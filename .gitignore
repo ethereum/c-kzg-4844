@@ -1,0 +1,7 @@
+*.o
+*.a
+*_test
+a.out
+tmp/
+inc/blst.h
+inc/blst_aux.h
