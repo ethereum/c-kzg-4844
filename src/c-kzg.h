@@ -15,4 +15,5 @@
  */
 
 #include <stdbool.h>
+#include <assert.h>
 #include "../inc/blst.h"
