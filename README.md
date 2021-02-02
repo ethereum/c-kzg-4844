@@ -1,4 +1,4 @@
-# c-kzg
+# c-kzg [Work in Progress]
 
 The very beginnings of a simple implementation of [KZG commitments](https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html) in C, using the [Blst library](https://github.com/supranational/blst) from Supranational for field and curve operations.
 
