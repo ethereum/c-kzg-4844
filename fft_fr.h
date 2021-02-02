@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "c-kzg.h"
 #include <stdlib.h>
 #include <assert.h>
 #include <stdio.h>
+#include "c-kzg.h"
 
 // This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
 static const blst_fr one =
@@ -71,11 +71,8 @@ typedef struct {
     blst_fr *reverse_roots_of_unity;
 } FFTSettings;
 
-void print_bytes_as_hex_le(byte *bytes, int start, int len);
-void print_fr(const blst_fr *a);
 bool is_one(const blst_fr *fr_p);
 bool is_power_of_two(uint64_t n);
-bool fr_equal(blst_fr *aa, blst_fr *bb);
 void fr_from_uint64(blst_fr *a, uint64_t n);
 blst_fr *expand_root_of_unity(blst_fr *root_of_unity, uint64_t width);
 blst_fr *reverse(blst_fr *r, uint64_t width);

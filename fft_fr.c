@@ -16,18 +16,6 @@
 
 #include "fft_fr.h"
 
-void print_bytes_as_hex_le(byte *bytes, int start, int len) {
-    for (int i = start + len - 1; i >= start; i--) {
-        printf("%02x", bytes[i]);
-    }
-}
-
-void print_fr(const blst_fr *a) {
-    blst_scalar b;
-    blst_scalar_from_fr(&b, a);
-    print_bytes_as_hex_le(b.b, 0, 32);
-}
-
 bool is_one(const blst_fr *fr_p) {
     uint64_t a[4];
     blst_uint64_from_fr(a, fr_p);
@@ -36,13 +24,6 @@ bool is_one(const blst_fr *fr_p) {
 
 bool is_power_of_two(uint64_t n) {
     return (n & (n - 1)) == 0;
-}
-
-bool fr_equal(blst_fr *aa, blst_fr *bb) {
-    uint64_t a[4], b[4];
-    blst_uint64_from_fr(a, aa);
-    blst_uint64_from_fr(b, bb);
-    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
 }
 
 void fr_from_uint64(blst_fr *a, uint64_t n) {

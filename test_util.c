@@ -14,16 +14,47 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
+#include "test_util.h"
 
-#include "inc/blst.h"
+//
+// General Utilities
+//
 
+// Big-endian
 void print_bytes_as_hex(byte *bytes, int start, int len) {
     for (int i = start; i < start + len; i++) {
         printf("%02x", bytes[i]);
     }
 }
+
+// Little-endian
+void print_bytes_as_hex_le(byte *bytes, int start, int len) {
+    for (int i = start + len - 1; i >= start; i--) {
+        printf("%02x", bytes[i]);
+    }
+}
+
+//
+// Fr utilities
+//
+
+// Print a `blst_fr`
+void print_fr(const blst_fr *a) {
+    blst_scalar b;
+    blst_scalar_from_fr(&b, a);
+    print_bytes_as_hex_le(b.b, 0, 32);
+}
+
+bool fr_equal(blst_fr *aa, blst_fr *bb) {
+    uint64_t a[4], b[4];
+    blst_uint64_from_fr(a, aa);
+    blst_uint64_from_fr(b, bb);
+    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+}
+
+//
+// G1 and G2 utilities
+//
 
 /* "Pretty" print an affine point in G1 */
 void print_p1_affine(const blst_p1_affine *p1) {
@@ -51,11 +82,4 @@ void print_p2_affine(const blst_p2_affine *p2) {
     print_bytes_as_hex(p2_hex, 144, 48);
     printf(")]\n");
     free(p2_hex);
-}
-
-
-int main() {
-    print_p1_affine(blst_p1_affine_generator());
-    print_p2_affine(blst_p2_affine_generator());
-    return 0;
 }

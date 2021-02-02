@@ -15,6 +15,7 @@
  */
 
 #include "inc/acutest.h"
+#include "test_util.h"
 #include "fft_fr.h"
 
 #define NUM_ROOTS 32
