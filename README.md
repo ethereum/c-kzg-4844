@@ -1,4 +1,4 @@
-# c-kzg [Work in Progress]
+# c-kzg - work in progress
 
 The very beginnings of a simple implementation of [KZG commitments](https://dankradfeist.de/ethereum/2020/06/16/kate-polynomial-commitments.html) in C, using the [Blst library](https://github.com/supranational/blst) from Supranational for field and curve operations.
 
@@ -17,7 +17,6 @@ Build the [Blst library](https://github.com/supranational/blst) following the in
 That is,
 
 ```
-mkdir lib
 cp ../blst/libblast.a lib/
 cp ../blst/bindings/*.h inc/
 ```
@@ -31,3 +30,10 @@ make test
 ```
 
 Thanks to [Acutest](https://github.com/mity/acutest) for the unit test harness, which is used here under the MIT licence.
+
+## Prerequisites
+
+ - Blst library (see above)
+ - `clang` compiler. I'm using Clang 10.0.0. I'll likely add `gcc` options in future.
+ - I'm developing on Ubuntu 20.04. Will check portability later.
+ 
