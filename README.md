@@ -26,6 +26,7 @@ There's no library to make here yet, but you can run the tests.
 ## Run tests
 
 ```
+cd src
 make test
 ```
 

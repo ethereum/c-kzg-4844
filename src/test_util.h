@@ -14,5 +14,18 @@
  * limitations under the License.
  */
 
-#include "inc/blst.h"
-#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include "../inc/blst.h"
+
+// General Utilities
+void print_bytes_as_hex(byte *bytes, int start, int len);
+void print_bytes_as_hex_le(byte *bytes, int start, int len);
+
+// Fr utilities
+void print_fr(const blst_fr *a);
+bool fr_equal(blst_fr *aa, blst_fr *bb);
+
+// G1 and G2 utilities
+void print_p1_affine(const blst_p1_affine *p1);
+void print_p2_affine(const blst_p2_affine *p2);

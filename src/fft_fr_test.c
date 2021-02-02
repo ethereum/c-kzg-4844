@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "inc/acutest.h"
+#include "../inc/acutest.h"
 #include "test_util.h"
 #include "fft_fr.h"
 

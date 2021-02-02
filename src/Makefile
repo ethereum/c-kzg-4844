@@ -6,7 +6,7 @@ tests = fft_fr_test
 	clang -Wall -c $*.c
 
 %_test: %.o %_test.c test_util.o
-	clang -Wall -o $@ $@.c test_util.o $*.o -Llib -lblst
+	clang -Wall -o $@ $@.c test_util.o $*.o -L../lib -lblst
 	./$@
 
 test: $(tests)
