@@ -48,8 +48,8 @@ void compare_sft_fft(void) {
     }
 
     // Do both fast and slow transforms
-    slow_ft(out0, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
-    fast_ft(out1, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
+    fft_fr_slow(out0, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
+    fft_fr_fast(out1, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
 
     // Verify the results are identical
     for (int i = 0; i < fs.max_width; i++) {
@@ -69,8 +69,8 @@ void roundtrip_fft(void) {
     }
 
     // Forward and reverse FFT
-    fft(coeffs, data, &fs, false, fs.max_width);
-    fft(data, coeffs, &fs, true, fs.max_width);
+    fft_fr(coeffs, data, &fs, false, fs.max_width);
+    fft_fr(data, coeffs, &fs, true, fs.max_width);
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {
@@ -91,7 +91,7 @@ void inverse_fft(void) {
     }
 
     // Inverst FFT
-    fft(out, data, &fs, true, fs.max_width);
+    fft_fr(out, data, &fs, true, fs.max_width);
 
     // Verify against the known result, `inv_fft_expected`
     int n = sizeof(inv_fft_expected) / sizeof(inv_fft_expected[0]);
