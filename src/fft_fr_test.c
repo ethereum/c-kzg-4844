@@ -40,7 +40,7 @@ const uint64_t inv_fft_expected[][4] =
 
 void compare_sft_fft(void) {
     // Initialise: ascending values of i (could be anything), and arbitrary size
-    unsigned int size = 8;
+    unsigned int size = 12;
     FFTSettings fs = new_fft_settings(size);
     blst_fr data[fs.max_width], out0[fs.max_width], out1[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
@@ -48,8 +48,8 @@ void compare_sft_fft(void) {
     }
 
     // Do both fast and slow transforms
-    fft_fr_slow(out0, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
-    fft_fr_fast(out1, data, 0, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
+    fft_fr_slow(out0, data, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
+    fft_fr_fast(out1, data, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
 
     // Verify the results are identical
     for (int i = 0; i < fs.max_width; i++) {

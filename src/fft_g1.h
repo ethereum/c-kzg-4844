@@ -14,20 +14,12 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include "../inc/blst.h"
+#include "c-kzg.h"
+#include "fft_util.h"
 
-// General Utilities
-void print_bytes_as_hex(byte *bytes, int start, int len);
-void print_bytes_as_hex_le(byte *bytes, int start, int len);
-
-// Fr utilities
-void print_fr(const blst_fr *a);
-bool fr_equal(blst_fr *aa, blst_fr *bb);
-
-// G1 and G2 utilities
-void print_p1_bytes(byte p1[96]);
-void print_p1(const blst_p1 *p1);
-void print_p1_affine(const blst_p1_affine *p1);
-void print_p2_affine(const blst_p2_affine *p2);
+void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b);
+void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b);
+void fft_g1_slow(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
+void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
+void fft_g1_helper(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
+void fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n);

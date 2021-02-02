@@ -17,44 +17,43 @@
 #include "fft_fr.h"
 
 // Slow Fourier Transform (simple, good for small sizes)
-void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t offset, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
-    blst_fr v, last, tmp;
+void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
+    blst_fr v, last, jv, r;
     for (uint64_t i = 0; i < l; i++) {
-        blst_fr jv = in[offset];
-        blst_fr r = roots[0];
-        blst_fr_mul(&v, &jv, &r);
-        last = v;
+        blst_fr_mul(&last, &in[0], &roots[0]);
         for (uint64_t j = 1; j < l; j++) {
-            jv = in[offset + j * stride];
+            jv = in[j * stride];
             r = roots[((i * j) % l) * roots_stride];
             blst_fr_mul(&v, &jv, &r);
-            tmp = last;
-            blst_fr_add(&last, &tmp, &v);
+            blst_fr_add(&last, &last, &v);
         }
         out[i] = last;
     }
 }
 
 // Fast Fourier Transform
-void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t offset, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
+void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     uint64_t half = l / 2;
-    fft_fr_helper(out, in, offset, stride * 2, roots, roots_stride * 2, l / 2);
-    fft_fr_helper(out + half, in, offset + stride, stride * 2, roots, roots_stride * 2, l / 2);
-    for (uint64_t i = 0; i < half; i++) {
-        blst_fr y_times_root;
-        blst_fr x = out[i];
-        blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-        blst_fr_add(&out[i], &x, &y_times_root);
-        blst_fr_sub(&out[i + half], &x, &y_times_root);
+    if (half > 0) {
+        fft_fr_helper(out, in, stride * 2, roots, roots_stride * 2, half);
+        fft_fr_helper(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
+        for (uint64_t i = 0; i < half; i++) {
+            blst_fr y_times_root;
+            blst_fr x = out[i];
+            blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            blst_fr_add(&out[i], &x, &y_times_root);
+            blst_fr_sub(&out[i + half], &x, &y_times_root);
+        }
+    } else {
+        blst_fr_mul(out, in, roots);
     }
 }
 
-void fft_fr_helper(blst_fr *out, blst_fr *in, uint64_t offset, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
-    // TODO: Tunable parameter
-    if (l <= 4) {
-        fft_fr_slow(out, in, offset, stride, roots, roots_stride, l);
+void fft_fr_helper(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
+    if (l <= 4) { // TODO: Tunable parameter
+        fft_fr_slow(out, in, stride, roots, roots_stride, l);
     } else {
-        fft_fr_fast(out, in, offset, stride, roots, roots_stride, l);
+        fft_fr_fast(out, in, stride, roots, roots_stride, l);
     }
 }
 
@@ -67,11 +66,11 @@ void fft_fr (blst_fr *out, blst_fr *in, FFTSettings *fs, bool inv, uint64_t n) {
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);
-        fft_fr_helper(out, in, 0, 1, fs->reverse_roots_of_unity, stride, fs->max_width);
+        fft_fr_helper(out, in, 1, fs->reverse_roots_of_unity, stride, fs->max_width);
         for (uint64_t i = 0; i < fs->max_width; i++) {
             blst_fr_mul(&out[i], &out[i], &inv_len);
         }
     } else {
-        fft_fr_helper(out, in, 0, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
+        fft_fr_helper(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
     }
 }

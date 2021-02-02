@@ -56,16 +56,28 @@ bool fr_equal(blst_fr *aa, blst_fr *bb) {
 // G1 and G2 utilities
 //
 
+void print_p1_bytes(byte p1[96]) {
+    printf("[0x");
+    print_bytes_as_hex(p1, 0, 48);
+    printf(",0x");
+    print_bytes_as_hex(p1, 48, 48);
+    printf("]\n");
+}
+
+/* "Pretty" print a point in G1 */
+void print_p1(const blst_p1 *p1) {
+    byte *p1_bytes = (byte *)malloc(96);
+    blst_p1_serialize(p1_bytes, p1);
+    print_p1_bytes(p1_bytes);
+    free(p1_bytes);
+}
+
 /* "Pretty" print an affine point in G1 */
 void print_p1_affine(const blst_p1_affine *p1) {
-    byte *p1_hex = (byte *)malloc(96);
-    blst_p1_affine_serialize(p1_hex, p1);
-    printf("[0x");
-    print_bytes_as_hex(p1_hex, 0, 48);
-    printf(",0x");
-    print_bytes_as_hex(p1_hex, 48, 48);
-    printf("]\n");
-    free(p1_hex);
+    byte *p1_bytes = (byte *)malloc(96);
+    blst_p1_affine_serialize(p1_bytes, p1);
+    print_p1_bytes(p1_bytes);
+    free(p1_bytes);
 }
 
 /* "Pretty" print an affine point in G2 */

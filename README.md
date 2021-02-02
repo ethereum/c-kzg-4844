@@ -6,6 +6,7 @@ Initially, at least, this largely follows the [go-kzg](https://github.com/protol
 
 Done so far:
   - Rough and ready FFT and inverse FFT over the finite field.
+  - Ditto for FFTs over the G1 group
 
 ## Installation
 
