@@ -18,9 +18,6 @@
 #include "test_util.h"
 #include "fft_g1.h"
 
-// The G1 subgroup size minus 1
-const uint64_t r_minus_1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
-
 void make_data(blst_p1 *out, uint64_t n) {
     // Multiples of g1_gen
     assert(n > 0);
@@ -31,13 +28,13 @@ void make_data(blst_p1 *out, uint64_t n) {
 }
 
 void p1_mul_works(void) {
-    blst_fr rm1;
+    blst_fr minus1;
     blst_p1 g1_gen, g1_gen_neg, res;
 
-    // Multiply the generator by the group order minus one
+    // Multiply the generator by minus one (the second root of unity)
     blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    blst_fr_from_uint64(&rm1, r_minus_1);
-    p1_mul(&res, &g1_gen, &rm1);
+    blst_fr_from_uint64(&minus1, scale2_root_of_unity[1]);
+    p1_mul(&res, &g1_gen, &minus1);
 
     // We should end up with negative the generator
     blst_p1_from_affine(&g1_gen_neg, &BLS12_381_NEG_G1);
