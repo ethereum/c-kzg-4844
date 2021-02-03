@@ -5,8 +5,8 @@ The very beginnings of a simple implementation of [KZG commitments](https://dank
 Initially, at least, this largely follows the [go-kzg](https://github.com/protolambda/go-kzg) implementation.
 
 Done so far:
-  - Rough and ready FFT and inverse FFT over the finite field.
-  - Ditto for FFTs over the G1 group
+  - FFT and inverse FFT over the finite field.
+  - FFTs over the G1 group
 
 ## Installation
 
@@ -22,7 +22,21 @@ cp ../blst/libblast.a lib/
 cp ../blst/bindings/*.h inc/
 ```
 
-There's no library to make here yet, but you can run the tests.
+## Build
+
+Build the `libckzg.a` library:
+
+```
+cd src
+make lib
+```
+
+Build a debug version that aborts on error conditions and attempts to print some helpful info (file, line number, condition that failed):
+
+```
+cd src
+make debuglib
+```
 
 ## Run tests
 
@@ -31,6 +45,8 @@ cd src
 make test
 ```
 
+Unit tests for an individual file can be built and run with `make fft_fr_test` for example. Once a test runner such as *fft_fr_test* has been built, individual unit tests can be run with `./fft_fr_test <test-name>`.
+
 Thanks to [Acutest](https://github.com/mity/acutest) for the unit test harness, which is used here under the MIT licence.
 
 ## Prerequisites
@@ -38,4 +54,3 @@ Thanks to [Acutest](https://github.com/mity/acutest) for the unit test harness, 
  - Blst library (see above)
  - `clang` compiler. I'm using Clang 10.0.0. I'll likely add `gcc` options in future.
  - I'm developing on Ubuntu 20.04. Will check portability later.
- 
