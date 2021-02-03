@@ -20,7 +20,7 @@
 
 void make_data(blst_p1 *out, uint64_t n) {
     // Multiples of g1_gen
-    assert(n > 0);
+    if (n == 0) return;
     blst_p1_from_affine(out + 0, &BLS12_381_G1);
     for (int i = 1; i < n; i++) {
         blst_p1_add_or_double_affine(out + i, out + i - 1, &BLS12_381_G1);
