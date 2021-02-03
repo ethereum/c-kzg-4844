@@ -15,7 +15,6 @@
  */
 
 #include "fft_g1.h"
-#include "test_util.h"
 
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;
