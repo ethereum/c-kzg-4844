@@ -18,7 +18,6 @@ fft_g1_test: fft_g1.o fft_g1_test.c test_util.o fft_util.o Makefile
 	./$@
 
 test: $(tests)
-	rm -f $(tests)
 
 clean:
 	rm -f *.o

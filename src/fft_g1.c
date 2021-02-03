@@ -47,9 +47,9 @@ void fft_g1_slow(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
 // Fast Fourier Transform
 void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     uint64_t half = l / 2;
-    if (half > 0) {
-        fft_g1_helper(out,        in,          stride * 2, roots, roots_stride * 2, half);
-        fft_g1_helper(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
+    if (half > 2) { // TODO: Tunable parameter
+        fft_g1_fast(out,        in,          stride * 2, roots, roots_stride * 2, half);
+        fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             blst_p1 y_times_root;
             blst_p1 x = out[i];
@@ -58,15 +58,7 @@ void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
             p1_sub(&out[i + half], &x, &y_times_root);
         }
     } else {
-        p1_mul(out, in, roots);
-    }
-}
-
-void fft_g1_helper(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
-    if (l <= 4) { // TODO: Tunable parameter
         fft_g1_slow(out, in, stride, roots, roots_stride, l);
-    } else {
-        fft_g1_fast(out, in, stride, roots, roots_stride, l);
     }
 }
 
@@ -79,11 +71,11 @@ void fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);
-        fft_g1_helper(out, in, 1, fs->reverse_roots_of_unity, stride, fs->max_width);
+        fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, fs->max_width);
         for (uint64_t i = 0; i < fs->max_width; i++) {
             p1_mul(&out[i], &out[i], &inv_len);
         }
     } else {
-        fft_g1_helper(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
+        fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
     }
 }
