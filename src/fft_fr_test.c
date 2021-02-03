@@ -41,7 +41,8 @@ const uint64_t inv_fft_expected[][4] =
 void compare_sft_fft(void) {
     // Initialise: ascending values of i (could be anything), and arbitrary size
     unsigned int size = 12;
-    FFTSettings fs = new_fft_settings(size);
+    FFTSettings fs;
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
     blst_fr data[fs.max_width], out0[fs.max_width], out1[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(data + i, i);
@@ -62,7 +63,8 @@ void compare_sft_fft(void) {
 void roundtrip_fft(void) {
     // Initialise: ascending values of i, and arbitrary size
     unsigned int size = 12;
-    FFTSettings fs = new_fft_settings(size);
+    FFTSettings fs;
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
     blst_fr data[fs.max_width], coeffs[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(data + i, i);
@@ -84,7 +86,8 @@ void roundtrip_fft(void) {
 
 void inverse_fft(void) {
     // Initialise: ascending values of i
-    FFTSettings fs = new_fft_settings(4);
+    FFTSettings fs;
+    TEST_CHECK(new_fft_settings(&fs, 4) == C_KZG_SUCCESS);
     blst_fr data[fs.max_width], out[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(&data[i], i);

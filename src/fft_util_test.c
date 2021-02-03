@@ -43,8 +43,8 @@ void roots_of_unity_are_plausible(void) {
 
 void reverse_works(void) {
     int n = 24;
-    blst_fr arr[n + 1];
-    blst_fr *rev, diff;
+    blst_fr arr[n + 1], rev[n + 1];
+    blst_fr diff;
 
     // Initialise - increasing values
     arr[0] = one;
@@ -53,7 +53,7 @@ void reverse_works(void) {
     }
 
     // Reverse
-    rev = reverse(arr, n);
+    TEST_CHECK(reverse(rev, arr, n) == C_KZG_SUCCESS);
 
     // Verify - decreasing values
     for (int i = 0; i < n; i++) {
@@ -61,19 +61,17 @@ void reverse_works(void) {
         TEST_CHECK(true == is_one(&diff));
     }
     TEST_CHECK(true == is_one(rev + n));
-
-    free(rev);
 }
 
 void expand_roots_is_plausible(void) {
     // Just test one (largeish) value of scale
-    unsigned int scale = 20;
+    unsigned int scale = 15;
     unsigned int width = 1 << scale;
-    blst_fr root, *expanded, prod;
+    blst_fr root, expanded[width + 1], prod;
 
     // Initialise
     blst_fr_from_uint64(&root, scale2_root_of_unity[scale]);
-    expanded = expand_root_of_unity(&root, width);
+    TEST_CHECK(expand_root_of_unity(expanded, &root, width) == C_KZG_SUCCESS);
 
     // Verify - each pair should multiply to one
     TEST_CHECK(true == is_one(expanded + 0));
@@ -82,8 +80,6 @@ void expand_roots_is_plausible(void) {
         blst_fr_mul(&prod, expanded + i, expanded + width - i);
         TEST_CHECK(true == is_one(&prod));
     }
-
-    free(expanded);
 }
 
 void new_fft_settings_is_plausible(void) {
@@ -91,7 +87,9 @@ void new_fft_settings_is_plausible(void) {
     unsigned int scale = 21;
     unsigned int width = 1 << scale;
     blst_fr prod;
-    FFTSettings s = new_fft_settings(scale);
+    FFTSettings s;
+
+    TEST_CHECK(new_fft_settings(&s, scale) == C_KZG_SUCCESS);
 
     // Verify - each pair should multiply to one
     for (unsigned int i = 1; i <= width; i++) {

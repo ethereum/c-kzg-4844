@@ -31,41 +31,42 @@ void fr_from_uint64(blst_fr *a, uint64_t n) {
     blst_fr_from_uint64(a, vals);
 }
 
-// Returns an array of powers of the root of unity
-// Allocates space for the array that needs to be freed later
-blst_fr *expand_root_of_unity(blst_fr *root_of_unity, uint64_t width) {
-    blst_fr *roots = malloc((width + 1) * sizeof(blst_fr));
+// Create an array of powers of the root of unity
+// The `out` array must be of size `width + 1`
+C_KZG_RET expand_root_of_unity(blst_fr *roots, blst_fr *root_of_unity, uint64_t width) {
     roots[0] = one;
     roots[1] = *root_of_unity;
 
     for (int i = 2; !is_one(&roots[i - 1]); i++) {
-        //ASSERT(i <= width, C_KZG_ERROR);
-        assert(i <= width);
+        ASSERT(i <= width, C_KZG_ERROR);
         blst_fr_mul(&roots[i], &roots[i - 1], root_of_unity);
     }
-    assert(is_one(&roots[width]));
+    ASSERT(is_one(&roots[width]), C_KZG_ERROR);
 
-    return roots;
+    return C_KZG_SUCCESS;
 }
 
-// Return a reversed copy of the list of Fr provided
-// `width` is one less than the length of `r`
-// Allocates space for the array that needs to be freed later
-blst_fr *reverse(blst_fr *r, uint64_t width) {
-   blst_fr *rr = malloc((width + 1) * sizeof(blst_fr));
+// Create a reversed list of Fr provided
+// `width` is one less than the length of `roots`
+C_KZG_RET reverse(blst_fr *out, blst_fr *roots, uint64_t width) {
    for (int i = 0; i <= width; i++) {
-       rr[i] = r[width - i];
+       out[i] = roots[width - i];
    }
-   return rr;
+
+   return C_KZG_SUCCESS;
 }
 
-FFTSettings new_fft_settings(unsigned int max_scale) {
-    FFTSettings s;
-    s.max_width = (uint64_t)1 << max_scale;
-    blst_fr_from_uint64(&s.root_of_unity, scale2_root_of_unity[max_scale]);
-    s.expanded_roots_of_unity = expand_root_of_unity(&s.root_of_unity, s.max_width);
-    s.reverse_roots_of_unity = reverse(s.expanded_roots_of_unity, s.max_width);
-    return s;
+C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale) {
+    C_KZG_RET ret;
+    s->max_width = (uint64_t)1 << max_scale;
+    blst_fr_from_uint64(&s->root_of_unity, scale2_root_of_unity[max_scale]);
+    s->expanded_roots_of_unity = malloc((s->max_width + 1) * sizeof(blst_fr));
+    s->reverse_roots_of_unity = malloc((s->max_width + 1) * sizeof(blst_fr));
+
+    ret = expand_root_of_unity(s->expanded_roots_of_unity, &s->root_of_unity, s->max_width);
+    if (ret != C_KZG_SUCCESS) return ret;
+    ret = reverse(s->reverse_roots_of_unity, s->expanded_roots_of_unity, s->max_width);
+    return ret;
 }
 
 void free_fft_settings(FFTSettings *s) {

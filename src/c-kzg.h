@@ -20,16 +20,14 @@
 typedef enum {
     C_KZG_SUCCESS = 0,
     C_KZG_BADARGS,
-    c_KZG_ERROR,
+    C_KZG_ERROR,
 } C_KZG_RET;
 
 #include <stdbool.h>
 #include "../inc/blst.h"
 
-#define DEBUG
-
-#include <assert.h>
 #ifdef DEBUG
+#include <assert.h>
 #include <stdio.h>
 #define ASSERT(cond, ret) if (!(cond)) \
         { \

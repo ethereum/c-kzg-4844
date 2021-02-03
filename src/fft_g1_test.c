@@ -59,7 +59,8 @@ void p1_sub_works(void) {
 void compare_sft_fft(void) {
     // Initialise: arbitrary size
     unsigned int size = 6;
-    FFTSettings fs = new_fft_settings(size);
+    FFTSettings fs;
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
     blst_p1 data[fs.max_width], slow[fs.max_width], fast[fs.max_width];
     make_data(data, fs.max_width);
     
@@ -78,7 +79,8 @@ void compare_sft_fft(void) {
 void roundtrip_fft(void) {
     // Initialise: arbitrary size
     unsigned int size = 10;
-    FFTSettings fs = new_fft_settings(size);
+    FFTSettings fs;
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
     blst_p1 expected[fs.max_width], data[fs.max_width], coeffs[fs.max_width];
     make_data(expected, fs.max_width);
     make_data(data, fs.max_width);
