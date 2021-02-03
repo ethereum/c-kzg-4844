@@ -15,8 +15,13 @@
  */
 
 #include "c_kzg.h"
-#include "fft_util.h"
 
-void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
-void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
-C_KZG_RET fft_fr (blst_fr *out, blst_fr *in, FFTSettings *fs, bool inv, uint64_t n);
+// This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
+static const blst_fr one =
+    {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
+
+bool fr_is_one(const blst_fr *fr_p);
+void fr_from_uint64(blst_fr *a, uint64_t n);
+bool fr_equal(blst_fr *aa, blst_fr *bb);
+void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b);
+void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b);

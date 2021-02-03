@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "test_util.h"
+#include "debug_util.h"
 
 //
 // General Utilities
@@ -43,13 +43,6 @@ void print_fr(const blst_fr *a) {
     blst_scalar b;
     blst_scalar_from_fr(&b, a);
     print_bytes_as_hex_le(b.b, 0, 32);
-}
-
-bool fr_equal(blst_fr *aa, blst_fr *bb) {
-    uint64_t a[4], b[4];
-    blst_uint64_from_fr(a, aa);
-    blst_uint64_from_fr(b, bb);
-    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
 }
 
 //

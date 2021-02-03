@@ -16,19 +16,8 @@
 
 #include "fft_util.h"
 
-bool is_one(const blst_fr *fr_p) {
-    uint64_t a[4];
-    blst_uint64_from_fr(a, fr_p);
-    return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
-}
-
 bool is_power_of_two(uint64_t n) {
     return (n & (n - 1)) == 0;
-}
-
-void fr_from_uint64(blst_fr *a, uint64_t n) {
-    uint64_t vals[] = {n, 0, 0, 0};
-    blst_fr_from_uint64(a, vals);
 }
 
 // Create an array of powers of the root of unity
@@ -37,11 +26,11 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, blst_fr *root_of_unity, uint64_t 
     roots[0] = one;
     roots[1] = *root_of_unity;
 
-    for (int i = 2; !is_one(&roots[i - 1]); i++) {
+    for (int i = 2; !fr_is_one(&roots[i - 1]); i++) {
         ASSERT(i <= width, C_KZG_ERROR);
         blst_fr_mul(&roots[i], &roots[i - 1], root_of_unity);
     }
-    ASSERT(is_one(&roots[width]), C_KZG_ERROR);
+    ASSERT(fr_is_one(&roots[width]), C_KZG_ERROR);
 
     return C_KZG_SUCCESS;
 }

@@ -15,7 +15,7 @@
  */
 
 #include "../inc/acutest.h"
-#include "test_util.h"
+#include "debug_util.h"
 #include "fft_fr.h"
 
 const uint64_t inv_fft_expected[][4] =

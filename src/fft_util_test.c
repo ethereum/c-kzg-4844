@@ -15,14 +15,10 @@
  */
 
 #include "../inc/acutest.h"
-#include "test_util.h"
+#include "debug_util.h"
 #include "fft_util.h"
 
 #define NUM_ROOTS 32
-
-void is_one_works(void) {
-    TEST_CHECK(true == is_one(&one));
-}
 
 void roots_of_unity_is_the_expected_size(void) {
     TEST_CHECK(NUM_ROOTS ==
@@ -36,7 +32,7 @@ void roots_of_unity_are_plausible(void) {
         for (unsigned int j = 0; j < i; j++) {
             blst_fr_sqr(&r, &r);
         }
-        TEST_CHECK(true == is_one(&r));
+        TEST_CHECK(true == fr_is_one(&r));
         TEST_MSG("Root %d failed", i);
     }
 }
@@ -58,9 +54,9 @@ void reverse_works(void) {
     // Verify - decreasing values
     for (int i = 0; i < n; i++) {
         blst_fr_sub(&diff, rev + i, rev + i + 1);
-        TEST_CHECK(true == is_one(&diff));
+        TEST_CHECK(true == fr_is_one(&diff));
     }
-    TEST_CHECK(true == is_one(rev + n));
+    TEST_CHECK(true == fr_is_one(rev + n));
 }
 
 void expand_roots_is_plausible(void) {
@@ -74,11 +70,11 @@ void expand_roots_is_plausible(void) {
     TEST_CHECK(expand_root_of_unity(expanded, &root, width) == C_KZG_SUCCESS);
 
     // Verify - each pair should multiply to one
-    TEST_CHECK(true == is_one(expanded + 0));
-    TEST_CHECK(true == is_one(expanded + width));
+    TEST_CHECK(true == fr_is_one(expanded + 0));
+    TEST_CHECK(true == fr_is_one(expanded + width));
     for (unsigned int i = 1; i <= width / 2; i++) {
         blst_fr_mul(&prod, expanded + i, expanded + width - i);
-        TEST_CHECK(true == is_one(&prod));
+        TEST_CHECK(true == fr_is_one(&prod));
     }
 }
 
@@ -94,7 +90,7 @@ void new_fft_settings_is_plausible(void) {
     // Verify - each pair should multiply to one
     for (unsigned int i = 1; i <= width; i++) {
         blst_fr_mul(&prod, s.expanded_roots_of_unity + i, s.reverse_roots_of_unity + i);
-        TEST_CHECK(true == is_one(&prod));
+        TEST_CHECK(true == fr_is_one(&prod));
     }
 
     free_fft_settings(&s);
@@ -115,30 +111,13 @@ void is_power_of_two_works(void) {
     TEST_CHECK(false == is_power_of_two(1234567));
 }
 
-void fr_from_uint64_works(void) {
-    blst_fr a;
-    fr_from_uint64(&a, 1);
-    TEST_CHECK(true == is_one(&a));
-}
-
-void fr_equal_works(void) {
-    blst_fr a, b;
-    blst_fr_from_uint64(&a, scale2_root_of_unity[15]);
-    blst_fr_from_uint64(&b, scale2_root_of_unity[16]);
-    TEST_CHECK(true == fr_equal(&a, &a));
-    TEST_CHECK(false == fr_equal(&a, &b));
-}
-
 TEST_LIST =
     {
-     {"is_one_works", is_one_works },
      {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
      {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
      {"reverse_works", reverse_works},
      {"expand_roots_is_plausible", expand_roots_is_plausible},
      {"new_fft_settings_is_plausible", new_fft_settings_is_plausible},
      {"is_power_of_two_works", is_power_of_two_works},
-     {"fr_from_uint64_works", fr_from_uint64_works},
-     {"fr_equal_works", fr_equal_works},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

@@ -15,11 +15,8 @@
  */
 
 #include <stdlib.h>
-#include "c-kzg.h"
-
-// This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
-static const blst_fr one =
-    {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
+#include "c_kzg.h"
+#include "blst_util.h"
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 // PRIMITIVE_ROOT = 5
@@ -69,9 +66,7 @@ typedef struct {
     blst_fr *reverse_roots_of_unity;
 } FFTSettings;
 
-bool is_one(const blst_fr *fr_p);
 bool is_power_of_two(uint64_t n);
-void fr_from_uint64(blst_fr *a, uint64_t n);
 C_KZG_RET expand_root_of_unity(blst_fr * roots, blst_fr *root_of_unity, uint64_t width);
 C_KZG_RET reverse(blst_fr *out, blst_fr *roots, uint64_t width);
 C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);

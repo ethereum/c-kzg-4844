@@ -1,19 +1,19 @@
-TESTS = fft_util_test fft_fr_test fft_g1_test
-LIB_SRC = fft_util.c fft_fr.c fft_g1.c
+TESTS = blst_util_test fft_util_test fft_fr_test fft_g1_test
+LIB_SRC = blst_util.c fft_util.c fft_fr.c fft_g1.c
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
 CFLAGS =
 
 .PRECIOUS: %.o
 
-%.o: %.c %.h c-kzg.h Makefile
+%.o: %.c %.h c_kzg.h Makefile
 	clang -Wall $(CFLAGS) -c $*.c
 
 libckzg.a: $(LIB_OBJ) Makefile
 	ar rc libckzg.a $(LIB_OBJ)
 
-%_test: %_test.c test_util.o libckzg.a Makefile
-	clang -Wall $(CFLAGS) -o $@ $@.c test_util.o libckzg.a -L../lib -lblst
+%_test: %_test.c debug_util.o libckzg.a Makefile
+	clang -Wall $(CFLAGS) -o $@ $@.c debug_util.o libckzg.a -L../lib -lblst
 	./$@
 
 lib: clean libckzg.a

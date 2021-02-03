@@ -16,18 +16,6 @@
 
 #include "fft_g1.h"
 
-void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
-}
-
-void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b) {
-    blst_p1 bneg = *b;
-    blst_p1_cneg(&bneg, true);
-    blst_p1_add_or_double(out, a, &bneg);
-}
-
 // Slow Fourier Transform (simple, good for small sizes)
 void fft_g1_slow(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     blst_p1 v, last, jv;

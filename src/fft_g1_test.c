@@ -15,7 +15,7 @@
  */
 
 #include "../inc/acutest.h"
-#include "test_util.h"
+#include "debug_util.h"
 #include "fft_g1.h"
 
 void make_data(blst_p1 *out, uint64_t n) {
@@ -25,35 +25,6 @@ void make_data(blst_p1 *out, uint64_t n) {
     for (int i = 1; i < n; i++) {
         blst_p1_add_or_double_affine(out + i, out + i - 1, &BLS12_381_G1);
     }
-}
-
-void p1_mul_works(void) {
-    blst_fr minus1;
-    blst_p1 g1_gen, g1_gen_neg, res;
-
-    // Multiply the generator by minus one (the second root of unity)
-    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    blst_fr_from_uint64(&minus1, scale2_root_of_unity[1]);
-    p1_mul(&res, &g1_gen, &minus1);
-
-    // We should end up with negative the generator
-    blst_p1_from_affine(&g1_gen_neg, &BLS12_381_NEG_G1);
-
-    TEST_CHECK(blst_p1_is_equal(&res, &g1_gen_neg));
-}
-
-void p1_sub_works(void) {
-    blst_p1 g1_gen, g1_gen_neg;
-    blst_p1 tmp, res;
-
-    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    blst_p1_from_affine(&g1_gen_neg, &BLS12_381_NEG_G1);
-
-    // 2 * g1_gen = g1_gen - g1_gen_neg
-    blst_p1_double(&tmp, &g1_gen);
-    p1_sub(&res, &g1_gen, &g1_gen_neg);
-
-    TEST_CHECK(blst_p1_is_equal(&tmp, &res));
 }
 
 void compare_sft_fft(void) {
@@ -99,8 +70,6 @@ void roundtrip_fft(void) {
 
 TEST_LIST =
     {
-     {"p1_mul_works", p1_mul_works},
-     {"p1_sub_works", p1_sub_works},
      {"compare_sft_fft", compare_sft_fft},
      {"roundtrip_fft", roundtrip_fft},
      { NULL, NULL }     /* zero record marks the end of the list */

@@ -16,7 +16,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include "../inc/blst.h"
+#include "c_kzg.h"
 
 // General Utilities
 void print_bytes_as_hex(byte *bytes, int start, int len);
@@ -24,7 +24,6 @@ void print_bytes_as_hex_le(byte *bytes, int start, int len);
 
 // Fr utilities
 void print_fr(const blst_fr *a);
-bool fr_equal(blst_fr *aa, blst_fr *bb);
 
 // G1 and G2 utilities
 void print_p1_bytes(byte p1[96]);
