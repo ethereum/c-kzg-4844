@@ -39,6 +39,7 @@ blst_fr *expand_root_of_unity(blst_fr *root_of_unity, uint64_t width) {
     roots[1] = *root_of_unity;
 
     for (int i = 2; !is_one(&roots[i - 1]); i++) {
+        //ASSERT(i <= width, C_KZG_ERROR);
         assert(i <= width);
         blst_fr_mul(&roots[i], &roots[i - 1], root_of_unity);
     }

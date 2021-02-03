@@ -14,6 +14,30 @@
  * limitations under the License.
  */
 
+#ifndef C_KZG_H
+#define C_KZG_H
+
+typedef enum {
+    C_KZG_SUCCESS = 0,
+    C_KZG_BADARGS,
+    c_KZG_ERROR,
+} C_KZG_RET;
+
 #include <stdbool.h>
-#include <assert.h>
 #include "../inc/blst.h"
+
+#define DEBUG
+
+#include <assert.h>
+#ifdef DEBUG
+#include <stdio.h>
+#define ASSERT(cond, ret) if (!(cond)) \
+        { \
+            printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond); \
+            abort(); \
+        }
+#else
+#define ASSERT(cond, ret) if (!(cond)) return (ret)
+#endif
+
+#endif

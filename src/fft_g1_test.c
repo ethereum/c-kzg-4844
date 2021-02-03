@@ -84,8 +84,8 @@ void roundtrip_fft(void) {
     make_data(data, fs.max_width);
     
     // Forward and reverse FFT
-    fft_g1(coeffs, data, &fs, false, fs.max_width);
-    fft_g1(data, coeffs, &fs, true, fs.max_width);
+    TEST_CHECK(fft_g1(coeffs, data, &fs, false, fs.max_width) == C_KZG_SUCCESS);
+    TEST_CHECK(fft_g1(data, coeffs, &fs, true, fs.max_width) == C_KZG_SUCCESS);
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {

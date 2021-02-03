@@ -63,10 +63,10 @@ void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
 }
 
 // The main entry point for forward and reverse FFTs
-void fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
+C_KZG_RET fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
     uint64_t stride = fs->max_width / n;
-    assert(n <= fs->max_width);
-    assert(is_power_of_two(n));
+    ASSERT(n <= fs->max_width, C_KZG_BADARGS);
+    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
     if (inv) {
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
@@ -78,4 +78,5 @@ void fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
     } else {
         fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
     }
+    return C_KZG_SUCCESS;
 }
