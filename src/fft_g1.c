@@ -20,8 +20,7 @@
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
-    //blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
-    blst_p1_mult(out, a, s.b, 256);
+    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
 void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b) {
@@ -50,7 +49,7 @@ void fft_g1_slow(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
 void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     uint64_t half = l / 2;
     if (half > 0) {
-        fft_g1_helper(out, in, stride * 2, roots, roots_stride * 2, half);
+        fft_g1_helper(out,        in,          stride * 2, roots, roots_stride * 2, half);
         fft_g1_helper(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             blst_p1 y_times_root;
