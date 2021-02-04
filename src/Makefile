@@ -1,5 +1,5 @@
-TESTS = blst_util_test fft_common_test fft_fr_test fft_g1_test
-LIB_SRC = blst_util.c fft_common.c fft_fr.c fft_g1.c
+TESTS = blst_util_test fft_common_test fft_fr_test fft_g1_test poly_test
+LIB_SRC = poly.c blst_util.c fft_common.c fft_fr.c fft_g1.c
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
 CFLAGS =
