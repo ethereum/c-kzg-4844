@@ -27,7 +27,7 @@ typedef enum {
 #include "../inc/blst.h"
 
 #ifdef DEBUG
-#include <assert.h>
+#include <stdlib.h>
 #include <stdio.h>
 #define ASSERT(cond, ret) if (!(cond)) \
         { \
