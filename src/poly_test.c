@@ -24,63 +24,77 @@ void poly_div_length() {
 }
 
 void poly_div_0() {
+    blst_fr a[3], b[2], c[2], expected[2];
+    poly dividend, divisor, actual;
+
     // Calculate (x^2 - 1) / (x + 1) = x - 1
-    blst_fr dividend[3];
-    blst_fr divisor[2];
-    blst_fr expected[2], actual[2];
 
-    // Set up dividend
-    fr_from_uint64(&dividend[0], 1);
-    fr_negate(&dividend[0], &dividend[0]);
-    fr_from_uint64(&dividend[1], 0);
-    fr_from_uint64(&dividend[2], 1);
+    // Dividend
+    fr_from_uint64(&a[0], 1);
+    fr_negate(&a[0], &a[0]);
+    fr_from_uint64(&a[1], 0);
+    fr_from_uint64(&a[2], 1);
+    dividend.length = 3;
+    dividend.coeffs = a;
 
-    // Set up divisor
-    fr_from_uint64(&divisor[0], 1);
-    fr_from_uint64(&divisor[1], 1);
+    // Divisor
+    fr_from_uint64(&b[0], 1);
+    fr_from_uint64(&b[1], 1);
+    divisor.length = 2;
+    divisor.coeffs = b;
 
-    // Set up result
+    // Known result
     fr_from_uint64(&expected[0], 1);
     fr_negate(&expected[0], &expected[0]);
     fr_from_uint64(&expected[1], 1);
 
-    TEST_CHECK(poly_long_div(actual, 2, dividend, 3, divisor, 2) == C_KZG_SUCCESS);
-    TEST_CHECK(fr_equal(expected + 0, actual + 0));
-    TEST_CHECK(fr_equal(expected + 1, actual + 1));
+    actual.length = 2;
+    actual.coeffs = c;
+
+    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_SUCCESS);
+    TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
+    TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
 }
 
 void poly_div_1() {
+    blst_fr a[4], b[2], c[3], expected[3];
+    poly dividend, divisor, actual;
+
     // Calculate (12x^3 - 11x^2 + 9x + 18) / (4x + 3) = 3x^2 - 5x + 6
-    blst_fr dividend[4];
-    blst_fr divisor[2];
-    blst_fr expected[3], actual[3];
 
-    // Set up dividend
-    fr_from_uint64(&dividend[0], 18);
-    fr_from_uint64(&dividend[1], 9);
-    fr_from_uint64(&dividend[2], 11);
-    fr_negate(&dividend[2], &dividend[2]);
-    fr_from_uint64(&dividend[3], 12);
+    // Dividend
+    fr_from_uint64(&a[0], 18);
+    fr_from_uint64(&a[1], 9);
+    fr_from_uint64(&a[2], 11);
+    fr_negate(&a[2], &a[2]);
+    fr_from_uint64(&a[3], 12);
+    dividend.length = 4;
+    dividend.coeffs = a;
 
-    // Set up divisor
-    fr_from_uint64(&divisor[0], 3);
-    fr_from_uint64(&divisor[1], 4);
+    // Divisor
+    fr_from_uint64(&b[0], 3);
+    fr_from_uint64(&b[1], 4);
+    divisor.length = 2;
+    divisor.coeffs = b;
 
-    // Set up result
+    // Known result
     fr_from_uint64(&expected[0], 6);
     fr_from_uint64(&expected[1], 5);
     fr_negate(&expected[1], &expected[1]);
     fr_from_uint64(&expected[2], 3);
 
-    TEST_CHECK(poly_long_div(actual, 3, dividend, 4, divisor, 2) == C_KZG_SUCCESS);
-    TEST_CHECK(fr_equal(expected + 0, actual + 0));
-    TEST_CHECK(fr_equal(expected + 1, actual + 1));
-    TEST_CHECK(fr_equal(expected + 2, actual + 2));
+    actual.length = 3;
+    actual.coeffs = c;
+
+    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_SUCCESS);
+    TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
+    TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
+    TEST_CHECK(fr_equal(&expected[2], &actual.coeffs[2]));
 }
 
 void poly_wrong_size(void) {
-    blst_fr dividend[1], divisor[1], result[1];
-    TEST_CHECK(poly_long_div(result, 5, dividend, 20, divisor, 7) == C_KZG_BADARGS);
+    poly dividend, divisor, result;
+    TEST_CHECK(poly_long_div(&result, &dividend, &divisor) == C_KZG_BADARGS);
 }
 
 TEST_LIST =

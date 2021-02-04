@@ -16,5 +16,10 @@
 
 #include "c_kzg.h"
 
+typedef struct {
+    blst_fr *coeffs; // coeffs[i] is the x^i term
+    uint64_t length; // one more than the polynomial's degree
+} poly;
+
 uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor);
-C_KZG_RET poly_long_div(blst_fr *out, const uint64_t len_out, const blst_fr *dividend, const uint64_t len_dividend, const blst_fr *divisor, const uint64_t len_divisor);
+C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);

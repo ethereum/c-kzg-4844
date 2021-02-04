@@ -28,24 +28,24 @@ uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_di
 
 // `out` must have been pre-allocated to the correct size, and the length is provided
 // as a check
-C_KZG_RET poly_long_div(blst_fr *out, const uint64_t len_out, const blst_fr *dividend, const uint64_t len_dividend, const blst_fr *divisor, const uint64_t len_divisor) {
-    uint64_t a_pos = len_dividend - 1;
-    uint64_t b_pos = len_divisor - 1;
+C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
+    uint64_t a_pos = dividend->length - 1;
+    uint64_t b_pos = divisor->length - 1;
     uint64_t diff = a_pos - b_pos;
-    blst_fr a[len_dividend];
+    blst_fr a[dividend->length];
 
-    ASSERT(len_out == diff + 1, C_KZG_BADARGS);
+    ASSERT(out->length == diff + 1, C_KZG_BADARGS);
 
-    for (uint64_t i = 0; i < len_dividend; i++) {
-        a[i] = dividend[i];
+    for (uint64_t i = 0; i < dividend->length; i++) {
+        a[i] = dividend->coeffs[i];
     }
 
     while (true) {
-        poly_factor_div(&out[diff], &a[a_pos], &divisor[b_pos]);
+        poly_factor_div(&out->coeffs[diff], &a[a_pos], &divisor->coeffs[b_pos]);
         for (uint64_t i = 0; i <= b_pos; i++) {
             blst_fr tmp;
             // a[diff + i] -= b[i] * quot
-            blst_fr_mul(&tmp, &out[diff], &divisor[i]);
+            blst_fr_mul(&tmp, &out->coeffs[diff], &divisor->coeffs[i]);
             blst_fr_sub(&a[diff + i], &a[diff + i], &tmp);
         }
         if (diff == 0) break;
