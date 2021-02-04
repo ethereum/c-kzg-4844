@@ -14,17 +14,15 @@
  * limitations under the License.
  */
 
-#include <stdlib.h> // malloc, free
 #include "c_kzg.h"
-#include "blst_util.h"
+#include "fft_common.h"
 
 typedef struct {
-    blst_fr *coeffs; // coeffs[i] is the x^i term
-    uint64_t length; // one more than the polynomial's degree
-} poly;
+    FFTSettings *fs;
+    blst_p1 *secret_g1;
+    blst_p1 *extended_secret_g1;
+    blst_p2 *secret_g2;
+    uint64_t length;
+} KZGSettings;
 
-void init_poly(poly *out, const uint64_t length);
-void free_poly(poly p);
-void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x);
-uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor);
-C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length);

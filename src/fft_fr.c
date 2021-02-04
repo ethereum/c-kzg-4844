@@ -15,6 +15,7 @@
  */
 
 #include "fft_fr.h"
+#include "blst_util.h"
 
 // Slow Fourier Transform (simple, good for small sizes)
 void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {

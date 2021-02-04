@@ -21,6 +21,31 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
     blst_fr_mul(out, out, a);
 }
 
+void init_poly(poly *out, const uint64_t length) {
+    out->length = length;
+    out->coeffs = malloc(length * sizeof(blst_fr));
+}
+
+void free_poly(poly p) {
+    free(p.coeffs);
+}
+
+void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x) {
+    blst_fr tmp;
+
+    if (p->length == 0) {
+        fr_from_uint64(out, 0);
+    }
+    // TODO x = 0 case
+
+    // Horner's method
+    *out = p->coeffs[p->length - 1];
+    for (int i = p->length - 2; i >= 0; i--) { // needs to be uint64_t?
+        blst_fr_mul(&tmp, out, x);
+        blst_fr_add(out, &tmp, &p->coeffs[i]);
+    }
+}
+
 // Call this to find out how much space to allocate for the result
 uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor) {
     return len_dividend - len_divisor + 1;

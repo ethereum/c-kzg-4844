@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-#include <stdlib.h> // malloc, free
 #include "c_kzg.h"
-#include "blst_util.h"
+#include "kzg_common.h"
+#include "poly.h"
 
-typedef struct {
-    blst_fr *coeffs; // coeffs[i] is the x^i term
-    uint64_t length; // one more than the polynomial's degree
-} poly;
-
-void init_poly(poly *out, const uint64_t length);
-void free_poly(poly p);
-void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x);
-uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor);
-C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p);
+void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const uint64_t x0);
+bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y);

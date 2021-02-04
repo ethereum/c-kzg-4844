@@ -16,14 +16,13 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
-#include "blst_util.h"
 #include "poly.h"
 
-void poly_div_length() {
+void poly_div_length(void) {
     TEST_CHECK(3 == poly_long_div_length(4, 2));
 }
 
-void poly_div_0() {
+void poly_div_0(void) {
     blst_fr a[3], b[2], c[2], expected[2];
     poly dividend, divisor, actual;
 
@@ -56,7 +55,7 @@ void poly_div_0() {
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
 }
 
-void poly_div_1() {
+void poly_div_1(void) {
     blst_fr a[4], b[2], c[3], expected[3];
     poly dividend, divisor, actual;
 
@@ -97,11 +96,27 @@ void poly_wrong_size(void) {
     TEST_CHECK(poly_long_div(&result, &dividend, &divisor) == C_KZG_BADARGS);
 }
 
+void eval_poly(void) {
+    uint64_t n = 10;
+    blst_fr res, expected;
+    poly p;
+    init_poly(&p, n);
+    for (uint64_t i = 0; i < n; i++) {
+        fr_from_uint64(&p.coeffs[i], i + 1);
+    }
+    fr_from_uint64(&expected, n * (n + 1) / 2);
+
+    eval_poly_at(&res, &p, &one);
+
+    TEST_CHECK(fr_equal(&expected, &res));
+}
+
 TEST_LIST =
     {
      {"poly_div_length", poly_div_length},
      {"poly_div_0", poly_div_0},
      {"poly_div_1", poly_div_1},
      {"poly_wrong_size", poly_wrong_size},
+     {"eval_poly", eval_poly},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

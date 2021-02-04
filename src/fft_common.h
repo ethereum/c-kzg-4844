@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include "c_kzg.h"
-#include "blst_util.h"
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
 // PRIMITIVE_ROOT = 5
