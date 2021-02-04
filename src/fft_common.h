@@ -66,8 +66,8 @@ typedef struct {
     blst_fr *reverse_roots_of_unity;
 } FFTSettings;
 
-bool is_power_of_two(uint64_t n);
-C_KZG_RET expand_root_of_unity(blst_fr * roots, blst_fr *root_of_unity, uint64_t width);
-C_KZG_RET reverse(blst_fr *out, blst_fr *roots, uint64_t width);
-C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);
+bool is_power_of_two(const uint64_t n);
+C_KZG_RET expand_root_of_unity(blst_fr * roots, const blst_fr *root_of_unity, const uint64_t width);
+C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width);
+C_KZG_RET new_fft_settings(FFTSettings *s, const unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);

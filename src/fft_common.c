@@ -16,13 +16,13 @@
 
 #include "fft_common.h"
 
-bool is_power_of_two(uint64_t n) {
+bool is_power_of_two(const uint64_t n) {
     return (n & (n - 1)) == 0;
 }
 
 // Create an array of powers of the root of unity
 // The `out` array must be of size `width + 1`
-C_KZG_RET expand_root_of_unity(blst_fr *roots, blst_fr *root_of_unity, uint64_t width) {
+C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, const uint64_t width) {
     roots[0] = one;
     roots[1] = *root_of_unity;
 
@@ -37,7 +37,7 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, blst_fr *root_of_unity, uint64_t 
 
 // Create a reversed list of Fr provided
 // `width` is one less than the length of `roots`
-C_KZG_RET reverse(blst_fr *out, blst_fr *roots, uint64_t width) {
+C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width) {
    for (int i = 0; i <= width; i++) {
        out[i] = roots[width - i];
    }
@@ -45,20 +45,20 @@ C_KZG_RET reverse(blst_fr *out, blst_fr *roots, uint64_t width) {
    return C_KZG_SUCCESS;
 }
 
-C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale) {
+C_KZG_RET new_fft_settings(FFTSettings *fs, const unsigned int max_scale) {
     C_KZG_RET ret;
-    s->max_width = (uint64_t)1 << max_scale;
-    blst_fr_from_uint64(&s->root_of_unity, scale2_root_of_unity[max_scale]);
-    s->expanded_roots_of_unity = malloc((s->max_width + 1) * sizeof(blst_fr));
-    s->reverse_roots_of_unity = malloc((s->max_width + 1) * sizeof(blst_fr));
+    fs->max_width = (uint64_t)1 << max_scale;
+    blst_fr_from_uint64(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
+    fs->expanded_roots_of_unity = malloc((fs->max_width + 1) * sizeof(blst_fr));
+    fs->reverse_roots_of_unity = malloc((fs->max_width + 1) * sizeof(blst_fr));
 
-    ret = expand_root_of_unity(s->expanded_roots_of_unity, &s->root_of_unity, s->max_width);
+    ret = expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width);
     if (ret != C_KZG_SUCCESS) return ret;
-    ret = reverse(s->reverse_roots_of_unity, s->expanded_roots_of_unity, s->max_width);
+    ret = reverse(fs->reverse_roots_of_unity, fs->expanded_roots_of_unity, fs->max_width);
     return ret;
 }
 
-void free_fft_settings(FFTSettings *s) {
-    free(s->expanded_roots_of_unity);
-    free(s->reverse_roots_of_unity);
+void free_fft_settings(FFTSettings *fs) {
+    free(fs->expanded_roots_of_unity);
+    free(fs->reverse_roots_of_unity);
 }
