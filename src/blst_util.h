@@ -29,4 +29,7 @@ bool fr_equal(const blst_fr *aa, const blst_fr *bb);
 void fr_negate(blst_fr *out, const blst_fr *in);
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b);
 void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b);
+void p2_mul(blst_p2 *out, const blst_p2 *a, const blst_fr *b);
+void p2_sub(blst_p2 *out, const blst_p2 *a, const blst_p2 *b);
 void linear_combination_g1(blst_p1 *out, const blst_p1 *p, const blst_fr *coeffs, const uint64_t len);
+bool pairings_verify(const blst_p1 *a1, const blst_p2 *a2, const blst_p1 *b1, const blst_p2 *b2);

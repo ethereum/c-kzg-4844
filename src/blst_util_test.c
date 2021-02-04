@@ -78,6 +78,35 @@ void p1_sub_works(void) {
     TEST_CHECK(blst_p1_is_equal(&tmp, &res));
 }
 
+void p2_mul_works(void) {
+    blst_fr minus1;
+    blst_p2 g2_gen, g2_gen_neg, res;
+
+    // Multiply the generator by minus one (the second root of unity)
+    blst_p2_from_affine(&g2_gen, &BLS12_381_G2);
+    blst_fr_from_uint64(&minus1, m1);
+    p2_mul(&res, &g2_gen, &minus1);
+
+    // We should end up with negative the generator
+    blst_p2_from_affine(&g2_gen_neg, &BLS12_381_NEG_G2);
+
+    TEST_CHECK(blst_p2_is_equal(&res, &g2_gen_neg));
+}
+
+void p2_sub_works(void) {
+    blst_p2 g2_gen, g2_gen_neg;
+    blst_p2 tmp, res;
+
+    blst_p2_from_affine(&g2_gen, &BLS12_381_G2);
+    blst_p2_from_affine(&g2_gen_neg, &BLS12_381_NEG_G2);
+
+    // 2 * g2_gen = g2_gen - g2_gen_neg
+    blst_p2_double(&tmp, &g2_gen);
+    p2_sub(&res, &g2_gen, &g2_gen_neg);
+
+    TEST_CHECK(blst_p2_is_equal(&tmp, &res));
+}
+
 void identity_g1_is_infinity(void) {
     blst_p1 identity_g1;
     blst_p1_from_affine(&identity_g1, &identity_g1_affine);
@@ -103,6 +132,25 @@ void g1_linear_combination(void) {
     TEST_CHECK(blst_p1_is_equal(&exp, &res));
 }
 
+void pairings_work(void) {
+    // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
+    blst_fr three, five;
+    blst_p1 g1_3, g1_5;
+    blst_p2 g2_3, g2_5;
+
+    // Set up
+    fr_from_uint64(&three, 3);
+    fr_from_uint64(&five, 5);
+    p1_mul(&g1_3, blst_p1_generator(), &three);
+    p1_mul(&g1_5, blst_p1_generator(), &five);
+    p2_mul(&g2_3, blst_p2_generator(), &three);
+    p2_mul(&g2_5, blst_p2_generator(), &five);
+
+    // Verify the pairing
+    TEST_CHECK(true == pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
+    TEST_CHECK(false == pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
+}
+
 TEST_LIST =
     {
      {"fr_is_one_works", fr_is_one_works },
@@ -111,7 +159,10 @@ TEST_LIST =
      {"fr_negate_works", fr_negate_works},
      {"p1_mul_works", p1_mul_works},
      {"p1_sub_works", p1_sub_works},
+     {"p2_mul_works", p2_mul_works},
+     {"p2_sub_works", p2_sub_works},
      {"identity_g1_is_infinity", identity_g1_is_infinity},
      {"g1_linear_combination", g1_linear_combination},
+     {"pairings_work", pairings_work},
      { NULL, NULL }     /* zero record marks the end of the list */
     };
