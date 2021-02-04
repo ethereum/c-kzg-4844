@@ -15,7 +15,7 @@
  */
 
 #include "c_kzg.h"
-#include "fft_util.h"
+#include "fft_common.h"
 
 void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);
 void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l);

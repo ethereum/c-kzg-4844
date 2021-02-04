@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "fft_util.h"
+#include "fft_common.h"
 
 bool is_power_of_two(uint64_t n) {
     return (n & (n - 1)) == 0;
