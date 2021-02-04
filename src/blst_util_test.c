@@ -18,6 +18,9 @@
 #include "debug_util.h"
 #include "blst_util.h"
 
+// This is -1 (the second root of unity)
+uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
+
 void fr_is_one_works(void) {
     TEST_CHECK(true == fr_is_one(&one));
 }
@@ -39,9 +42,14 @@ void fr_equal_works(void) {
     TEST_CHECK(false == fr_equal(&a, &b));
 }
 
+void fr_negate_works(void) {
+    blst_fr minus1, res;
+    blst_fr_from_uint64(&minus1, m1);
+    fr_negate(&res, &minus1);
+    TEST_CHECK(fr_is_one(&res));
+}
+
 void p1_mul_works(void) {
-    // This is -1 (the second root of unity)
-    uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
     blst_fr minus1;
     blst_p1 g1_gen, g1_gen_neg, res;
 
@@ -100,6 +108,7 @@ TEST_LIST =
      {"fr_is_one_works", fr_is_one_works },
      {"fr_from_uint64_works", fr_from_uint64_works},
      {"fr_equal_works", fr_equal_works},
+     {"fr_negate_works", fr_negate_works},
      {"p1_mul_works", p1_mul_works},
      {"p1_sub_works", p1_sub_works},
      {"identity_g1_is_infinity", identity_g1_is_infinity},

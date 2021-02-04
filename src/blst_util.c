@@ -17,9 +17,9 @@
 #include "blst_util.h"
 #include "debug_util.h"
 
-bool fr_is_one(const blst_fr *fr_p) {
+bool fr_is_one(const blst_fr *p) {
     uint64_t a[4];
-    blst_uint64_from_fr(a, fr_p);
+    blst_uint64_from_fr(a, p);
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
 
@@ -33,6 +33,10 @@ bool fr_equal(const blst_fr *aa, const blst_fr *bb) {
     blst_uint64_from_fr(a, aa);
     blst_uint64_from_fr(b, bb);
     return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+}
+
+void fr_negate(blst_fr *out, const blst_fr *in) {
+    blst_fr_cneg(out, in, true);
 }
 
 // TODO: Is there really no better way to do this?
