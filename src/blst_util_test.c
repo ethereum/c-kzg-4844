@@ -70,7 +70,30 @@ void p1_sub_works(void) {
     TEST_CHECK(blst_p1_is_equal(&tmp, &res));
 }
 
+void identity_g1_is_infinity(void) {
+    blst_p1 identity_g1;
+    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
+    TEST_CHECK(blst_p1_is_inf(&identity_g1));
+}
 
+void g1_linear_combination(void) {
+    int len = 255;
+    blst_fr coeffs[len], tmp;
+    blst_p1 p[len], res, exp, g1_gen;
+    for (int i = 0; i < len; i++) {
+        fr_from_uint64(coeffs + i, i + 1);
+        blst_p1_from_affine(p + i, &BLS12_381_G1);
+    }
+
+    // Expected result
+    fr_from_uint64(&tmp, len * (len + 1) / 2);
+    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
+    p1_mul(&exp, &g1_gen, &tmp);
+
+    // Test result
+    linear_combination_g1(&res, p, coeffs, len);
+    TEST_CHECK(blst_p1_is_equal(&exp, &res));
+}
 
 TEST_LIST =
     {
@@ -79,5 +102,7 @@ TEST_LIST =
      {"fr_equal_works", fr_equal_works},
      {"p1_mul_works", p1_mul_works},
      {"p1_sub_works", p1_sub_works},
+     {"identity_g1_is_infinity", identity_g1_is_infinity},
+     {"g1_linear_combination", g1_linear_combination},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

@@ -15,6 +15,7 @@
  */
 
 #include "blst_util.h"
+#include "debug_util.h"
 
 bool fr_is_one(const blst_fr *fr_p) {
     uint64_t a[4];
@@ -22,18 +23,19 @@ bool fr_is_one(const blst_fr *fr_p) {
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
 
-void fr_from_uint64(blst_fr *a, uint64_t n) {
+void fr_from_uint64(blst_fr *a, const uint64_t n) {
     uint64_t vals[] = {n, 0, 0, 0};
     blst_fr_from_uint64(a, vals);
 }
 
-bool fr_equal(blst_fr *aa, blst_fr *bb) {
+bool fr_equal(const blst_fr *aa, const blst_fr *bb) {
     uint64_t a[4], b[4];
     blst_uint64_from_fr(a, aa);
     blst_uint64_from_fr(b, bb);
     return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
 }
 
+// TODO: Is there really no better way to do this?
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
@@ -44,4 +46,14 @@ void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b) {
     blst_p1 bneg = *b;
     blst_p1_cneg(&bneg, true);
     blst_p1_add_or_double(out, a, &bneg);
+}
+
+// TODO: would be good to have an optimised multiexp for this
+void linear_combination_g1(blst_p1 *out, const blst_p1 *p, const blst_fr *coeffs, const uint64_t len) {
+    blst_p1 tmp;
+    blst_p1_from_affine(out, &identity_g1_affine);
+    for (uint64_t i = 0; i < len; i++) {
+        p1_mul(&tmp, &p[i], &coeffs[i]);
+        blst_p1_add_or_double(out, out, &tmp);
+    }
 }
