@@ -34,7 +34,7 @@ void compare_sft_fft(void) {
     TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
     blst_p1 data[fs.max_width], slow[fs.max_width], fast[fs.max_width];
     make_data(data, fs.max_width);
-    
+
     // Do both fast and slow transforms
     fft_g1_slow(slow, data, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
     fft_g1_fast(fast, data, 1, fs.expanded_roots_of_unity, 1, fs.max_width);
@@ -55,7 +55,7 @@ void roundtrip_fft(void) {
     blst_p1 expected[fs.max_width], data[fs.max_width], coeffs[fs.max_width];
     make_data(expected, fs.max_width);
     make_data(data, fs.max_width);
-    
+
     // Forward and reverse FFT
     TEST_CHECK(fft_g1(coeffs, data, &fs, false, fs.max_width) == C_KZG_SUCCESS);
     TEST_CHECK(fft_g1(data, coeffs, &fs, true, fs.max_width) == C_KZG_SUCCESS);
