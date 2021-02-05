@@ -48,7 +48,7 @@ void proof_single(void) {
     uint64_t coeffs_u[16] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
     blst_fr x, value;
 
-    init_poly(&p, 16);
+    poly_init(&p, 16);
     for (int i = 0; i < 16; i++) {
         fr_from_uint64(&p.coeffs[i], coeffs_u[i]);
     }
@@ -61,7 +61,7 @@ void proof_single(void) {
     compute_proof_single(&proof, &ks, &p, 17);
 
     fr_from_uint64(&x, 17);
-    eval_poly_at(&value, &p, &x);
+    poly_eval(&value, &p, &x);
 
     TEST_CHECK(true == check_proof_single(&ks, &commitment, &proof, &x, &value));
 

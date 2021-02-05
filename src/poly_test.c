@@ -22,8 +22,8 @@ void title(void) {;}
 
 void poly_div_length(void) {
     poly a, b;
-    init_poly(&a, 17);
-    init_poly(&b, 5);
+    poly_init(&a, 17);
+    poly_init(&b, 5);
     TEST_CHECK(13 == poly_quotient_length(&a, &b));
 }
 
@@ -101,17 +101,17 @@ void poly_wrong_size(void) {
     TEST_CHECK(poly_long_div(&result, &dividend, &divisor) == C_KZG_BADARGS);
 }
 
-void eval_poly(void) {
+void poly_eval_check(void) {
     uint64_t n = 10;
     blst_fr res, expected;
     poly p;
-    init_poly(&p, n);
+    poly_init(&p, n);
     for (uint64_t i = 0; i < n; i++) {
         fr_from_uint64(&p.coeffs[i], i + 1);
     }
     fr_from_uint64(&expected, n * (n + 1) / 2);
 
-    eval_poly_at(&res, &p, &one);
+    poly_eval(&res, &p, &one);
 
     TEST_CHECK(fr_equal(&expected, &res));
 }
@@ -123,6 +123,6 @@ TEST_LIST =
      {"poly_div_0", poly_div_0},
      {"poly_div_1", poly_div_1},
      {"poly_wrong_size", poly_wrong_size},
-     {"eval_poly", eval_poly},
+     {"poly_eval_check", poly_eval_check},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

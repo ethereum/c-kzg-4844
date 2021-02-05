@@ -26,19 +26,19 @@ void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const ui
     blst_fr tmp;
 
     // The divisor is x - x0
-    init_poly(&divisor, 2);
+    poly_init(&divisor, 2);
     fr_from_uint64(&tmp, x0);
     fr_negate(&divisor.coeffs[0],&tmp);
     divisor.coeffs[1] = one;
 
     // Calculate q = p / (x - x0)
-    init_poly(&q, poly_quotient_length(p, &divisor));
+    poly_init(&q, poly_quotient_length(p, &divisor));
     poly_long_div(&q, p, &divisor);
 
     linear_combination_g1(out, ks->secret_g1, q.coeffs, q.length);
 
-    free_poly(q);
-    free_poly(divisor);
+    poly_free(q);
+    poly_free(divisor);
 }
 
 bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y) {

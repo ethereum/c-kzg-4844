@@ -21,16 +21,16 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
     blst_fr_mul(out, out, a);
 }
 
-void init_poly(poly *out, const uint64_t length) {
+void poly_init(poly *out, const uint64_t length) {
     out->length = length;
     out->coeffs = malloc(length * sizeof(blst_fr));
 }
 
-void free_poly(poly p) {
+void poly_free(poly p) {
     free(p.coeffs);
 }
 
-void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x) {
+void poly_eval(blst_fr *out, const poly *p, const blst_fr *x) {
     blst_fr tmp;
 
     if (p->length == 0) {
