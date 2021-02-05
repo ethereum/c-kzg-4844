@@ -18,7 +18,7 @@
 #include "blst_util.h"
 
 // Slow Fourier Transform (simple, good for small sizes)
-void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
+void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     blst_fr v, last, jv, r;
     for (uint64_t i = 0; i < l; i++) {
         blst_fr_mul(&last, &in[0], &roots[0]);
@@ -33,7 +33,7 @@ void fft_fr_slow(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uin
 }
 
 // Fast Fourier Transform
-void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
+void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     uint64_t half = l / 2;
     if (half > 2) { // TODO: Tunable parameter
         fft_fr_fast(out,        in,          stride * 2, roots, roots_stride * 2, half);
@@ -51,7 +51,7 @@ void fft_fr_fast(blst_fr *out, blst_fr *in, uint64_t stride, blst_fr *roots, uin
 }
 
 // The main entry point for forward and reverse FFTs
-C_KZG_RET fft_fr (blst_fr *out, blst_fr *in, FFTSettings *fs, bool inv, uint64_t n) {
+C_KZG_RET fft_fr (blst_fr *out, const blst_fr *in, const FFTSettings *fs, bool inv, uint64_t n) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);

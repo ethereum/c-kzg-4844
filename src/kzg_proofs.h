@@ -15,7 +15,8 @@
  */
 
 #include "c_kzg.h"
-#include "fft_common.h"
+#include "fft_fr.h"
+#include "poly.h"
 
 typedef struct {
     FFTSettings *fs;
@@ -26,3 +27,8 @@ typedef struct {
 } KZGSettings;
 
 C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length);
+void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p);
+C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0);
+bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y);
+C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n);
+bool check_proof_multi(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, const blst_fr *ys, uint64_t n);

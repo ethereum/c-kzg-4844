@@ -47,6 +47,19 @@ void fr_negate(blst_fr *out, const blst_fr *in) {
     blst_fr_cneg(out, in, true);
 }
 
+void fr_pow(blst_fr *out, const blst_fr *a, uint64_t n) {
+    blst_fr tmp = *a;
+    *out = fr_one;
+
+    while (true) {
+        if (n & 1) {
+            blst_fr_mul(out, out, &tmp);
+        }
+        if ((n >>= 1) == 0) break;
+        blst_fr_sqr(&tmp, &tmp);
+    }
+}
+
 // TODO: Is there really no better way to do this?
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;

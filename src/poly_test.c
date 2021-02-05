@@ -23,8 +23,8 @@ void title(void) {;}
 void poly_div_length(void) {
     poly a, b;
     uint64_t len;
-    poly_init(&a, 17);
-    poly_init(&b, 5);
+    init_poly(&a, 17);
+    init_poly(&b, 5);
     TEST_CHECK(C_KZG_OK == poly_quotient_length(&len, &a, &b));
     TEST_CHECK(13 == len);
 }
@@ -32,8 +32,8 @@ void poly_div_length(void) {
 void poly_div_length_bad(void) {
     poly a, b;
     uint64_t len;
-    poly_init(&a, 5);
-    poly_init(&b, 17);
+    init_poly(&a, 5);
+    init_poly(&b, 17);
     TEST_CHECK(C_KZG_BADARGS == poly_quotient_length(&len, &a, &b));
 }
 
@@ -115,13 +115,13 @@ void poly_eval_check(void) {
     uint64_t n = 10;
     blst_fr res, expected;
     poly p;
-    poly_init(&p, n);
+    init_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
         fr_from_uint64(&p.coeffs[i], i + 1);
     }
     fr_from_uint64(&expected, n * (n + 1) / 2);
 
-    poly_eval(&res, &p, &fr_one);
+    eval_poly(&res, &p, &fr_one);
 
     TEST_CHECK(fr_equal(&expected, &res));
 }
@@ -130,13 +130,13 @@ void poly_eval_0_check(void) {
     uint64_t n = 7, a = 597;
     blst_fr res, expected;
     poly p;
-    poly_init(&p, n);
+    init_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
         fr_from_uint64(&p.coeffs[i], i + a);
     }
     fr_from_uint64(&expected, a);
 
-    poly_eval(&res, &p, &fr_zero);
+    eval_poly(&res, &p, &fr_zero);
 
     TEST_CHECK(fr_equal(&expected, &res));
 }

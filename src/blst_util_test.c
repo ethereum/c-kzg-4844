@@ -57,6 +57,24 @@ void fr_negate_works(void) {
     TEST_CHECK(fr_is_one(&res));
 }
 
+void fr_pow_works(void) {
+    // a^pow
+    uint64_t pow = 123456;
+    blst_fr a, expected, actual;
+    fr_from_uint64(&a, 197);
+
+    // Do it the slow way
+    expected = fr_one;
+    for (uint64_t i = 0; i < pow; i++) {
+        blst_fr_mul(&expected, &expected, &a);
+    }
+
+    // Do it the quick way
+    fr_pow(&actual, &a, pow);
+
+    TEST_CHECK(fr_equal(&expected, &actual));
+}
+
 void p1_mul_works(void) {
     blst_fr minus1;
     blst_p1 g1_gen, g1_gen_neg, res;
@@ -167,6 +185,7 @@ TEST_LIST =
      {"fr_from_uint64_works", fr_from_uint64_works},
      {"fr_equal_works", fr_equal_works},
      {"fr_negate_works", fr_negate_works},
+     {"fr_pow_works", fr_pow_works},
      {"p1_mul_works", p1_mul_works},
      {"p1_sub_works", p1_sub_works},
      {"p2_mul_works", p2_mul_works},

@@ -7,7 +7,8 @@ Initially, at least, this largely follows the [go-kzg](https://github.com/protol
 Done so far:
   - FFT and inverse FFT over the finite field.
   - FFTs over the G1 group
-  - Single polynomial commitment and verification
+  - Polynomial single commitment and verification
+  - Polynomial multi commitment and verification
 
 ## Installation
 

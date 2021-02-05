@@ -23,8 +23,8 @@ typedef struct {
     uint64_t length; // one more than the polynomial's degree
 } poly;
 
-void poly_init(poly *out, const uint64_t length);
-void poly_free(poly p);
-void poly_eval(blst_fr *out, const poly *p, const blst_fr *x);
+void init_poly(poly *out, const uint64_t length);
+void free_poly(poly p);
+void eval_poly(blst_fr *out, const poly *p, const blst_fr *x);
 C_KZG_RET poly_quotient_length(uint64_t *out, const poly *dividend, const poly *divisor);
 C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);

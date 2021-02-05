@@ -30,6 +30,7 @@ bool fr_is_one(const blst_fr *p);
 void fr_from_uint64(blst_fr *a, const uint64_t n);
 bool fr_equal(const blst_fr *aa, const blst_fr *bb);
 void fr_negate(blst_fr *out, const blst_fr *in);
+void fr_pow(blst_fr *out, const blst_fr *a, const uint64_t n);
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b);
 void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b);
 void p2_mul(blst_p2 *out, const blst_p2 *a, const blst_fr *b);
