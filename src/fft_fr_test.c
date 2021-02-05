@@ -100,7 +100,7 @@ void inverse_fft(void) {
     TEST_CHECK(fft_fr(out, data, &fs, true, fs.max_width) == C_KZG_OK);
 
     // Verify against the known result, `inv_fft_expected`
-    int n = sizeof(inv_fft_expected) / sizeof(inv_fft_expected[0]);
+    int n = sizeof inv_fft_expected  / sizeof inv_fft_expected[0];
     TEST_CHECK(n == fs.max_width);
     for (int i = 0; i < n; i++) {
         blst_fr expected;
