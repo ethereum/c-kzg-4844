@@ -33,7 +33,7 @@ void compare_sft_fft(void) {
     // Initialise: arbitrary size
     unsigned int size = 6;
     FFTSettings fs;
-    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
     blst_p1 data[fs.max_width], slow[fs.max_width], fast[fs.max_width];
     make_data(data, fs.max_width);
 
@@ -53,14 +53,14 @@ void roundtrip_fft(void) {
     // Initialise: arbitrary size
     unsigned int size = 10;
     FFTSettings fs;
-    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_SUCCESS);
+    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
     blst_p1 expected[fs.max_width], data[fs.max_width], coeffs[fs.max_width];
     make_data(expected, fs.max_width);
     make_data(data, fs.max_width);
 
     // Forward and reverse FFT
-    TEST_CHECK(fft_g1(coeffs, data, &fs, false, fs.max_width) == C_KZG_SUCCESS);
-    TEST_CHECK(fft_g1(data, coeffs, &fs, true, fs.max_width) == C_KZG_SUCCESS);
+    TEST_CHECK(fft_g1(coeffs, data, &fs, false, fs.max_width) == C_KZG_OK);
+    TEST_CHECK(fft_g1(data, coeffs, &fs, true, fs.max_width) == C_KZG_OK);
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {

@@ -67,5 +67,5 @@ C_KZG_RET fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t
     } else {
         fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
     }
-    return C_KZG_SUCCESS;
+    return C_KZG_OK;
 }

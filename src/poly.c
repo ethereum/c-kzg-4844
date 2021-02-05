@@ -78,5 +78,5 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
         --a_pos;
     }
 
-    return C_KZG_SUCCESS;
+    return C_KZG_OK;
 }

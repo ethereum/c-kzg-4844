@@ -18,7 +18,7 @@
 #define C_KZG_H
 
 typedef enum {
-    C_KZG_SUCCESS = 0,
+    C_KZG_OK = 0,
     C_KZG_BADARGS,
     C_KZG_ERROR,
 } C_KZG_RET;

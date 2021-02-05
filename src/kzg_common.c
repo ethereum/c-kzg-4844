@@ -24,5 +24,5 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1,
     ks->extended_secret_g1 = NULL;
     ks->secret_g2 = secret_g2;
     ks->length = length;
-    return C_KZG_SUCCESS;
+    return C_KZG_OK;
 }

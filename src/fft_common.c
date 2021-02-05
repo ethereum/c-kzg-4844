@@ -34,7 +34,7 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, con
     }
     ASSERT(fr_is_one(&roots[width]), C_KZG_ERROR);
 
-    return C_KZG_SUCCESS;
+    return C_KZG_OK;
 }
 
 // Create a reversed list of Fr provided
@@ -44,7 +44,7 @@ C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width) {
        out[i] = roots[width - i];
    }
 
-   return C_KZG_SUCCESS;
+   return C_KZG_OK;
 }
 
 C_KZG_RET new_fft_settings(FFTSettings *fs, const unsigned int max_scale) {
@@ -55,7 +55,7 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, const unsigned int max_scale) {
     fs->reverse_roots_of_unity = malloc((fs->max_width + 1) * sizeof(blst_fr));
 
     ret = expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width);
-    if (ret != C_KZG_SUCCESS) return ret;
+    if (ret != C_KZG_OK) return ret;
     ret = reverse(fs->reverse_roots_of_unity, fs->expanded_roots_of_unity, fs->max_width);
     return ret;
 }

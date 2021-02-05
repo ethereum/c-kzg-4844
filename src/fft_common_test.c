@@ -52,7 +52,7 @@ void reverse_works(void) {
     }
 
     // Reverse
-    TEST_CHECK(reverse(rev, arr, n) == C_KZG_SUCCESS);
+    TEST_CHECK(reverse(rev, arr, n) == C_KZG_OK);
 
     // Verify - decreasing values
     for (int i = 0; i < n; i++) {
@@ -70,7 +70,7 @@ void expand_roots_is_plausible(void) {
 
     // Initialise
     blst_fr_from_uint64(&root, scale2_root_of_unity[scale]);
-    TEST_CHECK(expand_root_of_unity(expanded, &root, width) == C_KZG_SUCCESS);
+    TEST_CHECK(expand_root_of_unity(expanded, &root, width) == C_KZG_OK);
 
     // Verify - each pair should multiply to one
     TEST_CHECK(true == fr_is_one(expanded + 0));
@@ -88,7 +88,7 @@ void new_fft_settings_is_plausible(void) {
     blst_fr prod;
     FFTSettings s;
 
-    TEST_CHECK(new_fft_settings(&s, scale) == C_KZG_SUCCESS);
+    TEST_CHECK(new_fft_settings(&s, scale) == C_KZG_OK);
 
     // Verify - each pair should multiply to one
     for (unsigned int i = 1; i <= width; i++) {

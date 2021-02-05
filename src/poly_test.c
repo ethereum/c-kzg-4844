@@ -55,7 +55,7 @@ void poly_div_0(void) {
     actual.length = 2;
     actual.coeffs = c;
 
-    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_SUCCESS);
+    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_OK);
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
 }
@@ -90,7 +90,7 @@ void poly_div_1(void) {
     actual.length = 3;
     actual.coeffs = c;
 
-    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_SUCCESS);
+    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_OK);
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
     TEST_CHECK(fr_equal(&expected[2], &actual.coeffs[2]));
