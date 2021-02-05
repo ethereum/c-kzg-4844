@@ -21,7 +21,7 @@
 void generate_setup(blst_p1 *s1, blst_p2 *s2, const blst_scalar *secret, const uint64_t n) {
     blst_fr s_pow, s;
     blst_fr_from_scalar(&s, secret);
-    s_pow = one;
+    s_pow = fr_one;
     for (uint64_t i = 0; i < n; i++) {
         p1_mul(&s1[i], blst_p1_generator(), &s_pow);
         p2_mul(&s2[i], blst_p2_generator(), &s_pow);

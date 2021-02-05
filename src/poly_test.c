@@ -121,7 +121,22 @@ void poly_eval_check(void) {
     }
     fr_from_uint64(&expected, n * (n + 1) / 2);
 
-    poly_eval(&res, &p, &one);
+    poly_eval(&res, &p, &fr_one);
+
+    TEST_CHECK(fr_equal(&expected, &res));
+}
+
+void poly_eval_0_check(void) {
+    uint64_t n = 7, a = 597;
+    blst_fr res, expected;
+    poly p;
+    poly_init(&p, n);
+    for (uint64_t i = 0; i < n; i++) {
+        fr_from_uint64(&p.coeffs[i], i + a);
+    }
+    fr_from_uint64(&expected, a);
+
+    poly_eval(&res, &p, &fr_zero);
 
     TEST_CHECK(fr_equal(&expected, &res));
 }
@@ -135,5 +150,6 @@ TEST_LIST =
      {"poly_div_1", poly_div_1},
      {"poly_wrong_size", poly_wrong_size},
      {"poly_eval_check", poly_eval_check},
+     {"poly_eval_0_check", poly_eval_0_check},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

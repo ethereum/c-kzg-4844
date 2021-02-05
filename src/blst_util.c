@@ -17,6 +17,14 @@
 #include "blst_util.h"
 #include "debug_util.h"
 
+// TODO - find a better way to do this
+bool fr_is_zero(const blst_fr *p) {
+    uint64_t a[4];
+    blst_uint64_from_fr(a, p);
+    return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+// TODO - find a better way to do this
 bool fr_is_one(const blst_fr *p) {
     uint64_t a[4];
     blst_uint64_from_fr(a, p);

@@ -25,7 +25,7 @@ bool is_power_of_two(const uint64_t n) {
 // Create an array of powers of the root of unity
 // The `out` array must be of size `width + 1`
 C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, const uint64_t width) {
-    roots[0] = one;
+    roots[0] = fr_one;
     roots[1] = *root_of_unity;
 
     for (int i = 2; !fr_is_one(&roots[i - 1]); i++) {

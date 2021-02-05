@@ -46,9 +46,9 @@ void reverse_works(void) {
     blst_fr diff;
 
     // Initialise - increasing values
-    arr[0] = one;
+    arr[0] = fr_one;
     for (int i = 1; i <= n; i++) {
-        blst_fr_add(arr + i, arr + i - 1, &one);
+        blst_fr_add(arr + i, arr + i - 1, &fr_one);
     }
 
     // Reverse

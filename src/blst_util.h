@@ -16,13 +16,16 @@
 
 #include "c_kzg.h"
 
+static const blst_fr fr_zero = {0L, 0L, 0L, 0L};
+
 // This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
-static const blst_fr one =
+static const blst_fr fr_one =
     {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
 // The G1 identity/infinity in affine representation
-static const blst_p1_affine identity_g1_affine = {{0,0,0,0,0,0},{0,0,0,0,0,0}};
+static const blst_p1_affine identity_g1_affine = {{0L,0L,0L,0L,0L,0L},{0L,0L,0L,0L,0L,0L}};
 
+bool fr_is_zero(const blst_fr *p);
 bool fr_is_one(const blst_fr *p);
 void fr_from_uint64(blst_fr *a, const uint64_t n);
 bool fr_equal(const blst_fr *aa, const blst_fr *bb);

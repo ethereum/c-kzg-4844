@@ -23,14 +23,20 @@ uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 
 
 void title(void) {;}
 
+void fr_is_zero_works(void) {
+    blst_fr zero;
+    fr_from_uint64(&zero, 0);
+    TEST_CHECK(fr_is_zero(&zero));
+}
+
 void fr_is_one_works(void) {
-    TEST_CHECK(true == fr_is_one(&one));
+    TEST_CHECK(fr_is_one(&fr_one));
 }
 
 void fr_from_uint64_works(void) {
     blst_fr a;
     fr_from_uint64(&a, 1);
-    TEST_CHECK(true == fr_is_one(&a));
+    TEST_CHECK(fr_is_one(&a));
 }
 
 void fr_equal_works(void) {
@@ -156,6 +162,7 @@ void pairings_work(void) {
 TEST_LIST =
     {
      {"BLST_UTIL_TEST", title},
+     {"fr_is_zero_works", fr_is_zero_works },
      {"fr_is_one_works", fr_is_one_works },
      {"fr_from_uint64_works", fr_from_uint64_works},
      {"fr_equal_works", fr_equal_works},

@@ -32,7 +32,7 @@ C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, con
     poly_init(&divisor, 2);
     fr_from_uint64(&tmp, x0);
     fr_negate(&divisor.coeffs[0],&tmp);
-    divisor.coeffs[1] = one;
+    divisor.coeffs[1] = fr_one;
 
     // Calculate q = p / (x - x0)
     // Discard the return codes since we already checked above that all should be fine.
