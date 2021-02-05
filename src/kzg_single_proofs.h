@@ -19,5 +19,5 @@
 #include "poly.h"
 
 void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p);
-void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const uint64_t x0);
+C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const uint64_t x0);
 bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y);

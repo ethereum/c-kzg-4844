@@ -47,8 +47,10 @@ void poly_eval(blst_fr *out, const poly *p, const blst_fr *x) {
 }
 
 // Call this to find out how much space to allocate for the result
-uint64_t poly_quotient_length(const poly *dividend, const poly *divisor) {
-    return dividend->length - divisor->length + 1;
+C_KZG_RET poly_quotient_length(uint64_t *out, const poly *dividend, const poly *divisor) {
+    ASSERT(dividend->length >= divisor->length, C_KZG_BADARGS);
+    *out = dividend->length - divisor->length + 1;
+    return C_KZG_OK;
 }
 
 // `out` must have been pre-allocated to the correct size, and the length is provided

@@ -58,7 +58,7 @@ void proof_single(void) {
     new_kzg_settings(&ks, &fs, s1, s2, 17);
 
     commit_to_poly(&commitment, &ks, &p);
-    compute_proof_single(&proof, &ks, &p, 17);
+    TEST_CHECK(C_KZG_OK == compute_proof_single(&proof, &ks, &p, 17));
 
     fr_from_uint64(&x, 17);
     poly_eval(&value, &p, &x);
@@ -69,9 +69,23 @@ void proof_single(void) {
     free(s2);
 }
 
+void proof_single_error(void) {
+    poly p;
+    blst_p1 proof;
+    KZGSettings ks;
+
+    // Check it barfs on a constant polynomial
+    poly_init(&p, 1);
+
+    TEST_CHECK(C_KZG_BADARGS == compute_proof_single(&proof, &ks, &p, 17));
+
+    poly_free(p);
+}
+
 TEST_LIST =
     {
      {"KZG_SINGLE_PRROFS_TEST", title},
      {"proof_single", proof_single},
+     {"proof_single_error", proof_single},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

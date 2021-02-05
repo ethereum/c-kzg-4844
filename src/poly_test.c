@@ -22,9 +22,19 @@ void title(void) {;}
 
 void poly_div_length(void) {
     poly a, b;
+    uint64_t len;
     poly_init(&a, 17);
     poly_init(&b, 5);
-    TEST_CHECK(13 == poly_quotient_length(&a, &b));
+    TEST_CHECK(C_KZG_OK == poly_quotient_length(&len, &a, &b));
+    TEST_CHECK(13 == len);
+}
+
+void poly_div_length_bad(void) {
+    poly a, b;
+    uint64_t len;
+    poly_init(&a, 5);
+    poly_init(&b, 17);
+    TEST_CHECK(C_KZG_BADARGS == poly_quotient_length(&len, &a, &b));
 }
 
 void poly_div_0(void) {
@@ -55,7 +65,7 @@ void poly_div_0(void) {
     actual.length = 2;
     actual.coeffs = c;
 
-    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_OK);
+    TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
 }
@@ -90,7 +100,7 @@ void poly_div_1(void) {
     actual.length = 3;
     actual.coeffs = c;
 
-    TEST_CHECK(poly_long_div(&actual, &dividend, &divisor) == C_KZG_OK);
+    TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
     TEST_CHECK(fr_equal(&expected[2], &actual.coeffs[2]));
@@ -98,7 +108,7 @@ void poly_div_1(void) {
 
 void poly_wrong_size(void) {
     poly dividend, divisor, result;
-    TEST_CHECK(poly_long_div(&result, &dividend, &divisor) == C_KZG_BADARGS);
+    TEST_CHECK(C_KZG_BADARGS == poly_long_div(&result, &dividend, &divisor));
 }
 
 void poly_eval_check(void) {
@@ -120,6 +130,7 @@ TEST_LIST =
     {
      {"POLY_TEST", title},
      {"poly_div_length", poly_div_length},
+     {"poly_div_length_bad", poly_div_length_bad},
      {"poly_div_0", poly_div_0},
      {"poly_div_1", poly_div_1},
      {"poly_wrong_size", poly_wrong_size},

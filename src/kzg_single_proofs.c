@@ -21,9 +21,12 @@ void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p) {
 }
 
 // Compute KZG proof for polynomial at position x0
-void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const uint64_t x0) {
+C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const uint64_t x0) {
     poly divisor, q;
     blst_fr tmp;
+    uint64_t len;
+
+    ASSERT(p->length >= 2, C_KZG_BADARGS);
 
     // The divisor is x - x0
     poly_init(&divisor, 2);
@@ -32,13 +35,17 @@ void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const ui
     divisor.coeffs[1] = one;
 
     // Calculate q = p / (x - x0)
-    poly_init(&q, poly_quotient_length(p, &divisor));
-    poly_long_div(&q, p, &divisor);
+    // Discard the return codes since we already checked above that all should be fine.
+    (void) poly_quotient_length(&len, p, &divisor);
+    poly_init(&q, len);
+    (void) poly_long_div(&q, p, &divisor);
 
     linear_combination_g1(out, ks->secret_g1, q.coeffs, q.length);
 
     poly_free(q);
     poly_free(divisor);
+
+    return C_KZG_OK;
 }
 
 bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y) {
