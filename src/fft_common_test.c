@@ -30,9 +30,9 @@ void roots_of_unity_is_the_expected_size(void) {
 
 void roots_of_unity_are_plausible(void) {
     blst_fr r;
-    for (unsigned int i = 0; i < NUM_ROOTS; i++) {
+    for (int i = 0; i < NUM_ROOTS; i++) {
         blst_fr_from_uint64(&r, scale2_root_of_unity[i]);
-        for (unsigned int j = 0; j < i; j++) {
+        for (int j = 0; j < i; j++) {
             blst_fr_sqr(&r, &r);
         }
         TEST_CHECK(true == fr_is_one(&r));
@@ -83,7 +83,7 @@ void expand_roots_is_plausible(void) {
 
 void new_fft_settings_is_plausible(void) {
     // Just test one (largeish) value of scale
-    unsigned int scale = 21;
+    int scale = 21;
     unsigned int width = 1 << scale;
     blst_fr prod;
     FFTSettings s;

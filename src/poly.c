@@ -32,6 +32,7 @@ void poly_free(poly p) {
 
 void poly_eval(blst_fr *out, const poly *p, const blst_fr *x) {
     blst_fr tmp;
+    uint64_t i;
 
     if (p->length == 0) {
         fr_from_uint64(out, 0);
@@ -42,9 +43,12 @@ void poly_eval(blst_fr *out, const poly *p, const blst_fr *x) {
 
     // Horner's method
     *out = p->coeffs[p->length - 1];
-    for (int i = p->length - 2; i >= 0; i--) { // needs to be uint64_t?
+    i = p->length - 2;
+    while (true) {
         blst_fr_mul(&tmp, out, x);
         blst_fr_add(out, &tmp, &p->coeffs[i]);
+        if (i == 0) break;
+        --i;
     }
 }
 

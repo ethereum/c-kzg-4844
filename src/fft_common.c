@@ -28,7 +28,7 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, con
     roots[0] = fr_one;
     roots[1] = *root_of_unity;
 
-    for (int i = 2; !fr_is_one(&roots[i - 1]); i++) {
+    for (uint64_t i = 2; !fr_is_one(&roots[i - 1]); i++) {
         ASSERT(i <= width, C_KZG_ERROR);
         blst_fr_mul(&roots[i], &roots[i - 1], root_of_unity);
     }
@@ -40,7 +40,7 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, con
 // Create a reversed list of Fr provided
 // `width` is one less than the length of `roots`
 C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width) {
-   for (int i = 0; i <= width; i++) {
+   for (uint64_t i = 0; i <= width; i++) {
        out[i] = roots[width - i];
    }
 
