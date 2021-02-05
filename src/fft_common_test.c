@@ -21,6 +21,8 @@
 
 #define NUM_ROOTS 32
 
+void title(void) {;}
+
 void roots_of_unity_is_the_expected_size(void) {
     TEST_CHECK(NUM_ROOTS ==
                sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));
@@ -114,6 +116,7 @@ void is_power_of_two_works(void) {
 
 TEST_LIST =
     {
+     {"FFT_COMMON_TEST", title},
      {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
      {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
      {"reverse_works", reverse_works},

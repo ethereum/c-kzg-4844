@@ -29,6 +29,8 @@ void generate_setup(blst_p1 *s1, blst_p2 *s2, const blst_scalar *secret, const u
     }
 }
 
+void title(void) {;}
+
 void proof_single(void) {
     FFTSettings fs;
     KZGSettings ks;
@@ -69,6 +71,7 @@ void proof_single(void) {
 
 TEST_LIST =
     {
+     {"KZG_SINGLE_PRROFS_TEST", title},
      {"proof_single", proof_single},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

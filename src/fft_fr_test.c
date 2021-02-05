@@ -39,6 +39,8 @@ const uint64_t inv_fft_expected[][4] =
      {0xd8cda22e753b3117L, 0x880454ec72238f55L, 0xcaf6199fc14a5353L, 0x197df7c2f05866d4L}
     };
 
+void title(void) {;}
+
 void compare_sft_fft(void) {
     // Initialise: ascending values of i (could be anything), and arbitrary size
     unsigned int size = 12;
@@ -111,6 +113,7 @@ void inverse_fft(void) {
 
 TEST_LIST =
     {
+     {"FFT_FR_TEST", title},
      {"compare_sft_fft", compare_sft_fft},
      {"roundtrip_fft", roundtrip_fft},
      {"inverse_fft", inverse_fft},
