@@ -68,18 +68,16 @@ void print_p1_bytes(byte p1[96]) {
 
 /* "Pretty" print serialisation of a point in G1 */
 void print_p1(const blst_p1 *p1) {
-    byte *p1_bytes = (byte *)malloc(96);
+    byte p1_bytes[96];
     blst_p1_serialize(p1_bytes, p1);
     print_p1_bytes(p1_bytes);
-    free(p1_bytes);
 }
 
 /* "Pretty" print serialisation of an affine point in G1 */
 void print_p1_affine(const blst_p1_affine *p1) {
-    byte *p1_bytes = (byte *)malloc(96);
+    byte p1_bytes[96];
     blst_p1_affine_serialize(p1_bytes, p1);
     print_p1_bytes(p1_bytes);
-    free(p1_bytes);
 }
 
 /* "Pretty" print internals of a point in G1 */
@@ -104,7 +102,7 @@ void print_p1_affine_limbs(const blst_p1_affine *p1) {
 
 /* "Pretty" print serialisation of an affine point in G2 */
 void print_p2_affine(const blst_p2_affine *p2) {
-    byte *p2_hex = (byte *)malloc(192);
+    byte p2_hex[192];
     blst_p2_affine_serialize(p2_hex, p2);
     printf("[(0x");
     print_bytes_as_hex(p2_hex, 0, 48);
@@ -115,5 +113,4 @@ void print_p2_affine(const blst_p2_affine *p2) {
     printf(",0x");
     print_bytes_as_hex(p2_hex, 144, 48);
     printf(")]\n");
-    free(p2_hex);
 }
