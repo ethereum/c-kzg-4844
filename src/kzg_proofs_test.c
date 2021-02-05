@@ -75,7 +75,7 @@ void proof_single(void) {
     TEST_CHECK(true == check_proof_single(&ks, &commitment, &proof, &x, &value));
 
     free_fft_settings(&fs);
-    free_poly(p);
+    free_poly(&p);
     free(s1);
     free(s2);
 }
@@ -128,7 +128,7 @@ void proof_multi(void) {
 
     free_fft_settings(&fs1);
     free_fft_settings(&fs2);
-    free_poly(p);
+    free_poly(&p);
     free(s1);
     free(s2);
 }
@@ -145,7 +145,7 @@ void proof_single_error(void) {
     fr_from_uint64(&x, 1234);
     TEST_CHECK(C_KZG_BADARGS == compute_proof_single(&proof, &ks, &p, &x));
 
-    free_poly(p);
+    free_poly(&p);
 }
 
 TEST_LIST =

@@ -79,8 +79,8 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
 
     commit_to_poly(out, ks, &q);
 
-    free_poly(q);
-    free_poly(divisor);
+    free_poly(&q);
+    free_poly(&divisor);
 
     return C_KZG_OK;
 }

@@ -26,8 +26,8 @@ void init_poly(poly *out, const uint64_t length) {
     out->coeffs = malloc(length * sizeof(blst_fr));
 }
 
-void free_poly(poly p) {
-    free(p.coeffs);
+void free_poly(poly *p) {
+    free(p->coeffs);
 }
 
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
