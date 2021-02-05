@@ -36,9 +36,12 @@ void poly_eval(blst_fr *out, const poly *p, const blst_fr *x) {
 
     if (p->length == 0) {
         fr_from_uint64(out, 0);
+        return;
     }
+
     if (fr_is_zero(x)) {
         *out = p->coeffs[0];
+        return;
     }
 
     // Horner's method
