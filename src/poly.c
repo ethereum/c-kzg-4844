@@ -47,8 +47,8 @@ void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x) {
 }
 
 // Call this to find out how much space to allocate for the result
-uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor) {
-    return len_dividend - len_divisor + 1;
+uint64_t poly_quotient_length(const poly *dividend, const poly *divisor) {
+    return dividend->length - divisor->length + 1;
 }
 
 // `out` must have been pre-allocated to the correct size, and the length is provided

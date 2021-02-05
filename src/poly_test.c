@@ -18,8 +18,13 @@
 #include "debug_util.h"
 #include "poly.h"
 
+void title(void) {;}
+
 void poly_div_length(void) {
-    TEST_CHECK(3 == poly_long_div_length(4, 2));
+    poly a, b;
+    init_poly(&a, 17);
+    init_poly(&b, 5);
+    TEST_CHECK(13 == poly_quotient_length(&a, &b));
 }
 
 void poly_div_0(void) {
@@ -113,6 +118,7 @@ void eval_poly(void) {
 
 TEST_LIST =
     {
+     {"POLY_TEST", title},
      {"poly_div_length", poly_div_length},
      {"poly_div_0", poly_div_0},
      {"poly_div_1", poly_div_1},

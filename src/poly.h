@@ -26,5 +26,5 @@ typedef struct {
 void init_poly(poly *out, const uint64_t length);
 void free_poly(poly p);
 void eval_poly_at(blst_fr *out, const poly *p, const blst_fr *x);
-uint64_t poly_long_div_length(const uint64_t len_dividend, const uint64_t len_divisor);
+uint64_t poly_quotient_length(const poly *dividend, const poly *divisor);
 C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);

@@ -32,7 +32,7 @@ void compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const ui
     divisor.coeffs[1] = one;
 
     // Calculate q = p / (x - x0)
-    init_poly(&q, poly_long_div_length(p->length, 2));
+    init_poly(&q, poly_quotient_length(p, &divisor));
     poly_long_div(&q, p, &divisor);
 
     linear_combination_g1(out, ks->secret_g1, q.coeffs, q.length);
