@@ -3,7 +3,7 @@ TESTS = blst_util_test fft_common_test fft_fr_test fft_g1_test \
 LIB_SRC = blst_util.c fft_common.c fft_fr.c fft_g1.c kzg_proofs.c poly.c
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
-CFLAGS =
+CFLAGS = -g
 
 .PRECIOUS: %.o
 
