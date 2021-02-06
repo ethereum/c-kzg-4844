@@ -56,7 +56,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
 
     ASSERT(p->length >= n + 1, C_KZG_BADARGS);
 
-    // Construct x^n - x0^n
+    // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
     init_poly(&divisor, n + 1);
 
     // -(x0^n)
@@ -99,7 +99,7 @@ bool check_proof_multi(const KZGSettings *ks, const blst_p1 *commitment, const b
     fft_fr(interp.coeffs, ys, ks->fs, true, n);
     // if (ret != C_KZG_OK) return ret;
 
-    // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^i
+    // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
     blst_fr_eucl_inverse(&inv_x, x);
     inv_x_pow = inv_x;
     for (uint64_t i = 1; i < n; i++) {

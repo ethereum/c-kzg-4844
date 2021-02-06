@@ -70,8 +70,9 @@ void proof_single(void) {
     commit_to_poly(&commitment, &ks, &p);
     TEST_CHECK(C_KZG_OK == compute_proof_single(&proof, &ks, &p, &x));
 
-    // Verify the proof for x = 25
     eval_poly(&value, &p, &x);
+
+    // Verify the proof that the (unknown) polynomial has y = value at x = 25
     TEST_CHECK(true == check_proof_single(&ks, &commitment, &proof, &x, &value));
 
     free_fft_settings(&fs);
@@ -93,8 +94,10 @@ void proof_multi(void) {
     blst_p1 *s1 = malloc(secrets_len * sizeof(blst_p1));
     blst_p2 *s2 = malloc(secrets_len * sizeof(blst_p2));
     blst_fr x, tmp;
-    int coset_scale = 3, coset_len = (1 << coset_scale); // Where do these come from?
-    blst_fr ys[coset_len];
+
+    // Must have coset_scale < poly_len [TODO: why?]
+    int coset_scale = 3, coset_len = (1 << coset_scale);
+    blst_fr y[coset_len];
 
     // Create the polynomial
     init_poly(&p, poly_len);
@@ -117,14 +120,14 @@ void proof_multi(void) {
     fr_from_uint64(&x, 5431);
     TEST_CHECK(C_KZG_OK == compute_proof_multi(&proof, &ks2, &p, &x, coset_len));
 
-    // The ys are the values of the polynomial at the points above
+    // y_i is the value of the polynomial at each x_i
     for (int i = 0; i < coset_len; i++) {
         blst_fr_mul(&tmp, &x, &ks2.fs->expanded_roots_of_unity[i]);
-        eval_poly(&ys[i], &p, &tmp);
+        eval_poly(&y[i], &p, &tmp);
     }
 
-    // Verify the proof
-    TEST_CHECK(check_proof_multi(&ks2, &commitment, &proof, &x, ys, coset_len));
+    // Verify the proof that the (unknown) polynomial has value y_i at x_i
+    TEST_CHECK(check_proof_multi(&ks2, &commitment, &proof, &x, y, coset_len));
 
     free_fft_settings(&fs1);
     free_fft_settings(&fs2);
