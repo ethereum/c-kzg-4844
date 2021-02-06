@@ -23,11 +23,13 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
 
 void init_poly(poly *out, const uint64_t length) {
     out->length = length;
-    out->coeffs = malloc(length * sizeof(blst_fr));
+    out->coeffs = length > 0 ? malloc(length * sizeof(blst_fr)): NULL;
 }
 
 void free_poly(poly *p) {
-    free(p->coeffs);
+    if (p->coeffs != NULL) {
+        free(p->coeffs);
+    }
 }
 
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
@@ -55,28 +57,28 @@ void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
     }
 }
 
-// Call this to find out how much space to allocate for the result
-C_KZG_RET poly_quotient_length(uint64_t *out, const poly *dividend, const poly *divisor) {
-    ASSERT(dividend->length >= divisor->length, C_KZG_BADARGS);
-    *out = dividend->length - divisor->length + 1;
-    return C_KZG_OK;
+// Call this to find out how much space to allocate for the result of `poly_long_div()`
+uint64_t poly_quotient_length(const poly *dividend, const poly *divisor) {
+    return dividend->length >= divisor->length ? dividend->length - divisor->length + 1 : 0;
 }
 
-// `out` must have been pre-allocated to the correct size, and the length is provided
-// as a check
+// `out` must have been pre-allocated to the correct size, see `poly_quotient_length()`
 C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     uint64_t a_pos = dividend->length - 1;
     uint64_t b_pos = divisor->length - 1;
     uint64_t diff = a_pos - b_pos;
     blst_fr a[dividend->length];
 
-    ASSERT(out->length == diff + 1, C_KZG_BADARGS);
+    ASSERT(out->length == poly_quotient_length(dividend, divisor), C_KZG_BADARGS);
+
+    // If the divisor is larger than the dividend, the result is zero-length
+    if (divisor->length > dividend->length) return C_KZG_OK;
 
     for (uint64_t i = 0; i < dividend->length; i++) {
         a[i] = dividend->coeffs[i];
     }
 
-    while (true) {
+    while (diff > 0) {
         poly_factor_div(&out->coeffs[diff], &a[a_pos], &divisor->coeffs[b_pos]);
         for (uint64_t i = 0; i <= b_pos; i++) {
             blst_fr tmp;
@@ -84,10 +86,10 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
             blst_fr_mul(&tmp, &out->coeffs[diff], &divisor->coeffs[i]);
             blst_fr_sub(&a[diff + i], &a[diff + i], &tmp);
         }
-        if (diff == 0) break;
         --diff;
         --a_pos;
     }
+    poly_factor_div(&out->coeffs[0], &a[a_pos], &divisor->coeffs[b_pos]);
 
     return C_KZG_OK;
 }

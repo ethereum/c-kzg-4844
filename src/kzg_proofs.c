@@ -51,10 +51,8 @@ bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const 
 // of several polynomial evaluations)
 C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n) {
     poly divisor, q;
-    uint64_t len;
     blst_fr x_pow_n;
-
-    ASSERT(p->length >= n + 1, C_KZG_BADARGS);
+    C_KZG_RET ret;
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
     init_poly(&divisor, n + 1);
@@ -72,10 +70,10 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
     divisor.coeffs[n] = fr_one;
 
     // Calculate q = p / (x^n - x0^n)
-    // Discard the return codes since we already checked above that all should be fine.
-    poly_quotient_length(&len, p, &divisor);
-    init_poly(&q, len);
-    poly_long_div(&q, p, &divisor);
+    init_poly(&q, poly_quotient_length(p, &divisor));
+    if ((ret = poly_long_div(&q, p, &divisor) != C_KZG_OK)) {
+        return C_KZG_ERROR;
+    }
 
     commit_to_poly(out, ks, &q);
 
