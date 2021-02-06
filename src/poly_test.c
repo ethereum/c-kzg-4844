@@ -102,31 +102,49 @@ void poly_div_1(void) {
 }
 
 void poly_div_2(void) {
-    blst_fr a[3], b[2];
+    blst_fr a[2], b[3];
     poly dividend, divisor, actual;
 
     // Calculate (x + 1) / (x^2 - 1) = nil
 
     // Dividend
-    fr_from_uint64(&b[0], 1);
-    fr_from_uint64(&b[1], 1);
+    fr_from_uint64(&a[0], 1);
+    fr_from_uint64(&a[1], 1);
     dividend.length = 2;
-    dividend.coeffs = b;
+    dividend.coeffs = a;
 
     // Divisor
-    fr_from_uint64(&a[0], 1);
-    fr_negate(&a[0], &a[0]);
-    fr_from_uint64(&a[1], 0);
-    fr_from_uint64(&a[2], 1);
+    fr_from_uint64(&b[0], 1);
+    fr_negate(&b[0], &b[0]);
+    fr_from_uint64(&b[1], 0);
+    fr_from_uint64(&b[2], 1);
     divisor.length = 3;
-    divisor.coeffs = a;
+    divisor.coeffs = b;
 
     init_poly(&actual, poly_quotient_length(&dividend, &divisor));
 
     TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
-    TEST_CHECK(fr_equal(NULL, actual.coeffs));
+    TEST_CHECK(NULL == actual.coeffs);
 
     free_poly(&actual);
+}
+
+void poly_div_by_zero(void) {
+    blst_fr a[2];
+    poly dividend, divisor;
+
+    // Calculate (x + 1) / 0 = FAIL
+
+    // Dividend
+    fr_from_uint64(&a[0], 1);
+    fr_from_uint64(&a[1], 1);
+    dividend.length = 2;
+    dividend.coeffs = a;
+
+    // Divisor
+    init_poly(&divisor, 0);
+
+    TEST_CHECK(C_KZG_BADARGS == poly_long_div(NULL, &dividend, &divisor));
 }
 
 void poly_eval_check(void) {
@@ -182,9 +200,10 @@ TEST_LIST =
      {"poly_div_length", poly_div_length},
      {"poly_div_0", poly_div_0},
      {"poly_div_1", poly_div_1},
-     {"poly_div_2", poly_div_1},
+     {"poly_div_2", poly_div_2},
+     {"poly_div_by_zero", poly_div_by_zero},
      {"poly_eval_check", poly_eval_check},
      {"poly_eval_0_check", poly_eval_0_check},
-     {"poly_eval_nil_check", poly_eval_0_check},
+     {"poly_eval_nil_check", poly_eval_nil_check},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

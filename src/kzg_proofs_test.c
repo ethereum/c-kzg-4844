@@ -145,10 +145,32 @@ void proof_multi(void) {
     free(s2);
 }
 
+void commit_to_nil_poly(void) {
+    poly a;
+    FFTSettings fs;
+    KZGSettings ks;
+    uint64_t secrets_len = 16;
+    blst_p1 *s1 = malloc(secrets_len * sizeof(blst_p1));
+    blst_p2 *s2 = malloc(secrets_len * sizeof(blst_p2));
+    blst_p1 result;
+    blst_p1_affine result_affine;
+
+    // Initialise the (arbitrary) secrets and data structures
+    generate_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, &fs, s1, s2, secrets_len));
+
+    init_poly(&a, 0);
+    commit_to_poly(&result, &ks, &a);
+    blst_p1_to_affine(&result_affine, &result);
+    TEST_CHECK(blst_p1_affine_is_equal(&identity_g1_affine, &result_affine));
+}
+
 TEST_LIST =
     {
      {"KZG_PROOFS_TEST", title},
      {"proof_single", proof_single},
      {"proof_multi", proof_multi},
+     {"commit_to_nil_poly", commit_to_nil_poly},
      { NULL, NULL }     /* zero record marks the end of the list */
     };

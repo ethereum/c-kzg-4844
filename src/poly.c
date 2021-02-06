@@ -69,6 +69,7 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     uint64_t diff = a_pos - b_pos;
     blst_fr a[dividend->length];
 
+    ASSERT(divisor->length > 0, C_KZG_BADARGS);
     ASSERT(out->length == poly_quotient_length(dividend, divisor), C_KZG_BADARGS);
 
     // If the divisor is larger than the dividend, the result is zero-length
