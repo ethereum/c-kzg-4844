@@ -27,6 +27,9 @@ void poly_div_length(void) {
     TEST_CHECK(13 == poly_quotient_length(&a, &b));
     TEST_CHECK(1 == poly_quotient_length(&a, &a));
     TEST_CHECK(0 == poly_quotient_length(&b, &a));
+
+    free_poly(&a);
+    free_poly(&b);
 }
 
 void poly_div_0(void) {
@@ -122,6 +125,8 @@ void poly_div_2(void) {
 
     TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(NULL, actual.coeffs));
+
+    free_poly(&actual);
 }
 
 void poly_eval_check(void) {
@@ -137,6 +142,8 @@ void poly_eval_check(void) {
     eval_poly(&actual, &p, &fr_one);
 
     TEST_CHECK(fr_equal(&expected, &actual));
+
+    free_poly(&p);
 }
 
 void poly_eval_0_check(void) {
@@ -152,6 +159,8 @@ void poly_eval_0_check(void) {
     eval_poly(&actual, &p, &fr_zero);
 
     TEST_CHECK(fr_equal(&expected, &actual));
+
+    free_poly(&p);
 }
 
 void poly_eval_nil_check(void) {
@@ -163,6 +172,8 @@ void poly_eval_nil_check(void) {
     eval_poly(&actual, &p, &fr_one);
 
     TEST_CHECK(fr_equal(&fr_zero, &actual));
+
+    free_poly(&p);
 }
 
 TEST_LIST =

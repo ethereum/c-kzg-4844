@@ -118,5 +118,7 @@ bool check_proof_multi(const KZGSettings *ks, const blst_p1 *commitment, const b
 	// [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
     p1_sub(&commit_minus_interp, commitment, &is1);
 
+    free_poly(&interp);
+
     return pairings_verify(&commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn);
 }
