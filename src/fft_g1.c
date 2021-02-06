@@ -41,10 +41,9 @@ void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
         fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             blst_p1 y_times_root;
-            blst_p1 x = out[i];
             p1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            blst_p1_add_or_double(&out[i], &x, &y_times_root);
-            p1_sub(&out[i + half], &x, &y_times_root);
+            p1_sub(&out[i + half], &out[i], &y_times_root);
+            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
         fft_g1_slow(out, in, stride, roots, roots_stride, l);

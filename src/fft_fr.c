@@ -40,10 +40,9 @@ void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr
         fft_fr_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             blst_fr y_times_root;
-            blst_fr x = out[i];
             blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            blst_fr_add(&out[i], &x, &y_times_root);
-            blst_fr_sub(&out[i + half], &x, &y_times_root);
+            blst_fr_sub(&out[i + half], &out[i], &y_times_root);
+            blst_fr_add(&out[i], &out[i], &y_times_root);
         }
     } else {
         fft_fr_slow(out, in, stride, roots, roots_stride, l);
