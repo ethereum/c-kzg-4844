@@ -19,7 +19,7 @@ libckzg.a: $(LIB_OBJ) Makefile
 
 lib: clean libckzg.a
 
-debuglib: CFLAGS += -DDEBUG
+debuglib: CFLAGS += -g -DDEBUG
 debuglib: clean libckzg.a
 
 test: $(TESTS)
