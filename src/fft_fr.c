@@ -37,7 +37,7 @@ void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr
 void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
                  uint64_t l) {
     uint64_t half = l / 2;
-    if (half > 2) { // TODO: Tunable parameter
+    if (half > 0) { // TODO: Tunable parameter
         fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_fr_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {

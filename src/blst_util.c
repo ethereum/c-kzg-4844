@@ -60,7 +60,6 @@ void fr_pow(blst_fr *out, const blst_fr *a, uint64_t n) {
     }
 }
 
-// TODO: Is there really no better way to do this?
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
@@ -73,7 +72,6 @@ void p1_sub(blst_p1 *out, const blst_p1 *a, const blst_p1 *b) {
     blst_p1_add_or_double(out, a, &bneg);
 }
 
-// TODO: Is there really no better way to do this?
 void p2_mul(blst_p2 *out, const blst_p2 *a, const blst_fr *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);

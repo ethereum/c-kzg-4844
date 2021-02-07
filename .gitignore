@@ -1,7 +1,10 @@
 *.o
 *.a
 *_test
-a.out
+*_bench
+*.prof
+*.out
+*.log
 tmp/
 inc/blst.h
 inc/blst_aux.h
