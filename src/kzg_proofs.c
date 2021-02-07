@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
+#include <stddef.h> // NULL
 #include "kzg_proofs.h"
 
 C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length) {
     ASSERT(length >= fs->max_width, C_KZG_BADARGS);
     ks->fs = fs;
     ks->secret_g1 = secret_g1;
-    ks->extended_secret_g1 = NULL;
+    ks->extended_secret_g1 = NULL; // What's this for?
     ks->secret_g2 = secret_g2;
     ks->length = length;
     return C_KZG_OK;
@@ -35,7 +36,7 @@ C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, con
     return compute_proof_multi(out, ks, p, x0, 1);
 }
 
-bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y) {
+C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y) {
     blst_p2 x_g2, s_minus_x;
     blst_p1 y_g1, commitment_minus_y;
     p2_mul(&x_g2, blst_p2_generator(), x);
@@ -43,7 +44,9 @@ bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const 
     p1_mul(&y_g1, blst_p1_generator(), y);
     p1_sub(&commitment_minus_y, commitment, &y_g1);
 
-    return pairings_verify(&commitment_minus_y, blst_p2_generator(), proof, &s_minus_x);
+    *out = pairings_verify(&commitment_minus_y, blst_p2_generator(), proof, &s_minus_x);
+
+    return C_KZG_OK;
 }
 
 // Compute KZG proof for polynomial in coefficient form at positions x * w^y where w is
@@ -54,7 +57,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
     blst_fr x_pow_n;
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
-    init_poly(&divisor, n + 1);
+    ASSERT(init_poly(&divisor, n + 1) == C_KZG_OK, C_KZG_MALLOC);
 
     // -(x0^n)
     fr_pow(&x_pow_n, x0, n);
@@ -81,17 +84,15 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
 
 // Check a proof for a KZG commitment for an evaluation f(x w^i) = y_i
 // The ys must have a power of 2 length
-bool check_proof_multi(const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, const blst_fr *ys, uint64_t n) {
+C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, const blst_fr *ys, uint64_t n) {
     poly interp;
     blst_fr inv_x, inv_x_pow, x_pow;
     blst_p2 xn2, xn_minus_yn;
     blst_p1 is1, commit_minus_interp;
-    //C_KZG_RET ret; // TODO - error handling
 
     // Interpolate at a coset.
-    init_poly(&interp, n);
-    fft_fr(interp.coeffs, ys, ks->fs, true, n);
-    // if (ret != C_KZG_OK) return ret;
+    ASSERT(init_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(fft_fr(interp.coeffs, ys, ks->fs, true, n) == C_KZG_OK, C_KZG_BADARGS);
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
     blst_fr_eucl_inverse(&inv_x, x);
@@ -114,7 +115,8 @@ bool check_proof_multi(const KZGSettings *ks, const blst_p1 *commitment, const b
 	// [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
     p1_sub(&commit_minus_interp, commitment, &is1);
 
-    free_poly(&interp);
+    *out = pairings_verify(&commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn);
 
-    return pairings_verify(&commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn);
+    free_poly(&interp);
+    return C_KZG_OK;
 }

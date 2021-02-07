@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#include <stdlib.h>
 #include "fft_common.h"
 #include "blst_util.h"
+#include "c_kzg_util.h"
 
 bool is_power_of_two(const uint64_t n) {
     return (n & (n - 1)) == 0;
@@ -51,8 +51,9 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, const unsigned int max_scale) {
     C_KZG_RET ret;
     fs->max_width = (uint64_t)1 << max_scale;
     blst_fr_from_uint64(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
-    fs->expanded_roots_of_unity = malloc((fs->max_width + 1) * sizeof(blst_fr));
-    fs->reverse_roots_of_unity = malloc((fs->max_width + 1) * sizeof(blst_fr));
+
+    ASSERT(c_kzg_malloc((void **)&fs->expanded_roots_of_unity, (fs->max_width + 1) * sizeof(blst_fr)) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(c_kzg_malloc((void **)&fs->reverse_roots_of_unity, (fs->max_width + 1) * sizeof(blst_fr)) == C_KZG_OK, C_KZG_MALLOC);
 
     ret = expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width);
     if (ret != C_KZG_OK) return ret;

@@ -14,29 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef C_KZG_H
-#define C_KZG_H
+#include "../inc/acutest.h"
+#include "debug_util.h"
+#include "c_kzg_util.h"
 
-#include <stdbool.h>
-#include "../inc/blst.h"
+void title(void) {;}
 
-typedef enum {
-    C_KZG_OK = 0,  // Success!
-    C_KZG_BADARGS, // The supplied data is invalid in some way
-    C_KZG_ERROR,   // Internal error - should never occur
-    C_KZG_MALLOC,  // Could not allocate memory
-} C_KZG_RET;
+void malloc_works(void) {
+    int *p;
+    TEST_CHECK(C_KZG_OK == c_kzg_malloc((void **)&p, 4));
+}
 
-#ifdef DEBUG
-#include <stdlib.h>
-#include <stdio.h>
-#define ASSERT(cond, ret) if (!(cond)) \
-        { \
-            printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond); \
-            abort(); \
-        }
-#else
-#define ASSERT(cond, ret) if (!(cond)) return (ret)
-#endif
+void malloc_huge_fails(void) {
+    int *p;
+    TEST_CHECK(C_KZG_MALLOC == c_kzg_malloc((void **)&p, -1));
+}
 
-#endif
+TEST_LIST =
+    {
+     {"C_KZG_UTIL_TEST", title},
+     {"malloc_works", malloc_works},
+     {"malloc_huge_fails", malloc_huge_fails},
+     { NULL, NULL }     /* zero record marks the end of the list */
+    };

@@ -1,6 +1,6 @@
-TESTS = blst_util_test fft_common_test fft_fr_test fft_g1_test \
+TESTS = blst_util_test c_kzg_util_test fft_common_test fft_fr_test fft_g1_test \
 	kzg_proofs_test poly_test
-LIB_SRC = blst_util.c fft_common.c fft_fr.c fft_g1.c kzg_proofs.c poly.c
+LIB_SRC = blst_util.c c_kzg_util.c fft_common.c fft_fr.c fft_g1.c kzg_proofs.c poly.c
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
 CFLAGS = -g

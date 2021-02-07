@@ -53,6 +53,7 @@ void proof_single(void) {
     blst_p1 *s1 = malloc(secrets_len * sizeof(blst_p1));
     blst_p2 *s2 = malloc(secrets_len * sizeof(blst_p2));
     blst_fr x, value;
+    bool result;
 
     // Create the polynomial
     init_poly(&p, poly_len);
@@ -73,11 +74,13 @@ void proof_single(void) {
     eval_poly(&value, &p, &x);
 
     // Verify the proof that the (unknown) polynomial has y = value at x = 25
-    TEST_CHECK(true == check_proof_single(&ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(true == result);
 
     // Change the value and check that the proof fails
     blst_fr_add(&value, &value, &fr_one);
-    TEST_CHECK(false == check_proof_single(&ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(false == result);
 
     free_fft_settings(&fs);
     free_poly(&p);
@@ -95,6 +98,7 @@ void proof_multi(void) {
     poly p;
     blst_p1 commitment, proof;
     blst_fr x, tmp;
+    bool result;
 
     // Compute proof at 2^coset_scale points
     int coset_scale = 7, coset_len = (1 << coset_scale);
@@ -132,11 +136,13 @@ void proof_multi(void) {
     }
 
     // Verify the proof that the (unknown) polynomial has value y_i at x_i
-    TEST_CHECK(true == check_proof_multi(&ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(true == result);
 
     // Change a value and check that the proof fails
     blst_fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
-    TEST_CHECK(false == check_proof_multi(&ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(false == result);
 
     free_fft_settings(&fs1);
     free_fft_settings(&fs2);

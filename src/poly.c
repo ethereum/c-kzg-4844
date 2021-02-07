@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <stdlib.h> // NULL, free()
+#include "c_kzg_util.h"
 #include "poly.h"
 
 static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
@@ -21,10 +23,9 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
     blst_fr_mul(out, out, a);
 }
 
-void init_poly(poly *out, const uint64_t length) {
+C_KZG_RET init_poly(poly *out, const uint64_t length) {
     out->length = length;
-    out->coeffs = length > 0 ? malloc(length * sizeof(blst_fr)): NULL;
-    // TODO: check malloc return and handle accordingly
+    return c_kzg_malloc((void **)&out->coeffs, length * sizeof(blst_fr));
 }
 
 void free_poly(poly *p) {
@@ -75,7 +76,7 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     ASSERT(divisor->length > 0, C_KZG_BADARGS);
 
     // Initialise the output polynomial
-    init_poly(out, poly_quotient_length(dividend, divisor));
+    ASSERT(init_poly(out, poly_quotient_length(dividend, divisor)) == C_KZG_OK, C_KZG_MALLOC);
 
     // If the divisor is larger than the dividend, the result is zero-length
     if (out->length == 0) return C_KZG_OK;

@@ -14,29 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef C_KZG_H
-#define C_KZG_H
+#include "c_kzg.h"
 
-#include <stdbool.h>
-#include "../inc/blst.h"
-
-typedef enum {
-    C_KZG_OK = 0,  // Success!
-    C_KZG_BADARGS, // The supplied data is invalid in some way
-    C_KZG_ERROR,   // Internal error - should never occur
-    C_KZG_MALLOC,  // Could not allocate memory
-} C_KZG_RET;
-
-#ifdef DEBUG
-#include <stdlib.h>
-#include <stdio.h>
-#define ASSERT(cond, ret) if (!(cond)) \
-        { \
-            printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond); \
-            abort(); \
-        }
-#else
-#define ASSERT(cond, ret) if (!(cond)) return (ret)
-#endif
-
-#endif
+C_KZG_RET c_kzg_malloc(void **p, size_t n);
