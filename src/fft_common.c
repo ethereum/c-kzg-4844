@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h> // free()
 #include "fft_common.h"
 #include "blst_util.h"
 #include "c_kzg_util.h"
