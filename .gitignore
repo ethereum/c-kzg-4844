@@ -7,3 +7,4 @@ inc/blst.h
 inc/blst_aux.h
 .vscode/
 *.json
+.clang-format

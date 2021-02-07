@@ -21,11 +21,12 @@
 
 #define NUM_ROOTS 32
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void roots_of_unity_is_the_expected_size(void) {
-    TEST_CHECK(NUM_ROOTS ==
-               sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));
+    TEST_CHECK(NUM_ROOTS == sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));
 }
 
 void roots_of_unity_are_plausible(void) {
@@ -101,7 +102,7 @@ void new_fft_settings_is_plausible(void) {
 
 void is_power_of_two_works(void) {
     // All actual powers of two
-    for (int i = 0; i <=63; i++) {
+    for (int i = 0; i <= 63; i++) {
         TEST_CHECK(true == is_power_of_two((uint64_t)1 << i));
         TEST_MSG("Case %d", i);
     }
@@ -114,14 +115,13 @@ void is_power_of_two_works(void) {
     TEST_CHECK(false == is_power_of_two(1234567));
 }
 
-TEST_LIST =
-    {
-     {"FFT_COMMON_TEST", title},
-     {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
-     {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
-     {"reverse_works", reverse_works},
-     {"expand_roots_is_plausible", expand_roots_is_plausible},
-     {"new_fft_settings_is_plausible", new_fft_settings_is_plausible},
-     {"is_power_of_two_works", is_power_of_two_works},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"FFT_COMMON_TEST", title},
+    {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
+    {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
+    {"reverse_works", reverse_works},
+    {"expand_roots_is_plausible", expand_roots_is_plausible},
+    {"new_fft_settings_is_plausible", new_fft_settings_is_plausible},
+    {"is_power_of_two_works", is_power_of_two_works},
+    {NULL, NULL} /* zero record marks the end of the list */
+};

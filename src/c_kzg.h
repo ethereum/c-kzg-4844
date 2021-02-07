@@ -30,13 +30,14 @@ typedef enum {
 #ifdef DEBUG
 #include <stdlib.h>
 #include <stdio.h>
-#define ASSERT(cond, ret) if (!(cond)) \
-        { \
-            printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond); \
-            abort(); \
-        }
+#define ASSERT(cond, ret)                                                                                              \
+    if (!(cond)) {                                                                                                     \
+        printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond);                                             \
+        abort();                                                                                                       \
+    }
 #else
-#define ASSERT(cond, ret) if (!(cond)) return (ret)
+#define ASSERT(cond, ret)                                                                                              \
+    if (!(cond)) return (ret)
 #endif
 
 #endif

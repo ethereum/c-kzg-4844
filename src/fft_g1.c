@@ -37,7 +37,7 @@ void fft_g1_slow(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
 void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uint64_t roots_stride, uint64_t l) {
     uint64_t half = l / 2;
     if (half > 2) { // TODO: Tunable parameter
-        fft_g1_fast(out,        in,          stride * 2, roots, roots_stride * 2, half);
+        fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             blst_p1 y_times_root;
@@ -51,7 +51,7 @@ void fft_g1_fast(blst_p1 *out, blst_p1 *in, uint64_t stride, blst_fr *roots, uin
 }
 
 // The main entry point for forward and reverse FFTs
-C_KZG_RET fft_g1 (blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
+C_KZG_RET fft_g1(blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t n) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);

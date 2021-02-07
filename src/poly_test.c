@@ -18,7 +18,9 @@
 #include "debug_util.h"
 #include "poly.h"
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void poly_div_length(void) {
     poly a, b;
@@ -190,16 +192,15 @@ void poly_eval_nil_check(void) {
     free_poly(&p);
 }
 
-TEST_LIST =
-    {
-     {"POLY_TEST", title},
-     {"poly_div_length", poly_div_length},
-     {"poly_div_0", poly_div_0},
-     {"poly_div_1", poly_div_1},
-     {"poly_div_2", poly_div_2},
-     {"poly_div_by_zero", poly_div_by_zero},
-     {"poly_eval_check", poly_eval_check},
-     {"poly_eval_0_check", poly_eval_0_check},
-     {"poly_eval_nil_check", poly_eval_nil_check},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"POLY_TEST", title},
+    {"poly_div_length", poly_div_length},
+    {"poly_div_0", poly_div_0},
+    {"poly_div_1", poly_div_1},
+    {"poly_div_2", poly_div_2},
+    {"poly_div_by_zero", poly_div_by_zero},
+    {"poly_eval_check", poly_eval_check},
+    {"poly_eval_0_check", poly_eval_0_check},
+    {"poly_eval_nil_check", poly_eval_nil_check},
+    {NULL, NULL} /* zero record marks the end of the list */
+};

@@ -18,7 +18,9 @@
 #include "debug_util.h"
 #include "fft_g1.h"
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void make_data(blst_p1 *out, uint64_t n) {
     // Multiples of g1_gen
@@ -70,10 +72,9 @@ void roundtrip_fft(void) {
     free_fft_settings(&fs);
 }
 
-TEST_LIST =
-    {
-     {"FFT_G1_TEST", title},
-     {"compare_sft_fft", compare_sft_fft},
-     {"roundtrip_fft", roundtrip_fft},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"FFT_G1_TEST", title},
+    {"compare_sft_fft", compare_sft_fft},
+    {"roundtrip_fft", roundtrip_fft},
+    {NULL, NULL} /* zero record marks the end of the list */
+};

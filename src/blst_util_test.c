@@ -21,7 +21,9 @@
 // This is -1 (the second root of unity)
 uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void fr_is_zero_works(void) {
     blst_fr zero;
@@ -177,21 +179,20 @@ void pairings_work(void) {
     TEST_CHECK(false == pairings_verify(&g1_3, &g2_3, &g1_5, &g2_5));
 }
 
-TEST_LIST =
-    {
-     {"BLST_UTIL_TEST", title},
-     {"fr_is_zero_works", fr_is_zero_works },
-     {"fr_is_one_works", fr_is_one_works },
-     {"fr_from_uint64_works", fr_from_uint64_works},
-     {"fr_equal_works", fr_equal_works},
-     {"fr_negate_works", fr_negate_works},
-     {"fr_pow_works", fr_pow_works},
-     {"p1_mul_works", p1_mul_works},
-     {"p1_sub_works", p1_sub_works},
-     {"p2_mul_works", p2_mul_works},
-     {"p2_sub_works", p2_sub_works},
-     {"identity_g1_is_infinity", identity_g1_is_infinity},
-     {"g1_linear_combination", g1_linear_combination},
-     {"pairings_work", pairings_work},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"BLST_UTIL_TEST", title},
+    {"fr_is_zero_works", fr_is_zero_works},
+    {"fr_is_one_works", fr_is_one_works},
+    {"fr_from_uint64_works", fr_from_uint64_works},
+    {"fr_equal_works", fr_equal_works},
+    {"fr_negate_works", fr_negate_works},
+    {"fr_pow_works", fr_pow_works},
+    {"p1_mul_works", p1_mul_works},
+    {"p1_sub_works", p1_sub_works},
+    {"p2_mul_works", p2_mul_works},
+    {"p2_sub_works", p2_sub_works},
+    {"identity_g1_is_infinity", identity_g1_is_infinity},
+    {"g1_linear_combination", g1_linear_combination},
+    {"pairings_work", pairings_work},
+    {NULL, NULL} /* zero record marks the end of the list */
+};

@@ -50,8 +50,7 @@ void print_fr(const blst_fr *a) {
 //
 
 void print_limbs(const blst_fp *fp) {
-    printf("(%08lx, %08lx, %08lx, %08lx, %08lx, %08lx)",
-           fp->l[0], fp->l[1], fp->l[2], fp->l[3], fp->l[4], fp->l[5]);
+    printf("(%08lx, %08lx, %08lx, %08lx, %08lx, %08lx)", fp->l[0], fp->l[1], fp->l[2], fp->l[3], fp->l[4], fp->l[5]);
 }
 
 //

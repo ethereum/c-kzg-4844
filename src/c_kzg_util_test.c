@@ -18,7 +18,9 @@
 #include "debug_util.h"
 #include "c_kzg_util.h"
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void malloc_works(void) {
     int *p;
@@ -30,10 +32,9 @@ void malloc_huge_fails(void) {
     TEST_CHECK(C_KZG_MALLOC == c_kzg_malloc((void **)&p, -1));
 }
 
-TEST_LIST =
-    {
-     {"C_KZG_UTIL_TEST", title},
-     {"malloc_works", malloc_works},
-     {"malloc_huge_fails", malloc_huge_fails},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"C_KZG_UTIL_TEST", title},
+    {"malloc_works", malloc_works},
+    {"malloc_huge_fails", malloc_huge_fails},
+    {NULL, NULL} /* zero record marks the end of the list */
+};

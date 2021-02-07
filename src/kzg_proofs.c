@@ -36,7 +36,8 @@ C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, con
     return compute_proof_multi(out, ks, p, x0, 1);
 }
 
-C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y) {
+C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
+                             const blst_fr *x, blst_fr *y) {
     blst_p2 x_g2, s_minus_x;
     blst_p1 y_g1, commitment_minus_y;
     p2_mul(&x_g2, blst_p2_generator(), x);
@@ -84,7 +85,8 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
 
 // Check a proof for a KZG commitment for an evaluation f(x w^i) = y_i
 // The ys must have a power of 2 length
-C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, const blst_fr *ys, uint64_t n) {
+C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
+                            const blst_fr *x, const blst_fr *ys, uint64_t n) {
     poly interp;
     blst_fr inv_x, inv_x_pow, x_pow;
     blst_p2 xn2, xn_minus_yn;
@@ -112,7 +114,7 @@ C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *com
     // [interpolation_polynomial(s)]_1
     commit_to_poly(&is1, ks, &interp);
 
-	// [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
+    // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
     p1_sub(&commit_minus_interp, commitment, &is1);
 
     *out = pairings_verify(&commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn);

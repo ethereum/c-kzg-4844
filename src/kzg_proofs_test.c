@@ -19,13 +19,9 @@
 #include "kzg_proofs.h"
 
 // The generator for our "trusted" setup
-blst_scalar secret =
-    {
-     0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea,
-     0x4d, 0x08, 0xcc, 0x53, 0x18, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    }; // Little-endian?
+blst_scalar secret = {0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
+                      0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Little-endian?
 
 void generate_setup(blst_p1 *s1, blst_p2 *s2, const blst_scalar *secret, const uint64_t n) {
     blst_fr s_pow, s;
@@ -38,7 +34,9 @@ void generate_setup(blst_p1 *s1, blst_p2 *s2, const blst_scalar *secret, const u
     }
 }
 
-void title(void) {;}
+void title(void) {
+    ;
+}
 
 void proof_single(void) {
     // Our polynomial: degree 15, 16 coefficients
@@ -172,11 +170,10 @@ void commit_to_nil_poly(void) {
     TEST_CHECK(blst_p1_affine_is_equal(&identity_g1_affine, &result_affine));
 }
 
-TEST_LIST =
-    {
-     {"KZG_PROOFS_TEST", title},
-     {"proof_single", proof_single},
-     {"proof_multi", proof_multi},
-     {"commit_to_nil_poly", commit_to_nil_poly},
-     { NULL, NULL }     /* zero record marks the end of the list */
-    };
+TEST_LIST = {
+    {"KZG_PROOFS_TEST", title},
+    {"proof_single", proof_single},
+    {"proof_multi", proof_multi},
+    {"commit_to_nil_poly", commit_to_nil_poly},
+    {NULL, NULL} /* zero record marks the end of the list */
+};
