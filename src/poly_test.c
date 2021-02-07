@@ -33,7 +33,7 @@ void poly_div_length(void) {
 }
 
 void poly_div_0(void) {
-    blst_fr a[3], b[2], c[2], expected[2];
+    blst_fr a[3], b[2], expected[2];
     poly dividend, divisor, actual;
 
     // Calculate (x^2 - 1) / (x + 1) = x - 1
@@ -57,16 +57,15 @@ void poly_div_0(void) {
     fr_negate(&expected[0], &expected[0]);
     fr_from_uint64(&expected[1], 1);
 
-    actual.length = 2;
-    actual.coeffs = c;
-
     TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
+
+    free_poly(&actual);
 }
 
 void poly_div_1(void) {
-    blst_fr a[4], b[2], c[3], expected[3];
+    blst_fr a[4], b[2], expected[3];
     poly dividend, divisor, actual;
 
     // Calculate (12x^3 - 11x^2 + 9x + 18) / (4x + 3) = 3x^2 - 5x + 6
@@ -92,13 +91,12 @@ void poly_div_1(void) {
     fr_negate(&expected[1], &expected[1]);
     fr_from_uint64(&expected[2], 3);
 
-    actual.length = 3;
-    actual.coeffs = c;
-
     TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
     TEST_CHECK(fr_equal(&expected[2], &actual.coeffs[2]));
+
+    free_poly(&actual);
 }
 
 void poly_div_2(void) {
@@ -121,8 +119,6 @@ void poly_div_2(void) {
     divisor.length = 3;
     divisor.coeffs = b;
 
-    init_poly(&actual, poly_quotient_length(&dividend, &divisor));
-
     TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(NULL == actual.coeffs);
 
@@ -131,7 +127,7 @@ void poly_div_2(void) {
 
 void poly_div_by_zero(void) {
     blst_fr a[2];
-    poly dividend, divisor;
+    poly dividend, divisor, dummy;
 
     // Calculate (x + 1) / 0 = FAIL
 
@@ -144,7 +140,7 @@ void poly_div_by_zero(void) {
     // Divisor
     init_poly(&divisor, 0);
 
-    TEST_CHECK(C_KZG_BADARGS == poly_long_div(NULL, &dividend, &divisor));
+    TEST_CHECK(C_KZG_BADARGS == poly_long_div(&dummy, &dividend, &divisor));
 }
 
 void poly_eval_check(void) {

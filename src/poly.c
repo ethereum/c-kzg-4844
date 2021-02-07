@@ -24,6 +24,7 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
 void init_poly(poly *out, const uint64_t length) {
     out->length = length;
     out->coeffs = length > 0 ? malloc(length * sizeof(blst_fr)): NULL;
+    // TODO: check malloc return and handle accordingly
 }
 
 void free_poly(poly *p) {
@@ -62,18 +63,22 @@ uint64_t poly_quotient_length(const poly *dividend, const poly *divisor) {
     return dividend->length >= divisor->length ? dividend->length - divisor->length + 1 : 0;
 }
 
-// `out` must have been pre-allocated to the correct size, see `poly_quotient_length()`
+// `out` must be an uninitialised poly and has space allocated for it here, which
+// must be freed by calling `free_poly()` later.
 C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     uint64_t a_pos = dividend->length - 1;
     uint64_t b_pos = divisor->length - 1;
     uint64_t diff = a_pos - b_pos;
     blst_fr a[dividend->length];
 
+    // Dividing by zero is undefined
     ASSERT(divisor->length > 0, C_KZG_BADARGS);
-    ASSERT(out->length == poly_quotient_length(dividend, divisor), C_KZG_BADARGS);
+
+    // Initialise the output polynomial
+    init_poly(out, poly_quotient_length(dividend, divisor));
 
     // If the divisor is larger than the dividend, the result is zero-length
-    if (divisor->length > dividend->length) return C_KZG_OK;
+    if (out->length == 0) return C_KZG_OK;
 
     for (uint64_t i = 0; i < dividend->length; i++) {
         a[i] = dividend->coeffs[i];

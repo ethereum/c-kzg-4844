@@ -18,9 +18,9 @@
 #define C_KZG_H
 
 typedef enum {
-    C_KZG_OK = 0,
-    C_KZG_BADARGS,
-    C_KZG_ERROR,
+    C_KZG_OK = 0,  // Success!
+    C_KZG_BADARGS, // The supplied data is invalid in some way
+    C_KZG_ERROR,   // Internal error - should never occur
 } C_KZG_RET;
 
 #include <stdbool.h>

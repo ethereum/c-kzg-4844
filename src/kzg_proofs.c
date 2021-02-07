@@ -52,7 +52,6 @@ bool check_proof_single(const KZGSettings *ks, const blst_p1 *commitment, const 
 C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n) {
     poly divisor, q;
     blst_fr x_pow_n;
-    C_KZG_RET ret;
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
     init_poly(&divisor, n + 1);
@@ -70,10 +69,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
     divisor.coeffs[n] = fr_one;
 
     // Calculate q = p / (x^n - x0^n)
-    init_poly(&q, poly_quotient_length(p, &divisor));
-    if ((ret = poly_long_div(&q, p, &divisor) != C_KZG_OK)) {
-        return C_KZG_ERROR;
-    }
+    ASSERT(poly_long_div(&q, p, &divisor) == C_KZG_OK, C_KZG_ERROR);
 
     commit_to_poly(out, ks, &q);
 
