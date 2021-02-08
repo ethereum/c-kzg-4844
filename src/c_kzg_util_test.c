@@ -18,9 +18,7 @@
 #include "debug_util.h"
 #include "c_kzg_util.h"
 
-void title(void) {
-    ;
-}
+void title(void) {}
 
 void malloc_works(void) {
     int *p;

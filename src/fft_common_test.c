@@ -21,9 +21,7 @@
 
 #define NUM_ROOTS 32
 
-void title(void) {
-    ;
-}
+void title(void) {}
 
 void roots_of_unity_is_the_expected_size(void) {
     TEST_CHECK(NUM_ROOTS == sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));

@@ -37,9 +37,7 @@ const uint64_t inv_fft_expected[][4] = {
     {0xe92ffdda2306c7d4L, 0x54dd2afcd2dfb16bL, 0xf6554603677e87beL, 0x5dbc603bc53c7a39L},
     {0xd8cda22e753b3117L, 0x880454ec72238f55L, 0xcaf6199fc14a5353L, 0x197df7c2f05866d4L}};
 
-void title(void) {
-    ;
-}
+void title(void) {}
 
 void compare_sft_fft(void) {
     // Initialise: ascending values of i (could be anything), and arbitrary size
