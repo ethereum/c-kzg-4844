@@ -17,11 +17,12 @@
 #include <time.h> // CLOCK_REALTIME, clock_gettime(), timespec
 #include "c_kzg.h"
 
-typedef struct timespec timespec;
+typedef struct timespec timespec_t;
 
 #define NANO 1000000000L
+#define NSEC 1
 
-unsigned long tdiff(timespec start, timespec end);
+unsigned long tdiff(timespec_t start, timespec_t end);
 uint64_t rand_uint64();
 blst_fr rand_fr();
 blst_p1 rand_g1();

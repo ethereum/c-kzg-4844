@@ -18,7 +18,7 @@
 #include "bench_util.h"
 #include "blst_util.h"
 
-unsigned long tdiff(timespec start, timespec end) {
+unsigned long tdiff(timespec_t start, timespec_t end) {
     return (end.tv_sec - start.tv_sec) * NANO + (end.tv_nsec - start.tv_nsec);
 }
 

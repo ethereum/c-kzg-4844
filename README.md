@@ -51,6 +51,24 @@ Unit tests for an individual file can be built and run with `make fft_fr_test` f
 
 Thanks to [Acutest](https://github.com/mity/acutest) for the unit test harness, which is used here under the MIT licence.
 
+## Run benchmarks
+
+This will run all available benchmarks, for the default one second per test size:
+
+```
+cd src
+make bench
+```
+
+You can run individual benchmarks, and optionally specify how long to run each test size:
+
+```
+make fft_fr_bench
+./fft_fr_bench 5
+```
+
+Doing `make clean` should resolve any weird build issues.
+
 ## Prerequisites
 
  - Blst library (see above)

@@ -41,4 +41,5 @@ clean:
 	rm -f *.o
 	rm -f libckzg.a
 	rm -f $(TESTS)
+	rm -f $(BENCH)
 	rm -f a.out

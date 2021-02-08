@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-#include <stdlib.h> // malloc(), free()
+#include <stdlib.h> // malloc(), free(), atoi()
 #include <stdio.h>  // printf()
 #include <assert.h> // assert()
+#include <unistd.h> // EXIT_SUCCESS/FAILURE
 #include "bench_util.h"
 #include "fft_g1.h"
 
 // Run the benchmark for `max_seconds` and return the time per iteration in nanoseconds.
 long run_bench(int scale, int max_seconds) {
-    timespec t0, t1;
+    timespec_t t0, t1;
     unsigned long total_time = 0, nits = 0;
     FFTSettings fs;
 
     assert(C_KZG_OK == new_fft_settings(&fs, scale));
+
     // Allocate on the heap to avoid stack overflow for large sizes
     blst_p1 *data, *out;
     data = malloc(fs.max_width * sizeof(blst_p1));
@@ -51,11 +53,29 @@ long run_bench(int scale, int max_seconds) {
     return total_time / nits;
 }
 
-#define NSEC 1
+int main(int argc, char *argv[]) {
+    int nsec = 0;
 
-int main(void) {
-    printf("*** Benchmarking FFT_g1, %d second%s per test.\n", NSEC, NSEC == 1 ? "" : "s");
-    for (int scale = 4; scale < 16; scale++) {
-        printf("fft_g1/scale_%d %lu ns/op\n", scale, run_bench(scale, 1));
+    switch (argc) {
+    case 1:
+        nsec = NSEC;
+        break;
+    case 2:
+        nsec = atoi(argv[1]);
+        break;
+    default:
+        break;
+    };
+
+    if (nsec == 0) {
+        printf("Usage: %s [test time in seconds > 0]\n", argv[0]);
+        exit(EXIT_FAILURE);
     }
+
+    printf("*** Benchmarking FFT_g1, %d second%s per test.\n", nsec, nsec == 1 ? "" : "s");
+    for (int scale = 4; scale <= 15; scale++) {
+        printf("fft_g1/scale_%d %lu ns/op\n", scale, run_bench(scale, nsec));
+    }
+
+    return EXIT_SUCCESS;
 }
