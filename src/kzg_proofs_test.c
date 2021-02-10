@@ -43,22 +43,22 @@ void proof_single(void) {
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // ln_2 of poly_len
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, &fs, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
     // Compute the proof for x = 25
     fr_from_uint64(&x, 25);
     commit_to_poly(&commitment, &p, &ks);
-    TEST_CHECK(C_KZG_OK == compute_proof_single(&proof, &ks, &p, &x));
+    TEST_CHECK(C_KZG_OK == compute_proof_single(&proof, &p, &x, &ks));
 
     eval_poly(&value, &p, &x);
 
     // Verify the proof that the (unknown) polynomial has y = value at x = 25
-    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &value, &ks));
     TEST_CHECK(true == result);
 
     // Change the value and check that the proof fails
     blst_fr_add(&value, &value, &fr_one);
-    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &value));
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &value, &ks));
     TEST_CHECK(false == result);
 
     free_fft_settings(&fs);
@@ -97,17 +97,17 @@ void proof_multi(void) {
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of poly_len
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks1, &fs1, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks1, s1, s2, secrets_len, &fs1));
 
     // Commit to the polynomial
     commit_to_poly(&commitment, &p, &ks1);
 
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs2, coset_scale));
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks2, &fs2, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks2, s1, s2, secrets_len, &fs2));
 
     // Compute proof at the points [x * root_i] 0 <= i < coset_len
     fr_from_uint64(&x, 5431);
-    TEST_CHECK(C_KZG_OK == compute_proof_multi(&proof, &ks2, &p, &x, coset_len));
+    TEST_CHECK(C_KZG_OK == compute_proof_multi(&proof, &p, &x, coset_len, &ks2));
 
     // y_i is the value of the polynomial at each x_i
     for (int i = 0; i < coset_len; i++) {
@@ -116,12 +116,12 @@ void proof_multi(void) {
     }
 
     // Verify the proof that the (unknown) polynomial has value y_i at x_i
-    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &ks2));
     TEST_CHECK(true == result);
 
     // Change a value and check that the proof fails
     blst_fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
-    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &ks2, &commitment, &proof, &x, y, coset_len));
+    TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &ks2));
     TEST_CHECK(false == result);
 
     free_fft_settings(&fs1);
@@ -146,7 +146,7 @@ void commit_to_nil_poly(void) {
     // Initialise the (arbitrary) secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, &fs, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
     init_poly(&a, 0);
     commit_to_poly(&result, &a, &ks);

@@ -71,8 +71,8 @@ void roundtrip_fft(void) {
     }
 
     // Forward and reverse FFT
-    TEST_CHECK(fft_fr(coeffs, data, &fs, false, fs.max_width) == C_KZG_OK);
-    TEST_CHECK(fft_fr(data, coeffs, &fs, true, fs.max_width) == C_KZG_OK);
+    TEST_CHECK(fft_fr(coeffs, data, false, fs.max_width, &fs) == C_KZG_OK);
+    TEST_CHECK(fft_fr(data, coeffs, true, fs.max_width, &fs) == C_KZG_OK);
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {
@@ -94,7 +94,7 @@ void inverse_fft(void) {
     }
 
     // Inverst FFT
-    TEST_CHECK(fft_fr(out, data, &fs, true, fs.max_width) == C_KZG_OK);
+    TEST_CHECK(fft_fr(out, data, true, fs.max_width, &fs) == C_KZG_OK);
 
     // Verify against the known result, `inv_fft_expected`
     int n = sizeof inv_fft_expected / sizeof inv_fft_expected[0];
@@ -119,8 +119,8 @@ void stride_fft(void) {
         fr_from_uint64(data + i, i);
     }
 
-    TEST_CHECK(fft_fr(coeffs1, data, &fs1, false, width) == C_KZG_OK);
-    TEST_CHECK(fft_fr(coeffs2, data, &fs2, false, width) == C_KZG_OK);
+    TEST_CHECK(fft_fr(coeffs1, data, false, width, &fs1) == C_KZG_OK);
+    TEST_CHECK(fft_fr(coeffs2, data, false, width, &fs2) == C_KZG_OK);
 
     for (int i = 0; i < width; i++) {
         TEST_CHECK(fr_equal(coeffs1 + i, coeffs2 + i));

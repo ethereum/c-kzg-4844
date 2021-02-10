@@ -117,7 +117,7 @@ void fk_single(void) {
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, n));
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, &fs, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
     // Generate the proofs
@@ -130,7 +130,7 @@ void fk_single(void) {
         eval_poly(&y, &p, &x);
         proof = all_proofs[reverse_bits_limited(2 * poly_len, i)];
 
-        TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &y));
+        TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &y, &ks));
         TEST_CHECK(true == result);
     }
 
@@ -169,7 +169,7 @@ void fk_single_strided(void) {
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, n));
-    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, &fs, s1, s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
     // Generate the proofs
@@ -182,7 +182,7 @@ void fk_single_strided(void) {
         eval_poly(&y, &p, &x);
         proof = all_proofs[reverse_bits_limited(2 * poly_len, i)];
 
-        TEST_CHECK(C_KZG_OK == check_proof_single(&result, &ks, &commitment, &proof, &x, &y));
+        TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &y, &ks));
         TEST_CHECK(true == result);
     }
 

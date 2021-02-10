@@ -81,7 +81,7 @@ C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, KZGSetting
         x_ext[i] = identity_g1;
     }
 
-    ASSERT(fft_g1(out, x_ext, ks->fs, false, n2) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(fft_g1(out, x_ext, false, n2, ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     free(x_ext);
     return C_KZG_OK;
@@ -96,7 +96,7 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
                C_KZG_OK,
            C_KZG_MALLOC);
 
-    ASSERT(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, fk->ks->fs, false, toeplitz_coeffs->length) == C_KZG_OK,
+    ASSERT(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fk->ks->fs) == C_KZG_OK,
            C_KZG_ERROR);
 
     for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
@@ -109,7 +109,7 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
 
 // Transform back and return the first half of the vector
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t length, const FK20SingleSettings *fk) {
-    ASSERT(fft_g1(out, h_ext_fft, fk->ks->fs, true, length) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(fft_g1(out, h_ext_fft, true, length, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     return C_KZG_OK;
 }
@@ -160,7 +160,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
         h[i] = identity_g1;
     }
 
-    ASSERT(fft_g1(out, h, fk->ks->fs, false, n2) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(fft_g1(out, h, false, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     free(h);
     free(h_ext_fft);

@@ -22,12 +22,12 @@ void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
 }
 
 // Compute KZG proof for polynomial at position x0
-C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0) {
-    return compute_proof_multi(out, ks, p, x0, 1);
+C_KZG_RET compute_proof_single(blst_p1 *out, poly *p, const blst_fr *x0, const KZGSettings *ks) {
+    return compute_proof_multi(out, p, x0, 1, ks);
 }
 
-C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
-                             const blst_fr *x, blst_fr *y) {
+C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y,
+                             const KZGSettings *ks) {
     blst_p2 x_g2, s_minus_x;
     blst_p1 y_g1, commitment_minus_y;
     p2_mul(&x_g2, blst_p2_generator(), x);
@@ -43,7 +43,7 @@ C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *co
 // Compute KZG proof for polynomial in coefficient form at positions x * w^y where w is
 // an n-th root of unity (this is the proof for one data availability sample, which consists
 // of several polynomial evaluations)
-C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n) {
+C_KZG_RET compute_proof_multi(blst_p1 *out, poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks) {
     poly divisor, q;
     blst_fr x_pow_n;
 
@@ -75,8 +75,8 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
 
 // Check a proof for a KZG commitment for an evaluation f(x w^i) = y_i
 // The ys must have a power of 2 length
-C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
-                            const blst_fr *x, const blst_fr *ys, uint64_t n) {
+C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x,
+                            const blst_fr *ys, uint64_t n, const KZGSettings *ks) {
     poly interp;
     blst_fr inv_x, inv_x_pow, x_pow;
     blst_p2 xn2, xn_minus_yn;
@@ -84,7 +84,7 @@ C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *com
 
     // Interpolate at a coset.
     ASSERT(init_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(fft_fr(interp.coeffs, ys, ks->fs, true, n) == C_KZG_OK, C_KZG_BADARGS);
+    ASSERT(fft_fr(interp.coeffs, ys, true, n, ks->fs) == C_KZG_OK, C_KZG_BADARGS);
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
     blst_fr_eucl_inverse(&inv_x, x);
@@ -114,7 +114,7 @@ C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *com
 }
 
 // We don't allocate space for the secrets s1 and s2 here as they are assumed to be pre-generated
-C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length) {
+C_KZG_RET new_kzg_settings(KZGSettings *ks, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length, FFTSettings *fs) {
     ASSERT(length >= fs->max_width, C_KZG_BADARGS);
 
     ks->fs = fs;

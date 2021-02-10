@@ -27,11 +27,11 @@ typedef struct {
 } KZGSettings;
 
 void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks);
-C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0);
-C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
-                             const blst_fr *x, blst_fr *y);
-C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n);
-C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
-                            const blst_fr *x, const blst_fr *ys, uint64_t n);
-C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length);
+C_KZG_RET compute_proof_single(blst_p1 *out, poly *p, const blst_fr *x0, const KZGSettings *ks);
+C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y,
+                             const KZGSettings *ks);
+C_KZG_RET compute_proof_multi(blst_p1 *out, poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks);
+C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x,
+                            const blst_fr *ys, uint64_t n, const KZGSettings *ks);
+C_KZG_RET new_kzg_settings(KZGSettings *ks, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length, FFTSettings *fs);
 void free_kzg_settings(KZGSettings *ks);

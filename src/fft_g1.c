@@ -53,7 +53,7 @@ void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
 }
 
 // The main entry point for forward and reverse FFTs
-C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, const FFTSettings *fs, bool inv, uint64_t n) {
+C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inv, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);

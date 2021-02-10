@@ -41,7 +41,7 @@ long run_bench(int scale, int max_seconds) {
 
     while (total_time < max_seconds * NANO) {
         clock_gettime(CLOCK_REALTIME, &t0);
-        assert(C_KZG_OK == fft_fr(out, data, &fs, false, fs.max_width));
+        assert(C_KZG_OK == fft_fr(out, data, false, fs.max_width, &fs));
         clock_gettime(CLOCK_REALTIME, &t1);
         nits++;
         total_time += tdiff(t0, t1);
