@@ -23,6 +23,7 @@ typedef struct {
 } poly;
 
 C_KZG_RET init_poly(poly *out, const uint64_t length);
+C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length);
 void free_poly(poly *p);
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x);
 uint64_t poly_quotient_length(const poly *dividend, const poly *divisor);

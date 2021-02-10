@@ -9,6 +9,7 @@ Done so far:
   - FFTs over the G1 group
   - Polynomial single commitment and verification
   - Polynomial multi commitment and verification
+  - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method (needs a tidy up)
 
 ## Installation
 
@@ -69,8 +70,20 @@ make fft_fr_bench
 
 Doing `make clean` should resolve any weird build issues.
 
+## Make debug builds of the tests
+
+The default build is designed not to exit on errors, and will (should) return fairly coarse error codes for any issue. This is good for a utility library, but unhelpful for debugging. The `-DDEBUG` compiler flag  builds a version such that any assertion failure aborts the run and outputs file and line info. This is much more useful for tracking down deeply buried errors.
+
+Each test suite can be compiled into its debug version. For example, as follows:
+
+```
+make fk20_proofs_test_debug
+./fk20_proofs_test_debug fk_single_strided
+```
+
 ## Prerequisites
 
  - Blst library (see above)
  - `clang` compiler. I'm using Clang 10.0.0. I'll likely add `gcc` options in future.
+ - The Makefile is GNU make compatible.
  - I'm developing on Ubuntu 20.04. Will check portability later.

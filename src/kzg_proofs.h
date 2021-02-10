@@ -26,11 +26,12 @@ typedef struct {
     uint64_t length;
 } KZGSettings;
 
-C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length);
-void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p);
+void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks);
 C_KZG_RET compute_proof_single(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0);
 C_KZG_RET check_proof_single(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
                              const blst_fr *x, blst_fr *y);
 C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, const blst_fr *x0, uint64_t n);
 C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *commitment, const blst_p1 *proof,
                             const blst_fr *x, const blst_fr *ys, uint64_t n);
+C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length);
+void free_kzg_settings(KZGSettings *ks);

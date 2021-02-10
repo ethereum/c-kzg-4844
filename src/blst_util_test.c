@@ -16,12 +16,11 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
+#include "test_util.h"
 #include "blst_util.h"
 
 // This is -1 (the second root of unity)
 uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
-
-void title(void) {}
 
 void fr_is_zero_works(void) {
     blst_fr zero;

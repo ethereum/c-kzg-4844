@@ -16,12 +16,11 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
+#include "test_util.h"
 #include "fft_common.h"
 #include "blst_util.h"
 
 #define NUM_ROOTS 32
-
-void title(void) {}
 
 void roots_of_unity_is_the_expected_size(void) {
     TEST_CHECK(NUM_ROOTS == sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));

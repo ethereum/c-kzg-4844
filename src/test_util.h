@@ -14,24 +14,13 @@
  * limitations under the License.
  */
 
-#include "../inc/acutest.h"
-#include "debug_util.h"
-#include "test_util.h"
-#include "c_kzg_util.h"
+#include "c_kzg.h"
 
-void malloc_works(void) {
-    int *p;
-    TEST_CHECK(C_KZG_OK == c_kzg_malloc((void **)&p, 4));
-}
+// The generator for our "trusted" setup
+static const blst_scalar secret = {0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,
+                                   0x53, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Little-endian?
 
-void malloc_huge_fails(void) {
-    int *p;
-    TEST_CHECK(C_KZG_MALLOC == c_kzg_malloc((void **)&p, -1));
-}
-
-TEST_LIST = {
-    {"C_KZG_UTIL_TEST", title},
-    {"malloc_works", malloc_works},
-    {"malloc_huge_fails", malloc_huge_fails},
-    {NULL, NULL} /* zero record marks the end of the list */
-};
+void generate_trusted_setup(blst_p1 **s1, blst_p2 **s2, const blst_scalar *secret, const uint64_t n);
+void free_trusted_setup(blst_p1 *s1, blst_p2 *s2);
+void title(void);

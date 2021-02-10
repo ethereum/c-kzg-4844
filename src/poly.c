@@ -25,7 +25,15 @@ static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
 
 C_KZG_RET init_poly(poly *out, const uint64_t length) {
     out->length = length;
-    return c_kzg_malloc((void **)&out->coeffs, length * sizeof(blst_fr));
+    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
+}
+
+C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length) {
+    ASSERT(init_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
+    for (uint64_t i = 0; i < length; i++) {
+        fr_from_uint64(&out->coeffs[i], coeffs[i]);
+    }
+    return C_KZG_OK;
 }
 
 void free_poly(poly *p) {

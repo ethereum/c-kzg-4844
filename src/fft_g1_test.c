@@ -16,9 +16,8 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
+#include "test_util.h"
 #include "fft_g1.h"
-
-void title(void) {}
 
 void make_data(blst_p1 *out, uint64_t n) {
     // Multiples of g1_gen
@@ -85,6 +84,9 @@ void stride_fft(void) {
     for (int i = 0; i < width; i++) {
         TEST_CHECK(blst_p1_is_equal(coeffs1 + i, coeffs2 + i));
     }
+
+    free_fft_settings(&fs1);
+    free_fft_settings(&fs2);
 }
 
 TEST_LIST = {

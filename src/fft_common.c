@@ -49,19 +49,20 @@ C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width) {
 }
 
 C_KZG_RET new_fft_settings(FFTSettings *fs, const unsigned int max_scale) {
-    C_KZG_RET ret;
     fs->max_width = (uint64_t)1 << max_scale;
     blst_fr_from_uint64(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
 
-    ASSERT(c_kzg_malloc((void **)&fs->expanded_roots_of_unity, (fs->max_width + 1) * sizeof(blst_fr)) == C_KZG_OK,
+    ASSERT(c_kzg_malloc((void **)&fs->expanded_roots_of_unity,
+                        (fs->max_width + 1) * sizeof *fs->expanded_roots_of_unity) == C_KZG_OK,
            C_KZG_MALLOC);
-    ASSERT(c_kzg_malloc((void **)&fs->reverse_roots_of_unity, (fs->max_width + 1) * sizeof(blst_fr)) == C_KZG_OK,
+    ASSERT(c_kzg_malloc((void **)&fs->reverse_roots_of_unity,
+                        (fs->max_width + 1) * sizeof *fs->reverse_roots_of_unity) == C_KZG_OK,
            C_KZG_MALLOC);
 
-    ret = expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width);
-    if (ret != C_KZG_OK) return ret;
-    ret = reverse(fs->reverse_roots_of_unity, fs->expanded_roots_of_unity, fs->max_width);
-    return ret;
+    ASSERT(expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width) == C_KZG_OK,
+           C_KZG_ERROR);
+    ASSERT(reverse(fs->reverse_roots_of_unity, fs->expanded_roots_of_unity, fs->max_width) == C_KZG_OK, C_KZG_ERROR);
+    return C_KZG_OK;
 }
 
 void free_fft_settings(FFTSettings *fs) {

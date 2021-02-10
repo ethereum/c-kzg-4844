@@ -2,6 +2,7 @@
 *.a
 *_test
 *_bench
+*_debug
 *.prof
 *.out
 *.log

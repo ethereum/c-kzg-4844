@@ -17,17 +17,7 @@
 #include <stddef.h> // NULL
 #include "kzg_proofs.h"
 
-C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length) {
-    ASSERT(length >= fs->max_width, C_KZG_BADARGS);
-    ks->fs = fs;
-    ks->secret_g1 = secret_g1;
-    ks->extended_secret_g1 = NULL; // What's this for?
-    ks->secret_g2 = secret_g2;
-    ks->length = length;
-    return C_KZG_OK;
-}
-
-void commit_to_poly(blst_p1 *out, const KZGSettings *ks, const poly *p) {
+void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
     linear_combination_g1(out, ks->secret_g1, p->coeffs, p->length);
 }
 
@@ -75,7 +65,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const KZGSettings *ks, poly *p, cons
     // Calculate q = p / (x^n - x0^n)
     ASSERT(poly_long_div(&q, p, &divisor) == C_KZG_OK, C_KZG_ERROR);
 
-    commit_to_poly(out, ks, &q);
+    commit_to_poly(out, &q, ks);
 
     free_poly(&q);
     free_poly(&divisor);
@@ -112,7 +102,7 @@ C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *com
     p2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
 
     // [interpolation_polynomial(s)]_1
-    commit_to_poly(&is1, ks, &interp);
+    commit_to_poly(&is1, &interp, ks);
 
     // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
     p1_sub(&commit_minus_interp, commitment, &is1);
@@ -122,3 +112,18 @@ C_KZG_RET check_proof_multi(bool *out, const KZGSettings *ks, const blst_p1 *com
     free_poly(&interp);
     return C_KZG_OK;
 }
+
+// We don't allocate space for the secrets s1 and s2 here as they are assumed to be pre-generated
+C_KZG_RET new_kzg_settings(KZGSettings *ks, FFTSettings *fs, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length) {
+    ASSERT(length >= fs->max_width, C_KZG_BADARGS);
+
+    ks->fs = fs;
+    ks->secret_g1 = secret_g1;
+    ks->extended_secret_g1 = NULL; // What's this for?
+    ks->secret_g2 = secret_g2;
+    ks->length = length;
+    return C_KZG_OK;
+}
+
+// This is a no-op since s1 and s2 are assumed to have been provided externally
+void free_kzg_settings(KZGSettings *ks) {}

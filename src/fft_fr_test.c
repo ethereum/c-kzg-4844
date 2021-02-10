@@ -16,6 +16,7 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
+#include "test_util.h"
 #include "fft_fr.h"
 #include "blst_util.h"
 
@@ -36,8 +37,6 @@ const uint64_t inv_fft_expected[][4] = {
     {0xef296e7ffb8ca216L, 0xd5b902cbcef9c1b6L, 0xf06dfe5c7fca260dL, 0x13993b7d05187205L},
     {0xe92ffdda2306c7d4L, 0x54dd2afcd2dfb16bL, 0xf6554603677e87beL, 0x5dbc603bc53c7a39L},
     {0xd8cda22e753b3117L, 0x880454ec72238f55L, 0xcaf6199fc14a5353L, 0x197df7c2f05866d4L}};
-
-void title(void) {}
 
 void compare_sft_fft(void) {
     // Initialise: ascending values of i (could be anything), and arbitrary size
@@ -126,6 +125,9 @@ void stride_fft(void) {
     for (int i = 0; i < width; i++) {
         TEST_CHECK(fr_equal(coeffs1 + i, coeffs2 + i));
     }
+
+    free_fft_settings(&fs1);
+    free_fft_settings(&fs2);
 }
 
 TEST_LIST = {

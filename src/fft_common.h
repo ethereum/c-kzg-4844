@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#ifndef FFT_COMMON
+#define FFT_COMMON
+
 #include "c_kzg.h"
 
 // MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
@@ -67,3 +70,5 @@ C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, con
 C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width);
 C_KZG_RET new_fft_settings(FFTSettings *s, const unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);
+
+#endif

@@ -16,11 +16,8 @@
 
 #include "../inc/acutest.h"
 #include "debug_util.h"
+#include "test_util.h"
 #include "poly.h"
-
-void title(void) {
-    ;
-}
 
 void poly_div_length(void) {
     poly a, b;
