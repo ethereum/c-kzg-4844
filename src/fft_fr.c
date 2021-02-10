@@ -60,12 +60,12 @@ C_KZG_RET fft_fr(blst_fr *out, const blst_fr *in, const FFTSettings *fs, bool in
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);
-        fft_fr_fast(out, in, 1, fs->reverse_roots_of_unity, stride, fs->max_width);
+        fft_fr_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
         for (uint64_t i = 0; i < fs->max_width; i++) {
             blst_fr_mul(&out[i], &out[i], &inv_len);
         }
     } else {
-        fft_fr_fast(out, in, 1, fs->expanded_roots_of_unity, stride, fs->max_width);
+        fft_fr_fast(out, in, 1, fs->expanded_roots_of_unity, stride, n);
     }
     return C_KZG_OK;
 }

@@ -109,10 +109,31 @@ void inverse_fft(void) {
     free_fft_settings(&fs);
 }
 
+void stride_fft(void) {
+    unsigned int size1 = 9, size2 = 12;
+    uint64_t width = size1 < size2 ? (uint64_t)1 << size1 : (uint64_t)1 << size2;
+    FFTSettings fs1, fs2;
+    TEST_CHECK(new_fft_settings(&fs1, size1) == C_KZG_OK);
+    TEST_CHECK(new_fft_settings(&fs2, size2) == C_KZG_OK);
+    blst_fr data[width], coeffs1[width], coeffs2[width];
+    for (int i = 0; i < width; i++) {
+        fr_from_uint64(data + i, i);
+    }
+
+    TEST_CHECK(fft_fr(coeffs1, data, &fs1, false, width) == C_KZG_OK);
+    TEST_CHECK(fft_fr(coeffs2, data, &fs2, false, width) == C_KZG_OK);
+
+    for (int i = 0; i < width; i++) {
+        TEST_CHECK(fr_equal(coeffs1 + i, coeffs2 + i));
+    }
+}
+
 TEST_LIST = {
     {"FFT_FR_TEST", title},
     {"compare_sft_fft", compare_sft_fft},
     {"roundtrip_fft", roundtrip_fft},
     {"inverse_fft", inverse_fft},
+    {"stride_fft", stride_fft},
+
     {NULL, NULL} /* zero record marks the end of the list */
 };
