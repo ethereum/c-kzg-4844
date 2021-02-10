@@ -81,6 +81,8 @@ make fk20_proofs_test_debug
 ./fk20_proofs_test_debug fk_single_strided
 ```
 
+This magic is implemented via the `ASSERT` macro in [c_kzg.h](src/c_kzh.h).
+
 ## Prerequisites
 
  - Blst library (see above)
