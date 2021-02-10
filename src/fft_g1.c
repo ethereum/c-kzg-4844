@@ -60,7 +60,7 @@ C_KZG_RET fft_g1(blst_p1 *out, blst_p1 *in, FFTSettings *fs, bool inv, uint64_t 
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);
         fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
-        for (uint64_t i = 0; i < fs->max_width; i++) {
+        for (uint64_t i = 0; i < n; i++) {
             p1_mul(&out[i], &out[i], &inv_len);
         }
     } else {
