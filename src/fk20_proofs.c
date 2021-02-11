@@ -107,9 +107,18 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
     return C_KZG_OK;
 }
 
-// Transform back and return the first half of the vector
-C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t length, const FK20SingleSettings *fk) {
-    ASSERT(fft_g1(out, h_ext_fft, true, length, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
+// Part 3: transform back and zero the top half
+C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk) {
+    uint64_t n = n2 / 2;
+    blst_p1 identity_g1;
+
+    ASSERT(fft_g1(out, h_ext_fft, true, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
+
+    // Zero the second half of h
+    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
+    for (uint64_t i = n; i < n2; i++) {
+        out[i] = identity_g1;
+    }
 
     return C_KZG_OK;
 }
@@ -130,35 +139,23 @@ void toeplitz_coeffs_step(poly *out, const poly *in) {
 // The upper half of the polynomial coefficients is always 0, so we do not need to extend to twice the size
 // for Toeplitz matrix multiplication
 C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
-    uint64_t n2 = p->length, n = n2 / 2;
-    blst_p1 *h, *h_ext_fft, identity_g1;
-    poly reduced_poly, toeplitz_coeffs;
+    uint64_t n = p->length, n2 = n * 2;
+    blst_p1 *h, *h_ext_fft;
+    poly toeplitz_coeffs;
     C_KZG_RET ret;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
-
-    for (uint64_t i = n; i < n2; i++) {
-        ASSERT(fr_is_zero(&p->coeffs[i]), C_KZG_BADARGS);
-    }
-
-    // The first half of the input polynomial
-    reduced_poly.coeffs = p->coeffs;
-    reduced_poly.length = n;
+    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     ASSERT(init_poly(&toeplitz_coeffs, n2) == C_KZG_OK, C_KZG_MALLOC);
-    toeplitz_coeffs_step(&toeplitz_coeffs, &reduced_poly);
+    toeplitz_coeffs_step(&toeplitz_coeffs, p);
 
     ASSERT(c_kzg_malloc((void **)&h_ext_fft, toeplitz_coeffs.length * sizeof *h_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
     ASSERT((ret = toeplitz_part_2(h_ext_fft, &toeplitz_coeffs, fk)) == C_KZG_OK,
            ret == C_KZG_MALLOC ? ret : C_KZG_ERROR);
+
     ASSERT(c_kzg_malloc((void **)&h, toeplitz_coeffs.length * sizeof *h) == C_KZG_OK, C_KZG_MALLOC);
     ASSERT(toeplitz_part_3(h, h_ext_fft, n2, fk) == C_KZG_OK, C_KZG_ERROR);
-
-    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
-    for (uint64_t i = n; i < n2; i++) {
-        h[i] = identity_g1;
-    }
 
     ASSERT(fft_g1(out, h, false, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
@@ -170,25 +167,13 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
 
 C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
-    poly extended_poly;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
-    ASSERT(init_poly(&extended_poly, n2) == C_KZG_OK, C_KZG_MALLOC);
-
-    for (uint64_t i = 0; i < n; i++) {
-        extended_poly.coeffs[i] = p->coeffs[i];
-    }
-    for (uint64_t i = n; i < n2; i++) {
-        extended_poly.coeffs[i] = fr_zero;
-    }
-
-    ASSERT(fk20_single_da_opt(out, &extended_poly, fk) == C_KZG_OK, C_KZG_ERROR);
-
+    ASSERT(fk20_single_da_opt(out, p, fk) == C_KZG_OK, C_KZG_ERROR);
     ASSERT(reverse_bit_order(out, sizeof out[0], n2) == C_KZG_OK, C_KZG_ERROR);
 
-    free_poly(&extended_poly);
     return C_KZG_OK;
 }
 
@@ -204,7 +189,7 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, KZGSetti
     fk->x_ext_fft_len = n2;
 
     ASSERT(c_kzg_malloc((void **)&x, n * sizeof *x) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft, n2 * sizeof *fk->x_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft, fk->x_ext_fft_len * sizeof *fk->x_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
 
     for (uint64_t i = 0; i < n - 1; i++) {
         x[i] = ks->secret_g1[n - 2 - i];
