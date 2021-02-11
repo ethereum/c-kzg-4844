@@ -74,6 +74,18 @@ void fr_pow_works(void) {
     TEST_CHECK(fr_equal(&expected, &actual));
 }
 
+void fr_div_works(void) {
+    blst_fr a, b, tmp, actual;
+
+    fr_from_uint64(&a, 197);
+    fr_from_uint64(&b, 123456);
+
+    fr_div(&tmp, &a, &b);
+    blst_fr_mul(&actual, &tmp, &b);
+
+    TEST_CHECK(fr_equal(&a, &actual));
+}
+
 void p1_mul_works(void) {
     blst_fr minus1;
     blst_p1 g1_gen, g1_gen_neg, res;
@@ -184,6 +196,7 @@ TEST_LIST = {
     {"fr_equal_works", fr_equal_works},
     {"fr_negate_works", fr_negate_works},
     {"fr_pow_works", fr_pow_works},
+    {"fr_div_works", fr_div_works},
     {"p1_mul_works", p1_mul_works},
     {"p1_sub_works", p1_sub_works},
     {"p2_mul_works", p2_mul_works},

@@ -62,6 +62,11 @@ void fr_pow(blst_fr *out, const blst_fr *a, uint64_t n) {
     }
 }
 
+void fr_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
+    blst_fr_eucl_inverse(out, b);
+    blst_fr_mul(out, out, a);
+}
+
 void p1_mul(blst_p1 *out, const blst_p1 *a, const blst_fr *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);

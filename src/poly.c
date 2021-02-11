@@ -20,30 +20,6 @@
 #include "c_kzg_util.h"
 #include "poly.h"
 
-static void poly_factor_div(blst_fr *out, const blst_fr *a, const blst_fr *b) {
-    blst_fr_eucl_inverse(out, b);
-    blst_fr_mul(out, out, a);
-}
-
-C_KZG_RET init_poly(poly *out, const uint64_t length) {
-    out->length = length;
-    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
-}
-
-C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length) {
-    ASSERT(init_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
-    for (uint64_t i = 0; i < length; i++) {
-        fr_from_uint64(&out->coeffs[i], coeffs[i]);
-    }
-    return C_KZG_OK;
-}
-
-void free_poly(poly *p) {
-    if (p->coeffs != NULL) {
-        free(p->coeffs);
-    }
-}
-
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
     blst_fr tmp;
     uint64_t i;
@@ -96,7 +72,7 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     }
 
     while (diff > 0) {
-        poly_factor_div(&out->coeffs[diff], &a[a_pos], &divisor->coeffs[b_pos]);
+        fr_div(&out->coeffs[diff], &a[a_pos], &divisor->coeffs[b_pos]);
         for (uint64_t i = 0; i <= b_pos; i++) {
             blst_fr tmp;
             // a[diff + i] -= b[i] * quot
@@ -106,7 +82,26 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
         --diff;
         --a_pos;
     }
-    poly_factor_div(&out->coeffs[0], &a[a_pos], &divisor->coeffs[b_pos]);
+    fr_div(&out->coeffs[0], &a[a_pos], &divisor->coeffs[b_pos]);
 
     return C_KZG_OK;
+}
+
+C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length) {
+    ASSERT(init_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
+    for (uint64_t i = 0; i < length; i++) {
+        fr_from_uint64(&out->coeffs[i], coeffs[i]);
+    }
+    return C_KZG_OK;
+}
+
+C_KZG_RET init_poly(poly *out, const uint64_t length) {
+    out->length = length;
+    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
+}
+
+void free_poly(poly *p) {
+    if (p->coeffs != NULL) {
+        free(p->coeffs);
+    }
 }

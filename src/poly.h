@@ -19,14 +19,19 @@
 #include "c_kzg.h"
 #include "blst_util.h"
 
+/**
+ * Defines a polynomial whose coefficients are members of the finite field F_r.
+ *
+ * Initialise the storage with #init_poly. After use, free the storage with #free_poly.
+ */
 typedef struct {
-    blst_fr *coeffs; // coeffs[i] is the x^i term
-    uint64_t length; // one more than the polynomial's degree
+    blst_fr *coeffs; /**< `coeffs[i]` is the coefficient of the `x^i` term of the polynomial. */
+    uint64_t length; /**< One more than the polynomial's degree */
 } poly;
 
-C_KZG_RET init_poly(poly *out, const uint64_t length);
-C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length);
-void free_poly(poly *p);
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x);
 uint64_t poly_quotient_length(const poly *dividend, const poly *divisor);
 C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET init_poly_with_coeffs(poly *out, const uint64_t *coeffs, const uint64_t length);
+C_KZG_RET init_poly(poly *out, const uint64_t length);
+void free_poly(poly *p);
