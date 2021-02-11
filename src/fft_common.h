@@ -21,11 +21,19 @@
 
 #include "c_kzg.h"
 
-// MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-// PRIMITIVE_ROOT = 5
-// [pow(PRIMITIVE_ROOT, (MODULUS - 1) // (2**i), MODULUS) for i in range(32)]
-//
-// These are not in `blst_fr` limb format and must be converted via `blst_fr_from_uint64()`
+/**
+ * The first 32 roots of unity in the finite field F_r.
+ *
+ * For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be
+ * converted to a `blst_fr` type via the blst_fr_from_uint64() library function.
+ *
+ * The decimal values may be calculated with the following Python code:
+ * @code{.py}
+ * MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+ * PRIMITIVE_ROOT = 5
+ * [pow(PRIMITIVE_ROOT, (MODULUS - 1) // (2**i), MODULUS) for i in range(32)]
+ * @endcode
+ */
 static const uint64_t scale2_root_of_unity[][4] = {
     {0x0000000000000001L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},
     {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L},
@@ -60,17 +68,21 @@ static const uint64_t scale2_root_of_unity[][4] = {
     {0x8409a9ea14ebb608L, 0xfad0084e66bac611L, 0x04287254811c1dfbL, 0x086d072b23b30c29L},
     {0xb427c9b367e4756aL, 0xc7537fb902ebc38dL, 0x51de21becd6a205fL, 0x6064ab727923597dL}};
 
+/**
+ * Stores the setup and parameters needed for performing FFTs.
+ *
+ * Initialise with #new_fft_settings. Free after use with #free_fft_settings.
+ */
 typedef struct {
-    uint64_t max_width;
-    blst_fr root_of_unity;
-    blst_fr *expanded_roots_of_unity;
-    blst_fr *reverse_roots_of_unity;
+    uint64_t max_width;               /**< The maximum size of FFT these settings support, a power of 2. */
+    blst_fr root_of_unity;            /**< The root of unity used to generate the lists in the structure. */
+    blst_fr *expanded_roots_of_unity; /**< Ascending powers of the root of unity, size `width + 1`. */
+    blst_fr *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
 } FFTSettings;
 
-bool is_power_of_two(const uint64_t n);
-C_KZG_RET expand_root_of_unity(blst_fr *roots, const blst_fr *root_of_unity, const uint64_t width);
-C_KZG_RET reverse(blst_fr *out, const blst_fr *roots, const uint64_t width);
-C_KZG_RET new_fft_settings(FFTSettings *s, const unsigned int max_scale);
+bool is_power_of_two(uint64_t n);
+C_KZG_RET expand_root_of_unity(blst_fr *out, const blst_fr *root, uint64_t width);
+C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);
 
-#endif
+#endif // FFT_COMMON

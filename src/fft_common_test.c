@@ -26,6 +26,11 @@ void roots_of_unity_is_the_expected_size(void) {
     TEST_CHECK(NUM_ROOTS == sizeof(scale2_root_of_unity) / sizeof(scale2_root_of_unity[0]));
 }
 
+void roots_of_unity_out_of_bounds_fails(void) {
+    FFTSettings fs;
+    TEST_CHECK(C_KZG_BADARGS == new_fft_settings(&fs, NUM_ROOTS));
+}
+
 void roots_of_unity_are_plausible(void) {
     blst_fr r;
     for (int i = 0; i < NUM_ROOTS; i++) {
@@ -36,28 +41,6 @@ void roots_of_unity_are_plausible(void) {
         TEST_CHECK(true == fr_is_one(&r));
         TEST_MSG("Root %d failed", i);
     }
-}
-
-void reverse_works(void) {
-    int n = 24;
-    blst_fr arr[n + 1], rev[n + 1];
-    blst_fr diff;
-
-    // Initialise - increasing values
-    arr[0] = fr_one;
-    for (int i = 1; i <= n; i++) {
-        blst_fr_add(arr + i, arr + i - 1, &fr_one);
-    }
-
-    // Reverse
-    TEST_CHECK(reverse(rev, arr, n) == C_KZG_OK);
-
-    // Verify - decreasing values
-    for (int i = 0; i < n; i++) {
-        blst_fr_sub(&diff, rev + i, rev + i + 1);
-        TEST_CHECK(true == fr_is_one(&diff));
-    }
-    TEST_CHECK(true == fr_is_one(rev + n));
 }
 
 void expand_roots_is_plausible(void) {
@@ -115,8 +98,8 @@ void is_power_of_two_works(void) {
 TEST_LIST = {
     {"FFT_COMMON_TEST", title},
     {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
+    {"roots_of_unity_out_of_bounds_fails", roots_of_unity_out_of_bounds_fails},
     {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
-    {"reverse_works", reverse_works},
     {"expand_roots_is_plausible", expand_roots_is_plausible},
     {"new_fft_settings_is_plausible", new_fft_settings_is_plausible},
     {"is_power_of_two_works", is_power_of_two_works},
