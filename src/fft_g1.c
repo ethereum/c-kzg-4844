@@ -96,11 +96,11 @@ void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inv, uint64_t n, const FFTSettings *fs) {
+C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inverse, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
-    if (inv) {
+    if (inverse) {
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);
