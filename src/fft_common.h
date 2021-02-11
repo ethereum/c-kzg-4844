@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file fft_common.h */
+
 #ifndef FFT_COMMON
 #define FFT_COMMON
 

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file fk20_proofs.c */
+
 // FK20 refers to this technique: https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf
 
 #include <stdlib.h> // free()
@@ -177,6 +179,17 @@ C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *
     return C_KZG_OK;
 }
 
+/**
+ * Initialise settings for an FK20 single proof.
+ *
+ * free_fk20_single_settings must be called to deallocate this structure.
+ *
+ * @param fk[out] The initialised settings
+ * @param n2[in] The size
+ * @param ks[in] KZGSettings that have already been initialised
+ *
+ * @return C_KZG_RET
+ */
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, KZGSettings *ks) {
     int n = n2 / 2;
     blst_p1 *x;

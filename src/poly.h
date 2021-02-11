@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file poly.h */
+
 #include "c_kzg.h"
 #include "blst_util.h"
 

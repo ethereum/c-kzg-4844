@@ -14,19 +14,41 @@
  * limitations under the License.
  */
 
+/**
+ * @file fft_g1.c
+ *
+ * Discrete fourier transforms over arrays of G1 group elements.
+ *
+ * Also known as [number theoretic
+ * transforms](https://en.wikipedia.org/wiki/Discrete_Fourier_transform_(general)#Number-theoretic_transform).
+ *
+ * @remark Functions here work only for lengths that are a power of two.
+ */
+
 #include "fft_g1.h"
 #include "blst_util.h"
 
-// Slow Fourier Transform (simple, good for small sizes)
+/**
+ * Slow Fourier Transform.
+ *
+ * This is simple, and ok for small sizes. It's mostly useful for testing.
+ *
+ * @param[out] out    The results (array of length @p n)
+ * @param[in]  in     The input data (array of length @p n * @p stride)
+ * @param[in]  stride The input data stride
+ * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n      Length of the FFT, must be a power of two
+ */
 void fft_g1_slow(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t l) {
+                 uint64_t n) {
     blst_p1 v, last, jv;
     blst_fr r;
-    for (uint64_t i = 0; i < l; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         p1_mul(&last, &in[0], &roots[0]);
-        for (uint64_t j = 1; j < l; j++) {
+        for (uint64_t j = 1; j < n; j++) {
             jv = in[j * stride];
-            r = roots[((i * j) % l) * roots_stride];
+            r = roots[((i * j) % n) * roots_stride];
             p1_mul(&v, &jv, &r);
             blst_p1_add_or_double(&last, &last, &v);
         }
@@ -34,10 +56,21 @@ void fft_g1_slow(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
     }
 }
 
-// Fast Fourier Transform
+/**
+ * Fast Fourier Transform.
+ *
+ * Recursively divide and conquer.
+ *
+ * @param[out] out    The results (array of length @p n)
+ * @param[in]  in     The input data (array of length @p n * @p stride)
+ * @param[in]  stride The input data stride
+ * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n      Length of the FFT, must be a power of two
+ */
 void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t l) {
-    uint64_t half = l / 2;
+                 uint64_t n) {
+    uint64_t half = n / 2;
     if (half > 0) { // Tunable parameter
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
@@ -48,11 +81,21 @@ void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
             blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
-        fft_g1_slow(out, in, stride, roots, roots_stride, l);
+        fft_g1_slow(out, in, stride, roots, roots_stride, n);
     }
 }
 
-// The main entry point for forward and reverse FFTs
+/**
+ * The main entry point for forward and reverse FFTs over the finite field.
+ *
+ * @param[out] out     The results (array of length @p n)
+ * @param[in]  in      The input data (array of length @p n)
+ * @param[in]  inverse `false` for forward transform, `true` for inverse transform
+ * @param[in]  n       Length of the FFT, must be a power of two
+ * @param[in]  fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ */
 C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inv, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);

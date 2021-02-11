@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file blst_util.c */
+
 #include "blst_util.h"
 #include "debug_util.h"
 

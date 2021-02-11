@@ -14,18 +14,40 @@
  * limitations under the License.
  */
 
+/**
+ * @file fft_fr.c
+ *
+ * Discrete fourier transforms over arrays of field elements.
+ *
+ * Also known as [number theoretic
+ * transforms](https://en.wikipedia.org/wiki/Discrete_Fourier_transform_(general)#Number-theoretic_transform).
+ *
+ * @remark Functions here work only for lengths that are a power of two.
+ */
+
 #include "fft_fr.h"
 #include "blst_util.h"
 
-// Slow Fourier Transform (simple, good for small sizes)
+/**
+ * Slow Fourier Transform.
+ *
+ * This is simple, and ok for small sizes. It's mostly useful for testing.
+ *
+ * @param[out] out    The results (array of length @p n)
+ * @param[in]  in     The input data (array of length @p n * @p stride)
+ * @param[in]  stride The input data stride
+ * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n      Length of the FFT, must be a power of two
+ */
 void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t l) {
+                 uint64_t n) {
     blst_fr v, last, jv, r;
-    for (uint64_t i = 0; i < l; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         blst_fr_mul(&last, &in[0], &roots[0]);
-        for (uint64_t j = 1; j < l; j++) {
+        for (uint64_t j = 1; j < n; j++) {
             jv = in[j * stride];
-            r = roots[((i * j) % l) * roots_stride];
+            r = roots[((i * j) % n) * roots_stride];
             blst_fr_mul(&v, &jv, &r);
             blst_fr_add(&last, &last, &v);
         }
@@ -33,10 +55,21 @@ void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr
     }
 }
 
-// Fast Fourier Transform
+/**
+ * Fast Fourier Transform.
+ *
+ * Recursively divide and conquer.
+ *
+ * @param[out] out    The results (array of length @p n)
+ * @param[in]  in     The input data (array of length @p n * @p stride)
+ * @param[in]  stride The input data stride
+ * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n      Length of the FFT, must be a power of two
+ */
 void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t l) {
-    uint64_t half = l / 2;
+                 uint64_t n) {
+    uint64_t half = n / 2;
     if (half > 0) { // Tunable parameter
         fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_fr_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
@@ -47,16 +80,26 @@ void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr
             blst_fr_add(&out[i], &out[i], &y_times_root);
         }
     } else {
-        fft_fr_slow(out, in, stride, roots, roots_stride, l);
+        fft_fr_slow(out, in, stride, roots, roots_stride, n);
     }
 }
 
-// The main entry point for forward and reverse FFTs
-C_KZG_RET fft_fr(blst_fr *out, const blst_fr *in, bool inv, uint64_t n, const FFTSettings *fs) {
+/**
+ * The main entry point for forward and reverse FFTs over the finite field.
+ *
+ * @param[out] out     The results (array of length @p n)
+ * @param[in]  in      The input data (array of length @p n)
+ * @param[in]  inverse `false` for forward transform, `true` for inverse transform
+ * @param[in]  n       Length of the FFT, must be a power of two
+ * @param[in]  fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ */
+C_KZG_RET fft_fr(blst_fr *out, const blst_fr *in, bool inverse, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
-    if (inv) {
+    if (inverse) {
         blst_fr inv_len;
         fr_from_uint64(&inv_len, n);
         blst_fr_eucl_inverse(&inv_len, &inv_len);

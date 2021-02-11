@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file fk20_proofs.h */
+
 #include "c_kzg.h"
 #include "kzg_proofs.h"
 

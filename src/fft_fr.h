@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-#include "c_kzg.h"
+/** @file fft_fr.h */
+
 #include "fft_common.h"
 
 void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file kzg_proofs.h */
+
 #include "c_kzg.h"
 #include "fft_fr.h"
 #include "poly.h"

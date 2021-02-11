@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file poly.c */
+
 #include <stdlib.h> // NULL, free()
 #include "c_kzg_util.h"
 #include "poly.h"

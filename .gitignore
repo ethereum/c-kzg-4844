@@ -7,6 +7,7 @@
 *.out
 *.log
 tmp/
+doc/
 inc/blst.h
 inc/blst_aux.h
 .vscode/

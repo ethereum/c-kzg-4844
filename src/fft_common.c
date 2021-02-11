@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file fft_common.c */
+
 #include <stdlib.h> // free()
 #include "fft_common.h"
 #include "blst_util.h"

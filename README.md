@@ -11,7 +11,7 @@ Done so far:
   - Polynomial multi commitment and verification
   - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method (needs a tidy up)
 
-## Installation
+## Install
 
 Build the [Blst library](https://github.com/supranational/blst) following the instructions there. Then,
 
@@ -83,9 +83,20 @@ make fk20_proofs_test_debug
 
 This magic is implemented via the `ASSERT` macro in _c_kzg.h_.
 
+## Make documentation
+
+I've just started inserting `doxygen` style documentation in a few files, and will aim for total coverage eventually. Build the docs in the top directory as follows:
+
+```
+doxygen Doxyfile
+```
+
+This will produce a _doc/html_ directory. Visit the _doc/html/index.html_ file in a browser to view the documentation.
+
 ## Prerequisites
 
  - Blst library (see above)
  - `clang` compiler. I'm using Clang 10.0.0. I'll likely add `gcc` options in future.
  - The Makefile is GNU make compatible.
  - I'm developing on Ubuntu 20.04. Will check portability later.
+ - [Doxygen](https://www.doxygen.nl/index.html) for building the documentation. I'm using v1.8.17 right now.

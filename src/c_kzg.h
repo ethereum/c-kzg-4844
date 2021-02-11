@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file c_kzg_util.c */
+
 #ifndef C_KZG_H
 #define C_KZG_H
 

@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file c_kzg_util.c */
+
 #include <stdlib.h> // malloc
 #include "c_kzg_util.h"
 

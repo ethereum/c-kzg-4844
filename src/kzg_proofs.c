@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file kzg_proofs.c */
+
 #include <stddef.h> // NULL
 #include "kzg_proofs.h"
 

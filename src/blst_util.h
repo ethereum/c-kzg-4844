@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+/** @file blst_util.h */
+
 #include "c_kzg.h"
 
 static const blst_fr fr_zero = {0L, 0L, 0L, 0L};
