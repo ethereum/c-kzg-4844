@@ -14,22 +14,59 @@
  * limitations under the License.
  */
 
-/** @file kzg_proofs.c */
+/**
+ *  @file kzg_proofs.c
+ *
+ * Implements KZG proofs for making, opening, and verifying polynomial commitments.
+ *
+ * See the paper [Constant-Size Commitments to Polynomials andTheir
+ * Applications](https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf) for the theoretical background.
+ */
 
 #include <stddef.h> // NULL
 #include <stdlib.h> // free()
 #include "kzg_proofs.h"
 #include "c_kzg_util.h"
 
+/**
+ * Make a KZG commitment to a polynomial.
+ *
+ * @param[out] out The commitment to the polynomial, in the form of a G1 group point
+ * @param[in]  p   The polynomial to be committed to
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ */
 void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
     linear_combination_g1(out, ks->secret_g1, p->coeffs, p->length);
 }
 
-// Compute KZG proof for polynomial at position x0
-C_KZG_RET compute_proof_single(blst_p1 *out, poly *p, const blst_fr *x0, const KZGSettings *ks) {
+/**
+ * Compute KZG proof for polynomial at position x0.
+ *
+ * @param[out] out The proof, in the form of a G1 point
+ * @param[in]  p   The polynomial
+ * @param[in]  x0  The x-value the polynomial is to be proved at
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET compute_proof_single(blst_p1 *out, const poly *p, const blst_fr *x0, const KZGSettings *ks) {
     return compute_proof_multi(out, p, x0, 1, ks);
 }
 
+/**
+ * Check a KZG proof at a point against a commitment.
+ *
+ * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed value @p y at @p x, verify the claim.
+ *
+ * @param[out] out        `true` if the proof is valid, `false` if not
+ * @param[in]  commitment The commitment to a polynomial
+ * @param[in]  proof      A proof of the value of the polynomial at the point @p x
+ * @param[in]  x          The point at which the proof is to be checked (opened)
+ * @param[in]  y          The claimed value of the polynomial at @p x
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ */
 C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y,
                              const KZGSettings *ks) {
     blst_p2 x_g2, s_minus_x;
@@ -44,12 +81,27 @@ C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1
     return C_KZG_OK;
 }
 
-// Compute KZG proof for polynomial in coefficient form at positions x * w^y where w is
-// an n-th root of unity (this is the proof for one data availability sample, which consists
-// of several polynomial evaluations)
-C_KZG_RET compute_proof_multi(blst_p1 *out, poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks) {
+/**
+ * Compute KZG proof for polynomial at positions x * w^y where w is an n-th root of unity.
+ *
+ * This constitutes the proof for one data availability sample, which consists
+ * of several polynomial evaluations.
+ *
+ * @param[out] out The combined proof as a single G1 element
+ * @param[in]  p   The polynomial
+ * @param[in]  x0  The generator x-value for the evaluation points
+ * @param[in]  n   The number of points at which to evaluate the polynomial, must be a power of two
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks) {
     poly divisor, q;
     blst_fr x_pow_n;
+
+    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
     ASSERT(init_poly(&divisor, n + 1) == C_KZG_OK, C_KZG_MALLOC);
@@ -77,8 +129,24 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, poly *p, const blst_fr *x0, uint64_t
     return C_KZG_OK;
 }
 
-// Check a proof for a KZG commitment for an evaluation f(x w^i) = y_i
-// The ys must have a power of 2 length
+/**
+ * Check a proof for a KZG commitment for evaluations `f(x * w^i) = y_i`.
+ *
+ * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed values @p y at values @p x `* w^i`,
+ * verify the claim. Here, `w` is an `n`th root of unity.
+ *
+ * @param[out] out        `true` if the proof is valid, `false` if not
+ * @param[in]  commitment The commitment to a polynomial
+ * @param[in]  proof      A proof of the value of the polynomial at the points @p x * w^i
+ * @param[in]  x          The generator x-value for the evaluation points
+ * @param[in]  ys         The claimed value of the polynomial at the points @p x * w^i
+ * @param[in]  n          The number of points at which to evaluate the polynomial, must be a power of two
+ * @param[in]  ks         The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x,
                             const blst_fr *ys, uint64_t n, const KZGSettings *ks) {
     poly interp;
@@ -86,9 +154,11 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     blst_p2 xn2, xn_minus_yn;
     blst_p1 is1, commit_minus_interp;
 
+    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+
     // Interpolate at a coset.
     ASSERT(init_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(fft_fr(interp.coeffs, ys, true, n, ks->fs) == C_KZG_OK, C_KZG_BADARGS);
+    ASSERT(fft_fr(interp.coeffs, ys, true, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
     blst_fr_eucl_inverse(&inv_x, x);
@@ -117,7 +187,24 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     return C_KZG_OK;
 }
 
-C_KZG_RET new_kzg_settings(KZGSettings *ks, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length, FFTSettings *fs) {
+/**
+ * Initialise a KZGSettings structure.
+ *
+ * Space is allocated for the provided secrets (the "trusted setup"), and copies of the secrets are made.
+ *
+ * @remark This structure *must* be deallocated after use by calling #free_kzg_settings.
+ *
+ * @param[out] ks        The new settings
+ * @param[in]  secret_g1 The G1 points from the trusted setup (an array of length at least @p length)
+ * @param[in]  secret_g2 The G2 points from the trusted setup (an array of length at least @p length)
+ * @param[in]  length    The length of the secrets arrays to create, must be at least @p fs->max_width
+ * @param[in]  fs        A previously initialised FFTSettings structure
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_kzg_settings(KZGSettings *ks, const blst_p1 *secret_g1, const blst_p2 *secret_g2, uint64_t length,
+                           FFTSettings const *fs) {
 
     ASSERT(length >= fs->max_width, C_KZG_BADARGS);
     ks->length = length;
@@ -132,11 +219,15 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, blst_p1 *secret_g1, blst_p2 *secret_
         ks->secret_g2[i] = secret_g2[i];
     }
     ks->fs = fs;
-    ks->extended_secret_g1 = NULL; // What's this for?
 
     return C_KZG_OK;
 }
 
+/**
+ * Free the memory that was previously allocated by #new_kzg_settings.
+ *
+ * @param ks The settings to be freed
+ */
 void free_kzg_settings(KZGSettings *ks) {
     free(ks->secret_g1);
     free(ks->secret_g2);

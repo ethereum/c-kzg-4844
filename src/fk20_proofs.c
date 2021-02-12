@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-/** @file fk20_proofs.c */
-
-// FK20 refers to this technique: https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf
+/**
+ *  @file fk20_proofs.c
+ *
+ * Implements amortised KZG proofs as per the [FK20
+ * paper](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf).
+ */
 
 #include <stdlib.h> // free()
 #include <string.h> // memcpy()
@@ -24,7 +27,16 @@
 #include "fft_g1.h"
 #include "c_kzg_util.h"
 
-// Log base 2 - only works for n a power of two
+/**
+ * Calculate log base two of a power of two.
+ *
+ * In other words, the bit index of the one bit.
+ *
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ *
+ * @param[in] n The power of two
+ * @return the log base two of n
+ */
 int log2_pow2(uint32_t n) {
     const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
     register uint32_t r;
@@ -36,18 +48,44 @@ int log2_pow2(uint32_t n) {
     return r;
 }
 
-// This simply wraps the macro to enforce the type check
+/**
+ * Reverse the bit order in a 32 bit integer.
+ *
+ * @remark This simply wraps the macro to enforce the type check.
+ *
+ * @param[in] a The integer to be reversed
+ * @return An integer with the bits of @p a reversed
+ */
 uint32_t reverse_bits(uint32_t a) {
     return rev_4byte(a);
 }
 
-uint32_t reverse_bits_limited(uint32_t length, uint32_t value) {
-    int unused_bit_len = 32 - log2_pow2(length);
+/**
+ * Reverse the low-order bits in a 32 bit integer.
+ *
+ * The lowest log_base_two(@p n) bits of @p value are returned reversed. @p n must be a power of two.
+ *
+ * @param[in] n     To reverse `b` bits, set `n = 2 ^ b`
+ * @param[in] value The bits to be reversed
+ * @return The reversal of the lowest log_2(@p n) bits of the input @p value
+ */
+uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
+    int unused_bit_len = 32 - log2_pow2(n);
     return reverse_bits(value) >> unused_bit_len;
 }
 
-// In-place re-ordering of an array by the bit-reversal of the indices
-// Can handle arrays of any type: provide the element size in `size`
+/**
+ * Reorder an array in reverse bit order of its indices.
+ *
+ * @remark Operates in-place on the array.
+ * @remark Can handle arrays of any type: provide the element size in @p size.
+ *
+ * @param[in,out] values The array, which is re-ordered in-place
+ * @param[in]     size   The size in bytes of an element of the array
+ * @param[in]     n      The length of the array, must be a power of two less that 2^32
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ */
 C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
     ASSERT(n >> 32 == 0, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
@@ -67,9 +105,21 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
     return C_KZG_OK;
 }
 
-// Performs the first part of the Toeplitz matrix multiplication algorithm, which is a Fourier
-// transform of the vector x extended
-C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, KZGSettings *ks) {
+/**
+ * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
+ * transform of the vector @p x extended.
+ *
+ * Used in #new_fk20_single_settings to calculate `x_ext_fft`.
+ *
+ * @param[out] out The FFT of the extension of @p x, size @p n * 2
+ * @param[in]  x   The input vector, size @p n
+ * @param[in]  n   The length of the input vector @p x
+ * @param[in]  fs  The FFT settings previously initialised with #new_fft_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs) {
     uint64_t n2 = n * 2;
     blst_p1 identity_g1, *x_ext;
 
@@ -83,13 +133,23 @@ C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, KZGSetting
         x_ext[i] = identity_g1;
     }
 
-    ASSERT(fft_g1(out, x_ext, false, n2, ks->fs) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(fft_g1(out, x_ext, false, n2, fs) == C_KZG_OK, C_KZG_ERROR);
 
     free(x_ext);
     return C_KZG_OK;
 }
 
-// Performs the second part of the Toeplitz matrix multiplication algorithm
+/**
+ * The second part of the Toeplitz matrix multiplication algorithm.
+ *
+ * @param[out] out Array of G1 group elements, length `n`
+ * @param[in]  toeplitz_coeffs Toeplitz coefficients, a polynomial length `n`
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk) {
     blst_fr *toeplitz_coeffs_fft;
 
@@ -109,7 +169,16 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
     return C_KZG_OK;
 }
 
-// Part 3: transform back and zero the top half
+/**
+ * The third part of the Toeplitz matrix multiplication algorithm: transform back and zero the top half.
+ *
+ * @param[out] out Array of G1 group elements, length @p n2
+ * @param[in]  h_ext_fft FFT of the extended `h` values, length @p n2
+ * @param[in]  n2  Size of the arrays
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ */
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk) {
     uint64_t n = n2 / 2;
     blst_p1 identity_g1;
@@ -125,8 +194,20 @@ C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, c
     return C_KZG_OK;
 }
 
-void toeplitz_coeffs_step(poly *out, const poly *in) {
+/**
+ * Reorder and extend polynomial coefficients for the toeplitz method.
+ *
+ * @warning Allocates space for the return polynomial that needs to be freed by calling #free_poly.
+ *
+ * @param[out] out The reordered polynomial, size `n * 2`
+ * @param[in]  in  The input polynomial, size `n`
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
     uint64_t n = in->length, n2 = n * 2;
+
+    ASSERT(init_poly(out, n2) == C_KZG_OK, C_KZG_MALLOC);
 
     out->coeffs[0] = in->coeffs[n - 1];
     for (uint64_t i = 1; i <= n + 1; i++) {
@@ -135,11 +216,26 @@ void toeplitz_coeffs_step(poly *out, const poly *in) {
     for (uint64_t i = n + 2; i < n2; i++) {
         out->coeffs[i] = in->coeffs[i - (n + 1)];
     }
+
+    return C_KZG_OK;
 }
 
-// Special version of the FK20 for the situation of data availability checks:
-// The upper half of the polynomial coefficients is always 0, so we do not need to extend to twice the size
-// for Toeplitz matrix multiplication
+/**
+ * Optimised version of the FK20 algorithm for use in data availability checks.
+ *
+ * The upper half of the polynomial coefficients is always 0, so we do not need to extend to twice the size
+ * for Toeplitz matrix multiplication.
+ *
+ * @param[out] out Array size `n * 2`
+ * @param[in]  p   Polynomial, size `n`
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ *
+ * @todo Better parameter descriptions
+ */
 C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
     blst_p1 *h, *h_ext_fft;
@@ -149,8 +245,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
-    ASSERT(init_poly(&toeplitz_coeffs, n2) == C_KZG_OK, C_KZG_MALLOC);
-    toeplitz_coeffs_step(&toeplitz_coeffs, p);
+    ASSERT(toeplitz_coeffs_step(&toeplitz_coeffs, p) == C_KZG_OK, C_KZG_MALLOC);
 
     ASSERT(c_kzg_malloc((void **)&h_ext_fft, toeplitz_coeffs.length * sizeof *h_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
     ASSERT((ret = toeplitz_part_2(h_ext_fft, &toeplitz_coeffs, fk)) == C_KZG_OK,
@@ -167,6 +262,18 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
     return C_KZG_OK;
 }
 
+/**
+ * Data availability using FK20 single.
+ *
+ * @param[out] out Array size `n * 2`
+ * @param[in]  p   Polynomial, size `n`
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ *
+ * @todo Better parameter descriptions
+ */
 C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
@@ -182,15 +289,17 @@ C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *
 /**
  * Initialise settings for an FK20 single proof.
  *
- * free_fk20_single_settings must be called to deallocate this structure.
+ * #free_fk20_single_settings must be called to deallocate this structure.
  *
- * @param fk[out] The initialised settings
- * @param n2[in] The size
- * @param ks[in] KZGSettings that have already been initialised
- *
- * @return C_KZG_RET
+ * @param[out] fk The initialised settings
+ * @param[in]  n2 The desired size of `x_ext_fft`, a power of two
+ * @param[in]  ks KZGSettings that have already been initialised
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, KZGSettings *ks) {
+C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks) {
     int n = n2 / 2;
     blst_p1 *x;
 
@@ -209,12 +318,18 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, KZGSetti
     }
     blst_p1_from_affine(&x[n - 1], &identity_g1_affine);
 
-    ASSERT(toeplitz_part_1(fk->x_ext_fft, x, n, ks) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(toeplitz_part_1(fk->x_ext_fft, x, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     free(x);
     return C_KZG_OK;
 }
 
+/**
+ * Free the memory that was previously allocated by #new_fk20_single_settings.
+ *
+ * @param fk The settings to be freed
+ */
 void free_fk20_single_settings(FK20SingleSettings *fk) {
     free(fk->x_ext_fft);
+    fk->x_ext_fft_len = 0;
 }

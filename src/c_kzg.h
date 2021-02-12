@@ -29,7 +29,7 @@
  * called routines has been deallocated. However, in the case of @p C_KZG_ERROR or @p C_KZG_MALLOC being returned, these
  * are unrecoverable and memory may have been leaked.
  *
- * @todo Check that memory is not leaked in the case of C_KZG_BADARGS.
+ * @todo Check that memory is not leaked anywhere in the case of C_KZG_BADARGS.
  */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
