@@ -17,7 +17,9 @@
 /** @file kzg_proofs.c */
 
 #include <stddef.h> // NULL
+#include <stdlib.h> // free()
 #include "kzg_proofs.h"
+#include "c_kzg_util.h"
 
 void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
     linear_combination_g1(out, ks->secret_g1, p->coeffs, p->length);
@@ -115,17 +117,28 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     return C_KZG_OK;
 }
 
-// We don't allocate space for the secrets s1 and s2 here as they are assumed to be pre-generated
 C_KZG_RET new_kzg_settings(KZGSettings *ks, blst_p1 *secret_g1, blst_p2 *secret_g2, uint64_t length, FFTSettings *fs) {
-    ASSERT(length >= fs->max_width, C_KZG_BADARGS);
 
-    ks->fs = fs;
-    ks->secret_g1 = secret_g1;
-    ks->extended_secret_g1 = NULL; // What's this for?
-    ks->secret_g2 = secret_g2;
+    ASSERT(length >= fs->max_width, C_KZG_BADARGS);
     ks->length = length;
+
+    // Allocate space for the secrets
+    ASSERT(c_kzg_malloc((void **)&ks->secret_g1, ks->length * sizeof *ks->secret_g1) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(c_kzg_malloc((void **)&ks->secret_g2, ks->length * sizeof *ks->secret_g2) == C_KZG_OK, C_KZG_MALLOC);
+
+    // Populate the secrets
+    for (uint64_t i = 0; i < ks->length; i++) {
+        ks->secret_g1[i] = secret_g1[i];
+        ks->secret_g2[i] = secret_g2[i];
+    }
+    ks->fs = fs;
+    ks->extended_secret_g1 = NULL; // What's this for?
+
     return C_KZG_OK;
 }
 
-// This is a no-op since s1 and s2 are assumed to have been provided externally
-void free_kzg_settings(KZGSettings *ks) {}
+void free_kzg_settings(KZGSettings *ks) {
+    free(ks->secret_g1);
+    free(ks->secret_g2);
+    ks->length = 0;
+}
