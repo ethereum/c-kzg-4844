@@ -9,7 +9,7 @@ Done so far:
   - FFTs over the G1 group
   - Polynomial single commitment and verification
   - Polynomial multi commitment and verification
-  - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method (needs a tidy up)
+  - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method
 
 ## Install
 
@@ -85,13 +85,13 @@ This magic is implemented via the `ASSERT` macro in _c_kzg.h_.
 
 ## Make documentation
 
-I've just started inserting `doxygen` style documentation in a few files, and will aim for total coverage eventually. Build the docs in the top directory as follows:
+`doxygen` style comments are in place throughout, although some places need more work. Build the docs in the top directory as follows:
 
 ```
 doxygen Doxyfile
 ```
 
-This will produce a _doc/html_ directory. Visit the _doc/html/index.html_ file in a browser to view the documentation.
+This will produce a _doc/html_ directory. Visit the _doc/html/files.html_ file in a browser to view the documentation.
 
 ## Prerequisites
 
