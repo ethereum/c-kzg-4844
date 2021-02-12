@@ -34,7 +34,7 @@
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
     C_KZG_BADARGS, /**< The supplied data is invalid in some way */
-    C_KZG_ERROR,   /**< Internal error - this should never occur and indicates a bug in the library */
+    C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
 

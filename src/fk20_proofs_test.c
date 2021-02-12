@@ -123,15 +123,34 @@ void fk_single(void) {
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
-    // Generate the proofs
+    // Commit to the polynomial
     commit_to_poly(&commitment, &p, &ks);
+
+    // 1. First with `da_using_fk20_single`
+
+    // Generate the proofs
     TEST_CHECK(da_using_fk20_single(all_proofs, &p, &fk) == C_KZG_OK);
 
-    // Verify the proof at each position
+    // Verify the proof at each root of unity
     for (uint64_t i = 0; i < 2 * poly_len; i++) {
         x = fs.expanded_roots_of_unity[i];
         eval_poly(&y, &p, &x);
         proof = all_proofs[reverse_bits_limited(2 * poly_len, i)];
+
+        TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &y, &ks));
+        TEST_CHECK(true == result);
+    }
+
+    // 2. Exactly the same thing again with `fk20_single_da_opt`
+
+    // Generate the proofs
+    TEST_CHECK(fk20_single_da_opt(all_proofs, &p, &fk) == C_KZG_OK);
+
+    // Verify the proof at each root of unity
+    for (uint64_t i = 0; i < 2 * poly_len; i++) {
+        x = fs.expanded_roots_of_unity[i];
+        eval_poly(&y, &p, &x);
+        proof = all_proofs[i];
 
         TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &y, &ks));
         TEST_CHECK(true == result);
@@ -178,11 +197,13 @@ void fk_single_strided(void) {
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
-    // Generate the proofs
+    // Commit to the polynomial
     commit_to_poly(&commitment, &p, &ks);
+
+    // Generate the proofs
     TEST_CHECK(da_using_fk20_single(all_proofs, &p, &fk) == C_KZG_OK);
 
-    // Verify the proof at each position
+    // Verify the proof at each root of unity
     for (uint64_t i = 0; i < 2 * poly_len; i++) {
         x = fs.expanded_roots_of_unity[i * stride];
         eval_poly(&y, &p, &x);

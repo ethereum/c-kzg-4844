@@ -197,7 +197,7 @@ C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, c
 /**
  * Reorder and extend polynomial coefficients for the toeplitz method.
  *
- * @warning Allocates space for the return polynomial that needs to be freed by calling #free_poly.
+ * @remark Allocates space for the return polynomial that needs to be freed by calling #free_poly.
  *
  * @param[out] out The reordered polynomial, size `n * 2`
  * @param[in]  in  The input polynomial, size `n`
@@ -226,6 +226,11 @@ C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
  * The upper half of the polynomial coefficients is always 0, so we do not need to extend to twice the size
  * for Toeplitz matrix multiplication.
  *
+ * Simultaneously calculates all the KZG proofs for `x_i = w^i` (`0 <= i < 2n`), where `w` is a `(2 * n)`th root of
+ * unity. The `2n` comes from the polynomial being extended with zeros to twice the original size.
+ *
+ * `out[i]` is the proof for `y[i]`, the evaluation of the polynomial at `fs.expanded_roots_of_unity[i]`.
+ *
  * @param[out] out Array size `n * 2`
  * @param[in]  p   Polynomial, size `n`
  * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
@@ -233,8 +238,6 @@ C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
- *
- * @todo Better parameter descriptions
  */
 C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
@@ -263,16 +266,20 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
 }
 
 /**
- * Data availability using FK20 single.
+ * Data availability using the FK20 single algorithm.
  *
- * @param[out] out Array size `n * 2`
+ * Simultaneously calculates all the KZG proofs for `x_i = w^i` (`0 <= i < 2n`), where `w` is a `(2 * n)`th root of
+ * unity. The `2n` comes from the polynomial being extended with zeros to twice the original size.
+ *
+ * `out[reverse_bits_limited(2 * n, i)]` is the proof for `y[i]`, the evaluation of the polynomial at
+ * `fs.expanded_roots_of_unity[i]`.
+ *
+ * @param[out] out All the proofs, array length 2 * `n`
  * @param[in]  p   Polynomial, size `n`
  * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
- *
- * @todo Better parameter descriptions
  */
 C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
