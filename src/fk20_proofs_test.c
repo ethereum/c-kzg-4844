@@ -112,7 +112,10 @@ void fk_single(void) {
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
-    TEST_CHECK(init_poly_with_coeffs(&p, coeffs, poly_len) == C_KZG_OK);
+    TEST_CHECK(init_poly(&p, poly_len) == C_KZG_OK);
+    for (uint64_t i = 0; i < poly_len; i++) {
+        fr_from_uint64(&p.coeffs[i], coeffs[i]);
+    }
 
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);
@@ -164,7 +167,10 @@ void fk_single_strided(void) {
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
-    TEST_CHECK(init_poly_with_coeffs(&p, coeffs, poly_len) == C_KZG_OK);
+    TEST_CHECK(init_poly(&p, poly_len) == C_KZG_OK);
+    for (uint64_t i = 0; i < poly_len; i++) {
+        fr_from_uint64(&p.coeffs[i], coeffs[i]);
+    }
 
     // Initialise the secrets and data structures
     generate_trusted_setup(&s1, &s2, &secret, secrets_len);

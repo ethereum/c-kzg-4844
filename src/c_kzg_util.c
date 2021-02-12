@@ -14,11 +14,23 @@
  * limitations under the License.
  */
 
-/** @file c_kzg_util.c */
+/**
+ *  @file c_kzg_util.c
+ *
+ * Utilities useful across the library.
+ */
 
 #include <stdlib.h> // malloc
 #include "c_kzg_util.h"
 
+/**
+ * Wrapped `malloc()` that reports failures to allocate.
+ *
+ * @param[out] p Pointer to the allocated space
+ * @param[in]  n The number of bytes to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET c_kzg_malloc(void **p, size_t n) {
     if (n > 0) {
         *p = malloc(n);

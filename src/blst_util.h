@@ -28,7 +28,7 @@ static const blst_p1_affine identity_g1_affine = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L,
 
 bool fr_is_zero(const blst_fr *p);
 bool fr_is_one(const blst_fr *p);
-void fr_from_uint64(blst_fr *a, const uint64_t n);
+void fr_from_uint64(blst_fr *out, uint64_t n);
 bool fr_equal(const blst_fr *aa, const blst_fr *bb);
 void fr_negate(blst_fr *out, const blst_fr *in);
 void fr_pow(blst_fr *out, const blst_fr *a, const uint64_t n);

@@ -19,18 +19,6 @@
 #include "test_util.h"
 #include "poly.h"
 
-void poly_div_length(void) {
-    poly a, b;
-    init_poly(&a, 17);
-    init_poly(&b, 5);
-    TEST_CHECK(13 == poly_quotient_length(&a, &b));
-    TEST_CHECK(1 == poly_quotient_length(&a, &a));
-    TEST_CHECK(0 == poly_quotient_length(&b, &a));
-
-    free_poly(&a);
-    free_poly(&b);
-}
-
 void poly_div_0(void) {
     blst_fr a[3], b[2], expected[2];
     poly dividend, divisor, actual;
@@ -191,7 +179,6 @@ void poly_eval_nil_check(void) {
 
 TEST_LIST = {
     {"POLY_TEST", title},
-    {"poly_div_length", poly_div_length},
     {"poly_div_0", poly_div_0},
     {"poly_div_1", poly_div_1},
     {"poly_div_2", poly_div_2},
