@@ -29,7 +29,7 @@ typedef struct {
     const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
     blst_p1 *secret_g1;    /**< G1 group elements from the trusted setup */
     blst_p2 *secret_g2;    /**< G2 group elements from the trusted setup */
-    uint64_t length;       /**< The number of elements from the trusted setup that are stored in this structure */
+    uint64_t length;       /**< The number of elements in secret_g1 and secret_g2 */
 } KZGSettings;
 
 void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks);

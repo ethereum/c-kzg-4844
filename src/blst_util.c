@@ -195,7 +195,7 @@ void p2_sub(blst_p2 *out, const blst_p2 *a, const blst_p2 *b) {
  */
 void linear_combination_g1(blst_p1 *out, const blst_p1 *p, const blst_fr *coeffs, const uint64_t len) {
     blst_p1 tmp;
-    blst_p1_from_affine(out, &identity_g1_affine);
+    *out = g1_identity;
     for (uint64_t i = 0; i < len; i++) {
         p1_mul(&tmp, &p[i], &coeffs[i]);
         blst_p1_add_or_double(out, out, &tmp);
@@ -205,7 +205,7 @@ void linear_combination_g1(blst_p1 *out, const blst_p1 *p, const blst_fr *coeffs
 /**
  * Perform pairings and test whether the outcomes are equal in G_T.
  *
- * Tests whether `e(a1, a2) == e(b1, b2)`
+ * Tests whether `e(a1, a2) == e(b1, b2)`.
  *
  * @param[in] a1 A G1 group point for the first pairing
  * @param[in] a2 A G2 group point for the first pairing

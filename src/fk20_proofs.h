@@ -53,14 +53,12 @@ typedef struct {
 /**
  * Stores the setup and parameters needed for computing FK20 multi proofs.
  */
-/*
 typedef struct {
-    KZGSettings *ks;
+    const KZGSettings *ks; /**< The corresponding settings for performing KZG proofs */
     uint64_t chunk_len;
     blst_p1 **x_ext_fft_files;
     uint64_t length;
 } FK20MultiSettings;
-*/
 
 int log2_pow2(uint32_t n);
 uint32_t reverse_bits(uint32_t a);
@@ -69,7 +67,9 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
 C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs);
 C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk);
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk);
-C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk);
-C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *fk);
+C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
+C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks);
+C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t chunk_len, const KZGSettings *ks);
 void free_fk20_single_settings(FK20SingleSettings *fk);
+void free_fk20_multi_settings(FK20MultiSettings *fk);

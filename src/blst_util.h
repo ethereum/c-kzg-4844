@@ -24,7 +24,10 @@ static const blst_fr fr_zero = {0L, 0L, 0L, 0L};
 static const blst_fr fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
 // The G1 identity/infinity in affine representation
-static const blst_p1_affine identity_g1_affine = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+static const blst_p1_affine g1_identity_affine = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+
+// The G1 identity/infinity
+static const blst_p1 g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 bool fr_is_zero(const blst_fr *p);
 bool fr_is_one(const blst_fr *p);

@@ -104,8 +104,8 @@ void fk_single(void) {
     KZGSettings ks;
     FK20SingleSettings fk;
     uint64_t secrets_len = n_len + 1;
-    blst_p1 *s1;
-    blst_p2 *s2;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
     poly p;
     blst_p1 commitment, all_proofs[2 * poly_len], proof;
     blst_fr x, y;
@@ -118,7 +118,7 @@ void fk_single(void) {
     }
 
     // Initialise the secrets and data structures
-    generate_trusted_setup(&s1, &s2, &secret, secrets_len);
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, n));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
@@ -161,7 +161,6 @@ void fk_single(void) {
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
     free_fk20_single_settings(&fk);
-    free_trusted_setup(s1, s2);
 }
 
 void fk_single_strided(void) {
@@ -178,8 +177,8 @@ void fk_single_strided(void) {
     KZGSettings ks;
     FK20SingleSettings fk;
     uint64_t secrets_len = n_len + 1;
-    blst_p1 *s1;
-    blst_p2 *s2;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
     poly p;
     blst_p1 commitment, all_proofs[2 * poly_len], proof;
     blst_fr x, y;
@@ -192,7 +191,7 @@ void fk_single_strided(void) {
     }
 
     // Initialise the secrets and data structures
-    generate_trusted_setup(&s1, &s2, &secret, secrets_len);
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, n));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
@@ -218,7 +217,28 @@ void fk_single_strided(void) {
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
     free_fk20_single_settings(&fk);
-    free_trusted_setup(s1, s2);
+}
+
+void fk_multi_settings(void) {
+    FFTSettings fs;
+    KZGSettings ks;
+    FK20MultiSettings fk;
+    uint64_t n = 5;
+    uint64_t secrets_len = 33;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
+
+    // Initialise the secrets and data structures
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, n));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+    TEST_CHECK(C_KZG_OK == new_fk20_multi_settings(&fk, 32, 4, &ks));
+
+    // Don't do anything. Run this with `valgrind` to check that memory is correctly allocated and freed.
+
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+    free_fk20_multi_settings(&fk);
 }
 
 TEST_LIST = {
@@ -231,5 +251,6 @@ TEST_LIST = {
     {"test_reverse_bit_order_fr", test_reverse_bit_order_fr},
     {"fk_single", fk_single},
     {"fk_single_strided", fk_single_strided},
+    {"fk_multi_settings", fk_multi_settings},
     {NULL, NULL} /* zero record marks the end of the list */
 };

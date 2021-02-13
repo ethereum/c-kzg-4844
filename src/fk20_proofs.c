@@ -121,16 +121,15 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
  */
 C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs) {
     uint64_t n2 = n * 2;
-    blst_p1 identity_g1, *x_ext;
+    blst_p1 *x_ext;
 
     ASSERT(c_kzg_malloc((void **)&x_ext, n2 * sizeof *x_ext) == C_KZG_OK, C_KZG_MALLOC);
 
-    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
     for (uint64_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
     for (uint64_t i = n; i < n2; i++) {
-        x_ext[i] = identity_g1;
+        x_ext[i] = g1_identity;
     }
 
     ASSERT(fft_g1(out, x_ext, false, n2, fs) == C_KZG_OK, C_KZG_ERROR);
@@ -181,14 +180,12 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
  */
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk) {
     uint64_t n = n2 / 2;
-    blst_p1 identity_g1;
 
     ASSERT(fft_g1(out, h_ext_fft, true, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     // Zero the second half of h
-    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
     for (uint64_t i = n; i < n2; i++) {
-        out[i] = identity_g1;
+        out[i] = g1_identity;
     }
 
     return C_KZG_OK;
@@ -239,7 +236,7 @@ C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
+C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
     blst_p1 *h, *h_ext_fft;
     poly toeplitz_coeffs;
@@ -281,7 +278,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, FK20SingleSettings *fk
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  */
-C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *fk) {
+C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
@@ -292,6 +289,23 @@ C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, FK20SingleSettings *
 
     return C_KZG_OK;
 }
+
+/**
+ * FK20 Method to compute all proofs - multi proof method
+ *
+ * Toeplitz multiplication as per http://www.netlib.org/utk/people/JackDongarra/etemplates/node384.html
+ *
+ * For a polynomial of size `n`, let `w` be a `n`th root of unity. Then this method will return
+ * `k = n / l` KZG proofs for the points:
+ *
+ * ```
+ * proof[0]: w^(0*l + 0), w^(0*l + 1), ... w^(0*l + l - 1)
+ * proof[1]: w^(1*l + 0), w^(1*l + 1), ... w^(1*l + l - 1)
+ * ...
+ * proof[i]: w^(i*l + 0), w^(i*l + 1), ... w^(i*l + l - 1)
+ * ```
+ */
+void fk20_multi(void) {}
 
 /**
  * Initialise settings for an FK20 single proof.
@@ -323,9 +337,65 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
     for (uint64_t i = 0; i < n - 1; i++) {
         x[i] = ks->secret_g1[n - 2 - i];
     }
-    blst_p1_from_affine(&x[n - 1], &identity_g1_affine);
+    x[n - 1] = g1_identity;
 
     ASSERT(toeplitz_part_1(fk->x_ext_fft, x, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
+
+    free(x);
+    return C_KZG_OK;
+}
+
+/**
+ * Initialise settings for an FK20 multi proof.
+ *
+ * #free_fk20_single_settings must be called to deallocate this structure.
+ *
+ * @param[out] fk The initialised settings
+ * @param[in]  n2 The desired size of `x_ext_fft`, a power of two
+ * @param[in]  ks KZGSettings that have already been initialised
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t chunk_len, const KZGSettings *ks) {
+    uint64_t n, k;
+    blst_p1 *x;
+    C_KZG_RET ret;
+
+    ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
+    ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
+    ASSERT(n2 >= 2, C_KZG_BADARGS);
+    ASSERT(chunk_len <= n2, C_KZG_BADARGS);
+    ASSERT(is_power_of_two(chunk_len), C_KZG_BADARGS);
+    ASSERT(chunk_len > 0, C_KZG_BADARGS);
+
+    n = n2 / 2;
+    k = n / chunk_len;
+
+    fk->ks = ks;
+    fk->chunk_len = chunk_len;
+
+    // TODO check this!
+    ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files) == C_KZG_OK,
+           C_KZG_MALLOC);
+
+    // Temporary array
+    ASSERT(c_kzg_malloc((void **)&x, k * sizeof *x) == C_KZG_OK, C_KZG_MALLOC);
+    for (uint64_t offset = 0; offset < chunk_len; offset++) {
+        uint64_t start = n - chunk_len - 1 - offset;
+        for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= chunk_len) {
+            x[i] = ks->secret_g1[j];
+        }
+        x[k - 1] = g1_identity;
+
+        ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft_files[offset], 2 * k * sizeof *fk->x_ext_fft_files[offset]) ==
+                   C_KZG_OK,
+               C_KZG_MALLOC);
+
+        ASSERT(ret = toeplitz_part_1(fk->x_ext_fft_files[offset], x, k, ks->fs) == C_KZG_OK,
+               ret == C_KZG_MALLOC ? ret : C_KZG_ERROR);
+    }
 
     free(x);
     return C_KZG_OK;
@@ -339,4 +409,18 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
 void free_fk20_single_settings(FK20SingleSettings *fk) {
     free(fk->x_ext_fft);
     fk->x_ext_fft_len = 0;
+}
+
+/**
+ * Free the memory that was previously allocated by #new_fk20_multi_settings.
+ *
+ * @param fk The settings to be freed
+ */
+void free_fk20_multi_settings(FK20MultiSettings *fk) {
+    for (uint64_t i = 0; i < fk->chunk_len; i++) {
+        free((fk->x_ext_fft_files)[i]);
+    }
+    free(fk->x_ext_fft_files);
+    fk->chunk_len = 0;
+    fk->length = 0;
 }

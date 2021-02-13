@@ -144,10 +144,20 @@ void p2_sub_works(void) {
     TEST_CHECK(blst_p2_is_equal(&tmp, &res));
 }
 
-void identity_g1_is_infinity(void) {
-    blst_p1 identity_g1;
-    blst_p1_from_affine(&identity_g1, &identity_g1_affine);
-    TEST_CHECK(blst_p1_is_inf(&identity_g1));
+void g1_identity_affine_is_infinity(void) {
+    blst_p1 actual;
+    blst_p1_from_affine(&actual, &g1_identity_affine);
+    TEST_CHECK(blst_p1_is_inf(&actual));
+}
+
+void g1_identity_is_infinity(void) {
+    TEST_CHECK(blst_p1_is_inf(&g1_identity));
+}
+
+void g1_identity_is_identity(void) {
+    blst_p1 actual;
+    blst_p1_add(&actual, blst_p1_generator(), &g1_identity);
+    TEST_CHECK(blst_p1_is_equal(blst_p1_generator(), &actual));
 }
 
 void g1_linear_combination(void) {
@@ -201,7 +211,9 @@ TEST_LIST = {
     {"p1_sub_works", p1_sub_works},
     {"p2_mul_works", p2_mul_works},
     {"p2_sub_works", p2_sub_works},
-    {"identity_g1_is_infinity", identity_g1_is_infinity},
+    {"g1_identity_affine_is_infinity", g1_identity_affine_is_infinity},
+    {"g1_identity_is_infinity", g1_identity_is_infinity},
+    {"g1_identity_is_identity", g1_identity_is_identity},
     {"g1_linear_combination", g1_linear_combination},
     {"pairings_work", pairings_work},
     {NULL, NULL} /* zero record marks the end of the list */

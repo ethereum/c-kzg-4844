@@ -27,8 +27,8 @@ void proof_single(void) {
 
     FFTSettings fs;
     KZGSettings ks;
-    blst_p1 *s1;
-    blst_p2 *s2;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
     poly p;
     blst_p1 commitment, proof;
     blst_fr x, value;
@@ -41,7 +41,7 @@ void proof_single(void) {
     }
 
     // Initialise the secrets and data structures
-    generate_trusted_setup(&s1, &s2, &secret, secrets_len);
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // ln_2 of poly_len
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
@@ -64,8 +64,6 @@ void proof_single(void) {
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
     free_poly(&p);
-    free(s1);
-    free(s2);
 }
 
 void proof_multi(void) {
@@ -75,8 +73,6 @@ void proof_multi(void) {
 
     FFTSettings fs1, fs2;
     KZGSettings ks1, ks2;
-    blst_p1 *s1;
-    blst_p2 *s2;
     poly p;
     blst_p1 commitment, proof;
     blst_fr x, tmp;
@@ -87,6 +83,8 @@ void proof_multi(void) {
     blst_fr y[coset_len];
 
     uint64_t secrets_len = poly_len > coset_len ? poly_len + 1 : coset_len + 1;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
 
     // Create the polynomial
     init_poly(&p, poly_len);
@@ -95,7 +93,7 @@ void proof_multi(void) {
     }
 
     // Initialise the secrets and data structures
-    generate_trusted_setup(&s1, &s2, &secret, secrets_len);
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs1, 4)); // ln_2 of poly_len
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks1, s1, s2, secrets_len, &fs1));
 
@@ -129,8 +127,6 @@ void proof_multi(void) {
     free_kzg_settings(&ks1);
     free_kzg_settings(&ks2);
     free_poly(&p);
-    free(s1);
-    free(s2);
 }
 
 void commit_to_nil_poly(void) {
@@ -138,25 +134,21 @@ void commit_to_nil_poly(void) {
     FFTSettings fs;
     KZGSettings ks;
     uint64_t secrets_len = 16;
-    blst_p1 *s1;
-    blst_p2 *s2;
+    blst_p1 s1[secrets_len];
+    blst_p2 s2[secrets_len];
     blst_p1 result;
-    blst_p1_affine result_affine;
 
     // Initialise the (arbitrary) secrets and data structures
-    generate_trusted_setup(&s1, &s2, &secret, secrets_len);
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
     init_poly(&a, 0);
     commit_to_poly(&result, &a, &ks);
-    blst_p1_to_affine(&result_affine, &result);
-    TEST_CHECK(blst_p1_affine_is_equal(&identity_g1_affine, &result_affine));
+    TEST_CHECK(blst_p1_is_equal(&g1_identity, &result));
 
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
-    free(s1);
-    free(s2);
 }
 
 TEST_LIST = {
