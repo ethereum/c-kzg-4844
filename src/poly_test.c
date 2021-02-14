@@ -44,7 +44,7 @@ void poly_div_0(void) {
     fr_negate(&expected[0], &expected[0]);
     fr_from_uint64(&expected[1], 1);
 
-    TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
+    TEST_CHECK(C_KZG_OK == new_poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
 
@@ -78,7 +78,7 @@ void poly_div_1(void) {
     fr_negate(&expected[1], &expected[1]);
     fr_from_uint64(&expected[2], 3);
 
-    TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
+    TEST_CHECK(C_KZG_OK == new_poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(fr_equal(&expected[0], &actual.coeffs[0]));
     TEST_CHECK(fr_equal(&expected[1], &actual.coeffs[1]));
     TEST_CHECK(fr_equal(&expected[2], &actual.coeffs[2]));
@@ -106,7 +106,7 @@ void poly_div_2(void) {
     divisor.length = 3;
     divisor.coeffs = b;
 
-    TEST_CHECK(C_KZG_OK == poly_long_div(&actual, &dividend, &divisor));
+    TEST_CHECK(C_KZG_OK == new_poly_long_div(&actual, &dividend, &divisor));
     TEST_CHECK(NULL == actual.coeffs);
 
     free_poly(&actual);
@@ -125,16 +125,16 @@ void poly_div_by_zero(void) {
     dividend.coeffs = a;
 
     // Divisor
-    init_poly(&divisor, 0);
+    new_poly(&divisor, 0);
 
-    TEST_CHECK(C_KZG_BADARGS == poly_long_div(&dummy, &dividend, &divisor));
+    TEST_CHECK(C_KZG_BADARGS == new_poly_long_div(&dummy, &dividend, &divisor));
 }
 
 void poly_eval_check(void) {
     uint64_t n = 10;
     blst_fr actual, expected;
     poly p;
-    init_poly(&p, n);
+    new_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
         fr_from_uint64(&p.coeffs[i], i + 1);
     }
@@ -151,7 +151,7 @@ void poly_eval_0_check(void) {
     uint64_t n = 7, a = 597;
     blst_fr actual, expected;
     poly p;
-    init_poly(&p, n);
+    new_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
         fr_from_uint64(&p.coeffs[i], i + a);
     }
@@ -168,7 +168,7 @@ void poly_eval_nil_check(void) {
     uint64_t n = 0;
     blst_fr actual;
     poly p;
-    init_poly(&p, n);
+    new_poly(&p, n);
 
     eval_poly(&actual, &p, &fr_one);
 

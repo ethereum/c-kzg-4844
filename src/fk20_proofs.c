@@ -201,10 +201,10 @@ C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, c
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
+C_KZG_RET new_toeplitz_coeffs_step(poly *out, const poly *in) {
     uint64_t n = in->length, n2 = n * 2;
 
-    ASSERT(init_poly(out, n2) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(new_poly(out, n2) == C_KZG_OK, C_KZG_MALLOC);
 
     out->coeffs[0] = in->coeffs[n - 1];
     for (uint64_t i = 1; i <= n + 1; i++) {
@@ -215,6 +215,15 @@ C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
     }
 
     return C_KZG_OK;
+}
+
+/**
+ * Recover memory allocated by #new_toeplitz_coeffs_step.
+ *
+ * @param p The coefficients to be freed
+ */
+void free_toeplitz_coeffs_step(poly *p) {
+    free_poly(p);
 }
 
 /**
@@ -245,7 +254,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettin
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
-    ASSERT(toeplitz_coeffs_step(&toeplitz_coeffs, p) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(new_toeplitz_coeffs_step(&toeplitz_coeffs, p) == C_KZG_OK, C_KZG_MALLOC);
 
     ASSERT(c_kzg_malloc((void **)&h_ext_fft, toeplitz_coeffs.length * sizeof *h_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
     ASSERT((ret = toeplitz_part_2(h_ext_fft, &toeplitz_coeffs, fk)) == C_KZG_OK,
@@ -258,7 +267,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettin
 
     free(h);
     free(h_ext_fft);
-    free_poly(&toeplitz_coeffs);
+    free_toeplitz_coeffs_step(&toeplitz_coeffs);
     return C_KZG_OK;
 }
 
@@ -376,7 +385,6 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
     fk->ks = ks;
     fk->chunk_len = chunk_len;
 
-    // TODO check this!
     ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files) == C_KZG_OK,
            C_KZG_MALLOC);
 

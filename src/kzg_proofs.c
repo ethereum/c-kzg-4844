@@ -104,7 +104,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, ui
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
-    ASSERT(init_poly(&divisor, n + 1) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(new_poly(&divisor, n + 1) == C_KZG_OK, C_KZG_MALLOC);
 
     // -(x0^n)
     fr_pow(&x_pow_n, x0, n);
@@ -119,7 +119,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, ui
     divisor.coeffs[n] = fr_one;
 
     // Calculate q = p / (x^n - x0^n)
-    ASSERT(poly_long_div(&q, p, &divisor) == C_KZG_OK, C_KZG_ERROR);
+    ASSERT(new_poly_long_div(&q, p, &divisor) == C_KZG_OK, C_KZG_ERROR);
 
     commit_to_poly(out, &q, ks);
 
@@ -157,7 +157,7 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     // Interpolate at a coset.
-    ASSERT(init_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(new_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
     ASSERT(fft_fr(interp.coeffs, ys, true, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i

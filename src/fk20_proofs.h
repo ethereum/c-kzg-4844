@@ -67,6 +67,7 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
 C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs);
 C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk);
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk);
+C_KZG_RET new_toeplitz_coeffs_step(poly *out, const poly *in);
 C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
 C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks);

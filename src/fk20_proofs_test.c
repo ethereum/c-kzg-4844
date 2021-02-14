@@ -112,7 +112,7 @@ void fk_single(void) {
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
-    TEST_CHECK(init_poly(&p, poly_len) == C_KZG_OK);
+    TEST_CHECK(new_poly(&p, poly_len) == C_KZG_OK);
     for (uint64_t i = 0; i < poly_len; i++) {
         fr_from_uint64(&p.coeffs[i], coeffs[i]);
     }
@@ -185,7 +185,7 @@ void fk_single_strided(void) {
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
-    TEST_CHECK(init_poly(&p, poly_len) == C_KZG_OK);
+    TEST_CHECK(new_poly(&p, poly_len) == C_KZG_OK);
     for (uint64_t i = 0; i < poly_len; i++) {
         fr_from_uint64(&p.coeffs[i], coeffs[i]);
     }

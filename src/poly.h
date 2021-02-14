@@ -22,7 +22,7 @@
 /**
  * Defines a polynomial whose coefficients are members of the finite field F_r.
  *
- * Initialise the storage with #init_poly. After use, free the storage with #free_poly.
+ * Initialise the storage with #new_poly. After use, free the storage with #free_poly.
  */
 typedef struct {
     blst_fr *coeffs; /**< `coeffs[i]` is the coefficient of the `x^i` term of the polynomial. */
@@ -30,7 +30,7 @@ typedef struct {
 } poly;
 
 void eval_poly(blst_fr *out, const poly *p, const blst_fr *x);
-C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);
-C_KZG_RET init_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length);
-C_KZG_RET init_poly(poly *out, uint64_t length);
+C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET new_poly(poly *out, uint64_t length);
+C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length);
 void free_poly(poly *p);

@@ -82,7 +82,7 @@ void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
+C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     uint64_t a_pos = dividend->length - 1;
     uint64_t b_pos = divisor->length - 1;
     uint64_t diff = a_pos - b_pos;
@@ -92,7 +92,7 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
     ASSERT(divisor->length > 0, C_KZG_BADARGS);
 
     // Initialise the output polynomial
-    ASSERT(init_poly(out, poly_quotient_length(dividend, divisor)) == C_KZG_OK, C_KZG_MALLOC);
+    ASSERT(new_poly(out, poly_quotient_length(dividend, divisor)) == C_KZG_OK, C_KZG_MALLOC);
 
     // If the divisor is larger than the dividend, the result is zero-length
     if (out->length == 0) return C_KZG_OK;
@@ -118,6 +118,21 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
 }
 
 /**
+ * Initialise an empty polynomial of the given size.
+ *
+ * @remark This allocates space for the polynomial coefficients that must be later reclaimed by calling #free_poly.
+ *
+ * @param[out] out    The initialised polynomial structure
+ * @param[in]  length The number of coefficients required, which is one more than the polynomial's degree
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_poly(poly *out, uint64_t length) {
+    out->length = length;
+    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
+}
+
+/**
  * Initialise a polynomial of the given size with the given coefficients.
  *
  * @remark This allocates space for the polynomial coefficients that must be later reclaimed by calling #free_poly.
@@ -128,8 +143,8 @@ C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET init_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length) {
-    ASSERT(init_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
+C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length) {
+    ASSERT(new_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
     for (uint64_t i = 0; i < length; i++) {
         out->coeffs[i] = coeffs[i];
     }
@@ -137,25 +152,10 @@ C_KZG_RET init_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t lengt
 }
 
 /**
- * Initialise an empty polynomial of the given size.
- *
- * @remark This allocates space for the polynomial coefficients that must be later reclaimed by calling #free_poly.
- *
- * @param[out] out    The initialised polynomial structure
- * @param[in]  length The number of coefficients required, which is one more than the polynomial's degree
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_MALLOC  Memory allocation failed
- */
-C_KZG_RET init_poly(poly *out, uint64_t length) {
-    out->length = length;
-    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
-}
-
-/**
  * Reclaim the memory used by a polynomial.
  *
- * @remark To avoid memory leaks, this must be called for polynomials initialised with #init_poly or
- * #init_poly_with_coeffs after use.
+ * @remark To avoid memory leaks, this must be called for polynomials initialised with #new_poly or
+ * #new_poly_with_coeffs after use.
  *
  * @param[in,out] p The polynomial
  */

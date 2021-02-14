@@ -35,7 +35,7 @@ void proof_single(void) {
     bool result;
 
     // Create the polynomial
-    init_poly(&p, poly_len);
+    new_poly(&p, poly_len);
     for (int i = 0; i < poly_len; i++) {
         fr_from_uint64(&p.coeffs[i], coeffs[i]);
     }
@@ -87,7 +87,7 @@ void proof_multi(void) {
     blst_p2 s2[secrets_len];
 
     // Create the polynomial
-    init_poly(&p, poly_len);
+    new_poly(&p, poly_len);
     for (int i = 0; i < poly_len; i++) {
         fr_from_uint64(&p.coeffs[i], coeffs[i]);
     }
@@ -143,7 +143,7 @@ void commit_to_nil_poly(void) {
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
-    init_poly(&a, 0);
+    new_poly(&a, 0);
     commit_to_poly(&result, &a, &ks);
     TEST_CHECK(blst_p1_is_equal(&g1_identity, &result));
 
