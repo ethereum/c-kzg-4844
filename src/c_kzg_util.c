@@ -20,7 +20,6 @@
  * Utilities useful across the library.
  */
 
-#include <stdlib.h> // malloc
 #include "c_kzg_util.h"
 
 /**

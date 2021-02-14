@@ -23,3 +23,5 @@ void fft_fr_slow(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr
 void fft_fr_fast(blst_fr *out, const blst_fr *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
                  uint64_t n);
 C_KZG_RET fft_fr(blst_fr *out, const blst_fr *in, bool inverse, uint64_t n, const FFTSettings *fs);
+C_KZG_RET new_fft_fr(blst_fr **out, const blst_fr *in, bool inverse, uint64_t n, const FFTSettings *fs);
+void free_fft_fr(blst_fr *x);

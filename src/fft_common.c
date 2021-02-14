@@ -20,7 +20,6 @@
  * Code shared between the FFTs over field elements and FFTs over G1 group elements.
  */
 
-#include <stdlib.h> // free()
 #include "fft_common.h"
 #include "blst_util.h"
 #include "c_kzg_util.h"
@@ -73,7 +72,8 @@ C_KZG_RET expand_root_of_unity(blst_fr *out, const blst_fr *root, uint64_t width
  * `max_width` is the maximum size of FFT that can be calculated with these settings, and is a power of two by
  * construction. The same settings may be used to calculated FFTs of smaller power sizes.
  *
- * @remark This structure *must* be deallocated after use by calling #free_fft_settings.
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_fft_settings.
  * @remark These settings may be used for FFTs on both field elements and G1 group elements.
  *
  * @param[out] fs        The new settings
@@ -90,16 +90,11 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     blst_fr_from_uint64(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
 
     // Allocate space for the roots of unity
-    ASSERT(c_kzg_malloc((void **)&fs->expanded_roots_of_unity,
-                        (fs->max_width + 1) * sizeof *fs->expanded_roots_of_unity) == C_KZG_OK,
-           C_KZG_MALLOC);
-    ASSERT(c_kzg_malloc((void **)&fs->reverse_roots_of_unity,
-                        (fs->max_width + 1) * sizeof *fs->reverse_roots_of_unity) == C_KZG_OK,
-           C_KZG_MALLOC);
+    TRY(c_kzg_malloc((void **)&fs->expanded_roots_of_unity, (fs->max_width + 1) * sizeof *fs->expanded_roots_of_unity));
+    TRY(c_kzg_malloc((void **)&fs->reverse_roots_of_unity, (fs->max_width + 1) * sizeof *fs->reverse_roots_of_unity));
 
     // Populate the roots of unity
-    ASSERT(expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width) == C_KZG_OK,
-           C_KZG_ERROR);
+    TRY(expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width));
 
     // Populate reverse roots of unity
     for (uint64_t i = 0; i <= fs->max_width; i++) {

@@ -20,7 +20,6 @@
  * Operations on polynomials defined over the finite field.
  */
 
-#include <stdlib.h> // NULL, free()
 #include "c_kzg_util.h"
 #include "poly.h"
 
@@ -92,7 +91,7 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
     ASSERT(divisor->length > 0, C_KZG_BADARGS);
 
     // Initialise the output polynomial
-    ASSERT(new_poly(out, poly_quotient_length(dividend, divisor)) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(new_poly(out, poly_quotient_length(dividend, divisor)));
 
     // If the divisor is larger than the dividend, the result is zero-length
     if (out->length == 0) return C_KZG_OK;
@@ -144,7 +143,7 @@ C_KZG_RET new_poly(poly *out, uint64_t length) {
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
 C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length) {
-    ASSERT(new_poly(out, length) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(new_poly(out, length));
     for (uint64_t i = 0; i < length; i++) {
         out->coeffs[i] = coeffs[i];
     }

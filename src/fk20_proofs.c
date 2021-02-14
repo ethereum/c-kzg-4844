@@ -21,7 +21,6 @@
  * paper](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf).
  */
 
-#include <stdlib.h> // free()
 #include <string.h> // memcpy()
 #include "fk20_proofs.h"
 #include "fft_g1.h"
@@ -109,8 +108,6 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
  * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
  * transform of the vector @p x extended.
  *
- * Used in #new_fk20_single_settings to calculate `x_ext_fft`.
- *
  * @param[out] out The FFT of the extension of @p x, size @p n * 2
  * @param[in]  x   The input vector, size @p n
  * @param[in]  n   The length of the input vector @p x
@@ -123,8 +120,7 @@ C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTS
     uint64_t n2 = n * 2;
     blst_p1 *x_ext;
 
-    ASSERT(c_kzg_malloc((void **)&x_ext, n2 * sizeof *x_ext) == C_KZG_OK, C_KZG_MALLOC);
-
+    TRY(c_kzg_malloc((void **)&x_ext, n2 * sizeof *x_ext));
     for (uint64_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
@@ -132,10 +128,39 @@ C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTS
         x_ext[i] = g1_identity;
     }
 
-    ASSERT(fft_g1(out, x_ext, false, n2, fs) == C_KZG_OK, C_KZG_ERROR);
+    TRY(fft_g1(out, x_ext, false, n2, fs));
 
     free(x_ext);
     return C_KZG_OK;
+}
+
+/**
+ * Wrapper for #toeplitz_part_1 that allocates memory for the output.
+ *
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_toeplitz_part_1.
+ *
+ * @param[out] out The FFT of the extension of @p x, size @p n * 2
+ * @param[in]  x   The input vector, size @p n
+ * @param[in]  n   The length of the input vector @p x
+ * @param[in]  fs  The FFT settings previously initialised with #new_fft_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_toeplitz_part_1(blst_p1 **out, const blst_p1 *x, uint64_t n, const FFTSettings *fs) {
+    TRY(c_kzg_malloc((void **)out, n * 2 * sizeof **out));
+    TRY(toeplitz_part_1(*out, x, n, fs));
+    return C_KZG_OK;
+}
+
+/**
+ * Recover memory allocated by #new_toeplitz_part_1.
+ *
+ * @param x The array to be freed
+ */
+void free_toeplitz_part_1(blst_p1 *x) {
+    free(x);
 }
 
 /**
@@ -153,19 +178,48 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
     blst_fr *toeplitz_coeffs_fft;
 
     ASSERT(toeplitz_coeffs->length == fk->x_ext_fft_len, C_KZG_BADARGS);
-    ASSERT(c_kzg_malloc((void **)&toeplitz_coeffs_fft, toeplitz_coeffs->length * sizeof *toeplitz_coeffs_fft) ==
-               C_KZG_OK,
-           C_KZG_MALLOC);
 
-    ASSERT(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fk->ks->fs) == C_KZG_OK,
-           C_KZG_ERROR);
+    TRY(new_fft_fr(&toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fk->ks->fs));
 
     for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
         p1_mul(&out[i], &fk->x_ext_fft[i], &toeplitz_coeffs_fft[i]);
     }
 
-    free(toeplitz_coeffs_fft);
+    free_fft_fr(toeplitz_coeffs_fft);
     return C_KZG_OK;
+}
+
+/**
+ * Wrapper for #toeplitz_part_2 that allocates memory for the output.
+ *
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_toeplitz_part_2.
+ *
+ * @param[out] out Array of G1 group elements, length `n`
+ * @param[in]  toeplitz_coeffs Toeplitz coefficients, a polynomial length `n`
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_toeplitz_part_2(blst_p1 **out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk) {
+    C_KZG_RET ret;
+    TRY(c_kzg_malloc((void **)out, toeplitz_coeffs->length * sizeof **out));
+    ret = toeplitz_part_2(*out, toeplitz_coeffs, fk);
+    if (ret == C_KZG_BADARGS) {
+        free_toeplitz_part_2(*out);
+    }
+    return ret;
+}
+
+/**
+ * Recover memory allocated by #new_toeplitz_part_2.
+ *
+ * @param x The array to be freed
+ */
+void free_toeplitz_part_2(blst_p1 *x) {
+    free(x);
 }
 
 /**
@@ -181,7 +235,7 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20S
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk) {
     uint64_t n = n2 / 2;
 
-    ASSERT(fft_g1(out, h_ext_fft, true, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
+    TRY(fft_g1(out, h_ext_fft, true, n2, fk->ks->fs));
 
     // Zero the second half of h
     for (uint64_t i = n; i < n2; i++) {
@@ -192,9 +246,39 @@ C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, c
 }
 
 /**
+ * Wrapper for #toeplitz_part_3 that allocates memory for the output.
+ *
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_toeplitz_part_3.
+ *
+ * @param[out] out Array of G1 group elements, length @p n2
+ * @param[in]  h_ext_fft FFT of the extended `h` values, length @p n2
+ * @param[in]  n2  Size of the arrays
+ * @param[in]  fk  FK20 single settings previously initialised by #new_fk20_single_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_toeplitz_part_3(blst_p1 **out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk) {
+    TRY(c_kzg_malloc((void **)out, n2 * sizeof **out));
+    TRY(toeplitz_part_3(*out, h_ext_fft, n2, fk));
+    return C_KZG_OK;
+}
+
+/**
+ * Recover memory allocated by #new_toeplitz_part_3.
+ *
+ * @param x The array to be freed
+ */
+void free_toeplitz_part_3(blst_p1 *x) {
+    free(x);
+}
+
+/**
  * Reorder and extend polynomial coefficients for the toeplitz method.
  *
- * @remark Allocates space for the return polynomial that needs to be freed by calling #free_poly.
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_toeplitz_coeffs_step.
  *
  * @param[out] out The reordered polynomial, size `n * 2`
  * @param[in]  in  The input polynomial, size `n`
@@ -204,7 +288,7 @@ C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, c
 C_KZG_RET new_toeplitz_coeffs_step(poly *out, const poly *in) {
     uint64_t n = in->length, n2 = n * 2;
 
-    ASSERT(new_poly(out, n2) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(new_poly(out, n2));
 
     out->coeffs[0] = in->coeffs[n - 1];
     for (uint64_t i = 1; i <= n + 1; i++) {
@@ -249,25 +333,18 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettin
     uint64_t n = p->length, n2 = n * 2;
     blst_p1 *h, *h_ext_fft;
     poly toeplitz_coeffs;
-    C_KZG_RET ret;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
-    ASSERT(new_toeplitz_coeffs_step(&toeplitz_coeffs, p) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(new_toeplitz_coeffs_step(&toeplitz_coeffs, p));
+    TRY(new_toeplitz_part_2(&h_ext_fft, &toeplitz_coeffs, fk));
+    TRY(new_toeplitz_part_3(&h, h_ext_fft, n2, fk));
+    TRY(fft_g1(out, h, false, n2, fk->ks->fs));
 
-    ASSERT(c_kzg_malloc((void **)&h_ext_fft, toeplitz_coeffs.length * sizeof *h_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT((ret = toeplitz_part_2(h_ext_fft, &toeplitz_coeffs, fk)) == C_KZG_OK,
-           ret == C_KZG_MALLOC ? ret : C_KZG_ERROR);
-
-    ASSERT(c_kzg_malloc((void **)&h, toeplitz_coeffs.length * sizeof *h) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(toeplitz_part_3(h, h_ext_fft, n2, fk) == C_KZG_OK, C_KZG_ERROR);
-
-    ASSERT(fft_g1(out, h, false, n2, fk->ks->fs) == C_KZG_OK, C_KZG_ERROR);
-
-    free(h);
-    free(h_ext_fft);
     free_toeplitz_coeffs_step(&toeplitz_coeffs);
+    free_toeplitz_part_2(h_ext_fft);
+    free_toeplitz_part_3(h);
     return C_KZG_OK;
 }
 
@@ -293,8 +370,8 @@ C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSett
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
-    ASSERT(fk20_single_da_opt(out, p, fk) == C_KZG_OK, C_KZG_ERROR);
-    ASSERT(reverse_bit_order(out, sizeof out[0], n2) == C_KZG_OK, C_KZG_ERROR);
+    TRY(fk20_single_da_opt(out, p, fk));
+    TRY(reverse_bit_order(out, sizeof out[0], n2));
 
     return C_KZG_OK;
 }
@@ -319,7 +396,8 @@ void fk20_multi(void) {}
 /**
  * Initialise settings for an FK20 single proof.
  *
- * #free_fk20_single_settings must be called to deallocate this structure.
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_fk20_single_settings.
  *
  * @param[out] fk The initialised settings
  * @param[in]  n2 The desired size of `x_ext_fft`, a power of two
@@ -340,15 +418,13 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
     fk->ks = ks;
     fk->x_ext_fft_len = n2;
 
-    ASSERT(c_kzg_malloc((void **)&x, n * sizeof *x) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft, fk->x_ext_fft_len * sizeof *fk->x_ext_fft) == C_KZG_OK, C_KZG_MALLOC);
-
+    TRY(c_kzg_malloc((void **)&x, n * sizeof *x));
     for (uint64_t i = 0; i < n - 1; i++) {
         x[i] = ks->secret_g1[n - 2 - i];
     }
     x[n - 1] = g1_identity;
 
-    ASSERT(toeplitz_part_1(fk->x_ext_fft, x, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
+    TRY(new_toeplitz_part_1(&fk->x_ext_fft, x, n, ks->fs));
 
     free(x);
     return C_KZG_OK;
@@ -357,10 +433,12 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
 /**
  * Initialise settings for an FK20 multi proof.
  *
- * #free_fk20_single_settings must be called to deallocate this structure.
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_fk20_multi_settings.
  *
  * @param[out] fk The initialised settings
  * @param[in]  n2 The desired size of `x_ext_fft`, a power of two
+ * @param[in]  chunk_len TODO
  * @param[in]  ks KZGSettings that have already been initialised
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
@@ -370,7 +448,6 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
 C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t chunk_len, const KZGSettings *ks) {
     uint64_t n, k;
     blst_p1 *x;
-    C_KZG_RET ret;
 
     ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
@@ -385,11 +462,9 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
     fk->ks = ks;
     fk->chunk_len = chunk_len;
 
-    ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files) == C_KZG_OK,
-           C_KZG_MALLOC);
+    TRY(c_kzg_malloc((void **)&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files));
 
-    // Temporary array
-    ASSERT(c_kzg_malloc((void **)&x, k * sizeof *x) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(c_kzg_malloc((void **)&x, k * sizeof *x));
     for (uint64_t offset = 0; offset < chunk_len; offset++) {
         uint64_t start = n - chunk_len - 1 - offset;
         for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= chunk_len) {
@@ -397,12 +472,7 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
         }
         x[k - 1] = g1_identity;
 
-        ASSERT(c_kzg_malloc((void **)&fk->x_ext_fft_files[offset], 2 * k * sizeof *fk->x_ext_fft_files[offset]) ==
-                   C_KZG_OK,
-               C_KZG_MALLOC);
-
-        ASSERT(ret = toeplitz_part_1(fk->x_ext_fft_files[offset], x, k, ks->fs) == C_KZG_OK,
-               ret == C_KZG_MALLOC ? ret : C_KZG_ERROR);
+        TRY(new_toeplitz_part_1(&fk->x_ext_fft_files[offset], x, k, ks->fs));
     }
 
     free(x);
@@ -415,7 +485,7 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
  * @param fk The settings to be freed
  */
 void free_fk20_single_settings(FK20SingleSettings *fk) {
-    free(fk->x_ext_fft);
+    free_toeplitz_part_1(fk->x_ext_fft);
     fk->x_ext_fft_len = 0;
 }
 
@@ -426,7 +496,7 @@ void free_fk20_single_settings(FK20SingleSettings *fk) {
  */
 void free_fk20_multi_settings(FK20MultiSettings *fk) {
     for (uint64_t i = 0; i < fk->chunk_len; i++) {
-        free((fk->x_ext_fft_files)[i]);
+        free_toeplitz_part_1((fk->x_ext_fft_files)[i]);
     }
     free(fk->x_ext_fft_files);
     fk->chunk_len = 0;

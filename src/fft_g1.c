@@ -27,6 +27,7 @@
 
 #include "fft_g1.h"
 #include "blst_util.h"
+#include "c_kzg_util.h"
 
 /**
  * Slow Fourier Transform.
@@ -112,4 +113,38 @@ C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inverse, uint64_t n, cons
         fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, n);
     }
     return C_KZG_OK;
+}
+
+/**
+ * Wrapper for #fft_g1 that allocates memory for the output.
+ *
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_fft_g1.
+ *
+ * @param[out] out     The results (array of length @p n)
+ * @param[in]  in      The input data (array of length @p n)
+ * @param[in]  inverse `false` for forward transform, `true` for inverse transform
+ * @param[in]  n       Length of the FFT, must be a power of two
+ * @param[in]  fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_fft_g1(blst_p1 **out, const blst_p1 *in, bool inverse, uint64_t n, const FFTSettings *fs) {
+    C_KZG_RET ret;
+    TRY(c_kzg_malloc((void **)out, n * sizeof **out));
+    ret = fft_g1(*out, in, inverse, n, fs);
+    if (ret == C_KZG_BADARGS) {
+        free_fft_g1(*out);
+    }
+    return ret;
+}
+
+/**
+ * Recover memory allocated by #new_fft_g1.
+ *
+ * @param x The array to be freed
+ */
+void free_fft_g1(blst_p1 *x) {
+    free(x);
 }

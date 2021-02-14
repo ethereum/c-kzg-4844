@@ -16,6 +16,7 @@
 
 /** @file c_kzg_util.c */
 
+#include <stdlib.h> // free()
 #include "c_kzg.h"
 
 C_KZG_RET c_kzg_malloc(void **p, size_t n);

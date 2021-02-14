@@ -24,7 +24,6 @@
  */
 
 #include <stddef.h> // NULL
-#include <stdlib.h> // free()
 #include "kzg_proofs.h"
 #include "c_kzg_util.h"
 
@@ -104,7 +103,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, ui
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
-    ASSERT(new_poly(&divisor, n + 1) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(new_poly(&divisor, n + 1));
 
     // -(x0^n)
     fr_pow(&x_pow_n, x0, n);
@@ -119,7 +118,7 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, ui
     divisor.coeffs[n] = fr_one;
 
     // Calculate q = p / (x^n - x0^n)
-    ASSERT(new_poly_long_div(&q, p, &divisor) == C_KZG_OK, C_KZG_ERROR);
+    TRY(new_poly_long_div(&q, p, &divisor));
 
     commit_to_poly(out, &q, ks);
 
@@ -157,8 +156,8 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
     // Interpolate at a coset.
-    ASSERT(new_poly(&interp, n) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(fft_fr(interp.coeffs, ys, true, n, ks->fs) == C_KZG_OK, C_KZG_ERROR);
+    TRY(new_poly(&interp, n));
+    TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
     blst_fr_eucl_inverse(&inv_x, x);
@@ -192,7 +191,8 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
  *
  * Space is allocated for the provided secrets (the "trusted setup"), and copies of the secrets are made.
  *
- * @remark This structure *must* be deallocated after use by calling #free_kzg_settings.
+ * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
+ * corresponding `free_` function. In this case, #free_kzg_settings.
  *
  * @param[out] ks        The new settings
  * @param[in]  secret_g1 The G1 points from the trusted setup (an array of length at least @p length)
@@ -210,8 +210,8 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const blst_p1 *secret_g1, const blst
     ks->length = length;
 
     // Allocate space for the secrets
-    ASSERT(c_kzg_malloc((void **)&ks->secret_g1, ks->length * sizeof *ks->secret_g1) == C_KZG_OK, C_KZG_MALLOC);
-    ASSERT(c_kzg_malloc((void **)&ks->secret_g2, ks->length * sizeof *ks->secret_g2) == C_KZG_OK, C_KZG_MALLOC);
+    TRY(c_kzg_malloc((void **)&ks->secret_g1, ks->length * sizeof *ks->secret_g1));
+    TRY(c_kzg_malloc((void **)&ks->secret_g2, ks->length * sizeof *ks->secret_g2));
 
     // Populate the secrets
     for (uint64_t i = 0; i < ks->length; i++) {

@@ -46,9 +46,23 @@ typedef enum {
         printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond);                                             \
         abort();                                                                                                       \
     }
+#define TRY(result)                                                                                                    \
+    {                                                                                                                  \
+        C_KZG_RET ret = (result);                                                                                      \
+        if (ret != C_KZG_OK) {                                                                                         \
+            printf("\n%s:%d: Failed TRY: %s, result = %d\n", __FILE__, __LINE__, #result, ret);                        \
+            abort();                                                                                                   \
+        }                                                                                                              \
+    }
 #else
 #define ASSERT(cond, ret)                                                                                              \
     if (!(cond)) return (ret)
+#define TRY(result)                                                                                                    \
+    {                                                                                                                  \
+        C_KZG_RET ret = (result);                                                                                      \
+        if (ret == C_KZG_MALLOC) return ret;                                                                           \
+        if (ret != C_KZG_OK) return C_KZG_ERROR;                                                                       \
+    }
 #endif // DEBUG
 
 /** @def ASSERT
@@ -56,7 +70,8 @@ typedef enum {
  * Handle errors.
  *
  * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
- *   - `DEBUG` is undefined: when @p cond is false, return from the function with the value @p ret, otherwise continue.
+ *   - `DEBUG` is undefined: when @p cond is false, return from the current function with the value @p ret, otherwise
+ * continue.
  *   - `DEBUG` is defined: when @p cond is false, print file and line number information and abort the run. This is very
  * useful for dubugging. The @p ret parameter is ignored in this case.
  *
@@ -64,4 +79,16 @@ typedef enum {
  * @param ret  The return code to be returned in case the condition is false
  */
 
+/** @def TRY
+ *
+ * Handle errors.
+ *
+ * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
+ *   - `DEBUG` is undefined: if the @p result is not `C_KZG_OK`, return immediately with either `C_KZG_MALLOC` or
+ * `C_KZG_ERROR`. Otherwise continue.
+ *   - `DEBUG` is defined: if @p result is not `C_KZG_OK`, print file and line number information and abort the run.
+ * This is very useful for dubugging.
+ *
+ * @param result The function call result to be tested
+ */
 #endif // C_KZG_H

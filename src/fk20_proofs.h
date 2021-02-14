@@ -47,17 +47,17 @@
 typedef struct {
     const KZGSettings *ks;  /**< The corresponding settings for performing KZG proofs */
     blst_p1 *x_ext_fft;     /**< The output of the first part of the Toeplitz process */
-    uint64_t x_ext_fft_len; /**< The length of the `x_ext_fft_len` array */
+    uint64_t x_ext_fft_len; /**< The length of the `x_ext_fft_len` array (TODO - do we need this?)*/
 } FK20SingleSettings;
 
 /**
  * Stores the setup and parameters needed for computing FK20 multi proofs.
  */
 typedef struct {
-    const KZGSettings *ks; /**< The corresponding settings for performing KZG proofs */
-    uint64_t chunk_len;
-    blst_p1 **x_ext_fft_files;
-    uint64_t length;
+    const KZGSettings *ks;     /**< The corresponding settings for performing KZG proofs */
+    uint64_t chunk_len;        /**< TODO */
+    blst_p1 **x_ext_fft_files; /**< TODO */
+    uint64_t length;           /**< TODO */
 } FK20MultiSettings;
 
 int log2_pow2(uint32_t n);
@@ -65,9 +65,16 @@ uint32_t reverse_bits(uint32_t a);
 uint32_t reverse_bits_limited(uint32_t n, uint32_t value);
 C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
 C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs);
+C_KZG_RET new_toeplitz_part_1(blst_p1 **out, const blst_p1 *x, uint64_t n, const FFTSettings *fs);
+void free_toeplitz_part_1(blst_p1 *x);
 C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk);
+C_KZG_RET new_toeplitz_part_2(blst_p1 **out, const poly *toeplitz_coeffs, const FK20SingleSettings *fk);
+void free_toeplitz_part_2(blst_p1 *x);
 C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk);
+C_KZG_RET new_toeplitz_part_3(blst_p1 **out, const blst_p1 *h_ext_fft, uint64_t n2, const FK20SingleSettings *fk);
+void free_toeplitz_part_3(blst_p1 *x);
 C_KZG_RET new_toeplitz_coeffs_step(poly *out, const poly *in);
+void free_toeplitz_coeffs_step(poly *p);
 C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
 C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks);
