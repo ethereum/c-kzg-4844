@@ -22,6 +22,7 @@
 void malloc_works(void) {
     int *p;
     TEST_CHECK(C_KZG_OK == c_kzg_malloc((void **)&p, 4));
+    free(p);
 }
 
 void malloc_huge_fails(void) {

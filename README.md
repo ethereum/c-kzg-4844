@@ -9,7 +9,8 @@ Done so far:
   - FFTs over the G1 group
   - Polynomial single commitment and verification
   - Polynomial multi commitment and verification
-  - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method
+  - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method (normal, and optimised for data availability)
+  - FK20 multi proof method (normal, and optimised for data availability)
 
 ## Install
 

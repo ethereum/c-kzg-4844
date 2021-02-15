@@ -113,37 +113,3 @@ C_KZG_RET fft_fr(blst_fr *out, const blst_fr *in, bool inverse, uint64_t n, cons
     }
     return C_KZG_OK;
 }
-
-/**
- * Wrapper for #fft_fr that allocates memory for the output.
- *
- * @remark As with all functions prefixed `new_`, this allocates memory that needs to be reclaimed by calling the
- * corresponding `free_` function. In this case, #free_fft_fr.
- *
- * @param[out] out     The results (array of length @p n)
- * @param[in]  in      The input data (array of length @p n)
- * @param[in]  inverse `false` for forward transform, `true` for inverse transform
- * @param[in]  n       Length of the FFT, must be a power of two
- * @param[in]  fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- * @retval C_CZK_MALLOC  Memory allocation failed
- */
-C_KZG_RET new_fft_fr(blst_fr **out, const blst_fr *in, bool inverse, uint64_t n, const FFTSettings *fs) {
-    C_KZG_RET ret;
-    TRY(c_kzg_malloc((void **)out, n * sizeof **out));
-    ret = fft_fr(*out, in, inverse, n, fs);
-    if (ret == C_KZG_BADARGS) {
-        free_fft_fr(*out);
-    }
-    return ret;
-}
-
-/**
- * Recover memory allocated by #new_fft_fr.
- *
- * @param x The array to be freed
- */
-void free_fft_fr(blst_fr *x) {
-    free(x);
-}

@@ -18,6 +18,7 @@
 #include "debug_util.h"
 #include "test_util.h"
 #include "fk20_proofs.h"
+#include "c_kzg_util.h"
 
 void test_reverse_bits_macros(void) {
     TEST_CHECK(128 == rev_byte(1));
@@ -241,6 +242,117 @@ void fk_multi_settings(void) {
     free_fk20_multi_settings(&fk);
 }
 
+void fk_multi_0(void) {
+    FFTSettings fs;
+    KZGSettings ks;
+    FK20MultiSettings fk;
+    uint64_t n, chunk_len, chunk_count;
+    uint64_t secrets_len;
+    blst_p1 *s1;
+    blst_p2 *s2;
+    poly p;
+    uint64_t vv[] = {1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33};
+    blst_p1 commitment;
+    blst_p1 *all_proofs;
+    blst_fr *extended_coeffs, *extended_coeffs_fft;
+    blst_fr *ys, *ys2;
+    uint64_t domain_stride;
+
+    chunk_len = 16;
+    chunk_count = 32;
+    n = chunk_len * chunk_count;
+    secrets_len = 2 * n;
+
+    TEST_CHECK(C_KZG_OK == new_p1(&s1, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_p2(&s2, secrets_len));
+
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4 + 5 + 1));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+    TEST_CHECK(C_KZG_OK == new_fk20_multi_settings(&fk, n * 2, chunk_len, &ks));
+
+    // Create a test polynomial: 512 coefficients
+    TEST_CHECK(C_KZG_OK == new_poly(&p, n));
+    for (int i = 0; i < chunk_count; i++) {
+        for (int j = 0; j < chunk_len; j++) {
+            uint64_t v = vv[j];
+            if (j == 3) v += i;
+            if (j == 5) v += i * i;
+            fr_from_uint64(&p.coeffs[i * chunk_len + j], v);
+        }
+        fr_negate(&p.coeffs[i * chunk_len + 12], &p.coeffs[i * chunk_len + 12]);
+        fr_negate(&p.coeffs[i * chunk_len + 14], &p.coeffs[i * chunk_len + 14]);
+    }
+
+    commit_to_poly(&commitment, &p, &ks);
+
+    // Compute the multi proofs, assuming that the polynomial will be extended with zeros
+    TEST_CHECK(C_KZG_OK == new_p1(&all_proofs, 2 * chunk_count));
+    TEST_CHECK(C_KZG_OK == da_using_fk20_multi(all_proofs, &p, &fk));
+
+    // Now actually extend the polynomial with zeros
+    TEST_CHECK(C_KZG_OK == new_fr(&extended_coeffs, 2 * n));
+    for (uint64_t i = 0; i < n; i++) {
+        extended_coeffs[i] = p.coeffs[i];
+    }
+    for (uint64_t i = n; i < 2 * n; i++) {
+        extended_coeffs[i] = fr_zero;
+    }
+    TEST_CHECK(C_KZG_OK == new_fr(&extended_coeffs_fft, 2 * n));
+    TEST_CHECK(C_KZG_OK == fft_fr(extended_coeffs_fft, extended_coeffs, false, 2 * n, &fs));
+    TEST_CHECK(C_KZG_OK == reverse_bit_order(extended_coeffs_fft, sizeof extended_coeffs_fft[0], 2 * n));
+
+    // Verify the proofs
+    TEST_CHECK(C_KZG_OK == new_fr(&ys, chunk_len));
+    TEST_CHECK(C_KZG_OK == new_fr(&ys2, chunk_len));
+    domain_stride = fs.max_width / (2 * n);
+    for (uint64_t pos = 0; pos < 2 * chunk_count; pos++) {
+        uint64_t domain_pos, stride;
+        blst_fr x;
+        bool result;
+
+        domain_pos = reverse_bits_limited(2 * chunk_count, pos);
+        x = fs.expanded_roots_of_unity[domain_pos * domain_stride];
+
+        // The ys from the extended coeffients
+        for (uint64_t i = 0; i < chunk_len; i++) {
+            ys[i] = extended_coeffs_fft[chunk_len * pos + i];
+        }
+        TEST_CHECK(C_KZG_OK == reverse_bit_order(ys, sizeof ys[0], chunk_len));
+
+        // Now recreate the ys by evaluating the polynomial in the sub-domain range
+        stride = fs.max_width / chunk_len;
+        for (uint64_t i = 0; i < chunk_len; i++) {
+            blst_fr z;
+            blst_fr_mul(&z, &x, &fs.expanded_roots_of_unity[i * stride]);
+            eval_poly(&ys2[i], &p, &z);
+        }
+
+        // ys and ys2 should be equal
+        for (uint64_t i = 0; i < chunk_len; i++) {
+            TEST_CHECK(fr_equal(&ys[i], &ys2[i]));
+        }
+
+        // Verify this proof
+        TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &all_proofs[pos], &x, ys, chunk_len, &ks));
+        TEST_CHECK(true == result);
+    }
+
+    free_poly(&p);
+    free(all_proofs);
+    free(extended_coeffs);
+    free(extended_coeffs_fft);
+    free(ys);
+    free(ys2);
+    free(s1);
+    free(s2);
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+    free_fk20_multi_settings(&fk);
+}
+
+// TODO: compare results of fk20_multi_da_opt() and  fk20_compute_proof_multi()
+
 TEST_LIST = {
     {"FK20_PROOFS_TEST", title},
     {"test_reverse_bits_macros", test_reverse_bits_macros},
@@ -252,5 +364,6 @@ TEST_LIST = {
     {"fk_single", fk_single},
     {"fk_single_strided", fk_single_strided},
     {"fk_multi_settings", fk_multi_settings},
+    {"fk_multi_0", fk_multi_0},
     {NULL, NULL} /* zero record marks the end of the list */
 };

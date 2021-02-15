@@ -23,5 +23,3 @@ void fft_g1_slow(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
 void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
                  uint64_t n);
 C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inverse, uint64_t n, const FFTSettings *fs);
-C_KZG_RET new_fft_g1(blst_p1 **out, const blst_p1 *in, bool inverse, uint64_t n, const FFTSettings *fs);
-void free_fft_g1(blst_p1 *x);

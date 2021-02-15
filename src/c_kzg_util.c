@@ -25,16 +25,58 @@
 /**
  * Wrapped `malloc()` that reports failures to allocate.
  *
- * @param[out] p Pointer to the allocated space
+ * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of bytes to be allocated
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET c_kzg_malloc(void **p, size_t n) {
+C_KZG_RET c_kzg_malloc(void **x, size_t n) {
     if (n > 0) {
-        *p = malloc(n);
-        return *p != NULL ? C_KZG_OK : C_KZG_MALLOC;
+        *x = malloc(n);
+        return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
     }
-    *p = NULL;
+    *x = NULL;
     return C_KZG_OK;
+}
+
+/**
+ * Allocate memory for an array of `blst_fr`.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of blst_fr to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_fr(blst_fr **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+/**
+ * Allocate memory for an array of `blst_p1`.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of blst_p1 to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_p1(blst_p1 **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+/**
+ * Allocate memory for an array of `blst_p2`.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of blst_p2 to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_p2(blst_p2 **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
 }

@@ -20,3 +20,6 @@
 #include "c_kzg.h"
 
 C_KZG_RET c_kzg_malloc(void **p, size_t n);
+C_KZG_RET new_fr(blst_fr **x, size_t n);
+C_KZG_RET new_p1(blst_p1 **x, size_t n);
+C_KZG_RET new_p2(blst_p2 **x, size_t n);

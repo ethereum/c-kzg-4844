@@ -128,7 +128,7 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
  */
 C_KZG_RET new_poly(poly *out, uint64_t length) {
     out->length = length;
-    return c_kzg_malloc((void **)&out->coeffs, length * sizeof *out->coeffs);
+    return new_fr(&out->coeffs, length);
 }
 
 /**
@@ -141,6 +141,8 @@ C_KZG_RET new_poly(poly *out, uint64_t length) {
  * @param[in]  length The number of coefficients, which is one more than the polynomial's degree
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
+ *
+ * @todo This is likely not useful. Remove?
  */
 C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length) {
     TRY(new_poly(out, length));
