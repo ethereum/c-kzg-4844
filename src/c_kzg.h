@@ -19,7 +19,7 @@
 #ifndef C_KZG_H
 #define C_KZG_H
 
-#include <stdbool.h>
+#include "bls12_381.h"
 
 /**
  * The common return type for all routines in which something can go wrong.

@@ -16,7 +16,6 @@
 
 #include <time.h> // CLOCK_REALTIME, clock_gettime(), timespec
 #include "c_kzg.h"
-#include "bls12_381.h"
 
 typedef struct timespec timespec_t;
 

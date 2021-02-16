@@ -20,7 +20,6 @@
 #define FFT_COMMON
 
 #include "c_kzg.h"
-#include "bls12_381.h"
 
 /**
  * The first 32 roots of unity in the finite field F_r.

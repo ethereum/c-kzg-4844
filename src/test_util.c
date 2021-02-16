@@ -14,9 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdlib.h> // malloc()
 #include "test_util.h"
-#include "bls12_381.h"
 
 void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const uint64_t n) {
     fr_t s_pow, s;

@@ -23,8 +23,8 @@
 #ifndef BLS12_381_H
 #define BLS12_381_H
 
-#include "stdint.h"
-#include "c_kzg.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 // BLST is our only option for now
 #ifndef BLST

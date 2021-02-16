@@ -17,7 +17,6 @@
 /** @file poly.h */
 
 #include "c_kzg.h"
-#include "bls12_381.h"
 
 /**
  * Defines a polynomial whose coefficients are members of the finite field F_r.

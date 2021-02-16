@@ -18,7 +18,6 @@
 
 #include <stdlib.h> // free()
 #include "c_kzg.h"
-#include "bls12_381.h"
 
 C_KZG_RET c_kzg_malloc(void **p, size_t n);
 C_KZG_RET new_fr(fr_t **x, size_t n);
