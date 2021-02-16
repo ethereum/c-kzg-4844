@@ -15,16 +15,15 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "fft_g1.h"
 
-void make_data(blst_p1 *out, uint64_t n) {
+void make_data(g1_t *out, uint64_t n) {
     // Multiples of g1_gen
     if (n == 0) return;
-    blst_p1_from_affine(out + 0, &BLS12_381_G1);
+    *out = g1_generator;
     for (int i = 1; i < n; i++) {
-        blst_p1_add_or_double_affine(out + i, out + i - 1, &BLS12_381_G1);
+        g1_add_or_dbl(out + i, out + i - 1, &g1_generator);
     }
 }
 
@@ -33,7 +32,7 @@ void compare_sft_fft(void) {
     unsigned int size = 6;
     FFTSettings fs;
     TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
-    blst_p1 data[fs.max_width], slow[fs.max_width], fast[fs.max_width];
+    g1_t data[fs.max_width], slow[fs.max_width], fast[fs.max_width];
     make_data(data, fs.max_width);
 
     // Do both fast and slow transforms
@@ -42,7 +41,7 @@ void compare_sft_fft(void) {
 
     // Verify the results are identical
     for (int i = 0; i < fs.max_width; i++) {
-        TEST_CHECK(blst_p1_is_equal(slow + i, fast + i));
+        TEST_CHECK(g1_equal(slow + i, fast + i));
     }
 
     free_fft_settings(&fs);
@@ -53,7 +52,7 @@ void roundtrip_fft(void) {
     unsigned int size = 10;
     FFTSettings fs;
     TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
-    blst_p1 expected[fs.max_width], data[fs.max_width], coeffs[fs.max_width];
+    g1_t expected[fs.max_width], data[fs.max_width], coeffs[fs.max_width];
     make_data(expected, fs.max_width);
     make_data(data, fs.max_width);
 
@@ -63,7 +62,7 @@ void roundtrip_fft(void) {
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {
-        TEST_CHECK(blst_p1_is_equal(expected + i, data + i));
+        TEST_CHECK(g1_equal(expected + i, data + i));
     }
 
     free_fft_settings(&fs);
@@ -75,14 +74,14 @@ void stride_fft(void) {
     FFTSettings fs1, fs2;
     TEST_CHECK(new_fft_settings(&fs1, size1) == C_KZG_OK);
     TEST_CHECK(new_fft_settings(&fs2, size2) == C_KZG_OK);
-    blst_p1 data[width], coeffs1[width], coeffs2[width];
+    g1_t data[width], coeffs1[width], coeffs2[width];
     make_data(data, width);
 
     TEST_CHECK(fft_g1(coeffs1, data, false, width, &fs1) == C_KZG_OK);
     TEST_CHECK(fft_g1(coeffs2, data, false, width, &fs2) == C_KZG_OK);
 
     for (int i = 0; i < width; i++) {
-        TEST_CHECK(blst_p1_is_equal(coeffs1 + i, coeffs2 + i));
+        TEST_CHECK(g1_equal(coeffs1 + i, coeffs2 + i));
     }
 
     free_fft_settings(&fs1);

@@ -41,8 +41,8 @@ static uint64_t poly_quotient_length(const poly *dividend, const poly *divisor) 
  * @param[in]  p   The polynomial
  * @param[in]  x   The x-coordinate to be evaluated
  */
-void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
-    blst_fr tmp;
+void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
+    fr_t tmp;
     uint64_t i;
 
     if (p->length == 0) {
@@ -59,8 +59,8 @@ void eval_poly(blst_fr *out, const poly *p, const blst_fr *x) {
     *out = p->coeffs[p->length - 1];
     i = p->length - 2;
     while (true) {
-        blst_fr_mul(&tmp, out, x);
-        blst_fr_add(out, &tmp, &p->coeffs[i]);
+        fr_mul(&tmp, out, x);
+        fr_add(out, &tmp, &p->coeffs[i]);
         if (i == 0) break;
         --i;
     }
@@ -85,7 +85,7 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
     uint64_t a_pos = dividend->length - 1;
     uint64_t b_pos = divisor->length - 1;
     uint64_t diff = a_pos - b_pos;
-    blst_fr a[dividend->length];
+    fr_t a[dividend->length];
 
     // Dividing by zero is undefined
     ASSERT(divisor->length > 0, C_KZG_BADARGS);
@@ -103,10 +103,10 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
     while (diff > 0) {
         fr_div(&out->coeffs[diff], &a[a_pos], &divisor->coeffs[b_pos]);
         for (uint64_t i = 0; i <= b_pos; i++) {
-            blst_fr tmp;
+            fr_t tmp;
             // a[diff + i] -= b[i] * quot
-            blst_fr_mul(&tmp, &out->coeffs[diff], &divisor->coeffs[i]);
-            blst_fr_sub(&a[diff + i], &a[diff + i], &tmp);
+            fr_mul(&tmp, &out->coeffs[diff], &divisor->coeffs[i]);
+            fr_sub(&a[diff + i], &a[diff + i], &tmp);
         }
         --diff;
         --a_pos;
@@ -144,7 +144,7 @@ C_KZG_RET new_poly(poly *out, uint64_t length) {
  *
  * @todo This is likely not useful. Remove?
  */
-C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length) {
+C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
     TRY(new_poly(out, length));
     for (uint64_t i = 0; i < length; i++) {
         out->coeffs[i] = coeffs[i];

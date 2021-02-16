@@ -118,9 +118,9 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs) {
+C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const FFTSettings *fs) {
     uint64_t n2 = n * 2;
-    blst_p1 *x_ext;
+    g1_t *x_ext;
 
     TRY(new_p1(&x_ext, n2));
     for (uint64_t i = 0; i < n; i++) {
@@ -148,8 +148,8 @@ C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTS
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const blst_p1 *x_ext_fft, const FFTSettings *fs) {
-    blst_fr *toeplitz_coeffs_fft;
+C_KZG_RET toeplitz_part_2(g1_t *out, const poly *toeplitz_coeffs, const g1_t *x_ext_fft, const FFTSettings *fs) {
+    fr_t *toeplitz_coeffs_fft;
 
     // ASSERT(toeplitz_coeffs->length == fk->x_ext_fft_len, C_KZG_BADARGS); // TODO: how to implement?
 
@@ -157,7 +157,7 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const blst_
     TRY(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fs));
 
     for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
-        p1_mul(&out[i], &x_ext_fft[i], &toeplitz_coeffs_fft[i]);
+        g1_mul(&out[i], &x_ext_fft[i], &toeplitz_coeffs_fft[i]);
     }
 
     free(toeplitz_coeffs_fft);
@@ -174,7 +174,7 @@ C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const blst_
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_ERROR   An internal error occurred
  */
-C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FFTSettings *fs) {
+C_KZG_RET toeplitz_part_3(g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const FFTSettings *fs) {
     uint64_t n = n2 / 2;
 
     TRY(fft_g1(out, h_ext_fft, true, n2, fs));
@@ -252,9 +252,9 @@ C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in) {
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk) {
+C_KZG_RET fk20_single_da_opt(g1_t *out, const poly *p, const FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
-    blst_p1 *h, *h_ext_fft;
+    g1_t *h, *h_ext_fft;
     poly toeplitz_coeffs;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
@@ -293,7 +293,7 @@ C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettin
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  */
-C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk) {
+C_KZG_RET da_using_fk20_single(g1_t *out, const poly *p, const FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
@@ -324,9 +324,9 @@ C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSett
  * @param[in]  p   The polynomial
  * @param[in]  fk  FK20 multi settings previously initialised by #new_fk20_multi_settings
  */
-C_KZG_RET fk20_compute_proof_multi(blst_p1 *out, const poly *p, const FK20MultiSettings *fk) {
+C_KZG_RET fk20_compute_proof_multi(g1_t *out, const poly *p, const FK20MultiSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
-    blst_p1 *h_ext_fft, *h_ext_fft_file, *h;
+    g1_t *h_ext_fft, *h_ext_fft_file, *h;
     poly toeplitz_coeffs;
 
     ASSERT(fk->ks->fs->max_width >= n2, C_KZG_BADARGS);
@@ -342,7 +342,7 @@ C_KZG_RET fk20_compute_proof_multi(blst_p1 *out, const poly *p, const FK20MultiS
         TRY(toeplitz_coeffs_step(&toeplitz_coeffs, p));
         TRY(toeplitz_part_2(h_ext_fft_file, &toeplitz_coeffs, fk->x_ext_fft_files[i], fk->ks->fs));
         for (uint64_t j = 0; j < n2; j++) {
-            blst_p1_add(&h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]);
+            g1_add_or_dbl(&h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]);
         }
     }
     free_poly(&toeplitz_coeffs);
@@ -369,9 +369,9 @@ C_KZG_RET fk20_compute_proof_multi(blst_p1 *out, const poly *p, const FK20MultiS
  * @param[in]  p   The polynomial, length `n`
  * @param[in]  fk  FK20 multi settings previously initialised by #new_fk20_multi_settings
  */
-C_KZG_RET fk20_multi_da_opt(blst_p1 *out, const poly *p, const FK20MultiSettings *fk) {
+C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *fk) {
     uint64_t n = p->length, n2 = n * 2, k, k2;
-    blst_p1 *h_ext_fft, *h_ext_fft_file, *h;
+    g1_t *h_ext_fft, *h_ext_fft_file, *h;
     poly toeplitz_coeffs;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
@@ -392,7 +392,7 @@ C_KZG_RET fk20_multi_da_opt(blst_p1 *out, const poly *p, const FK20MultiSettings
         TRY(toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, fk->chunk_len));
         TRY(toeplitz_part_2(h_ext_fft_file, &toeplitz_coeffs, fk->x_ext_fft_files[i], fk->ks->fs));
         for (uint64_t j = 0; j < k2; j++) {
-            blst_p1_add(&h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]);
+            g1_add_or_dbl(&h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]);
         }
     }
     free_poly(&toeplitz_coeffs);
@@ -421,7 +421,7 @@ C_KZG_RET fk20_multi_da_opt(blst_p1 *out, const poly *p, const FK20MultiSettings
  * This involves sampling on the double domain and reordering according to reverse bit order.
  *
  */
-C_KZG_RET da_using_fk20_multi(blst_p1 *out, const poly *p, const FK20MultiSettings *fk) {
+C_KZG_RET da_using_fk20_multi(g1_t *out, const poly *p, const FK20MultiSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
     ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
@@ -449,7 +449,7 @@ C_KZG_RET da_using_fk20_multi(blst_p1 *out, const poly *p, const FK20MultiSettin
  */
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks) {
     int n = n2 / 2;
-    blst_p1 *x;
+    g1_t *x;
 
     ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
@@ -488,7 +488,7 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
  */
 C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t chunk_len, const KZGSettings *ks) {
     uint64_t n, k;
-    blst_p1 *x;
+    g1_t *x;
 
     ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n2), C_KZG_BADARGS);

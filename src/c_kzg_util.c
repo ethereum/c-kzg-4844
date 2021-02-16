@@ -40,43 +40,43 @@ C_KZG_RET c_kzg_malloc(void **x, size_t n) {
 }
 
 /**
- * Allocate memory for an array of `blst_fr`.
+ * Allocate memory for an array of field elements.
  *
  * @remark Free the space later using `free()`.
  *
  * @param[out] x Pointer to the allocated space
- * @param[in]  n The number of blst_fr to be allocated
+ * @param[in]  n The number of field elements to be allocated
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET new_fr(blst_fr **x, size_t n) {
+C_KZG_RET new_fr(fr_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
 
 /**
- * Allocate memory for an array of `blst_p1`.
+ * Allocate memory for an array of G1 group elements.
  *
  * @remark Free the space later using `free()`.
  *
  * @param[out] x Pointer to the allocated space
- * @param[in]  n The number of blst_p1 to be allocated
+ * @param[in]  n The number of G1 elements to be allocated
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET new_p1(blst_p1 **x, size_t n) {
+C_KZG_RET new_p1(g1_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
 
 /**
- * Allocate memory for an array of `blst_p2`.
+ * Allocate memory for an array of G2 group elements.
  *
  * @remark Free the space later using `free()`.
  *
  * @param[out] x Pointer to the allocated space
- * @param[in]  n The number of blst_p2 to be allocated
+ * @param[in]  n The number of G2 elements to be allocated
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET new_p2(blst_p2 **x, size_t n) {
+C_KZG_RET new_p2(g2_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }

@@ -16,7 +16,6 @@
 
 #include <stdlib.h> // rand()
 #include "bench_util.h"
-#include "blst_util.h"
 
 unsigned long tdiff(timespec_t start, timespec_t end) {
     return (end.tv_sec - start.tv_sec) * NANO + (end.tv_nsec - start.tv_nsec);
@@ -28,20 +27,20 @@ uint64_t rand_uint64() {
     return a << 32 | b;
 }
 
-blst_fr rand_fr() {
-    blst_fr ret;
+fr_t rand_fr() {
+    fr_t ret;
     uint64_t a[4];
     a[0] = rand_uint64();
     a[1] = rand_uint64();
     a[2] = rand_uint64();
     a[3] = rand_uint64();
-    blst_fr_from_uint64(&ret, a);
+    fr_from_uint64s(&ret, a);
     return ret;
 }
 
-blst_p1 rand_g1() {
-    blst_p1 ret;
-    blst_fr random = rand_fr();
-    p1_mul(&ret, blst_p1_generator(), &random);
+g1_t rand_g1() {
+    g1_t ret;
+    fr_t random = rand_fr();
+    g1_mul(&ret, &g1_generator, &random);
     return ret;
 }

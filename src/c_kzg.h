@@ -20,7 +20,6 @@
 #define C_KZG_H
 
 #include <stdbool.h>
-#include "../inc/blst.h"
 
 /**
  * The common return type for all routines in which something can go wrong.

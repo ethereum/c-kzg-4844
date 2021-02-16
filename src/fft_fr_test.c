@@ -15,10 +15,8 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "fft_fr.h"
-#include "blst_util.h"
 
 const uint64_t inv_fft_expected[][4] = {
     {0x7fffffff80000008L, 0xa9ded2017fff2dffL, 0x199cec0404d0ec02L, 0x39f6d3a994cebea4L},
@@ -43,7 +41,7 @@ void compare_sft_fft(void) {
     unsigned int size = 12;
     FFTSettings fs;
     TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
-    blst_fr data[fs.max_width], out0[fs.max_width], out1[fs.max_width];
+    fr_t data[fs.max_width], out0[fs.max_width], out1[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(data + i, i);
     }
@@ -65,7 +63,7 @@ void roundtrip_fft(void) {
     unsigned int size = 12;
     FFTSettings fs;
     TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
-    blst_fr data[fs.max_width], coeffs[fs.max_width];
+    fr_t data[fs.max_width], coeffs[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(data + i, i);
     }
@@ -76,7 +74,7 @@ void roundtrip_fft(void) {
 
     // Verify that the result is still ascending values of i
     for (int i = 0; i < fs.max_width; i++) {
-        blst_fr tmp;
+        fr_t tmp;
         fr_from_uint64(&tmp, i);
         TEST_CHECK(fr_equal(&tmp, data + i));
     }
@@ -88,7 +86,7 @@ void inverse_fft(void) {
     // Initialise: ascending values of i
     FFTSettings fs;
     TEST_CHECK(new_fft_settings(&fs, 4) == C_KZG_OK);
-    blst_fr data[fs.max_width], out[fs.max_width];
+    fr_t data[fs.max_width], out[fs.max_width];
     for (int i = 0; i < fs.max_width; i++) {
         fr_from_uint64(&data[i], i);
     }
@@ -100,8 +98,8 @@ void inverse_fft(void) {
     int n = sizeof inv_fft_expected / sizeof inv_fft_expected[0];
     TEST_CHECK(n == fs.max_width);
     for (int i = 0; i < n; i++) {
-        blst_fr expected;
-        blst_fr_from_uint64(&expected, inv_fft_expected[i]);
+        fr_t expected;
+        fr_from_uint64s(&expected, inv_fft_expected[i]);
         TEST_CHECK(fr_equal(&expected, &out[i]));
     }
 
@@ -114,7 +112,7 @@ void stride_fft(void) {
     FFTSettings fs1, fs2;
     TEST_CHECK(new_fft_settings(&fs1, size1) == C_KZG_OK);
     TEST_CHECK(new_fft_settings(&fs2, size2) == C_KZG_OK);
-    blst_fr data[width], coeffs1[width], coeffs2[width];
+    fr_t data[width], coeffs1[width], coeffs2[width];
     for (int i = 0; i < width; i++) {
         fr_from_uint64(data + i, i);
     }

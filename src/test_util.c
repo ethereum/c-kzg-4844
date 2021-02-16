@@ -16,17 +16,17 @@
 
 #include <stdlib.h> // malloc()
 #include "test_util.h"
-#include "blst_util.h"
+#include "bls12_381.h"
 
-void generate_trusted_setup(blst_p1 *s1, blst_p2 *s2, const blst_scalar *secret, const uint64_t n) {
-    blst_fr s_pow, s;
-    blst_fr_from_scalar(&s, secret);
+void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const uint64_t n) {
+    fr_t s_pow, s;
+    fr_from_scalar(&s, secret);
     s_pow = fr_one;
 
     for (uint64_t i = 0; i < n; i++) {
-        p1_mul(s1 + i, blst_p1_generator(), &s_pow);
-        p2_mul(s2 + i, blst_p2_generator(), &s_pow);
-        blst_fr_mul(&s_pow, &s_pow, &s);
+        g1_mul(s1 + i, &g1_generator, &s_pow);
+        g2_mul(s2 + i, &g2_generator, &s_pow);
+        fr_mul(&s_pow, &s_pow, &s);
     }
 }
 

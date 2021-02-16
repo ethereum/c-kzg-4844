@@ -30,9 +30,9 @@ long run_bench(int scale, int max_seconds) {
     assert(C_KZG_OK == new_fft_settings(&fs, scale));
 
     // Allocate on the heap to avoid stack overflow for large sizes
-    blst_fr *data, *out;
-    data = malloc(fs.max_width * sizeof(blst_fr));
-    out = malloc(fs.max_width * sizeof(blst_fr));
+    fr_t *data, *out;
+    data = malloc(fs.max_width * sizeof(fr_t));
+    out = malloc(fs.max_width * sizeof(fr_t));
 
     // Fill with randomness
     for (uint64_t i = 0; i < fs.max_width; i++) {

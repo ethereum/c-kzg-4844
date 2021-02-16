@@ -15,12 +15,11 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "poly.h"
 
 void poly_div_0(void) {
-    blst_fr a[3], b[2], expected[2];
+    fr_t a[3], b[2], expected[2];
     poly dividend, divisor, actual;
 
     // Calculate (x^2 - 1) / (x + 1) = x - 1
@@ -52,7 +51,7 @@ void poly_div_0(void) {
 }
 
 void poly_div_1(void) {
-    blst_fr a[4], b[2], expected[3];
+    fr_t a[4], b[2], expected[3];
     poly dividend, divisor, actual;
 
     // Calculate (12x^3 - 11x^2 + 9x + 18) / (4x + 3) = 3x^2 - 5x + 6
@@ -87,7 +86,7 @@ void poly_div_1(void) {
 }
 
 void poly_div_2(void) {
-    blst_fr a[2], b[3];
+    fr_t a[2], b[3];
     poly dividend, divisor, actual;
 
     // Calculate (x + 1) / (x^2 - 1) = nil
@@ -113,7 +112,7 @@ void poly_div_2(void) {
 }
 
 void poly_div_by_zero(void) {
-    blst_fr a[2];
+    fr_t a[2];
     poly dividend, divisor, dummy;
 
     // Calculate (x + 1) / 0 = FAIL
@@ -132,7 +131,7 @@ void poly_div_by_zero(void) {
 
 void poly_eval_check(void) {
     uint64_t n = 10;
-    blst_fr actual, expected;
+    fr_t actual, expected;
     poly p;
     new_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
@@ -149,7 +148,7 @@ void poly_eval_check(void) {
 
 void poly_eval_0_check(void) {
     uint64_t n = 7, a = 597;
-    blst_fr actual, expected;
+    fr_t actual, expected;
     poly p;
     new_poly(&p, n);
     for (uint64_t i = 0; i < n; i++) {
@@ -166,7 +165,7 @@ void poly_eval_0_check(void) {
 
 void poly_eval_nil_check(void) {
     uint64_t n = 0;
-    blst_fr actual;
+    fr_t actual;
     poly p;
     new_poly(&p, n);
 

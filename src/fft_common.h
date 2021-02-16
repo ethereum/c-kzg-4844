@@ -20,12 +20,13 @@
 #define FFT_COMMON
 
 #include "c_kzg.h"
+#include "bls12_381.h"
 
 /**
  * The first 32 roots of unity in the finite field F_r.
  *
  * For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be
- * converted to a `blst_fr` type via the blst_fr_from_uint64() library function.
+ * converted to an `fr_t` type via the #fr_from_uint64s library function.
  *
  * The decimal values may be calculated with the following Python code:
  * @code{.py}
@@ -74,14 +75,14 @@ static const uint64_t scale2_root_of_unity[][4] = {
  * Initialise with #new_fft_settings. Free after use with #free_fft_settings.
  */
 typedef struct {
-    uint64_t max_width;               /**< The maximum size of FFT these settings support, a power of 2. */
-    blst_fr root_of_unity;            /**< The root of unity used to generate the lists in the structure. */
-    blst_fr *expanded_roots_of_unity; /**< Ascending powers of the root of unity, size `width + 1`. */
-    blst_fr *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
+    uint64_t max_width;            /**< The maximum size of FFT these settings support, a power of 2. */
+    fr_t root_of_unity;            /**< The root of unity used to generate the lists in the structure. */
+    fr_t *expanded_roots_of_unity; /**< Ascending powers of the root of unity, size `width + 1`. */
+    fr_t *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
 } FFTSettings;
 
 bool is_power_of_two(uint64_t n);
-C_KZG_RET expand_root_of_unity(blst_fr *out, const blst_fr *root, uint64_t width);
+C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width);
 C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);
 

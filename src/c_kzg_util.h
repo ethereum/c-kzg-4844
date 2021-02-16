@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-/** @file c_kzg_util.c */
+/** @file c_kzg_util.h */
 
 #include <stdlib.h> // free()
 #include "c_kzg.h"
+#include "bls12_381.h"
 
 C_KZG_RET c_kzg_malloc(void **p, size_t n);
-C_KZG_RET new_fr(blst_fr **x, size_t n);
-C_KZG_RET new_p1(blst_p1 **x, size_t n);
-C_KZG_RET new_p2(blst_p2 **x, size_t n);
+C_KZG_RET new_fr(fr_t **x, size_t n);
+C_KZG_RET new_p1(g1_t **x, size_t n);
+C_KZG_RET new_p2(g2_t **x, size_t n);

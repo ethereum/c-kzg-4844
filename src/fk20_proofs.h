@@ -16,7 +16,6 @@
 
 /** @file fk20_proofs.h */
 
-#include "c_kzg.h"
 #include "kzg_proofs.h"
 
 /**
@@ -46,7 +45,7 @@
  */
 typedef struct {
     const KZGSettings *ks;  /**< The corresponding settings for performing KZG proofs */
-    blst_p1 *x_ext_fft;     /**< The output of the first part of the Toeplitz process */
+    g1_t *x_ext_fft;        /**< The output of the first part of the Toeplitz process */
     uint64_t x_ext_fft_len; /**< The length of the `x_ext_fft_len` array (TODO - do we need this?)*/
 } FK20SingleSettings;
 
@@ -54,25 +53,25 @@ typedef struct {
  * Stores the setup and parameters needed for computing FK20 multi proofs.
  */
 typedef struct {
-    const KZGSettings *ks;     /**< The corresponding settings for performing KZG proofs */
-    uint64_t chunk_len;        /**< TODO */
-    blst_p1 **x_ext_fft_files; /**< TODO */
-    uint64_t length;           /**< TODO */
+    const KZGSettings *ks;  /**< The corresponding settings for performing KZG proofs */
+    uint64_t chunk_len;     /**< TODO */
+    g1_t **x_ext_fft_files; /**< TODO */
+    uint64_t length;        /**< TODO */
 } FK20MultiSettings;
 
 int log2_pow2(uint32_t n);
 uint32_t reverse_bits(uint32_t a);
 uint32_t reverse_bits_limited(uint32_t n, uint32_t value);
 C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
-C_KZG_RET toeplitz_part_1(blst_p1 *out, const blst_p1 *x, uint64_t n, const FFTSettings *fs);
-C_KZG_RET toeplitz_part_2(blst_p1 *out, const poly *toeplitz_coeffs, const blst_p1 *x_ext_fft, const FFTSettings *fs);
-C_KZG_RET toeplitz_part_3(blst_p1 *out, const blst_p1 *h_ext_fft, uint64_t n2, const FFTSettings *fs);
+C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const FFTSettings *fs);
+C_KZG_RET toeplitz_part_2(g1_t *out, const poly *toeplitz_coeffs, const g1_t *x_ext_fft, const FFTSettings *fs);
+C_KZG_RET toeplitz_part_3(g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const FFTSettings *fs);
 C_KZG_RET toeplitz_coeffs_stride(poly *out, const poly *in, uint64_t offset, uint64_t stride);
 C_KZG_RET toeplitz_coeffs_step(poly *out, const poly *in);
-C_KZG_RET fk20_single_da_opt(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
-C_KZG_RET da_using_fk20_single(blst_p1 *out, const poly *p, const FK20SingleSettings *fk);
-C_KZG_RET fk20_multi_da_opt(blst_p1 *out, const poly *p, const FK20MultiSettings *fk);
-C_KZG_RET da_using_fk20_multi(blst_p1 *out, const poly *p, const FK20MultiSettings *fk);
+C_KZG_RET fk20_single_da_opt(g1_t *out, const poly *p, const FK20SingleSettings *fk);
+C_KZG_RET da_using_fk20_single(g1_t *out, const poly *p, const FK20SingleSettings *fk);
+C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *fk);
+C_KZG_RET da_using_fk20_multi(g1_t *out, const poly *p, const FK20MultiSettings *fk);
 C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZGSettings *ks);
 C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t chunk_len, const KZGSettings *ks);
 void free_fk20_single_settings(FK20SingleSettings *fk);

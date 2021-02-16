@@ -26,7 +26,6 @@
  */
 
 #include "fft_g1.h"
-#include "blst_util.h"
 #include "c_kzg_util.h"
 
 /**
@@ -41,17 +40,16 @@
  * @param[in]  roots_stride The stride interval among the roots of unity
  * @param[in]  n      Length of the FFT, must be a power of two
  */
-void fft_g1_slow(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t n) {
-    blst_p1 v, last, jv;
-    blst_fr r;
+void fft_g1_slow(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride, uint64_t n) {
+    g1_t v, last, jv;
+    fr_t r;
     for (uint64_t i = 0; i < n; i++) {
-        p1_mul(&last, &in[0], &roots[0]);
+        g1_mul(&last, &in[0], &roots[0]);
         for (uint64_t j = 1; j < n; j++) {
             jv = in[j * stride];
             r = roots[((i * j) % n) * roots_stride];
-            p1_mul(&v, &jv, &r);
-            blst_p1_add_or_double(&last, &last, &v);
+            g1_mul(&v, &jv, &r);
+            g1_add_or_dbl(&last, &last, &v);
         }
         out[i] = last;
     }
@@ -69,17 +67,16 @@ void fft_g1_slow(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
  * @param[in]  roots_stride The stride interval among the roots of unity
  * @param[in]  n      Length of the FFT, must be a power of two
  */
-void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr *roots, uint64_t roots_stride,
-                 uint64_t n) {
+void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride, uint64_t n) {
     uint64_t half = n / 2;
     if (half > 0) { // Tunable parameter
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
-            blst_p1 y_times_root;
-            p1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            p1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
+            g1_t y_times_root;
+            g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            g1_sub(&out[i + half], &out[i], &y_times_root);
+            g1_add_or_dbl(&out[i], &out[i], &y_times_root);
         }
     } else {
         fft_g1_slow(out, in, stride, roots, roots_stride, n);
@@ -97,17 +94,17 @@ void fft_g1_fast(blst_p1 *out, const blst_p1 *in, uint64_t stride, const blst_fr
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-C_KZG_RET fft_g1(blst_p1 *out, const blst_p1 *in, bool inverse, uint64_t n, const FFTSettings *fs) {
+C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     ASSERT(n <= fs->max_width, C_KZG_BADARGS);
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
     if (inverse) {
-        blst_fr inv_len;
+        fr_t inv_len;
         fr_from_uint64(&inv_len, n);
-        blst_fr_eucl_inverse(&inv_len, &inv_len);
+        fr_inv(&inv_len, &inv_len);
         fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
         for (uint64_t i = 0; i < n; i++) {
-            p1_mul(&out[i], &out[i], &inv_len);
+            g1_mul(&out[i], &out[i], &inv_len);
         }
     } else {
         fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, n);

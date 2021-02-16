@@ -15,7 +15,6 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "c_kzg_util.h"
 

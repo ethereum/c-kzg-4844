@@ -21,7 +21,6 @@
  */
 
 #include "fft_common.h"
-#include "blst_util.h"
 #include "c_kzg_util.h"
 
 /**
@@ -50,13 +49,13 @@ bool is_power_of_two(uint64_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-C_KZG_RET expand_root_of_unity(blst_fr *out, const blst_fr *root, uint64_t width) {
+C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
     out[0] = fr_one;
     out[1] = *root;
 
     for (uint64_t i = 2; !fr_is_one(&out[i - 1]); i++) {
         ASSERT(i <= width, C_KZG_BADARGS);
-        blst_fr_mul(&out[i], &out[i - 1], root);
+        fr_mul(&out[i], &out[i - 1], root);
     }
     ASSERT(fr_is_one(&out[width]), C_KZG_BADARGS);
 
@@ -87,7 +86,7 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fs->max_width = (uint64_t)1 << max_scale;
 
     ASSERT((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]), C_KZG_BADARGS);
-    blst_fr_from_uint64(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
+    fr_from_uint64s(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
 
     // Allocate space for the roots of unity
     TRY(new_fr(&fs->expanded_roots_of_unity, fs->max_width + 1));

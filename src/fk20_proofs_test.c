@@ -15,7 +15,6 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "fk20_proofs.h"
 #include "c_kzg_util.h"
@@ -53,36 +52,36 @@ void test_log2_pow2(void) {
 
 void test_reverse_bit_order_g1(void) {
     int size = 10, n = 1 << size;
-    blst_p1 a[n], b[n];
-    blst_fr tmp;
+    g1_t a[n], b[n];
+    fr_t tmp;
 
     for (int i = 0; i < n; i++) {
         fr_from_uint64(&tmp, i);
-        p1_mul(&a[i], blst_p1_generator(), &tmp);
+        g1_mul(&a[i], &g1_generator, &tmp);
         b[i] = a[i];
     }
 
-    TEST_CHECK(C_KZG_OK == reverse_bit_order(a, sizeof(blst_p1), n));
+    TEST_CHECK(C_KZG_OK == reverse_bit_order(a, sizeof(g1_t), n));
     for (int i = 0; i < n; i++) {
-        TEST_CHECK(true == blst_p1_is_equal(&b[reverse_bits(i) >> (32 - size)], &a[i]));
+        TEST_CHECK(true == g1_equal(&b[reverse_bits(i) >> (32 - size)], &a[i]));
     }
 
     // Hand check a few select values
-    TEST_CHECK(true == blst_p1_is_equal(&b[0], &a[0]));
-    TEST_CHECK(false == blst_p1_is_equal(&b[1], &a[1]));
-    TEST_CHECK(true == blst_p1_is_equal(&b[n - 1], &a[n - 1]));
+    TEST_CHECK(true == g1_equal(&b[0], &a[0]));
+    TEST_CHECK(false == g1_equal(&b[1], &a[1]));
+    TEST_CHECK(true == g1_equal(&b[n - 1], &a[n - 1]));
 }
 
 void test_reverse_bit_order_fr(void) {
     int size = 12, n = 1 << size;
-    blst_fr a[n], b[n];
+    fr_t a[n], b[n];
 
     for (int i = 0; i < n; i++) {
         fr_from_uint64(&a[i], i);
         b[i] = a[i];
     }
 
-    TEST_CHECK(C_KZG_OK == reverse_bit_order(a, sizeof(blst_fr), n));
+    TEST_CHECK(C_KZG_OK == reverse_bit_order(a, sizeof(fr_t), n));
     for (int i = 0; i < n; i++) {
         TEST_CHECK(true == fr_equal(&b[reverse_bits(i) >> (32 - size)], &a[i]));
     }
@@ -105,11 +104,11 @@ void fk_single(void) {
     KZGSettings ks;
     FK20SingleSettings fk;
     uint64_t secrets_len = n_len + 1;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
     poly p;
-    blst_p1 commitment, all_proofs[2 * poly_len], proof;
-    blst_fr x, y;
+    g1_t commitment, all_proofs[2 * poly_len], proof;
+    fr_t x, y;
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
@@ -178,11 +177,11 @@ void fk_single_strided(void) {
     KZGSettings ks;
     FK20SingleSettings fk;
     uint64_t secrets_len = n_len + 1;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
     poly p;
-    blst_p1 commitment, all_proofs[2 * poly_len], proof;
-    blst_fr x, y;
+    g1_t commitment, all_proofs[2 * poly_len], proof;
+    fr_t x, y;
     bool result;
 
     TEST_CHECK(n_len >= 2 * poly_len);
@@ -226,8 +225,8 @@ void fk_multi_settings(void) {
     FK20MultiSettings fk;
     uint64_t n = 5;
     uint64_t secrets_len = 33;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
 
     // Initialise the secrets and data structures
     generate_trusted_setup(s1, s2, &secret, secrets_len);
@@ -248,14 +247,14 @@ void fk_multi_0(void) {
     FK20MultiSettings fk;
     uint64_t n, chunk_len, chunk_count;
     uint64_t secrets_len;
-    blst_p1 *s1;
-    blst_p2 *s2;
+    g1_t *s1;
+    g2_t *s2;
     poly p;
     uint64_t vv[] = {1, 2, 3, 4, 7, 8, 9, 10, 13, 14, 1, 15, 1, 1000, 134, 33};
-    blst_p1 commitment;
-    blst_p1 *all_proofs;
-    blst_fr *extended_coeffs, *extended_coeffs_fft;
-    blst_fr *ys, *ys2;
+    g1_t commitment;
+    g1_t *all_proofs;
+    fr_t *extended_coeffs, *extended_coeffs_fft;
+    fr_t *ys, *ys2;
     uint64_t domain_stride;
 
     chunk_len = 16;
@@ -308,7 +307,7 @@ void fk_multi_0(void) {
     domain_stride = fs.max_width / (2 * n);
     for (uint64_t pos = 0; pos < 2 * chunk_count; pos++) {
         uint64_t domain_pos, stride;
-        blst_fr x;
+        fr_t x;
         bool result;
 
         domain_pos = reverse_bits_limited(2 * chunk_count, pos);
@@ -323,8 +322,8 @@ void fk_multi_0(void) {
         // Now recreate the ys by evaluating the polynomial in the sub-domain range
         stride = fs.max_width / chunk_len;
         for (uint64_t i = 0; i < chunk_len; i++) {
-            blst_fr z;
-            blst_fr_mul(&z, &x, &fs.expanded_roots_of_unity[i * stride]);
+            fr_t z;
+            fr_mul(&z, &x, &fs.expanded_roots_of_unity[i * stride]);
             eval_poly(&ys2[i], &p, &z);
         }
 

@@ -27,18 +27,18 @@
  */
 typedef struct {
     const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
-    blst_p1 *secret_g1;    /**< G1 group elements from the trusted setup */
-    blst_p2 *secret_g2;    /**< G2 group elements from the trusted setup */
+    g1_t *secret_g1;       /**< G1 group elements from the trusted setup */
+    g2_t *secret_g2;       /**< G2 group elements from the trusted setup */
     uint64_t length;       /**< The number of elements in secret_g1 and secret_g2 */
 } KZGSettings;
 
-void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks);
-C_KZG_RET compute_proof_single(blst_p1 *out, const poly *p, const blst_fr *x0, const KZGSettings *ks);
-C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y,
+void commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks);
+C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const KZGSettings *ks);
+C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
                              const KZGSettings *ks);
-C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks);
-C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x,
-                            const blst_fr *ys, uint64_t n, const KZGSettings *ks);
-C_KZG_RET new_kzg_settings(KZGSettings *ks, const blst_p1 *secret_g1, const blst_p2 *secret_g2, uint64_t length,
+C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t n, const KZGSettings *ks);
+C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, const fr_t *ys,
+                            uint64_t n, const KZGSettings *ks);
+C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
                            const FFTSettings *fs);
 void free_kzg_settings(KZGSettings *ks);

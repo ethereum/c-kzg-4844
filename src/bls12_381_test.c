@@ -15,15 +15,14 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
-#include "blst_util.h"
+#include "bls12_381.h"
 
 // This is -1 (the second root of unity)
 uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
 
 void fr_is_zero_works(void) {
-    blst_fr zero;
+    fr_t zero;
     fr_from_uint64(&zero, 0);
     TEST_CHECK(fr_is_zero(&zero));
 }
@@ -33,7 +32,7 @@ void fr_is_one_works(void) {
 }
 
 void fr_from_uint64_works(void) {
-    blst_fr a;
+    fr_t a;
     fr_from_uint64(&a, 1);
     TEST_CHECK(fr_is_one(&a));
 }
@@ -42,16 +41,16 @@ void fr_equal_works(void) {
     // A couple of arbitrary roots of unity
     uint64_t aa[] = {0x0001000000000000L, 0xec03000276030000L, 0x8d51ccce760304d0L, 0x0000000000000000L};
     uint64_t bb[] = {0x8dd702cb688bc087L, 0xa032824078eaa4feL, 0xa733b23a98ca5b22L, 0x3f96405d25a31660L};
-    blst_fr a, b;
-    blst_fr_from_uint64(&a, aa);
-    blst_fr_from_uint64(&b, bb);
+    fr_t a, b;
+    fr_from_uint64s(&a, aa);
+    fr_from_uint64s(&b, bb);
     TEST_CHECK(true == fr_equal(&a, &a));
     TEST_CHECK(false == fr_equal(&a, &b));
 }
 
 void fr_negate_works(void) {
-    blst_fr minus1, res;
-    blst_fr_from_uint64(&minus1, m1);
+    fr_t minus1, res;
+    fr_from_uint64s(&minus1, m1);
     fr_negate(&res, &minus1);
     TEST_CHECK(fr_is_one(&res));
 }
@@ -59,13 +58,13 @@ void fr_negate_works(void) {
 void fr_pow_works(void) {
     // a^pow
     uint64_t pow = 123456;
-    blst_fr a, expected, actual;
+    fr_t a, expected, actual;
     fr_from_uint64(&a, 197);
 
     // Do it the slow way
     expected = fr_one;
     for (uint64_t i = 0; i < pow; i++) {
-        blst_fr_mul(&expected, &expected, &a);
+        fr_mul(&expected, &expected, &a);
     }
 
     // Do it the quick way
@@ -75,123 +74,101 @@ void fr_pow_works(void) {
 }
 
 void fr_div_works(void) {
-    blst_fr a, b, tmp, actual;
+    fr_t a, b, tmp, actual;
 
     fr_from_uint64(&a, 197);
     fr_from_uint64(&b, 123456);
 
     fr_div(&tmp, &a, &b);
-    blst_fr_mul(&actual, &tmp, &b);
+    fr_mul(&actual, &tmp, &b);
 
     TEST_CHECK(fr_equal(&a, &actual));
 }
 
 void p1_mul_works(void) {
-    blst_fr minus1;
-    blst_p1 g1_gen, g1_gen_neg, res;
+    fr_t minus1;
+    g1_t res;
 
     // Multiply the generator by minus one (the second root of unity)
-    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    blst_fr_from_uint64(&minus1, m1);
-    p1_mul(&res, &g1_gen, &minus1);
+    fr_from_uint64s(&minus1, m1);
+    g1_mul(&res, &g1_generator, &minus1);
 
     // We should end up with negative the generator
-    blst_p1_from_affine(&g1_gen_neg, &BLS12_381_NEG_G1);
-
-    TEST_CHECK(blst_p1_is_equal(&res, &g1_gen_neg));
+    TEST_CHECK(g1_equal(&res, &g1_negative_generator));
 }
 
 void p1_sub_works(void) {
-    blst_p1 g1_gen, g1_gen_neg;
-    blst_p1 tmp, res;
-
-    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    blst_p1_from_affine(&g1_gen_neg, &BLS12_381_NEG_G1);
+    g1_t tmp, res;
 
     // 2 * g1_gen = g1_gen - g1_gen_neg
-    blst_p1_double(&tmp, &g1_gen);
-    p1_sub(&res, &g1_gen, &g1_gen_neg);
+    g1_dbl(&tmp, &g1_generator);
+    g1_sub(&res, &g1_generator, &g1_negative_generator);
 
-    TEST_CHECK(blst_p1_is_equal(&tmp, &res));
+    TEST_CHECK(g1_equal(&tmp, &res));
 }
 
 void p2_mul_works(void) {
-    blst_fr minus1;
-    blst_p2 g2_gen, g2_gen_neg, res;
+    fr_t minus1;
+    g2_t res;
 
     // Multiply the generator by minus one (the second root of unity)
-    blst_p2_from_affine(&g2_gen, &BLS12_381_G2);
-    blst_fr_from_uint64(&minus1, m1);
-    p2_mul(&res, &g2_gen, &minus1);
+    fr_from_uint64s(&minus1, m1);
+    g2_mul(&res, &g2_generator, &minus1);
 
-    // We should end up with negative the generator
-    blst_p2_from_affine(&g2_gen_neg, &BLS12_381_NEG_G2);
-
-    TEST_CHECK(blst_p2_is_equal(&res, &g2_gen_neg));
+    TEST_CHECK(g2_equal(&res, &g2_negative_generator));
 }
 
 void p2_sub_works(void) {
-    blst_p2 g2_gen, g2_gen_neg;
-    blst_p2 tmp, res;
-
-    blst_p2_from_affine(&g2_gen, &BLS12_381_G2);
-    blst_p2_from_affine(&g2_gen_neg, &BLS12_381_NEG_G2);
+    g2_t tmp, res;
 
     // 2 * g2_gen = g2_gen - g2_gen_neg
-    blst_p2_double(&tmp, &g2_gen);
-    p2_sub(&res, &g2_gen, &g2_gen_neg);
+    g2_dbl(&tmp, &g2_generator);
+    g2_sub(&res, &g2_generator, &g2_negative_generator);
 
-    TEST_CHECK(blst_p2_is_equal(&tmp, &res));
-}
-
-void g1_identity_affine_is_infinity(void) {
-    blst_p1 actual;
-    blst_p1_from_affine(&actual, &g1_identity_affine);
-    TEST_CHECK(blst_p1_is_inf(&actual));
+    TEST_CHECK(g2_equal(&tmp, &res));
 }
 
 void g1_identity_is_infinity(void) {
-    TEST_CHECK(blst_p1_is_inf(&g1_identity));
+    TEST_CHECK(g1_is_inf(&g1_identity));
 }
 
 void g1_identity_is_identity(void) {
-    blst_p1 actual;
-    blst_p1_add(&actual, blst_p1_generator(), &g1_identity);
-    TEST_CHECK(blst_p1_is_equal(blst_p1_generator(), &actual));
+    g1_t actual;
+    g1_add_or_dbl(&actual, &g1_generator, &g1_identity);
+    TEST_CHECK(g1_equal(&g1_generator, &actual));
 }
 
-void g1_linear_combination(void) {
+void g1_make_linear_combination(void) {
     int len = 255;
-    blst_fr coeffs[len], tmp;
-    blst_p1 p[len], res, exp, g1_gen;
+    fr_t coeffs[len], tmp;
+    g1_t p[len], res, exp;
     for (int i = 0; i < len; i++) {
         fr_from_uint64(coeffs + i, i + 1);
-        blst_p1_from_affine(p + i, &BLS12_381_G1);
+        p[i] = g1_generator;
     }
 
     // Expected result
     fr_from_uint64(&tmp, len * (len + 1) / 2);
-    blst_p1_from_affine(&g1_gen, &BLS12_381_G1);
-    p1_mul(&exp, &g1_gen, &tmp);
+    g1_mul(&exp, &g1_generator, &tmp);
 
     // Test result
-    linear_combination_g1(&res, p, coeffs, len);
-    TEST_CHECK(blst_p1_is_equal(&exp, &res));
+    g1_linear_combination(&res, p, coeffs, len);
+    TEST_CHECK(g1_equal(&exp, &res));
 }
 
 void pairings_work(void) {
     // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
-    blst_fr three, five;
-    blst_p1 g1_3, g1_5;
-    blst_p2 g2_3, g2_5;
+    fr_t three, five;
+    g1_t g1_3, g1_5;
+    g2_t g2_3, g2_5;
 
     // Set up
     fr_from_uint64(&three, 3);
     fr_from_uint64(&five, 5);
-    p1_mul(&g1_3, blst_p1_generator(), &three);
-    p1_mul(&g1_5, blst_p1_generator(), &five);
-    p2_mul(&g2_3, blst_p2_generator(), &three);
-    p2_mul(&g2_5, blst_p2_generator(), &five);
+    g1_mul(&g1_3, &g1_generator, &three);
+    g1_mul(&g1_5, &g1_generator, &five);
+    g2_mul(&g2_3, &g2_generator, &three);
+    g2_mul(&g2_5, &g2_generator, &five);
 
     // Verify the pairing
     TEST_CHECK(true == pairings_verify(&g1_3, &g2_5, &g1_5, &g2_3));
@@ -199,7 +176,7 @@ void pairings_work(void) {
 }
 
 TEST_LIST = {
-    {"BLST_UTIL_TEST", title},
+    {"BLS12_384_TEST", title},
     {"fr_is_zero_works", fr_is_zero_works},
     {"fr_is_one_works", fr_is_one_works},
     {"fr_from_uint64_works", fr_from_uint64_works},
@@ -211,10 +188,9 @@ TEST_LIST = {
     {"p1_sub_works", p1_sub_works},
     {"p2_mul_works", p2_mul_works},
     {"p2_sub_works", p2_sub_works},
-    {"g1_identity_affine_is_infinity", g1_identity_affine_is_infinity},
     {"g1_identity_is_infinity", g1_identity_is_infinity},
     {"g1_identity_is_identity", g1_identity_is_identity},
-    {"g1_linear_combination", g1_linear_combination},
+    {"g1_make_linear_combination", g1_make_linear_combination},
     {"pairings_work", pairings_work},
     {NULL, NULL} /* zero record marks the end of the list */
 };

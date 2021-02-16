@@ -34,8 +34,8 @@
  * @param[in]  p   The polynomial to be committed to
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  */
-void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
-    linear_combination_g1(out, ks->secret_g1, p->coeffs, p->length);
+void commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
+    g1_linear_combination(out, ks->secret_g1, p->coeffs, p->length);
 }
 
 /**
@@ -49,7 +49,7 @@ void commit_to_poly(blst_p1 *out, const poly *p, const KZGSettings *ks) {
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_proof_single(blst_p1 *out, const poly *p, const blst_fr *x0, const KZGSettings *ks) {
+C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const KZGSettings *ks) {
     return compute_proof_multi(out, p, x0, 1, ks);
 }
 
@@ -66,16 +66,16 @@ C_KZG_RET compute_proof_single(blst_p1 *out, const poly *p, const blst_fr *x0, c
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x, blst_fr *y,
+C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
                              const KZGSettings *ks) {
-    blst_p2 x_g2, s_minus_x;
-    blst_p1 y_g1, commitment_minus_y;
-    p2_mul(&x_g2, blst_p2_generator(), x);
-    p2_sub(&s_minus_x, &ks->secret_g2[1], &x_g2);
-    p1_mul(&y_g1, blst_p1_generator(), y);
-    p1_sub(&commitment_minus_y, commitment, &y_g1);
+    g2_t x_g2, s_minus_x;
+    g1_t y_g1, commitment_minus_y;
+    g2_mul(&x_g2, &g2_generator, x);
+    g2_sub(&s_minus_x, &ks->secret_g2[1], &x_g2);
+    g1_mul(&y_g1, &g1_generator, y);
+    g1_sub(&commitment_minus_y, commitment, &y_g1);
 
-    *out = pairings_verify(&commitment_minus_y, blst_p2_generator(), proof, &s_minus_x);
+    *out = pairings_verify(&commitment_minus_y, &g2_generator, proof, &s_minus_x);
 
     return C_KZG_OK;
 }
@@ -96,9 +96,9 @@ C_KZG_RET check_proof_single(bool *out, const blst_p1 *commitment, const blst_p1
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, uint64_t n, const KZGSettings *ks) {
+C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t n, const KZGSettings *ks) {
     poly divisor, q;
-    blst_fr x_pow_n;
+    fr_t x_pow_n;
 
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
@@ -146,12 +146,12 @@ C_KZG_RET compute_proof_multi(blst_p1 *out, const poly *p, const blst_fr *x0, ui
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 *proof, const blst_fr *x,
-                            const blst_fr *ys, uint64_t n, const KZGSettings *ks) {
+C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, const fr_t *ys,
+                            uint64_t n, const KZGSettings *ks) {
     poly interp;
-    blst_fr inv_x, inv_x_pow, x_pow;
-    blst_p2 xn2, xn_minus_yn;
-    blst_p1 is1, commit_minus_interp;
+    fr_t inv_x, inv_x_pow, x_pow;
+    g2_t xn2, xn_minus_yn;
+    g1_t is1, commit_minus_interp;
 
     ASSERT(is_power_of_two(n), C_KZG_BADARGS);
 
@@ -160,27 +160,27 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
     TRY(fft_fr(interp.coeffs, ys, true, n, ks->fs));
 
     // Because it is a coset, not the subgroup, we have to multiply the polynomial coefficients by x^-i
-    blst_fr_eucl_inverse(&inv_x, x);
+    fr_inv(&inv_x, x);
     inv_x_pow = inv_x;
     for (uint64_t i = 1; i < n; i++) {
-        blst_fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
-        blst_fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
+        fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
+        fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
     }
 
     // [x^n]_2
-    blst_fr_eucl_inverse(&x_pow, &inv_x_pow);
-    p2_mul(&xn2, blst_p2_generator(), &x_pow);
+    fr_inv(&x_pow, &inv_x_pow);
+    g2_mul(&xn2, &g2_generator, &x_pow);
 
     // [s^n - x^n]_2
-    p2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
+    g2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
 
     // [interpolation_polynomial(s)]_1
     commit_to_poly(&is1, &interp, ks);
 
     // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
-    p1_sub(&commit_minus_interp, commitment, &is1);
+    g1_sub(&commit_minus_interp, commitment, &is1);
 
-    *out = pairings_verify(&commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn);
+    *out = pairings_verify(&commit_minus_interp, &g2_generator, proof, &xn_minus_yn);
 
     free_poly(&interp);
     return C_KZG_OK;
@@ -203,7 +203,7 @@ C_KZG_RET check_proof_multi(bool *out, const blst_p1 *commitment, const blst_p1 
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET new_kzg_settings(KZGSettings *ks, const blst_p1 *secret_g1, const blst_p2 *secret_g2, uint64_t length,
+C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
                            FFTSettings const *fs) {
 
     ASSERT(length >= fs->max_width, C_KZG_BADARGS);

@@ -1,7 +1,7 @@
-TESTS = blst_util_test c_kzg_util_test fft_common_test fft_fr_test fft_g1_test \
+TESTS = bls12_381_test c_kzg_util_test fft_common_test fft_fr_test fft_g1_test \
 	fk20_proofs_test kzg_proofs_test poly_test
 BENCH = fft_fr_bench fft_g1_bench
-LIB_SRC = blst_util.c c_kzg_util.c fft_common.c fft_fr.c fft_g1.c fk20_proofs.c kzg_proofs.c poly.c
+LIB_SRC = bls12_381.c c_kzg_util.c fft_common.c fft_fr.c fft_g1.c fk20_proofs.c kzg_proofs.c poly.c
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
 CFLAGS =

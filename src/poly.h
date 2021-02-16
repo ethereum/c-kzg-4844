@@ -17,7 +17,7 @@
 /** @file poly.h */
 
 #include "c_kzg.h"
-#include "blst_util.h"
+#include "bls12_381.h"
 
 /**
  * Defines a polynomial whose coefficients are members of the finite field F_r.
@@ -25,12 +25,12 @@
  * Initialise the storage with #new_poly. After use, free the storage with #free_poly.
  */
 typedef struct {
-    blst_fr *coeffs; /**< `coeffs[i]` is the coefficient of the `x^i` term of the polynomial. */
+    fr_t *coeffs;    /**< `coeffs[i]` is the coefficient of the `x^i` term of the polynomial. */
     uint64_t length; /**< One more than the polynomial's degree */
 } poly;
 
-void eval_poly(blst_fr *out, const poly *p, const blst_fr *x);
+void eval_poly(fr_t *out, const poly *p, const fr_t *x);
 C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor);
 C_KZG_RET new_poly(poly *out, uint64_t length);
-C_KZG_RET new_poly_with_coeffs(poly *out, const blst_fr *coeffs, uint64_t length);
+C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length);
 void free_poly(poly *p);

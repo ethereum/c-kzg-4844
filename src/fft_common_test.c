@@ -15,10 +15,8 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "fft_common.h"
-#include "blst_util.h"
 
 #define NUM_ROOTS 32
 
@@ -32,11 +30,11 @@ void roots_of_unity_out_of_bounds_fails(void) {
 }
 
 void roots_of_unity_are_plausible(void) {
-    blst_fr r;
+    fr_t r;
     for (int i = 0; i < NUM_ROOTS; i++) {
-        blst_fr_from_uint64(&r, scale2_root_of_unity[i]);
+        fr_from_uint64s(&r, scale2_root_of_unity[i]);
         for (int j = 0; j < i; j++) {
-            blst_fr_sqr(&r, &r);
+            fr_sqr(&r, &r);
         }
         TEST_CHECK(true == fr_is_one(&r));
         TEST_MSG("Root %d failed", i);
@@ -47,17 +45,17 @@ void expand_roots_is_plausible(void) {
     // Just test one (largeish) value of scale
     unsigned int scale = 15;
     unsigned int width = 1 << scale;
-    blst_fr root, expanded[width + 1], prod;
+    fr_t root, expanded[width + 1], prod;
 
     // Initialise
-    blst_fr_from_uint64(&root, scale2_root_of_unity[scale]);
+    fr_from_uint64s(&root, scale2_root_of_unity[scale]);
     TEST_CHECK(expand_root_of_unity(expanded, &root, width) == C_KZG_OK);
 
     // Verify - each pair should multiply to one
     TEST_CHECK(true == fr_is_one(expanded + 0));
     TEST_CHECK(true == fr_is_one(expanded + width));
     for (unsigned int i = 1; i <= width / 2; i++) {
-        blst_fr_mul(&prod, expanded + i, expanded + width - i);
+        fr_mul(&prod, expanded + i, expanded + width - i);
         TEST_CHECK(true == fr_is_one(&prod));
     }
 }
@@ -66,14 +64,14 @@ void new_fft_settings_is_plausible(void) {
     // Just test one (largeish) value of scale
     int scale = 21;
     unsigned int width = 1 << scale;
-    blst_fr prod;
+    fr_t prod;
     FFTSettings s;
 
     TEST_CHECK(new_fft_settings(&s, scale) == C_KZG_OK);
 
     // Verify - each pair should multiply to one
     for (unsigned int i = 1; i <= width; i++) {
-        blst_fr_mul(&prod, s.expanded_roots_of_unity + i, s.reverse_roots_of_unity + i);
+        fr_mul(&prod, s.expanded_roots_of_unity + i, s.reverse_roots_of_unity + i);
         TEST_CHECK(true == fr_is_one(&prod));
     }
 

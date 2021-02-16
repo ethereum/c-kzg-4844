@@ -15,7 +15,6 @@
  */
 
 #include "../inc/acutest.h"
-#include "debug_util.h"
 #include "test_util.h"
 #include "kzg_proofs.h"
 
@@ -27,11 +26,11 @@ void proof_single(void) {
 
     FFTSettings fs;
     KZGSettings ks;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
     poly p;
-    blst_p1 commitment, proof;
-    blst_fr x, value;
+    g1_t commitment, proof;
+    fr_t x, value;
     bool result;
 
     // Create the polynomial
@@ -57,7 +56,7 @@ void proof_single(void) {
     TEST_CHECK(true == result);
 
     // Change the value and check that the proof fails
-    blst_fr_add(&value, &value, &fr_one);
+    fr_add(&value, &value, &fr_one);
     TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &value, &ks));
     TEST_CHECK(false == result);
 
@@ -74,17 +73,17 @@ void proof_multi(void) {
     FFTSettings fs1, fs2;
     KZGSettings ks1, ks2;
     poly p;
-    blst_p1 commitment, proof;
-    blst_fr x, tmp;
+    g1_t commitment, proof;
+    fr_t x, tmp;
     bool result;
 
     // Compute proof at 2^coset_scale points
     int coset_scale = 7, coset_len = (1 << coset_scale);
-    blst_fr y[coset_len];
+    fr_t y[coset_len];
 
     uint64_t secrets_len = poly_len > coset_len ? poly_len + 1 : coset_len + 1;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
 
     // Create the polynomial
     new_poly(&p, poly_len);
@@ -109,7 +108,7 @@ void proof_multi(void) {
 
     // y_i is the value of the polynomial at each x_i
     for (int i = 0; i < coset_len; i++) {
-        blst_fr_mul(&tmp, &x, &ks2.fs->expanded_roots_of_unity[i]);
+        fr_mul(&tmp, &x, &ks2.fs->expanded_roots_of_unity[i]);
         eval_poly(&y[i], &p, &tmp);
     }
 
@@ -118,7 +117,7 @@ void proof_multi(void) {
     TEST_CHECK(true == result);
 
     // Change a value and check that the proof fails
-    blst_fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
+    fr_add(y + coset_len / 2, y + coset_len / 2, &fr_one);
     TEST_CHECK(C_KZG_OK == check_proof_multi(&result, &commitment, &proof, &x, y, coset_len, &ks2));
     TEST_CHECK(false == result);
 
@@ -134,9 +133,9 @@ void commit_to_nil_poly(void) {
     FFTSettings fs;
     KZGSettings ks;
     uint64_t secrets_len = 16;
-    blst_p1 s1[secrets_len];
-    blst_p2 s2[secrets_len];
-    blst_p1 result;
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
+    g1_t result;
 
     // Initialise the (arbitrary) secrets and data structures
     generate_trusted_setup(s1, s2, &secret, secrets_len);
@@ -145,7 +144,7 @@ void commit_to_nil_poly(void) {
 
     new_poly(&a, 0);
     commit_to_poly(&result, &a, &ks);
-    TEST_CHECK(blst_p1_is_equal(&g1_identity, &result));
+    TEST_CHECK(g1_equal(&g1_identity, &result));
 
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
