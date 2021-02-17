@@ -11,6 +11,7 @@ Done so far:
   - Polynomial multi commitment and verification
   - [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) single proof method (normal, and optimised for data availability)
   - FK20 multi proof method (normal, and optimised for data availability)
+  - Polynomial extension for data availability sampling
 
 ## Install
 

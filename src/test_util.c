@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <stdlib.h> // rand()
 #include "test_util.h"
 
 void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const uint64_t n) {
@@ -26,6 +27,30 @@ void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const ui
         g2_mul(s2 + i, &g2_generator, &s_pow);
         fr_mul(&s_pow, &s_pow, &s);
     }
+}
+
+uint64_t rand_uint64() {
+    uint64_t a = (uint64_t)rand();
+    uint64_t b = (uint64_t)rand();
+    return a << 32 | b;
+}
+
+fr_t rand_fr() {
+    fr_t ret;
+    uint64_t a[4];
+    a[0] = rand_uint64();
+    a[1] = rand_uint64();
+    a[2] = rand_uint64();
+    a[3] = rand_uint64();
+    fr_from_uint64s(&ret, a);
+    return ret;
+}
+
+g1_t rand_g1() {
+    g1_t ret;
+    fr_t random = rand_fr();
+    g1_mul(&ret, &g1_generator, &random);
+    return ret;
 }
 
 // Dummy function used to get the test-suite to print a title

@@ -14,33 +14,8 @@
  * limitations under the License.
  */
 
-#include <stdlib.h> // rand()
 #include "bench_util.h"
 
 unsigned long tdiff(timespec_t start, timespec_t end) {
     return (end.tv_sec - start.tv_sec) * NANO + (end.tv_nsec - start.tv_nsec);
-}
-
-uint64_t rand_uint64() {
-    uint64_t a = (uint64_t)rand();
-    uint64_t b = (uint64_t)rand();
-    return a << 32 | b;
-}
-
-fr_t rand_fr() {
-    fr_t ret;
-    uint64_t a[4];
-    a[0] = rand_uint64();
-    a[1] = rand_uint64();
-    a[2] = rand_uint64();
-    a[3] = rand_uint64();
-    fr_from_uint64s(&ret, a);
-    return ret;
-}
-
-g1_t rand_g1() {
-    g1_t ret;
-    fr_t random = rand_fr();
-    g1_mul(&ret, &g1_generator, &random);
-    return ret;
 }

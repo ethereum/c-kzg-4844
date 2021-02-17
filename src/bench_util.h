@@ -23,6 +23,3 @@ typedef struct timespec timespec_t;
 #define NSEC 1
 
 unsigned long tdiff(timespec_t start, timespec_t end);
-uint64_t rand_uint64();
-fr_t rand_fr();
-g1_t rand_g1();
