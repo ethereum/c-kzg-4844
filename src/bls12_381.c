@@ -25,6 +25,25 @@
 #ifdef BLST
 
 /**
+ * Fast log base 2 of a byte.
+ *
+ * Corresponds to the index of the highest bit set in the byte. Adapted from
+ * https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
+ *
+ * @param[in] b A non-zero byte
+ * @return The index of the highest set bit
+ */
+int log_2_byte(byte b) {
+    int r, shift;
+    r = (b > 0xF) << 2;
+    b >>= r;
+    shift = (b > 0x3) << 1;
+    b >>= (shift + 1);
+    r |= shift | b;
+    return r;
+}
+
+/**
  * Check whether the operand is zero in the finite field.
  *
  * @param p The field element to be checked
@@ -250,6 +269,8 @@ bool g1_equal(const g1_t *a, const g1_t *b) {
 /**
  * Multiply a G1 group element by a field element.
  *
+ * This "undoes" the Blst constant-timedness. FFTs do a lot of multiplication by one, so constant time is rather slow.
+ *
  * @param[out] out [@p b]@p a
  * @param[in]  a   The G1 group element
  * @param[in]  b   The multiplier
@@ -257,7 +278,18 @@ bool g1_equal(const g1_t *a, const g1_t *b) {
 void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
-    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
+
+    // Count the number of bytes to be multiplied.
+    int i = sizeof(blst_scalar);
+    while (i && !s.b[i - 1]) --i;
+    if (i == 0) {
+        *out = g1_identity;
+    } else if (i == 1 && s.b[0] == 1) {
+        *out = *a;
+    } else {
+        // Count the number of bits to be multiplied.
+        blst_p1_mult(out, a, s.b, 8 * i - 7 + log_2_byte(s.b[i - 1]));
+    }
 }
 
 /**

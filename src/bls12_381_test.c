@@ -20,6 +20,14 @@
 // This is -1 (the second root of unity)
 uint64_t m1[] = {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L};
 
+void log_2_byte_works(void) {
+    // TEST_CHECK(0 == log_2_byte(0x00));
+    TEST_CHECK(0 == log_2_byte(0x01));
+    TEST_CHECK(7 == log_2_byte(0x80));
+    TEST_CHECK(7 == log_2_byte(0xff));
+    TEST_CHECK(4 == log_2_byte(0x10));
+}
+
 void fr_is_zero_works(void) {
     fr_t zero;
     fr_from_uint64(&zero, 0);
@@ -176,6 +184,7 @@ void pairings_work(void) {
 
 TEST_LIST = {
     {"BLS12_384_TEST", title},
+    {"log_2_byte_works", log_2_byte_works},
     {"fr_is_zero_works", fr_is_zero_works},
     {"fr_is_one_works", fr_is_one_works},
     {"fr_from_uint64_works", fr_from_uint64_works},

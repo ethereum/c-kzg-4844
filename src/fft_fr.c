@@ -78,7 +78,7 @@ void fft_fr_fast(fr_t *out, const fr_t *in, uint64_t stride, const fr_t *roots, 
             fr_add(&out[i], &out[i], &y_times_root);
         }
     } else {
-        fft_fr_slow(out, in, stride, roots, roots_stride, n);
+        *out = *in;
     }
 }
 

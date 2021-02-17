@@ -79,7 +79,7 @@ void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, 
             g1_add_or_dbl(&out[i], &out[i], &y_times_root);
         }
     } else {
-        fft_g1_slow(out, in, stride, roots, roots_stride, n);
+        *out = *in;
     }
 }
 
