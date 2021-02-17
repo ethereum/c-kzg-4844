@@ -88,7 +88,7 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
     fr_t a[dividend->length];
 
     // Dividing by zero is undefined
-    ASSERT(divisor->length > 0, C_KZG_BADARGS);
+    CHECK(divisor->length > 0);
 
     // Initialise the output polynomial
     TRY(new_poly(out, poly_quotient_length(dividend, divisor)));

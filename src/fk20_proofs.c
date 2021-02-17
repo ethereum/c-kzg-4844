@@ -88,8 +88,8 @@ uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
 C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
-    ASSERT(n >> 32 == 0, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n >> 32 == 0);
+    CHECK(is_power_of_two(n));
 
     byte tmp[size];
     int unused_bit_len = 32 - log2_pow2(n);
@@ -151,7 +151,7 @@ C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const FFTSetting
 C_KZG_RET toeplitz_part_2(g1_t *out, const poly *toeplitz_coeffs, const g1_t *x_ext_fft, const FFTSettings *fs) {
     fr_t *toeplitz_coeffs_fft;
 
-    // ASSERT(toeplitz_coeffs->length == fk->x_ext_fft_len, C_KZG_BADARGS); // TODO: how to implement?
+    // CHECK(toeplitz_coeffs->length == fk->x_ext_fft_len); // TODO: how to implement?
 
     TRY(new_fr(&toeplitz_coeffs_fft, toeplitz_coeffs->length));
     TRY(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fs));
@@ -203,7 +203,7 @@ C_KZG_RET toeplitz_part_3(g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const F
 C_KZG_RET toeplitz_coeffs_stride(poly *out, const poly *in, uint64_t offset, uint64_t stride) {
     uint64_t n = in->length, k, k2;
 
-    ASSERT(stride > 0, C_KZG_BADARGS);
+    CHECK(stride > 0);
 
     k = n / stride;
     k2 = k * 2;
@@ -257,8 +257,8 @@ C_KZG_RET fk20_single_da_opt(g1_t *out, const poly *p, const FK20SingleSettings 
     g1_t *h, *h_ext_fft;
     poly toeplitz_coeffs;
 
-    ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n2 <= fk->ks->fs->max_width);
+    CHECK(is_power_of_two(n));
 
     TRY(new_poly(&toeplitz_coeffs, 2 * p->length));
     TRY(toeplitz_coeffs_step(&toeplitz_coeffs, p));
@@ -296,8 +296,8 @@ C_KZG_RET fk20_single_da_opt(g1_t *out, const poly *p, const FK20SingleSettings 
 C_KZG_RET da_using_fk20_single(g1_t *out, const poly *p, const FK20SingleSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
-    ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n2 <= fk->ks->fs->max_width);
+    CHECK(is_power_of_two(n));
 
     TRY(fk20_single_da_opt(out, p, fk));
     TRY(reverse_bit_order(out, sizeof out[0], n2));
@@ -329,7 +329,7 @@ C_KZG_RET fk20_compute_proof_multi(g1_t *out, const poly *p, const FK20MultiSett
     g1_t *h_ext_fft, *h_ext_fft_file, *h;
     poly toeplitz_coeffs;
 
-    ASSERT(fk->ks->fs->max_width >= n2, C_KZG_BADARGS);
+    CHECK(fk->ks->fs->max_width >= n2);
 
     TRY(new_p1(&h_ext_fft, n2));
     for (uint64_t i = 0; i < n2; i++) {
@@ -374,8 +374,8 @@ C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *f
     g1_t *h_ext_fft, *h_ext_fft_file, *h;
     poly toeplitz_coeffs;
 
-    ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n2 <= fk->ks->fs->max_width);
+    CHECK(is_power_of_two(n));
 
     n = n2 / 2;
     k = n / fk->chunk_len;
@@ -424,8 +424,8 @@ C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *f
 C_KZG_RET da_using_fk20_multi(g1_t *out, const poly *p, const FK20MultiSettings *fk) {
     uint64_t n = p->length, n2 = n * 2;
 
-    ASSERT(n2 <= fk->ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n2 <= fk->ks->fs->max_width);
+    CHECK(is_power_of_two(n));
 
     TRY(fk20_multi_da_opt(out, p, fk));
     TRY(reverse_bit_order(out, sizeof out[0], n2 / fk->chunk_len));
@@ -451,9 +451,9 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
     int n = n2 / 2;
     g1_t *x;
 
-    ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
-    ASSERT(n2 >= 2, C_KZG_BADARGS);
+    CHECK(n2 <= ks->fs->max_width);
+    CHECK(is_power_of_two(n2));
+    CHECK(n2 >= 2);
 
     fk->ks = ks;
     fk->x_ext_fft_len = n2;
@@ -490,12 +490,12 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
     uint64_t n, k;
     g1_t *x;
 
-    ASSERT(n2 <= ks->fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n2), C_KZG_BADARGS);
-    ASSERT(n2 >= 2, C_KZG_BADARGS);
-    ASSERT(chunk_len <= n2, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(chunk_len), C_KZG_BADARGS);
-    ASSERT(chunk_len > 0, C_KZG_BADARGS);
+    CHECK(n2 <= ks->fs->max_width);
+    CHECK(is_power_of_two(n2));
+    CHECK(n2 >= 2);
+    CHECK(chunk_len <= n2);
+    CHECK(is_power_of_two(chunk_len));
+    CHECK(chunk_len > 0);
 
     n = n2 / 2;
     k = n / chunk_len;

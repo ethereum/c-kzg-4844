@@ -54,10 +54,10 @@ C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
     out[1] = *root;
 
     for (uint64_t i = 2; !fr_is_one(&out[i - 1]); i++) {
-        ASSERT(i <= width, C_KZG_BADARGS);
+        CHECK(i <= width);
         fr_mul(&out[i], &out[i - 1], root);
     }
-    ASSERT(fr_is_one(&out[width]), C_KZG_BADARGS);
+    CHECK(fr_is_one(&out[width]));
 
     return C_KZG_OK;
 }
@@ -85,7 +85,7 @@ C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
 C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fs->max_width = (uint64_t)1 << max_scale;
 
-    ASSERT((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]), C_KZG_BADARGS);
+    CHECK((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]));
     fr_from_uint64s(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
 
     // Allocate space for the roots of unity

@@ -96,8 +96,8 @@ void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, 
  */
 C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
-    ASSERT(n <= fs->max_width, C_KZG_BADARGS);
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(n <= fs->max_width);
+    CHECK(is_power_of_two(n));
     if (inverse) {
         fr_t inv_len;
         fr_from_uint64(&inv_len, n);

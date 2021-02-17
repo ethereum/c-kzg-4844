@@ -100,7 +100,7 @@ C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t
     poly divisor, q;
     fr_t x_pow_n;
 
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(is_power_of_two(n));
 
     // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
     TRY(new_poly(&divisor, n + 1));
@@ -153,7 +153,7 @@ C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof
     g2_t xn2, xn_minus_yn;
     g1_t is1, commit_minus_interp;
 
-    ASSERT(is_power_of_two(n), C_KZG_BADARGS);
+    CHECK(is_power_of_two(n));
 
     // Interpolate at a coset.
     TRY(new_poly(&interp, n));
@@ -206,7 +206,7 @@ C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof
 C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
                            FFTSettings const *fs) {
 
-    ASSERT(length >= fs->max_width, C_KZG_BADARGS);
+    CHECK(length >= fs->max_width);
     ks->length = length;
 
     // Allocate space for the secrets

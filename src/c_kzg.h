@@ -40,7 +40,7 @@ typedef enum {
 #ifdef DEBUG
 #include <stdlib.h>
 #include <stdio.h>
-#define ASSERT(cond, ret)                                                                                              \
+#define CHECK(cond)                                                                                                    \
     if (!(cond)) {                                                                                                     \
         printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond);                                             \
         abort();                                                                                                       \
@@ -54,8 +54,8 @@ typedef enum {
         }                                                                                                              \
     }
 #else
-#define ASSERT(cond, ret)                                                                                              \
-    if (!(cond)) return (ret)
+#define CHECK(cond)                                                                                                    \
+    if (!(cond)) return C_KZG_BADARGS
 #define TRY(result)                                                                                                    \
     {                                                                                                                  \
         C_KZG_RET ret = (result);                                                                                      \
@@ -64,18 +64,17 @@ typedef enum {
     }
 #endif // DEBUG
 
-/** @def ASSERT
+/** @def CHECK
  *
  * Handle errors.
  *
  * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
- *   - `DEBUG` is undefined: when @p cond is false, return from the current function with the value @p ret, otherwise
- * continue.
+ *   - `DEBUG` is undefined: when @p cond is false, return from the current function with the value `C_KZG_BADARGS`,
+ * otherwise continue.
  *   - `DEBUG` is defined: when @p cond is false, print file and line number information and abort the run. This is very
  * useful for dubugging. The @p ret parameter is ignored in this case.
  *
  * @param cond The condition to be tested
- * @param ret  The return code to be returned in case the condition is false
  */
 
 /** @def TRY
