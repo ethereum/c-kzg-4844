@@ -83,7 +83,7 @@ make fk20_proofs_test_debug
 ./fk20_proofs_test_debug fk_single_strided
 ```
 
-This magic is implemented via the `ASSERT` macro in _c_kzg.h_.
+This magic is implemented via the `CHECK` and `TRY` macros in _c_kzg.h_.
 
 ## Make documentation
 
