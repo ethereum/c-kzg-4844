@@ -27,6 +27,7 @@
 
 #include "fft_g1.h"
 #include "c_kzg_util.h"
+#include "utility.h"
 
 /**
  * Slow Fourier Transform.

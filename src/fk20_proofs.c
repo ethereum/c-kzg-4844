@@ -23,90 +23,10 @@
  * @todo Split this out into smaller files.
  */
 
-#include <string.h> // memcpy()
 #include "fk20_proofs.h"
 #include "fft_g1.h"
 #include "c_kzg_util.h"
-
-/**
- * Calculate log base two of a power of two.
- *
- * In other words, the bit index of the one bit.
- *
- * @remark Works only for n a power of two, and only for n up to 2^31.
- *
- * @param[in] n The power of two
- * @return the log base two of n
- */
-int log2_pow2(uint32_t n) {
-    const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
-    register uint32_t r;
-    r = (n & b[0]) != 0;
-    r |= ((n & b[1]) != 0) << 1;
-    r |= ((n & b[2]) != 0) << 2;
-    r |= ((n & b[3]) != 0) << 3;
-    r |= ((n & b[4]) != 0) << 4;
-    return r;
-}
-
-/**
- * Reverse the bit order in a 32 bit integer.
- *
- * @remark This simply wraps the macro to enforce the type check.
- *
- * @param[in] a The integer to be reversed
- * @return An integer with the bits of @p a reversed
- */
-uint32_t reverse_bits(uint32_t a) {
-    return rev_4byte(a);
-}
-
-/**
- * Reverse the low-order bits in a 32 bit integer.
- *
- * The lowest log_base_two(@p n) bits of @p value are returned reversed. @p n must be a power of two.
- *
- * @param[in] n     To reverse `b` bits, set `n = 2 ^ b`
- * @param[in] value The bits to be reversed
- * @return The reversal of the lowest log_2(@p n) bits of the input @p value
- */
-uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
-    int unused_bit_len = 32 - log2_pow2(n);
-    return reverse_bits(value) >> unused_bit_len;
-}
-
-/**
- * Reorder an array in reverse bit order of its indices.
- *
- * @remark Operates in-place on the array.
- * @remark Can handle arrays of any type: provide the element size in @p size.
- *
- * @param[in,out] values The array, which is re-ordered in-place
- * @param[in]     size   The size in bytes of an element of the array
- * @param[in]     n      The length of the array, must be a power of two less that 2^32
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- */
-C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
-    CHECK(n >> 32 == 0);
-    CHECK(is_power_of_two(n));
-
-    // Pointer arithmetic on `void *` is naughty, so cast to something definite
-    byte *v = values;
-    byte tmp[size];
-    int unused_bit_len = 32 - log2_pow2(n);
-    for (uint32_t i = 0; i < n; i++) {
-        uint32_t r = reverse_bits(i) >> unused_bit_len;
-        if (r > i) {
-            // Swap the two elements
-            memcpy(tmp, v + (i * size), size);
-            memcpy(v + (i * size), v + (r * size), size);
-            memcpy(v + (r * size), tmp, size);
-        }
-    }
-
-    return C_KZG_OK;
-}
+#include "utility.h"
 
 /**
  * The first part of the Toeplitz matrix multiplication algorithm: the Fourier

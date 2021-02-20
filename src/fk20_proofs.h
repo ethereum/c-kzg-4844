@@ -19,26 +19,6 @@
 #include "kzg_proofs.h"
 
 /**
- * Reverse the bits in a byte.
- *
- * From https://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64BitsDiv
- *
- * @param a A byte
- * @return A byte that is bit-reversed with respect to @p a
- *
- * @todo Benchmark some of the other bit-reversal options in the list. Maybe.
- */
-#define rev_byte(a) ((((a)&0xff) * 0x0202020202ULL & 0x010884422010ULL) % 1023)
-
-/**
- * Reverse the bits in a 32 bit word.
- *
- * @param a A 32 bit unsigned integer
- * @return A 32 bit unsigned integer that is bit-reversed with respect to @p a
- */
-#define rev_4byte(a) (rev_byte(a) << 24 | rev_byte((a) >> 8) << 16 | rev_byte((a) >> 16) << 8 | rev_byte((a) >> 24))
-
-/**
  * Stores the setup and parameters needed for computing FK20 single proofs.
  *
  * Initialise with #new_fk20_single_settings. Free after use with #free_fk20_single_settings.
@@ -59,10 +39,6 @@ typedef struct {
     uint64_t length;        /**< TODO */
 } FK20MultiSettings;
 
-int log2_pow2(uint32_t n);
-uint32_t reverse_bits(uint32_t a);
-uint32_t reverse_bits_limited(uint32_t n, uint32_t value);
-C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
 C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const FFTSettings *fs);
 C_KZG_RET toeplitz_part_2(g1_t *out, const poly *toeplitz_coeffs, const g1_t *x_ext_fft, const FFTSettings *fs);
 C_KZG_RET toeplitz_part_3(g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const FFTSettings *fs);

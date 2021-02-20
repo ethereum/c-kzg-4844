@@ -24,20 +24,6 @@
 #include "c_kzg_util.h"
 
 /**
- * Utility function to test whether the argument is a power of two.
- *
- * @remark This method returns `true` for `is_power_of_two(0)` which is a bit weird, but not an issue in the contexts in
- * which we use it.
- *
- * @param[in] n The number to test
- * @retval true  if @p n is a power of two or zero
- * @retval false otherwise
- */
-bool is_power_of_two(uint64_t n) {
-    return (n & (n - 1)) == 0;
-}
-
-/**
  * Generate powers of a root of unity in the field for use in the FFTs.
  *
  * @remark @p root must be such that @p root ^ @p width is equal to one, but no smaller power of @p root is equal to

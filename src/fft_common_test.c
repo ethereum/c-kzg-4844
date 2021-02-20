@@ -17,6 +17,7 @@
 #include "../inc/acutest.h"
 #include "test_util.h"
 #include "fft_common.h"
+#include "utility.h"
 
 #define NUM_ROOTS 32
 
@@ -78,21 +79,6 @@ void new_fft_settings_is_plausible(void) {
     free_fft_settings(&s);
 }
 
-void is_power_of_two_works(void) {
-    // All actual powers of two
-    for (int i = 0; i <= 63; i++) {
-        TEST_CHECK(true == is_power_of_two((uint64_t)1 << i));
-        TEST_MSG("Case %d", i);
-    }
-
-    // This is a bit weird
-    TEST_CHECK(true == is_power_of_two(0));
-
-    // Not powers of two
-    TEST_CHECK(false == is_power_of_two(123));
-    TEST_CHECK(false == is_power_of_two(1234567));
-}
-
 TEST_LIST = {
     {"FFT_COMMON_TEST", title},
     {"roots_of_unity_is_the_expected_size", roots_of_unity_is_the_expected_size},
@@ -100,6 +86,5 @@ TEST_LIST = {
     {"roots_of_unity_are_plausible", roots_of_unity_are_plausible},
     {"expand_roots_is_plausible", expand_roots_is_plausible},
     {"new_fft_settings_is_plausible", new_fft_settings_is_plausible},
-    {"is_power_of_two_works", is_power_of_two_works},
     {NULL, NULL} /* zero record marks the end of the list */
 };

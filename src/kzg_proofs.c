@@ -26,6 +26,7 @@
 #include <stddef.h> // NULL
 #include "kzg_proofs.h"
 #include "c_kzg_util.h"
+#include "utility.h"
 
 /**
  * Make a KZG commitment to a polynomial.
