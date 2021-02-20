@@ -91,15 +91,17 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
     CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
 
+    // Pointer arithmetic on `void *` is naughty, so cast to something definite
+    byte *v = values;
     byte tmp[size];
     int unused_bit_len = 32 - log2_pow2(n);
     for (uint32_t i = 0; i < n; i++) {
         uint32_t r = reverse_bits(i) >> unused_bit_len;
         if (r > i) {
             // Swap the two elements
-            memcpy(tmp, values + (i * size), size);
-            memcpy(values + (i * size), values + (r * size), size);
-            memcpy(values + (r * size), tmp, size);
+            memcpy(tmp, v + (i * size), size);
+            memcpy(v + (i * size), v + (r * size), size);
+            memcpy(v + (r * size), tmp, size);
         }
     }
 
