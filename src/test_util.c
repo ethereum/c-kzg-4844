@@ -29,10 +29,28 @@ void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const ui
     }
 }
 
+// We don't need great quality randomness for testing, but we should make a bit of an effort
 uint64_t rand_uint64() {
-    uint64_t a = (uint64_t)rand();
-    uint64_t b = (uint64_t)rand();
-    return a << 32 | b;
+    static int rand_max_bits = 0;
+
+    // RAND_MAX varies in size per system. Count its bits.
+    if (!rand_max_bits) {
+        uint64_t a = RAND_MAX;
+        while (a) {
+            rand_max_bits++;
+            a >>= 1;
+        }
+    }
+
+    // Concatenate rand()s to make a uint64_t. This is a Bad Thing to do, but never mind.
+    uint64_t ret = (uint64_t)rand();
+    int bits_done = rand_max_bits;
+    while (bits_done < 64) {
+        ret <<= rand_max_bits;
+        ret |= (uint64_t)rand();
+        bits_done += rand_max_bits;
+    }
+    return ret;
 }
 
 fr_t rand_fr() {

@@ -18,6 +18,16 @@
 #include "test_util.h"
 #include "utility.h"
 
+static uint32_t rev_bits_slow(uint32_t a) {
+    uint32_t ret = 0;
+    for (int i = 0; i < 32; i++) {
+        ret <<= 1;
+        ret |= a & 1;
+        a >>= 1;
+    }
+    return ret;
+}
+
 void is_power_of_two_works(void) {
     // All actual powers of two
     for (int i = 0; i <= 63; i++) {
@@ -33,6 +43,34 @@ void is_power_of_two_works(void) {
     TEST_CHECK(false == is_power_of_two(1234567));
 }
 
+void test_log2_pow2(void) {
+    int actual, expected;
+    for (int i = 0; i < 32; i++) {
+        expected = i;
+        actual = log2_pow2((uint32_t)1 << i);
+        TEST_CHECK(expected == actual);
+    }
+}
+
+void test_next_power_of_two_powers(void) {
+    for (int i = 0; i <= 63; i++) {
+        uint64_t expected = (uint64_t)1 << i;
+        uint64_t actual = next_power_of_two(expected);
+        TEST_CHECK(expected == actual);
+    }
+}
+
+void test_next_power_of_two_random(void) {
+    for (int i = 0; i < 32768; i++) {
+        uint64_t a = 1 + (rand_uint64() >> 1); // It's not expected to work for a > 2^63
+        uint64_t higher = next_power_of_two(a);
+        uint64_t lower = higher >> 1;
+        if (!(TEST_CHECK(is_power_of_two(higher)) && TEST_CHECK(higher >= a) && TEST_CHECK(lower < a))) {
+            TEST_MSG("Failed for %lu", a);
+        }
+    }
+}
+
 void test_reverse_bits_macros(void) {
     TEST_CHECK(128 == rev_byte(1));
     TEST_CHECK(128 == rev_byte(257));
@@ -42,7 +80,7 @@ void test_reverse_bits_macros(void) {
     TEST_CHECK(0xffffffff == rev_4byte(0xffffffff));
 }
 
-void test_reverse_bits_0(void) {
+void test_reverse_bits_powers(void) {
     uint32_t actual, expected;
     for (int i = 0; i < 32; i++) {
         expected = (uint32_t)1 << (31 - i);
@@ -51,16 +89,11 @@ void test_reverse_bits_0(void) {
     }
 }
 
-void test_reverse_bits_1(void) {
-    TEST_CHECK(0x84c2a6e1 == reverse_bits(0x87654321));
-}
-
-void test_log2_pow2(void) {
-    int actual, expected;
-    for (int i = 0; i < 32; i++) {
-        expected = i;
-        actual = log2_pow2((uint32_t)1 << i);
-        TEST_CHECK(expected == actual);
+void test_reverse_bits_random(void) {
+    for (int i = 0; i < 32768; i++) {
+        uint32_t a = (uint32_t)(rand_uint64() & 0xffffffffL);
+        TEST_CHECK(rev_bits_slow(a) == reverse_bits(a));
+        TEST_MSG("Failed for %08x. Expected %08x, got %08x.", a, rev_bits_slow(a), reverse_bits(a));
     }
 }
 
@@ -109,10 +142,12 @@ void test_reverse_bit_order_fr(void) {
 TEST_LIST = {
     {"UTILITY_TEST", title},
     {"is_power_of_two_works", is_power_of_two_works},
-    {"test_reverse_bits_macros", test_reverse_bits_macros},
-    {"test_reverse_bits_0", test_reverse_bits_0},
-    {"test_reverse_bits_1", test_reverse_bits_1},
     {"test_log2_pow2", test_log2_pow2},
+    {"test_next_power_of_two_powers", test_next_power_of_two_powers},
+    {"test_next_power_of_two_random", test_next_power_of_two_random},
+    {"test_reverse_bits_macros", test_reverse_bits_macros},
+    {"test_reverse_bits_powers", test_reverse_bits_powers},
+    {"test_reverse_bits_random", test_reverse_bits_random},
     {"test_reverse_bit_order_g1", test_reverse_bit_order_g1},
     {"test_reverse_bit_order_fr", test_reverse_bit_order_fr},
     {NULL, NULL} /* zero record marks the end of the list */
