@@ -128,7 +128,7 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
  */
 C_KZG_RET new_poly(poly *out, uint64_t length) {
     out->length = length;
-    return new_fr(&out->coeffs, length);
+    return new_fr_array(&out->coeffs, length);
 }
 
 /**

@@ -44,7 +44,7 @@ C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const FFTSetting
     uint64_t n2 = n * 2;
     g1_t *x_ext;
 
-    TRY(new_p1(&x_ext, n2));
+    TRY(new_g1_array(&x_ext, n2));
     for (uint64_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
@@ -75,7 +75,7 @@ C_KZG_RET toeplitz_part_2(g1_t *out, const poly *toeplitz_coeffs, const g1_t *x_
 
     // CHECK(toeplitz_coeffs->length == fk->x_ext_fft_len); // TODO: how to implement?
 
-    TRY(new_fr(&toeplitz_coeffs_fft, toeplitz_coeffs->length));
+    TRY(new_fr_array(&toeplitz_coeffs_fft, toeplitz_coeffs->length));
     TRY(fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs->coeffs, false, toeplitz_coeffs->length, fs));
 
     for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
@@ -185,10 +185,10 @@ C_KZG_RET fk20_single_da_opt(g1_t *out, const poly *p, const FK20SingleSettings 
     TRY(new_poly(&toeplitz_coeffs, 2 * p->length));
     TRY(toeplitz_coeffs_step(&toeplitz_coeffs, p));
 
-    TRY(new_p1(&h_ext_fft, toeplitz_coeffs.length));
+    TRY(new_g1_array(&h_ext_fft, toeplitz_coeffs.length));
     TRY(toeplitz_part_2(h_ext_fft, &toeplitz_coeffs, fk->x_ext_fft, fk->ks->fs));
 
-    TRY(new_p1(&h, n2));
+    TRY(new_g1_array(&h, n2));
     TRY(toeplitz_part_3(h, h_ext_fft, n2, fk->ks->fs));
 
     TRY(fft_g1(out, h, false, n2, fk->ks->fs));
@@ -253,13 +253,13 @@ C_KZG_RET fk20_compute_proof_multi(g1_t *out, const poly *p, const FK20MultiSett
 
     CHECK(fk->ks->fs->max_width >= n2);
 
-    TRY(new_p1(&h_ext_fft, n2));
+    TRY(new_g1_array(&h_ext_fft, n2));
     for (uint64_t i = 0; i < n2; i++) {
         h_ext_fft[i] = g1_identity;
     }
 
     TRY(new_poly(&toeplitz_coeffs, 2 * p->length));
-    TRY(new_p1(&h_ext_fft_file, toeplitz_coeffs.length));
+    TRY(new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length));
     for (uint64_t i = 0; i < fk->chunk_len; i++) {
         TRY(toeplitz_coeffs_step(&toeplitz_coeffs, p));
         TRY(toeplitz_part_2(h_ext_fft_file, &toeplitz_coeffs, fk->x_ext_fft_files[i], fk->ks->fs));
@@ -270,7 +270,7 @@ C_KZG_RET fk20_compute_proof_multi(g1_t *out, const poly *p, const FK20MultiSett
     free_poly(&toeplitz_coeffs);
     free(h_ext_fft_file);
 
-    TRY(new_p1(&h, n2));
+    TRY(new_g1_array(&h, n2));
     TRY(toeplitz_part_3(h, h_ext_fft, n2, fk->ks->fs));
 
     TRY(fft_g1(out, h, false, n2, fk->ks->fs));
@@ -303,13 +303,13 @@ C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *f
     k = n / fk->chunk_len;
     k2 = k * 2;
 
-    TRY(new_p1(&h_ext_fft, k2));
+    TRY(new_g1_array(&h_ext_fft, k2));
     for (uint64_t i = 0; i < k2; i++) {
         h_ext_fft[i] = g1_identity;
     }
 
     TRY(new_poly(&toeplitz_coeffs, n2 / fk->chunk_len));
-    TRY(new_p1(&h_ext_fft_file, toeplitz_coeffs.length));
+    TRY(new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length));
     for (uint64_t i = 0; i < fk->chunk_len; i++) {
         TRY(toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, fk->chunk_len));
         TRY(toeplitz_part_2(h_ext_fft_file, &toeplitz_coeffs, fk->x_ext_fft_files[i], fk->ks->fs));
@@ -321,7 +321,7 @@ C_KZG_RET fk20_multi_da_opt(g1_t *out, const poly *p, const FK20MultiSettings *f
     free(h_ext_fft_file);
 
     // Calculate `h`
-    TRY(new_p1(&h, k2));
+    TRY(new_g1_array(&h, k2));
     TRY(toeplitz_part_3(h, h_ext_fft, k2, fk->ks->fs));
 
     // Overwrite the second half of `h` with zero
@@ -380,13 +380,13 @@ C_KZG_RET new_fk20_single_settings(FK20SingleSettings *fk, uint64_t n2, const KZ
     fk->ks = ks;
     fk->x_ext_fft_len = n2;
 
-    TRY(new_p1(&x, n));
+    TRY(new_g1_array(&x, n));
     for (uint64_t i = 0; i < n - 1; i++) {
         x[i] = ks->secret_g1[n - 2 - i];
     }
     x[n - 1] = g1_identity;
 
-    TRY(new_p1(&fk->x_ext_fft, 2 * n));
+    TRY(new_g1_array(&fk->x_ext_fft, 2 * n));
     TRY(toeplitz_part_1(fk->x_ext_fft, x, n, ks->fs));
 
     free(x);
@@ -426,9 +426,9 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
     fk->chunk_len = chunk_len;
 
     // `x_ext_fft_files` is two dimensional. Allocate space for pointers to the rows.
-    TRY(c_kzg_malloc((void **)&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files));
+    TRY(new_g1_array_2(&fk->x_ext_fft_files, chunk_len * sizeof *fk->x_ext_fft_files));
 
-    TRY(new_p1(&x, k));
+    TRY(new_g1_array(&x, k));
     for (uint64_t offset = 0; offset < chunk_len; offset++) {
         uint64_t start = n - chunk_len - 1 - offset;
         for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= chunk_len) {
@@ -436,7 +436,7 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
         }
         x[k - 1] = g1_identity;
 
-        TRY(new_p1(&fk->x_ext_fft_files[offset], 2 * k));
+        TRY(new_g1_array(&fk->x_ext_fft_files[offset], 2 * k));
         TRY(toeplitz_part_1(fk->x_ext_fft_files[offset], x, k, ks->fs));
     }
 

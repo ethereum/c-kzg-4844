@@ -190,8 +190,8 @@ void fk_multi_0(void) {
     n = chunk_len * chunk_count;
     secrets_len = 2 * n;
 
-    TEST_CHECK(C_KZG_OK == new_p1(&s1, secrets_len));
-    TEST_CHECK(C_KZG_OK == new_p2(&s2, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_g1_array(&s1, secrets_len));
+    TEST_CHECK(C_KZG_OK == new_g2_array(&s2, secrets_len));
 
     generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4 + 5 + 1));
@@ -214,24 +214,24 @@ void fk_multi_0(void) {
     commit_to_poly(&commitment, &p, &ks);
 
     // Compute the multi proofs, assuming that the polynomial will be extended with zeros
-    TEST_CHECK(C_KZG_OK == new_p1(&all_proofs, 2 * chunk_count));
+    TEST_CHECK(C_KZG_OK == new_g1_array(&all_proofs, 2 * chunk_count));
     TEST_CHECK(C_KZG_OK == da_using_fk20_multi(all_proofs, &p, &fk));
 
     // Now actually extend the polynomial with zeros
-    TEST_CHECK(C_KZG_OK == new_fr(&extended_coeffs, 2 * n));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&extended_coeffs, 2 * n));
     for (uint64_t i = 0; i < n; i++) {
         extended_coeffs[i] = p.coeffs[i];
     }
     for (uint64_t i = n; i < 2 * n; i++) {
         extended_coeffs[i] = fr_zero;
     }
-    TEST_CHECK(C_KZG_OK == new_fr(&extended_coeffs_fft, 2 * n));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&extended_coeffs_fft, 2 * n));
     TEST_CHECK(C_KZG_OK == fft_fr(extended_coeffs_fft, extended_coeffs, false, 2 * n, &fs));
     TEST_CHECK(C_KZG_OK == reverse_bit_order(extended_coeffs_fft, sizeof extended_coeffs_fft[0], 2 * n));
 
     // Verify the proofs
-    TEST_CHECK(C_KZG_OK == new_fr(&ys, chunk_len));
-    TEST_CHECK(C_KZG_OK == new_fr(&ys2, chunk_len));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&ys, chunk_len));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&ys2, chunk_len));
     domain_stride = fs.max_width / (2 * n);
     for (uint64_t pos = 0; pos < 2 * chunk_count; pos++) {
         uint64_t domain_pos, stride;

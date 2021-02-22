@@ -211,8 +211,8 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
     ks->length = length;
 
     // Allocate space for the secrets
-    TRY(new_p1(&ks->secret_g1, ks->length));
-    TRY(new_p2(&ks->secret_g2, ks->length));
+    TRY(new_g1_array(&ks->secret_g1, ks->length));
+    TRY(new_g2_array(&ks->secret_g2, ks->length));
 
     // Populate the secrets
     for (uint64_t i = 0; i < ks->length; i++) {

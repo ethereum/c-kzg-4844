@@ -38,7 +38,7 @@ void das_extension_test_known(void) {
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
     half = fs.max_width / 2;
 
-    TEST_CHECK(C_KZG_OK == new_fr(&data, half));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&data, half));
     for (uint64_t i = 0; i < half; i++) {
         fr_from_uint64(data + i, i);
     }
@@ -62,10 +62,10 @@ void das_extension_test_random(void) {
     fr_t *even_data, *odd_data, *data, *coeffs;
     for (int scale = 4; scale < 10; scale++) {
         TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, scale));
-        TEST_CHECK(C_KZG_OK == new_fr(&even_data, fs.max_width / 2));
-        TEST_CHECK(C_KZG_OK == new_fr(&odd_data, fs.max_width / 2));
-        TEST_CHECK(C_KZG_OK == new_fr(&data, fs.max_width));
-        TEST_CHECK(C_KZG_OK == new_fr(&coeffs, fs.max_width));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&even_data, fs.max_width / 2));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&odd_data, fs.max_width / 2));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&data, fs.max_width));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&coeffs, fs.max_width));
 
         for (int rep = 0; rep < 4; rep++) {
 

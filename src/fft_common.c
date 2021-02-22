@@ -75,8 +75,8 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fr_from_uint64s(&fs->root_of_unity, scale2_root_of_unity[max_scale]);
 
     // Allocate space for the roots of unity
-    TRY(new_fr(&fs->expanded_roots_of_unity, fs->max_width + 1));
-    TRY(new_fr(&fs->reverse_roots_of_unity, fs->max_width + 1));
+    TRY(new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1));
+    TRY(new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1));
 
     // Populate the roots of unity
     TRY(expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width));
