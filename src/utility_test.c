@@ -17,6 +17,7 @@
 #include "../inc/acutest.h"
 #include "test_util.h"
 #include "utility.h"
+#include "c_kzg_util.h"
 
 static uint32_t rev_bits_slow(uint32_t a) {
     uint32_t ret = 0;
@@ -139,6 +140,32 @@ void test_reverse_bit_order_fr(void) {
     TEST_CHECK(true == fr_equal(&b[n - 1], &a[n - 1]));
 }
 
+void test_reverse_bit_order_fr_large(void) {
+    int size = 22, n = 1 << size;
+    fr_t *a, *b;
+
+    TEST_CHECK(C_KZG_OK == new_fr_array(&a, n));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&b, n));
+
+    for (int i = 0; i < n; i++) {
+        fr_from_uint64(&a[i], i);
+        b[i] = a[i];
+    }
+
+    TEST_CHECK(C_KZG_OK == reverse_bit_order(a, sizeof(fr_t), n));
+    for (int i = 0; i < n; i++) {
+        TEST_CHECK(true == fr_equal(&b[reverse_bits(i) >> (32 - size)], &a[i]));
+    }
+
+    // Hand check a few select values
+    TEST_CHECK(true == fr_equal(&b[0], &a[0]));
+    TEST_CHECK(false == fr_equal(&b[1], &a[1]));
+    TEST_CHECK(true == fr_equal(&b[n - 1], &a[n - 1]));
+
+    free(a);
+    free(b);
+}
+
 TEST_LIST = {
     {"UTILITY_TEST", title},
     {"is_power_of_two_works", is_power_of_two_works},
@@ -150,5 +177,6 @@ TEST_LIST = {
     {"test_reverse_bits_random", test_reverse_bits_random},
     {"test_reverse_bit_order_g1", test_reverse_bit_order_g1},
     {"test_reverse_bit_order_fr", test_reverse_bit_order_fr},
+    {"test_reverse_bit_order_fr_large", test_reverse_bit_order_fr_large},
     {NULL, NULL} /* zero record marks the end of the list */
 };

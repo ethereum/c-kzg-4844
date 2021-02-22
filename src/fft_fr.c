@@ -111,3 +111,77 @@ C_KZG_RET fft_fr(fr_t *out, const fr_t *in, bool inverse, uint64_t n, const FFTS
     }
     return C_KZG_OK;
 }
+
+/**
+ * Perform an in-place FFT by copying the results over the input.
+ *
+ * @remark This is almost as fast as #fft_fr. It is slower than #fft_fr_in_place_lomem, but, unlike that routine,
+ * allocates a extra array the same size as the input data to copy the results.
+ *
+ * @param[in,out] data    The input data and output results (array of length @p n)
+ * @param[in]     inverse `false` for forward transform, `true` for inverse transform
+ * @param[in]     n       Length of the FFT, must be a power of two
+ * @param[in]     fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET fft_fr_in_place(fr_t *data, bool inverse, uint64_t n, const FFTSettings *fs) {
+    fr_t *out;
+    CHECK(n <= fs->max_width);
+    CHECK(is_power_of_two(n));
+    TRY(new_fr_array(&out, fs->max_width));
+    TRY(fft_fr(out, data, inverse, n, fs));
+    for (uint64_t i = 0; i < n; i++) {
+        data[i] = out[i];
+    }
+    free(out);
+    return C_KZG_OK;
+}
+
+/**
+ * Perform an in-place FFT without allocating any extra memory.
+ *
+ * @remark This is about 25% slower than #fft_fr_in_place, but does not allocate any extra memory, whereas that routine
+ * has a memory overhead the same size as the input array.
+ *
+ * @param[in,out] data    The input data and output results (array of length @p n)
+ * @param[in]     inverse `false` for forward transform, `true` for inverse transform
+ * @param[in]     n       Length of the FFT, must be a power of two
+ * @param[in]     fs      Pointer to previously initialised FFTSettings structure with `max_width` at least @p n.
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ */
+C_KZG_RET fft_fr_in_place_lomem(fr_t *data, bool inverse, uint64_t n, const FFTSettings *fs) {
+    uint64_t stride = fs->max_width / n;
+    CHECK(n <= fs->max_width);
+    CHECK(is_power_of_two(n));
+
+    fr_t *roots = inverse ? fs->reverse_roots_of_unity : fs->expanded_roots_of_unity;
+
+    reverse_bit_order(data, sizeof data[0], n);
+
+    uint64_t m = 1;
+    while (m < n) {
+        m <<= 1;
+        for (uint64_t k = 0; k < n; k += m) {
+            for (uint64_t j = 0; j < m / 2; j++) {
+                fr_t t, w = roots[j * stride * n / m];
+                fr_mul(&t, &w, &data[k + j + m / 2]);
+                fr_sub(&data[k + j + m / 2], &data[k + j], &t);
+                fr_add(&data[k + j], &data[k + j], &t);
+            }
+        }
+    }
+
+    if (inverse) {
+        fr_t inv_len;
+        fr_from_uint64(&inv_len, n);
+        fr_inv(&inv_len, &inv_len);
+        for (uint64_t i = 0; i < n; i++) {
+            fr_mul(&data[i], &data[i], &inv_len);
+        }
+    }
+
+    return C_KZG_OK;
+}
