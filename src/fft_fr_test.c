@@ -128,86 +128,12 @@ void stride_fft(void) {
     free_fft_settings(&fs2);
 }
 
-void in_place_fft(void) {
-    // Initialise: ascending values of i, and arbitrary size
-    uint64_t size = 10;
-    uint64_t width = (uint64_t)1 << size;
-    FFTSettings fs;
-    TEST_CHECK(new_fft_settings(&fs, size) == C_KZG_OK);
-
-    fr_t data[width], coeffs[width];
-    for (int i = 0; i < width; i++) {
-        fr_from_uint64(data + i, i);
-    }
-
-    // Output is separate from input
-    TEST_CHECK(fft_fr(coeffs, data, false, width, &fs) == C_KZG_OK);
-    // Output and input array is the same
-    TEST_CHECK(fft_fr_in_place(data, false, width, &fs) == C_KZG_OK);
-
-    for (int i = 0; i < width; i++) {
-        TEST_CHECK(fr_equal(&coeffs[i], &data[i]));
-    }
-
-    free_fft_settings(&fs);
-}
-
-void in_place_inverse_fft(void) {
-    // Initialise: ascending values of i, and arbitrary size
-    uint64_t size = 11;
-    uint64_t width = (uint64_t)1 << size;
-    FFTSettings fs;
-    TEST_CHECK(new_fft_settings(&fs, size + 1) == C_KZG_OK);
-
-    fr_t data[width], coeffs[width];
-    for (int i = 0; i < width; i++) {
-        fr_from_uint64(data + i, i);
-    }
-
-    // Output is separate from input
-    TEST_CHECK(fft_fr(coeffs, data, true, width, &fs) == C_KZG_OK);
-    // Output and input array is the same
-    TEST_CHECK(fft_fr_in_place(data, true, width, &fs) == C_KZG_OK);
-
-    for (int i = 0; i < width; i++) {
-        TEST_CHECK(fr_equal(&coeffs[i], &data[i]));
-    }
-
-    free_fft_settings(&fs);
-}
-
-void in_place_fft_lomem(void) {
-    // Initialise: ascending values of i, and arbitrary size
-    uint64_t size = 13;
-    uint64_t width = (uint64_t)1 << size;
-    FFTSettings fs;
-    // Make this one strided for good measure
-    TEST_CHECK(new_fft_settings(&fs, size + 2) == C_KZG_OK);
-
-    fr_t data0[width], data1[width];
-    for (int i = 0; i < width; i++) {
-        fr_from_uint64(data0 + i, i);
-        data1[i] = data0[i];
-    }
-
-    TEST_CHECK(fft_fr_in_place_lomem(data0, false, width, &fs) == C_KZG_OK);
-    TEST_CHECK(fft_fr_in_place(data1, false, width, &fs) == C_KZG_OK);
-
-    for (int i = 0; i < width; i++) {
-        TEST_CHECK(fr_equal(&data0[i], &data1[i]));
-    }
-
-    free_fft_settings(&fs);
-}
-
 TEST_LIST = {
     {"FFT_FR_TEST", title},
     {"compare_sft_fft", compare_sft_fft},
     {"roundtrip_fft", roundtrip_fft},
     {"inverse_fft", inverse_fft},
     {"stride_fft", stride_fft},
-    {"in_place_fft", in_place_fft},
-    {"in_place_inverse_fft", in_place_inverse_fft},
-    {"in_place_fft_lomem", in_place_fft_lomem},
+
     {NULL, NULL} /* zero record marks the end of the list */
 };
