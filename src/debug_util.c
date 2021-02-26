@@ -47,6 +47,17 @@ void print_fr(const fr_t *a) {
     print_bytes_as_hex_le(b.b, 0, 32);
 }
 
+// Print a vector of Frs
+void print_frs(const char *s, const fr_t *x, uint64_t n) {
+    printf("\n----\n");
+    for (uint64_t i = 0; i < n; i++) {
+        printf("%s %lu: ", s, i);
+        print_fr(x + i);
+        printf("\n");
+    }
+    printf("----\n");
+}
+
 //
 // Fp Utilities
 //

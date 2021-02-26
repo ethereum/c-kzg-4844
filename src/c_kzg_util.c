@@ -40,6 +40,20 @@ C_KZG_RET c_kzg_malloc(void **x, size_t n) {
 }
 
 /**
+ * Allocate memory for an array of uint64_t.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of utin64_t to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_uint64_array(uint64_t **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+/**
  * Allocate memory for an array of field elements.
  *
  * @remark Free the space later using `free()`.

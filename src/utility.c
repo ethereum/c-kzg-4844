@@ -58,7 +58,16 @@ int log2_pow2(uint32_t n) {
     return r;
 }
 
-// Adapted from https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+/**
+ * Return the next highest power of two.
+ *
+ * If @p v is already a power of two, it is returned as-is.
+ *
+ * Adapted from https://graphics.stanford.edu/~seander/bithacks.html#RoundUpPowerOf2
+ *
+ * @param[in] v A 64-bit unsigned integer <= 2^31
+ * @return      The lowest power of two equal or larger than @p v
+ */
 uint64_t next_power_of_two(uint64_t v) {
     v--;
     v |= v >> 1;

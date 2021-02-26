@@ -19,6 +19,7 @@
 
 // Fr utilities
 void print_fr(const fr_t *a);
+void print_frs(const char *s, const fr_t *x, uint64_t n);
 
 // G1 and G2 utilities
 void print_g1_bytes(byte p1[96]);

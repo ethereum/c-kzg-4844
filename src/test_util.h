@@ -25,4 +25,5 @@ void generate_trusted_setup(g1_t *s1, g2_t *s2, const scalar_t *secret, const ui
 uint64_t rand_uint64();
 fr_t rand_fr();
 g1_t rand_g1();
+void shuffle(uint64_t *a, uint64_t n);
 void title(void);

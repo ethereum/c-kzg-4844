@@ -71,5 +71,16 @@ g1_t rand_g1() {
     return ret;
 }
 
+void shuffle(uint64_t *a, uint64_t n) {
+    uint64_t i = n, j, tmp;
+    while (i > 0) {
+        j = rand_uint64() % i;
+        i--;
+        tmp = a[j];
+        a[j] = a[i];
+        a[i] = tmp;
+    }
+}
+
 // Dummy function used to get the test-suite to print a title
 void title(void) {}
