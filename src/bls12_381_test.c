@@ -38,6 +38,12 @@ void fr_is_one_works(void) {
     TEST_CHECK(fr_is_one(&fr_one));
 }
 
+void fr_is_null_works(void) {
+    TEST_CHECK(fr_is_null(&fr_null));
+    TEST_CHECK(!fr_is_null(&fr_zero));
+    TEST_CHECK(!fr_is_null(&fr_one));
+}
+
 void fr_from_uint64_works(void) {
     fr_t a;
     fr_from_uint64(&a, 1);
@@ -187,6 +193,7 @@ TEST_LIST = {
     {"log_2_byte_works", log_2_byte_works},
     {"fr_is_zero_works", fr_is_zero_works},
     {"fr_is_one_works", fr_is_one_works},
+    {"fr_is_null_works", fr_is_null_works},
     {"fr_from_uint64_works", fr_from_uint64_works},
     {"fr_equal_works", fr_equal_works},
     {"fr_negate_works", fr_negate_works},

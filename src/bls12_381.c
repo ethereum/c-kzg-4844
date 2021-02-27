@@ -44,7 +44,7 @@ int log_2_byte(byte b) {
 }
 
 /**
- * Check whether the operand is zero in the finite field.
+ * Test whether the operand is zero in the finite field.
  *
  * @param p The field element to be checked
  * @retval true The element is zero
@@ -59,7 +59,7 @@ bool fr_is_zero(const fr_t *p) {
 }
 
 /**
- * Check whether the operand is one in the finite field.
+ * Test whether the operand is one in the finite field.
  *
  * @param p The field element to be checked
  * @retval true The element is one
@@ -71,6 +71,19 @@ bool fr_is_one(const fr_t *p) {
     uint64_t a[4];
     blst_uint64_from_fr(a, p);
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+/**
+ * Test whether the operand is a specially defined NULL value.
+ *
+ * @param p The field element to be checked
+ * @retval true The element is the NULL value
+ * @retval false The element is not the NULL value
+ */
+bool fr_is_null(const fr_t *p) {
+    uint64_t *null = (uint64_t *)&fr_null;
+    uint64_t *a = (uint64_t *)p;
+    return a[0] == null[0] && a[1] == null[1] && a[2] == null[2] && a[3] == null[3];
 }
 
 /**
@@ -182,8 +195,9 @@ void fr_inv(fr_t *out, const fr_t *a) {
  * @param[in]  b   The divisor
  */
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr_eucl_inverse(out, b);
-    blst_fr_mul(out, out, a);
+    blst_fr tmp;
+    blst_fr_eucl_inverse(&tmp, b);
+    blst_fr_mul(out, a, &tmp);
 }
 
 /**

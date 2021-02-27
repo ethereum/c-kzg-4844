@@ -21,11 +21,9 @@
  */
 
 #include "zero_poly.h"
-#include "fft_fr.h"
 #include "c_kzg_util.h"
+#include "fft_fr.h"
 #include "utility.h"
-
-#include "debug_util.h"
 
 /**
  * Process a slice of missing indices into a leaf.
@@ -141,6 +139,9 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
  *
  * Also calculates the FFT.
  *
+ * @remark Fails for very high numbers of missing indices. For example, with `fs.max_width = 256` and `length = 256`,
+ * this will fail for len_missing = 253 or more. In this case, `length` (and maybe `fs.max_width`) needs to be doubled.
+ *
  * @param[out] zero_eval Array length @p length (TODO: description)
  * @param[out] zero_poly Array length @p length (TODO: description)
  * @param[out] zero_poly_len The length of the resulting @p zero_poly
@@ -157,6 +158,11 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
                                              const uint64_t *missing_indices, uint64_t len_missing,
                                              const FFTSettings *fs) {
     if (len_missing == 0) {
+        *zero_poly_len = length;
+        for (uint64_t i = 0; i < length; i++) {
+            zero_eval[i] = fr_zero;
+            zero_poly[i] = fr_zero;
+        }
         return C_KZG_OK;
     }
     CHECK(length <= fs->max_width);

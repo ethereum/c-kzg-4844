@@ -48,6 +48,9 @@ static const fr_t fr_zero = {0L, 0L, 0L, 0L};
 // This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
 static const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
+// Define a NULL value for fr_t. TODO - does this make sense?
+static const fr_t fr_null = {0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL};
+
 // The G1 identity/infinity
 static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
@@ -97,6 +100,7 @@ static const g2_t g2_negative_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b
 int log_2_byte(byte b);
 bool fr_is_zero(const fr_t *p);
 bool fr_is_one(const fr_t *p);
+bool fr_is_null(const fr_t *p);
 void fr_from_scalar(fr_t *out, const scalar_t *a);
 void fr_from_uint64s(fr_t *out, const uint64_t *vals);
 void fr_from_uint64(fr_t *out, uint64_t n);
