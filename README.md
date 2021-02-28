@@ -76,7 +76,7 @@ Doing `make clean` should resolve any weird build issues.
 
 ## Make debug builds of the tests
 
-The default build is designed not to exit on errors, and will (should) return fairly coarse error codes for any issue. This is good for a utility library, but unhelpful for debugging. The `-DDEBUG` compiler flag  builds a version such that any assertion failure aborts the run and outputs file and line info. This is much more useful for tracking down deeply buried errors.
+The default build is designed not to crash on errors, and will (should) return fairly coarse error codes for any issue. This is good for a utility library, but unhelpful for debugging. The `-DDEBUG` compiler flag  builds a version such that any assertion failure aborts the run and outputs file and line info. This is much more useful for tracking down deeply buried errors.
 
 Each test suite can be compiled into its debug version. For example, as follows:
 
