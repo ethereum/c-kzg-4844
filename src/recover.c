@@ -78,8 +78,6 @@ void unshift_poly(fr_t *p, uint64_t len_p) {
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
- *
- * @todo Could probably reuse some memory here.
  */
 C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uint64_t len_samples, FFTSettings *fs) {
 
@@ -95,10 +93,23 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         }
     }
 
-    fr_t *zero_eval, *zero_poly;
+    // Make scratch areas, each of size len_samples. Cuts space required by 57%.
+    fr_t *scratch;
+    TRY(new_fr_array(&scratch, 3 * len_samples));
+    fr_t *scratch0 = scratch;
+    fr_t *scratch1 = scratch0 + len_samples;
+    fr_t *scratch2 = scratch1 + len_samples;
+
+    // Assign meaningful names to scratch spaces
+    fr_t *zero_eval = scratch0;
+    fr_t *zero_poly = scratch1;
+    fr_t *poly_evaluations_with_zero = scratch2;
+    fr_t *poly_with_zero = scratch0;
+    fr_t *eval_shifted_poly_with_zero = scratch2;
+    fr_t *eval_shifted_zero_poly = scratch0;
+    fr_t *shifted_reconstructed_poly = scratch1;
+
     uint64_t zero_poly_len;
-    TRY(new_fr_array(&zero_eval, len_samples));
-    TRY(new_fr_array(&zero_poly, len_samples));
     TRY(zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, len_samples, missing, len_missing,
                                            fs));
 
@@ -107,9 +118,6 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         TRY(fr_is_null(&samples[i]) == fr_is_zero(&zero_eval[i]) ? C_KZG_OK : C_KZG_ERROR);
     }
 
-    // TODO: Could just modify zero_eval in place?
-    fr_t *poly_evaluations_with_zero, *poly_with_zero;
-    TRY(new_fr_array(&poly_evaluations_with_zero, len_samples));
     for (uint64_t i = 0; i < len_samples; i++) {
         if (fr_is_null(&samples[i])) {
             poly_evaluations_with_zero[i] = fr_zero;
@@ -117,19 +125,14 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
             fr_mul(&poly_evaluations_with_zero[i], &samples[i], &zero_eval[i]);
         }
     }
-    TRY(new_fr_array(&poly_with_zero, len_samples));
     TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
-
     shift_poly(poly_with_zero, len_samples);
-    shift_poly(zero_poly, zero_poly_len); // The rest of zero_poly is 0s
+    shift_poly(zero_poly, zero_poly_len);
 
-    // renamings:
+    // Renamings:
     fr_t *shifted_poly_with_zero = poly_with_zero;
     fr_t *shifted_zero_poly = zero_poly;
 
-    fr_t *eval_shifted_poly_with_zero, *eval_shifted_zero_poly;
-    TRY(new_fr_array(&eval_shifted_poly_with_zero, len_samples));
-    TRY(new_fr_array(&eval_shifted_zero_poly, len_samples));
     TRY(fft_fr(eval_shifted_poly_with_zero, shifted_poly_with_zero, false, len_samples, fs));
     TRY(fft_fr(eval_shifted_zero_poly, shifted_zero_poly, false, len_samples, fs));
 
@@ -138,13 +141,11 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         fr_div(&eval_shifted_reconstructed_poly[i], &eval_shifted_poly_with_zero[i], &eval_shifted_zero_poly[i]);
     }
 
-    fr_t *shifted_reconstructed_poly;
-    TRY(new_fr_array(&shifted_reconstructed_poly, len_samples));
     TRY(fft_fr(shifted_reconstructed_poly, eval_shifted_reconstructed_poly, true, len_samples, fs));
 
     unshift_poly(shifted_reconstructed_poly, len_samples);
 
-    // renaming:
+    // Renaming:
     fr_t *reconstructed_poly = shifted_reconstructed_poly;
 
     TRY(fft_fr(reconstructed_data, reconstructed_poly, false, len_samples, fs));
@@ -154,13 +155,7 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         TRY(fr_is_null(&samples[i]) || fr_equal(&reconstructed_data[i], &samples[i]) ? C_KZG_OK : C_KZG_ERROR);
     }
 
-    free(shifted_reconstructed_poly);
-    free(eval_shifted_poly_with_zero);
-    free(eval_shifted_zero_poly);
-    free(poly_with_zero);
-    free(poly_evaluations_with_zero);
-    free(zero_eval);
-    free(zero_poly);
+    free(scratch);
     free(missing);
 
     return C_KZG_OK;
