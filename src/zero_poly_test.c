@@ -229,8 +229,8 @@ void zero_poly_known(void) {
     TEST_CHECK(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval.coeffs, zero_poly.coeffs, &zero_poly_len,
                                                               zero_eval.length, missing, len_missing, &fs));
 
-    TEST_CHECK(expected_poly.length == zero_poly_len);
-    TEST_MSG("Expected %lu, got %lu", expected_poly.length, zero_poly_len);
+    TEST_CHECK(len_missing + 1 == zero_poly_len);
+    TEST_MSG("Expected %lu, got %lu", len_missing + 1, zero_poly_len);
 
     for (int i = 0; i < expected_eval.length; i++) {
         TEST_CHECK(fr_equal(&expected_eval.coeffs[i], &zero_eval.coeffs[i]));

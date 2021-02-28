@@ -142,6 +142,8 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
  * @remark Fails for very high numbers of missing indices. For example, with `fs.max_width = 256` and `length = 256`,
  * this will fail for len_missing = 253 or more. In this case, `length` (and maybe `fs.max_width`) needs to be doubled.
  *
+ * @remark Note that @p zero_poly is used as workspace during calculation.
+ *
  * @param[out] zero_eval Array length @p length (TODO: description)
  * @param[out] zero_poly Array length @p length (TODO: description)
  * @param[out] zero_poly_len The length of the resulting @p zero_poly
@@ -153,6 +155,8 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
+ *
+ * @todo What is the performance impact of tuning `per_leaf_poly`?
  */
 C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, uint64_t *zero_poly_len, uint64_t length,
                                              const uint64_t *missing_indices, uint64_t len_missing,
@@ -168,20 +172,20 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
     CHECK(length <= fs->max_width);
     CHECK(is_power_of_two(length));
 
-    uint64_t domain_stride = fs->max_width / length;
-    uint64_t per_leaf_poly = 64;
+    uint64_t per_leaf_poly = 64; // Tunable parameter. Must be a power of two.
     uint64_t per_leaf = per_leaf_poly - 1;
+    uint64_t domain_stride = fs->max_width / length;
     uint64_t leaf_count = (len_missing + per_leaf - 1) / per_leaf;
     uint64_t n = next_power_of_two(leaf_count * per_leaf_poly);
 
     if (len_missing <= per_leaf) {
         TRY(do_zero_poly_mul_leaf(zero_poly, length, missing_indices, len_missing, domain_stride, fs));
         TRY(fft_fr(zero_eval, zero_poly, false, length, fs));
-        *zero_poly_len = length;
+        *zero_poly_len = len_missing + 1;
     } else {
         CHECK(n <= length);
 
-        // Work space for reducing the leaves - we could use `zero_poly` for this if it were always big enough.
+        // Work space for reducing the leaves - `zero_poly` is large enough due to the above check, so use that.
         fr_t *work = zero_poly;
 
         // Build the leaves.
