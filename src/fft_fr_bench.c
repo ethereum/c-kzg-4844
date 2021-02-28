@@ -50,6 +50,7 @@ long run_bench(int scale, int max_seconds) {
 
     free(out);
     free(data);
+    free_fft_settings(&fs);
 
     return total_time / nits;
 }

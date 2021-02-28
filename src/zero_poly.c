@@ -156,7 +156,7 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  *
- * @todo What is the performance impact of tuning `per_leaf_poly`?
+ * @todo What is the performance impact of tuning `per_leaf_poly` and `reduction factor`?
  */
 C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, uint64_t *zero_poly_len, uint64_t length,
                                              const uint64_t *missing_indices, uint64_t len_missing,

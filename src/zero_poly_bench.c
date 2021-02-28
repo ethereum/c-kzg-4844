@@ -20,7 +20,8 @@
 #include <unistd.h> // EXIT_SUCCESS/FAILURE
 #include "bench_util.h"
 #include "test_util.h"
-#include "fft_g1.h"
+#include "fft_fr.h"
+#include "zero_poly.h"
 
 // Run the benchmark for `max_seconds` and return the time per iteration in nanoseconds.
 long run_bench(int scale, int max_seconds) {
@@ -31,25 +32,28 @@ long run_bench(int scale, int max_seconds) {
     assert(C_KZG_OK == new_fft_settings(&fs, scale));
 
     // Allocate on the heap to avoid stack overflow for large sizes
-    g1_t *data, *out;
-    data = malloc(fs.max_width * sizeof(g1_t));
-    out = malloc(fs.max_width * sizeof(g1_t));
-
-    // Fill with randomness
-    for (uint64_t i = 0; i < fs.max_width; i++) {
-        data[i] = rand_g1();
+    uint64_t *missing = malloc(fs.max_width * sizeof(uint64_t));
+    for (int i = 0; i < fs.max_width; i++) {
+        missing[i] = i;
     }
+    shuffle(missing, fs.max_width);
 
+    fr_t *zero_eval = malloc(fs.max_width * sizeof(fr_t));
+    fr_t *zero_poly = malloc(fs.max_width * sizeof(fr_t));
+    uint64_t zero_poly_len;
     while (total_time < max_seconds * NANO) {
         clock_gettime(CLOCK_REALTIME, &t0);
-        assert(C_KZG_OK == fft_g1(out, data, false, fs.max_width, &fs));
+        // Half missing leaves enough FFT computation space
+        assert(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, fs.max_width,
+                                                              missing, fs.max_width / 2, &fs));
         clock_gettime(CLOCK_REALTIME, &t1);
         nits++;
         total_time += tdiff(t0, t1);
     }
 
-    free(out);
-    free(data);
+    free(zero_poly);
+    free(zero_eval);
+    free(missing);
     free_fft_settings(&fs);
 
     return total_time / nits;
@@ -74,9 +78,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    printf("*** Benchmarking FFT_g1, %d second%s per test.\n", nsec, nsec == 1 ? "" : "s");
-    for (int scale = 4; scale <= 15; scale++) {
-        printf("fft_g1/scale_%d %lu ns/op\n", scale, run_bench(scale, nsec));
+    printf("*** Benchmarking Zero Polynomial, %d second%s per test.\n", nsec, nsec == 1 ? "" : "s");
+    for (int scale = 5; scale <= 15; scale++) {
+        printf("zero_poly/scale_%d %lu ns/op\n", scale, run_bench(scale, nsec));
     }
 
     return EXIT_SUCCESS;
