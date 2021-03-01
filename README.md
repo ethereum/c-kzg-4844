@@ -15,6 +15,16 @@ Done so far:
   - Calculation of zero polynomials
   - Data recovery from samples
 
+That's basically all the necessary stuff for Eth2 use cases. Things remaining (aside from tidying up, which is never ending):
+  - [ ] Document the underlying mathematics to help with checking correctness of the implementation and writing better tests
+  - [ ] End-to-end tests
+  - [ ] Performance tuning
+  - [ ] Robustness checking (don't crash on errors; return the correct error codes; no buffer overflows)
+  - [ ] Java interface
+  - [ ] (Optional) Use alternative back-end libraries to Blst (e.g. [Herumi mcl](https://github.com/herumi/mcl))
+  - [ ] Nice build process
+  - [ ] Make it portable
+
 ## Install
 
 Build the [Blst library](https://github.com/supranational/blst) following the instructions there. Then,
@@ -65,7 +75,7 @@ cd src
 make bench
 ```
 
-You can run individual benchmarks, and optionally specify how long to run each test size:
+You can run individual benchmarks, and optionally specify how long (in seconds) to run each test size:
 
 ```
 make fft_fr_bench

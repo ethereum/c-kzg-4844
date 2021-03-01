@@ -26,17 +26,21 @@
 #include "utility.h"
 #include "zero_poly.h"
 
+/** 5 is a primitive element, but actually this can be pretty much anything not 1 or 0*/
+#define SHIFT_FACTOR 5
+
 /**
  * Shift a polynomial in place.
  *
- * Multiplies each coefficient by 1 / shift_factor ^ i.
+ * Multiplies each coefficient by `1 / shift_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x * k`
+ * rather than `x`.
  *
  * @param[out,in] p The polynomial coefficients to be shifted
  * @param[in] len_p Length of the polynomial coefficients
  */
 void shift_poly(fr_t *p, uint64_t len_p) {
     fr_t shift_factor, factor_power, inv_factor;
-    fr_from_uint64(&shift_factor, 5); // primitive root of unity
+    fr_from_uint64(&shift_factor, SHIFT_FACTOR);
     fr_inv(&inv_factor, &shift_factor);
     factor_power = fr_one;
 
@@ -49,14 +53,15 @@ void shift_poly(fr_t *p, uint64_t len_p) {
 /**
  * Unshift a polynomial in place.
  *
- * Multiplies each coefficient by shift_factor ^ i.
+ * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x / k`
+ * rather than `x`.
  *
  * @param[out,in] p The polynomial coefficients to be unshifted
  * @param[in] len_p Length of the polynomial coefficients
  */
 void unshift_poly(fr_t *p, uint64_t len_p) {
     fr_t shift_factor, factor_power;
-    fr_from_uint64(&shift_factor, 5); // primitive root of unity
+    fr_from_uint64(&shift_factor, SHIFT_FACTOR);
     factor_power = fr_one;
 
     for (uint64_t i = 1; i < len_p; i++) {
@@ -69,6 +74,8 @@ void unshift_poly(fr_t *p, uint64_t len_p) {
  * Given a dataset with up to half the entries missing, return the reconstructed original.
  *
  * Assumes that the inverse FFT of the original data has the upper half of its values equal to zero.
+ *
+ * See https://ethresear.ch/t/reed-solomon-erasure-code-recovery-in-n-log-2-n-time-with-ffts/3039
  *
  * @param[out] reconstructed_data An attempted reconstruction of the original data
  * @param[in]  samples            The data to be reconstructed, with `fr_null` set for missing values

@@ -33,6 +33,13 @@
  * PRIMITIVE_ROOT = 5
  * [pow(PRIMITIVE_ROOT, (MODULUS - 1) // (2**i), MODULUS) for i in range(32)]
  * @endcode
+ *
+ * Note: Being a "primitive root" in this context means that r^k != 1 for any k < q-1 where q is the modulus. So
+ * powers of r generate the field. This is also known as being a "primitive element".
+ *
+ * This is easy to check for: we just require that r^((q-1)/2) != 1. Instead of 5, we could use 7, 10, 13, 14, 15, 20...
+ * to create the roots of unity below. There are a lot of primitive roots:
+ * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
 static const uint64_t scale2_root_of_unity[][4] = {
     {0x0000000000000001L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},

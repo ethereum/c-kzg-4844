@@ -17,7 +17,7 @@
 /**
  *  @file zero_poly.c
  *
- *  Methods for constructing zero polynomials and reconstructing polynomials from partial evaluations on a subgroup.
+ *  Methods for constructing polynomials that evaluate to zero for given lists of powers of roots of unity.
  */
 
 #include "zero_poly.h"
@@ -26,7 +26,10 @@
 #include "utility.h"
 
 /**
- * Process a slice of missing indices into a leaf.
+ * Calculates the minimal polynomial that evaluates to zero for powers of roots of unity at the given indices.
+ *
+ * Uses straightforward multiplication to calculate the product of `(x - r^i)` where `r` is a root of unity and the `i`s
+ * are the indices at which it must evaluate to zero. This results in a polynomial of degree @p len_indices.
  *
  * @param[out] dst         The resulting leaf, length @p len_dst
  * @param[in]  len_dst     Length of the output leaf, @p dst
@@ -66,7 +69,7 @@ C_KZG_RET do_zero_poly_mul_leaf(fr_t *dst, uint64_t len_dst, const uint64_t *ind
 }
 
 /**
- * Copy @p p to @p out, padding to length @p n with zeros.
+ * Copy @p p to @p out, padding to length @p p_len with zeros.
  *
  * @param[out] out     A copy of @p p padded to length @p n with zeros
  * @param[in]  out_len The length of the desired output data, @p out
@@ -87,9 +90,10 @@ C_KZG_RET pad_p(fr_t *out, uint64_t out_len, const fr_t *p, uint64_t p_len) {
 }
 
 /**
- * Calculate the convolution of the input polynomials.
+ * Calculate the product of the input polynomials via convolution.
  *
- * Pad the polynomials in @p ps, perform FFTs, multiply the results together, and apply an inverse FFT to the result.
+ * Pad the polynomials in @p ps, perform FFTs, point-wise multiply the results together, and apply an inverse FFT to the
+ * result.
  *
  * @param[out] dst         The result of the convolution
  * @param[in]  len_dst     Length of the output, a power of two
@@ -109,7 +113,9 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
                         const uint64_t *len_p, const FFTSettings *fs) {
     CHECK(is_power_of_two(len_dst));
     CHECK(len_ps > 0);
-    CHECK(len_ps * len_p[0] <= len_dst); // needed, or just len_p <= len_dst
+    // The degree of the output is the sum of the degrees of the input polynomials.
+    // TODO A more relaxed check should be ok: `len_ps * (len_p[0] - 1) < len_dst` (or even sum up the lengths)
+    CHECK(len_ps * len_p[0] <= len_dst);
     CHECK(len_scratch >= 3 * len_dst);
 
     // Split `scratch` up into three equally sized working arrays
@@ -117,7 +123,7 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
     fr_t *mul_eval_ps = scratch + len_dst;
     fr_t *p_eval = scratch + 2 * len_dst;
 
-    // Do the last leaf first: it may be shorter than the others, and the padding can remain in place for the rest.
+    // Do the last leaf first: it may be shorter than the others and the padding can remain in place for the rest.
     TRY(pad_p(p_padded, len_dst, ps[len_ps - 1], len_p[len_ps - 1]));
     TRY(fft_fr(mul_eval_ps, p_padded, false, len_dst, fs));
 
@@ -135,12 +141,17 @@ C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len
 }
 
 /**
- * Calculate a polynomial that evaluates to zero for powers of roots of one that correspond to missing indices.
+ * Calculate the minimal polynomial that evaluates to zero for powers of roots of unity that correspond to missing
+ * indices.
  *
- * Also calculates the FFT.
+ * This is done by simply multiplying together `(x - r^i)` for all the `i` that are missing indices, using a combination
+ * of direct multiplication (#do_zero_poly_mul_leaf) and multiplication via convolution (#reduce_leaves).
+ *
+ * Also calculates the FFT (the "evaluation polynomial").
  *
  * @remark Fails for very high numbers of missing indices. For example, with `fs.max_width = 256` and `length = 256`,
  * this will fail for len_missing = 253 or more. In this case, `length` (and maybe `fs.max_width`) needs to be doubled.
+ * But this failure is probably OK for our use case.
  *
  * @remark Note that @p zero_poly is used as workspace during calculation.
  *
@@ -162,7 +173,7 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
                                              const uint64_t *missing_indices, uint64_t len_missing,
                                              const FFTSettings *fs) {
     if (len_missing == 0) {
-        *zero_poly_len = length;
+        *zero_poly_len = 0;
         for (uint64_t i = 0; i < length; i++) {
             zero_eval[i] = fr_zero;
             zero_poly[i] = fr_zero;
@@ -212,9 +223,9 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
 
         int reduction_factor = 4; // must be a power of 2
         TRY(new_fr_array(&scratch, n * 3));
-        // All the leaves are the same length, except possibly the last leaf, but that's ok.
         while (leaf_count > 1) {
             uint64_t reduced_count = (leaf_count + reduction_factor - 1) / reduction_factor;
+            // All the leaves are the same length, except possibly the last leaf, but that's ok.
             uint64_t leaf_size = leaf_lengths[0];
             for (uint64_t i = 0; i < reduced_count; i++) {
                 uint64_t start = i * reduction_factor;
