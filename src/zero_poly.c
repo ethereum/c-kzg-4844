@@ -112,11 +112,23 @@ C_KZG_RET pad_p(fr_t *out, uint64_t out_len, const fr_t *p, uint64_t p_len) {
 C_KZG_RET reduce_leaves(fr_t *dst, uint64_t len_dst, fr_t *scratch, uint64_t len_scratch, blst_fr **ps, uint64_t len_ps,
                         const uint64_t *len_p, const FFTSettings *fs) {
     CHECK(is_power_of_two(len_dst));
+    CHECK(len_scratch >= 3 * len_dst);
     CHECK(len_ps > 0);
     // The degree of the output is the sum of the degrees of the input polynomials.
     // TODO A more relaxed check should be ok: `len_ps * (len_p[0] - 1) < len_dst` (or even sum up the lengths)
-    CHECK(len_ps * len_p[0] <= len_dst);
-    CHECK(len_scratch >= 3 * len_dst);
+    // CHECK(len_ps * len_p[0] <= len_dst);
+    uint64_t total_length = 0;
+    for (int i = 0; i < len_ps; i++) {
+        total_length += len_p[i] - 1;
+    }
+    if (total_length + 1 > len_dst) {
+        printf("Total length: %lu, len dest: %lu\n", total_length, len_dst);
+        printf("\n");
+        for (int i = 0; i < len_ps; i++) {
+            printf("Len %d = %lu\n", i, len_p[i]);
+        }
+    }
+    CHECK(total_length + 1 <= len_dst);
 
     // Split `scratch` up into three equally sized working arrays
     fr_t *p_padded = scratch;
@@ -180,6 +192,7 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
         }
         return C_KZG_OK;
     }
+    CHECK(len_missing < length); // The output would be larger than length otherwise
     CHECK(length <= fs->max_width);
     CHECK(is_power_of_two(length));
 
@@ -188,16 +201,17 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
     uint64_t domain_stride = fs->max_width / length;
     uint64_t leaf_count = (len_missing + per_leaf - 1) / per_leaf;
     uint64_t n = next_power_of_two(leaf_count * per_leaf_poly);
+    if (n > length) n = length;
 
     if (len_missing <= per_leaf) {
         TRY(do_zero_poly_mul_leaf(zero_poly, length, missing_indices, len_missing, domain_stride, fs));
         TRY(fft_fr(zero_eval, zero_poly, false, length, fs));
         *zero_poly_len = len_missing + 1;
     } else {
-        CHECK(n <= length);
-
         // Work space for reducing the leaves - `zero_poly` is large enough due to the above check, so use that.
-        fr_t *work = zero_poly;
+        // fr_t *work = zero_poly;
+        fr_t *work;
+        TRY(new_fr_array(&work, next_power_of_two(leaf_count * per_leaf_poly)));
 
         // Build the leaves.
 
@@ -213,20 +227,23 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
             if (end > max) end = max;
             leaves[i] = &work[out_offset];
             leaf_lengths[i] = per_leaf_poly;
-            TRY(do_zero_poly_mul_leaf(leaves[i], leaf_lengths[i], &missing_indices[offset], end - offset, domain_stride,
+            TRY(do_zero_poly_mul_leaf(leaves[i], per_leaf_poly, &missing_indices[offset], end - offset, domain_stride,
                                       fs));
             offset += per_leaf;
             out_offset += per_leaf_poly;
         }
+        // Adjust the length of the last leaf
+        // leaf_lengths[leaf_count - 1] = 1 + len_missing % per_leaf;
+        leaf_lengths[leaf_count - 1] = 1 + len_missing - (leaf_count - 1) * per_leaf;
 
         // Now reduce all the leaves to a single poly
 
-        int reduction_factor = 4; // must be a power of 2
+        int reduction_factor = 4; // must be a power of 2 (why?)
         TRY(new_fr_array(&scratch, n * 3));
         while (leaf_count > 1) {
             uint64_t reduced_count = (leaf_count + reduction_factor - 1) / reduction_factor;
             // All the leaves are the same length, except possibly the last leaf, but that's ok.
-            uint64_t leaf_size = leaf_lengths[0];
+            uint64_t leaf_size = next_power_of_two(leaf_lengths[0]);
             for (uint64_t i = 0; i < reduced_count; i++) {
                 uint64_t start = i * reduction_factor;
                 uint64_t end = start + reduction_factor;
@@ -238,18 +255,24 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
                 }
                 reduced = work + start * leaf_size;
                 uint64_t reduced_len = out_end - start * leaf_size;
+                if (reduced_len > length) reduced_len = length;
                 if (end > leaf_count) {
                     end = leaf_count;
                 }
                 uint64_t leaves_slice_len = end - start;
-                if (end > start + 1) {
+                if (leaves_slice_len > 1) {
                     TRY(reduce_leaves(reduced, reduced_len, scratch, n * 3, &leaves[start], leaves_slice_len,
                                       &leaf_lengths[start], fs));
-                    leaf_lengths[i] = reduced_len;
-                } else {
-                    leaf_lengths[i] = leaf_lengths[start];
+                    // leaf_lengths[i] = reduced_len;
+                    // } else {
+                    //     leaf_lengths[i] = leaf_lengths[start];
                 }
                 leaves[i] = reduced;
+                uint64_t total_length = 0;
+                for (int j = start; j < end; j++) {
+                    total_length += leaf_lengths[j] - 1;
+                }
+                leaf_lengths[i] = total_length + 1;
             }
             leaf_count = reduced_count;
         }
@@ -260,6 +283,7 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
         }
         TRY(fft_fr(zero_eval, zero_poly, false, length, fs));
 
+        free(work);
         free(leaves);
         free(leaf_lengths);
         free(scratch);
