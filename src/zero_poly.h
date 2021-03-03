@@ -17,17 +17,17 @@
 /**
  *  @file zero_poly.h
  *
- *  Methods for constructing zero polynomials and reconstructing polynomials from partial evaluations on a subgroup
+ *  Methods for constructing polynomials that evaluate to zero for given lists of powers of roots of unity.
  */
 
 #include "c_kzg.h"
 #include "fft_common.h"
 #include "poly.h"
 
-C_KZG_RET do_zero_poly_mul_leaf(fr_t *dst, uint64_t len_dst, const uint64_t *indices, uint64_t len_indices,
-                                uint64_t stride, const FFTSettings *fs);
-C_KZG_RET reduce_leaves(poly *dst, uint64_t len_dst, fr_t *scratch, uint64_t len_scratch, const poly *leaves,
-                        uint64_t leaf_count, const FFTSettings *fs);
+C_KZG_RET do_zero_poly_mul_partial(fr_t *dst, uint64_t len_dst, const uint64_t *indices, uint64_t len_indices,
+                                   uint64_t stride, const FFTSettings *fs);
+C_KZG_RET reduce_partials(poly *dst, uint64_t len_dst, fr_t *scratch, uint64_t len_scratch, const poly *partials,
+                          uint64_t partial_count, const FFTSettings *fs);
 C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, uint64_t *zero_poly_len, uint64_t length,
                                              const uint64_t *missing_indices, uint64_t len_missing,
                                              const FFTSettings *fs);

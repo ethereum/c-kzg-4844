@@ -60,30 +60,30 @@ uint64_t expected_poly_u64[16][4] = {
     {0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},
     {0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L}};
 
-void test_reduce_leaves(void) {
+void test_reduce_partials(void) {
     FFTSettings fs;
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
     fr_t from_tree_reduction_coeffs[16], from_direct[9], scratch[48];
     poly from_tree_reduction;
     from_tree_reduction.coeffs = from_tree_reduction_coeffs;
 
-    // Via reduce_leaves
+    // Via reduce_partials
 
-    poly leaves[4];
-    fr_t leaf0[3], leaf1[3], leaf2[3], leaf3[3];
-    leaves[0].coeffs = leaf0, leaves[0].length = 3;
-    leaves[1].coeffs = leaf1, leaves[1].length = 3;
-    leaves[2].coeffs = leaf2, leaves[2].length = 3;
-    leaves[3].coeffs = leaf3, leaves[3].length = 3;
-    const uint64_t leaf_indices[4][2] = {{1, 3}, {7, 8}, {9, 10}, {12, 13}};
+    poly partials[4];
+    fr_t partial0[3], partial1[3], partial2[3], partial3[3];
+    partials[0].coeffs = partial0, partials[0].length = 3;
+    partials[1].coeffs = partial1, partials[1].length = 3;
+    partials[2].coeffs = partial2, partials[2].length = 3;
+    partials[3].coeffs = partial3, partials[3].length = 3;
+    const uint64_t partial_indices[4][2] = {{1, 3}, {7, 8}, {9, 10}, {12, 13}};
     for (int i = 0; i < 4; i++) {
-        TEST_CHECK(C_KZG_OK == do_zero_poly_mul_leaf(leaves[i].coeffs, 3, leaf_indices[i], 2, 1, &fs));
+        TEST_CHECK(C_KZG_OK == do_zero_poly_mul_partial(partials[i].coeffs, 3, partial_indices[i], 2, 1, &fs));
     }
-    TEST_CHECK(C_KZG_OK == reduce_leaves(&from_tree_reduction, 16, scratch, 48, leaves, 4, &fs));
+    TEST_CHECK(C_KZG_OK == reduce_partials(&from_tree_reduction, 16, scratch, 48, partials, 4, &fs));
 
     // Direct
     uint64_t indices[] = {1, 3, 7, 8, 9, 10, 12, 13};
-    TEST_CHECK(C_KZG_OK == do_zero_poly_mul_leaf(from_direct, 9, indices, 8, 1, &fs));
+    TEST_CHECK(C_KZG_OK == do_zero_poly_mul_partial(from_direct, 9, indices, 8, 1, &fs));
 
     // Compare
     for (int i = 0; i < 9; i++) {
@@ -93,7 +93,7 @@ void test_reduce_leaves(void) {
     free_fft_settings(&fs);
 }
 
-void reduce_leaves_random(void) {
+void reduce_partials_random(void) {
     for (int scale = 5; scale < 13; scale++) {
         for (int ii = 1; ii <= 7; ii++) {
             float missing_ratio = 0.1 * ii;
@@ -110,24 +110,24 @@ void reduce_leaves_random(void) {
             }
             shuffle(missing, point_count);
 
-            // Build the leaves
-            poly *leaves;
-            const int points_per_leaf = 63;
-            uint64_t indices[points_per_leaf];
-            uint64_t leaf_count = (missing_count + points_per_leaf - 1) / points_per_leaf;
-            TEST_CHECK(C_KZG_OK == new_poly_array(&leaves, leaf_count));
-            for (uint64_t i = 0; i < leaf_count; i++) {
-                uint64_t start = i * points_per_leaf;
-                uint64_t end = start + points_per_leaf;
+            // Build the partials
+            poly *partials;
+            const int missing_per_partial = 63;
+            uint64_t indices[missing_per_partial];
+            uint64_t partial_count = (missing_count + missing_per_partial - 1) / missing_per_partial;
+            TEST_CHECK(C_KZG_OK == new_poly_array(&partials, partial_count));
+            for (uint64_t i = 0; i < partial_count; i++) {
+                uint64_t start = i * missing_per_partial;
+                uint64_t end = start + missing_per_partial;
                 if (end > missing_count) end = missing_count;
-                uint64_t leaf_size = end - start;
-                TEST_CHECK(C_KZG_OK == new_fr_array(&leaves[i].coeffs, leaf_size + 1));
-                for (int j = 0; j < leaf_size; j++) {
-                    indices[j] = missing[i * points_per_leaf + j];
+                uint64_t partial_size = end - start;
+                TEST_CHECK(C_KZG_OK == new_fr_array(&partials[i].coeffs, partial_size + 1));
+                for (int j = 0; j < partial_size; j++) {
+                    indices[j] = missing[i * missing_per_partial + j];
                 }
-                leaves[i].length = leaf_size + 1;
-                TEST_CHECK(C_KZG_OK ==
-                           do_zero_poly_mul_leaf(leaves[i].coeffs, leaves[i].length, indices, leaf_size, 1, &fs));
+                partials[i].length = partial_size + 1;
+                TEST_CHECK(C_KZG_OK == do_zero_poly_mul_partial(partials[i].coeffs, partials[i].length, indices,
+                                                                partial_size, 1, &fs));
             }
 
             // From tree reduction
@@ -135,14 +135,14 @@ void reduce_leaves_random(void) {
             TEST_CHECK(C_KZG_OK == new_poly(&from_tree_reduction, point_count));
             fr_t *scratch;
             TEST_CHECK(C_KZG_OK == new_fr_array(&scratch, point_count * 3));
-            TEST_CHECK(C_KZG_OK == reduce_leaves(&from_tree_reduction, point_count, scratch, point_count * 3, leaves,
-                                                 leaf_count, &fs));
+            TEST_CHECK(C_KZG_OK == reduce_partials(&from_tree_reduction, point_count, scratch, point_count * 3,
+                                                   partials, partial_count, &fs));
 
             // From direct
             fr_t *from_direct;
             TEST_CHECK(C_KZG_OK == new_fr_array(&from_direct, missing_count + 1));
-            TEST_CHECK(C_KZG_OK == do_zero_poly_mul_leaf(from_direct, missing_count + 1, missing, missing_count,
-                                                         fs.max_width / point_count, &fs));
+            TEST_CHECK(C_KZG_OK == do_zero_poly_mul_partial(from_direct, missing_count + 1, missing, missing_count,
+                                                            fs.max_width / point_count, &fs));
 
             for (uint64_t i = 0; i < missing_count + 1; i++) {
                 TEST_CHECK(fr_equal(&from_tree_reduction.coeffs[i], &from_direct[i]));
@@ -151,10 +151,10 @@ void reduce_leaves_random(void) {
             free_poly(&from_tree_reduction);
             free(from_direct);
             free(scratch);
-            for (uint64_t i = 0; i < leaf_count; i++) {
-                free_poly(&leaves[i]);
+            for (uint64_t i = 0; i < partial_count; i++) {
+                free_poly(&partials[i]);
             }
-            free(leaves);
+            free(partials);
             free(missing);
             free_fft_settings(&fs);
         }
@@ -260,7 +260,7 @@ void zero_poly_random(void) {
                 }
             }
 
-            // TODO: fix up the edge cases - zero_poly... fails for very large numbers of missing indices
+            // We know it doesn't work when all indices are missing
             if (len_missing == fs.max_width) {
                 free_fft_settings(&fs);
                 continue;
@@ -284,8 +284,6 @@ void zero_poly_random(void) {
                 fr_t out;
                 eval_poly(&out, &p, &fs.expanded_roots_of_unity[missing[i]]);
                 ret = TEST_CHECK(fr_is_zero(&out));
-                TEST_MSG("Failed for scale = %d, len_missing = %d, zero_poly_len = %lu", scale, len_missing,
-                         zero_poly_len);
                 TEST_MSG("Failed for missing[%d] = %lu", i, missing[i]);
             }
 
@@ -327,6 +325,9 @@ void zero_poly_all_but_one(void) {
     TEST_CHECK(C_KZG_OK == new_fr_array(&zero_poly, fs.max_width));
     TEST_CHECK(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, fs.max_width,
                                                               missing, len_missing, &fs));
+
+    TEST_CHECK(len_missing + 1 == zero_poly_len);
+    TEST_MSG("ZeroPolyLen: expected %d, got %lu", len_missing + 1, zero_poly_len);
 
     poly p;
     p.length = zero_poly_len;
@@ -376,7 +377,7 @@ void zero_poly_252(void) {
     TEST_CHECK(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, fs.max_width,
                                                               missing, len_missing, &fs));
 
-    TEST_CHECK(253 == zero_poly_len);
+    TEST_CHECK(len_missing + 1 == zero_poly_len);
     TEST_MSG("ZeroPolyLen: expected %d, got %lu", len_missing + 1, zero_poly_len);
 
     poly p;
@@ -409,9 +410,9 @@ void zero_poly_252(void) {
 
 TEST_LIST = {
     {"ZERO_POLY_TEST", title},
-    {"test_reduce_leaves", test_reduce_leaves},
+    {"test_reduce_partials", test_reduce_partials},
     {"check_test_data", check_test_data},
-    {"reduce_leaves_random", reduce_leaves_random},
+    {"reduce_partials_random", reduce_partials_random},
     {"zero_poly_known", zero_poly_known},
     {"zero_poly_random", zero_poly_random},
     {"zero_poly_all_but_one", zero_poly_all_but_one},

@@ -31,8 +31,8 @@
  * Uses straightforward multiplication to calculate the product of `(x - r^i)` where `r` is a root of unity and the `i`s
  * are the indices at which it must evaluate to zero. This results in a polynomial of degree @p len_indices.
  *
- * @param[out] dst         The resulting leaf, length @p len_dst
- * @param[in]  len_dst     Length of the output leaf, @p dst
+ * @param[out] dst         The resulting polynomial, length @p len_dst
+ * @param[in]  len_dst     Length of the output polynomial, @p dst
  * @param[in]  indices     Array of missing indices of length @p len_indices
  * @param[in]  len_indices Length of the missing indices array, @p indices
  * @param[in]  stride      Stride length through the powers of the root of unity
@@ -42,8 +42,8 @@
  *
  * @todo rework to pass polynomials in and out
  */
-C_KZG_RET do_zero_poly_mul_leaf(fr_t *dst, uint64_t len_dst, const uint64_t *indices, uint64_t len_indices,
-                                uint64_t stride, const FFTSettings *fs) {
+C_KZG_RET do_zero_poly_mul_partial(fr_t *dst, uint64_t len_dst, const uint64_t *indices, uint64_t len_indices,
+                                   uint64_t stride, const FFTSettings *fs) {
 
     CHECK(len_dst >= len_indices + 1);
 
@@ -80,12 +80,12 @@ C_KZG_RET do_zero_poly_mul_leaf(fr_t *dst, uint64_t len_dst, const uint64_t *ind
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-C_KZG_RET pad_p(fr_t *out, uint64_t out_len, const fr_t *p, uint64_t p_len) {
-    CHECK(out_len >= p_len);
-    for (uint64_t i = 0; i < p_len; i++) {
-        out[i] = p[i];
+C_KZG_RET pad_p(fr_t *out, uint64_t out_len, const poly *p) {
+    CHECK(out_len >= p->length);
+    for (uint64_t i = 0; i < p->length; i++) {
+        out[i] = p->coeffs[i];
     }
-    for (uint64_t i = p_len; i < out_len; i++) {
+    for (uint64_t i = p->length; i < out_len; i++) {
         out[i] = fr_zero;
     }
     return C_KZG_OK;
@@ -109,15 +109,15 @@ C_KZG_RET pad_p(fr_t *out, uint64_t out_len, const fr_t *p, uint64_t p_len) {
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  * @retval C_CZK_ERROR   An internal error occurred
  */
-C_KZG_RET reduce_leaves(poly *out, uint64_t len_out, fr_t *scratch, uint64_t len_scratch, const poly *leaves,
-                        uint64_t leaf_count, const FFTSettings *fs) {
+C_KZG_RET reduce_partials(poly *out, uint64_t len_out, fr_t *scratch, uint64_t len_scratch, const poly *partials,
+                          uint64_t partial_count, const FFTSettings *fs) {
     CHECK(is_power_of_two(len_out));
     CHECK(len_scratch >= 3 * len_out);
-    CHECK(leaf_count > 0);
+    CHECK(partial_count > 0);
     // The degree of the output polynomial is the sum of the degrees of the input polynomials.
     uint64_t out_degree = 0;
-    for (int i = 0; i < leaf_count; i++) {
-        out_degree += leaves[i].length - 1;
+    for (int i = 0; i < partial_count; i++) {
+        out_degree += partials[i].length - 1;
     }
     CHECK(out_degree + 1 <= len_out);
 
@@ -126,12 +126,12 @@ C_KZG_RET reduce_leaves(poly *out, uint64_t len_out, fr_t *scratch, uint64_t len
     fr_t *mul_eval_ps = scratch + len_out;
     fr_t *p_eval = scratch + 2 * len_out;
 
-    // Do the last leaf first: it may be shorter than the others and the padding can remain in place for the rest.
-    TRY(pad_p(p_padded, len_out, leaves[leaf_count - 1].coeffs, leaves[leaf_count - 1].length));
+    // Do the last partial first: it may be shorter than the others and the padding can remain in place for the rest.
+    TRY(pad_p(p_padded, len_out, &partials[partial_count - 1]));
     TRY(fft_fr(mul_eval_ps, p_padded, false, len_out, fs));
 
-    for (uint64_t i = 0; i < leaf_count - 1; i++) {
-        TRY(pad_p(p_padded, leaves[i].length, leaves[i].coeffs, leaves[i].length));
+    for (uint64_t i = 0; i < partial_count - 1; i++) {
+        TRY(pad_p(p_padded, partials[i].length, &partials[i]));
         TRY(fft_fr(p_eval, p_padded, false, len_out, fs));
         for (uint64_t j = 0; j < len_out; j++) {
             fr_mul(&mul_eval_ps[j], &mul_eval_ps[j], &p_eval[j]);
@@ -149,7 +149,7 @@ C_KZG_RET reduce_leaves(poly *out, uint64_t len_out, fr_t *scratch, uint64_t len
  * indices.
  *
  * This is done by simply multiplying together `(x - r^i)` for all the `i` that are missing indices, using a combination
- * of direct multiplication (#do_zero_poly_mul_leaf) and multiplication via convolution (#reduce_leaves).
+ * of direct multiplication (#do_zero_poly_mul_partial) and multiplication via convolution (#reduce_partials).
  *
  * Also calculates the FFT (the "evaluation polynomial").
  *
@@ -172,7 +172,7 @@ C_KZG_RET reduce_leaves(poly *out, uint64_t len_out, fr_t *scratch, uint64_t len
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  *
- * @todo What is the performance impact of tuning `per_leaf_poly` and `reduction factor`?
+ * @todo What is the performance impact of tuning `degree_of_partial` and `reduction factor`?
  */
 C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, uint64_t *zero_poly_len, uint64_t length,
                                              const uint64_t *missing_indices, uint64_t len_missing,
@@ -189,83 +189,81 @@ C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, fr_t *zero_poly, u
     CHECK(length <= fs->max_width);
     CHECK(is_power_of_two(length));
 
-    uint64_t per_leaf_poly = 64; // Tunable parameter. Must be a power of two.
-    uint64_t per_leaf = per_leaf_poly - 1;
+    uint64_t degree_of_partial = 64; // Tunable parameter. Must be a power of two.
+    uint64_t missing_per_partial = degree_of_partial - 1;
     uint64_t domain_stride = fs->max_width / length;
-    uint64_t leaf_count = (len_missing + per_leaf - 1) / per_leaf;
-    uint64_t n = next_power_of_two(leaf_count * per_leaf_poly);
+    uint64_t partial_count = (len_missing + missing_per_partial - 1) / missing_per_partial;
+    uint64_t n = next_power_of_two(partial_count * degree_of_partial);
     if (n > length) n = length;
 
-    if (len_missing <= per_leaf) {
-        TRY(do_zero_poly_mul_leaf(zero_poly, length, missing_indices, len_missing, domain_stride, fs));
+    if (len_missing <= missing_per_partial) {
+        TRY(do_zero_poly_mul_partial(zero_poly, length, missing_indices, len_missing, domain_stride, fs));
         TRY(fft_fr(zero_eval, zero_poly, false, length, fs));
         *zero_poly_len = len_missing + 1;
     } else {
 
-        // Work space for building and reducing the leaves
+        // Work space for building and reducing the partials
         fr_t *work;
-        TRY(new_fr_array(&work, next_power_of_two(leaf_count * per_leaf_poly)));
+        TRY(new_fr_array(&work, next_power_of_two(partial_count * degree_of_partial)));
 
-        // Build the leaves.
+        // Build the partials.
 
-        // Just allocate pointers here since we're re-using `work` for the leaf processing
-        // Combining leaves can be done mostly in-place, using a scratchpad.
-        poly *leaves;
-        TRY(new_poly_array(&leaves, leaf_count));
+        // Just allocate pointers here since we're re-using `work` for the partial processing
+        // Combining partials can be done mostly in-place, using a scratchpad.
+        poly *partials;
+        TRY(new_poly_array(&partials, partial_count));
         uint64_t offset = 0, out_offset = 0, max = len_missing;
-        for (int i = 0; i < leaf_count; i++) {
-            uint64_t end = offset + per_leaf;
+        for (int i = 0; i < partial_count; i++) {
+            uint64_t end = offset + missing_per_partial;
             if (end > max) end = max;
-            leaves[i].coeffs = &work[out_offset];
-            leaves[i].length = per_leaf_poly;
-            TRY(do_zero_poly_mul_leaf(leaves[i].coeffs, per_leaf_poly, &missing_indices[offset], end - offset,
-                                      domain_stride, fs));
-            offset += per_leaf;
-            out_offset += per_leaf_poly;
+            partials[i].coeffs = &work[out_offset];
+            partials[i].length = degree_of_partial;
+            TRY(do_zero_poly_mul_partial(partials[i].coeffs, degree_of_partial, &missing_indices[offset], end - offset,
+                                         domain_stride, fs));
+            offset += missing_per_partial;
+            out_offset += degree_of_partial;
         }
-        // Adjust the length of the last leaf
-        // leaf_lengths[leaf_count - 1] = 1 + len_missing % per_leaf;
-        leaves[leaf_count - 1].length = 1 + len_missing - (leaf_count - 1) * per_leaf;
+        // Adjust the length of the last partial
+        partials[partial_count - 1].length = 1 + len_missing - (partial_count - 1) * missing_per_partial;
 
-        // Now reduce all the leaves to a single poly
+        // Reduce all the partials to a single poly
 
-        int reduction_factor = 4; // must be a power of 2 (TODO why?)
+        int reduction_factor = 4; // must be a power of 2 (for sake of the FFTs in reduce partials)
         fr_t *scratch;
         TRY(new_fr_array(&scratch, n * 3));
-        while (leaf_count > 1) {
-            uint64_t reduced_count = (leaf_count + reduction_factor - 1) / reduction_factor;
-            uint64_t leaf_size = next_power_of_two(leaves[0].length);
+        while (partial_count > 1) {
+            uint64_t reduced_count = (partial_count + reduction_factor - 1) / reduction_factor;
+            uint64_t partial_size = next_power_of_two(partials[0].length);
             for (uint64_t i = 0; i < reduced_count; i++) {
                 uint64_t start = i * reduction_factor;
                 uint64_t end = start + reduction_factor;
-                // E.g. if we *started* with 2 leaves, we won't have more than that since it is already a power
-                // of 2. If we had 3, it would have been rounded up anyway. So just pick the end
-                uint64_t out_end = end * leaf_size;
+                uint64_t out_end = end * partial_size;
                 if (out_end > n) out_end = n;
-                fr_t *reduced = work + start * leaf_size;
-                uint64_t reduced_len = out_end - start * leaf_size;
+                fr_t *reduced = work + start * partial_size;
+                uint64_t reduced_len = out_end - start * partial_size;
                 if (reduced_len > length) reduced_len = length;
-                if (end > leaf_count) end = leaf_count;
-                uint64_t leaves_slice_len = end - start;
-                if (leaves_slice_len > 1) {
-                    leaves[i].coeffs = reduced;
-                    TRY(reduce_leaves(&leaves[i], reduced_len, scratch, n * 3, &leaves[start], leaves_slice_len, fs));
+                if (end > partial_count) end = partial_count;
+                uint64_t partials_slice = end - start;
+                partials[i].coeffs = reduced;
+                if (partials_slice > 1) {
+                    TRY(reduce_partials(&partials[i], reduced_len, scratch, n * 3, &partials[start], partials_slice,
+                                        fs));
                 } else {
-                    leaves[i].coeffs = reduced;
-                    leaves[i].length = leaves[start].length;
+                    partials[i].length = partials[start].length;
                 }
             }
-            leaf_count = reduced_count;
+            partial_count = reduced_count;
         }
 
-        *zero_poly_len = leaves[0].length;
-        for (uint64_t i = 0; i < length; i++) {
-            zero_poly[i] = i < *zero_poly_len ? leaves[0].coeffs[i] : fr_zero;
-        }
+        // Process final output
+
+        TRY(pad_p(zero_poly, length, &partials[0]));
         TRY(fft_fr(zero_eval, zero_poly, false, length, fs));
 
+        *zero_poly_len = partials[0].length;
+
         free(work);
-        free(leaves);
+        free(partials);
         free(scratch);
     }
 
