@@ -108,17 +108,17 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
     fr_t *scratch2 = scratch1 + len_samples;
 
     // Assign meaningful names to scratch spaces
+    poly zero_poly;
     fr_t *zero_eval = scratch0;
-    fr_t *zero_poly = scratch1;
+    zero_poly.coeffs = scratch1;
     fr_t *poly_evaluations_with_zero = scratch2;
     fr_t *poly_with_zero = scratch0;
     fr_t *eval_shifted_poly_with_zero = scratch2;
     fr_t *eval_shifted_zero_poly = scratch0;
     fr_t *shifted_reconstructed_poly = scratch1;
 
-    uint64_t zero_poly_len;
-    TRY(zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, len_samples, missing, len_missing,
-                                           fs));
+    // Calculate `Z_r,I`
+    TRY(zero_polynomial_via_multiplication(zero_eval, &zero_poly, len_samples, missing, len_missing, fs));
 
     // Check all is well
     for (uint64_t i = 0; i < len_samples; i++) {
@@ -134,11 +134,10 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
     }
     TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
     shift_poly(poly_with_zero, len_samples);
-    shift_poly(zero_poly, zero_poly_len);
+    shift_poly(zero_poly.coeffs, zero_poly.length);
 
-    // Renamings:
-    fr_t *shifted_poly_with_zero = poly_with_zero;
-    fr_t *shifted_zero_poly = zero_poly;
+    fr_t *shifted_poly_with_zero = poly_with_zero; // Renaming
+    fr_t *shifted_zero_poly = zero_poly.coeffs;    // Renaming
 
     TRY(fft_fr(eval_shifted_poly_with_zero, shifted_poly_with_zero, false, len_samples, fs));
     TRY(fft_fr(eval_shifted_zero_poly, shifted_zero_poly, false, len_samples, fs));
@@ -152,9 +151,7 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
 
     unshift_poly(shifted_reconstructed_poly, len_samples);
 
-    // Renaming:
-    fr_t *reconstructed_poly = shifted_reconstructed_poly;
-
+    fr_t *reconstructed_poly = shifted_reconstructed_poly; // Renaming
     TRY(fft_fr(reconstructed_data, reconstructed_poly, false, len_samples, fs));
 
     // Check all is well
