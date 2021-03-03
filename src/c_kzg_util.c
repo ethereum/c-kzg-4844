@@ -122,3 +122,17 @@ C_KZG_RET new_g1_array_2(g1_t ***x, size_t n) {
 C_KZG_RET new_g2_array(g2_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
+
+/**
+ * Allocate memory for an array of polynomial headers.
+ *
+ * @remark Free the space later using `free()`, after freeing the individual polynomials via #free_poly.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of polynomial headers to be allocated
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+C_KZG_RET new_poly_array(poly **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}

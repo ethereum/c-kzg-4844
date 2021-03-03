@@ -16,6 +16,9 @@
 
 /** @file poly.h */
 
+#ifndef POLY_H
+#define POLY_H
+
 #include "c_kzg.h"
 
 /**
@@ -33,3 +36,5 @@ C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor
 C_KZG_RET new_poly(poly *out, uint64_t length);
 C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length);
 void free_poly(poly *p);
+
+#endif // POLY_H
