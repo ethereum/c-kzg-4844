@@ -26,7 +26,7 @@
 #include "utility.h"
 #include "zero_poly.h"
 
-/** 5 is a primitive element, but actually this can be pretty much anything not 1 or 0*/
+/** 5 is a primitive element, but actually this can be pretty much anything not 0 or a low-degree root of unity */
 #define SHIFT_FACTOR 5
 
 /**
@@ -125,6 +125,7 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         TRY(fr_is_null(&samples[i]) == fr_is_zero(&zero_eval[i]) ? C_KZG_OK : C_KZG_ERROR);
     }
 
+    // Construct E * Z_r,I: the loop makes the evaluation polynomial
     for (uint64_t i = 0; i < len_samples; i++) {
         if (fr_is_null(&samples[i])) {
             poly_evaluations_with_zero[i] = fr_zero;
@@ -132,13 +133,19 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
             fr_mul(&poly_evaluations_with_zero[i], &samples[i], &zero_eval[i]);
         }
     }
+    // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
     TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
+
+    // x -> k * x
     shift_poly(poly_with_zero, len_samples);
     shift_poly(zero_poly.coeffs, zero_poly.length);
 
+    // Q1 = (D * Z_r,I)(k * x)
     fr_t *shifted_poly_with_zero = poly_with_zero; // Renaming
-    fr_t *shifted_zero_poly = zero_poly.coeffs;    // Renaming
+    // Q2 = Z_r,I(k * x)
+    fr_t *shifted_zero_poly = zero_poly.coeffs; // Renaming
 
+    // Polynomial division by convolution: Q3 = Q1 / Q2
     TRY(fft_fr(eval_shifted_poly_with_zero, shifted_poly_with_zero, false, len_samples, fs));
     TRY(fft_fr(eval_shifted_zero_poly, shifted_zero_poly, false, len_samples, fs));
 
@@ -147,11 +154,16 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
         fr_div(&eval_shifted_reconstructed_poly[i], &eval_shifted_poly_with_zero[i], &eval_shifted_zero_poly[i]);
     }
 
+    // The result of the division is D(k * x):
     TRY(fft_fr(shifted_reconstructed_poly, eval_shifted_reconstructed_poly, true, len_samples, fs));
 
+    // k * x -> x
     unshift_poly(shifted_reconstructed_poly, len_samples);
 
+    // Finally we have D(x) which evaluates to our original data at the powers of roots of unity
     fr_t *reconstructed_poly = shifted_reconstructed_poly; // Renaming
+
+    // The evaluation polynomial for D(x) is the reconstructed data:
     TRY(fft_fr(reconstructed_data, reconstructed_poly, false, len_samples, fs));
 
     // Check all is well

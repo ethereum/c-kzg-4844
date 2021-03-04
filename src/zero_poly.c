@@ -28,8 +28,8 @@
 /**
  * Calculates the minimal polynomial that evaluates to zero for powers of roots of unity at the given indices.
  *
- * Uses straightforward multiplication to calculate the product of `(x - r^i)` where `r` is a root of unity and the `i`s
- * are the indices at which it must evaluate to zero. This results in a polynomial of degree @p len_indices.
+ * Uses straightforward long multiplication to calculate the product of `(x - r^i)` where `r` is a root of unity and the
+ * `i`s are the indices at which it must evaluate to zero. This results in a polynomial of degree @p len_indices.
  *
  * @param[in,out] dst      The zero polynomial for @p indices. The space allocated for coefficients must be at least @p
  *                         len_indices + 1, as indicated by the `length` value on entry.
@@ -39,8 +39,6 @@
  * @param[in]  fs          The FFT settings previously initialised with #new_fft_settings
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
- *
- * @todo rework to pass polynomials in and out
  */
 C_KZG_RET do_zero_poly_mul_partial(poly *dst, const uint64_t *indices, uint64_t len_indices, uint64_t stride,
                                    const FFTSettings *fs) {
@@ -126,7 +124,7 @@ C_KZG_RET reduce_partials(poly *out, uint64_t len_out, fr_t *scratch, uint64_t l
     fr_t *mul_eval_ps = scratch + len_out;
     fr_t *p_eval = scratch + 2 * len_out;
 
-    // Do the last partial first: it may be shorter than the others and the padding can remain in place for the rest.
+    // Do the last partial first: it is no longer than the others and the padding can remain in place for the rest.
     TRY(pad_p(p_padded, len_out, &partials[partial_count - 1]));
     TRY(fft_fr(mul_eval_ps, p_padded, false, len_out, fs));
 
