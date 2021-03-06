@@ -108,14 +108,16 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
     fr_t *scratch2 = scratch1 + len_samples;
 
     // Assign meaningful names to scratch spaces
-    poly zero_poly;
     fr_t *zero_eval = scratch0;
-    zero_poly.coeffs = scratch1;
     fr_t *poly_evaluations_with_zero = scratch2;
     fr_t *poly_with_zero = scratch0;
     fr_t *eval_shifted_poly_with_zero = scratch2;
     fr_t *eval_shifted_zero_poly = scratch0;
     fr_t *shifted_reconstructed_poly = scratch1;
+
+    poly zero_poly;
+    zero_poly.length = len_samples;
+    zero_poly.coeffs = scratch1;
 
     // Calculate `Z_r,I`
     TRY(zero_polynomial_via_multiplication(zero_eval, &zero_poly, len_samples, missing, len_missing, fs));
