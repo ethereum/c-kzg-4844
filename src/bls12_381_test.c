@@ -98,6 +98,18 @@ void fr_div_works(void) {
     TEST_CHECK(fr_equal(&a, &actual));
 }
 
+// This is strictly undefined, but conventionally 0 is returned
+void fr_div_by_zero(void) {
+    fr_t a, b, tmp;
+
+    fr_from_uint64(&a, 197);
+    fr_from_uint64(&b, 0);
+
+    fr_div(&tmp, &a, &b);
+
+    TEST_CHECK(fr_is_zero(&tmp));
+}
+
 void p1_mul_works(void) {
     fr_t minus1;
     g1_t res;
@@ -199,6 +211,7 @@ TEST_LIST = {
     {"fr_negate_works", fr_negate_works},
     {"fr_pow_works", fr_pow_works},
     {"fr_div_works", fr_div_works},
+    {"fr_div_by_zero", fr_div_by_zero},
     {"p1_mul_works", p1_mul_works},
     {"p1_sub_works", p1_sub_works},
     {"p2_mul_works", p2_mul_works},
