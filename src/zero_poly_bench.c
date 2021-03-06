@@ -40,18 +40,20 @@ long run_bench(int scale, int max_seconds) {
 
     fr_t *zero_eval = malloc(fs.max_width * sizeof(fr_t));
     fr_t *zero_poly = malloc(fs.max_width * sizeof(fr_t));
-    uint64_t zero_poly_len;
+    poly zero_poly_p;
+    zero_poly_p.coeffs = zero_poly;
+    zero_poly_p.length = fs.max_width;
     while (total_time < max_seconds * NANO) {
         clock_gettime(CLOCK_REALTIME, &t0);
         // Half missing leaves enough FFT computation space
-        assert(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval, zero_poly, &zero_poly_len, fs.max_width,
-                                                              missing, fs.max_width / 2, &fs));
+        assert(C_KZG_OK == zero_polynomial_via_multiplication(zero_eval, &zero_poly_p, fs.max_width, missing,
+                                                              fs.max_width / 2, &fs));
         clock_gettime(CLOCK_REALTIME, &t1);
         nits++;
         total_time += tdiff(t0, t1);
     }
 
-    free(zero_poly);
+    free_poly(&zero_poly_p);
     free(zero_eval);
     free(missing);
     free_fft_settings(&fs);
