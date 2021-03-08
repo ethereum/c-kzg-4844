@@ -27,21 +27,21 @@
 #include "zero_poly.h"
 
 /** 5 is a primitive element, but actually this can be pretty much anything not 0 or a low-degree root of unity */
-#define SHIFT_FACTOR 5
+#define SCALE_FACTOR 5
 
 /**
- * Shift a polynomial in place.
+ * Scale a polynomial in place.
  *
- * Multiplies each coefficient by `1 / shift_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x * k`
+ * Multiplies each coefficient by `1 / scale_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x * k`
  * rather than `x`.
  *
- * @param[out,in] p The polynomial coefficients to be shifted
+ * @param[out,in] p The polynomial coefficients to be scaled
  * @param[in] len_p Length of the polynomial coefficients
  */
-void shift_poly(fr_t *p, uint64_t len_p) {
-    fr_t shift_factor, factor_power, inv_factor;
-    fr_from_uint64(&shift_factor, SHIFT_FACTOR);
-    fr_inv(&inv_factor, &shift_factor);
+void scale_poly(fr_t *p, uint64_t len_p) {
+    fr_t scale_factor, factor_power, inv_factor;
+    fr_from_uint64(&scale_factor, SCALE_FACTOR);
+    fr_inv(&inv_factor, &scale_factor);
     factor_power = fr_one;
 
     for (uint64_t i = 1; i < len_p; i++) {
@@ -51,21 +51,21 @@ void shift_poly(fr_t *p, uint64_t len_p) {
 }
 
 /**
- * Unshift a polynomial in place.
+ * Unscale a polynomial in place.
  *
- * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x / k`
+ * Multiplies each coefficient by `scale_factor ^ i`. Equivalent to creating a polynomial that evaluates at `x / k`
  * rather than `x`.
  *
- * @param[out,in] p The polynomial coefficients to be unshifted
+ * @param[out,in] p The polynomial coefficients to be unscaled
  * @param[in] len_p Length of the polynomial coefficients
  */
-void unshift_poly(fr_t *p, uint64_t len_p) {
-    fr_t shift_factor, factor_power;
-    fr_from_uint64(&shift_factor, SHIFT_FACTOR);
+void unscale_poly(fr_t *p, uint64_t len_p) {
+    fr_t scale_factor, factor_power;
+    fr_from_uint64(&scale_factor, SCALE_FACTOR);
     factor_power = fr_one;
 
     for (uint64_t i = 1; i < len_p; i++) {
-        fr_mul(&factor_power, &factor_power, &shift_factor);
+        fr_mul(&factor_power, &factor_power, &scale_factor);
         fr_mul(&p[i], &p[i], &factor_power);
     }
 }
@@ -111,9 +111,9 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
     fr_t *zero_eval = scratch0;
     fr_t *poly_evaluations_with_zero = scratch2;
     fr_t *poly_with_zero = scratch0;
-    fr_t *eval_shifted_poly_with_zero = scratch2;
-    fr_t *eval_shifted_zero_poly = scratch0;
-    fr_t *shifted_reconstructed_poly = scratch1;
+    fr_t *eval_scaled_poly_with_zero = scratch2;
+    fr_t *eval_scaled_zero_poly = scratch0;
+    fr_t *scaled_reconstructed_poly = scratch1;
 
     poly zero_poly;
     zero_poly.length = len_samples;
@@ -139,31 +139,31 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
     TRY(fft_fr(poly_with_zero, poly_evaluations_with_zero, true, len_samples, fs));
 
     // x -> k * x
-    shift_poly(poly_with_zero, len_samples);
-    shift_poly(zero_poly.coeffs, zero_poly.length);
+    scale_poly(poly_with_zero, len_samples);
+    scale_poly(zero_poly.coeffs, zero_poly.length);
 
     // Q1 = (D * Z_r,I)(k * x)
-    fr_t *shifted_poly_with_zero = poly_with_zero; // Renaming
+    fr_t *scaled_poly_with_zero = poly_with_zero; // Renaming
     // Q2 = Z_r,I(k * x)
-    fr_t *shifted_zero_poly = zero_poly.coeffs; // Renaming
+    fr_t *scaled_zero_poly = zero_poly.coeffs; // Renaming
 
     // Polynomial division by convolution: Q3 = Q1 / Q2
-    TRY(fft_fr(eval_shifted_poly_with_zero, shifted_poly_with_zero, false, len_samples, fs));
-    TRY(fft_fr(eval_shifted_zero_poly, shifted_zero_poly, false, len_samples, fs));
+    TRY(fft_fr(eval_scaled_poly_with_zero, scaled_poly_with_zero, false, len_samples, fs));
+    TRY(fft_fr(eval_scaled_zero_poly, scaled_zero_poly, false, len_samples, fs));
 
-    fr_t *eval_shifted_reconstructed_poly = eval_shifted_poly_with_zero;
+    fr_t *eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero;
     for (uint64_t i = 0; i < len_samples; i++) {
-        fr_div(&eval_shifted_reconstructed_poly[i], &eval_shifted_poly_with_zero[i], &eval_shifted_zero_poly[i]);
+        fr_div(&eval_scaled_reconstructed_poly[i], &eval_scaled_poly_with_zero[i], &eval_scaled_zero_poly[i]);
     }
 
     // The result of the division is D(k * x):
-    TRY(fft_fr(shifted_reconstructed_poly, eval_shifted_reconstructed_poly, true, len_samples, fs));
+    TRY(fft_fr(scaled_reconstructed_poly, eval_scaled_reconstructed_poly, true, len_samples, fs));
 
     // k * x -> x
-    unshift_poly(shifted_reconstructed_poly, len_samples);
+    unscale_poly(scaled_reconstructed_poly, len_samples);
 
     // Finally we have D(x) which evaluates to our original data at the powers of roots of unity
-    fr_t *reconstructed_poly = shifted_reconstructed_poly; // Renaming
+    fr_t *reconstructed_poly = scaled_reconstructed_poly; // Renaming
 
     // The evaluation polynomial for D(x) is the reconstructed data:
     TRY(fft_fr(reconstructed_data, reconstructed_poly, false, len_samples, fs));
