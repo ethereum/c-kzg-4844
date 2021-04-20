@@ -43,20 +43,21 @@
 C_KZG_RET do_zero_poly_mul_partial(poly *dst, const uint64_t *indices, uint64_t len_indices, uint64_t stride,
                                    const FFTSettings *fs) {
 
+    CHECK(len_indices > 0);
     CHECK(dst->length >= len_indices + 1);
 
-    for (uint64_t i = 0; i < len_indices; i++) {
+    fr_negate(&dst->coeffs[0], &fs->expanded_roots_of_unity[indices[0] * stride]);
+
+    for (uint64_t i = 1; i < len_indices; i++) {
         fr_t neg_di;
         fr_negate(&neg_di, &fs->expanded_roots_of_unity[indices[i] * stride]);
         dst->coeffs[i] = neg_di;
-        if (i > 0) {
-            fr_add(&dst->coeffs[i], &dst->coeffs[i], &dst->coeffs[i - 1]);
-            for (uint64_t j = i - 1; j > 0; j--) {
-                fr_mul(&dst->coeffs[j], &dst->coeffs[j], &neg_di);
-                fr_add(&dst->coeffs[j], &dst->coeffs[j], &dst->coeffs[j - 1]);
-            }
-            fr_mul(&dst->coeffs[0], &dst->coeffs[0], &neg_di);
+        fr_add(&dst->coeffs[i], &dst->coeffs[i], &dst->coeffs[i - 1]);
+        for (uint64_t j = i - 1; j > 0; j--) {
+            fr_mul(&dst->coeffs[j], &dst->coeffs[j], &neg_di);
+            fr_add(&dst->coeffs[j], &dst->coeffs[j], &dst->coeffs[j - 1]);
         }
+        fr_mul(&dst->coeffs[0], &dst->coeffs[0], &neg_di);
     }
 
     dst->coeffs[len_indices] = fr_one;
