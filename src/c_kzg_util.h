@@ -20,6 +20,13 @@
 #include "c_kzg.h"
 #include "poly.h"
 
+#define min_u64(a, b)                                                                                                  \
+    ({                                                                                                                 \
+        uint64_t _a = (a);                                                                                             \
+        uint64_t _b = (b);                                                                                             \
+        _a < _b ? _a : _b;                                                                                             \
+    })
+
 C_KZG_RET c_kzg_malloc(void **p, size_t n);
 C_KZG_RET new_uint64_array(uint64_t **x, size_t n);
 C_KZG_RET new_fr_array(fr_t **x, size_t n);
