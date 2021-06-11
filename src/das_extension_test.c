@@ -26,14 +26,14 @@ void das_extension_test_known(void) {
     fr_t *data;
     // The expected output (from go-kzg):
     const uint64_t expected_u[8][4] = {
-        {0x740e9eb4cef44b7fL, 0xb66dfe6438d1316aL, 0xc62c567f7b9c5e97L, 0x5a4f75d3eb7951c4L},
-        {0x52617bb5c60d8fabL, 0x0e225ff8d6c658d9L, 0x73ce7b30718ed2aeL, 0x0d94457acc0cb888L},
-        {0x8bf0614a310bb489L, 0xb14ca59c512a2a94L, 0xdfbbb4ba1802749cL, 0x199e317f3e242b82L},
-        {0x98cbae3b8f66f769L, 0x69198f8ae9ed978dL, 0x360058041982845aL, 0x3171960f86bb881dL},
-        {0x8bf0614a310bb489L, 0xb14ca59c512a2a94L, 0xdfbbb4ba1802749cL, 0x199e317f3e242b82L},
-        {0x52617bb5c60d8fabL, 0x0e225ff8d6c658d9L, 0x73ce7b30718ed2aeL, 0x0d94457acc0cb888L},
-        {0x740e9eb4cef44b7fL, 0xb66dfe6438d1316aL, 0xc62c567f7b9c5e97L, 0x5a4f75d3eb7951c4L},
-        {0xc2735a57e47de950L, 0xa665548b548a12beL, 0x3040233ff907b7f0L, 0x2753864e0ac8841bL}};
+        {0xa0c43757db972d7dL, 0x79d15a1e0677962cL, 0xf678865c0c95fa6aL, 0x4e85fd4814f96825L},
+        {0xad9f844939f2705dL, 0x319e440c9f3b0325L, 0x4cbd29a60e160a28L, 0x665961d85d90c4c0L},
+        {0x5f3ac8a72468d28bL, 0xede949e28383c5d2L, 0xaf6f84dd8708d8c9L, 0x2567aa0b14a41521L},
+        {0x25abe312b96aadadL, 0x4abf043f091ff417L, 0x43824b53e09536dbL, 0x195dbe06a28ca227L},
+        {0x5f3ac8a72468d28bL, 0xede949e28383c5d2L, 0xaf6f84dd8708d8c9L, 0x2567aa0b14a41521L},
+        {0xad9f844939f2705dL, 0x319e440c9f3b0325L, 0x4cbd29a60e160a28L, 0x665961d85d90c4c0L},
+        {0xa0c43757db972d7dL, 0x79d15a1e0677962cL, 0xf678865c0c95fa6aL, 0x4e85fd4814f96825L},
+        {0x7f171458d2b071a9L, 0xd185bbb2a46cbd9bL, 0xa41aab0d02886e80L, 0x01cacceef58ccee9L}};
 
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
     half = fs.max_width / 2;
