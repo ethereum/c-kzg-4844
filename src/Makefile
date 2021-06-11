@@ -5,28 +5,29 @@ LIB_SRC = bls12_381.c c_kzg_util.c das_extension.c fft_common.c fft_fr.c fft_g1.
 LIB_OBJ = $(LIB_SRC:.c=.o)
 
 CFLAGS =
+INCLUDE_DIRS = ../inc
 
 .PRECIOUS: %.o
 
 %.o: %.c %.h c_kzg.h Makefile
-	clang -Wall $(CFLAGS) -c $*.c
+	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -c $*.c
 
 libckzg.a: $(LIB_OBJ) Makefile
 	ar rc libckzg.a $(LIB_OBJ)
 
 %_test: %_test.c debug_util.o test_util.o libckzg.a Makefile
-	clang -Wall $(CFLAGS) -o $@ $@.c debug_util.o test_util.o libckzg.a -L../lib -lblst
+	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -o $@ $@.c debug_util.o test_util.o libckzg.a -L../lib -lblst
 	./$@
 
 # This version will abort on error and print the file and line number
 %_test_debug: CFLAGS += -g -O0 -DDEBUG
 %_test_debug: %_test.c debug_util.o test_util.o libckzg.a Makefile
-	clang -Wall $(CFLAGS) -o $@ $*_test.c debug_util.o test_util.o libckzg.a -L../lib -lblst
+	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -o $@ $*_test.c debug_util.o test_util.o libckzg.a -L../lib -lblst
 
 # Benchmarks
 %_bench: CFLAGS += -O
 %_bench: %_bench.c bench_util.o test_util.o $(LIB_OBJ) Makefile
-	clang -Wall $(CFLAGS) -o $@ $@.c bench_util.o test_util.o $(LIB_OBJ) -L../lib -lblst
+	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -o $@ $@.c bench_util.o test_util.o $(LIB_OBJ) -L../lib -lblst
 	./$@
 
 lib: CFLAGS += -O

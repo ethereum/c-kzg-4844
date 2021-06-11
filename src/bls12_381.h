@@ -34,7 +34,7 @@
 // Settings for linking with the BLST library
 #ifdef BLST
 
-#include "../inc/blst.h"
+#include "blst.h"
 
 typedef blst_scalar scalar_t; /**< Internal scalar type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
