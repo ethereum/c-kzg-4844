@@ -20,7 +20,7 @@ That's basically all the necessary stuff for Eth2 use cases. Things remaining (a
   - [ ] End-to-end tests
   - [ ] Performance tuning
   - [ ] Robustness checking (don't crash on errors; return the correct error codes; no buffer overflows)
-  - [ ] Java interface
+  - [x] Java interface: see [jc-kzg](https://github.com/Nashatyrev/jc-kzg)
   - [ ] (Optional) Use alternative back-end libraries to Blst (e.g. [Herumi mcl](https://github.com/herumi/mcl))
   - [ ] Nice build process
   - [ ] Make it portable
