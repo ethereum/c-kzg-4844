@@ -39,6 +39,8 @@ cp ../blst/libblast.a lib/
 cp ../blst/bindings/*.h inc/
 ```
 
+This version of c-kzg is tested with Blst's master branch, commit `d4b40c3`. Blst release 0.3.4 is not sufficient since we make use of the more recently implemented Pippenger multiscalar multiplication for the polynomial commitments.
+
 ## Build
 
 Build the `libckzg.a` library:

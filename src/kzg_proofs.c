@@ -27,6 +27,7 @@
 #include "kzg_proofs.h"
 #include "c_kzg_util.h"
 #include "utility.h"
+#include <assert.h>
 
 /**
  * Make a KZG commitment to a polynomial.
@@ -82,7 +83,7 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
 }
 
 /**
- * Compute KZG proof for polynomial at positions x * w^y where w is an n-th root of unity.
+ * Compute KZG proof for polynomial at positions x0 * w^y where w is an n-th root of unity.
  *
  * This constitutes the proof for one data availability sample, which consists
  * of several polynomial evaluations.
@@ -103,7 +104,7 @@ C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t
 
     CHECK(is_power_of_two(n));
 
-    // Construct x^n - x0^n = (x - w^0)(x - w^1)...(x - w^(n-1))
+    // Construct x^n - x0^n = (x - x0.w^0)(x - x0.w^1)...(x - x0.w^(n-1))
     TRY(new_poly(&divisor, n + 1));
 
     // -(x0^n)

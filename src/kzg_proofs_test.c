@@ -78,7 +78,7 @@ void proof_multi(void) {
     bool result;
 
     // Compute proof at 2^coset_scale points
-    int coset_scale = 7, coset_len = (1 << coset_scale);
+    int coset_scale = 3, coset_len = (1 << coset_scale);
     fr_t y[coset_len];
 
     uint64_t secrets_len = poly_len > coset_len ? poly_len + 1 : coset_len + 1;

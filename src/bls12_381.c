@@ -24,6 +24,8 @@
 
 #ifdef BLST
 
+#include <stdlib.h> // malloc(), free(), NULL
+
 /**
  * Fast log base 2 of a byte.
  *
@@ -377,16 +379,50 @@ void g2_dbl(g2_t *out, const g2_t *a) {
  * @param[in]  coeffs Array of field elements, length @p len
  * @param[in]  len    The number of group/field elements
  *
- * @todo This could be substantially improved with an optimised multi-scalar multiplication. (1) Benchmark and see if
- * this is a bottleneck. (2) If so, look into optimised routines. [Notes from
- * Mamy](https://github.com/vacp2p/research/issues/7#issuecomment-690083000) on the topic.
+ * For the benefit of future generations (since Blst has no documentation to speak of),
+ * there are two ways to pass the arrays of scalars and points into `blst_p1s_mult_pippenger()`.
+ *
+ * 1. Pass `points` as an array of pointers to the points, and pass `scalars` as an array of pointers to the scalars,
+ * each of length @p len.
+ * 2. Pass an array where the first element is a pointer to the contiguous array of points and the second is null, and
+ * similarly for scalars.
+ *
+ * We do the second of these to save memory here.
  */
 void g1_linear_combination(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
-    g1_t tmp;
-    *out = g1_identity;
-    for (uint64_t i = 0; i < len; i++) {
-        g1_mul(&tmp, &p[i], &coeffs[i]);
-        blst_p1_add_or_double(out, out, &tmp);
+
+    if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+        // Direct approach
+        g1_t tmp;
+        *out = g1_identity;
+        for (uint64_t i = 0; i < len; i++) {
+            g1_mul(&tmp, &p[i], &coeffs[i]);
+            blst_p1_add_or_double(out, out, &tmp);
+        }
+    } else {
+        // Blst's implementation of the Pippenger method
+        void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
+        blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
+        blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
+
+        // Transform the points to affine representation
+        const blst_p1 *p_arg[2] = {p, NULL};
+        blst_p1s_to_affine(p_affine, p_arg, len);
+
+        // Transform the field elements to 256-bit scalars
+        for (int i = 0; i < len; i++) {
+            blst_scalar_from_fr(&scalars[i], &coeffs[i]);
+        }
+
+        // Call the Pippenger implementation
+        const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+        const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+        blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
+
+        // Tidy up
+        free(scratch);
+        free(p_affine);
+        free(scalars);
     }
 }
 

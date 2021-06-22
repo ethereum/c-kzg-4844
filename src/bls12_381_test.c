@@ -181,6 +181,29 @@ void g1_make_linear_combination(void) {
     TEST_CHECK(g1_equal(&exp, &res));
 }
 
+void g1_random_linear_combination(void) {
+    int len = 8192;
+    fr_t coeffs[len];
+    g1_t p[len], p1tmp = g1_generator;
+    for (int i = 0; i < len; i++) {
+        coeffs[i] = rand_fr();
+        p[i] = p1tmp;
+        blst_p1_double(&p1tmp, &p1tmp);
+    }
+
+    // Expected result
+    g1_t exp = g1_identity;
+    for (uint64_t i = 0; i < len; i++) {
+        g1_mul(&p1tmp, &p[i], &coeffs[i]);
+        blst_p1_add_or_double(&exp, &exp, &p1tmp);
+    }
+
+    // Test result
+    g1_t res;
+    g1_linear_combination(&res, p, coeffs, len);
+    TEST_CHECK(g1_equal(&exp, &res));
+}
+
 void pairings_work(void) {
     // Verify that e([3]g1, [5]g2) = e([5]g1, [3]g2)
     fr_t three, five;
@@ -219,6 +242,7 @@ TEST_LIST = {
     {"g1_identity_is_infinity", g1_identity_is_infinity},
     {"g1_identity_is_identity", g1_identity_is_identity},
     {"g1_make_linear_combination", g1_make_linear_combination},
+    {"g1_random_linear_combination", g1_make_linear_combination},
     {"pairings_work", pairings_work},
     {NULL, NULL} /* zero record marks the end of the list */
 };
