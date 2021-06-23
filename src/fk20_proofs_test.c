@@ -52,7 +52,7 @@ void fk_single(void) {
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
     // Commit to the polynomial
-    commit_to_poly(&commitment, &p, &ks);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
 
     // 1. First with `da_using_fk20_single`
 
@@ -125,7 +125,7 @@ void fk_single_strided(void) {
     TEST_CHECK(C_KZG_OK == new_fk20_single_settings(&fk, 2 * poly_len, &ks));
 
     // Commit to the polynomial
-    commit_to_poly(&commitment, &p, &ks);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
 
     // Generate the proofs
     TEST_CHECK(da_using_fk20_single(all_proofs, &p, &fk) == C_KZG_OK);
@@ -211,7 +211,7 @@ void fk_multi_0(void) {
         fr_negate(&p.coeffs[i * chunk_len + 14], &p.coeffs[i * chunk_len + 14]);
     }
 
-    commit_to_poly(&commitment, &p, &ks);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
 
     // Compute the multi proofs, assuming that the polynomial will be extended with zeros
     TEST_CHECK(C_KZG_OK == new_g1_array(&all_proofs, 2 * chunk_count));

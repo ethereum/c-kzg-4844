@@ -48,7 +48,7 @@ long run_bench(int scale, int max_seconds) {
         g1_t commitment;
         clock_gettime(CLOCK_REALTIME, &t0);
 
-        commit_to_poly(&commitment, &p, &ks);
+        assert(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
 
         clock_gettime(CLOCK_REALTIME, &t1);
         nits++;

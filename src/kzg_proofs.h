@@ -31,7 +31,7 @@ typedef struct {
     uint64_t length;       /**< The number of elements in secret_g1 and secret_g2 */
 } KZGSettings;
 
-void commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks);
+C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks);
 C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const KZGSettings *ks);
 C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
                              const KZGSettings *ks);

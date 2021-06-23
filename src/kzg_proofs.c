@@ -35,9 +35,13 @@
  * @param[out] out The commitment to the polynomial, in the form of a G1 group point
  * @param[in]  p   The polynomial to be committed to
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-void commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
+C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
+    CHECK(p->length <= ks->length);
     g1_linear_combination(out, ks->secret_g1, p->coeffs, p->length);
+    return C_KZG_OK;
 }
 
 /**
@@ -122,7 +126,7 @@ C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t
     // Calculate q = p / (x^n - x0^n)
     TRY(new_poly_long_div(&q, p, &divisor));
 
-    commit_to_poly(out, &q, ks);
+    TRY(commit_to_poly(out, &q, ks));
 
     free_poly(&q);
     free_poly(&divisor);
@@ -177,7 +181,7 @@ C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof
     g2_sub(&xn_minus_yn, &ks->secret_g2[n], &xn2);
 
     // [interpolation_polynomial(s)]_1
-    commit_to_poly(&is1, &interp, ks);
+    TRY(commit_to_poly(&is1, &interp, ks));
 
     // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 - [interpolation_polynomial(s)]_1
     g1_sub(&commit_minus_interp, commitment, &is1);

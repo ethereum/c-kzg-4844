@@ -46,7 +46,7 @@ void proof_single(void) {
 
     // Compute the proof for x = 25
     fr_from_uint64(&x, 25);
-    commit_to_poly(&commitment, &p, &ks);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
     TEST_CHECK(C_KZG_OK == compute_proof_single(&proof, &p, &x, &ks));
 
     eval_poly(&value, &p, &x);
@@ -97,7 +97,7 @@ void proof_multi(void) {
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks1, s1, s2, secrets_len, &fs1));
 
     // Commit to the polynomial
-    commit_to_poly(&commitment, &p, &ks1);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks1));
 
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs2, coset_scale));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks2, s1, s2, secrets_len, &fs2));
@@ -143,8 +143,29 @@ void commit_to_nil_poly(void) {
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
 
     new_poly(&a, 0);
-    commit_to_poly(&result, &a, &ks);
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&result, &a, &ks));
     TEST_CHECK(g1_equal(&g1_identity, &result));
+
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+}
+
+void commit_to_too_long_poly(void) {
+    poly a;
+    FFTSettings fs;
+    KZGSettings ks;
+    uint64_t poly_len = 32, secrets_len = 16; // poly is longer than secrets!
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
+    g1_t result;
+
+    // Initialise the (arbitrary) secrets and data structures
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4));
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+
+    new_poly(&a, poly_len);
+    TEST_CHECK(C_KZG_BADARGS == commit_to_poly(&result, &a, &ks));
 
     free_fft_settings(&fs);
     free_kzg_settings(&ks);
@@ -155,5 +176,6 @@ TEST_LIST = {
     {"proof_single", proof_single},
     {"proof_multi", proof_multi},
     {"commit_to_nil_poly", commit_to_nil_poly},
+    {"commit_to_too_long_poly", commit_to_too_long_poly},
     {NULL, NULL} /* zero record marks the end of the list */
 };
