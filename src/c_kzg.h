@@ -42,7 +42,7 @@ typedef enum {
 #include <stdio.h>
 #define CHECK(cond)                                                                                                    \
     if (!(cond)) {                                                                                                     \
-        printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond);                                             \
+        printf("\n%s:%d: Failed CHECK: %s\n", __FILE__, __LINE__, #cond);                                              \
         abort();                                                                                                       \
     }
 #define TRY(result)                                                                                                    \
@@ -53,6 +53,11 @@ typedef enum {
             abort();                                                                                                   \
         }                                                                                                              \
     }
+#define ASSERT(cond)                                                                                                   \
+    if (!(cond)) {                                                                                                     \
+        printf("\n%s:%d: Failed ASSERT: %s\n", __FILE__, __LINE__, #cond);                                             \
+        abort();                                                                                                       \
+    }
 #else
 #define CHECK(cond)                                                                                                    \
     if (!(cond)) return C_KZG_BADARGS
@@ -62,11 +67,15 @@ typedef enum {
         if (ret == C_KZG_MALLOC) return ret;                                                                           \
         if (ret != C_KZG_OK) return C_KZG_ERROR;                                                                       \
     }
+#define ASSERT(cond)                                                                                                   \
+    if (!(cond)) return C_KZG_ERROR
 #endif // DEBUG
 
 /** @def CHECK
  *
- * Handle errors.
+ * Test input parameters.
+ *
+ * Differs from `ASSERT` in returning `C_KZG_BADARGS`.
  *
  * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
  *   - `DEBUG` is undefined: when @p cond is false, return from the current function with the value `C_KZG_BADARGS`,
@@ -79,7 +88,7 @@ typedef enum {
 
 /** @def TRY
  *
- * Handle errors.
+ * Handle errors in called functions.
  *
  * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
  *   - `DEBUG` is undefined: if the @p result is not `C_KZG_OK`, return immediately with either `C_KZG_MALLOC` or
@@ -89,4 +98,20 @@ typedef enum {
  *
  * @param result The function call result to be tested
  */
+
+/** @def ASSERT
+ *
+ * Test the correctness of statements.
+ *
+ * Differs from `CHECK` in returning `C_KZG_ERROR`.
+ *
+ * This macro comes in two versions according to whether `DEBUG` is defined or not (`-DDEBUG` compiler flag).
+ *   - `DEBUG` is undefined: when @p cond is false, return from the current function with the value `C_KZG_ERROR`,
+ * otherwise continue.
+ *   - `DEBUG` is defined: when @p cond is false, print file and line number information and abort the run. This is very
+ * useful for dubugging. The @p ret parameter is ignored in this case.
+ *
+ * @param cond The condition to be tested
+ */
+
 #endif // C_KZG_H

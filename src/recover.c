@@ -124,7 +124,7 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
 
     // Check all is well
     for (uint64_t i = 0; i < len_samples; i++) {
-        TRY(fr_is_null(&samples[i]) == fr_is_zero(&zero_eval[i]) ? C_KZG_OK : C_KZG_ERROR);
+        ASSERT(fr_is_null(&samples[i]) == fr_is_zero(&zero_eval[i]));
     }
 
     // Construct E * Z_r,I: the loop makes the evaluation polynomial
@@ -170,7 +170,7 @@ C_KZG_RET recover_poly_from_samples(fr_t *reconstructed_data, fr_t *samples, uin
 
     // Check all is well
     for (uint64_t i = 0; i < len_samples; i++) {
-        TRY(fr_is_null(&samples[i]) || fr_equal(&reconstructed_data[i], &samples[i]) ? C_KZG_OK : C_KZG_ERROR);
+        ASSERT(fr_is_null(&samples[i]) || fr_equal(&reconstructed_data[i], &samples[i]));
     }
 
     free(scratch);
