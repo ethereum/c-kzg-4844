@@ -124,7 +124,7 @@ C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t
     divisor.coeffs[n] = fr_one;
 
     // Calculate q = p / (x^n - x0^n)
-    TRY(new_poly_long_div(&q, p, &divisor));
+    TRY(new_poly_div(&q, p, &divisor));
 
     TRY(commit_to_poly(out, &q, ks));
 

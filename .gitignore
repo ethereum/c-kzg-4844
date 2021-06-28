@@ -3,6 +3,7 @@
 *_test
 *_bench
 *_debug
+*_tune
 *.prof
 *.out
 *.log

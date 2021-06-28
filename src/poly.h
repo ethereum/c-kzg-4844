@@ -20,6 +20,7 @@
 #define POLY_H
 
 #include "c_kzg.h"
+#include "fft_fr.h"
 
 /**
  * Defines a polynomial whose coefficients are members of the finite field F_r.
@@ -32,7 +33,14 @@ typedef struct {
 } poly;
 
 void eval_poly(fr_t *out, const poly *p, const fr_t *x);
-C_KZG_RET new_poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET poly_long_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET poly_mul_direct(poly *out, const poly *a, const poly *b);
+C_KZG_RET poly_mul_fft(poly *out, const poly *a, const poly *b, FFTSettings *fs);
+C_KZG_RET poly_inverse(poly *out, poly *b);
+C_KZG_RET poly_fast_div(poly *out, const poly *dividend, const poly *divisor);
+C_KZG_RET poly_mul(poly *out, const poly *a, const poly *b);
+C_KZG_RET poly_mul_(poly *out, const poly *a, const poly *b, FFTSettings *fs);
+C_KZG_RET new_poly_div(poly *out, const poly *dividend, const poly *divisor);
 C_KZG_RET new_poly(poly *out, uint64_t length);
 C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length);
 void free_poly(poly *p);

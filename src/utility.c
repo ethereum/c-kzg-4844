@@ -59,6 +59,20 @@ int log2_pow2(uint32_t n) {
 }
 
 /**
+ * Calculate log base two of a power of two.
+ *
+ * In other words, the bit index of the highest one bit.
+ *
+ * @param[in] n The 64 bit unsigned integer to take the logarithm of
+ * @return the log base two of n
+ */
+int log2_u64(uint64_t n) {
+    int r = 0;
+    while (n >>= 1) r++;
+    return r;
+}
+
+/**
  * Return the next highest power of two.
  *
  * If @p v is already a power of two, it is returned as-is.

@@ -20,11 +20,26 @@
 #include "c_kzg.h"
 #include "poly.h"
 
+/** @def min_u64
+ *
+ * Safely find the minimum of two uint_64s.
+ */
 #define min_u64(a, b)                                                                                                  \
     ({                                                                                                                 \
         uint64_t _a = (a);                                                                                             \
         uint64_t _b = (b);                                                                                             \
         _a < _b ? _a : _b;                                                                                             \
+    })
+
+/** @def max_u64
+ *
+ * Safely find the maximum of two uint_64s.
+ */
+#define max_u64(a, b)                                                                                                  \
+    ({                                                                                                                 \
+        uint64_t _a = (a);                                                                                             \
+        uint64_t _b = (b);                                                                                             \
+        _a > _b ? _a : _b;                                                                                             \
     })
 
 C_KZG_RET c_kzg_malloc(void **p, size_t n);
