@@ -122,6 +122,16 @@ void fr_from_uint64(fr_t *out, uint64_t n) {
 }
 
 /**
+ * Convert the field element to an array of four 64-bit unsigned integers.
+ *
+ * @param out  array for returned values, little-endian ordering of the 64-bit words
+ * @param vals The field element equivalent of @p n
+ */
+void fr_to_uint64s(uint64_t out[4], const fr_t* fr) {
+    blst_uint64_from_fr(out, fr);
+}
+
+/**
  * Test whether two field elements are equal.
  *
  * @param[in] aa The first element
