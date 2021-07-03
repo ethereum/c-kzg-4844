@@ -101,7 +101,7 @@ void fr_from_scalar(fr_t *out, const scalar_t *a) {
 /**
  * Create a field element from an array of four 64-bit unsigned integers.
  *
- * @param out  The field element equivalent of @p n
+ * @param out  The field element equivalent of @p vals
  * @param vals The array of 64-bit integers to be converted, little-endian ordering of the 64-bit words
  */
 void fr_from_uint64s(fr_t *out, const uint64_t vals[4]) {
@@ -125,7 +125,7 @@ void fr_from_uint64(fr_t *out, uint64_t n) {
  * Convert a field element to an array of four 64-bit unsigned integers.
  *
  * @param out  Array for returned values, little-endian ordering of the 64-bit words
- * @param vals The field element equivalent of @p n
+ * @param fr   The field element to be converted
  */
 void fr_to_uint64s(uint64_t out[4], const fr_t *fr) {
     blst_uint64_from_fr(out, fr);
