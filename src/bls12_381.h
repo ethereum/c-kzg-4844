@@ -104,6 +104,7 @@ bool fr_is_null(const fr_t *p);
 void fr_from_scalar(fr_t *out, const scalar_t *a);
 void fr_from_uint64s(fr_t *out, const uint64_t *vals);
 void fr_from_uint64(fr_t *out, uint64_t n);
+void fr_to_uint64s(uint64_t out[4], const fr_t* fr);
 bool fr_equal(const fr_t *aa, const fr_t *bb);
 void fr_negate(fr_t *out, const fr_t *in);
 void fr_add(fr_t *out, const fr_t *a, const fr_t *b);
