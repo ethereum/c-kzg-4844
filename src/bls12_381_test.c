@@ -110,6 +110,20 @@ void fr_div_by_zero(void) {
     TEST_CHECK(fr_is_zero(&tmp));
 }
 
+void fr_uint64s_roundtrip(void) {
+    fr_t fr;
+    uint64_t expected[4] = {1, 2, 3, 4};
+    uint64_t actual[4];
+
+    fr_from_uint64s(&fr, expected);
+    fr_to_uint64s(actual, &fr);
+
+    TEST_CHECK(expected[0] == actual[0]);
+    TEST_CHECK(expected[1] == actual[1]);
+    TEST_CHECK(expected[2] == actual[2]);
+    TEST_CHECK(expected[3] == actual[3]);
+}
+
 void p1_mul_works(void) {
     fr_t minus1;
     g1_t res;
@@ -235,6 +249,7 @@ TEST_LIST = {
     {"fr_pow_works", fr_pow_works},
     {"fr_div_works", fr_div_works},
     {"fr_div_by_zero", fr_div_by_zero},
+    {"fr_uint64s_roundtrip", fr_uint64s_roundtrip},
     {"p1_mul_works", p1_mul_works},
     {"p1_sub_works", p1_sub_works},
     {"p2_mul_works", p2_mul_works},
