@@ -56,37 +56,40 @@ void das_extension_test_known(void) {
     free_fft_settings(&fs);
 }
 
-// Caution: uses random data
 void das_extension_test_random(void) {
     FFTSettings fs;
     fr_t *even_data, *odd_data, *data, *coeffs;
-    for (int scale = 4; scale < 10; scale++) {
-        TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, scale));
-        TEST_CHECK(C_KZG_OK == new_fr_array(&even_data, fs.max_width / 2));
-        TEST_CHECK(C_KZG_OK == new_fr_array(&odd_data, fs.max_width / 2));
-        TEST_CHECK(C_KZG_OK == new_fr_array(&data, fs.max_width));
-        TEST_CHECK(C_KZG_OK == new_fr_array(&coeffs, fs.max_width));
+    int max_scale = 15;
+
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, max_scale));
+    for (int scale = 1; scale <= max_scale; scale++) {
+        uint64_t width = (uint64_t)1 << scale;
+        TEST_ASSERT(width <= fs.max_width);
+        TEST_CHECK(C_KZG_OK == new_fr_array(&even_data, width / 2));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&odd_data, width / 2));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&data, width));
+        TEST_CHECK(C_KZG_OK == new_fr_array(&coeffs, width));
 
         for (int rep = 0; rep < 4; rep++) {
 
-            // Make random input data, and save a copy of it
-            for (int i = 0; i < fs.max_width / 2; i++) {
+            // Make random even data and duplicate temporarily in the odd_data
+            for (int i = 0; i < width / 2; i++) {
                 even_data[i] = rand_fr();
                 odd_data[i] = even_data[i];
             }
 
-            // Extend the odd data
-            TEST_CHECK(C_KZG_OK == das_fft_extension(odd_data, fs.max_width / 2, &fs));
+            // Extend the even data to create the odd data required to make the second half of the FFT zero
+            TEST_CHECK(C_KZG_OK == das_fft_extension(odd_data, width / 2, &fs));
 
-            // Reconstruct the data
-            for (int i = 0; i < fs.max_width; i += 2) {
+            // Reconstruct the full data
+            for (int i = 0; i < width; i += 2) {
                 data[i] = even_data[i / 2];
                 data[i + 1] = odd_data[i / 2];
             }
-            TEST_CHECK(C_KZG_OK == fft_fr(coeffs, data, true, fs.max_width, &fs));
+            TEST_CHECK(C_KZG_OK == fft_fr(coeffs, data, true, width, &fs));
 
             // Second half of the coefficients should be all zeros
-            for (int i = fs.max_width / 2; i < fs.max_width; i++) {
+            for (int i = width / 2; i < width; i++) {
                 TEST_CHECK(fr_is_zero(&coeffs[i]));
             }
         }
@@ -95,8 +98,8 @@ void das_extension_test_random(void) {
         free(odd_data);
         free(data);
         free(coeffs);
-        free_fft_settings(&fs);
     }
+    free_fft_settings(&fs);
 }
 
 TEST_LIST = {
