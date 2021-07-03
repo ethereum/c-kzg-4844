@@ -21,6 +21,7 @@
  */
 
 #include "das_extension.h"
+#include "utility.h"
 
 /**
  * Recursive implementation of #das_fft_extension.
@@ -96,10 +97,11 @@ static void das_fft_extension_stride(fr_t *ab, uint64_t n, uint64_t stride, cons
 C_KZG_RET das_fft_extension(fr_t *vals, uint64_t n, const FFTSettings *fs) {
     fr_t invlen;
 
+    CHECK(n > 0);
+    CHECK(is_power_of_two(n));
     CHECK(n * 2 <= fs->max_width);
-    CHECK(n >= 2);
 
-    das_fft_extension_stride(vals, n, 1, fs);
+    das_fft_extension_stride(vals, n, fs->max_width / (n * 2), fs);
 
     fr_from_uint64(&invlen, n);
     fr_inv(&invlen, &invlen);
