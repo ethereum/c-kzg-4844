@@ -97,14 +97,13 @@ static const g2_t g2_negative_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b
 #endif // BLST
 
 // All the functions in the interface
-int log_2_byte(byte b);
 bool fr_is_zero(const fr_t *p);
 bool fr_is_one(const fr_t *p);
 bool fr_is_null(const fr_t *p);
 void fr_from_scalar(fr_t *out, const scalar_t *a);
 void fr_from_uint64s(fr_t *out, const uint64_t *vals);
 void fr_from_uint64(fr_t *out, uint64_t n);
-void fr_to_uint64s(uint64_t out[4], const fr_t* fr);
+void fr_to_uint64s(uint64_t out[4], const fr_t *fr);
 bool fr_equal(const fr_t *aa, const fr_t *bb);
 void fr_negate(fr_t *out, const fr_t *in);
 void fr_add(fr_t *out, const fr_t *a, const fr_t *b);

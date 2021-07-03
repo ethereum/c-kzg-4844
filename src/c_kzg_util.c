@@ -30,7 +30,7 @@
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-C_KZG_RET c_kzg_malloc(void **x, size_t n) {
+static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
     if (n > 0) {
         *x = malloc(n);
         return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
@@ -136,3 +136,28 @@ C_KZG_RET new_g2_array(g2_t **x, size_t n) {
 C_KZG_RET new_poly_array(poly **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
+
+#ifdef KZGTEST
+
+#include "../inc/acutest.h"
+#include "test_util.h"
+
+void malloc_works(void) {
+    int *p;
+    TEST_CHECK(C_KZG_OK == c_kzg_malloc((void **)&p, 4));
+    free(p);
+}
+
+void malloc_huge_fails(void) {
+    int *p;
+    TEST_CHECK(C_KZG_MALLOC == c_kzg_malloc((void **)&p, -1));
+}
+
+TEST_LIST = {
+    {"C_KZG_UTIL_TEST", title},
+    {"malloc_works", malloc_works},
+    {"malloc_huge_fails", malloc_huge_fails},
+    {NULL, NULL} /* zero record marks the end of the list */
+};
+
+#endif // KZGTEST
