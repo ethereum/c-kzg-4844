@@ -16,6 +16,9 @@
 
 /** @file kzg_proofs.h */
 
+#ifndef KZG_PROOFS_H
+#define KZG_PROOFS_H
+
 #include "fft_fr.h"
 #include "poly.h"
 
@@ -41,3 +44,5 @@ C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof
 C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
                            const FFTSettings *fs);
 void free_kzg_settings(KZGSettings *ks);
+
+#endif // KZG_PROOFS_H
