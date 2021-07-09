@@ -43,17 +43,19 @@ typedef blst_fp2 fp2_t;       /**< Internal Fp2 field element type (used only fo
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 
+/** The zero field element */
 static const fr_t fr_zero = {0L, 0L, 0L, 0L};
 
-// This is 1 in Blst's `blst_fr` limb representation. Crazy but true.
+/** This is 1 in Blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
-// Define a NULL value for fr_t. TODO - does this make sense?
+/** Defines a NULL value for fr_t. */
 static const fr_t fr_null = {0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL};
 
-// The G1 identity/infinity
+/** The G1 identity/infinity */
 static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
+/** The G1 generator */
 static const g1_t g1_generator = {{0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
                                    0xedce6ecc21dbf440L, 0x120177419e0bfb75L},
                                   {0xbaac93d50ce72271L, 0x8c22631a7918fd8eL, 0xdd595f13570725ceL, 0x51ac582950405194L,
@@ -61,6 +63,7 @@ static const g1_t g1_generator = {{0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x1
                                   {0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL, 0x77ce585370525745L,
                                    0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L}};
 
+/** The inverse of the G1 generator */
 static const g1_t g1_negative_generator = {{0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L,
                                             0xf0ae6acdf3d0e747L, 0xedce6ecc21dbf440L, 0x120177419e0bfb75L},
                                            {0xff526c2af318883aL, 0x92899ce4383b0270L, 0x89d7738d9fa9d055L,
@@ -68,6 +71,7 @@ static const g1_t g1_negative_generator = {{0x5cb38790fd530c16L, 0x7817fc679976f
                                            {0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL,
                                             0x77ce585370525745L, 0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L}};
 
+/** The G2 generator */
 static const g2_t g2_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
                                      0x6f67b7631863366bL, 0x058191924350bcd7L},
                                     {0xa5a9c0759e23f606L, 0xaaa0c59dbccd60c3L, 0x3bb17e18e2867806L, 0x1b1ab6cc8541b367L,
@@ -81,6 +85,7 @@ static const g2_t g2_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0
                                     {0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
                                      0x0000000000000000L, 0x0000000000000000L}}}};
 
+/** The inverse of the G2 generator */
 static const g2_t g2_negative_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L,
                                               0x9894999d1a3caee9L, 0x6f67b7631863366bL, 0x058191924350bcd7L},
                                              {0xa5a9c0759e23f606L, 0xaaa0c59dbccd60c3L, 0x3bb17e18e2867806L,
