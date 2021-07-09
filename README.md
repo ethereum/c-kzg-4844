@@ -39,7 +39,7 @@ cp ../blst/libblast.a lib/
 cp ../blst/bindings/*.h inc/
 ```
 
-Alternatively, change the `INCLUDE_DIRS` in *Makefile* to point to the Blst header files.
+Alternatively, add `-I<include-dir>` to `KZG_CFLAGS` in *Makefile* to point to the Blst header files, or set the `CFLAGS` environment variable similarly.
 
 This version of c-kzg is tested with Blst's master branch, commit `d4b40c3`. Blst release 0.3.4 is not sufficient since we make use of the more recently implemented Pippenger multiscalar multiplication for the polynomial commitments.
 
