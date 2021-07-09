@@ -45,4 +45,4 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
                            const FFTSettings *fs);
 void free_kzg_settings(KZGSettings *ks);
 
-#endif
+#endif // KZG_PROOFS_H
