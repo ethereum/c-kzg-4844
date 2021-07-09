@@ -7,6 +7,7 @@
 *.prof
 *.out
 *.log
+src/*_tune.c
 tmp/
 doc/
 inc/blst.h*

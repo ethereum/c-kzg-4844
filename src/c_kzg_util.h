@@ -42,7 +42,6 @@
         _a > _b ? _a : _b;                                                                                             \
     })
 
-C_KZG_RET c_kzg_malloc(void **p, size_t n);
 C_KZG_RET new_uint64_array(uint64_t **x, size_t n);
 C_KZG_RET new_fr_array(fr_t **x, size_t n);
 C_KZG_RET new_fr_array_2(fr_t ***x, size_t n);

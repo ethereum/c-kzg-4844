@@ -24,10 +24,6 @@
 #include "fft_common.h"
 #include "poly.h"
 
-C_KZG_RET do_zero_poly_mul_partial(poly *dst, const uint64_t *indices, uint64_t len_indices, uint64_t stride,
-                                   const FFTSettings *fs);
-C_KZG_RET reduce_partials(poly *dst, uint64_t len_dst, fr_t *scratch, uint64_t len_scratch, const poly *partials,
-                          uint64_t partial_count, const FFTSettings *fs);
 C_KZG_RET zero_polynomial_via_multiplication(fr_t *zero_eval, poly *zero_poly, uint64_t width,
                                              const uint64_t *missing_indices, uint64_t len_missing,
                                              const FFTSettings *fs);

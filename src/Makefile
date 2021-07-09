@@ -16,14 +16,14 @@ INCLUDE_DIRS = ../inc
 libckzg.a: $(LIB_OBJ) Makefile
 	ar rc libckzg.a $(LIB_OBJ)
 
-%_test: %_test.c debug_util.o test_util.o libckzg.a Makefile
-	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) $(KZG_CFLAGS) -o $@ $@.c debug_util.o test_util.o libckzg.a -L../lib -lblst
+%_test: %.c debug_util.o test_util.o libckzg.a Makefile
+	clang -Wall -DKZGTEST -I$(INCLUDE_DIRS) $(CFLAGS) $(KZG_CFLAGS) -o $@ $*.c debug_util.o test_util.o libckzg.a -L../lib -lblst
 	./$@
 
 # This version will abort on error and print the file and line number
-%_test_debug: KZG_CFLAGS += -g -O0 -DDEBUG
-%_test_debug: %_test.c debug_util.o test_util.o libckzg.a Makefile
-	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) $(KZG_CFLAGS) -o $@ $*_test.c debug_util.o test_util.o libckzg.a -L../lib -lblst
+%_test_debug: KZG_CFLAGS += -g -O0
+%_test_debug: %.c debug_util.o test_util.o libckzg.a Makefile
+	clang -Wall -DKZGTEST -DDEBUG -I$(INCLUDE_DIRS) $(CFLAGS) $(KZG_CFLAGS) -o $@ $*.c debug_util.o test_util.o libckzg.a -L../lib -lblst
 
 # Benchmarks
 %_bench: KZG_CFLAGS += -O

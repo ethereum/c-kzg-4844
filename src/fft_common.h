@@ -87,7 +87,6 @@ typedef struct {
     fr_t *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
 } FFTSettings;
 
-C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width);
 C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);
 
