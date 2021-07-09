@@ -20,7 +20,8 @@
  * Perform polynomial extension for data availability sampling.
  */
 
-#include "das_extension.h"
+#include "control.h"
+#include "c_kzg.h"
 #include "utility.h"
 
 /**
@@ -115,7 +116,7 @@ C_KZG_RET das_fft_extension(fr_t *vals, uint64_t n, const FFTSettings *fs) {
 #ifdef KZGTEST
 
 #include "../inc/acutest.h"
-#include "c_kzg_util.h"
+#include "c_kzg_alloc.h"
 #include "test_util.h"
 
 void das_extension_test_known(void) {

@@ -20,7 +20,7 @@
 #include <unistd.h> // EXIT_SUCCESS/FAILURE
 #include "bench_util.h"
 #include "test_util.h"
-#include "fft_fr.h"
+#include "c_kzg.h"
 
 // Run the benchmark for `max_seconds` and return the time per iteration in nanoseconds.
 long run_bench(int scale, int max_seconds) {

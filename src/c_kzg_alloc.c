@@ -15,12 +15,12 @@
  */
 
 /**
- *  @file c_kzg_util.c
+ *  @file c_kzg_alloc.c
  *
- * Utilities useful across the library.
+ * Utilities for dynamically allocating arrays of things.
  */
 
-#include "c_kzg_util.h"
+#include "c_kzg_alloc.h"
 
 /**
  * Wrapped `malloc()` that reports failures to allocate.

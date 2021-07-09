@@ -25,7 +25,8 @@
  * @remark Functions here work only for lengths that are a power of two.
  */
 
-#include "fft_fr.h"
+#include "control.h"
+#include "c_kzg.h"
 #include "utility.h"
 
 /**

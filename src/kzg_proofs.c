@@ -24,10 +24,9 @@
  */
 
 #include <stddef.h> // NULL
-#include "kzg_proofs.h"
-#include "c_kzg_util.h"
+#include "control.h"
+#include "c_kzg_alloc.h"
 #include "utility.h"
-#include <assert.h>
 
 /**
  * Make a KZG commitment to a polynomial.

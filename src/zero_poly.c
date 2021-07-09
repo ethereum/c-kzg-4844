@@ -20,9 +20,8 @@
  *  Methods for constructing polynomials that evaluate to zero for given lists of powers of roots of unity.
  */
 
-#include "zero_poly.h"
-#include "c_kzg_util.h"
-#include "fft_fr.h"
+#include "control.h"
+#include "c_kzg_alloc.h"
 #include "utility.h"
 
 /**

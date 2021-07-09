@@ -29,8 +29,8 @@ That's basically all the necessary stuff for Eth2 use cases. Things remaining (a
 
 Build the [Blst library](https://github.com/supranational/blst) following the instructions there. Then,
 
-1. Copy the resulting `libblst.a` file into the `lib/` directory here.
-2. From Blst's `bindings/` directory copy `blst.h` and `blst_aux.h` to `inc/`
+1. Copy the resulting *libblst.a* file into the *lib/* directory here.
+2. From Blst's *bindings/* directory copy *blst.h* and *blst_aux.h* to *inc/*
 
 That is,
 
@@ -39,11 +39,13 @@ cp ../blst/libblast.a lib/
 cp ../blst/bindings/*.h inc/
 ```
 
+Alternatively, change the `INCLUDE_DIRS` in *Makefile* to point to the Blst header files.
+
 This version of c-kzg is tested with Blst's master branch, commit `d4b40c3`. Blst release 0.3.4 is not sufficient since we make use of the more recently implemented Pippenger multiscalar multiplication for the polynomial commitments.
 
 ## Build
 
-Build the `libckzg.a` library:
+Build the *libckzg.a* library:
 
 ```
 cd src
@@ -56,6 +58,10 @@ Build a debug version that aborts on error conditions and attempts to print some
 cd src
 make debuglib
 ```
+
+## Integrate
+
+Once you have *libkzg.a*, the only other files you should need in order to integrate `c-kzg` with your own application are *c_kzg.h* and *bls12_381.h* (in addition to the Blst library and header files). *c_kzg.h* contains all the prototypes for the accessible functions in `c-kzg` and the associated data structures.
 
 ## Run tests
 

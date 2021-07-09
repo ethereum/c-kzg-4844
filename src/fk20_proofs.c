@@ -23,9 +23,8 @@
  * @todo Split this out into smaller files.
  */
 
-#include "fk20_proofs.h"
-#include "fft_g1.h"
-#include "c_kzg_util.h"
+#include "control.h"
+#include "c_kzg_alloc.h"
 #include "utility.h"
 
 /**

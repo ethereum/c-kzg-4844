@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-/** @file c_kzg_util.h */
+/** @file c_kzg_alloc.h */
 
-#include <stdlib.h> // free()
+#include <stdlib.h> // free(), NULL
 #include "c_kzg.h"
-#include "poly.h"
 
 /** @def min_u64
  *

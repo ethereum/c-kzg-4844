@@ -20,9 +20,9 @@
  * Operations on polynomials defined over the finite field.
  */
 
-#include "c_kzg_util.h"
+#include "control.h"
+#include "c_kzg_alloc.h"
 #include "utility.h"
-#include "poly.h"
 
 /**
  * Internal utility for calculating the length to be allocated for the result of dividing two polynomials.

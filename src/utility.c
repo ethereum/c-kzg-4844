@@ -21,6 +21,7 @@
  */
 
 #include <string.h> // memcpy()
+#include "control.h"
 #include "utility.h"
 
 /**
@@ -157,7 +158,7 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
 
 #include "../inc/acutest.h"
 #include "test_util.h"
-#include "c_kzg_util.h"
+#include "c_kzg_alloc.h"
 
 static uint32_t rev_bits_slow(uint32_t a) {
     uint32_t ret = 0;

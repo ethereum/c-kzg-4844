@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "c_kzg.h"
+#include "bls12_381.h"
 
 // The generator for our "trusted" setup
 static const scalar_t secret = {0xa4, 0x73, 0x31, 0x95, 0x28, 0xc8, 0xb6, 0xea, 0x4d, 0x08, 0xcc,

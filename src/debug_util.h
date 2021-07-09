@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include <stdio.h>
-#include "c_kzg.h"
+#include "bls12_381.h"
 
 // Fr utilities
 void print_fr(const fr_t *a);

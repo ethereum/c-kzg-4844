@@ -20,11 +20,9 @@
  * Recover polynomials from samples.
  */
 
-#include "recover.h"
-#include "c_kzg_util.h"
-#include "fft_fr.h"
+#include "control.h"
+#include "c_kzg_alloc.h"
 #include "utility.h"
-#include "zero_poly.h"
 
 /** 5 is a primitive element, but actually this can be pretty much anything not 0 or a low-degree root of unity */
 #define SCALE_FACTOR 5

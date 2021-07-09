@@ -25,7 +25,8 @@
  * @remark Functions here work only for lengths that are a power of two.
  */
 
-#include "fft_g1.h"
+#include "control.h"
+#include "c_kzg.h"
 #include "utility.h"
 
 /**
@@ -90,7 +91,6 @@ C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTS
 
 #include "../inc/acutest.h"
 #include "test_util.h"
-#include "fft_g1.h"
 
 static void make_data(g1_t *out, uint64_t n) {
     // Multiples of g1_gen
