@@ -357,6 +357,19 @@ void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
 }
 
 /**
+ * Add or double G2 points.
+ *
+ * This is safe if the two points are the same.
+ *
+ * @param[out] out @p a plus @p b in the group
+ * @param[in]  a   G2 group point
+ * @param[in]  b   G2 group point
+ */
+void g2_add_or_dbl(g2_t *out, const g2_t *a, const g2_t *b) {
+    blst_p2_add_or_double(out, a, b);
+}
+
+/**
  * Subtraction of G2 group elements.
  *
  * @param[out] out @p a - @p b
@@ -608,6 +621,15 @@ void p1_sub_works(void) {
     TEST_CHECK(g1_equal(&tmp, &res));
 }
 
+void p2_add_or_dbl_works(void) {
+    g2_t expected, actual;
+
+    g2_dbl(&expected, &g2_generator);
+    g2_add_or_dbl(&actual, &g2_generator, &g2_generator);
+
+    TEST_CHECK(g2_equal(&expected, &actual));
+}
+
 void p2_mul_works(void) {
     fr_t minus1;
     g2_t res;
@@ -714,6 +736,7 @@ TEST_LIST = {
     {"fr_uint64s_roundtrip", fr_uint64s_roundtrip},
     {"p1_mul_works", p1_mul_works},
     {"p1_sub_works", p1_sub_works},
+    {"p2_add_or_dbl_works", p2_add_or_dbl_works},
     {"p2_mul_works", p2_mul_works},
     {"p2_sub_works", p2_sub_works},
     {"g1_identity_is_infinity", g1_identity_is_infinity},

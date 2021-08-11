@@ -126,6 +126,7 @@ void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
 void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
 bool g2_equal(const g2_t *a, const g2_t *b);
 void g2_mul(g2_t *out, const g2_t *a, const fr_t *b);
+void g2_add_or_dbl(g2_t *out, const g2_t *a, const g2_t *b);
 void g2_sub(g2_t *out, const g2_t *a, const g2_t *b);
 void g2_dbl(g2_t *out, const g2_t *a);
 void g1_linear_combination(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len);
