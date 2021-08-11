@@ -414,7 +414,7 @@ C_KZG_RET new_fk20_multi_settings(FK20MultiSettings *fk, uint64_t n2, uint64_t c
     CHECK(n2 <= ks->fs->max_width);
     CHECK(is_power_of_two(n2));
     CHECK(n2 >= 2);
-    CHECK(chunk_len <= n2);
+    CHECK(chunk_len <= n2 / 2);
     CHECK(is_power_of_two(chunk_len));
     CHECK(chunk_len > 0);
 
