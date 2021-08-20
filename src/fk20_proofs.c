@@ -129,8 +129,10 @@ static C_KZG_RET toeplitz_coeffs_stride(poly *out, const poly *in, uint64_t offs
     k = n / stride;
     k2 = k * 2;
 
+    CHECK(out->length >= k2);
+
     out->coeffs[0] = in->coeffs[n - 1 - offset];
-    for (uint64_t i = 1; i <= k + 1; i++) {
+    for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
         out->coeffs[i] = fr_zero;
     }
     for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2; i++, j += stride) {
@@ -621,11 +623,11 @@ void fk_multi_settings(void) {
     free_fk20_multi_settings(&fk);
 }
 
-void fk_multi_0(void) {
+void fk_multi_case(int chunk_len, int n) {
     FFTSettings fs;
     KZGSettings ks;
     FK20MultiSettings fk;
-    uint64_t n, chunk_len, chunk_count;
+    uint64_t chunk_count, width;
     uint64_t secrets_len;
     g1_t *s1;
     g2_t *s2;
@@ -637,30 +639,37 @@ void fk_multi_0(void) {
     fr_t *ys, *ys2;
     uint64_t domain_stride;
 
-    chunk_len = 16;
-    chunk_count = 32;
-    n = chunk_len * chunk_count;
+    TEST_ASSERT(is_power_of_two(n));
+    TEST_ASSERT(is_power_of_two(chunk_len));
+    TEST_ASSERT(n % 16 == 0);
+    TEST_ASSERT(n >= chunk_len);
+
+    chunk_count = n / chunk_len;
     secrets_len = 2 * n;
+    width = log2_pow2(secrets_len);
 
     TEST_CHECK(C_KZG_OK == new_g1_array(&s1, secrets_len));
     TEST_CHECK(C_KZG_OK == new_g2_array(&s2, secrets_len));
 
     generate_trusted_setup(s1, s2, &secret, secrets_len);
-    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4 + 5 + 1));
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, width));
     TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
     TEST_CHECK(C_KZG_OK == new_fk20_multi_settings(&fk, n * 2, chunk_len, &ks));
 
-    // Create a test polynomial: 512 coefficients
+    // Create a test polynomial of size n that's independent of chunk_len
     TEST_CHECK(C_KZG_OK == new_poly(&p, n));
     for (int i = 0; i < chunk_count; i++) {
         for (int j = 0; j < chunk_len; j++) {
-            uint64_t v = vv[j];
-            if (j == 3) v += i;
-            if (j == 5) v += i * i;
-            fr_from_uint64(&p.coeffs[i * chunk_len + j], v);
+            int p_index = i * chunk_len + j;
+            int v_index = p_index % 16;
+            uint64_t v = vv[v_index];
+            int tmp = i * chunk_len / 16;
+            if (v_index == 3) v += tmp;
+            if (v_index == 5) v += tmp * tmp;
+            fr_from_uint64(&p.coeffs[p_index], v);
+            if (v_index == 12) fr_negate(&p.coeffs[p_index], &p.coeffs[p_index]);
+            if (v_index == 14) fr_negate(&p.coeffs[p_index], &p.coeffs[p_index]);
         }
-        fr_negate(&p.coeffs[i * chunk_len + 12], &p.coeffs[i * chunk_len + 12]);
-        fr_negate(&p.coeffs[i * chunk_len + 14], &p.coeffs[i * chunk_len + 14]);
     }
 
     TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
@@ -730,6 +739,18 @@ void fk_multi_0(void) {
     free_fk20_multi_settings(&fk);
 }
 
+void fk_multi_chunk_len_16_512() {
+    fk_multi_case(16, 512);
+}
+
+void fk_multi_chunk_len_1_512() {
+    fk_multi_case(1, 512);
+}
+
+void fk_multi_chunk_len_16_16() {
+    fk_multi_case(16, 16);
+}
+
 // TODO: compare results of fk20_multi_da_opt() and  fk20_compute_proof_multi()
 
 TEST_LIST = {
@@ -737,7 +758,9 @@ TEST_LIST = {
     {"fk_single", fk_single},
     {"fk_single_strided", fk_single_strided},
     {"fk_multi_settings", fk_multi_settings},
-    {"fk_multi_0", fk_multi_0},
+    {"fk_multi_chunk_len_1_512", fk_multi_chunk_len_1_512},
+    {"fk_multi_chunk_len_16_512", fk_multi_chunk_len_16_512},
+    {"fk_multi_chunk_len_16_16", fk_multi_chunk_len_16_16},
     {NULL, NULL} /* zero record marks the end of the list */
 };
 
