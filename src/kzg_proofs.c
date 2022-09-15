@@ -91,6 +91,24 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
     return C_KZG_OK;
 }
 
+C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const KZGSettings *ks) {
+  fr_t y, tmp, tmp2;
+  poly_l q;
+  uint64_t i;
+
+  eval_poly_l(&y, p, x0, ks->fs);
+
+  new_poly_l(&q, p->length);
+  for (i = 0; i < q->length; i++) {
+    // (p_i - y) / (ω_i - x0)
+    fr_sub(&tmp, &p->values[i], &y);
+    fr_sub(&tmp2, &ks->fs->expanded_roots_of_unity[i], x0);
+    fr_div(&q->values[i], &tmp, &tmp2);
+  }
+
+  return commit_to_poly_l(out, &q, ks);
+}
+
 /**
  * Compute KZG proof for polynomial at positions x0 * w^y where w is an n-th root of unity.
  *
