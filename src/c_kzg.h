@@ -86,6 +86,11 @@ typedef struct {
     uint64_t length; /**< One more than the polynomial's degree */
 } poly;
 
+typedef struct {
+    fr_t *values;    /**< `values[i]` is value of the polynomial at `ω^i`. */
+    uint64_t length; /**< One more than the polynomial's degree */
+} poly_l; // Lagrange form
+
 void eval_poly(fr_t *out, const poly *p, const fr_t *x);
 C_KZG_RET poly_inverse(poly *out, poly *b);
 C_KZG_RET poly_mul(poly *out, const poly *a, const poly *b);
@@ -94,6 +99,7 @@ C_KZG_RET new_poly_div(poly *out, const poly *dividend, const poly *divisor);
 C_KZG_RET new_poly(poly *out, uint64_t length);
 C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length);
 void free_poly(poly *p);
+void free_poly_l(poly_l *p);
 
 //
 // kzg_proofs.c
@@ -107,11 +113,15 @@ void free_poly(poly *p);
 typedef struct {
     const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
     g1_t *secret_g1;       /**< G1 group elements from the trusted setup */
+    g1_t *secret_g1_l;     /**< secret_g1 in Lagrange form */
     g2_t *secret_g2;       /**< G2 group elements from the trusted setup */
     uint64_t length;       /**< The number of elements in secret_g1 and secret_g2 */
 } KZGSettings;
 
+C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *ks);
+
 C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks);
+C_KZG_RET commit_to_poly_l(g1_t *out, const poly_l *p, const KZGSettings *ks);
 C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const KZGSettings *ks);
 C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
                              const KZGSettings *ks);

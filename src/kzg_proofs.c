@@ -43,6 +43,12 @@ C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
     return C_KZG_OK;
 }
 
+C_KZG_RET commit_to_poly_l(g1_t *out, const poly_l *p_l, const KZGSettings *ks) {
+    CHECK(p_l->length <= ks->length);
+    g1_linear_combination(out, ks->secret_g1_l, p_l->values, p_l->length);
+    return C_KZG_OK;
+}
+
 /**
  * Compute KZG proof for polynomial at position x0.
  *
@@ -216,6 +222,7 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
 
     // Allocate space for the secrets
     TRY(new_g1_array(&ks->secret_g1, ks->length));
+    TRY(new_g1_array(&ks->secret_g1_l, ks->length));
     TRY(new_g2_array(&ks->secret_g2, ks->length));
 
     // Populate the secrets
@@ -225,7 +232,8 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
     }
     ks->fs = fs;
 
-    return C_KZG_OK;
+    // Add Lagrange form (and return its success)
+    return fft_g1(ks->secret_g1_l, ks->secret_g1, true, length, fs);
 }
 
 /**
@@ -235,6 +243,7 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
  */
 void free_kzg_settings(KZGSettings *ks) {
     free(ks->secret_g1);
+    free(ks->secret_g1_l);
     free(ks->secret_g2);
     ks->length = 0;
 }
@@ -393,12 +402,54 @@ void commit_to_too_long_poly(void) {
     free_kzg_settings(&ks);
 }
 
+void commit_to_poly_lagrange(void) {
+    // Our polynomial: degree 15, 16 coefficients
+    uint64_t coeffs[] = {12, 2, 8, 4, 7, 9, 1337, 227, 3, 13, 13, 130, 13, 13111, 13, 12223};
+    int poly_len = sizeof coeffs / sizeof coeffs[0];
+    uint64_t secrets_len = poly_len;
+
+    FFTSettings fs;
+    KZGSettings ks;
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
+    poly p;
+    poly_l p_l;
+    g1_t commitment, commitment_l;
+
+    // Create the polynomial
+    new_poly(&p, poly_len);
+    for (int i = 0; i < poly_len; i++) {
+        fr_from_uint64(&p.coeffs[i], coeffs[i]);
+    }
+
+    // Initialise the secrets and data structures
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // ln_2 of poly_len
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+
+    // Create Lagrange form
+    new_poly_l_from_poly(&p_l, &p, &ks);
+
+    // Compute commitments
+    TEST_CHECK(C_KZG_OK == commit_to_poly(&commitment, &p, &ks));
+    TEST_CHECK(C_KZG_OK == commit_to_poly_l(&commitment_l, &p_l, &ks));
+
+    // Check commitments are equal
+    TEST_CHECK(g1_equal(&commitment, &commitment_l));
+
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+    free_poly(&p);
+    free_poly_l(&p_l);
+}
+
 TEST_LIST = {
     {"KZG_PROOFS_TEST", title},
     {"proof_single", proof_single},
     {"proof_multi", proof_multi},
     {"commit_to_nil_poly", commit_to_nil_poly},
     {"commit_to_too_long_poly", commit_to_too_long_poly},
+    {"commit_to_poly_lagrange", commit_to_poly_lagrange},
     {NULL, NULL} /* zero record marks the end of the list */
 };
 

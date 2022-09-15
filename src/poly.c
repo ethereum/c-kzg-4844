@@ -541,6 +541,11 @@ C_KZG_RET new_poly(poly *out, uint64_t length) {
     return new_fr_array(&out->coeffs, length);
 }
 
+C_KZG_RET new_poly_l(poly_l *out, uint64_t length) {
+    out->length = length;
+    return new_fr_array(&out->values, length);
+}
+
 /**
  * Initialise a polynomial of the given size with the given coefficients.
  *
@@ -562,6 +567,11 @@ C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
     return C_KZG_OK;
 }
 
+C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *ks) {
+  TRY(new_poly_l(out, ks->length));
+  return fft_fr(out->values, in->coeffs, false, out->length, ks->fs);
+}
+
 /**
  * Reclaim the memory used by a polynomial.
  *
@@ -573,6 +583,12 @@ C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
 void free_poly(poly *p) {
     if (p->coeffs != NULL) {
         free(p->coeffs);
+    }
+}
+
+void free_poly_l(poly_l *p) {
+    if (p->values != NULL) {
+        free(p->values);
     }
 }
 
