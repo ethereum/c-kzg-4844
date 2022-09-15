@@ -102,6 +102,29 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
     }
 }
 
+// TODO: optimize via batch inversion
+void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
+  fr_t tmp, tmp2, tmp3;
+  uint64_t i;
+  const uint64_t stride = fs->max_width / p->length;
+
+  *out = fr_zero;
+  for (i = 0; i < p->length; i++) {
+    fr_sub(&tmp, x, &fs->expanded_roots_of_unity[i * stride]);
+    fr_inv(&tmp2, &tmp);
+    fr_mul(&tmp, &tmp2, &fs->expanded_roots_of_unity[i * stride]);
+    fr_mul(&tmp2, &tmp, &p->values[i]);
+    fr_add(out, out, &tmp2);
+  }
+  fr_negate(&tmp3, &fr_one);
+  fr_pow(&tmp2, x, p->length);
+  fr_sub(&tmp, &tmp2, &fr_one);
+  fr_from_uint64(&tmp2, p->length);
+  fr_div(&tmp3, &tmp, &tmp2);
+  tmp2 = *out;
+  fr_mul(out, &tmp2, &tmp3);
+}
+
 /**
  * Polynomial division in the finite field via long division.
  *
@@ -569,7 +592,21 @@ C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
 
 C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *ks) {
   TRY(new_poly_l(out, ks->length));
-  return fft_fr(out->values, in->coeffs, false, out->length, ks->fs);
+  if (out->length <= in->length) {
+    return fft_fr(out->values, in->coeffs, false, out->length, ks->fs);
+  }
+  else {
+    int i;
+    fr_t *coeffs;
+    TRY(new_fr_array(&coeffs, out->length));
+    for (i = 0; i < in->length; i++) {
+      coeffs[i] = in->coeffs[i];
+    }
+    for (; i < out->length; i++) {
+      coeffs[i] = fr_zero;
+    }
+    return fft_fr(out->values, coeffs, false, out->length, ks->fs);
+  }
 }
 
 /**
