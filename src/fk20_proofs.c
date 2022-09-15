@@ -485,7 +485,7 @@ void fk_single(void) {
     FFTSettings fs;
     KZGSettings ks;
     FK20SingleSettings fk;
-    uint64_t secrets_len = n_len + 1;
+    uint64_t secrets_len = n_len;
     g1_t s1[secrets_len];
     g2_t s2[secrets_len];
     poly p;
@@ -558,7 +558,7 @@ void fk_single_strided(void) {
     FFTSettings fs;
     KZGSettings ks;
     FK20SingleSettings fk;
-    uint64_t secrets_len = n_len + 1;
+    uint64_t secrets_len = n_len;
     g1_t s1[secrets_len];
     g2_t s2[secrets_len];
     poly p;
@@ -606,7 +606,7 @@ void fk_multi_settings(void) {
     KZGSettings ks;
     FK20MultiSettings fk;
     uint64_t n = 5;
-    uint64_t secrets_len = 33;
+    uint64_t secrets_len = 32;
     g1_t s1[secrets_len];
     g2_t s2[secrets_len];
 

@@ -248,7 +248,7 @@ void proof_single(void) {
     // Our polynomial: degree 15, 16 coefficients
     uint64_t coeffs[] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
     int poly_len = sizeof coeffs / sizeof coeffs[0];
-    uint64_t secrets_len = poly_len + 1;
+    uint64_t secrets_len = poly_len;
 
     FFTSettings fs;
     KZGSettings ks;
@@ -307,7 +307,7 @@ void proof_multi(void) {
     int coset_scale = 3, coset_len = (1 << coset_scale);
     fr_t y[coset_len];
 
-    uint64_t secrets_len = poly_len > coset_len ? poly_len + 1 : coset_len + 1;
+    uint64_t secrets_len = poly_len > coset_len ? poly_len : coset_len;
     g1_t s1[secrets_len];
     g2_t s2[secrets_len];
 
