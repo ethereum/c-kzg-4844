@@ -605,7 +605,9 @@ C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *k
     for (; i < out->length; i++) {
       coeffs[i] = fr_zero;
     }
-    return fft_fr(out->values, coeffs, false, out->length, ks->fs);
+    TRY(fft_fr(out->values, coeffs, false, out->length, ks->fs));
+    free(coeffs);
+    return C_KZG_OK;
   }
 }
 
