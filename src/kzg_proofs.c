@@ -533,7 +533,6 @@ void poly_eval_l_check(void) {
     uint64_t secrets_len = 16;
     g1_t s1[secrets_len];
     g2_t s2[secrets_len];
-    g1_t result;
 
     generate_trusted_setup(s1, s2, &secret, secrets_len);
     TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // log_2(secrets_len)
