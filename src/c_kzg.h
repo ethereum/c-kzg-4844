@@ -98,6 +98,7 @@ C_KZG_RET poly_mul(poly *out, const poly *a, const poly *b);
 C_KZG_RET poly_mul_(poly *out, const poly *a, const poly *b, FFTSettings *fs);
 C_KZG_RET new_poly_div(poly *out, const poly *dividend, const poly *divisor);
 C_KZG_RET new_poly(poly *out, uint64_t length);
+C_KZG_RET new_poly_l(poly_l *out, uint64_t length);
 C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length);
 void free_poly(poly *p);
 void free_poly_l(poly_l *p);
