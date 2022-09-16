@@ -104,7 +104,7 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
 
 // TODO: optimize via batch inversion
 void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
-  fr_t tmp, tmp2, tmp3;
+  fr_t tmp, tmp2;
   uint64_t i;
   const uint64_t stride = fs->max_width / p->length;
 
@@ -116,13 +116,11 @@ void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *f
     fr_mul(&tmp2, &tmp, &p->values[i]);
     fr_add(out, out, &tmp2);
   }
-  fr_negate(&tmp3, &fr_one);
-  fr_pow(&tmp2, x, p->length);
-  fr_sub(&tmp, &tmp2, &fr_one);
-  fr_from_uint64(&tmp2, p->length);
-  fr_div(&tmp3, &tmp, &tmp2);
-  tmp2 = *out;
-  fr_mul(out, &tmp2, &tmp3);
+  fr_from_uint64(&tmp, p->length);
+  fr_div(out, out, &tmp);
+  fr_pow(&tmp, x, p->length);
+  fr_sub(&tmp, &tmp, &fr_one);
+  fr_mul(out, out, &tmp);
 }
 
 /**
