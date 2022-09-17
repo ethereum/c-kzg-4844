@@ -103,7 +103,7 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
 }
 
 /**
- * Evaluate a polynomial in Lagrange formover the finite field at a point.
+ * Evaluate a polynomial in Lagrange form over the finite field at a point.
  *
  * @param[out] out The value of the polynomial at the point @p x
  * @param[in]  p   The polynomial in Lagrange form
@@ -119,6 +119,8 @@ C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettin
   for (i = 0; i < p->length; i++) {
     if (fr_equal(x, &fs->expanded_roots_of_unity[i * stride])) {
       *out = p->values[i];
+      free(inverses_in);
+      free(inverses);
       return C_KZG_OK;
     }
     fr_sub(&inverses_in[i], x, &fs->expanded_roots_of_unity[i * stride]);
@@ -136,6 +138,9 @@ C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettin
   fr_pow(&tmp, x, p->length);
   fr_sub(&tmp, &tmp, &fr_one);
   fr_mul(out, out, &tmp);
+
+  free(inverses_in);
+  free(inverses);
 
   return C_KZG_OK;
 }
