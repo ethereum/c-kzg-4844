@@ -97,6 +97,13 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
   uint64_t i, m = 0;
 
   new_poly_l(&q, p->length);
+
+  fr_t *inverses_in, *inverses;
+
+  TRY(new_fr_array(&inverses_in, p->length));
+  TRY(new_fr_array(&inverses, p->length));
+  
+
   for (i = 0; i < q.length; i++) {
     if (fr_equal(x0, &ks->fs->expanded_roots_of_unity[i])) {
       m = i + 1;
@@ -104,23 +111,32 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
     }
     // (p_i - y) / (ω_i - x0)
     fr_sub(&q.values[i], &p->values[i], y);
-    fr_sub(&tmp, &ks->fs->expanded_roots_of_unity[i], x0);
-    fr_div(&q.values[i], &q.values[i], &tmp);
+    fr_sub(&inverses_in[i], &ks->fs->expanded_roots_of_unity[i], x0);
   }
+
+  TRY(fr_batch_inv(inverses, inverses_in, q.length));
+
+  for (i = 0; i < q.length; i++) {
+    fr_mul(&q.values[i], &q.values[i], &inverses[i]);
+  }  
   if (m) { // ω_m == x0
     q.values[--m] = fr_zero;
     for (i=0; i < q.length; i++) {
       if (i == m) continue;
       // (p_i - y) * ω_i / (x0 * (x0 - ω_i))
       fr_sub(&tmp, x0, &ks->fs->expanded_roots_of_unity[i]);
-      fr_mul(&tmp, &tmp, x0);
+      fr_mul(&inverses_in[i], &tmp, x0);
+    }
+    TRY(fr_batch_inv(inverses, inverses_in, q.length));
+    for (i=0; i < q.length; i++) {
       fr_sub(&tmp2, &p->values[i], y);
-      fr_div(&tmp, &tmp2, &tmp);
+      fr_mul(&tmp, &tmp2, &inverses[i]);
       fr_mul(&tmp, &tmp, &ks->fs->expanded_roots_of_unity[i]);
       fr_add(&q.values[m], &q.values[m], &tmp);
     }
   }
-
+  free(inverses_in);
+  free(inverses);
   return commit_to_poly_l(out, &q, ks);
 }
 
