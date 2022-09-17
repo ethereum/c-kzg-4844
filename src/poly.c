@@ -103,8 +103,6 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
 }
 
 // TODO: optimize via batch inversion
-// TODO: Consider the case where x is one of the roots of unity
-//       (needs special formula)
 void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
   fr_t tmp;
   uint64_t i;
@@ -112,6 +110,10 @@ void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *f
 
   *out = fr_zero;
   for (i = 0; i < p->length; i++) {
+    if (fr_equal(x, &fs->expanded_roots_of_unity[i * stride])) {
+      *out = p->values[i];
+      return;
+    }
     fr_sub(&tmp, x, &fs->expanded_roots_of_unity[i * stride]);
     fr_inv(&tmp, &tmp);
     fr_mul(&tmp, &tmp, &fs->expanded_roots_of_unity[i * stride]);
