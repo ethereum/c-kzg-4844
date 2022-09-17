@@ -91,18 +91,34 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
     return C_KZG_OK;
 }
 
-// TODO: Consider the case where x is one of the roots of unity (needs special formula)
 C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const fr_t *y, const KZGSettings *ks) {
   fr_t tmp, tmp2;
   poly_l q;
-  uint64_t i;
+  uint64_t i, m = 0;
 
   new_poly_l(&q, p->length);
   for (i = 0; i < q.length; i++) {
+    if (fr_equal(x0, &ks->fs->expanded_roots_of_unity[i])) {
+      m = i + 1;
+      continue;
+    }
     // (p_i - y) / (ω_i - x0)
-    fr_sub(&tmp, &p->values[i], y);
-    fr_sub(&tmp2, &ks->fs->expanded_roots_of_unity[i], x0);
-    fr_div(&q.values[i], &tmp, &tmp2);
+    fr_sub(&q.values[i], &p->values[i], y);
+    fr_sub(&tmp, &ks->fs->expanded_roots_of_unity[i], x0);
+    fr_div(&q.values[i], &q.values[i], &tmp);
+  }
+  if (m) { // ω_m == x0
+    q.values[--m] = fr_zero;
+    for (i=0; i < q.length; i++) {
+      if (i == m) continue;
+      // (p_i - y) * ω_i / (x0 * (x0 - ω_i))
+      fr_sub(&tmp, x0, &ks->fs->expanded_roots_of_unity[i]);
+      fr_mul(&tmp, &tmp, x0);
+      fr_sub(&tmp2, &p->values[i], y);
+      fr_div(&tmp, &tmp2, &tmp);
+      fr_mul(&tmp, &tmp, &ks->fs->expanded_roots_of_unity[i]);
+      fr_add(&q.values[m], &q.values[m], &tmp);
+    }
   }
 
   return commit_to_poly_l(out, &q, ks);
@@ -368,6 +384,58 @@ void proof_single_l(void) {
     free_poly_l(&p_l);
 }
 
+void proof_single_l_at_root(void) {
+    // Our polynomial: degree 15, 16 coefficients
+    uint64_t coeffs[] = {3, 2, 13, 4, 7, 7, 9, 7, 9913, 13, 8813, 13, 7713, 13, 5513, 14};
+    int poly_len = sizeof coeffs / sizeof coeffs[0];
+    uint64_t secrets_len = poly_len;
+
+    FFTSettings fs;
+    KZGSettings ks;
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
+    poly p;
+    poly_l p_l;
+    g1_t commitment, proof;
+    fr_t value;
+    fr_t *x;
+    bool result;
+
+    // Create the polynomial
+    new_poly(&p, poly_len);
+    for (int i = 0; i < poly_len; i++) {
+        fr_from_uint64(&p.coeffs[i], coeffs[i]);
+    }
+
+    // Initialise the secrets and data structures
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // ln_2 of poly_len
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+
+    // Create Lagrange form
+    new_poly_l_from_poly(&p_l, &p, &ks);
+
+    // Compute the proof for x = the 5th root of unity
+    x = &fs.expanded_roots_of_unity[6];
+    TEST_CHECK(C_KZG_OK == commit_to_poly_l(&commitment, &p_l, &ks));
+    eval_poly_l(&value, &p_l, x, &fs);
+    TEST_CHECK(C_KZG_OK == compute_proof_single_l(&proof, &p_l, x, &value, &ks));
+
+    // Verify the proof that the (unknown) polynomial has y = value at x = ω_5
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, x, &value, &ks));
+    TEST_CHECK(true == result);
+
+    // Change the value and check that the proof fails
+    fr_add(&value, &value, &fr_one);
+    TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, x, &value, &ks));
+    TEST_CHECK(false == result);
+
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+    free_poly(&p);
+    free_poly_l(&p_l);
+}
+
 void proof_multi(void) {
     // Our polynomial: degree 15, 16 coefficients
     uint64_t coeffs[] = {1, 2, 3, 4, 7, 7, 7, 7, 13, 13, 13, 13, 13, 13, 13, 13};
@@ -623,6 +691,7 @@ TEST_LIST = {
     {"eval_poly_l_at_another_root_of_unity", eval_poly_l_at_another_root_of_unity},
     {"proof_single", proof_single},
     {"proof_single_l", proof_single_l},
+    {"proof_single_l_at_root", proof_single_l_at_root},
     {"proof_multi", proof_multi},
     {"commit_to_nil_poly", commit_to_nil_poly},
     {"commit_to_too_long_poly", commit_to_too_long_poly},
