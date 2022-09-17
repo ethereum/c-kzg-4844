@@ -23,6 +23,7 @@
 #include <string.h> // memcpy()
 #include "control.h"
 #include "utility.h"
+#include "c_kzg_alloc.h"
 
 /**
  * Utility function to test whether the argument is a power of two.
@@ -154,6 +155,37 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
     return C_KZG_OK;
 }
 
+/**
+ * Montgomery batch inversion in finite field
+ *
+ * @param[out] out The inverses of @p a, length @p len
+ * @param[in]  a   A vector of field elements, length @p len
+ * @param[in]  len Length
+ */
+C_KZG_RET fr_batch_inv(fr_t **out, const fr_t *a, size_t len) {
+    fr_t *prod;
+    fr_t inv;
+    size_t i;
+
+    TRY(new_fr_array(out, len));
+    TRY(new_fr_array(&prod, len));
+
+    prod[0] = a[0];
+
+    for(i = 1; i < len; i++) {
+        fr_mul(&prod[i], &a[i], &prod[i - 1]);
+    }
+
+    blst_fr_eucl_inverse(&inv, &prod[len - 1]);
+
+    for(i = len - 1; i > 0; i--) {
+        fr_mul(out[i], &inv, &prod[i - 1]);
+        fr_mul(&inv, &a[i], &inv);
+    }
+
+    return C_KZG_OK;
+}
+
 #ifdef KZGTEST
 
 #include "../inc/acutest.h"
@@ -183,6 +215,23 @@ void is_power_of_two_works(void) {
     // Not powers of two
     TEST_CHECK(false == is_power_of_two(123));
     TEST_CHECK(false == is_power_of_two(1234567));
+}
+
+void test_batch_inv(void) {
+    fr_t **inputs;
+    fr_t **actual, **expected;
+
+    TEST_CHECK(C_KZG_OK == new_fr_array(inputs, 32));
+    TEST_CHECK(C_KZG_OK == new_fr_array(expected, 32));
+
+    for (int i = 0; i < 32; i++) {
+        *inputs[i] = rand_fr();
+        fr_inv(expected[i], inputs[i]);
+    }
+    fr_batch_inv(actual, *inputs, 32);
+    for (int i = 0; i < 32; i++) {
+        TEST_CHECK(expected[i] == actual[i]);
+    }
 }
 
 void test_log2_pow2(void) {
@@ -309,6 +358,7 @@ void test_reverse_bit_order_fr_large(void) {
 
 TEST_LIST = {
     {"UTILITY_TEST", title},
+    {"test_batch_inv", test_batch_inv},
     {"is_power_of_two_works", is_power_of_two_works},
     {"test_log2_pow2", test_log2_pow2},
     {"test_next_power_of_two_powers", test_next_power_of_two_powers},
