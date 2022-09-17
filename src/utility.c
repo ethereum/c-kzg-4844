@@ -162,12 +162,11 @@ C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
  * @param[in]  a   A vector of field elements, length @p len
  * @param[in]  len Length
  */
-C_KZG_RET fr_batch_inv(fr_t **out, const fr_t *a, size_t len) {
+C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     fr_t *prod;
     fr_t inv;
     size_t i;
 
-    TRY(new_fr_array(out, len));
     TRY(new_fr_array(&prod, len));
 
     prod[0] = a[0];
@@ -179,9 +178,12 @@ C_KZG_RET fr_batch_inv(fr_t **out, const fr_t *a, size_t len) {
     blst_fr_eucl_inverse(&inv, &prod[len - 1]);
 
     for(i = len - 1; i > 0; i--) {
-        fr_mul(out[i], &inv, &prod[i - 1]);
+        fr_mul(&out[i], &inv, &prod[i - 1]);
         fr_mul(&inv, &a[i], &inv);
     }
+    out[0] = inv;
+
+    free(prod);
 
     return C_KZG_OK;
 }
@@ -218,20 +220,25 @@ void is_power_of_two_works(void) {
 }
 
 void test_batch_inv(void) {
-    fr_t **inputs;
-    fr_t **actual, **expected;
+    fr_t *inputs, *actual, *expected;
+    int i;
 
-    TEST_CHECK(C_KZG_OK == new_fr_array(inputs, 32));
-    TEST_CHECK(C_KZG_OK == new_fr_array(expected, 32));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&inputs, 32));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&actual, 32));
+    TEST_CHECK(C_KZG_OK == new_fr_array(&expected, 32));
 
-    for (int i = 0; i < 32; i++) {
-        *inputs[i] = rand_fr();
-        fr_inv(expected[i], inputs[i]);
+    for (i = 0; i < 32; i++) {
+        inputs[i] = rand_fr();
+        fr_inv(&expected[i], &inputs[i]);
     }
-    fr_batch_inv(actual, *inputs, 32);
-    for (int i = 0; i < 32; i++) {
-        TEST_CHECK(expected[i] == actual[i]);
+    fr_batch_inv(actual, inputs, 32);
+    for (i = 0; i < 32; i++) {
+        TEST_CHECK(fr_equal(&expected[i], &actual[i]));
     }
+
+    free(inputs);
+    free(actual);
+    free(expected);
 }
 
 void test_log2_pow2(void) {
