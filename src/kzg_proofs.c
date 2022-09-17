@@ -626,6 +626,7 @@ TEST_LIST = {
     {"eval_poly_l_at_first_root_of_unity", eval_poly_l_at_first_root_of_unity},
     {"eval_poly_l_at_another_root_of_unity", eval_poly_l_at_another_root_of_unity},
     {"proof_single", proof_single},
+    {"proof_single_l", proof_single_l},
     {"proof_multi", proof_multi},
     {"commit_to_nil_poly", commit_to_nil_poly},
     {"commit_to_too_long_poly", commit_to_too_long_poly},
