@@ -585,10 +585,46 @@ void eval_poly_l_at_first_root_of_unity(void) {
     free_poly_l(&p_l);
 }
 
+void eval_poly_l_at_another_root_of_unity(void) {
+    uint64_t n = 13;
+    fr_t actual, expected;
+    poly p;
+    new_poly(&p, n);
+    for (uint64_t i = 0; i < n; i++) {
+        fr_from_uint64(&p.coeffs[i], 2 * n - i);
+    }
+
+    poly_l p_l;
+    FFTSettings fs;
+    KZGSettings ks;
+    uint64_t secrets_len = 16;
+    g1_t s1[secrets_len];
+    g2_t s2[secrets_len];
+
+    generate_trusted_setup(s1, s2, &secret, secrets_len);
+    TEST_CHECK(C_KZG_OK == new_fft_settings(&fs, 4)); // log_2(secrets_len)
+    TEST_CHECK(C_KZG_OK == new_kzg_settings(&ks, s1, s2, secrets_len, &fs));
+
+    eval_poly(&expected, &p, &fs.expanded_roots_of_unity[5]);
+
+    TEST_CHECK(C_KZG_OK == new_poly_l_from_poly(&p_l, &p, &ks));
+
+    eval_poly_l(&actual, &p_l, &fs.expanded_roots_of_unity[5], &fs);
+
+    TEST_CHECK(fr_equal(&expected, &actual));
+
+    free_fft_settings(&fs);
+    free_kzg_settings(&ks);
+    free_poly(&p);
+    free_poly_l(&p_l);
+}
+
+
 TEST_LIST = {
     {"KZG_PROOFS_TEST", title},
     {"poly_eval_l_check", poly_eval_l_check},
     {"eval_poly_l_at_first_root_of_unity", eval_poly_l_at_first_root_of_unity},
+    {"eval_poly_l_at_another_root_of_unity", eval_poly_l_at_another_root_of_unity},
     {"proof_single", proof_single},
     {"proof_multi", proof_multi},
     {"commit_to_nil_poly", commit_to_nil_poly},
