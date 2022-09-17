@@ -91,19 +91,16 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
     return C_KZG_OK;
 }
 
-// TODO: I don't think this should compute the evaluation. Instead y should be a parameter
 // TODO: Consider the case where x is one of the roots of unity (needs special formula)
-C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const KZGSettings *ks) {
-  fr_t y, tmp, tmp2;
+C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const fr_t *y, const KZGSettings *ks) {
+  fr_t tmp, tmp2;
   poly_l q;
   uint64_t i;
-
-  eval_poly_l(&y, p, x0, ks->fs);
 
   new_poly_l(&q, p->length);
   for (i = 0; i < q.length; i++) {
     // (p_i - y) / (ω_i - x0)
-    fr_sub(&tmp, &p->values[i], &y);
+    fr_sub(&tmp, &p->values[i], y);
     fr_sub(&tmp2, &ks->fs->expanded_roots_of_unity[i], x0);
     fr_div(&q.values[i], &tmp, &tmp2);
   }
@@ -353,9 +350,8 @@ void proof_single_l(void) {
     // Compute the proof for x = 25
     fr_from_uint64(&x, 25);
     TEST_CHECK(C_KZG_OK == commit_to_poly_l(&commitment, &p_l, &ks));
-    TEST_CHECK(C_KZG_OK == compute_proof_single_l(&proof, &p_l, &x, &ks));
-
     eval_poly_l(&value, &p_l, &x, &fs);
+    TEST_CHECK(C_KZG_OK == compute_proof_single_l(&proof, &p_l, &x, &value, &ks));
 
     // Verify the proof that the (unknown) polynomial has y = value at x = 25
     TEST_CHECK(C_KZG_OK == check_proof_single(&result, &commitment, &proof, &x, &value, &ks));
