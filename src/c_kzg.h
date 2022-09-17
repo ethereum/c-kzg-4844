@@ -125,6 +125,7 @@ C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *k
 C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks);
 C_KZG_RET commit_to_poly_l(g1_t *out, const poly_l *p, const KZGSettings *ks);
 C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const KZGSettings *ks);
+C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const fr_t *y, const KZGSettings *ks);
 C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
                              const KZGSettings *ks);
 C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t n, const KZGSettings *ks);
