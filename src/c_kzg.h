@@ -92,7 +92,7 @@ typedef struct {
 } poly_l; // Lagrange form
 
 void eval_poly(fr_t *out, const poly *p, const fr_t *x);
-void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs);
+C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs);
 C_KZG_RET poly_inverse(poly *out, poly *b);
 C_KZG_RET poly_mul(poly *out, const poly *a, const poly *b);
 C_KZG_RET poly_mul_(poly *out, const poly *a, const poly *b, FFTSettings *fs);

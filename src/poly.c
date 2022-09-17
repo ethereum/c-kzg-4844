@@ -102,21 +102,32 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
     }
 }
 
-// TODO: optimize via batch inversion
-void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
-  fr_t tmp;
+/**
+ * Evaluate a polynomial in Lagrange formover the finite field at a point.
+ *
+ * @param[out] out The value of the polynomial at the point @p x
+ * @param[in]  p   The polynomial in Lagrange form
+ * @param[in]  x   The x-coordinate to be evaluated
+ */
+C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
+  fr_t tmp, *inverses_in, *inverses;
   uint64_t i;
   const uint64_t stride = fs->max_width / p->length;
 
-  *out = fr_zero;
+  TRY(new_fr_array(&inverses_in, p->length));
+  TRY(new_fr_array(&inverses, p->length));
   for (i = 0; i < p->length; i++) {
     if (fr_equal(x, &fs->expanded_roots_of_unity[i * stride])) {
       *out = p->values[i];
-      return;
+      return C_KZG_OK;
     }
-    fr_sub(&tmp, x, &fs->expanded_roots_of_unity[i * stride]);
-    fr_inv(&tmp, &tmp);
-    fr_mul(&tmp, &tmp, &fs->expanded_roots_of_unity[i * stride]);
+    fr_sub(&inverses_in[i], x, &fs->expanded_roots_of_unity[i * stride]);
+  }
+  TRY(fr_batch_inv(inverses, inverses_in, p->length));
+
+  *out = fr_zero;
+  for (i = 0; i < p->length; i++) {
+    fr_mul(&tmp, &inverses[i], &fs->expanded_roots_of_unity[i * stride]);
     fr_mul(&tmp, &tmp, &p->values[i]);
     fr_add(out, out, &tmp);
   }
@@ -125,6 +136,8 @@ void eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *f
   fr_pow(&tmp, x, p->length);
   fr_sub(&tmp, &tmp, &fr_one);
   fr_mul(out, out, &tmp);
+
+  return C_KZG_OK;
 }
 
 /**

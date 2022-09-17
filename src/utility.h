@@ -49,3 +49,4 @@ uint64_t next_power_of_two(uint64_t v);
 uint32_t reverse_bits(uint32_t a);
 uint32_t reverse_bits_limited(uint32_t n, uint32_t value);
 C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n);
+C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len);
