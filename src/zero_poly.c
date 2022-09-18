@@ -516,11 +516,10 @@ void zero_poly_random(void) {
             TEST_CHECK(len_missing + 1 == zero_poly.length);
             TEST_MSG("ZeroPolyLen: expected %d, got %lu", len_missing + 1, zero_poly.length);
 
-            int ret = 0;
             for (int i = 0; i < len_missing; i++) {
                 fr_t out;
                 eval_poly(&out, &zero_poly, &fs.expanded_roots_of_unity[missing[i]]);
-                ret = TEST_CHECK(fr_is_zero(&out));
+                TEST_CHECK(fr_is_zero(&out));
                 TEST_MSG("Failed for missing[%d] = %lu", i, missing[i]);
             }
 
@@ -567,11 +566,10 @@ void zero_poly_all_but_one(void) {
     TEST_CHECK(len_missing + 1 == zero_poly.length);
     TEST_MSG("ZeroPolyLen: expected %d, got %lu", len_missing + 1, zero_poly.length);
 
-    int ret = 0;
     for (int i = 0; i < len_missing; i++) {
         fr_t out;
         eval_poly(&out, &zero_poly, &fs.expanded_roots_of_unity[missing[i]]);
-        ret = TEST_CHECK(fr_is_zero(&out));
+        TEST_CHECK(fr_is_zero(&out));
         TEST_MSG("Failed for missing[%d] = %lu", i, missing[i]);
     }
 
@@ -615,11 +613,10 @@ void zero_poly_252(void) {
     TEST_CHECK(len_missing + 1 == zero_poly.length);
     TEST_MSG("ZeroPolyLen: expected %d, got %lu", len_missing + 1, zero_poly.length);
 
-    int ret = 0;
     for (int i = 0; i < len_missing; i++) {
         fr_t out;
         eval_poly(&out, &zero_poly, &fs.expanded_roots_of_unity[missing[i]]);
-        ret = TEST_CHECK(fr_is_zero(&out));
+        TEST_CHECK(fr_is_zero(&out));
         TEST_MSG("Failed for missing[%d] = %lu", i, missing[i]);
     }
 
