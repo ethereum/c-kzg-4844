@@ -57,7 +57,7 @@ typedef struct {
     fr_t *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
 } FFTSettings;
 
-C_KZG_RET new_fft_settings(FFTSettings *s, unsigned int max_scale);
+C_KZG_RET new_fft_settings(FFTSettings *out, unsigned int max_scale);
 void free_fft_settings(FFTSettings *s);
 
 //
@@ -131,7 +131,7 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
 C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t n, const KZGSettings *ks);
 C_KZG_RET check_proof_multi(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, const fr_t *ys,
                             uint64_t n, const KZGSettings *ks);
-C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
+C_KZG_RET new_kzg_settings(KZGSettings *out, const g1_t *secret_g1, const g2_t *secret_g2, uint64_t length,
                            const FFTSettings *fs);
 void free_kzg_settings(KZGSettings *ks);
 
