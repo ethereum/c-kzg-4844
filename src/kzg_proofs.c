@@ -43,6 +43,15 @@ C_KZG_RET commit_to_poly(g1_t *out, const poly *p, const KZGSettings *ks) {
     return C_KZG_OK;
 }
 
+/**
+ * Make a KZG commitment to a polynomial in Lagrange form.
+ *
+ * @param[out] out The commitment to the polynomial, in the form of a G1 group point
+ * @param[in]  p_l The polynomial to be committed to
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ */
 C_KZG_RET commit_to_poly_l(g1_t *out, const poly_l *p_l, const KZGSettings *ks) {
     CHECK(p_l->length <= ks->length);
     g1_linear_combination(out, ks->secret_g1_l, p_l->values, p_l->length);
@@ -91,6 +100,18 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
     return C_KZG_OK;
 }
 
+/**
+ * Compute KZG proof for evaluation of a polynomial in Lagrange form.
+ *
+ * @param[out] out The proof, in the form of a G1 point
+ * @param[in]  p   The polynomial
+ * @param[in]  x0  The x-value the polynomial is to be proved at
+ * @param[in]  y   The y-value of the polynomial evaluation, which is assumed to be correct
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const fr_t *y, const KZGSettings *ks) {
   fr_t tmp, tmp2;
   poly_l q;

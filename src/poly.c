@@ -584,6 +584,16 @@ C_KZG_RET new_poly(poly *out, uint64_t length) {
     return new_fr_array(&out->coeffs, length);
 }
 
+/**
+ * Initialise an empty polynomial in Lagrange form of the given size.
+ *
+ * @remark This allocates space for the Lagrange values that must be later reclaimed by calling #free_poly_l.
+ *
+ * @param[out] out    The initialised polynomial structure
+ * @param[in]  length The number of coefficients required, which is one more than the polynomial's degree
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET new_poly_l(poly_l *out, uint64_t length) {
     out->length = length;
     return new_fr_array(&out->values, length);
@@ -610,6 +620,18 @@ C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
     return C_KZG_OK;
 }
 
+/**
+ * Initialise a polynomial in Lagrange form from the given polynomial in coefficient form.
+ *
+ * @remark This allocates space for the Lagrange values that must be later reclaimed by calling #free_poly_l.
+ *
+ * @param[out] out The initialised Lagrange polynomial structure
+ * @param[in]  in  The polynomial of which to compute the Lagrange form
+ * @param[in]  ks  The settings containing the roots of unity to use for DFT
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid settings, e.g., fft max_width too low for this polynomial
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *ks) {
   TRY(new_poly_l(out, ks->length));
   if (out->length <= in->length) {
@@ -645,6 +667,14 @@ void free_poly(poly *p) {
     }
 }
 
+/**
+ * Reclaim the memory used by a polynomial in Lagrange form.
+ *
+ * @remark To avoid memory leaks, this must be called for polynomials initialised with #new_poly_l or
+ * #new_poly_l_from_poly after use.
+ *
+ * @param[in,out] p The polynomial
+ */
 void free_poly_l(poly_l *p) {
     if (p->values != NULL) {
         free(p->values);
