@@ -171,10 +171,10 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
  * @param[in]  x0  The generator x-value for the evaluation points
  * @param[in]  n   The number of points at which to evaluate the polynomial, must be a power of two
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- * @retval C_CZK_ERROR   An internal error occurred
- * @retval C_CZK_MALLOC  Memory allocation failed
+ * @retval C_KZG_OK      All is well
+ * @retval C_KZG_BADARGS Invalid parameters were supplied
+ * @retval C_KZG_ERROR   An internal error occurred
+ * @retval C_KZG_MALLOC  Memory allocation failed
  */
 C_KZG_RET compute_proof_multi(g1_t *out, const poly *p, const fr_t *x0, uint64_t n, const KZGSettings *ks) {
     poly divisor, q;
