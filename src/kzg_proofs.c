@@ -102,7 +102,6 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
 
   TRY(new_fr_array(&inverses_in, p->length));
   TRY(new_fr_array(&inverses, p->length));
-  
 
   for (i = 0; i < q.length; i++) {
     if (fr_equal(x0, &ks->fs->expanded_roots_of_unity[i])) {
@@ -118,7 +117,7 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
 
   for (i = 0; i < q.length; i++) {
     fr_mul(&q.values[i], &q.values[i], &inverses[i]);
-  }  
+  }
   if (m) { // ω_m == x0
     q.values[--m] = fr_zero;
     for (i=0; i < q.length; i++) {

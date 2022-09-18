@@ -43,7 +43,7 @@ long run_bench(int scale, int max_seconds) {
     for (int i = 0; i < fs.max_width; i++) {
         p.values[i] = rand_fr();
     }
-    
+
     fr_t x = rand_fr();
     fr_t y;
     assert(C_KZG_OK == eval_poly_l(&y, &p, &x, &fs));
