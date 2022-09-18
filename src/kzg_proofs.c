@@ -101,18 +101,18 @@ C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proo
 }
 
 /**
- * Compute KZG proof for evaluation of a polynomial in Lagrange form.
+ * Compute KZG proof for polynomial in Lagrange form at position x0
  *
- * @param[out] out The proof, in the form of a G1 point
- * @param[in]  p   The polynomial
- * @param[in]  x0  The x-value the polynomial is to be proved at
- * @param[in]  y   The y-value of the polynomial evaluation, which is assumed to be correct
+ * @param[out] out The combined proof as a single G1 element
+ * @param[in]  p   The polynomial in Lagrange form
+ * @param[in]  x  The generator x-value for the evaluation points
+ * @param[in]  y   The value of @p p at @p x
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_ERROR   An internal error occurred
- * @retval C_CZK_MALLOC  Memory allocation failed
+ * @retval C_KZG_OK      All is well
+ * @retval C_KZG_ERROR   An internal error occurred
+ * @retval C_KZG_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, const fr_t *y, const KZGSettings *ks) {
+C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x, const fr_t *y, const KZGSettings *ks) {
   fr_t tmp, tmp2;
   poly_l q;
   uint64_t i, m = 0;
@@ -125,27 +125,27 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x0, con
   TRY(new_fr_array(&inverses, p->length));
 
   for (i = 0; i < q.length; i++) {
-    if (fr_equal(x0, &ks->fs->expanded_roots_of_unity[i])) {
+    if (fr_equal(x, &ks->fs->expanded_roots_of_unity[i])) {
       m = i + 1;
       continue;
     }
-    // (p_i - y) / (ω_i - x0)
+    // (p_i - y) / (ω_i - x)
     fr_sub(&q.values[i], &p->values[i], y);
-    fr_sub(&inverses_in[i], &ks->fs->expanded_roots_of_unity[i], x0);
+    fr_sub(&inverses_in[i], &ks->fs->expanded_roots_of_unity[i], x);
   }
 
   TRY(fr_batch_inv(inverses, inverses_in, q.length));
 
   for (i = 0; i < q.length; i++) {
     fr_mul(&q.values[i], &q.values[i], &inverses[i]);
-  }
-  if (m) { // ω_m == x0
+  }  
+  if (m) { // ω_m == x
     q.values[--m] = fr_zero;
     for (i=0; i < q.length; i++) {
       if (i == m) continue;
-      // (p_i - y) * ω_i / (x0 * (x0 - ω_i))
-      fr_sub(&tmp, x0, &ks->fs->expanded_roots_of_unity[i]);
-      fr_mul(&inverses_in[i], &tmp, x0);
+      // (p_i - y) * ω_i / (x * (x - ω_i))
+      fr_sub(&tmp, x, &ks->fs->expanded_roots_of_unity[i]);
+      fr_mul(&inverses_in[i], &tmp, x);
     }
     TRY(fr_batch_inv(inverses, inverses_in, q.length));
     for (i=0; i < q.length; i++) {
