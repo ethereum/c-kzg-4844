@@ -15,3 +15,7 @@ inc/blst_aux.h*
 .vscode/
 *.json
 .clang-format
+bindings/*/_*.so
+bindings/python/*.py
+bindings/python/*_wrap.c
+__pycache__
