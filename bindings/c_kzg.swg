@@ -1,13 +1,12 @@
 %module ckzg
-%include "stdint.i"
-%include "carrays.i"
-%include "cpointer.i"
 %{
-#include <stdbool.h>
 #include "c_kzg.h"
 #include "bls12_381.h"
 #include "test_util.h"
 %}
+%include "stdint.i"
+%include "carrays.i"
+%include "cpointer.i"
 %rename(alloc_poly) new_poly;
 %rename(alloc_poly_l) new_poly_l;
 
@@ -23,6 +22,13 @@
   blst_scalar *out,
   FFTSettings *out, KZGSettings *out
 }
+
+%typemap(in, numinputs=0) bool *OUTPUT(bool tmp) { $1 = &tmp; }
+%typemap(argout) bool *OUTPUT {
+  PyObject *obj = *$1 ? Py_True : Py_False;
+  $result = ($result == NULL) ? obj : SWIG_Python_AppendOutput($result, obj);
+}
+%apply bool *OUTPUT { bool *out }
 
 %typemap(in, numinputs=0) uint64_t out[4] (uint64_t tmp[4]) { $1 = tmp; }
 %typemap(argout) uint64_t out[4] {
