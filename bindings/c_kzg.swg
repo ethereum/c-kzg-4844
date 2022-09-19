@@ -54,6 +54,7 @@
 }
 
 %array_class(fr_t, frArray)
+%array_class(byte, byteArray)
 %array_class(g1_t, g1Array)
 %array_class(g2_t, g2Array)
 %pointer_class(poly, polyp)
