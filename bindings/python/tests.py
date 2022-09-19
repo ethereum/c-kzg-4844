@@ -86,10 +86,41 @@ assert ckzg.fr_equal(y, y_l)
 
 # And that this agrees with a naive Python evaluation
 
-py_coeffs = [int_from_uint64s(ckzg.fr_to_uint64s(c)) for c in coeffs]
+def fr_to_int(fr):
+    return int_from_uint64s(ckzg.fr_to_uint64s(fr))
 
-y_p = eval_poly(py_coeffs, int_from_uint64s(ckzg.fr_to_uint64s(c2)))
-assert int_from_uint64s(ckzg.fr_to_uint64s(y)) == y_p
+py_coeffs = [fr_to_int(c) for c in coeffs]
+
+y_p = eval_poly(py_coeffs, fr_to_int(c2))
+assert fr_to_int(y) == y_p
+
+# Commit to the polynomial, in both Lagrange and coefficient form
+# The commitment should be the same
+
+ret, commitment = ckzg.commit_to_poly(p, ks)
+assert ret == 0
+ret, commitment_l = ckzg.commit_to_poly_l(p_l, ks)
+assert ret == 0
+assert ckzg.g1_equal(commitment, commitment_l)
+
+# Compute proof at an arbitrary point (for both forms)
+x = ckzg.fr_from_uint64s((39, 100, 8, 0))
+ret, π = ckzg.compute_proof_single(p, x, ks)
+assert ret == 0
+ret, v = ckzg.eval_poly_l(p_l, x, fs)
+assert ret == 0
+ret, π_l = ckzg.compute_proof_single_l(p_l, x, v, ks)
+assert ret == 0
+
+# Check the proofs using the commitments
+
+ret, res = ckzg.check_proof_single(commitment, π, x, v, ks)
+assert ret == 0
+assert res
+
+ret, res = ckzg.check_proof_single(commitment_l, π_l, x, v, ks)
+assert ret == 0
+assert res
 
 print("All tests passed.")
 
