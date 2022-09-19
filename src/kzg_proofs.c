@@ -155,7 +155,7 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x, cons
 
   for (i = 0; i < q.length; i++) {
     fr_mul(&q.values[i], &q.values[i], &inverses[i]);
-  }  
+  }
   if (m) { // ω_m == x
     q.values[--m] = fr_zero;
     for (i=0; i < q.length; i++) {
