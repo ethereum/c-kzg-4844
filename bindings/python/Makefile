@@ -1,6 +1,9 @@
 INCLUDE_DIRS = .. ../../src ../../inc
 INCLUDE_PY = $(shell python -c 'import sysconfig; print(sysconfig.get_config_var("INCLUDEPY"))')
 
+test: tests.py _ckzg.so
+	python $<
+
 _ckzg.so: c_kzg_wrap.c ../../src/libckzg.a ../../lib/libblst.a ../../src/test_util.o
 	clang -O -Wall -shared -fPIC -Wl,-Bsymbolic -I${INCLUDE_PY} ${addprefix -I,${INCLUDE_DIRS}} -o $@ $^
 
