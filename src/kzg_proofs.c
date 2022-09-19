@@ -29,6 +29,23 @@
 #include "utility.h"
 
 /**
+ * Compute linear combinations of a sequence of vectors with some scalars
+ */
+void fr_vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uint64_t n, uint64_t m) {
+  fr_t (*vectors_ptr)[n][m] = (fr_t (*)[n][m]) vectors;
+  fr_t tmp;
+  uint64_t i, j;
+  for (j = 0; j < m; j++)
+    out[j] = fr_zero;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < m; j++) {
+      fr_mul(&tmp, &scalars[i], &((*vectors_ptr)[i][j]));
+      fr_add(&out[j], &out[j], &tmp);
+    }
+  }
+}
+
+/**
  * Make a KZG commitment to a polynomial.
  *
  * @param[out] out The commitment to the polynomial, in the form of a G1 group point
@@ -719,9 +736,38 @@ void eval_poly_l_at_another_root_of_unity(void) {
     free_poly_l(&p_l);
 }
 
+void fr_vector_lincomb_simple_test(void) {
+  const uint64_t n = 2, m = 3;
+  int i;
+  fr_t fr2, fr3, tmp;
+  fr_add(&fr2, &fr_one, &fr_one);
+  fr_add(&fr3, &fr2, &fr_one);
+  fr_t out[m];
+  const fr_t vectors[2][3] = { { fr_one, fr2, fr3 }, { fr3, fr2, fr_zero } };
+
+  fr_t scalars[2] = { fr_zero, fr_one };
+  fr_vector_lincomb(out, (fr_t*)vectors, (fr_t*)scalars, n, m);
+  for (i = 0; i < m; i++) {
+    TEST_CHECK(fr_equal(&out[i], &vectors[1][i]));
+  }
+
+  scalars[0] = fr_one; scalars[1] = fr_zero;
+  fr_vector_lincomb(out, (fr_t*)vectors, (fr_t*)scalars, n, m);
+  for (i = 0; i < m; i++) {
+    TEST_CHECK(fr_equal(&out[i], &vectors[0][i]));
+  }
+
+  scalars[1] = fr_one;
+  fr_vector_lincomb(out, (fr_t*)vectors, (fr_t*)scalars, n, m);
+  for (i = 0; i < m; i++) {
+    fr_add(&tmp, &vectors[0][i], &vectors[1][i]);
+    TEST_CHECK(fr_equal(&out[i], &tmp));
+  }
+}
 
 TEST_LIST = {
     {"KZG_PROOFS_TEST", title},
+    {"fr_vector_lincomb_simple_test", fr_vector_lincomb_simple_test},
     {"poly_eval_l_check", poly_eval_l_check},
     {"eval_poly_l_at_first_root_of_unity", eval_poly_l_at_first_root_of_unity},
     {"eval_poly_l_at_another_root_of_unity", eval_poly_l_at_another_root_of_unity},
