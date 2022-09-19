@@ -5,4 +5,4 @@ _ckzg.so: c_kzg_wrap.c ../../src/libckzg.a ../../lib/libblst.a ../../src/test_ut
 	clang -O -Wall -shared -fPIC -Wl,-Bsymbolic -I${INCLUDE_PY} ${addprefix -I,${INCLUDE_DIRS}} -o $@ $^
 
 c_kzg_wrap.c ckzg.py: ../c_kzg.swg
-	swig -O -python -outcurrentdir $<
+	swig -DSWIGWORDSIZE64 -O -Wall -python -outcurrentdir $<

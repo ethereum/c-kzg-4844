@@ -27,16 +27,16 @@
 %typemap(in, numinputs=0) uint64_t out[4] (uint64_t tmp[4]) { $1 = tmp; }
 %typemap(argout) uint64_t out[4] {
   PyObject *obj = PyTuple_Pack(4,
-    PyLong_FromUnsignedLongLong($1[0]),
-    PyLong_FromUnsignedLongLong($1[1]),
-    PyLong_FromUnsignedLongLong($1[2]),
-    PyLong_FromUnsignedLongLong($1[3]));
+    PyLong_FromUnsignedLong($1[0]),
+    PyLong_FromUnsignedLong($1[1]),
+    PyLong_FromUnsignedLong($1[2]),
+    PyLong_FromUnsignedLong($1[3]));
   $result = ($result == NULL) ? obj : SWIG_Python_AppendOutput($result, obj);
 }
 
 %typemap(in) const uint64_t[4] (uint64_t tmp[4]) {
   if (PyTuple_Check($input)) {
-    if (!PyArg_ParseTuple($input, "KKKK", tmp, tmp+1, tmp+2, tmp+3)) {
+    if (!PyArg_ParseTuple($input, "kkkk", tmp, tmp+1, tmp+2, tmp+3)) {
       PyErr_SetString(PyExc_TypeError, "tuple must have 4 elements");
       SWIG_fail;
     }
