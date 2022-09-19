@@ -104,6 +104,7 @@ assert ret == 0
 assert ckzg.g1_equal(commitment, commitment_l)
 
 # Compute proof at an arbitrary point (for both forms)
+
 x = ckzg.fr_from_uint64s((39, 100, 8, 0))
 ret, π = ckzg.compute_proof_single(p, x, ks)
 assert ret == 0
@@ -121,6 +122,13 @@ assert res
 ret, res = ckzg.check_proof_single(commitment_l, π_l, x, v, ks)
 assert ret == 0
 assert res
+
+# Check the proof fails with the wrong value
+
+w = ckzg.fr_add(v, ckzg.fr_one)
+ret, res = ckzg.check_proof_single(commitment_l, π_l, x, w, ks)
+assert ret == 0
+assert not res
 
 print("All tests passed.")
 
