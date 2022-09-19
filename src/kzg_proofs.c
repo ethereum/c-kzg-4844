@@ -103,7 +103,7 @@ C_KZG_RET compute_proof_single(g1_t *out, const poly *p, const fr_t *x0, const K
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, fr_t *y,
+C_KZG_RET check_proof_single(bool *out, const g1_t *commitment, const g1_t *proof, const fr_t *x, const fr_t *y,
                              const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
