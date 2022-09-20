@@ -92,3 +92,24 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *polynomial,
   TRY(evaluate_polynomial_in_evaluation_form(&value, polynomial, z, s));
   return compute_proof_single_l(out, polynomial, z, &value, s);
 }
+
+#ifdef KZGTEST
+
+#include "../inc/acutest.h"
+#include "test_util.h"
+
+void load_trusted_setup_test(void) {
+  FILE *in = fopen("trusted_setup.txt", "r");
+  KZGSettings ks;
+  TEST_CHECK(C_KZG_OK == load_trusted_setup(&ks, in));
+  fclose(in);
+  free_kzg_settings(&ks);
+}
+
+TEST_LIST = {
+    {"C_KZG_4844_TEST", title},
+    {"load_trusted_setup_test", load_trusted_setup_test},
+    {NULL, NULL} /* zero record marks the end of the list */
+};
+
+#endif // KZGTEST

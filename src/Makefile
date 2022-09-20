@@ -1,5 +1,5 @@
 TESTS = bls12_381_test das_extension_test c_kzg_alloc_test fft_common_test fft_fr_test fft_g1_test \
-	fk20_proofs_test kzg_proofs_test poly_test recover_test utility_test zero_poly_test
+	fk20_proofs_test kzg_proofs_test poly_test recover_test utility_test zero_poly_test c_kzg_4844_test
 BENCH = fft_fr_bench fft_g1_bench recover_bench zero_poly_bench kzg_proofs_bench poly_bench poly_barycentric_bench compute_proof_lagrange_bench
 TUNE = poly_mul_tune poly_div_tune
 LIB_SRC = bls12_381.c c_kzg_alloc.c das_extension.c fft_common.c fft_fr.c fft_g1.c fk20_proofs.c kzg_proofs.c poly.c recover.c utility.c zero_poly.c
