@@ -15,10 +15,55 @@
  */
 
 #include "c_kzg_4844.h"
+#include "c_kzg_alloc.h"
 
-void load_trusted_setup(KZGSettings *out) { }
+#include <inttypes.h>
+#include <stdio.h>
 
-void free_trusted_setup(KZGSettings *s) { free_kzg_settings(s); }
+C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
+  // custom version of new_kzg_settings to avoid unnecessary allocation
+
+  uint64_t n2, i;
+  int j; uint8_t c[96];
+  blst_p1_affine g1_affine;
+  blst_p2_affine g2_affine;
+
+  fscanf(in, "%" SCNu64, &out->length);
+  fscanf(in, "%" SCNu64, &n2);
+
+  TRY(new_g1_array(&out->secret_g1, out->length));
+  TRY(new_g1_array(&out->secret_g1_l, out->length));
+  TRY(new_g2_array(&out->secret_g2, n2));
+
+  for (i = 0; i < out->length; i++) {
+    for (j = 0; j < 48; j++) {
+      fscanf(in, "%2hhx", &c[j]);
+    }
+    blst_p1_uncompress(&g1_affine, c);
+    blst_p1_from_affine(&out->secret_g1[i], &g1_affine);
+  }
+
+  for (i = 0; i < n2; i++) {
+    for (j = 0; j < 96; j++) {
+      fscanf(in, "%2hhx", &c[j]);
+    }
+    blst_p2_uncompress(&g2_affine, c);
+    blst_p2_from_affine(&out->secret_g2[i], &g2_affine);
+  }
+
+  unsigned int max_scale = 0;
+  while (((uint64_t)1 << max_scale) < out->length) max_scale++;
+
+  TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
+
+  return fft_g1(out->secret_g1_l, out->secret_g1, true, out->length, out->fs);
+
+}
+
+void free_trusted_setup(KZGSettings *s) {
+  free_fft_settings((FFTSettings*)s->fs);
+  free_kzg_settings(s);
+}
 
 void compute_powers(BLSFieldElement out[], const BLSFieldElement *x, uint64_t n) { fr_pow(out, x, n); }
 

@@ -25,13 +25,14 @@
 
 #include "c_kzg.h"
 #include "control.h"
+#include <stdio.h>
 
 typedef fr_t BLSFieldElement;
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
 typedef poly_l PolynomialEvalForm;
 
-void load_trusted_setup(KZGSettings *out); // TODO: decide on input format and add appropriate arguments
+C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in);
 
 void free_trusted_setup(KZGSettings *s);
 
