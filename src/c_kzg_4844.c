@@ -54,6 +54,8 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
   unsigned int max_scale = 0;
   while (((uint64_t)1 << max_scale) < out->length) max_scale++;
 
+  out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
+
   TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
 
   return fft_g1(out->secret_g1_l, out->secret_g1, true, out->length, out->fs);
@@ -103,7 +105,7 @@ void load_trusted_setup_test(void) {
   KZGSettings ks;
   TEST_CHECK(C_KZG_OK == load_trusted_setup(&ks, in));
   fclose(in);
-  free_kzg_settings(&ks);
+  free_trusted_setup(&ks);
 }
 
 TEST_LIST = {
