@@ -8,6 +8,7 @@ This is a copy of C-KZG stripped down to support the [Polynomial Commitments](ht
 - `verify_kzg_proof`
 - `compute_kzg_proof`
 - `evaluate_polynomial_in_evaluation_form`
+
 and `compute_powers` from the [Validator](https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/validator.md) API.
 
 We also provide `load_trusted_setup` and `free_trusted_setup` to load the

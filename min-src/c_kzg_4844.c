@@ -108,6 +108,9 @@ static int log_2_byte(byte b) {
     return r;
 }
 
+/** The zero field element */
+static const fr_t fr_zero = {0L, 0L, 0L, 0L};
+
 /** This is 1 in Blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
@@ -137,6 +140,17 @@ static bool fr_is_one(const fr_t *p) {
 }
 
 /**
+ * Add two field elements.
+ *
+ * @param[out] out @p a plus @p b in the field
+ * @param[in]  a   Field element
+ * @param[in]  b   Field element
+ */
+static void fr_add(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr_add(out, a, b);
+}
+
+/**
  * Multiply two field elements.
  *
  * @param[out] out @p a multiplied by @p b in the field
@@ -145,6 +159,16 @@ static bool fr_is_one(const fr_t *p) {
  */
 static void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
     blst_fr_mul(out, a, b);
+}
+
+/**
+ * Square a field element.
+ *
+ * @param[out] out @p a squared
+ * @param[in]  a   A field element
+ */
+static void fr_sqr(fr_t *out, const fr_t *a) {
+    blst_fr_sqr(out, a);
 }
 
 /**
@@ -599,26 +623,57 @@ void free_trusted_setup(KZGSettings *s) {
   free_kzg_settings(s);
 }
 
-/*
-void compute_powers(BLSFieldElement out[], const BLSFieldElement *x, uint64_t n) { fr_pow(out, x, n); }
+/**
+ * Exponentiation of a field element.
+ *
+ * Uses square and multiply for log(@p n) performance.
+ *
+ * @remark A 64-bit exponent is sufficient for our needs here.
+ *
+ * @param[out] out @p a raised to the power of @p n
+ * @param[in]  x   The field element to be exponentiated
+ * @param[in]  n   The exponent
+ */
+void compute_powers(fr_t out[], const fr_t *x, uint64_t n) {
+    fr_t tmp = *x;
+    *out = fr_one;
 
-void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors, const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len) {
-  fr_vector_lincomb(out, vectors, scalars, num_vectors, vector_len);
+    while (true) {
+        if (n & 1) {
+            fr_mul(out, out, &tmp);
+        }
+        if ((n >>= 1) == 0) break;
+        fr_sqr(&tmp, &tmp);
+    }
 }
 
+void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes) {
+  blst_fr_from_scalar(out, bytes);
+}
+
+/**
+ * Compute linear combinations of a sequence of vectors with some scalars
+ */
+void vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uint64_t n, uint64_t m) {
+  fr_t (*vectors_ptr)[n][m] = (fr_t (*)[n][m]) vectors;
+  fr_t tmp;
+  uint64_t i, j;
+  for (j = 0; j < m; j++)
+    out[j] = fr_zero;
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < m; j++) {
+      fr_mul(&tmp, &scalars[i], &((*vectors_ptr)[i][j]));
+      fr_add(&out[j], &out[j], &tmp);
+    }
+  }
+}
+
+/*
 void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points) {
   g1_linear_combination(out, points, scalars, num_points);
 
 void blob_to_kzg_commitment(KZGCommitment *out, const BLSFieldElement blob[], const KZGSettings *s) {
   g1_linear_combination(out, s->secret_g1_l, blob, s->length);
-}
-
-void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes) {
-  fr_from_scalar(out, bytes);
-}
-
-C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s) {
-   return eval_poly_l(out, polynomial, z, s->fs);
 }
 
 C_KZG_RET verify_kzg_proof(bool *out, const KZGCommitment *polynomial_kzg, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *kzg_proof, const KZGSettings *s) {
@@ -629,5 +684,9 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *polynomial,
   BLSFieldElement value;
   TRY(evaluate_polynomial_in_evaluation_form(&value, polynomial, z, s));
   return compute_proof_single_l(out, polynomial, z, &value, s);
+}
+
+C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s) {
+   return eval_poly_l(out, polynomial, z, s->fs);
 }
 */
