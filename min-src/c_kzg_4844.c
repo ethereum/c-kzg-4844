@@ -140,6 +140,21 @@ static bool fr_is_one(const fr_t *p) {
 }
 
 /**
+ * Test whether two field elements are equal.
+ *
+ * @param[in] aa The first element
+ * @param[in] bb The second element
+ * @retval true if @p aa and @p bb are equal
+ * @retval false otherwise
+ */
+static bool fr_equal(const fr_t *aa, const fr_t *bb) {
+    uint64_t a[4], b[4];
+    blst_uint64_from_fr(a, aa);
+    blst_uint64_from_fr(b, bb);
+    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+}
+
+/**
  * Add two field elements.
  *
  * @param[out] out @p a plus @p b in the field
@@ -148,6 +163,17 @@ static bool fr_is_one(const fr_t *p) {
  */
 static void fr_add(fr_t *out, const fr_t *a, const fr_t *b) {
     blst_fr_add(out, a, b);
+}
+
+/**
+ * Subtract one field element from another.
+ *
+ * @param[out] out @p a minus @p b in the field
+ * @param[in]  a   Field element
+ * @param[in]  b   Field element
+ */
+static void fr_sub(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr_sub(out, a, b);
 }
 
 /**
@@ -162,6 +188,19 @@ static void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
 }
 
 /**
+ * Division of two field elements.
+ *
+ * @param[out] out @p a divided by @p b in the field
+ * @param[in]  a   The dividend
+ * @param[in]  b   The divisor
+ */
+static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr tmp;
+    blst_fr_eucl_inverse(&tmp, b);
+    blst_fr_mul(out, a, &tmp);
+}
+
+/**
  * Square a field element.
  *
  * @param[out] out @p a squared
@@ -169,6 +208,30 @@ static void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
  */
 static void fr_sqr(fr_t *out, const fr_t *a) {
     blst_fr_sqr(out, a);
+}
+
+/**
+ * Exponentiation of a field element.
+ *
+ * Uses square and multiply for log(@p n) performance.
+ *
+ * @remark A 64-bit exponent is sufficient for our needs here.
+ *
+ * @param[out] out @p a raised to the power of @p n
+ * @param[in]  a   The field element to be exponentiated
+ * @param[in]  n   The exponent
+ */
+static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
+    fr_t tmp = *a;
+    *out = fr_one;
+
+    while (true) {
+        if (n & 1) {
+            fr_mul(out, out, &tmp);
+        }
+        if ((n >>= 1) == 0) break;
+        fr_sqr(&tmp, &tmp);
+    }
 }
 
 /**
@@ -192,6 +255,39 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
  */
 static void fr_inv(fr_t *out, const fr_t *a) {
     blst_fr_eucl_inverse(out, a);
+}
+
+/**
+ * Montgomery batch inversion in finite field
+ *
+ * @param[out] out The inverses of @p a, length @p len
+ * @param[in]  a   A vector of field elements, length @p len
+ * @param[in]  len Length
+ */
+static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
+    fr_t *prod;
+    fr_t inv;
+    size_t i;
+
+    TRY(new_fr_array(&prod, len));
+
+    prod[0] = a[0];
+
+    for(i = 1; i < len; i++) {
+        fr_mul(&prod[i], &a[i], &prod[i - 1]);
+    }
+
+    blst_fr_eucl_inverse(&inv, &prod[len - 1]);
+
+    for(i = len - 1; i > 0; i--) {
+        fr_mul(&out[i], &inv, &prod[i - 1]);
+        fr_mul(&inv, &a[i], &inv);
+    }
+    out[0] = inv;
+
+    free(prod);
+
+    return C_KZG_OK;
 }
 
 
@@ -841,14 +937,106 @@ C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, con
     return C_KZG_OK;
 }
 
-/*
-C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s) {
-  BLSFieldElement value;
-  TRY(evaluate_polynomial_in_evaluation_form(&value, polynomial, z, s));
-  return compute_proof_single_l(out, polynomial, z, &value, s);
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position x
+ *
+ * @param[out] out The combined proof as a single G1 element
+ * @param[in]  p   The polynomial in Lagrange form
+ * @param[in]  x   The generator x-value for the evaluation points
+ * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_KZG_OK      All is well
+ * @retval C_KZG_ERROR   An internal error occurred
+ * @retval C_KZG_MALLOC  Memory allocation failed
+ */
+C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *p, const BLSFieldElement *x, const KZGSettings *s) {
+  CHECK(p->length <= s->length);
+
+  BLSFieldElement y;
+  TRY(evaluate_polynomial_in_evaluation_form(&y, p, x, s));
+
+  fr_t tmp, tmp2;
+  PolynomialEvalForm q;
+  const fr_t *roots_of_unity = s->fs->roots_of_unity;
+  uint64_t i, m = 0;
+
+  q.length = p->length;
+  TRY(new_fr_array(&q.values, q.length));
+
+  fr_t *inverses_in, *inverses;
+
+  TRY(new_fr_array(&inverses_in, p->length));
+  TRY(new_fr_array(&inverses, p->length));
+
+  for (i = 0; i < q.length; i++) {
+    if (fr_equal(x, &roots_of_unity[i])) {
+      m = i + 1;
+      continue;
+    }
+    // (p_i - y) / (ω_i - x)
+    fr_sub(&q.values[i], &p->values[i], &y);
+    fr_sub(&inverses_in[i], &roots_of_unity[i], x);
+  }
+
+  TRY(fr_batch_inv(inverses, inverses_in, q.length));
+
+  for (i = 0; i < q.length; i++) {
+    fr_mul(&q.values[i], &q.values[i], &inverses[i]);
+  }
+  if (m) { // ω_m == x
+    q.values[--m] = fr_zero;
+    for (i=0; i < q.length; i++) {
+      if (i == m) continue;
+      // (p_i - y) * ω_i / (x * (x - ω_i))
+      fr_sub(&tmp, x, &roots_of_unity[i]);
+      fr_mul(&inverses_in[i], &tmp, x);
+    }
+    TRY(fr_batch_inv(inverses, inverses_in, q.length));
+    for (i=0; i < q.length; i++) {
+      fr_sub(&tmp2, &p->values[i], &y);
+      fr_mul(&tmp, &tmp2, &inverses[i]);
+      fr_mul(&tmp, &tmp, &roots_of_unity[i]);
+      fr_add(&q.values[m], &q.values[m], &tmp);
+    }
+  }
+  free(inverses_in);
+  free(inverses);
+  g1_lincomb(out, s->g1_values, p->values, p->length);
+  return C_KZG_OK;
 }
 
-C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s) {
-   return eval_poly_l(out, polynomial, z, s->fs);
+C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *p, const BLSFieldElement *x, const KZGSettings *s) {
+  fr_t tmp, *inverses_in, *inverses;
+  uint64_t i;
+  const uint64_t stride = s->fs->max_width / p->length;
+  const fr_t *roots_of_unity = s->fs->roots_of_unity;
+
+  TRY(new_fr_array(&inverses_in, p->length));
+  TRY(new_fr_array(&inverses, p->length));
+  for (i = 0; i < p->length; i++) {
+    if (fr_equal(x, &roots_of_unity[i * stride])) {
+      *out = p->values[i];
+      free(inverses_in);
+      free(inverses);
+      return C_KZG_OK;
+    }
+    fr_sub(&inverses_in[i], x, &roots_of_unity[i * stride]);
+  }
+  TRY(fr_batch_inv(inverses, inverses_in, p->length));
+
+  *out = fr_zero;
+  for (i = 0; i < p->length; i++) {
+    fr_mul(&tmp, &inverses[i], &roots_of_unity[i * stride]);
+    fr_mul(&tmp, &tmp, &p->values[i]);
+    fr_add(out, out, &tmp);
+  }
+  fr_from_uint64(&tmp, p->length);
+  fr_div(out, out, &tmp);
+  fr_pow(&tmp, x, p->length);
+  fr_sub(&tmp, &tmp, &fr_one);
+  fr_mul(out, out, &tmp);
+
+  free(inverses_in);
+  free(inverses);
+
+  return C_KZG_OK;
 }
-*/
