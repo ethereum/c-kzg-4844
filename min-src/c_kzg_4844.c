@@ -198,6 +198,29 @@ static void fr_inv(fr_t *out, const fr_t *a) {
 /** The G1 identity/infinity */
 static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
+/** The G1 generator */
+static const g1_t g1_generator = {{0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
+                                   0xedce6ecc21dbf440L, 0x120177419e0bfb75L},
+                                  {0xbaac93d50ce72271L, 0x8c22631a7918fd8eL, 0xdd595f13570725ceL, 0x51ac582950405194L,
+                                   0x0e1c8c3fad0059c0L, 0x0bbc3efc5008a26aL},
+                                  {0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL, 0x77ce585370525745L,
+                                   0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L}};
+
+/** The G2 generator */
+static const g2_t g2_generator = {{{{0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
+                                     0x6f67b7631863366bL, 0x058191924350bcd7L},
+                                    {0xa5a9c0759e23f606L, 0xaaa0c59dbccd60c3L, 0x3bb17e18e2867806L, 0x1b1ab6cc8541b367L,
+                                     0xc2b6ed0ef2158547L, 0x11922a097360edf3L}}},
+                                  {{{0x4c730af860494c4aL, 0x597cfa1f5e369c5aL, 0xe7e6856caa0a635aL, 0xbbefb5e96e0d495fL,
+                                     0x07d3a975f0ef25a2L, 0x0083fd8e7e80dae5L},
+                                    {0xadc0fc92df64b05dL, 0x18aa270a2b1461dcL, 0x86adac6a3be4eba0L, 0x79495c4ec93da33aL,
+                                     0xe7175850a43ccaedL, 0x0b2bc2a163de1bf2L}}},
+                                  {{{0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL, 0x77ce585370525745L,
+                                     0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L},
+                                    {0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
+                                     0x0000000000000000L, 0x0000000000000000L}}}};
+
+
 /**
  * Add or double G1 points.
  *
@@ -248,6 +271,32 @@ static void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
     g1_t bneg = *b;
     blst_p1_cneg(&bneg, true);
     blst_p1_add_or_double(out, a, &bneg);
+}
+
+/**
+ * Subtraction of G2 group elements.
+ *
+ * @param[out] out @p a - @p b
+ * @param[in]  a   A G2 group element
+ * @param[in]  b   The G2 group element to be subtracted
+ */
+static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
+    g2_t bneg = *b;
+    blst_p2_cneg(&bneg, true);
+    blst_p2_add_or_double(out, a, &bneg);
+}
+
+/**
+ * Multiply a G2 group element by a field element.
+ *
+ * @param[out] out [@p b]@p a
+ * @param[in]  a   The G2 group element
+ * @param[in]  b   The multiplier
+ */
+static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
+    blst_scalar s;
+    blst_scalar_from_fr(&s, b);
+    blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
 
@@ -571,6 +620,43 @@ static void free_kzg_settings(KZGSettings *ks) {
 }
 
 
+/**
+ * Perform pairings and test whether the outcomes are equal in G_T.
+ *
+ * Tests whether `e(a1, a2) == e(b1, b2)`.
+ *
+ * @param[in] a1 A G1 group point for the first pairing
+ * @param[in] a2 A G2 group point for the first pairing
+ * @param[in] b1 A G1 group point for the second pairing
+ * @param[in] b2 A G2 group point for the second pairing
+ * @retval true  The pairings were equal
+ * @retval false The pairings were not equal
+ */
+static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
+    blst_fp12 loop0, loop1, gt_point;
+    blst_p1_affine aa1, bb1;
+    blst_p2_affine aa2, bb2;
+
+    // As an optimisation, we want to invert one of the pairings,
+    // so we negate one of the points.
+    g1_t a1neg = *a1;
+    blst_p1_cneg(&a1neg, true);
+
+    blst_p1_to_affine(&aa1, &a1neg);
+    blst_p1_to_affine(&bb1, b1);
+    blst_p2_to_affine(&aa2, a2);
+    blst_p2_to_affine(&bb2, b2);
+
+    blst_miller_loop(&loop0, &aa2, &aa1);
+    blst_miller_loop(&loop1, &bb2, &bb1);
+
+    blst_fp12_mul(&gt_point, &loop0, &loop1);
+    blst_final_exp(&gt_point, &gt_point);
+
+    return blst_fp12_is_one(&gt_point);
+}
+
+
 C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
 
   uint64_t n2, i;
@@ -668,18 +754,94 @@ void vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uint64
   }
 }
 
-/*
-void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points) {
-  g1_linear_combination(out, points, scalars, num_points);
+/**
+ * Calculate a linear combination of G1 group elements.
+ *
+ * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
+ *
+ * @param[out] out    The resulting sum-product
+ * @param[in]  p      Array of G1 group elements, length @p len
+ * @param[in]  coeffs Array of field elements, length @p len
+ * @param[in]  len    The number of group/field elements
+ *
+ * For the benefit of future generations (since Blst has no documentation to speak of),
+ * there are two ways to pass the arrays of scalars and points into `blst_p1s_mult_pippenger()`.
+ *
+ * 1. Pass `points` as an array of pointers to the points, and pass `scalars` as an array of pointers to the scalars,
+ * each of length @p len.
+ * 2. Pass an array where the first element is a pointer to the contiguous array of points and the second is null, and
+ * similarly for scalars.
+ *
+ * We do the second of these to save memory here.
+ */
+void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
+    if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+        // Direct approach
+        g1_t tmp;
+        *out = g1_identity;
+        for (uint64_t i = 0; i < len; i++) {
+            g1_mul(&tmp, &p[i], &coeffs[i]);
+            blst_p1_add_or_double(out, out, &tmp);
+        }
+    } else {
+        // Blst's implementation of the Pippenger method
+        void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
+        blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
+        blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
+
+        // Transform the points to affine representation
+        const blst_p1 *p_arg[2] = {p, NULL};
+        blst_p1s_to_affine(p_affine, p_arg, len);
+
+        // Transform the field elements to 256-bit scalars
+        for (int i = 0; i < len; i++) {
+            blst_scalar_from_fr(&scalars[i], &coeffs[i]);
+        }
+
+        // Call the Pippenger implementation
+        const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+        const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+        blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
+
+        // Tidy up
+        free(scratch);
+        free(p_affine);
+        free(scalars);
+    }
+}
 
 void blob_to_kzg_commitment(KZGCommitment *out, const BLSFieldElement blob[], const KZGSettings *s) {
-  g1_linear_combination(out, s->secret_g1_l, blob, s->length);
+  g1_lincomb(out, s->g1_values, blob, s->length);
 }
 
-C_KZG_RET verify_kzg_proof(bool *out, const KZGCommitment *polynomial_kzg, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *kzg_proof, const KZGSettings *s) {
-  return check_proof_single(out, polynomial_kzg, kzg_proof, z, y, s);
+/**
+ * Check a KZG proof at a point against a commitment.
+ *
+ * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed value @p y at @p x, verify the claim.
+ *
+ * @param[out] out        `true` if the proof is valid, `false` if not
+ * @param[in]  commitment The commitment to a polynomial
+ * @param[in]  x          The point at which the proof is to be checked (opened)
+ * @param[in]  y          The claimed value of the polynomial at @p x
+ * @param[in]  proof      A proof of the value of the polynomial at the point @p x
+ * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @retval C_CZK_OK      All is well
+ */
+C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+                           const g1_t *proof, const KZGSettings *ks) {
+    g2_t x_g2, s_minus_x;
+    g1_t y_g1, commitment_minus_y;
+    g2_mul(&x_g2, &g2_generator, x);
+    g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
+    g1_mul(&y_g1, &g1_generator, y);
+    g1_sub(&commitment_minus_y, commitment, &y_g1);
+
+    *out = pairings_verify(&commitment_minus_y, &g2_generator, proof, &s_minus_x);
+
+    return C_KZG_OK;
 }
 
+/*
 C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s) {
   BLSFieldElement value;
   TRY(evaluate_polynomial_in_evaluation_form(&value, polynomial, z, s));
