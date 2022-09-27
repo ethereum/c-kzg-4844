@@ -117,19 +117,19 @@ C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettin
   TRY(new_fr_array(&inverses_in, p->length));
   TRY(new_fr_array(&inverses, p->length));
   for (i = 0; i < p->length; i++) {
-    if (fr_equal(x, &fs->expanded_roots_of_unity[i * stride])) {
+    if (fr_equal(x, &fs->bitrevp_roots_of_unity[i * stride])) {
       *out = p->values[i];
       free(inverses_in);
       free(inverses);
       return C_KZG_OK;
     }
-    fr_sub(&inverses_in[i], x, &fs->expanded_roots_of_unity[i * stride]);
+    fr_sub(&inverses_in[i], x, &fs->bitrevp_roots_of_unity[i * stride]);
   }
   TRY(fr_batch_inv(inverses, inverses_in, p->length));
 
   *out = fr_zero;
   for (i = 0; i < p->length; i++) {
-    fr_mul(&tmp, &inverses[i], &fs->expanded_roots_of_unity[i * stride]);
+    fr_mul(&tmp, &inverses[i], &fs->bitrevp_roots_of_unity[i * stride]);
     fr_mul(&tmp, &tmp, &p->values[i]);
     fr_add(out, out, &tmp);
   }
@@ -635,7 +635,7 @@ C_KZG_RET new_poly_with_coeffs(poly *out, const fr_t *coeffs, uint64_t length) {
 C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *ks) {
   TRY(new_poly_l(out, ks->length));
   if (out->length <= in->length) {
-    return fft_fr(out->values, in->coeffs, false, out->length, ks->fs);
+    fft_fr(out->values, in->coeffs, false, out->length, ks->fs);
   }
   else {
     int i;
@@ -649,8 +649,8 @@ C_KZG_RET new_poly_l_from_poly(poly_l *out, const poly *in, const KZGSettings *k
     }
     TRY(fft_fr(out->values, coeffs, false, out->length, ks->fs));
     free(coeffs);
-    return C_KZG_OK;
   }
+  return reverse_bit_order(out->values, sizeof(fr_t), out->length);
 }
 
 /**

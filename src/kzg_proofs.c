@@ -142,13 +142,13 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x, cons
   TRY(new_fr_array(&inverses, p->length));
 
   for (i = 0; i < q.length; i++) {
-    if (fr_equal(x, &ks->fs->expanded_roots_of_unity[i])) {
+    if (fr_equal(x, &ks->fs->bitrevp_roots_of_unity[i])) {
       m = i + 1;
       continue;
     }
     // (p_i - y) / (ω_i - x)
     fr_sub(&q.values[i], &p->values[i], y);
-    fr_sub(&inverses_in[i], &ks->fs->expanded_roots_of_unity[i], x);
+    fr_sub(&inverses_in[i], &ks->fs->bitrevp_roots_of_unity[i], x);
   }
 
   TRY(fr_batch_inv(inverses, inverses_in, q.length));
@@ -161,14 +161,14 @@ C_KZG_RET compute_proof_single_l(g1_t *out, const poly_l *p, const fr_t *x, cons
     for (i=0; i < q.length; i++) {
       if (i == m) continue;
       // (p_i - y) * ω_i / (x * (x - ω_i))
-      fr_sub(&tmp, x, &ks->fs->expanded_roots_of_unity[i]);
+      fr_sub(&tmp, x, &ks->fs->bitrevp_roots_of_unity[i]);
       fr_mul(&inverses_in[i], &tmp, x);
     }
     TRY(fr_batch_inv(inverses, inverses_in, q.length));
     for (i=0; i < q.length; i++) {
       fr_sub(&tmp2, &p->values[i], y);
       fr_mul(&tmp, &tmp2, &inverses[i]);
-      fr_mul(&tmp, &tmp, &ks->fs->expanded_roots_of_unity[i]);
+      fr_mul(&tmp, &tmp, &ks->fs->bitrevp_roots_of_unity[i]);
       fr_add(&q.values[m], &q.values[m], &tmp);
     }
   }
@@ -318,8 +318,9 @@ C_KZG_RET new_kzg_settings(KZGSettings *ks, const g1_t *secret_g1, const g2_t *s
     }
     ks->fs = fs;
 
-    // Add Lagrange form (and return its success)
-    return fft_g1(ks->secret_g1_l, ks->secret_g1, true, length, fs);
+    // Add Lagrange form
+    TRY(fft_g1(ks->secret_g1_l, ks->secret_g1, true, length, fs));
+    return reverse_bit_order(ks->secret_g1_l, sizeof(g1_t), length);
 }
 
 /**

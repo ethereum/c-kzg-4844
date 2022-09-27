@@ -20,8 +20,10 @@
  * Code shared between the FFTs over field elements and FFTs over G1 group elements.
  */
 
+#include <string.h> // memcpy
 #include "control.h"
 #include "c_kzg_alloc.h"
+#include "utility.h" // reverse_bit_order
 
 /**
  * The first 32 roots of unity in the finite field F_r.
@@ -131,6 +133,7 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     // Allocate space for the roots of unity
     TRY(new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1));
     TRY(new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1));
+    TRY(new_fr_array(&fs->bitrevp_roots_of_unity, fs->max_width));
 
     // Populate the roots of unity
     TRY(expand_root_of_unity(fs->expanded_roots_of_unity, &fs->root_of_unity, fs->max_width));
@@ -139,6 +142,10 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     for (uint64_t i = 0; i <= fs->max_width; i++) {
         fs->reverse_roots_of_unity[i] = fs->expanded_roots_of_unity[fs->max_width - i];
     }
+
+    // Permute the roots of unity
+    memcpy(fs->bitrevp_roots_of_unity, fs->expanded_roots_of_unity, sizeof(fr_t) * fs->max_width);
+    TRY(reverse_bit_order(fs->bitrevp_roots_of_unity, sizeof(fr_t), fs->max_width));
 
     return C_KZG_OK;
 }
@@ -151,6 +158,7 @@ C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
 void free_fft_settings(FFTSettings *fs) {
     free(fs->expanded_roots_of_unity);
     free(fs->reverse_roots_of_unity);
+    free(fs->bitrevp_roots_of_unity);
     fs->max_width = 0;
 }
 
@@ -158,7 +166,6 @@ void free_fft_settings(FFTSettings *fs) {
 
 #include "../inc/acutest.h"
 #include "test_util.h"
-#include "utility.h"
 
 #define NUM_ROOTS 32
 

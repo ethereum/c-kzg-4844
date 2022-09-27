@@ -55,6 +55,7 @@ typedef struct {
     fr_t root_of_unity;            /**< The root of unity used to generate the lists in the structure. */
     fr_t *expanded_roots_of_unity; /**< Ascending powers of the root of unity, size `width + 1`. */
     fr_t *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
+    fr_t *bitrevp_roots_of_unity;  /**< Powers of the root of unity in bit-reversal permutation, size `width`. */
 } FFTSettings;
 
 C_KZG_RET new_fft_settings(FFTSettings *out, unsigned int max_scale);
@@ -87,9 +88,9 @@ typedef struct {
 } poly;
 
 typedef struct {
-    fr_t *values;    /**< `values[i]` is value of the polynomial at `ω^i`. */
+    fr_t *values;    /**< `values[i]` is value of the polynomial at `ω^brp(i)`. */
     uint64_t length; /**< One more than the polynomial's degree */
-} poly_l; // Lagrange form
+} poly_l; // Lagrange form, under bit-reversal permutation
 
 void eval_poly(fr_t *out, const poly *p, const fr_t *x);
 C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs);
@@ -117,7 +118,7 @@ void fr_vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uin
 typedef struct {
     const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
     g1_t *secret_g1;       /**< G1 group elements from the trusted setup */
-    g1_t *secret_g1_l;     /**< secret_g1 in Lagrange form */
+    g1_t *secret_g1_l;     /**< secret_g1 in Lagrange form, in bit-reversal permutation */
     g2_t *secret_g2;       /**< G2 group elements from the trusted setup */
     uint64_t length;       /**< The number of elements in secret_g1 and secret_g2 */
 } KZGSettings;
