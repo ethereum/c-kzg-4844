@@ -937,6 +937,16 @@ C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, con
     return C_KZG_OK;
 }
 
+C_KZG_RET alloc_polynomial(PolynomialEvalForm *out, uint64_t length) {
+  out->length = length;
+  return new_fr_array(&out->values, length);
+}
+
+void free_polynomial(PolynomialEvalForm *p) {
+  p->length = 0;
+  free(p->values);
+}
+
 /**
  * Compute KZG proof for polynomial in Lagrange form at position x
  *
@@ -959,8 +969,7 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *p, const BL
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
   uint64_t i, m = 0;
 
-  q.length = p->length;
-  TRY(new_fr_array(&q.values, q.length));
+  TRY(alloc_polynomial(&q, p->length));
 
   fr_t *inverses_in, *inverses;
 

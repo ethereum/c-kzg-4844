@@ -44,8 +44,6 @@ typedef fr_t BLSFieldElement;
  * @warning In the case of @p C_KZG_OK or @p C_KZG_BADARGS, the caller can assume that all memory allocated by the
  * called routines has been deallocated. However, in the case of @p C_KZG_ERROR or @p C_KZG_MALLOC being returned, these
  * are unrecoverable and memory may have been leaked.
- *
- * @todo Check that memory is not leaked anywhere in the case of C_KZG_BADARGS.
  */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
@@ -53,7 +51,6 @@ typedef enum {
     C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
-
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
@@ -65,7 +62,6 @@ typedef struct {
     fr_t *roots_of_unity;          /**< Powers of the root of unity in bit-reversal permutation, size `width`. */
 } FFTSettings;
 
-
 /**
  * Stores the setup and parameters needed for computing KZG proofs.
  */
@@ -75,7 +71,6 @@ typedef struct {
     g2_t *g2_values;       /**< G2 group elements from the trusted setup */
     uint64_t length;       /**< The number of elements in g1_values */
 } KZGSettings;
-
 
 /**
  * Lagrange form polynomial, with values under the bit-reversal permutation
