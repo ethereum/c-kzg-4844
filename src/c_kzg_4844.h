@@ -42,6 +42,8 @@ void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors, const
 
 void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points);
 
+void blob_to_kzg_commitment(KZGCommitment *out, const BLSFieldElement blob[], const KZGSettings *s);
+
 void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes);
 
 C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s);
