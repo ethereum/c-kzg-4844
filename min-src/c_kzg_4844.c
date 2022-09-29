@@ -753,6 +753,15 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 
+void BLSFieldElement_from_uint64s(BLSFieldElement *out, const uint64_t in[4]) {
+  blst_fr_from_uint64(out, in);
+}
+
+void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
+  blst_uint64_from_fr(out, in);
+}
+
+
 C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
 
   uint64_t n2, i;

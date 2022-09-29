@@ -39,6 +39,14 @@ typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
 
 /**
+ * BLSFieldElements are communicated directly to/from clients,
+ * so we need to expose the functions for translating between this
+ * type and uint256. BLST represents uint256 as uint64[4].
+ */
+void BLSFieldElement_from_uint64s(BLSFieldElement *out, const uint64_t[4]);
+void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement*);
+
+/**
  * The common return type for all routines in which something can go wrong.
  *
  * @warning In the case of @p C_KZG_OK or @p C_KZG_BADARGS, the caller can assume that all memory allocated by the
