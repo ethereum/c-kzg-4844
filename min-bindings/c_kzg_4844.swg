@@ -55,6 +55,21 @@
 #endif
 }
 
+#if defined(SWIGPYTHON)
+%typemap(in) FILE* {
+  if (PyUnicode_Check($input)) {
+    $1 = fopen(PyUnicode_AsUTF8($input), "r");
+    if ($1 == NULL) {
+      PyErr_SetString(PyExc_RuntimeError, "failed to load file");
+      SWIG_fail;
+    }
+  } else {
+    PyErr_SetString(PyExc_TypeError, "expected bytes (utf-8 encoded file path)");
+    SWIG_fail;
+  }
+}
+#endif
+
 %array_class(scalar_t, scalars)
 %array_class(BLSFieldElement, BLSFieldElements)
 %pointer_class(PolynomialEvalForm, PolynomialEvalFormPtr)
