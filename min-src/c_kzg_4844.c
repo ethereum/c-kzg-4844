@@ -814,28 +814,10 @@ void free_trusted_setup(KZGSettings *s) {
   free_kzg_settings(s);
 }
 
-/**
- * Exponentiation of a field element.
- *
- * Uses square and multiply for log(@p n) performance.
- *
- * @remark A 64-bit exponent is sufficient for our needs here.
- *
- * @param[out] out @p a raised to the power of @p n
- * @param[in]  x   The field element to be exponentiated
- * @param[in]  n   The exponent
- */
 void compute_powers(fr_t out[], const fr_t *x, uint64_t n) {
-    fr_t tmp = *x;
-    *out = fr_one;
-
-    while (true) {
-        if (n & 1) {
-            fr_mul(out, out, &tmp);
-        }
-        if ((n >>= 1) == 0) break;
-        fr_sqr(&tmp, &tmp);
-    }
+    uint64_t i = 0;
+    out[i] = fr_one;
+    while (++i < n) fr_mul(&out[i], &out[i-1], x);
 }
 
 void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes) {
