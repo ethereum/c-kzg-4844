@@ -15,7 +15,7 @@ inc/blst_aux.h*
 .vscode/
 *.json
 .clang-format
-bindings/*/_*.so
-bindings/python/ckzg.py
-bindings/python/c_kzg_wrap.c
+*bindings/*/_*.so
+*bindings/python/ckzg.py
+*bindings/python/*_wrap.c
 __pycache__
