@@ -29,9 +29,8 @@ blobs_sedes = ssz.List(ssz.Vector(ssz.uint256, BLOB_SIZE), MAX_BLOBS_PER_BLOCK)
 kzg_commitments_sedes = ssz.List(ssz.bytes48, MAX_BLOBS_PER_BLOCK)
 
 # Commit to a few random blobs
-num_blobs = 3
-blobs = [ckzg.BLSFieldElements(BLOB_SIZE) for _ in range(num_blobs)]
-for i in range(num_blobs):
+blobs = [ckzg.BLSFieldElements(BLOB_SIZE) for _ in range(3)]
+for i in range(len(blobs)):
     for j in range(BLOB_SIZE):
         blobs[i][j] = ckzg.blst_fr.from_int(random.randrange(0, 2**256))
 kzg_commitments = [ckzg.blob_to_kzg_commitment(blob.cast(), ts) for blob in blobs]
@@ -54,24 +53,33 @@ hashed = ssz.hash.hashlib.sha256(encoded_blobs + encoded_commitments).digest()
 h = ckzg.bytes.frompybytes(hashed)
 
 r = ckzg.bytes_to_bls_field(h.cast())
-r_powers = ckzg.BLSFieldElements(len(kzg_commitments))
-ckzg.compute_powers(r_powers.cast(), r, len(kzg_commitments))
+r_powers = ckzg.BLSFieldElements(len(blobs))
+ckzg.compute_powers(r_powers.cast(), r, len(blobs))
 
-values = ckzg.BLSFieldElements(len(r_powers))
+vectors = ckzg.BLSFieldVectors(len(blobs))
+for i, v in enumerate(blobs):
+    vectors[i] = v.cast()
 
-# ckzg.vector_lincomb(values.cast(), blobs
+ret, pptr = ckzg.alloc_polynomial(len(blobs))
+assert ret == 0
+aggregated_poly = ckzg.PolynomialEvalFormPtr_frompointer(pptr).value()
 
-#     aggregated_poly = Polynomial(vector_lincomb(blobs, r_powers))
-#
-#     # Compute commitment to aggregated polynomial
-#     aggregated_poly_commitment = KZGCommitment(g1_lincomb(kzg_commitments, r_powers))
-#
-#     return aggregated_poly, aggregated_poly_commitment
+# ckzg.vector_lincomb(
+#         aggregated_poly.values,
+#         vectors.cast(),
+#         r_powers.cast(),
+#         len(blobs),
+#         BLOB_SIZE)
 
+#aggregated_poly_commitment =
+#ckzg.g1_lincomb(kzg_commitments
+
+#KZGCommitment(g1_lincomb(kzg_commitments, r_powers))
 
 print('Tests passed')
 
 def cleanup():
+    ckzg.free_polynomial(pptr)
     ckzg.free_trusted_setup(ts)
 
 atexit.register(cleanup)

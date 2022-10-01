@@ -70,8 +70,14 @@
 }
 #endif
 
+%{
+typedef BLSFieldElement* BLSFieldVector;
+%}
+typedef BLSFieldElement* BLSFieldVector;
+
 %array_class(uint8_t, bytes)
 %array_class(BLSFieldElement, BLSFieldElements)
+%array_class(BLSFieldVector, BLSFieldVectors)
 %pointer_class(PolynomialEvalForm, PolynomialEvalFormPtr)
 
 %include "../min-src/c_kzg_4844.h"
