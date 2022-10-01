@@ -1,6 +1,6 @@
 INCLUDE_DIRS = .. ../../min-src ../../inc
 
-test: tests.cs libckzg.so
+test: tests.cs libckzg.so ckzg.cs
 	mcs -langversion:5 -optimize+ tests.cs ckzg.cs -r:System.Numerics.dll
 	mono tests.exe
 
