@@ -108,7 +108,7 @@ void free_poly_l(poly_l *p);
 // kzg_proofs.c
 //
 
-void fr_vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uint64_t n, uint64_t m);
+void fr_vector_lincomb(fr_t out[], const fr_t *vectors[], const fr_t *scalars, uint64_t n, uint64_t m);
 
 /**
  * Stores the setup and parameters needed for computing KZG proofs.

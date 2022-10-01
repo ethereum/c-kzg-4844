@@ -69,7 +69,7 @@ void free_trusted_setup(KZGSettings *s) {
 
 void compute_powers(BLSFieldElement out[], const BLSFieldElement *x, uint64_t n) { fr_pow(out, x, n); }
 
-void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors, const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len) {
+void vector_lincomb(BLSFieldElement out[], const BLSFieldElement[] *vectors, const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len) {
   fr_vector_lincomb(out, vectors, scalars, num_vectors, vector_len);
 }
 

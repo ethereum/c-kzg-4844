@@ -38,7 +38,7 @@ void free_trusted_setup(KZGSettings *s);
 
 void compute_powers(BLSFieldElement out[], const BLSFieldElement *x, uint64_t n);
 
-void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors, const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len);
+void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors[], const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len);
 
 void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points);
 
