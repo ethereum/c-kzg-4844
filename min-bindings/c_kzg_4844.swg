@@ -77,6 +77,7 @@
 %include "../min-src/c_kzg_4844.h"
 %include "../inc/blst.h"
 
+#if defined(SWIGPYTHON)
 %pythoncode %{
 # Helper functions
 
@@ -121,3 +122,4 @@ def _frompybytes(b):
 
 bytes.frompybytes = _frompybytes
 %}
+#endif
