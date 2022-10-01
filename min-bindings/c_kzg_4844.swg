@@ -80,7 +80,7 @@
 %pythoncode %{
 # Helper functions
 
-def fr_from_int(x):
+def _fr_from_int(x):
     r = []
     while x > 0:
         r.append(x % 2**64)
@@ -90,7 +90,9 @@ def fr_from_int(x):
         r.append(0)
     return BLSFieldElement_from_uint64s(tuple(r))
 
-def int_from_fr(fr):
+blst_fr.from_int = _fr_from_int
+
+def _int_from_fr(fr):
     digits = uint64s_from_BLSFieldElement(fr)
     res, mult = 0, 1
     for x in digits:
@@ -98,7 +100,9 @@ def int_from_fr(fr):
         mult *= 2**64
     return res
 
-def poly_from_values(values):
+blst_fr.__int__ = _int_from_fr
+
+def _poly_from_values(values):
     ret, pptr = alloc_polynomial(len(values))
     assert ret == 0
     p = PolynomialEvalFormPtr_frompointer(pptr).value()
@@ -106,4 +110,14 @@ def poly_from_values(values):
     for i, c in enumerate(values):
         pvalues[i] = fr_from_int(c)
     return p
+
+PolynomialEvalForm.from_values = _poly_from_values
+
+def _frompybytes(b):
+    h = bytes(len(b))
+    for i, byte in enumerate(b):
+        h[i] = byte
+    return h
+
+bytes.frompybytes = _frompybytes
 %}

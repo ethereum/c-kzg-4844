@@ -10,10 +10,10 @@ n = 11
 p = 1
 
 powers = ckzg.BLSFieldElements(n)
-ckzg.compute_powers(powers.cast(), ckzg.fr_from_int(x), n)
+ckzg.compute_powers(powers.cast(), ckzg.blst_fr.from_int(x), n)
 
 for i in range(n):
-    assert p == ckzg.int_from_fr(powers[i])
+    assert p == int(powers[i])
     p *= x
     p %= 2**256
 
@@ -33,13 +33,13 @@ num_blobs = 3
 blobs = [ckzg.BLSFieldElements(BLOB_SIZE) for _ in range(num_blobs)]
 for i in range(num_blobs):
     for j in range(BLOB_SIZE):
-        blobs[i][j] = ckzg.fr_from_int(random.randrange(0, 2**256))
+        blobs[i][j] = ckzg.blst_fr.from_int(random.randrange(0, 2**256))
 kzg_commitments = [ckzg.blob_to_kzg_commitment(blob.cast(), ts) for blob in blobs]
 
 # Compute polynomial commitments for these blobs
 # We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
 
-blobs_as_ints = [[ckzg.int_from_fr(frs[i]) for i in range(BLOB_SIZE)] for frs in blobs]
+blobs_as_ints = [[int(frs[i]) for i in range(BLOB_SIZE)] for frs in blobs]
 kzg_commitments_as_bytes = []
 for c in kzg_commitments:
     a = ckzg.bytes(48)
@@ -50,9 +50,8 @@ for c in kzg_commitments:
 encoded_blobs = ssz.encode(blobs_as_ints, blobs_sedes)
 encoded_commitments = ssz.encode(kzg_commitments_as_bytes, kzg_commitments_sedes)
 hashed = ssz.hash.hashlib.sha256(encoded_blobs + encoded_commitments).digest()
-h = ckzg.bytes(len(hashed))
-for i, byte in enumerate(hashed):
-    h[i] = byte
+
+h = ckzg.bytes.frompybytes(hashed)
 
 r = ckzg.bytes_to_bls_field(h.cast())
 r_powers = ckzg.BLSFieldElements(len(kzg_commitments))
