@@ -833,15 +833,14 @@ void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
 /**
  * Compute linear combinations of a sequence of vectors with some scalars
  */
-void vector_lincomb(fr_t out[], const fr_t *vectors, const fr_t *scalars, uint64_t n, uint64_t m) {
-  fr_t (*vectors_ptr)[n][m] = (fr_t (*)[n][m]) vectors;
+void vector_lincomb(fr_t out[], const fr_t *vectors[], const fr_t *scalars, uint64_t n, uint64_t m) {
   fr_t tmp;
   uint64_t i, j;
   for (j = 0; j < m; j++)
     out[j] = fr_zero;
   for (i = 0; i < n; i++) {
     for (j = 0; j < m; j++) {
-      fr_mul(&tmp, &scalars[i], &((*vectors_ptr)[i][j]));
+      fr_mul(&tmp, &scalars[i], &vectors[i][j]);
       fr_add(&out[j], &out[j], &tmp);
     }
   }
