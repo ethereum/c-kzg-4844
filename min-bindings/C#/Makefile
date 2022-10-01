@@ -1,10 +1,10 @@
 INCLUDE_DIRS = .. ../../min-src ../../inc
 
-test: tests.cs ckzg.dll.so
+test: tests.cs libckzg.so
 	mcs -langversion:5 -optimize+ tests.cs ckzg.cs -r:System.Numerics.dll
-	./tests.exe
+	mono tests.exe
 
-ckzg.dll.so: c_kzg_4844_wrap.c ../../min-src/c_kzg_4844.o ../../lib/libblst.a
+libckzg.so: c_kzg_4844_wrap.c ../../min-src/c_kzg_4844.o ../../lib/libblst.a
 	clang -O -Wall -shared -fPIC -Wl,-Bsymbolic -I${INCLUDE_PY} ${addprefix -I,${INCLUDE_DIRS}} -o $@ $^
 
 c_kzg_4844_wrap.c ckzg.cs: ../c_kzg_4844.swg
