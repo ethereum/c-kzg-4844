@@ -1,4 +1,4 @@
-%module ckzg
+%module ckzg_swig
 %{
 #include "c_kzg_4844.h"
 %}

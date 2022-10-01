@@ -16,6 +16,11 @@ inc/blst_aux.h*
 *.json
 .clang-format
 *bindings/*/_*.so
+*bindings/*/lib*.so
+*bindings/python/ckzg_swig.py
 *bindings/python/ckzg.py
+*bindings/C#/ckzg_swig.cs
 *bindings/python/*_wrap.c
+*bindings/C#/*_wrap.c
+*bindings/C#/*.exe
 __pycache__
