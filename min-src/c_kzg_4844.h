@@ -32,7 +32,6 @@
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
-typedef blst_scalar scalar_t; /**< Internal scalar type */
 
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
@@ -41,7 +40,7 @@ typedef fr_t BLSFieldElement;
 /**
  * KZGCommitment and KZGProof can be recovered as 48 bytes
  */
-void Bytes48_from_G1(uint8_t out[48], const g1_t*);
+void bytes_from_G1(uint8_t out[48], const g1_t*);
 
 /**
  * BLSFieldElements are communicated directly to/from clients,
@@ -105,7 +104,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in);
 
 void free_trusted_setup(KZGSettings *s);
 
-void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes);
+void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]);
 
 void vector_lincomb(BLSFieldElement out[], const BLSFieldElement *vectors, const BLSFieldElement *scalars, uint64_t num_vectors, uint64_t vector_len);
 

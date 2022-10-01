@@ -753,7 +753,7 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 
-void Bytes48_from_G1(uint8_t out[48], const g1_t *in) {
+void bytes_from_G1(uint8_t out[48], const g1_t *in) {
   blst_p1_compress(out, in);
 }
 
@@ -824,8 +824,10 @@ void compute_powers(fr_t out[], const fr_t *x, uint64_t n) {
     while (++i < n) fr_mul(&out[i], &out[i-1], x);
 }
 
-void bytes_to_bls_field(BLSFieldElement *out, const scalar_t *bytes) {
-  blst_fr_from_scalar(out, bytes);
+void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
+  blst_scalar tmp;
+  blst_scalar_from_lendian(&tmp, bytes);
+  blst_fr_from_scalar(out, &tmp);
 }
 
 /**
