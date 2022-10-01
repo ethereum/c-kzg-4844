@@ -753,6 +753,10 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 
+void Bytes48_from_G1(uint8_t out[48], const g1_t *in) {
+  blst_p1_compress(out, in);
+}
+
 void BLSFieldElement_from_uint64s(BLSFieldElement *out, const uint64_t in[4]) {
   blst_fr_from_uint64(out, in);
 }

@@ -71,6 +71,7 @@
 #endif
 
 %array_class(scalar_t, scalars)
+%array_class(uint8_t, bytes)
 %array_class(BLSFieldElement, BLSFieldElements)
 %pointer_class(PolynomialEvalForm, PolynomialEvalFormPtr)
 

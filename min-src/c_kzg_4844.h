@@ -39,6 +39,11 @@ typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
 
 /**
+ * KZGCommitment and KZGProof can be recovered as 48 bytes
+ */
+void Bytes48_from_G1(uint8_t out[48], const g1_t*);
+
+/**
  * BLSFieldElements are communicated directly to/from clients,
  * so we need to expose the functions for translating between this
  * type and uint256. BLST represents uint256 as uint64[4].
