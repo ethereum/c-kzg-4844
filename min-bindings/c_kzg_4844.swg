@@ -76,3 +76,34 @@
 
 %include "../min-src/c_kzg_4844.h"
 %include "../inc/blst.h"
+
+%pythoncode %{
+# Helper functions
+
+def fr_from_int(x):
+    r = []
+    while x > 0:
+        r.append(x % 2**64)
+        x //= 2**64
+    assert len(r) <= 4
+    while len(r) < 4:
+        r.append(0)
+    return BLSFieldElement_from_uint64s(tuple(r))
+
+def int_from_fr(fr):
+    digits = uint64s_from_BLSFieldElement(fr)
+    res, mult = 0, 1
+    for x in digits:
+        res += mult * x
+        mult *= 2**64
+    return res
+
+def poly_from_values(values):
+    ret, pptr = alloc_polynomial(len(values))
+    assert ret == 0
+    p = PolynomialEvalFormPtr_frompointer(pptr).value()
+    pvalues = BLSFieldElements_frompointer(p.values)
+    for i, c in enumerate(values):
+        pvalues[i] = fr_from_int(c)
+    return p
+%}
