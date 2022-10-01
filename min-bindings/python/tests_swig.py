@@ -1,5 +1,5 @@
 import atexit
-import ckzg
+import ckzg_swig as ckzg
 import random
 import ssz
 
