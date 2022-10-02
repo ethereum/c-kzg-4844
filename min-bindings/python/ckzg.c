@@ -23,17 +23,17 @@ static void free_KZGSettings(PyObject *c) {
 }
 
 static PyObject* bytes_to_bls_field_wrap(PyObject *self, PyObject *args) {
-  PyBytesObject *pybytes;
+  PyObject *pybytes;
 
   if (!PyArg_ParseTuple(args, "S", &pybytes) ||
-      PyBytes_Size((PyObject*)pybytes) != 32)
+      PyBytes_Size(pybytes) != 32)
     return PyErr_Format(PyExc_ValueError, "expected 32 bytes");
 
   BLSFieldElement *out = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
 
   if (out == NULL) return PyErr_NoMemory();
 
-  bytes_to_bls_field(out, (const uint8_t*)PyBytes_AsString((PyObject*)pybytes));
+  bytes_to_bls_field(out, (const uint8_t*)PyBytes_AsString(pybytes));
 
   return PyCapsule_New(out, "BLSFieldElement", free_BLSFieldElement);
 }
@@ -46,12 +46,12 @@ static PyObject* int_from_bls_field(PyObject *self, PyObject *args) {
     return PyErr_Format(PyExc_ValueError, "expected a BLSFieldElement capsule");
 
   uint64_t u[4];
-  uint64s_from_BLSFieldElement(u, PyCapsule_GetPointer(c, PyCapsule_GetName(c)));
+  uint64s_from_BLSFieldElement(u, PyCapsule_GetPointer(c, "BLSFieldElement"));
 
   PyObject *out = PyLong_FromUnsignedLong(0);
   PyObject *mult = PyLong_FromUnsignedLong(1);
   PyObject *two64 = PyNumber_Power(PyLong_FromUnsignedLong(2), PyLong_FromUnsignedLong(64), Py_None);
-  for (int i = 0; i < 4; i++) {
+  for (uint8_t i = 0; i < 4; i++) {
     out = PyNumber_Add(out, PyNumber_Multiply(mult, PyLong_FromUnsignedLong(u[i])));
     mult = PyNumber_Multiply(mult, two64);
   }
@@ -71,7 +71,6 @@ static PyObject* alloc_polynomial_wrap(PyObject *self, PyObject *args) {
   if (p == NULL) return PyErr_NoMemory();
 
   Py_ssize_t n = PySequence_Length(a);
-  p->length = n;
 
   if (alloc_polynomial(p, n) != C_KZG_OK)
     return PyErr_Format(PyExc_RuntimeError, "error allocating polynomial");
@@ -84,7 +83,7 @@ static PyObject* alloc_polynomial_wrap(PyObject *self, PyObject *args) {
       free(p);
       return PyErr_Format(PyExc_ValueError, "expected BLSFieldElement capsules");
     }
-    p->values[i] = *(BLSFieldElement*)PyCapsule_GetPointer(e, "BLSFieldElement");
+    memcpy(&p->values[i], PyCapsule_GetPointer(e, "BLSFieldElement"), sizeof(BLSFieldElement));
   }
 
   return PyCapsule_New(p, "PolynomialEvalForm", free_PolynomialEvalForm);
@@ -132,7 +131,7 @@ static PyObject* compute_powers_wrap(PyObject *self, PyObject *args) {
       free(a);
       return PyErr_NoMemory();
     }
-    *f = a[i];
+    memcpy(f, &a[i], sizeof(BLSFieldElement));
     PyList_SetItem(out, i, PyCapsule_New(f, "BLSFieldElement", free_BLSFieldElement));
   }
 
@@ -151,8 +150,10 @@ static PyObject* load_trusted_setup_wrap(PyObject *self, PyObject *args) {
 
   if (s == NULL) return PyErr_NoMemory();
 
-  if (load_trusted_setup(s, fopen(PyUnicode_AsUTF8(f), "r")) != C_KZG_OK)
+  if (load_trusted_setup(s, fopen(PyUnicode_AsUTF8(f), "r")) != C_KZG_OK) {
+    free(s);
     return PyErr_Format(PyExc_RuntimeError, "error loading trusted setup");
+  }
 
   return PyCapsule_New(s, "KZGSettings", free_KZGSettings);
 }
@@ -180,12 +181,15 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
       return PyErr_Format(PyExc_ValueError, "expected BLSFieldElement capsules");
     }
     // TODO: could avoid copying if blob_to_kzg_commitment expected pointers instead of an array
-    blob[i] = *(BLSFieldElement*)PyCapsule_GetPointer(e, "BLSFieldElement");
+    memcpy(&blob[i], PyCapsule_GetPointer(e, "BLSFieldElement"), sizeof(BLSFieldElement));
   }
 
   KZGCommitment *k = (KZGCommitment*)malloc(sizeof(KZGCommitment));
 
-  if (k == NULL) return PyErr_NoMemory();
+  if (k == NULL) {
+    free(blob);
+    return PyErr_NoMemory();
+  }
 
   blob_to_kzg_commitment(k, blob, PyCapsule_GetPointer(c, "KZGSettings"));
 
@@ -285,7 +289,7 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
       free(r);
       return PyErr_NoMemory();
     }
-    *f = r[j];
+    memcpy(f, &r[j], sizeof(BLSFieldElement));
     PyList_SetItem(out, j, PyCapsule_New(f, "BLSFieldElement", free_BLSFieldElement));
   }
 
@@ -331,17 +335,21 @@ static PyObject* g1_lincomb_wrap(PyObject *self, PyObject *args) {
   for (i = 0; i < n; i++) {
     tmp = PySequence_GetItem(gs, i);
     if (!PyCapsule_IsValid(tmp, "G1")) {
-      free(scalars); free(points); free(k);
+      free(scalars);
+      free(points);
+      free(k);
       return PyErr_Format(PyExc_ValueError, "expected group elements");
     }
-    points[i] = *(KZGCommitment*)(PyCapsule_GetPointer(tmp, "G1"));
+    memcpy(&points[i], PyCapsule_GetPointer(tmp, "G1"), sizeof(KZGCommitment));
 
     tmp = PySequence_GetItem(fs, i);
     if (!PyCapsule_IsValid(tmp, "BLSFieldElement")) {
-      free(scalars); free(points); free(k);
+      free(scalars);
+      free(points);
+      free(k);
       return PyErr_Format(PyExc_ValueError, "expected field elements");
     }
-    scalars[i] = *(BLSFieldElement*)(PyCapsule_GetPointer(tmp, "BLSFieldElement"));
+    memcpy(&scalars[i], PyCapsule_GetPointer(tmp, "BLSFieldElement"), sizeof(BLSFieldElement));
   }
 
   g1_lincomb(k, points, scalars, n);
@@ -393,7 +401,6 @@ static PyObject* evaluate_polynomial_in_evaluation_form_wrap(PyObject *self, PyO
         PyCapsule_GetPointer(p, "PolynomialEvalForm"),
         PyCapsule_GetPointer(x, "BLSFieldElement"),
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-  printf("f34\n");
     free(y);
     return PyErr_Format(PyExc_RuntimeError, "evaluate_polynomial_in_evaluation_form failed");
   }
@@ -404,7 +411,7 @@ static PyObject* evaluate_polynomial_in_evaluation_form_wrap(PyObject *self, PyO
 static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
   PyObject *c, *x, *y, *p, *s;
 
-  if (!PyArg_UnpackTuple(args, "evaluate_polynomial_in_evaluation_form", 5, 5, &c, &x, &y, &p, &s) ||
+  if (!PyArg_UnpackTuple(args, "verify_kzg_proof", 5, 5, &c, &x, &y, &p, &s) ||
       !PyCapsule_IsValid(c, "G1") ||
       !PyCapsule_IsValid(x, "BLSFieldElement") ||
       !PyCapsule_IsValid(y, "BLSFieldElement") ||
