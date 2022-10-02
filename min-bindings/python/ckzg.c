@@ -444,7 +444,7 @@ static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK)
     return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed");
 
-  return out ? Py_True : Py_False;
+  if (out) Py_RETURN_TRUE; else Py_RETURN_FALSE;
 }
 
 static PyMethodDef ckzgmethods[] = {
