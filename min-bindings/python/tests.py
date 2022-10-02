@@ -64,4 +64,12 @@ x = ckzg.bytes_to_bls_field(hashed_polynomial_and_commitment)
 
 proof = ckzg.compute_kzg_proof(aggregated_poly, x, ts)
 
+# Verify proof
+
+y = ckzg.evaluate_polynomial_in_evaluation_form(aggregated_poly, x, ts)
+
+assert ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, proof, ts)
+
+# Verification fails at wrong value
+
 print('Tests passed')

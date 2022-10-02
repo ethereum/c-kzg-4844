@@ -376,6 +376,56 @@ static PyObject* compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
   return PyCapsule_New(k, "G1", free_G1);
 }
 
+static PyObject* evaluate_polynomial_in_evaluation_form_wrap(PyObject *self, PyObject *args) {
+  PyObject *p, *x, *s;
+
+  if (!PyArg_UnpackTuple(args, "evaluate_polynomial_in_evaluation_form", 3, 3, &p, &x, &s) ||
+      !PyCapsule_IsValid(p, "PolynomialEvalForm") ||
+      !PyCapsule_IsValid(x, "BLSFieldElement") ||
+      !PyCapsule_IsValid(s, "KZGSettings"))
+    return PyErr_Format(PyExc_ValueError, "expected polynomial, field element, trusted setup");
+
+  BLSFieldElement *y = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
+
+  if (y == NULL) return PyErr_NoMemory();
+
+  if (evaluate_polynomial_in_evaluation_form(y,
+        PyCapsule_GetPointer(p, "PolynomialEvalForm"),
+        PyCapsule_GetPointer(x, "BLSFieldElement"),
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+  printf("f34\n");
+    free(y);
+    return PyErr_Format(PyExc_RuntimeError, "evaluate_polynomial_in_evaluation_form failed");
+  }
+
+  return PyCapsule_New(y, "BLSFieldElement", free_BLSFieldElement);
+}
+
+static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
+  PyObject *c, *x, *y, *p, *s;
+
+  if (!PyArg_UnpackTuple(args, "evaluate_polynomial_in_evaluation_form", 5, 5, &c, &x, &y, &p, &s) ||
+      !PyCapsule_IsValid(c, "G1") ||
+      !PyCapsule_IsValid(x, "BLSFieldElement") ||
+      !PyCapsule_IsValid(y, "BLSFieldElement") ||
+      !PyCapsule_IsValid(p, "G1") ||
+      !PyCapsule_IsValid(s, "KZGSettings"))
+    return PyErr_Format(PyExc_ValueError,
+        "expected commitment, field element, field element, proof, trusted setup");
+
+  bool out;
+
+  if (verify_kzg_proof(&out,
+        PyCapsule_GetPointer(c, "G1"),
+        PyCapsule_GetPointer(x, "BLSFieldElement"),
+        PyCapsule_GetPointer(y, "BLSFieldElement"),
+        PyCapsule_GetPointer(p, "G1"),
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK)
+    return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed");
+
+  return out ? Py_True : Py_False;
+}
+
 static PyMethodDef ckzgmethods[] = {
   {"bytes_from_g1",            bytes_from_g1_wrap,          METH_VARARGS, "Convert a group element to 48 bytes"},
   {"int_from_bls_field",       int_from_bls_field,          METH_VARARGS, "Convert a field element to a 256-bit int"},
@@ -387,6 +437,8 @@ static PyMethodDef ckzgmethods[] = {
   {"vector_lincomb",           vector_lincomb_wrap,         METH_VARARGS, "Multiply a matrix of field elements with a vector"},
   {"g1_lincomb",               g1_lincomb_wrap,             METH_VARARGS, "Linear combination of group elements with field elements"},
   {"compute_kzg_proof",        compute_kzg_proof_wrap,      METH_VARARGS, "Compute KZG proof for polynomial at point"},
+  {"evaluate_polynomial_in_evaluation_form", evaluate_polynomial_in_evaluation_form_wrap, METH_VARARGS, "Evaluate polynomial"},
+  {"verify_kzg_proof",         verify_kzg_proof_wrap,       METH_VARARGS, "Verify KZG proof"},
   {NULL, NULL, 0, NULL}
 };
 
