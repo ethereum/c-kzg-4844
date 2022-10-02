@@ -30,11 +30,14 @@ static PyObject* bytes_to_bls_field_wrap(PyObject *self, PyObject *args) {
 
 static PyObject* int_from_BLSFieldElement(PyObject *self, PyObject *args) {
   PyObject *c;
+
   if (!PyArg_UnpackTuple(args, "uint64s_from_BLSFieldElement", 1, 1, &c) ||
       !PyCapsule_IsValid(c, "BLSFieldElement"))
     return PyErr_Format(PyExc_ValueError, "expected a BLSFieldElement capsule");
+
   uint64_t u[4];
   uint64s_from_BLSFieldElement(u, PyCapsule_GetPointer(c, PyCapsule_GetName(c)));
+
   PyObject *out = PyLong_FromUnsignedLong(0);
   PyObject *mult = PyLong_FromUnsignedLong(1);
   PyObject *two64 = PyNumber_Power(PyLong_FromUnsignedLong(2), PyLong_FromUnsignedLong(64), Py_None);
@@ -42,11 +45,13 @@ static PyObject* int_from_BLSFieldElement(PyObject *self, PyObject *args) {
     out = PyNumber_Add(out, PyNumber_Multiply(mult, PyLong_FromUnsignedLong(u[i])));
     mult = PyNumber_Multiply(mult, two64);
   }
+
   return out;
 }
 
 static PyObject* alloc_polynomial_wrap(PyObject *self, PyObject *args) {
   PyObject *a;
+
   if (!PyArg_UnpackTuple(args, "alloc_polynomial_wrap", 1, 1, &a) ||
       !PySequence_Check(a))
     return PyErr_Format(PyExc_ValueError, "expected sequence");
@@ -77,12 +82,53 @@ static PyObject* alloc_polynomial_wrap(PyObject *self, PyObject *args) {
 
 static PyObject* bytes_from_G1_wrap(PyObject *self, PyObject *args) {
   PyObject *c;
+
   if (!PyArg_UnpackTuple(args, "bytes_from_G1", 1, 1, &c) ||
       !PyCapsule_IsValid(c, "G1"))
     return PyErr_Format(PyExc_ValueError, "expected G1 capsule");
+
   uint8_t bytes[48];
   bytes_from_G1(bytes, PyCapsule_GetPointer(c, "G1"));
+
   return PyBytes_FromStringAndSize((char*)bytes, 48);
+}
+
+static PyObject* compute_powers_wrap(PyObject *self, PyObject *args) {
+  PyObject *c;
+  PyObject *n;
+
+  if (!PyArg_UnpackTuple(args, "compute_powers", 2, 2, &c, &n) ||
+      !PyCapsule_IsValid(c, "BLSFieldElement") ||
+      !PyLong_Check(n))
+    return PyErr_Format(PyExc_ValueError, "expected a BLSFieldElement capsule and a number");
+
+  Py_ssize_t z = PyLong_AsSsize_t(n);
+
+  PyObject *out = PyList_New(z);
+
+  if (out == NULL) return PyErr_NoMemory();
+
+  BLSFieldElement *a = (BLSFieldElement*)malloc(sizeof(BLSFieldElement) * z);
+
+  if (a == NULL) return PyErr_NoMemory();
+
+  compute_powers(a, PyCapsule_GetPointer(c, "BLSFieldElement"), z);
+
+  BLSFieldElement *f;
+
+  for (Py_ssize_t i = 0; i < z; i++) {
+    f = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
+    if (f == NULL) {
+      free(a);
+      return PyErr_NoMemory();
+    }
+    *f = a[i];
+    PyList_SetItem(out, i, PyCapsule_New(f, "BLSFieldElement", free_BLSFieldElement));
+  }
+
+  free(a);
+
+  return out;
 }
 
 static PyMethodDef ckzgmethods[] = {
@@ -92,7 +138,7 @@ static PyMethodDef ckzgmethods[] = {
   {"alloc_polynomial",         alloc_polynomial_wrap,       METH_VARARGS, "Create a PolynomialEvalForm from a sequence of field elements"},
   // {"load_trusted_setup",       load_trusted_setup_wrap,     METH_VARARGS, "Load trusted setup from file path"},
   // {"blob_to_kzg_commitment",   blob_to_kzg_commitment_wrap, METH_VARARGS, "Create a commitment from a sequence of field elements"},
-  // {"compute_powers",           compute_powers_wrap,         METH_VARARGS, "Create a list of powers of a field element"},
+  {"compute_powers",           compute_powers_wrap,         METH_VARARGS, "Create a list of powers of a field element"},
   {NULL, NULL, 0, NULL}
 };
 
@@ -104,7 +150,6 @@ static struct PyModuleDef ckzg = {
   ckzgmethods
 };
 
-PyMODINIT_FUNC PyInit_ckzg(void)
-{
+PyMODINIT_FUNC PyInit_ckzg(void) {
     return PyModule_Create(&ckzg);
 }
