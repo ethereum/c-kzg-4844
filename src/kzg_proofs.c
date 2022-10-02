@@ -31,14 +31,14 @@
 /**
  * Compute linear combinations of a sequence of vectors with some scalars
  */
-void fr_vector_lincomb(fr_t out[], const fr_t *vectors[], const fr_t *scalars, uint64_t n, uint64_t m) {
+void fr_vector_lincomb(fr_t out[], const fr_t* vectors[], const fr_t* scalars[], uint64_t n, uint64_t m) {
   fr_t tmp;
   uint64_t i, j;
   for (j = 0; j < m; j++)
     out[j] = fr_zero;
   for (i = 0; i < n; i++) {
     for (j = 0; j < m; j++) {
-      fr_mul(&tmp, &scalars[i], vectors[i * m + j]);
+      fr_mul(&tmp, scalars[i], vectors[i * m + j]);
       fr_add(&out[j], &out[j], &tmp);
     }
   }
@@ -748,20 +748,20 @@ void fr_vector_lincomb_simple_test(void) {
   const fr_t* vectors[] = { &v1[0], &v1[1], &v1[2],
                             &v2[0], &v2[1], &v2[2] };
 
-  fr_t scalars[2] = { fr_zero, fr_one };
-  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
+  const fr_t* scalars[2] = { &fr_zero, &fr_one };
+  fr_vector_lincomb(out, (const fr_t**)vectors, (const fr_t**)scalars, n, m);
   for (i = 0; i < m; i++) {
     TEST_CHECK(fr_equal(&out[i], &v2[i]));
   }
 
-  scalars[0] = fr_one; scalars[1] = fr_zero;
-  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
+  scalars[0] = &fr_one; scalars[1] = &fr_zero;
+  fr_vector_lincomb(out, (const fr_t**)vectors, (const fr_t**)scalars, n, m);
   for (i = 0; i < m; i++) {
     TEST_CHECK(fr_equal(&out[i], &v1[i]));
   }
 
-  scalars[1] = fr_one;
-  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
+  scalars[1] = &fr_one;
+  fr_vector_lincomb(out, (const fr_t**)vectors, (const fr_t**)scalars, n, m);
   for (i = 0; i < m; i++) {
     fr_add(&tmp, &v1[i], &v2[i]);
     TEST_CHECK(fr_equal(&out[i], &tmp));
