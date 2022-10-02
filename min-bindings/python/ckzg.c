@@ -48,13 +48,27 @@ static PyObject* int_from_bls_field(PyObject *self, PyObject *args) {
   uint64_t u[4];
   uint64s_from_BLSFieldElement(u, PyCapsule_GetPointer(c, "BLSFieldElement"));
 
-  PyObject *out = PyLong_FromUnsignedLong(0);
-  PyObject *mult = PyLong_FromUnsignedLong(1);
-  PyObject *two64 = PyNumber_Power(PyLong_FromUnsignedLong(2), PyLong_FromUnsignedLong(64), Py_None);
+  PyObject *out = PyLong_FromUnsignedLong(2);
+  PyObject *mult = PyLong_FromUnsignedLong(64);
+  PyObject *tmp, *two64 = PyNumber_Power(out, mult, Py_None);
+  Py_DECREF(out);
+  Py_DECREF(mult);
+  out = PyLong_FromUnsignedLong(0);
+  mult = PyLong_FromUnsignedLong(1);
   for (uint8_t i = 0; i < 4; i++) {
-    out = PyNumber_Add(out, PyNumber_Multiply(mult, PyLong_FromUnsignedLong(u[i])));
-    mult = PyNumber_Multiply(mult, two64);
+    c = PyLong_FromUnsignedLong(u[i]);
+    tmp = PyNumber_Multiply(mult, c);
+    Py_DECREF(c);
+    c = PyNumber_Add(out, tmp);
+    Py_DECREF(out);
+    Py_DECREF(tmp);
+    out = c;
+    c = PyNumber_Multiply(mult, two64);
+    Py_DECREF(mult);
+    mult = c;
   }
+  Py_DECREF(mult);
+  Py_DECREF(two64);
 
   return out;
 }
