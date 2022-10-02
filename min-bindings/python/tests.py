@@ -38,7 +38,7 @@ kzg_commitments = [ckzg.blob_to_kzg_commitment(blob, ts) for blob in blobs]
 # We don't follow the spec exactly to get the hash, but it shouldn't matter since it's random data
 
 encoded_blobs = ssz.encode([[ckzg.int_from_bls_field(fr) for fr in blob] for blob in blobs], blobs_sedes)
-encoded_commitments = ssz.encode([ckzg.bytes_from_G1(c) for c in kzg_commitments], kzg_commitments_sedes)
+encoded_commitments = ssz.encode([ckzg.bytes_from_g1(c) for c in kzg_commitments], kzg_commitments_sedes)
 hashed = ssz.hash.hashlib.sha256(encoded_blobs + encoded_commitments).digest()
 
 r = ckzg.bytes_to_bls_field(hashed)
@@ -47,5 +47,9 @@ r_powers = ckzg.compute_powers(r, len(blobs))
 values = ckzg.vector_lincomb(blobs, r_powers)
 
 aggregated_poly = ckzg.alloc_polynomial(values)
+
+aggregated_poly_commitment = ckzg.g1_lincomb(kzg_commitments, r_powers)
+
+# Compute proof
 
 print('Tests passed')

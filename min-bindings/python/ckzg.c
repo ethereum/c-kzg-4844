@@ -90,15 +90,15 @@ static PyObject* alloc_polynomial_wrap(PyObject *self, PyObject *args) {
   return PyCapsule_New(p, "PolynomialEvalForm", free_PolynomialEvalForm);
 }
 
-static PyObject* bytes_from_G1_wrap(PyObject *self, PyObject *args) {
+static PyObject* bytes_from_g1_wrap(PyObject *self, PyObject *args) {
   PyObject *c;
 
-  if (!PyArg_UnpackTuple(args, "bytes_from_G1", 1, 1, &c) ||
+  if (!PyArg_UnpackTuple(args, "bytes_from_g1", 1, 1, &c) ||
       !PyCapsule_IsValid(c, "G1"))
     return PyErr_Format(PyExc_ValueError, "expected G1 capsule");
 
   uint8_t bytes[48];
-  bytes_from_G1(bytes, PyCapsule_GetPointer(c, "G1"));
+  bytes_from_g1(bytes, PyCapsule_GetPointer(c, "G1"));
 
   return PyBytes_FromStringAndSize((char*)bytes, 48);
 }
@@ -294,8 +294,66 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
   return out;
 }
 
+static PyObject* g1_lincomb_wrap(PyObject *self, PyObject *args) {
+  PyObject *gs, *fs;
+
+  if (!PyArg_UnpackTuple(args, "g1_lincomb", 2, 2, &gs, &fs) ||
+      !PySequence_Check(gs) ||
+      !PySequence_Check(fs) ||
+      PySequence_Length(gs) != PySequence_Length(fs))
+    return PyErr_Format(PyExc_ValueError, "expected same-length sequences");
+
+  Py_ssize_t i, n = PySequence_Length(gs);
+
+  KZGCommitment *k = (KZGCommitment*)malloc(sizeof(KZGCommitment));
+
+  if (k == NULL) return PyErr_NoMemory();
+
+  KZGCommitment* points = (KZGCommitment*)calloc(n, sizeof(KZGCommitment));
+
+  if (points == NULL) {
+    free(k);
+    return PyErr_NoMemory();
+  }
+
+  BLSFieldElement* scalars = (BLSFieldElement*)calloc(n, sizeof(BLSFieldElement));
+
+  if (scalars == NULL) {
+    free(points);
+    free(k);
+    return PyErr_NoMemory();
+  }
+
+  PyObject *tmp;
+
+  // TODO: could avoid copying if g1_lincomb expected pointers
+
+  for (i = 0; i < n; i++) {
+    tmp = PySequence_GetItem(gs, i);
+    if (!PyCapsule_IsValid(tmp, "G1")) {
+      free(scalars); free(points); free(k);
+      return PyErr_Format(PyExc_ValueError, "expected group elements");
+    }
+    points[i] = *(KZGCommitment*)(PyCapsule_GetPointer(tmp, "G1"));
+
+    tmp = PySequence_GetItem(fs, i);
+    if (!PyCapsule_IsValid(tmp, "BLSFieldElement")) {
+      free(scalars); free(points); free(k);
+      return PyErr_Format(PyExc_ValueError, "expected field elements");
+    }
+    scalars[i] = *(BLSFieldElement*)(PyCapsule_GetPointer(tmp, "BLSFieldElement"));
+  }
+
+  g1_lincomb(k, points, scalars, n);
+
+  free(scalars);
+  free(points);
+
+  return PyCapsule_New(k, "G1", free_G1);
+}
+
 static PyMethodDef ckzgmethods[] = {
-  {"bytes_from_G1",            bytes_from_G1_wrap,          METH_VARARGS, "Convert a group element to 48 bytes"},
+  {"bytes_from_g1",            bytes_from_g1_wrap,          METH_VARARGS, "Convert a group element to 48 bytes"},
   {"int_from_bls_field",       int_from_bls_field,          METH_VARARGS, "Convert a field element to a 256-bit int"},
   {"bytes_to_bls_field",       bytes_to_bls_field_wrap,     METH_VARARGS, "Convert 32 bytes to a field element"},
   {"alloc_polynomial",         alloc_polynomial_wrap,       METH_VARARGS, "Create a PolynomialEvalForm from a sequence of field elements"},
@@ -303,6 +361,7 @@ static PyMethodDef ckzgmethods[] = {
   {"blob_to_kzg_commitment",   blob_to_kzg_commitment_wrap, METH_VARARGS, "Create a commitment from a sequence of field elements"},
   {"compute_powers",           compute_powers_wrap,         METH_VARARGS, "Create a list of powers of a field element"},
   {"vector_lincomb",           vector_lincomb_wrap,         METH_VARARGS, "Multiply a matrix of field elements with a vector"},
+  {"g1_lincomb",               g1_lincomb_wrap,             METH_VARARGS, "Linear combination of group elements with field elements"},
   {NULL, NULL, 0, NULL}
 };
 

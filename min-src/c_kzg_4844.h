@@ -40,7 +40,7 @@ typedef fr_t BLSFieldElement;
 /**
  * KZGCommitment and KZGProof can be recovered as 48 bytes
  */
-void bytes_from_G1(uint8_t out[48], const g1_t*);
+void bytes_from_g1(uint8_t out[48], const g1_t*);
 
 /**
  * BLSFieldElements are communicated directly to/from clients,

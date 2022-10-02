@@ -753,7 +753,7 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 
-void bytes_from_G1(uint8_t out[48], const g1_t *in) {
+void bytes_from_g1(uint8_t out[48], const g1_t *in) {
   blst_p1_compress(out, in);
 }
 
