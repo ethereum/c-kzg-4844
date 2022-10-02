@@ -757,10 +757,6 @@ void bytes_from_g1(uint8_t out[48], const g1_t *in) {
   blst_p1_compress(out, in);
 }
 
-void BLSFieldElement_from_uint64s(BLSFieldElement *out, const uint64_t in[4]) {
-  blst_fr_from_uint64(out, in);
-}
-
 void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
   blst_uint64_from_fr(out, in);
 }
