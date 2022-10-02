@@ -52,4 +52,16 @@ aggregated_poly_commitment = ckzg.g1_lincomb(kzg_commitments, r_powers)
 
 # Compute proof
 
+values_sedes = ssz.List(ssz.uint256, MAX_BLOBS_PER_BLOCK)
+
+encoded_polynomial = ssz.encode([ckzg.int_from_bls_field(fr) for fr in values], values_sedes)
+encoded_polynomial_length = ssz.encode(len(values), ssz.uint64)
+encoded_commitment = ssz.encode(ckzg.bytes_from_g1(aggregated_poly_commitment), ssz.bytes48)
+hashed_polynomial_and_commitment = ssz.hash.hashlib.sha256(
+        encoded_polynomial + encoded_polynomial_length + encoded_commitment).digest()
+
+x = ckzg.bytes_to_bls_field(hashed_polynomial_and_commitment)
+
+proof = ckzg.compute_kzg_proof(aggregated_poly, x, ts)
+
 print('Tests passed')

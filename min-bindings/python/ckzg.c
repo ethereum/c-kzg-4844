@@ -352,6 +352,30 @@ static PyObject* g1_lincomb_wrap(PyObject *self, PyObject *args) {
   return PyCapsule_New(k, "G1", free_G1);
 }
 
+static PyObject* compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
+  PyObject *p, *x, *s;
+
+  if (!PyArg_UnpackTuple(args, "compute_kzg_proof", 3, 3, &p, &x, &s) ||
+      !PyCapsule_IsValid(p, "PolynomialEvalForm") ||
+      !PyCapsule_IsValid(x, "BLSFieldElement") ||
+      !PyCapsule_IsValid(s, "KZGSettings"))
+    return PyErr_Format(PyExc_ValueError, "expected polynomial, field element, trusted setup");
+
+  KZGProof *k = (KZGProof*)malloc(sizeof(KZGProof));
+
+  if (k == NULL) return PyErr_NoMemory();
+
+  if (compute_kzg_proof(k,
+        PyCapsule_GetPointer(p, "PolynomialEvalForm"),
+        PyCapsule_GetPointer(x, "BLSFieldElement"),
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    free(k);
+    return PyErr_Format(PyExc_RuntimeError, "compute_kzg_proof failed");
+  }
+
+  return PyCapsule_New(k, "G1", free_G1);
+}
+
 static PyMethodDef ckzgmethods[] = {
   {"bytes_from_g1",            bytes_from_g1_wrap,          METH_VARARGS, "Convert a group element to 48 bytes"},
   {"int_from_bls_field",       int_from_bls_field,          METH_VARARGS, "Convert a field element to a 256-bit int"},
@@ -362,6 +386,7 @@ static PyMethodDef ckzgmethods[] = {
   {"compute_powers",           compute_powers_wrap,         METH_VARARGS, "Create a list of powers of a field element"},
   {"vector_lincomb",           vector_lincomb_wrap,         METH_VARARGS, "Multiply a matrix of field elements with a vector"},
   {"g1_lincomb",               g1_lincomb_wrap,             METH_VARARGS, "Linear combination of group elements with field elements"},
+  {"compute_kzg_proof",        compute_kzg_proof_wrap,      METH_VARARGS, "Compute KZG proof for polynomial at point"},
   {NULL, NULL, 0, NULL}
 };
 
