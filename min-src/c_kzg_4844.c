@@ -840,7 +840,7 @@ void vector_lincomb(fr_t out[], const fr_t *vectors[], const fr_t *scalars, uint
     out[j] = fr_zero;
   for (i = 0; i < n; i++) {
     for (j = 0; j < m; j++) {
-      fr_mul(&tmp, &scalars[i], &vectors[i][j]);
+      fr_mul(&tmp, &scalars[i], vectors[i * m + j]);
       fr_add(&out[j], &out[j], &tmp);
     }
   }

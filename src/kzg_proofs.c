@@ -38,7 +38,7 @@ void fr_vector_lincomb(fr_t out[], const fr_t *vectors[], const fr_t *scalars, u
     out[j] = fr_zero;
   for (i = 0; i < n; i++) {
     for (j = 0; j < m; j++) {
-      fr_mul(&tmp, &scalars[i], &vectors[i][j]);
+      fr_mul(&tmp, &scalars[i], vectors[i * m + j]);
       fr_add(&out[j], &out[j], &tmp);
     }
   }
@@ -745,24 +745,25 @@ void fr_vector_lincomb_simple_test(void) {
   fr_t out[m];
   const fr_t v1[3] = { fr_one, fr2, fr3 };
   const fr_t v2[3] = { fr3, fr2, fr_zero };
-  const fr_t* vectors[2] = { v1, v2 };
+  const fr_t* vectors[] = { &v1[0], &v1[1], &v1[2],
+                            &v2[0], &v2[1], &v2[2] };
 
   fr_t scalars[2] = { fr_zero, fr_one };
-  fr_vector_lincomb(out, vectors, (fr_t*)scalars, n, m);
+  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
   for (i = 0; i < m; i++) {
-    TEST_CHECK(fr_equal(&out[i], &vectors[1][i]));
+    TEST_CHECK(fr_equal(&out[i], &v2[i]));
   }
 
   scalars[0] = fr_one; scalars[1] = fr_zero;
-  fr_vector_lincomb(out, vectors, (fr_t*)scalars, n, m);
+  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
   for (i = 0; i < m; i++) {
-    TEST_CHECK(fr_equal(&out[i], &vectors[0][i]));
+    TEST_CHECK(fr_equal(&out[i], &v1[i]));
   }
 
   scalars[1] = fr_one;
-  fr_vector_lincomb(out, vectors, (fr_t*)scalars, n, m);
+  fr_vector_lincomb(out, (const fr_t**)vectors, (fr_t*)scalars, n, m);
   for (i = 0; i < m; i++) {
-    fr_add(&tmp, &vectors[0][i], &vectors[1][i]);
+    fr_add(&tmp, &v1[i], &v2[i]);
     TEST_CHECK(fr_equal(&out[i], &tmp));
   }
 }
