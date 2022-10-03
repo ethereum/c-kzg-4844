@@ -20,6 +20,23 @@ for p in powers:
     p_check *= x
     p_check %= 2**256
 
+# Simple test of polynomial evaluation
+
+ts = ckzg.load_trusted_setup("tiny_trusted_setup.txt")
+
+lvals = [239807672958224171024, 239807672958224171018,
+         3465144826073652318776269530687742778510060141723586134027,
+         52435875175126190475982595682112313518914282969839895044573213904131443392524]
+
+def int_to_bls_field(x):
+    return ckzg.bytes_to_bls_field(x.to_bytes(32, "little"))
+
+poly = ckzg.alloc_polynomial(tuple(map(int_to_bls_field, lvals)))
+
+y = ckzg.evaluate_polynomial_in_evaluation_form(poly, int_to_bls_field(2), ts)
+
+assert ckzg.int_from_bls_field(y) == 239807672958224171036
+
 # Commit to a few random blobs
 
 BLOB_SIZE = 4096
