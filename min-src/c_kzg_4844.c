@@ -801,9 +801,16 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
 
   TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
 
+  //g1_t *g1_origorder;
+  //TRY(new_g1_array(&g1_origorder, out->length));
+
   TRY(fft_g1(out->g1_values, g1_projective, true, out->length, out->fs));
 
+  TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), out->length));
+  printf("Reverse bit ordered\n");
+
   free(g1_projective);
+  //free(g1_origorder);
 
   return C_KZG_OK;
 
@@ -1014,19 +1021,19 @@ C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const Pol
   TRY(new_fr_array(&inverses_in, p->length));
   TRY(new_fr_array(&inverses, p->length));
   for (i = 0; i < p->length; i++) {
-    if (fr_equal(x, &roots_of_unity[i * stride])) {
+    if (fr_equal(x, &roots_of_unity[i])) {
       *out = p->values[i];
       free(inverses_in);
       free(inverses);
       return C_KZG_OK;
     }
-    fr_sub(&inverses_in[i], x, &roots_of_unity[i * stride]);
+    fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
   }
   TRY(fr_batch_inv(inverses, inverses_in, p->length));
 
   *out = fr_zero;
   for (i = 0; i < p->length; i++) {
-    fr_mul(&tmp, &inverses[i], &roots_of_unity[i * stride]);
+    fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
     fr_mul(&tmp, &tmp, &p->values[i]);
     fr_add(out, out, &tmp);
   }
