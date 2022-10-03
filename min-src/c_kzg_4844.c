@@ -1015,7 +1015,6 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *p, const BL
 C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *p, const BLSFieldElement *x, const KZGSettings *s) {
   fr_t tmp, *inverses_in, *inverses;
   uint64_t i;
-  const uint64_t stride = s->fs->max_width / p->length;
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
 
   TRY(new_fr_array(&inverses_in, p->length));
