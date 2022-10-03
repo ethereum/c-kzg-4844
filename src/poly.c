@@ -112,24 +112,23 @@ void eval_poly(fr_t *out, const poly *p, const fr_t *x) {
 C_KZG_RET eval_poly_l(fr_t *out, const poly_l *p, const fr_t *x, const FFTSettings *fs) {
   fr_t tmp, *inverses_in, *inverses;
   uint64_t i;
-  const uint64_t stride = fs->max_width / p->length;
 
   TRY(new_fr_array(&inverses_in, p->length));
   TRY(new_fr_array(&inverses, p->length));
   for (i = 0; i < p->length; i++) {
-    if (fr_equal(x, &fs->bitrevp_roots_of_unity[i * stride])) {
+    if (fr_equal(x, &fs->bitrevp_roots_of_unity[i])) {
       *out = p->values[i];
       free(inverses_in);
       free(inverses);
       return C_KZG_OK;
     }
-    fr_sub(&inverses_in[i], x, &fs->bitrevp_roots_of_unity[i * stride]);
+    fr_sub(&inverses_in[i], x, &fs->bitrevp_roots_of_unity[i]);
   }
   TRY(fr_batch_inv(inverses, inverses_in, p->length));
 
   *out = fr_zero;
   for (i = 0; i < p->length; i++) {
-    fr_mul(&tmp, &inverses[i], &fs->bitrevp_roots_of_unity[i * stride]);
+    fr_mul(&tmp, &inverses[i], &fs->bitrevp_roots_of_unity[i]);
     fr_mul(&tmp, &tmp, &p->values[i]);
     fr_add(out, out, &tmp);
   }
