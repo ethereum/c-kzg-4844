@@ -50,6 +50,8 @@ aggregated_poly = ckzg.alloc_polynomial(values)
 
 aggregated_poly_commitment = ckzg.g1_lincomb(kzg_commitments, r_powers)
 
+simple_commitment = ckzg.blob_to_kzg_commitment(values, ts)
+
 # Compute proof
 
 values_sedes = ssz.List(ssz.uint256, MAX_BLOBS_PER_BLOCK)
@@ -68,7 +70,11 @@ proof = ckzg.compute_kzg_proof(aggregated_poly, x, ts)
 
 y = ckzg.evaluate_polynomial_in_evaluation_form(aggregated_poly, x, ts)
 
-assert ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, proof, ts)
+assert ckzg.bytes_from_g1(simple_commitment) == ckzg.bytes_from_g1(aggregated_poly_commitment)
+
+assert ckzg.verify_kzg_proof(simple_commitment, x, y, proof, ts), 'Simple verification failed'
+
+assert ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, proof, ts), 'Verification failed'
 
 # Verification fails at wrong value
 
