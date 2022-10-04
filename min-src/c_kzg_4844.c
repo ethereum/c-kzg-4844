@@ -763,7 +763,6 @@ void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
 
 
 C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
-
   uint64_t n2, i;
   int j; uint8_t c[96];
   blst_p1_affine g1_affine;
@@ -801,19 +800,13 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
 
   TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
 
-  //g1_t *g1_origorder;
-  //TRY(new_g1_array(&g1_origorder, out->length));
-
   TRY(fft_g1(out->g1_values, g1_projective, true, out->length, out->fs));
 
   TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), out->length));
-  printf("Reverse bit ordered\n");
 
   free(g1_projective);
-  //free(g1_origorder);
 
   return C_KZG_OK;
-
 }
 
 void free_trusted_setup(KZGSettings *s) {
