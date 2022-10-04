@@ -7,6 +7,8 @@ import ssz
 bs = (329).to_bytes(32, "little")
 assert 329 == ckzg.int_from_bls_field(ckzg.bytes_to_bls_field(bs))
 
+del bs
+
 # Simple test of compute_powers
 
 x = 32930439
@@ -19,6 +21,8 @@ for p in powers:
     assert p_check == ckzg.int_from_bls_field(p)
     p_check *= x
     p_check %= 2**256
+
+del x, n, powers, p_check
 
 # Simple test of polynomial evaluation
 
@@ -45,7 +49,10 @@ MAX_BLOBS_PER_BLOCK = 16
 blobs_sedes = ssz.List(ssz.Vector(ssz.uint256, BLOB_SIZE), MAX_BLOBS_PER_BLOCK)
 kzg_commitments_sedes = ssz.List(ssz.bytes48, MAX_BLOBS_PER_BLOCK)
 
-blobs = [[ckzg.bytes_to_bls_field(random.randbytes(32)) for _ in range(BLOB_SIZE)] for _ in range(3)]
+blobs = [
+  [ckzg.bytes_to_bls_field(random.randbytes(32)) for _ in range(BLOB_SIZE)]
+  for _ in range(3)
+]
 
 ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
 

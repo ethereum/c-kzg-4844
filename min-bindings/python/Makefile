@@ -1,6 +1,10 @@
 INCLUDE_DIRS = .. ../../min-src ../../inc
 INCLUDE_PY = $(shell python -c 'import sysconfig; print(sysconfig.get_config_var("INCLUDEPY"))')
 
+.PHONY: all
+
+all: test ecc_test
+
 test: tests.py ckzg.so
 	python $<
 

@@ -1,10 +1,8 @@
-import atexit
 import ckzg
 import kzg_proofs
 import random
 from py_ecc import optimized_bls12_381 as b
 from py_ecc.bls.point_compression import compress_G1, decompress_G1, decompress_G2
-
 
 polynomial = [random.randint(0, kzg_proofs.MODULUS) for i in range(4096)]
 n = len(polynomial)
@@ -74,3 +72,5 @@ proof_pyecc = kzg_proofs.compute_proof_single(polynomial, x, ts_pyecc)
 proof_ckzg = ckzg.compute_kzg_proof(ckzg_poly, ckzg.bytes_to_bls_field(x.to_bytes(32, "little")), ts)
 
 assert compress_G1(proof_pyecc).to_bytes(48, "big") == ckzg.bytes_from_g1(proof_ckzg)
+
+print('comparison to py_ecc passed')
