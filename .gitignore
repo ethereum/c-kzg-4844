@@ -22,4 +22,5 @@ inc/blst_aux.h*
 *bindings/python/*_wrap.c
 *bindings/C#/*_wrap.c
 *bindings/C#/*.exe
+*bindings/C#/*.dll
 __pycache__
