@@ -102,4 +102,13 @@ assert ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, proof, ts), 'Veri
 
 # Verification fails at wrong value
 
+x2_bytes = random.randbytes(32)
+while x2_bytes == hashed_polynomial_and_commitment:
+    x2_bytes = random.randbytes(32)
+x2 = ckzg.bytes_to_bls_field(x2_bytes)
+
+y2 = ckzg.evaluate_polynomial_in_evaluation_form(aggregated_poly, x2, ts)
+
+assert not ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y2, proof, ts), 'Verification should fail'
+
 print('Tests passed')
