@@ -963,7 +963,7 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *p, const BL
   BLSFieldElement y;
   TRY(evaluate_polynomial_in_evaluation_form(&y, p, x, s));
 
-  fr_t tmp, tmp2;
+  fr_t tmp;
   PolynomialEvalForm q;
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
   uint64_t i, m = 0;
@@ -990,25 +990,29 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *p, const BL
   for (i = 0; i < q.length; i++) {
     fr_mul(&q.values[i], &q.values[i], &inverses[i]);
   }
+
   if (m) { // ω_m == x
     q.values[--m] = fr_zero;
-    for (i=0; i < q.length; i++) {
+    for (i = 0; i < q.length; i++) {
       if (i == m) continue;
       // (p_i - y) * ω_i / (x * (x - ω_i))
       fr_sub(&tmp, x, &roots_of_unity[i]);
       fr_mul(&inverses_in[i], &tmp, x);
     }
     TRY(fr_batch_inv(inverses, inverses_in, q.length));
-    for (i=0; i < q.length; i++) {
-      fr_sub(&tmp2, &p->values[i], &y);
-      fr_mul(&tmp, &tmp2, &inverses[i]);
+    for (i = 0; i < q.length; i++) {
+      fr_sub(&tmp, &p->values[i], &y);
       fr_mul(&tmp, &tmp, &roots_of_unity[i]);
+      fr_mul(&tmp, &tmp, &inverses[i]);
       fr_add(&q.values[m], &q.values[m], &tmp);
     }
   }
+
   free(inverses_in);
   free(inverses);
-  g1_lincomb(out, s->g1_values, p->values, p->length);
+
+  g1_lincomb(out, s->g1_values, q.values, q.length);
+
   return C_KZG_OK;
 }
 
