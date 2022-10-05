@@ -38,21 +38,6 @@ typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
 
 /**
- * KZGCommitment and KZGProof can be recovered as 48 bytes
- */
-void bytes_from_g1(uint8_t out[48], const g1_t*);
-void bytes_to_g1(g1_t* out, const uint8_t[48]);
-
-/**
- * BLSFieldElements are communicated directly to/from clients,
- * so we need to expose the functions for translating between this
- * type and uint256. BLST represents uint256 as uint64[4].
- * TODO: we should perhaps just used bytes[32] for this too.
- * For conversion to BLSFieldElement use bytes_to_bls_field.
- */
-void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement*);
-
-/**
  * The common return type for all routines in which something can go wrong.
  *
  * @warning In the case of @p C_KZG_OK or @p C_KZG_BADARGS, the caller can assume that all memory allocated by the
@@ -65,6 +50,21 @@ typedef enum {
     C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
+
+/**
+ * KZGCommitment and KZGProof can be recovered as 48 bytes
+ */
+void bytes_from_g1(uint8_t out[48], const g1_t*);
+C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t[48]);
+
+/**
+ * BLSFieldElements are communicated directly to/from clients,
+ * so we need to expose the functions for translating between this
+ * type and uint256. BLST represents uint256 as uint64[4].
+ * TODO: we should perhaps just used bytes[32] for this too.
+ * For conversion to BLSFieldElement use bytes_to_bls_field.
+ */
+void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement*);
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
