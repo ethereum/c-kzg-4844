@@ -38,6 +38,17 @@ class ckzg {
 }
 
 class tests {
+  // Convert.FromHexString replacement (since mono does not seem to have new enough C# libs)
+  public static byte[] HexadecimalStringToByteArray(String hexadecimalString)
+  {
+    int length = hexadecimalString.Length;
+    byte[] byteArray = new byte[length / 2];
+    for (int i = 0; i < length; i += 2){
+      byteArray[i / 2] = Convert.ToByte(hexadecimalString.Substring(i, 2), 16);
+    }
+    return byteArray;
+  }
+
   private static void Main(string[] args)
   {
     IntPtr ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt");
@@ -46,19 +57,19 @@ class tests {
       return;
     }
 
-    byte[] c = new byte[48];
-    byte[] x = new byte[32];
-    byte[] y = new byte[32];
-    byte[] p = new byte[48];
+    byte[] c = HexadecimalStringToByteArray("b91c022acf7bd3b63be69a4c19b781ea7a3d5df1cd66ceb7dd0f399610f0ee04695dace82e04bfb83af2b17d7319f87f");
+    byte[] x = HexadecimalStringToByteArray("0345f802a75a6c0d9cc5b8a1e71642b8fa80b0a78938edc6da1e591149578d1a");
+    byte[] y = HexadecimalStringToByteArray("3b17cab634c3795d311380f3bc93ce8e768efc0e2b9e79496cfc8f351594b472");
+    byte[] p = HexadecimalStringToByteArray("a5ddd6da04c47a9cd4628beb8d55ebd2e930a64dfa29f876ebf393cfd6574d48a3ce96ac5a2af4a4f9ec9caa47d304d3");
     int result = ckzg.verify_kzg_proof(c, x, y, p, ts);
-    Console.WriteLine(string.Format("Verification result: {0}", result));
+    System.Diagnostics.Trace.Assert(result == 1, "Verification failed");
+
+    x[0] = 0x42;
+    result = ckzg.verify_kzg_proof(c, x, y, p, ts);
+    System.Diagnostics.Trace.Assert(result == 0, "Verification succeeded incorrectly");
 
     ckzg.free_trusted_setup(ts);
 
-    byte[] b = new byte[32];
-    b[0] = 11;
-    b[8] = 1;
-    IntPtr fr = ckzg.bytes_to_bls_field(b);
-    Console.WriteLine(ckzg.int_from_bls_field(fr));
+    Console.WriteLine("Tests passed");
   }
 }
