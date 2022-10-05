@@ -33,6 +33,11 @@ KZGSettings* load_trusted_setup_wrap(const char* file) {
   return out;
 }
 
+void free_trusted_setup_wrap(KZGSettings* s) {
+  free_trusted_setup(s);
+  free(s);
+}
+
 BLSFieldElement* bytes_to_bls_field_wrap(const uint8_t bytes[]) {
   BLSFieldElement* out = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
   bytes_to_bls_field(out, bytes);

@@ -13,7 +13,7 @@ class ckzg {
   [DllImport("ckzg.dll", EntryPoint="load_trusted_setup_wrap")]
   public static extern IntPtr load_trusted_setup(string filename);
 
-  [DllImport("ckzg.dll", EntryPoint="free_trusted_setup")]
+  [DllImport("ckzg.dll", EntryPoint="free_trusted_setup_wrap")]
   public static extern void free_trusted_setup(IntPtr ts);
 
   [DllImport("ckzg.dll", EntryPoint="free")]
