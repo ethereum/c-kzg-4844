@@ -757,6 +757,12 @@ void bytes_from_g1(uint8_t out[48], const g1_t *in) {
   blst_p1_compress(out, in);
 }
 
+void bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
+  blst_p1_affine tmp;
+  blst_p1_uncompress(&tmp, bytes);
+  blst_p1_from_affine(out, &tmp);
+}
+
 void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
   blst_uint64_from_fr(out, in);
 }
@@ -765,7 +771,6 @@ void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
 C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
   uint64_t n2, i;
   int j; uint8_t c[96];
-  blst_p1_affine g1_affine;
   blst_p2_affine g2_affine;
   g1_t *g1_projective;
 
@@ -781,8 +786,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
     for (j = 0; j < 48; j++) {
       fscanf(in, "%2hhx", &c[j]);
     }
-    blst_p1_uncompress(&g1_affine, c);
-    blst_p1_from_affine(&g1_projective[i], &g1_affine);
+    bytes_to_g1(&g1_projective[i], c);
   }
 
   for (i = 0; i < n2; i++) {
