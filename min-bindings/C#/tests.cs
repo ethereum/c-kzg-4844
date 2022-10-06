@@ -83,6 +83,13 @@ class tests {
     System.Diagnostics.Trace.Assert(result == 0, "Evaluation failed");
     System.Diagnostics.Trace.Assert(y == HexadecimalStringToByteArray("1c000000000000000d0000000000000000000000000000000000000000000000"),
         "Evaluation produced incorrect value");
+
+    x[11] = 0x11;
+    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, x, ts);
+    System.Diagnostics.Trace.Assert(result == 0, "Second evaluation failed");
+    System.Diagnostics.Trace.Assert(y != HexadecimalStringToByteArray("1c000000000000000d0000000000000000000000000000000000000000000000"),
+        "Second evaluation produced incorrect value");
+
     ckzg.free_trusted_setup(ts);
 
     Console.WriteLine("Tests passed");
