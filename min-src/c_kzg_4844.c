@@ -769,6 +769,9 @@ void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement *in) {
   blst_uint64_from_fr(out, in);
 }
 
+void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement *in) {
+  blst_scalar_from_fr((blst_scalar*)out, in);
+}
 
 C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
   uint64_t n2, i;

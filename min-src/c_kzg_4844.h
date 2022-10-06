@@ -61,10 +61,11 @@ C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t[48]);
  * BLSFieldElements are communicated directly to/from clients,
  * so we need to expose the functions for translating between this
  * type and uint256. BLST represents uint256 as uint64[4].
- * TODO: we should perhaps just used bytes[32] for this too.
+ * TODO: remove the uint64s version?
  * For conversion to BLSFieldElement use bytes_to_bls_field.
  */
 void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement*);
+void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement*);
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
