@@ -10,6 +10,9 @@ class ckzg {
   [DllImport("ckzg.dll", EntryPoint="verify_kzg_proof_wrap")]
   public static extern int verify_kzg_proof(byte[] c, byte[] x, byte[] y, byte[] p, IntPtr ts);
 
+  [DllImport("ckzg.dll", EntryPoint="evaluate_polynomial_wrap")]
+  public static extern int evaluate_polynomial_in_evaluation_form(byte[] result, byte[] p, byte[] z, IntPtr ts);
+
   [DllImport("ckzg.dll", EntryPoint="load_trusted_setup_wrap")]
   public static extern IntPtr load_trusted_setup(string filename);
 
@@ -51,11 +54,10 @@ class tests {
 
   private static void Main(string[] args)
   {
+    Console.WriteLine("Test 1: verify_kzg_proof");
+
     IntPtr ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt");
-    if (ts == IntPtr.Zero) {
-      Console.WriteLine("Failed to load trusted setup.");
-      return;
-    }
+    System.Diagnostics.Trace.Assert(ts != IntPtr.Zero, "Failed to load trusted setup.");
 
     byte[] c = HexadecimalStringToByteArray("b91c022acf7bd3b63be69a4c19b781ea7a3d5df1cd66ceb7dd0f399610f0ee04695dace82e04bfb83af2b17d7319f87f");
     byte[] x = HexadecimalStringToByteArray("0345f802a75a6c0d9cc5b8a1e71642b8fa80b0a78938edc6da1e591149578d1a");
@@ -68,6 +70,19 @@ class tests {
     result = ckzg.verify_kzg_proof(c, x, y, p, ts);
     System.Diagnostics.Trace.Assert(result == 0, "Verification succeeded incorrectly");
 
+    ckzg.free_trusted_setup(ts);
+
+    Console.WriteLine("Test 2: evaluate_polynomial_in_evaluation_form");
+
+    ts = ckzg.load_trusted_setup("../python/tiny_trusted_setup.txt");
+    System.Diagnostics.Trace.Assert(ts != IntPtr.Zero, "Failed to load trusted setup.");
+
+    p = HexadecimalStringToByteArray("10000000000000000d00000000000000000000000000000000000000000000000a000000000000000d00000000000000000000000000000000000000000000000b000000000001000d000376020003ecd0040376cecc518d00000000000000000c000000fffffeff0b5cfb8900a4ba6734d39e93390be8a5477d9d2953a7ed73");
+    x = HexadecimalStringToByteArray("0200000000000000000000000000000000000000000000000000000000000000");
+    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, x, ts);
+    System.Diagnostics.Trace.Assert(result == 0, "Evaluation failed");
+    System.Diagnostics.Trace.Assert(y == HexadecimalStringToByteArray("1c000000000000000d0000000000000000000000000000000000000000000000"),
+        "Evaluation produced incorrect value");
     ckzg.free_trusted_setup(ts);
 
     Console.WriteLine("Tests passed");

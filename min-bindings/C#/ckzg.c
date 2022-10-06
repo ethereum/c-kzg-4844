@@ -33,6 +33,30 @@ KZGSettings* load_trusted_setup_wrap(const char* file) {
   return out;
 }
 
+int evaluate_polynomial_wrap(uint8_t out[32], const uint8_t pvals[], size_t n, const uint8_t point[32], const KZGSettings *s) {
+  PolynomialEvalForm p;
+
+  if (alloc_polynomial(&p, n) != C_KZG_OK)
+    return -1;
+
+  for (size_t i = 0; i < n; i++)
+    bytes_to_bls_field(&p.values[i], &pvals[i * 32]);
+
+  BLSFieldElement z;
+  bytes_to_bls_field(&z, point);
+
+  BLSFieldElement r;
+
+  if (evaluate_polynomial_in_evaluation_form(&r, &p, &z, s) != C_KZG_OK) {
+    free_polynomial(&p);
+    return -1;
+  }
+
+  bytes_from_bls_field(out, &r);
+
+  return 0;
+}
+
 void free_trusted_setup_wrap(KZGSettings* s) {
   free_trusted_setup(s);
   free(s);
