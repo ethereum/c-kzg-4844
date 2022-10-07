@@ -11,7 +11,7 @@ class ckzg {
   public static extern int verify_kzg_proof(byte[] c, byte[] x, byte[] y, byte[] p, IntPtr ts);
 
   [DllImport("ckzg.dll", EntryPoint="evaluate_polynomial_wrap")]
-  public static extern int evaluate_polynomial_in_evaluation_form(byte[] result, byte[] p, byte[] z, IntPtr ts);
+  public static extern int evaluate_polynomial_in_evaluation_form(byte[] result, byte[] p, UInt64 n, byte[] z, IntPtr ts);
 
   [DllImport("ckzg.dll", EntryPoint="load_trusted_setup_wrap")]
   public static extern IntPtr load_trusted_setup(string filename);
@@ -79,13 +79,14 @@ class tests {
 
     p = HexadecimalStringToByteArray("10000000000000000d00000000000000000000000000000000000000000000000a000000000000000d00000000000000000000000000000000000000000000000b000000000001000d000376020003ecd0040376cecc518d00000000000000000c000000fffffeff0b5cfb8900a4ba6734d39e93390be8a5477d9d2953a7ed73");
     x = HexadecimalStringToByteArray("0200000000000000000000000000000000000000000000000000000000000000");
-    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, x, ts);
+    UInt64 n = Convert.ToUInt64(p.Length) / 32;
+    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, n, x, ts);
     System.Diagnostics.Trace.Assert(result == 0, "Evaluation failed");
     System.Diagnostics.Trace.Assert(y == HexadecimalStringToByteArray("1c000000000000000d0000000000000000000000000000000000000000000000"),
         "Evaluation produced incorrect value");
 
     x[11] = 0x11;
-    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, x, ts);
+    result = ckzg.evaluate_polynomial_in_evaluation_form(y, p, n, x, ts);
     System.Diagnostics.Trace.Assert(result == 0, "Second evaluation failed");
     System.Diagnostics.Trace.Assert(y != HexadecimalStringToByteArray("1c000000000000000d0000000000000000000000000000000000000000000000"),
         "Second evaluation produced incorrect value");
