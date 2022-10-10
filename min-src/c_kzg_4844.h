@@ -109,7 +109,10 @@ void free_trusted_setup(KZGSettings *s);
 
 void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]);
 
-void vector_lincomb(BLSFieldElement out[], const BLSFieldElement* vectors[], const BLSFieldElement* scalars[], uint64_t num_vectors, uint64_t vector_len);
+// TODO: probably remove this version
+void vector_lincomb_indirect(BLSFieldElement out[], const BLSFieldElement* vectors[], const BLSFieldElement* scalars[], uint64_t num_vectors, uint64_t vector_len);
+
+void vector_lincomb(BLSFieldElement out[], const BLSFieldElement vectors[], const BLSFieldElement scalars[], uint64_t num_vectors, uint64_t vector_len);
 
 void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points);
 

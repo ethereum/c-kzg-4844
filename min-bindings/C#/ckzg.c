@@ -15,8 +15,30 @@ BLSFieldElement* compute_powers_wrap(const BLSFieldElement *r, uint64_t n) {
   return out;
 }
 
-PolynomialEvalForm* vector_lincomb_wrap(const uint8_t vectors[], const BLSFieldElement scalars[], uint64_t num_vectors, uint64_t vector_len) {
-  return NULL; // TODO
+PolynomialEvalForm* vector_lincomb_wrap(const uint8_t bytes[], const BLSFieldElement scalars[], uint64_t num_vectors, uint64_t vector_len) {
+  PolynomialEvalForm *p = (PolynomialEvalForm*)malloc(sizeof(PolynomialEvalForm));
+  if (p == NULL) return NULL;
+
+  if (alloc_polynomial(p, vector_len) != C_KZG_OK) {
+    free(p);
+    return NULL;
+  }
+
+  BLSFieldElement *vectors = (BLSFieldElement*)calloc(num_vectors * vector_len, sizeof(BLSFieldElement));
+  if (vectors == NULL) {
+    free_polynomial(p);
+    free(p);
+    return NULL;
+  }
+
+  for (uint64_t i = 0; i < num_vectors; i++)
+    for (uint64_t j = 0; j < vector_len; j++)
+      bytes_to_bls_field(&vectors[i * vector_len + j], &bytes[(i * vector_len + j) * 32]);
+
+  vector_lincomb(p->values, vectors, scalars, num_vectors, vector_len);
+
+  free(vectors);
+  return p;
 }
 
 KZGCommitment* g1_lincomb_wrap(const uint8_t bytes[], const BLSFieldElement scalars[], uint64_t num_points) {

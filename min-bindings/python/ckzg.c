@@ -283,7 +283,7 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
     return PyErr_NoMemory();
   }
 
-  vector_lincomb(r, vectors, scalars, n, m);
+  vector_lincomb_indirect(r, vectors, scalars, n, m);
 
   free(scalars);
   free(vectors);
