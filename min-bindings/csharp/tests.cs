@@ -21,8 +21,8 @@ class ckzg
     [DllImport("ckzg.dll", EntryPoint = "verify_kzg_proof_wrap")]
     public static extern bool verify_kzg_proof(byte[] c, byte[] x, byte[] y, byte[] p, IntPtr ts);
 
-    [DllImport("ckzg.dll", EntryPoint = "evaluate_polynomial_wrap")]
-    public static extern bool evaluate_polynomial_in_evaluation_form(byte[] result, byte[] p, UInt64 n, byte[] z, IntPtr ts);
+    [DllImport("ckzg.dll", EntryPoint = "evaluate_polynomial_wrap")] // free result with free()
+    public static extern IntPtr evaluate_polynomial_in_evaluation_form(IntPtr p, IntPtr z, IntPtr ts);
 
     [DllImport("ckzg.dll", EntryPoint = "load_trusted_setup_wrap")] // free result with free_trusted_setup()
     public static extern IntPtr load_trusted_setup(string filename);
@@ -40,7 +40,7 @@ class ckzg
 class tests
 {
     IntPtr ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt");
-    
+
     byte[] ssz_of(params object[] anything)
     {
         return new byte[1]; //mock
@@ -103,7 +103,7 @@ class tests
           ssz_of("PolynomialAndCommitment", aggregated_poly, aggregated_poly_commitment)
         );
         // Evaluate aggregated polynomial at `x` (evaluation function checks for div-by-zero)
-        var y = ckzg.evaluate_polynomial_in_evaluation_form(aggregated_poly, x, "need to clarify", "need to clarify", ts);
+        var y = ckzg.evaluate_polynomial_in_evaluation_form(aggregated_poly, x, ts);
 
         // Verify aggregated proof
         if (!ckzg.verify_kzg_proof(aggregated_poly_commitment, x, y, "need to clarify", ts))
