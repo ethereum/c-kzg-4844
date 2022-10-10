@@ -232,7 +232,7 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
 
   Py_ssize_t i, j, m = PySequence_Length(PySequence_GetItem(vs, 0));
 
-  const BLSFieldElement* *vectors = (const BLSFieldElement**)calloc(n * m, sizeof(BLSFieldElement*));
+  BLSFieldElement *vectors = (BLSFieldElement*)calloc(n * m, sizeof(BLSFieldElement));
 
   if (vectors == NULL) return PyErr_NoMemory();
 
@@ -254,11 +254,11 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
         free(vectors);
         return PyErr_Format(PyExc_ValueError, "expected vectors of BLSFieldElement capsules");
       }
-      vectors[i * m + j] = (BLSFieldElement*)PyCapsule_GetPointer(out, "BLSFieldElement");
+      memcpy(&vectors[i * m + j], PyCapsule_GetPointer(out, "BLSFieldElement"), sizeof(BLSFieldElement));
     }
   }
 
-  const BLSFieldElement* *scalars = (const BLSFieldElement**)calloc(n, sizeof(BLSFieldElement*));
+  BLSFieldElement *scalars = (BLSFieldElement*)calloc(n, sizeof(BLSFieldElement));
 
   if (scalars == NULL) {
     free(vectors);
@@ -272,7 +272,7 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
       free(vectors);
       return PyErr_Format(PyExc_ValueError, "expected a BLSFieldElement capsule");
     }
-    scalars[i] = (BLSFieldElement*)PyCapsule_GetPointer(tmp, "BLSFieldElement");
+    memcpy(&scalars[i], PyCapsule_GetPointer(tmp, "BLSFieldElement"), sizeof(BLSFieldElement));
   }
 
   BLSFieldElement *r = (BLSFieldElement*)calloc(m, sizeof(BLSFieldElement));
@@ -283,7 +283,7 @@ static PyObject* vector_lincomb_wrap(PyObject *self, PyObject *args) {
     return PyErr_NoMemory();
   }
 
-  vector_lincomb_indirect(r, vectors, scalars, n, m);
+  vector_lincomb(r, vectors, scalars, n, m);
 
   free(scalars);
   free(vectors);
