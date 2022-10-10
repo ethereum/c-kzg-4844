@@ -3,19 +3,54 @@
 #include <stdlib.h>
 #include "c_kzg_4844.h"
 
-int verify_kzg_proof_wrap(const uint8_t c[48], const uint8_t x[32], const uint8_t y[32], const uint8_t p[48], KZGSettings *s) {
-  KZGCommitment commitment;
-  BLSFieldElement px, py;
+BLSFieldElement* bytes_to_bls_field_wrap(const uint8_t bytes[]) {
+  BLSFieldElement* out = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
+  if (out != NULL) bytes_to_bls_field(out, bytes);
+  return out;
+}
+
+BLSFieldElement* compute_powers_wrap(const BLSFieldElement *r, uint64_t n) {
+  BLSFieldElement* out = (BLSFieldElement*)calloc(n, sizeof(BLSFieldElement));
+  if (out != NULL) compute_powers(out, r, n);
+  return out;
+}
+
+PolynomialEvalForm* vector_lincomb_wrap(const uint8_t vectors[], const BLSFieldElement scalars[], uint64_t num_vectors, uint64_t vector_len) {
+  return NULL; // TODO
+}
+
+KZGCommitment* g1_lincomb_wrap(const uint8_t bytes[], const BLSFieldElement scalars[], uint64_t num_points) {
+  KZGCommitment* points = (KZGCommitment*)calloc(num_points, sizeof(KZGCommitment));
+  if (points == NULL) return NULL;
+
+  for (uint64_t i = 0; i < num_points; i++) {
+    if (bytes_to_g1(&points[i], &bytes[i * 48]) != C_KZG_OK) {
+      free(points);
+      return NULL;
+    }
+  }
+
+  KZGCommitment* out = (KZGCommitment*)malloc(sizeof(KZGCommitment));
+  if (out == NULL) {
+    free(points);
+    return NULL;
+  }
+
+  g1_lincomb(out, points, scalars, num_points);
+
+  free(points);
+  return out;
+}
+
+int verify_kzg_proof_wrap(const KZGCommitment* c, const BLSFieldElement* x, const BLSFieldElement* y, const uint8_t p[48], KZGSettings *s) {
   KZGProof proof;
   bool out;
 
-  if (bytes_to_g1(&commitment, c) != C_KZG_OK) return -1;
-  bytes_to_bls_field(&px, x);
-  bytes_to_bls_field(&py, y);
   if (bytes_to_g1(&proof, p) != C_KZG_OK) return -1;
 
-  if (verify_kzg_proof(&out, &commitment, &px, &py, &proof, s) != C_KZG_OK)
+  if (verify_kzg_proof(&out, c, x, y, &proof, s) != C_KZG_OK)
     return -2;
+
   return out ? 1 : 0;
 }
 
@@ -60,16 +95,4 @@ int evaluate_polynomial_wrap(uint8_t out[32], const uint8_t pvals[], size_t n, c
 void free_trusted_setup_wrap(KZGSettings* s) {
   free_trusted_setup(s);
   free(s);
-}
-
-BLSFieldElement* bytes_to_bls_field_wrap(const uint8_t bytes[]) {
-  BLSFieldElement* out = (BLSFieldElement*)malloc(sizeof(BLSFieldElement));
-  bytes_to_bls_field(out, bytes);
-  return out;
-}
-
-uint64_t* uint64s_from_bls_field(BLSFieldElement *fr) {
-  uint64_t *r = (uint64_t*)calloc(4, sizeof(uint64_t));
-  uint64s_from_BLSFieldElement(r, fr);
-  return r;
 }
