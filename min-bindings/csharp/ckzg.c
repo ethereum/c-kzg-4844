@@ -100,7 +100,12 @@ BLSFieldElement* evaluate_polynomial_wrap(const PolynomialEvalForm* p, const BLS
   return out;
 }
 
-void free_trusted_setup_wrap(KZGSettings* s) {
+void free_trusted_setup_wrap(KZGSettings *s) {
   free_trusted_setup(s);
   free(s);
+}
+
+void free_polynomial_wrap(PolynomialEvalForm *p) {
+  free_polynomial(p);
+  free(p);
 }

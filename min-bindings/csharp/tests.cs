@@ -7,19 +7,19 @@ using System.Runtime.InteropServices;
 class ckzg
 {
     [DllImport("ckzg.dll", EntryPoint = "bytes_to_bls_field_wrap")] // free result with free()
-    public static extern byte[] bytes_to_bls_field(byte[] bytes);
+    public static extern IntPtr bytes_to_bls_field(byte[] bytes);
 
     [DllImport("ckzg.dll", EntryPoint = "compute_powers_wrap")] // free result with free()
-    public static extern byte[] compute_powers(byte[] r, UInt64 n);
+    public static extern IntPtr compute_powers(IntPtr r, UInt64 n);
 
     [DllImport("ckzg.dll", EntryPoint = "vector_lincomb_wrap")] // free result with free_polynomial()
-    public static extern byte[] vector_lincomb(byte[] vectors, byte[] scalars, UInt64 num_vectors, UInt64 vector_len);
+    public static extern IntPtr vector_lincomb(byte[] vectors, IntPtr scalars, UInt64 num_vectors, UInt64 vector_len);
 
     [DllImport("ckzg.dll", EntryPoint = "g1_lincomb_wrap")] // free result with free()
-    public static extern byte[] g1_lincomb(byte[] points, byte[] scalars, UInt64 num_points);
+    public static extern IntPtr g1_lincomb(byte[] points, IntPtr scalars, UInt64 num_points);
 
     [DllImport("ckzg.dll", EntryPoint = "verify_kzg_proof_wrap")]
-    public static extern bool verify_kzg_proof(byte[] c, byte[] x, byte[] y, byte[] p, IntPtr ts);
+    public static extern int verify_kzg_proof(IntPtr c, IntPtr x, IntPtr y, byte[] p, IntPtr ts);
 
     [DllImport("ckzg.dll", EntryPoint = "evaluate_polynomial_wrap")] // free result with free()
     public static extern IntPtr evaluate_polynomial_in_evaluation_form(IntPtr p, IntPtr z, IntPtr ts);
@@ -30,7 +30,7 @@ class ckzg
     [DllImport("ckzg.dll", EntryPoint = "free_trusted_setup_wrap")]
     public static extern void free_trusted_setup(IntPtr ts);
 
-    [DllImport("ckzg.dll", EntryPoint = "free_polynomial")]
+    [DllImport("ckzg.dll", EntryPoint = "free_polynomial_wrap")]
     public static extern void free_polynomial(IntPtr p);
 
     [DllImport("ckzg.dll", EntryPoint = "free")]
