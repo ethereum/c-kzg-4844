@@ -18,9 +18,7 @@ inc/blst_aux.h*
 *bindings/*/*.so
 *bindings/python/ckzg_swig.py
 *bindings/python/ckzg.py
-*bindings/C#/ckzg_swig.cs
 *bindings/python/*_wrap.c
-*bindings/C#/*_wrap.c
-*bindings/C#/*.exe
-*bindings/C#/*.dll
+*bindings/csharp/*.exe
+*bindings/csharp/*.dll
 __pycache__
