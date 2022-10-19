@@ -29,6 +29,8 @@
 
 #include "blst.h"
 
+#define FIELD_ELEMENTS_PER_BLOB 4096
+
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
@@ -36,6 +38,7 @@ typedef blst_fr fr_t;         /**< Internal Fr field element type */
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
+typedef BLSFieldElement Polynomial[FIELD_ELEMENTS_PER_BLOB];
 
 /**
  * The common return type for all routines in which something can go wrong.
@@ -58,14 +61,10 @@ void bytes_from_g1(uint8_t out[48], const g1_t*);
 C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t[48]);
 
 /**
- * BLSFieldElements are communicated directly to/from clients,
- * so we need to expose the functions for translating between this
- * type and uint256. BLST represents uint256 as uint64[4].
- * TODO: remove the uint64s version?
- * For conversion to BLSFieldElement use bytes_to_bls_field.
+ * BLSFieldElements can be recovered as 32 bytes
  */
-void uint64s_from_BLSFieldElement(uint64_t out[4], const BLSFieldElement*);
 void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement*);
+void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]);
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
@@ -83,44 +82,33 @@ typedef struct {
 typedef struct {
     const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
     g1_t *g1_values;       /**< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation */
-    g2_t *g2_values;       /**< G2 group elements from the trusted setup */
-    uint64_t length;       /**< The number of elements in g1_values */
+    g2_t *g2_values;       /**< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements */
 } KZGSettings;
-
-/**
- * Lagrange form polynomial, with values under the bit-reversal permutation
- */
-typedef struct {
-    fr_t *values;    /**< `values[i]` is value of the polynomial at `ω^brp(i)` */
-    uint64_t length; /**< One more than the polynomial's degree */
-} PolynomialEvalForm;
-
-C_KZG_RET alloc_polynomial(PolynomialEvalForm *out, uint64_t length);
-void free_polynomial(PolynomialEvalForm *p);
-
 
 /**
  * Interface functions
  */
 
-C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup(KZGSettings *out,
+    FILE *in);
 
-void free_trusted_setup(KZGSettings *s);
+void free_trusted_setup(
+    KZGSettings *s);
 
-void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]);
+C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
+    const Polynomial blobs[],
+    size_t n,
+    const KZGSettings *s);
 
-void vector_lincomb(BLSFieldElement out[], const BLSFieldElement vectors[], const BLSFieldElement scalars[], uint64_t num_vectors, uint64_t vector_len);
+C_KZG_RET verify_aggregate_kzg_proof(bool *out,
+    const Polynomial blobs[],
+    const KZGCommitment expected_kzg_commitments[],
+    size_t n,
+    const KZGProof *kzg_aggregated_proof,
+    const KZGSettings *s);
 
-void g1_lincomb(KZGCommitment *out, const KZGCommitment points[], const BLSFieldElement scalars[], uint64_t num_points);
-
-void blob_to_kzg_commitment(KZGCommitment *out, const BLSFieldElement blob[], const KZGSettings *s);
-
-C_KZG_RET verify_kzg_proof(bool *out, const KZGCommitment *polynomial_kzg, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *kzg_proof, const KZGSettings *s);
-
-C_KZG_RET compute_kzg_proof(KZGProof *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s);
-
-C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const PolynomialEvalForm *polynomial, const BLSFieldElement *z, const KZGSettings *s);
-
-void compute_powers(BLSFieldElement out[], const BLSFieldElement *x, uint64_t n);
+void blob_to_kzg_commitment(KZGCommitment *out,
+    const Polynomial blob,
+    const KZGSettings *s);
 
 #endif // C_KZG_4844_H
