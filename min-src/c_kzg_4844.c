@@ -805,13 +805,15 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
 
   out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
 
-  TRY(new_fft_settings((FFTSettings*)out->fs, max_scale));
+  C_KZG_RET ret;
+  ret = new_fft_settings((FFTSettings*)out->fs, max_scale);
+  if (ret != C_KZG_OK) { free(g1_projective); return ret; }
 
-  TRY(fft_g1(out->g1_values, g1_projective, true, FIELD_ELEMENTS_PER_BLOB, out->fs));
+  ret = fft_g1(out->g1_values, g1_projective, true, FIELD_ELEMENTS_PER_BLOB, out->fs);
+  free(g1_projective);
+  if (ret != C_KZG_OK) return ret;
 
   TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), FIELD_ELEMENTS_PER_BLOB));
-
-  free(g1_projective);
 
   return C_KZG_OK;
 }
@@ -992,7 +994,9 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   fr_t *inverses_in, *inverses;
 
   TRY(new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB));
-  TRY(new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB));
+  C_KZG_RET ret;
+  ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
+  if (ret != C_KZG_OK) { free(inverses_in); return ret; }
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     if (fr_equal(x, &roots_of_unity[i])) {
@@ -1004,7 +1008,8 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
     fr_sub(&inverses_in[i], &roots_of_unity[i], x);
   }
 
-  TRY(fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB));
+  ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
+  if (ret != C_KZG_OK) { free(inverses_in); free(inverses); return ret; }
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     fr_mul(&q[i], &q[i], &inverses[i]);
@@ -1018,7 +1023,8 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
       fr_sub(&tmp, x, &roots_of_unity[i]);
       fr_mul(&inverses_in[i], &tmp, x);
     }
-    TRY(fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB));
+    ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    if (ret != C_KZG_OK) { free(inverses_in); free(inverses); return ret; }
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
       fr_sub(&tmp, &p[i], &y);
       fr_mul(&tmp, &tmp, &roots_of_unity[i]);
