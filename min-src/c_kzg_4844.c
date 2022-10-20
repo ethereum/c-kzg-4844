@@ -774,8 +774,13 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
   blst_p2_affine g2_affine;
   g1_t *g1_projective;
 
+  fscanf(in, "%" SCNu64, &i);
+  CHECK(i == FIELD_ELEMENTS_PER_BLOB);
+  fscanf(in, "%" SCNu64, &i);
+  CHECK(i == 65);
+
   TRY(new_g1_array(&out->g1_values, FIELD_ELEMENTS_PER_BLOB));
-  TRY(new_g2_array(&out->g2_values, FIELD_ELEMENTS_PER_BLOB));
+  TRY(new_g2_array(&out->g2_values, 65));
 
   TRY(new_g1_array(&g1_projective, FIELD_ELEMENTS_PER_BLOB));
 
@@ -786,7 +791,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
     bytes_to_g1(&g1_projective[i], c);
   }
 
-  for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+  for (i = 0; i < 65; i++) {
     for (j = 0; j < 96; j++) {
       fscanf(in, "%2hhx", &c[j]);
     }
