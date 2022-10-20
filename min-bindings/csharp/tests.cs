@@ -6,35 +6,20 @@ using System.Runtime.InteropServices;
 
 class ckzg
 {
-    [DllImport("ckzg.dll", EntryPoint = "bytes_to_bls_field_wrap")] // free result with free()
-    public static extern IntPtr bytes_to_bls_field(byte[] bytes);
+    [DllImport("ckzg.dll", EntryPoint = "blob_to_kzg_commitment_wrap")]
+    public static extern void blob_to_kzg_commitment(byte[/*48*/] retval, byte[/*4096 * 32*/] blob, IntPtr ts);
 
-    [DllImport("ckzg.dll", EntryPoint = "compute_powers_wrap")] // free result with free()
-    public static extern IntPtr compute_powers(IntPtr r, UInt64 n);
+    [DllImport("ckzg.dll", EntryPoint = "compute_aggregate_kzg_proof_wrap")] // returns 0 on success
+    public static extern int compute_aggregate_kzg_proof(byte[/*48*/] retval, byte[] blobs, int n, IntPtr ts);
 
-    [DllImport("ckzg.dll", EntryPoint = "vector_lincomb_wrap")] // free result with free_polynomial()
-    public static extern IntPtr vector_lincomb(byte[] vectors, IntPtr scalars, UInt64 num_vectors, UInt64 vector_len);
-
-    [DllImport("ckzg.dll", EntryPoint = "g1_lincomb_wrap")] // free result with free()
-    public static extern IntPtr g1_lincomb(byte[] points, IntPtr scalars, UInt64 num_points);
-
-    [DllImport("ckzg.dll", EntryPoint = "verify_kzg_proof_wrap")]
-    public static extern int verify_kzg_proof(IntPtr c, IntPtr x, IntPtr y, byte[] p, IntPtr ts);
-
-    [DllImport("ckzg.dll", EntryPoint = "evaluate_polynomial_wrap")] // free result with free()
-    public static extern IntPtr evaluate_polynomial_in_evaluation_form(IntPtr p, IntPtr z, IntPtr ts);
+    [DllImport("ckzg.dll", EntryPoint = "verify_aggregate_kzg_proof_wrap")] // returns 0 on success
+    public static extern int verify_aggregate_kzg_proof(byte[] blobs, byte[] commitments, int n, byte[/*48*/] proof, IntPtr ts);
 
     [DllImport("ckzg.dll", EntryPoint = "load_trusted_setup_wrap")] // free result with free_trusted_setup()
     public static extern IntPtr load_trusted_setup(string filename);
 
     [DllImport("ckzg.dll", EntryPoint = "free_trusted_setup_wrap")]
     public static extern void free_trusted_setup(IntPtr ts);
-
-    [DllImport("ckzg.dll", EntryPoint = "free_polynomial_wrap")]
-    public static extern void free_polynomial(IntPtr p);
-
-    [DllImport("ckzg.dll", EntryPoint = "free")]
-    private static extern void free(IntPtr p);
 }
 
 class tests
