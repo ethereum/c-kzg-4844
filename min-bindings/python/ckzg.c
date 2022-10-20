@@ -159,11 +159,26 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
   if (out) Py_RETURN_TRUE; else Py_RETURN_FALSE;
 }
 
+static PyObject* bytes_from_g1_wrap(PyObject *self, PyObject *args) {
+  PyObject *c;
+
+  if (!PyArg_UnpackTuple(args, "bytes_from_g1", 1, 1, &c) ||
+      !PyCapsule_IsValid(c, "G1"))
+    return PyErr_Format(PyExc_ValueError, "expected G1 capsule");
+
+  uint8_t bytes[48];
+  bytes_from_g1(bytes, PyCapsule_GetPointer(c, "G1"));
+
+  return PyBytes_FromStringAndSize((char*)bytes, 48);
+}
+
 static PyMethodDef ckzgmethods[] = {
   {"load_trusted_setup",          load_trusted_setup_wrap,          METH_VARARGS, "Load trusted setup from file path"},
   {"blob_to_kzg_commitment",      blob_to_kzg_commitment_wrap,      METH_VARARGS, "Create a commitment from a blob"},
   {"compute_aggregate_kzg_proof", compute_aggregate_kzg_proof_wrap, METH_VARARGS, "Compute aggregate KZG proof"},
   {"verify_aggregate_kzg_proof",  verify_aggregate_kzg_proof_wrap,  METH_VARARGS, "Verify aggregate KZG proof"},
+  // for tests/debugging
+  {"bytes_from_g1",               bytes_from_g1_wrap,               METH_VARARGS, "Convert a group element to 48 bytes"},
   {NULL, NULL, 0, NULL}
 };
 
