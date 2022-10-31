@@ -921,8 +921,8 @@ void blob_to_kzg_commitment(KZGCommitment *out, const Polynomial blob, const KZG
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-static C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
-                                  const g1_t *proof, const KZGSettings *ks) {
+C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+                           const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
     g2_mul(&x_g2, &g2_generator, x);

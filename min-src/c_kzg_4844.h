@@ -111,4 +111,11 @@ void blob_to_kzg_commitment(KZGCommitment *out,
     const Polynomial blob,
     const KZGSettings *s);
 
+C_KZG_RET verify_kzg_proof(bool *out,
+    const KZGCommitment *polynomial_kzg,
+    const BLSFieldElement *z,
+    const BLSFieldElement *y,
+    const KZGProof *kzg_proof,
+    const KZGSettings *s);
+
 #endif // C_KZG_4844_H
