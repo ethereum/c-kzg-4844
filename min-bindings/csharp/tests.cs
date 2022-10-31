@@ -15,6 +15,9 @@ class ckzg
     [DllImport("ckzg.dll", EntryPoint = "verify_aggregate_kzg_proof_wrap")] // returns 0 on success
     public static extern int verify_aggregate_kzg_proof(byte[] blobs, byte[] commitments, int n, byte[/*48*/] proof, IntPtr ts);
 
+    [DllImport("ckzg.dll", EntryPoint = "verify_kzg_proof_wrap")] // returns 0 on success
+    public static extern int verify_kzg_proof(byte[/*48*/] c, byte[/*32*/] x, byte[/*32*/] y, byte[/*48*/] p, IntPtr ts);
+
     [DllImport("ckzg.dll", EntryPoint = "load_trusted_setup_wrap")] // free result with free_trusted_setup()
     public static extern IntPtr load_trusted_setup(string filename);
 
