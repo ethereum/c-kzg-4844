@@ -1,11 +1,18 @@
-INCLUDE_DIRS = .. ../../src ../../inc
+INCLUDE_DIRS = .. ../../min-src ../../inc
 INCLUDE_PY = $(shell python -c 'import sysconfig; print(sysconfig.get_config_var("INCLUDEPY"))')
 
-test: tests.py _ckzg.so
+.PHONY: all
+
+all: test ecc_test
+
+test: tests.py ckzg.so
 	python $<
 
-_ckzg.so: c_kzg_wrap.c ../../src/libckzg.a ../../lib/libblst.a ../../src/test_util.o
-	clang -O -Wall -shared -fPIC -Wl,-Bsymbolic -I${INCLUDE_PY} ${addprefix -I,${INCLUDE_DIRS}} -o $@ $^
+ecc_test: py_ecc_tests.py ckzg.so
+	python $<
 
-c_kzg_wrap.c ckzg.py: ../c_kzg.swg
-	swig -DSWIGWORDSIZE64 -O -Wall -python -outcurrentdir $<
+libblst.a: ../../lib/libblst.a
+	objcopy --globalize-symbol=sha256_init --globalize-symbol=sha256_update --globalize-symbol=sha256_final $< $@
+
+ckzg.so: ckzg.c ../../min-src/c_kzg_4844.o libblst.a
+	clang -O -Wall -shared -fPIC -Wl,-Bsymbolic -I${INCLUDE_PY} ${addprefix -I,${INCLUDE_DIRS}} -o $@ $^
