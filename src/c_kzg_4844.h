@@ -108,7 +108,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     const KZGSettings *s);
 
 void blob_to_kzg_commitment(KZGCommitment *out,
-    const Polynomial blob,
+    const BLSFieldElement blob[FIELD_ELEMENTS_PER_BLOB],
     const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
