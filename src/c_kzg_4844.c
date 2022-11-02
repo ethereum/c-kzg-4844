@@ -20,7 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-void test_function() {}
+int test_function() {
+  return 5;
+}
 
 
 /**

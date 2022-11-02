@@ -29,7 +29,14 @@
 
 #include "blst.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #define FIELD_ELEMENTS_PER_BLOB 4096
+
+
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
@@ -53,12 +60,6 @@ typedef enum {
     C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void test_function();
 
 /**
  * KZGCommitment and KZGProof can be recovered as 48 bytes
@@ -90,6 +91,8 @@ typedef struct {
     g1_t *g1_values;       /**< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation */
     g2_t *g2_values;       /**< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements */
 } KZGSettings;
+
+int test_function();
 
 /**
  * Interface functions
