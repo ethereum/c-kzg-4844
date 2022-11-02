@@ -29,14 +29,12 @@
 
 #include "blst.h"
 
+// Allow a library built from this code to be used from C++
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
 #define FIELD_ELEMENTS_PER_BLOB 4096
-
-
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */

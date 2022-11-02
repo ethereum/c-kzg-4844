@@ -1,31 +1,11 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <iostream>
 #define NAPI_EXPERIMENTAL
 #include <napi.h>
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-
-KZGSettings* loadTrustedSetup(const char* file) {
-  KZGSettings* out = (KZGSettings*)malloc(sizeof(KZGSettings));
-
-  if (out == NULL) return NULL;
-
-  FILE* f = fopen(file, "r");
-
-  if (f == NULL) { free(out); return NULL; }
-
-  if (load_trusted_setup(out, f) != C_KZG_OK) { free(out); return NULL; }
-
-  return out;
-}
-
-void freeTrustedSetup(KZGSettings *s) {
-  free_trusted_setup(s);
-  free(s);
-}
 
 void blobToKzgCommitment(uint8_t out[48], const uint8_t blob[FIELD_ELEMENTS_PER_BLOB * 32], const KZGSettings *s) {
   Polynomial p;
@@ -137,25 +117,16 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  // https://github.com/nodejs/node-addon-api/issues/667
-  Napi::External<KZGSettings> kzgSettingsPointer = Napi::External<KZGSettings>::New(info.Env(), kzgSettings);
-  kzgSettingsPointer.As<Napi::Object>().AddFinalizer([](Napi::Env, KZGSettings* kzgSettings) {
-    printf(" finalize \n"
-           " test %p   "
-           "*test %x   "
-           "&test %p\n", kzgSettings, *kzgSettings, &kzgSettings);
-  }, kzgSettings);
-
-  return kzgSettingsPointer;
+  return Napi::External<KZGSettings>::New(info.Env(), kzgSettings);
 }
 
 void FreeTrustedSetup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   KZGSettings* kzgSettings = info[0].As<Napi::External<KZGSettings>>().Data();
-  printf("Freeing: kzgSettings %p   *kzgSettings %s   &kzgSettings %p\n", kzgSettings, *kzgSettings, &kzgSettings);
-
-  freeTrustedSetup(kzgSettings);
+  free_trusted_setup(kzgSettings);
+  free(kzgSettings);
 }
+
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 }
