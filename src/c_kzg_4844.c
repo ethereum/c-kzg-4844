@@ -20,11 +20,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-int test_function() {
-  return 5;
-}
-
-
 /**
  * Wrapped `malloc()` that reports failures to allocate.
  *
@@ -909,7 +904,7 @@ static void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint6
     }
 }
 
-void blob_to_kzg_commitment(KZGCommitment *out, const BLSFieldElement blob[FIELD_ELEMENTS_PER_BLOB], const KZGSettings *s) {
+void blob_to_kzg_commitment(KZGCommitment *out, const Polynomial blob, const KZGSettings *s) {
   g1_lincomb(out, s->g1_values, blob, FIELD_ELEMENTS_PER_BLOB);
 }
 

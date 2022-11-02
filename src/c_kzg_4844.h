@@ -90,8 +90,6 @@ typedef struct {
     g2_t *g2_values;       /**< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements */
 } KZGSettings;
 
-int test_function();
-
 /**
  * Interface functions
  */
@@ -115,7 +113,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     const KZGSettings *s);
 
 void blob_to_kzg_commitment(KZGCommitment *out,
-    const BLSFieldElement blob[FIELD_ELEMENTS_PER_BLOB],
+    const Polynomial blob,
     const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
