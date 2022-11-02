@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include "ckzg.h"
 
-void testFunction() {}
+void testFunction() {
+  return test_function();
+}
 
 KZGSettings* loadTrustSetup(const char* file) {
   KZGSettings* out = (KZGSettings*)malloc(sizeof(KZGSettings));

@@ -20,6 +20,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+void test_function() {}
+
+
 /**
  * Wrapped `malloc()` that reports failures to allocate.
  *

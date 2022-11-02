@@ -8,4 +8,5 @@ console.log(kzg);
 
 console.log('Invoking function...', kzg.testFunction());
 
-console.log('Invoking freeTrustedSetup...', kzg.freeTrustedSetup(null));
+let config = {};
+console.log('Invoking freeTrustedSetup...', kzg.freeTrustedSetup(config));

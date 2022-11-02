@@ -54,6 +54,12 @@ typedef enum {
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void test_function();
+
 /**
  * KZGCommitment and KZGProof can be recovered as 48 bytes
  */
@@ -117,5 +123,9 @@ C_KZG_RET verify_kzg_proof(bool *out,
     const BLSFieldElement *y,
     const KZGProof *kzg_proof,
     const KZGSettings *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // C_KZG_4844_H
