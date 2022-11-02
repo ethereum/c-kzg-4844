@@ -6,6 +6,10 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
+#include <sstream>  // std::ostringstream
+#include <algorithm>    // std::copy
+#include <iterator> // std::ostream_iterator
+
 
 void blobToKzgCommitment(uint8_t out[48], const uint8_t blob[FIELD_ELEMENTS_PER_BLOB * 32], const KZGSettings *s) {
   Polynomial p;
@@ -83,6 +87,7 @@ int verifyKzgProof(const uint8_t c[48], const uint8_t x[32], const uint8_t y[32]
 
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
+
   if (info.Length() != 1) {
     Napi::TypeError::New(env, "Wrong number of arguments")
       .ThrowAsJavaScriptException();
@@ -117,9 +122,11 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
+  // Consider making this internal state intead
   return Napi::External<KZGSettings>::New(info.Env(), kzgSettings);
 }
 
+// Maybe this can be done with a finalizer on the thing returned by LoadTrustedSetup, and then the JS garbage collector can just sort it out.
 void FreeTrustedSetup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   KZGSettings* kzgSettings = info[0].As<Napi::External<KZGSettings>>().Data();
@@ -130,23 +137,78 @@ void FreeTrustedSetup(const Napi::CallbackInfo& info) {
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 }
+
 Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 }
+
 Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
 }
+
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
+
+  if (info.Length() != 5) {
+    Napi::TypeError::New(env, "Wrong number of arguments")
+      .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+
+  // const uint8_t c[48]
+  uint8_t* c = reinterpret_cast<uint8_t*>(info[0].As<Napi::Int8Array>().Data());
+
+  // const uint8_t x[32]
+  uint8_t* x = reinterpret_cast<uint8_t*>(info[1].As<Napi::Int8Array>().Data());
+
+  // const uint8_t y[32]
+  uint8_t* y = reinterpret_cast<uint8_t*>(info[2].As<Napi::Int8Array>().Data());
+
+  // const uint8_t p[48]
+  uint8_t* p = reinterpret_cast<uint8_t*>(info[3].As<Napi::Int8Array>().Data());
+
+  // KZGSettings *s
+  KZGSettings* kzgSettings = info[4].As<Napi::External<KZGSettings>>().Data();
+
+  KZGCommitment commitment;
+  KZGProof proof;
+  BLSFieldElement fx, fy;
+  bool out;
+
+  bytes_to_bls_field(&fx, x);
+  bytes_to_bls_field(&fy, y);
+
+  C_KZG_RET ret = bytes_to_g1(&commitment, c);
+  if (ret != C_KZG_OK) {
+    std::ostringstream ss;
+    std::copy(c, c+sizeof(c), std::ostream_iterator<int>(ss, ","));
+
+    Napi::TypeError::New(env, "Failed to parse argument commitment: "  + ss.str() + " Return code was: " + std::to_string(ret)).ThrowAsJavaScriptException();
+    return env.Null();
+    // return -1;
+  };
+  if (bytes_to_g1(&proof, p) != C_KZG_OK) {
+    Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+    return env.Null();
+    // return -1;
+  }
+
+  if (verify_kzg_proof(&out, &commitment, &fx, &fy, &proof, kzgSettings) != C_KZG_OK) {
+    return env.Null();
+  }
+
+  return env.Null();
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports.Set(Napi::String::New(env, "loadTrustedSetup"), Napi::Function::New(env, LoadTrustedSetup));
   exports.Set(Napi::String::New(env, "freeTrustedSetup"), Napi::Function::New(env, FreeTrustedSetup));
+  exports.Set(Napi::String::New(env, "verifyKzgProof"), Napi::Function::New(env, VerifyKzgProof));
+
+
   exports.Set(Napi::String::New(env, "blobToKzgCommitment"), Napi::Function::New(env, BlobToKzgCommitment));
   exports.Set(Napi::String::New(env, "verifyAggregateKzgProof"), Napi::Function::New(env, VerifyAggregateKzgProof));
   exports.Set(Napi::String::New(env, "computeAggregateKzgProof"), Napi::Function::New(env, ComputeAggregateKzgProof));
-  exports.Set(Napi::String::New(env, "verifyKzgProof"), Napi::Function::New(env, VerifyKzgProof));
   return exports;
 }
 

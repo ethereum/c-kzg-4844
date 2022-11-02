@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "description": "",
   "author": "Dan Coffman",
-  "main": "runnable.js",
+  "license": "MIT",
+  "main": "test.ts",
   "gypfile": true,
   "scripts": {
     "clean": "node-gyp clean",
