@@ -825,7 +825,7 @@ void free_trusted_setup(KZGSettings *s) {
 
 static void compute_powers(fr_t out[], uint64_t n) {
     uint64_t i = 0;
-    out[++i] = fr_one;
+    out[i++] = fr_one;
     while (++i < n) fr_mul(&out[i], &out[i-1], &out[1]);
 }
 
