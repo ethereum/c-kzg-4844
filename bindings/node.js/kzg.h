@@ -1,9 +1,6 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-// #include <node.h>
-// #include <node_version.h>
-// #include <v8.h>
 
 #include "c_kzg_4844.h"
 

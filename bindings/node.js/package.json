@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "author": "Dan Coffman",
+  "main": "runnable.js",
   "gypfile": true,
   "scripts": {
     "clean": "node-gyp clean",
@@ -12,6 +13,7 @@
     "node-gyp": "^9.3.0"
   },
   "dependencies": {
+    "bindings": "^1.5.0",
     "node-addon-api": "^5.0.0"
   }
 }

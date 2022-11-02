@@ -5,10 +5,10 @@ clean:
 	rm -f ckzg_wrap.cxx
 
 build: ckzg.cxx ckzg.h Makefile
-	cd ../../src; make lib
-	swig -c++ -javascript -node ckzg.swg
+	# cd ../../src; make lib
+	# swig -c++ -javascript -node ckzg.swg
 	yarn build
-	cp build/Release/ckzg.node .
+	cp build/Release/kzg.node .
 
 test:
 	env NODE_PATH=.: node runnable.js
