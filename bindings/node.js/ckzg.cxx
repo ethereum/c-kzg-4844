@@ -1,10 +1,12 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "c_kzg_4844.h"
+#include "ckzg.h"
+
+void testFunction() {}
 
 KZGSettings* loadTrustSetup(const char* file) {
-  KZGSettings* out = malloc(sizeof(KZGSettings));
+  KZGSettings* out = (KZGSettings*)malloc(sizeof(KZGSettings));
 
   if (out == NULL) return NULL;
 
@@ -34,10 +36,10 @@ void blobToKzgCommitment(uint8_t out[48], const uint8_t blob[FIELD_ELEMENTS_PER_
 }
 
 int verifyAggregateKzgProof(const uint8_t blobs[], const uint8_t commitments[], size_t n, const uint8_t proof[48], const KZGSettings *s) {
-  Polynomial* p = calloc(n, sizeof(Polynomial));
+  Polynomial* p = (Polynomial*)calloc(n, sizeof(Polynomial));
   if (p == NULL) return -1;
 
-  KZGCommitment* c = calloc(n, sizeof(KZGCommitment));
+  KZGCommitment* c = (KZGCommitment*)calloc(n, sizeof(KZGCommitment));
   if (c == NULL) { free(p); return -1; }
 
   C_KZG_RET ret;
@@ -62,8 +64,8 @@ int verifyAggregateKzgProof(const uint8_t blobs[], const uint8_t commitments[], 
 }
 
 C_KZG_RET computeAggregateKzgProof(uint8_t out[48], const uint8_t blobs[], size_t n, const KZGSettings *s) {
-  Polynomial* p = calloc(n, sizeof(Polynomial));
-  if (p == NULL) return -1;
+  Polynomial* p = (Polynomial*)calloc(n, sizeof(Polynomial));
+  if (p == NULL) return C_KZG_ERROR;
 
   for (size_t i = 0; i < n; i++)
     for (size_t j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)

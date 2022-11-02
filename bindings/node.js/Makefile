@@ -3,8 +3,8 @@ clean:
 	rm -f ckzg.node
 	rm -f ckzg_wrap.cxx
 
-build: ckzg.c ckzg.h
-	swig -javascript -node ckzg.swg
+build: ckzg.cxx ckzg.h
+	swig -c++ -javascript -node ckzg.swg
 	node-gyp rebuild
 	cp build/Release/ckzg.node .
 

@@ -3,10 +3,11 @@
     {
       'target_name': 'ckzg',
       'sources': [
+        'ckzg.cxx',
         'ckzg_wrap.cxx',
-        '../../src/c_kzg_4844.c',
       ],
-      'include_dirs': [ '../../inc' ]
-    },
+      'include_dirs': ['../../inc', '../../src'],
+      'libraries': ['/Users/coffman@coinbase.com/src/c-kzg/bindings/node.js/libckzg.a'],
+    }
   ]
 }

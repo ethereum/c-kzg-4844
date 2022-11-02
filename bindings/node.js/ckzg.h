@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include "c_kzg_4844.h"
 
+void testFunction();
+
 KZGSettings* loadTrustSetup(const char* file);
 
 void freeTrustedSetup(KZGSettings *s);
