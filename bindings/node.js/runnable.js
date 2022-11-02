@@ -2,6 +2,8 @@
 
 console.log('testing...');
 
-const blst = require('ckzg');
+const kzg = require('ckzg');
 
-console.log(blst);
+console.log(kzg);
+
+kzg.testFunction();
