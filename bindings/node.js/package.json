@@ -1,0 +1,17 @@
+{
+  "name": "c-kzg",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Dan Coffman",
+  "gypfile": true,
+  "scripts": {
+    "clean": "node-gyp clean",
+    "build": "node-gyp rebuild"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.3.0"
+  },
+  "dependencies": {
+    "node-addon-api": "^5.0.0"
+  }
+}

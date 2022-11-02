@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include "c_kzg_4844.h"
 
-void testFunction();
+int testFunction();
 
-KZGSettings* loadTrustSetup(const char* file);
+KZGSettings* loadTrustedSetup(const char* file);
 
 void freeTrustedSetup(KZGSettings *s);
 

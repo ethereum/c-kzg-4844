@@ -2,12 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ckzg.h"
+#include <napi.h>
 
-void testFunction() {
+int testFunction() {
   return test_function();
 }
 
-KZGSettings* loadTrustSetup(const char* file) {
+// https://stackoverflow.com/questions/59799509/how-to-return-a-c-class-to-node-js
+// https://github.com/nodejs/node-addon-api/blob/main/doc/node-gyp.md
+
+KZGSettings* loadTrustedSetup(const char* file) {
   KZGSettings* out = (KZGSettings*)malloc(sizeof(KZGSettings));
 
   if (out == NULL) return NULL;

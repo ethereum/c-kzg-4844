@@ -1,11 +1,13 @@
 clean:
+	yarn clean
 	rm -rf build
 	rm -f ckzg.node
 	rm -f ckzg_wrap.cxx
 
-build: ckzg.cxx ckzg.h
+build: ckzg.cxx ckzg.h Makefile
+	cd ../../src; make lib
 	swig -c++ -javascript -node ckzg.swg
-	node-gyp rebuild
+	yarn build
 	cp build/Release/ckzg.node .
 
 test:
