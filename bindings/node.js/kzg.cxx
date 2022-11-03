@@ -1,16 +1,14 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define NAPI_EXPERIMENTAL
+#include <sstream>  // std::ostringstream
+#include <algorithm> // std::copy
+#include <iterator> // std::ostream_iterator
 #include <napi.h>
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-#include <sstream>  // std::ostringstream
-#include <algorithm>    // std::copy
-#include <iterator> // std::ostream_iterator
-
-Napi::TypedArrayOf<uint8_t> napiTypedArrayFromByteArray(uint8_t* array, size_t arrayLength, Napi::Env env) {
+Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t arrayLength, Napi::Env env) {
   // Create std::vector<uint8_t> out of array.
   // We allocate it on the heap to allow wrapping it up into ArrayBuffer.
   std::unique_ptr<std::vector<uint8_t>> nativeArray =
@@ -75,13 +73,11 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  // Consider making this internal state intead
   return Napi::External<KZGSettings>::New(info.Env(), kzgSettings);
 }
 
 // freeTrustedSetup: (setupHandle: SetupHandle) => void;
 void FreeTrustedSetup(const Napi::CallbackInfo& info) {
-  // Maybe this can be done with a finalizer on the thing returned by LoadTrustedSetup, and then the JS garbage collector can just sort it out.
   auto kzgSettings = info[0].As<Napi::External<KZGSettings>>().Data();
   free_trusted_setup(kzgSettings);
   free(kzgSettings);
@@ -109,15 +105,14 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 
   Polynomial polynomial;
   for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++)
-    bytes_to_bls_field(&polynomial[i], &blob[i * 32]);
+    bytes_to_bls_field(&polynomial[i], &blob[i * BYTES_PER_FIELD]);
 
   KZGCommitment commitment;
   blob_to_kzg_commitment(&commitment, polynomial, kzgSettings);
 
-  // Turn it into a byte array
   uint8_t commitmentBytes[BYTES_PER_COMMITMENT];
   bytes_from_g1(commitmentBytes, &commitment);
-  return napiTypedArrayFromByteArray(commitmentBytes, BYTES_PER_COMMITMENT, env);
+  return napi_typed_array_from_bytes(commitmentBytes, BYTES_PER_COMMITMENT, env);
 }
 
 // computeAggregateKzgProof: (blobs: Blob[], setupHandle: SetupHandle) => KZGProof;
@@ -134,16 +129,11 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto kzgSettings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   auto numberOfBlobs = blobs_param.Length();
-
-  printf("ComputeAggregateKzgProof called with %i blob(s)\n", numberOfBlobs);
-
   auto polynomial = (Polynomial*)calloc(numberOfBlobs, sizeof(Polynomial));
 
   for (uint32_t blobIndex = 0; blobIndex < numberOfBlobs; blobIndex++) {
     Napi::Value blob = blobs_param[blobIndex];
     auto blobBytes = blob.As<Napi::Uint8Array>().Data();
-
-    printf("Iterating blob index: %i\n", blobIndex);
 
     for (uint32_t fieldIndex = 0; fieldIndex < FIELD_ELEMENTS_PER_BLOB; fieldIndex++) {
       bytes_to_bls_field(
@@ -168,19 +158,9 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
     return env.Undefined();
   };
 
-  printf("proof generated: %llu y: %llu z: %llu\n", proof.x, proof.y, proof.z);
-  printf("compute_aggregate_kzg_proof ret was %i\n", ret);
-
-  uint8_t array[48];
-  bytes_from_g1(array, &proof);
-
-  printf("Turned proof into bytes: [");
-  for (int i = 0; i < sizeof(array); i++) {
-    printf("%x ", array[i]);
-  }
-  printf("]\n");
-
-  return napiTypedArrayFromByteArray(array, sizeof(array), env);
+  uint8_t proofBytes[BYTES_PER_PROOF];
+  bytes_from_g1(proofBytes, &proof);
+  return napi_typed_array_from_bytes(proofBytes, BYTES_PER_PROOF, env);
 }
 
 // verifyAggregateKzgProof: (blobs: Blob[], expectedKzgCommitments: KZGCommitment[], kzgAggregatedProof: KZGProof) => boolean;
@@ -242,15 +222,14 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   }
 
   bool verificationResult;
-  ret = verify_aggregate_kzg_proof(
+  if (verify_aggregate_kzg_proof(
     &verificationResult,
     polynomial,
     commitments,
     numberOfBlobs,
     &proof,
     kzgSettings
-  );
-  if (ret != C_KZG_OK) {
+  ) != C_KZG_OK) {
     free(commitments);
     free(polynomial);
 
@@ -275,7 +254,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  // const uint8_t c[48]
   auto c_param = info[0].As<Napi::TypedArray>();
   if (c_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(env, "Expected an Uint8Array")
@@ -284,7 +262,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto c = c_param.As<Napi::Uint8Array>().Data();
 
-  // const uint8_t x[32]
   auto x_param = info[0].As<Napi::TypedArray>();
   if (x_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(env, "Expected an Uint8Array")
@@ -293,7 +270,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto x = x_param.As<Napi::Uint8Array>().Data();
 
-  // const uint8_t y[32]
   auto y_param = info[0].As<Napi::TypedArray>();
   if (y_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(env, "Expected an Uint8Array")
@@ -302,7 +278,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto y = y_param.As<Napi::Uint8Array>().Data();
 
-  // const uint8_t p[48]
   auto p_param = info[0].As<Napi::TypedArray>();
   if (p_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(info.Env(), "Expected an Uint8Array")
@@ -311,7 +286,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto p = p_param.As<Napi::Uint8Array>().Data();
 
-  // KZGSettings *s
   auto kzgSettings = info[4].As<Napi::External<KZGSettings>>().Data();
 
   KZGCommitment commitment;
@@ -343,14 +317,12 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  exports.Set(Napi::String::New(env, "loadTrustedSetup"), Napi::Function::New(env, LoadTrustedSetup));
-  exports.Set(Napi::String::New(env, "freeTrustedSetup"), Napi::Function::New(env, FreeTrustedSetup));
-  exports.Set(Napi::String::New(env, "verifyKzgProof"), Napi::Function::New(env, VerifyKzgProof));
-
-
-  exports.Set(Napi::String::New(env, "blobToKzgCommitment"), Napi::Function::New(env, BlobToKzgCommitment));
-  exports.Set(Napi::String::New(env, "verifyAggregateKzgProof"), Napi::Function::New(env, VerifyAggregateKzgProof));
-  exports.Set(Napi::String::New(env, "computeAggregateKzgProof"), Napi::Function::New(env, ComputeAggregateKzgProof));
+  exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup);
+  exports["freeTrustedSetup"] = Napi::Function::New(env, FreeTrustedSetup);
+  exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
+  exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment);
+  exports["computeAggregateKzgProof"] = Napi::Function::New(env, ComputeAggregateKzgProof);
+  exports["verifyAggregateKzgProof"] = Napi::Function::New(env, VerifyAggregateKzgProof);
   return exports;
 }
 

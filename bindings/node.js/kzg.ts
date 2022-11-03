@@ -1,5 +1,5 @@
 // @ts-expect-error
-import bindings from 'bindings';
+import bindings from "bindings";
 
 export const BLOB_SIZE = 4096;
 export const NUMBER_OF_FIELDS = 32;
@@ -20,14 +20,14 @@ type KZG = {
 
   computeAggregateKzgProof: (
     blobs: Blob[],
-    setupHandle: SetupHandle,
+    setupHandle: SetupHandle
   ) => KZGProof;
 
   verifyAggregateKzgProof: (
     blobs: Blob[],
     expectedKzgCommitments: KZGCommitment[],
     kzgAggregatedProof: KZGProof,
-    setupHandle: SetupHandle,
+    setupHandle: SetupHandle
   ) => boolean;
 
   verifyKzgProof: (
@@ -35,11 +35,11 @@ type KZG = {
     z: BLSFieldElement,
     y: BLSFieldElement,
     kzgProof: KZGProof,
-    setupHandle: SetupHandle,
+    setupHandle: SetupHandle
   ) => boolean;
 };
 
-const kzg: KZG = bindings('kzg.node');
+const kzg: KZG = bindings("kzg.node");
 
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
@@ -47,7 +47,7 @@ let setupHandle: SetupHandle | undefined;
 export function loadTrustedSetup(filePath: string) {
   if (setupHandle) {
     throw new Error(
-      'Call freeTrustedSetup before loading a new trusted setup.',
+      "Call freeTrustedSetup before loading a new trusted setup."
     );
   }
   setupHandle = kzg.loadTrustedSetup(filePath);
@@ -55,7 +55,7 @@ export function loadTrustedSetup(filePath: string) {
 
 export function freeTrustedSetup() {
   if (!setupHandle) {
-    throw new Error('You must call loadTrustedSetup before freeTrustedSetup.');
+    throw new Error("You must call loadTrustedSetup before freeTrustedSetup.");
   }
   kzg.freeTrustedSetup(setupHandle);
   setupHandle = undefined;
@@ -63,14 +63,14 @@ export function freeTrustedSetup() {
 
 export function blobToKzgCommitment(blob: Blob) {
   if (!setupHandle) {
-    throw new Error('You must call loadTrustedSetup to initialize KZG.');
+    throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return kzg.blobToKzgCommitment(blob, setupHandle);
 }
 
 export function computeAggregateKzgProof(blobs: Blob[]) {
   if (!setupHandle) {
-    throw new Error('You must call loadTrustedSetup to initialize KZG.');
+    throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return kzg.computeAggregateKzgProof(blobs, setupHandle);
 }
@@ -82,10 +82,10 @@ export function verifyKzgProof(
   polynomialKzg: KZGCommitment,
   z: BLSFieldElement,
   y: BLSFieldElement,
-  kzgProof: KZGProof,
+  kzgProof: KZGProof
 ) {
   if (!setupHandle) {
-    throw new Error('You must call loadTrustedSetup to initialize KZG.');
+    throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return kzg.verifyKzgProof(polynomialKzg, z, y, kzgProof, setupHandle);
 }
@@ -93,15 +93,15 @@ export function verifyKzgProof(
 export function verifyAggregateKzgProof(
   blobs: Blob[],
   expectedKzgCommitments: KZGCommitment[],
-  kzgAggregatedProof: KZGProof,
+  kzgAggregatedProof: KZGProof
 ) {
   if (!setupHandle) {
-    throw new Error('You must call loadTrustedSetup to initialize KZG.');
+    throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return kzg.verifyAggregateKzgProof(
     blobs,
     expectedKzgCommitments,
     kzgAggregatedProof,
-    setupHandle,
+    setupHandle
   );
 }

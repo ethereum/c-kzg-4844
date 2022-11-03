@@ -1,4 +1,4 @@
-import { randomBytes } from 'crypto';
+import { randomBytes } from "crypto";
 import {
   loadTrustedSetup,
   freeTrustedSetup,
@@ -9,15 +9,15 @@ import {
   NUMBER_OF_FIELDS,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
-} from './kzg';
+} from "./kzg";
 
-const SETUP_FILE_PATH = '../../src/trusted_setup.txt';
+const SETUP_FILE_PATH = "../../src/trusted_setup.txt";
 
 function generateRandomBlob(): Blob {
   return new Uint8Array(randomBytes(BLOB_SIZE * NUMBER_OF_FIELDS));
 }
 
-describe('C-KZG', () => {
+describe("C-KZG", () => {
   beforeEach(() => {
     loadTrustedSetup(SETUP_FILE_PATH);
   });
@@ -26,7 +26,7 @@ describe('C-KZG', () => {
     freeTrustedSetup();
   });
 
-  it('computes and verifies an aggregate KZG proof', async () => {
+  it("computes and verifies an aggregate KZG proof", async () => {
     const blob1 = generateRandomBlob();
     const blob2 = generateRandomBlob();
     const blobs = [blob1, blob2];
