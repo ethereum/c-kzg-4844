@@ -2,9 +2,19 @@ import {
   loadTrustedSetup,
   freeTrustedSetup,
   verifyKzgProof,
+  blobToKzgCommitment,
   ReturnValue,
   SetupHandle,
+  Blob,
+  BLOB_SIZE,
+  NUMBER_OF_FIELDS,
 } from './kzg';
+
+import { randomBytes } from 'crypto';
+
+function generateRandomBlob(): Blob {
+  return new Uint8Array(randomBytes(NUMBER_OF_FIELDS * BLOB_SIZE));
+}
 
 describe('C-KZG', () => {
   let setupHandle: SetupHandle;
@@ -20,13 +30,15 @@ describe('C-KZG', () => {
   });
 
   describe('computing a KZG commitment from a blob', () => {
-    it('returns the expected value', () => {
-      expect(true).toBe(ReturnValue.OK);
+    it.only('returns data with the correct length', () => {
+      const blob = generateRandomBlob();
+      const commitment = blobToKzgCommitment(blob, setupHandle);
+      expect(commitment.length).toBe(48);
     });
   });
 
   describe('verifying a KZG proof', () => {
-    it.only('returns the expected value', () => {
+    it.skip('returns the expected value', () => {
       const byteEncoder = new TextEncoder();
 
       const commitment = byteEncoder.encode(

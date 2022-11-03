@@ -16,16 +16,19 @@ export enum ReturnValue {
   MALLOC,
 }
 
+export const BLOB_SIZE = 4096;
+export const NUMBER_OF_FIELDS = 32;
+
 export type Point = Uint8Array;
 export type KZGProof = Uint8Array;
 export type KZGCommitment = Uint8Array;
-export type Blob = Uint8Array[];
+export type Blob = Uint8Array;
 export type Blobs = Blob[];
 
 type KZG = {
   loadTrustedSetup: (path: string) => SetupHandle;
   freeTrustedSetup: (setupHandle: SetupHandle) => void;
-  blobToKzgCommitment: (blob: Blob) => KZGCommitment;
+  blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
   verifyAggregateKzgProof: (blobs: Blobs) => ReturnValue;
   computeAggregateKzgProof: (
     blobs: Blobs,
