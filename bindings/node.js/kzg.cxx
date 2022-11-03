@@ -294,8 +294,8 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
   auto kzgSettings = info[4].As<Napi::External<KZGSettings>>().Data();
 
-  BLSFieldElement fx, fy;
-  bytes_to_bls_field(&fx, z);
+  BLSFieldElement fz, fy;
+  bytes_to_bls_field(&fz, z);
   bytes_to_bls_field(&fy, y);
 
   KZGCommitment commitment;
@@ -303,6 +303,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   if (ret != C_KZG_OK) {
     std::ostringstream ss;
     std::copy(polynomialKzg, polynomialKzg + BYTES_PER_COMMITMENT, std::ostream_iterator<int>(ss, ","));
+
     Napi::TypeError::New(env, "Failed to parse argument commitment: "  + ss.str() + " Return code was: " + std::to_string(ret)).ThrowAsJavaScriptException();
     return env.Null();
   };
@@ -314,11 +315,11 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
 
   bool out;
-  if (verify_kzg_proof(&out, &commitment, &fx, &fy, &proof, kzgSettings) != C_KZG_OK) {
-    return Napi::Boolean::New(env, false);
+  if (verify_kzg_proof(&out, &commitment, &fz, &fy, &proof, kzgSettings) == C_KZG_OK) {
+    return Napi::Boolean::New(env, true);
   }
 
-  return Napi::Boolean::New(env, true);
+  return Napi::Boolean::New(env, false);
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {

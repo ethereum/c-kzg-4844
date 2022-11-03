@@ -24,18 +24,19 @@ describe("C-KZG", () => {
     freeTrustedSetup();
   });
 
-  it.skip("verifies a proof at a given commitment point", async () => {
+  it("verifies a proof at a given commitment point", () => {
     const blob = generateRandomBlob();
     const commitment = blobToKzgCommitment(blob);
     const proof = computeAggregateKzgProof([blob]);
 
+    // It doesn't seem to matter what is passed here...
     const z = Uint8Array.from(new Array(32).fill(0));
     const y = Uint8Array.from(new Array(32).fill(0));
 
     expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
   });
 
-  it("computes the correct aggregate commitment from blobs", async () => {
+  it("computes the correct commitments and aggregate proofs from blobs", () => {
     const blobs = new Array(2).fill(0).map(generateRandomBlob);
     const commitments = blobs.map(blobToKzgCommitment);
     const proof = computeAggregateKzgProof(blobs);
