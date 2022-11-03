@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+#define BYTES_PER_FIELD 32
 #define FIELD_ELEMENTS_PER_BLOB 4096
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
