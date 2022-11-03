@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+#define BYTES_PER_COMMITMENT 48
 #define BYTES_PER_FIELD 32
 #define FIELD_ELEMENTS_PER_BLOB 4096
 
