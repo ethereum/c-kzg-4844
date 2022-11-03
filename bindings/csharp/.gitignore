@@ -1,3 +1,11 @@
-bin/
-obj/
-.vs/
+**/bin
+**/obj
+
+.vs
+.vscode
+
+Ckzg/runtimes/*/native/*
+!**/.gitkeep
+test_ckzg*
+*.so
+*.dll
