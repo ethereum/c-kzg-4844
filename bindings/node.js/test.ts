@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import {
   loadTrustedSetup,
   freeTrustedSetup,
@@ -8,54 +9,56 @@ import {
   Blob,
   BLOB_SIZE,
   NUMBER_OF_FIELDS,
+  computeAggregateKzgProof,
 } from './kzg';
 
-import { randomBytes } from 'crypto';
+const SETUP_FILE_PATH = '../../src/trusted_setup.txt';
+
+const COMMITMENT_BYTE_LENGTH = 48;
 
 function generateRandomBlob(): Blob {
   return new Uint8Array(randomBytes(NUMBER_OF_FIELDS * BLOB_SIZE));
 }
 
 describe('C-KZG', () => {
-  let setupHandle: SetupHandle;
+  let sharedSetupHandle: SetupHandle;
 
   beforeAll(() => {
-    setupHandle = loadTrustedSetup('../../src/trusted_setup.txt');
+    sharedSetupHandle = loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe('setup', () => {
     it('can both load and free', () => {
-      expect(freeTrustedSetup(setupHandle)).toBeUndefined();
+      expect(
+        freeTrustedSetup(loadTrustedSetup(SETUP_FILE_PATH)),
+      ).toBeUndefined();
     });
   });
 
   describe('computing a KZG commitment from a blob', () => {
-    it.only('returns data with the correct length', () => {
+    it('returns data with the correct length', () => {
       const blob = generateRandomBlob();
-      const commitment = blobToKzgCommitment(blob, setupHandle);
-      expect(commitment.length).toBe(48);
+      const commitment = blobToKzgCommitment(blob, sharedSetupHandle);
+      expect(commitment.length).toBe(COMMITMENT_BYTE_LENGTH);
     });
   });
 
   describe('verifying a KZG proof', () => {
-    it.skip('returns the expected value', () => {
+    it.only('returns the expected value', () => {
       const byteEncoder = new TextEncoder();
 
-      const commitment = byteEncoder.encode(
-        'b91c022acf7bd3b63be69a4c19b781ea7a3d5df1cd66ceb7dd0f399610f0ee04695dace82e04bfb83af2b17d7319f87f',
-      );
-      console.log({ commitment });
+      const blob = generateRandomBlob();
+      const commitment = blobToKzgCommitment(blob, sharedSetupHandle);
+      const proof = computeAggregateKzgProof([blob], sharedSetupHandle);
+
       const x = byteEncoder.encode(
         '0345f802a75a6c0d9cc5b8a1e71642b8fa80b0a78938edc6da1e591149578d1a',
       );
       const y = byteEncoder.encode(
         '3b17cab634c3795d311380f3bc93ce8e768efc0e2b9e79496cfc8f351594b472',
       );
-      const proof = byteEncoder.encode(
-        'a5ddd6da04c47a9cd4628beb8d55ebd2e930a64dfa29f876ebf393cfd6574d48a3ce96ac5a2af4a4f9ec9caa47d304d3',
-      );
 
-      const result = verifyKzgProof(commitment, y, x, proof, setupHandle);
+      const result = verifyKzgProof(commitment, y, x, proof, sharedSetupHandle);
       console.log({ result });
       expect(result).toBe(ReturnValue.OK);
     });
@@ -63,7 +66,9 @@ describe('C-KZG', () => {
 
   describe('computing an aggregate KZG proof', () => {
     it('returns the expected value', () => {
-      expect(true).toBe(false);
+      const blob = generateRandomBlob();
+      const commitment = blobToKzgCommitment(blob, sharedSetupHandle);
+      const proof = computeAggregateKzgProof([blob], sharedSetupHandle);
     });
   });
 

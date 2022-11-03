@@ -1,6 +1,9 @@
 // @ts-expect-error
 import bindings from 'bindings';
 
+export const BLOB_SIZE = 4096;
+export const NUMBER_OF_FIELDS = 32;
+
 // Consider making this internal state of the native code
 // so we don't have to pass it around in the application layer
 export type SetupHandle = Object;
@@ -16,9 +19,6 @@ export enum ReturnValue {
   MALLOC,
 }
 
-export const BLOB_SIZE = 4096;
-export const NUMBER_OF_FIELDS = 32;
-
 export type Point = Uint8Array;
 export type KZGProof = Uint8Array;
 export type KZGCommitment = Uint8Array;
@@ -27,14 +27,18 @@ export type Blobs = Blob[];
 
 type KZG = {
   loadTrustedSetup: (path: string) => SetupHandle;
+
   freeTrustedSetup: (setupHandle: SetupHandle) => void;
+
   blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
+
   verifyAggregateKzgProof: (blobs: Blobs) => ReturnValue;
+
   computeAggregateKzgProof: (
     blobs: Blobs,
-    size: number,
     setupHandle: SetupHandle,
   ) => KZGProof;
+
   verifyKzgProof: (
     commitment: KZGCommitment,
     x: Point,
@@ -52,5 +56,4 @@ export const blobToKzgCommitment = kzg.blobToKzgCommitment;
 export const verifyAggregateKzgProof = kzg.verifyAggregateKzgProof;
 export const computeAggregateKzgProof = kzg.computeAggregateKzgProof;
 export const verifyKzgProof = kzg.verifyKzgProof;
-
 export default kzg;

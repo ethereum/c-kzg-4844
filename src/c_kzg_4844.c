@@ -19,6 +19,7 @@
 #include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
+#include "sha256.h"
 
 /**
  * Wrapped `malloc()` that reports failures to allocate.
@@ -1041,44 +1042,34 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   return C_KZG_OK;
 }
 
-typedef struct {
-    unsigned int h[8];
-    unsigned long long N;
-    unsigned char buf[64];
-    size_t off;
-} SHA256_CTX;
-
-void sha256_init(SHA256_CTX *ctx);
-void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
-void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
-
 static void hash(uint8_t md[32], uint8_t input[], size_t n) {
   SHA256_CTX ctx;
   sha256_init(&ctx);
   sha256_update(&ctx, input, n);
-  sha256_final(md, &ctx);
+  sha256_final(&ctx, md);
 }
 
 static C_KZG_RET hash_to_bytes(uint8_t out[32],
     const uint8_t *initializer, const Polynomial polys[], const KZGCommitment comms[], size_t n) {
+  printf("hash_to_bytes 1\n");
   size_t i; uint64_t j;
   size_t ni = initializer == NULL ? 0 : 32;
   size_t np = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
-
+  printf("hash_to_bytes 2\n");
   uint8_t* bytes = calloc(np + n * 48, sizeof(uint8_t));
   if (bytes == NULL) return C_KZG_MALLOC;
 
   if (ni) memcpy(bytes, initializer, ni);
-
+  printf("hash_to_bytes 3\n");
   for (i = 0; i < n; i++)
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
       bytes_from_bls_field(&bytes[ni + i * 32], &polys[i][j]);
-
+  printf("hash_to_bytes 5\n");
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
-
+  printf("hash_to_bytes 6\n");
   hash(out, bytes, np + n * 48);
-
+  printf("hash_to_bytes 7\n");
   free(bytes);
   return C_KZG_OK;
 }
@@ -1087,18 +1078,20 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
     const Polynomial blobs[],
     const KZGCommitment kzg_commitments[],
     size_t n) {
+  printf("compute_aggregated_poly_and_commitment 1\n");
   BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
   if (r_powers == NULL) return C_KZG_MALLOC;
-
+  printf("compute_aggregated_poly_and_commitment 2\n");
   C_KZG_RET ret;
   ret = hash_to_bytes(hash_out, NULL, blobs, kzg_commitments, n);
   if (ret != C_KZG_OK) { free(r_powers); return ret; }
+  printf("compute_aggregated_poly_and_commitment 3\n");
   bytes_to_bls_field(&r_powers[1], hash_out);
-
+  printf("compute_aggregated_poly_and_commitment 4\n");
   compute_powers(r_powers, n);
-
+  printf("compute_aggregated_poly_and_commitment 5\n");
   vector_lincomb(poly_out, blobs, r_powers, n);
-
+  printf("compute_aggregated_poly_and_commitment 6\n");
   g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
   free(r_powers);
@@ -1109,11 +1102,17 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     const Polynomial blobs[],
     size_t n,
     const KZGSettings *s) {
+  printf("RUNNING compute_aggregate_kzg_proof 1");
+
   KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
   if (commitments == NULL) return C_KZG_MALLOC;
 
+  printf("RUNNING compute_aggregate_kzg_proof 2");
+
   for (size_t i = 0; i < n; i++)
     blob_to_kzg_commitment(&commitments[i], blobs[i], s);
+
+  printf("RUNNING compute_aggregate_kzg_proof 3");
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
@@ -1121,11 +1120,18 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   uint8_t hash[32];
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, hash, blobs, commitments, n);
   free(commitments);
+
+  printf("RUNNING compute_aggregate_kzg_proof 4");
+
   if (ret != C_KZG_OK) return ret;
 
   TRY(hash_to_bytes(hash, hash, &aggregated_poly, &aggregated_poly_commitment, 1));
+  printf("RUNNING compute_aggregate_kzg_proof 5");
+
   BLSFieldElement x;
   bytes_to_bls_field(&x, hash);
+
+  printf("RUNNING compute_aggregate_kzg_proof 6");
 
   return compute_kzg_proof(out, aggregated_poly, &x, s);
 }
