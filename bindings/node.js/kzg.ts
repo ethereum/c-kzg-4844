@@ -50,6 +50,9 @@ const kzg: KZG = bindings("kzg.node");
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 export const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
 
+const isCommitmentValid = (commitment: KZGCommitment) =>
+  commitment.length === 48;
+
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
 
@@ -95,6 +98,9 @@ export function verifyKzgProof(
 ): boolean {
   if (!setupHandle) {
     throw new Error("You must call loadTrustedSetup to initialize KZG.");
+  }
+  if (!isCommitmentValid(polynomialKzg)) {
+    throw new Error("Invalid polynomialKzg");
   }
   return kzg.verifyKzgProof(polynomialKzg, z, y, kzgProof, setupHandle);
 }

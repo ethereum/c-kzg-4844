@@ -26,14 +26,14 @@ describe("C-KZG", () => {
 
   it("verifies a proof at a given commitment point", () => {
     const blob = generateRandomBlob();
-    const commitment = blobToKzgCommitment(blob);
+    const polynomialCommitment = blobToKzgCommitment(blob);
     const proof = computeAggregateKzgProof([blob]);
 
-    // It doesn't seem to matter what is passed here...
+    // TODO: How do I test this? How do I get values of z and y?
     const z = Uint8Array.from(new Array(32).fill(0));
-    const y = Uint8Array.from(new Array(32).fill(0));
+    const y = Uint8Array.from(blob.slice(0, 32));
 
-    expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
+    expect(verifyKzgProof(polynomialCommitment, z, y, proof)).toBe(true);
   });
 
   it("computes the correct commitments and aggregate proofs from blobs", () => {

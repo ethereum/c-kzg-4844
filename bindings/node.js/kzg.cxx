@@ -315,11 +315,11 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
 
   bool out;
-  if (verify_kzg_proof(&out, &commitment, &fz, &fy, &proof, kzgSettings) == C_KZG_OK) {
-    return Napi::Boolean::New(env, true);
+  if (verify_kzg_proof(&out, &commitment, &fz, &fy, &proof, kzgSettings) != C_KZG_OK) {
+    return Napi::Boolean::New(env, false);
   }
 
-  return Napi::Boolean::New(env, false);
+  return Napi::Boolean::New(env, out);
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
