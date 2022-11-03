@@ -163,7 +163,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   return napi_typed_array_from_bytes(proofBytes, BYTES_PER_PROOF, env);
 }
 
-// verifyAggregateKzgProof: (blobs: Blob[], expectedKzgCommitments: KZGCommitment[], kzgAggregatedProof: KZGProof) => boolean;
+// verifyAggregateKzgProof: (blobs: Blob[], expectedKzgCommitments: KZGCommitment[], kzgAggregatedProof: KZGProof, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto env = info.Env();
 
@@ -189,23 +189,29 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   C_KZG_RET ret;
 
   for (uint32_t blobIndex = 0; blobIndex < numberOfBlobs; blobIndex++) {
+    // Extract blob bytes from parameter
     Napi::Value blob = blobs_param[blobIndex];
     auto blobBytes = blob.As<Napi::Uint8Array>().Data();
 
-    Napi::Value commitment = comittments_param[blobIndex];
-    auto commitmentBytes = commitment.As<Napi::Uint8Array>().Data();
-
+    // Populate the polynomial with a BLS field for each field element in the blob
     for (uint32_t fieldIndex = 0; fieldIndex < FIELD_ELEMENTS_PER_BLOB; fieldIndex++) {
        bytes_to_bls_field(&polynomial[blobIndex][fieldIndex], &blobBytes[fieldIndex * BYTES_PER_FIELD]);
     }
 
-    ret = bytes_to_g1(&commitments[blobIndex], &commitmentBytes[blobIndex * BYTES_PER_COMMITMENT]);
+    // Extract a G1 point for each commitment
+    Napi::Value commitment = comittments_param[blobIndex];
+    auto commitmentBytes = commitment.As<Napi::Uint8Array>().Data();
+
+    ret = bytes_to_g1(&commitments[blobIndex], commitmentBytes);
     if (ret != C_KZG_OK) {
+      std::ostringstream ss;
+      std::copy(commitmentBytes, commitmentBytes + BYTES_PER_COMMITMENT, std::ostream_iterator<int>(ss, ","));
+
+      Napi::TypeError::New(env, "Error parsing commitment. Error code was: " + std::to_string(ret) + ". Commitment bytes: " + ss.str()).ThrowAsJavaScriptException();
+
       free(commitments);
       free(polynomial);
 
-      Napi::TypeError::New(env, "Error parsing blobs and commitments")
-        .ThrowAsJavaScriptException();
       return env.Null();
     }
   }
@@ -260,15 +266,15 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
         .ThrowAsJavaScriptException();
     return env.Undefined();
   }
-  auto c = c_param.As<Napi::Uint8Array>().Data();
+  auto polynomialKzg = c_param.As<Napi::Uint8Array>().Data();
 
-  auto x_param = info[0].As<Napi::TypedArray>();
-  if (x_param.TypedArrayType() != napi_uint8_array) {
+  auto z_param = info[0].As<Napi::TypedArray>();
+  if (z_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(env, "Expected an Uint8Array")
         .ThrowAsJavaScriptException();
     return env.Undefined();
   }
-  auto x = x_param.As<Napi::Uint8Array>().Data();
+  auto z = z_param.As<Napi::Uint8Array>().Data();
 
   auto y_param = info[0].As<Napi::TypedArray>();
   if (y_param.TypedArrayType() != napi_uint8_array) {
@@ -278,37 +284,36 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto y = y_param.As<Napi::Uint8Array>().Data();
 
-  auto p_param = info[0].As<Napi::TypedArray>();
-  if (p_param.TypedArrayType() != napi_uint8_array) {
+  auto proof_param = info[0].As<Napi::TypedArray>();
+  if (proof_param.TypedArrayType() != napi_uint8_array) {
     Napi::Error::New(info.Env(), "Expected an Uint8Array")
         .ThrowAsJavaScriptException();
     return info.Env().Undefined();
   }
-  auto p = p_param.As<Napi::Uint8Array>().Data();
+  auto kzgProof = proof_param.As<Napi::Uint8Array>().Data();
 
   auto kzgSettings = info[4].As<Napi::External<KZGSettings>>().Data();
 
-  KZGCommitment commitment;
-  KZGProof proof;
   BLSFieldElement fx, fy;
-  bool out;
-
-  bytes_to_bls_field(&fx, x);
+  bytes_to_bls_field(&fx, z);
   bytes_to_bls_field(&fy, y);
 
-  auto ret = bytes_to_g1(&commitment, c);
+  KZGCommitment commitment;
+  auto ret = bytes_to_g1(&commitment, polynomialKzg);
   if (ret != C_KZG_OK) {
     std::ostringstream ss;
-    std::copy(c, c+sizeof(c), std::ostream_iterator<int>(ss, ","));
+    std::copy(polynomialKzg, polynomialKzg + BYTES_PER_COMMITMENT, std::ostream_iterator<int>(ss, ","));
     Napi::TypeError::New(env, "Failed to parse argument commitment: "  + ss.str() + " Return code was: " + std::to_string(ret)).ThrowAsJavaScriptException();
     return env.Null();
   };
 
-  if (bytes_to_g1(&proof, p) != C_KZG_OK) {
-    Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+  KZGProof proof;
+  if (bytes_to_g1(&proof, kzgProof) != C_KZG_OK) {
+    Napi::TypeError::New(env, "Invalid kzgProof").ThrowAsJavaScriptException();
     return env.Null();
   }
 
+  bool out;
   if (verify_kzg_proof(&out, &commitment, &fx, &fy, &proof, kzgSettings) != C_KZG_OK) {
     return Napi::Boolean::New(env, false);
   }
@@ -317,12 +322,18 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
+  // Functions
   exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup);
   exports["freeTrustedSetup"] = Napi::Function::New(env, FreeTrustedSetup);
   exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
   exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment);
   exports["computeAggregateKzgProof"] = Napi::Function::New(env, ComputeAggregateKzgProof);
   exports["verifyAggregateKzgProof"] = Napi::Function::New(env, VerifyAggregateKzgProof);
+
+  // Constants
+  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
+  exports["BYTES_PER_FIELD"] = Napi::Number::New(env, BYTES_PER_FIELD);
+
   return exports;
 }
 

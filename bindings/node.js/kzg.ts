@@ -1,17 +1,23 @@
 // @ts-expect-error
 import bindings from "bindings";
 
-export const BLOB_SIZE = 4096;
-export const NUMBER_OF_FIELDS = 32;
+/**
+ * The public interface of this module exposes the functions as specified by
+ * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
+ */
 
-export type SetupHandle = Object;
+export type BLSFieldElement = Uint8Array; // 32 bytes
+export type KZGProof = Uint8Array; // 48 bytes
+export type KZGCommitment = Uint8Array; // 48 bytes
+export type Blob = Uint8Array; // 4096 * 32 bytes
 
-export type BLSFieldElement = Uint8Array;
-export type KZGProof = Uint8Array;
-export type KZGCommitment = Uint8Array;
-export type Blob = Uint8Array;
+type SetupHandle = Object;
 
+// The C++ native addon interface
 type KZG = {
+  FIELD_ELEMENTS_PER_BLOB: number;
+  BYTES_PER_FIELD: number;
+
   loadTrustedSetup: (filePath: string) => SetupHandle;
 
   freeTrustedSetup: (setupHandle: SetupHandle) => void;
@@ -40,6 +46,9 @@ type KZG = {
 };
 
 const kzg: KZG = bindings("kzg.node");
+
+export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
+export const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
 
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
@@ -83,7 +92,7 @@ export function verifyKzgProof(
   z: BLSFieldElement,
   y: BLSFieldElement,
   kzgProof: KZGProof
-) {
+): boolean {
   if (!setupHandle) {
     throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }

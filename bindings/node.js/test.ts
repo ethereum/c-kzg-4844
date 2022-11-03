@@ -2,46 +2,43 @@ import { randomBytes } from "crypto";
 import {
   loadTrustedSetup,
   freeTrustedSetup,
-  verifyKzgProof,
   blobToKzgCommitment,
-  Blob,
-  BLOB_SIZE,
-  NUMBER_OF_FIELDS,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
+  BYTES_PER_FIELD,
+  FIELD_ELEMENTS_PER_BLOB,
+  verifyKzgProof,
 } from "./kzg";
 
 const SETUP_FILE_PATH = "../../src/trusted_setup.txt";
+const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD;
 
-function generateRandomBlob(): Blob {
-  return new Uint8Array(randomBytes(BLOB_SIZE * NUMBER_OF_FIELDS));
-}
+const generateRandomBlob = () => new Uint8Array(randomBytes(BLOB_BYTE_COUNT));
 
 describe("C-KZG", () => {
-  beforeEach(() => {
+  beforeAll(() => {
     loadTrustedSetup(SETUP_FILE_PATH);
   });
 
-  afterEach(() => {
+  afterAll(() => {
     freeTrustedSetup();
   });
 
-  it("computes and verifies an aggregate KZG proof", async () => {
-    const blob1 = generateRandomBlob();
-    const blob2 = generateRandomBlob();
-    const blobs = [blob1, blob2];
+  it.skip("verifies a proof at a given commitment point", async () => {
+    const blob = generateRandomBlob();
+    const commitment = blobToKzgCommitment(blob);
+    const proof = computeAggregateKzgProof([blob]);
 
+    const z = Uint8Array.from(new Array(32).fill(0));
+    const y = Uint8Array.from(new Array(32).fill(0));
+
+    expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
+  });
+
+  it("computes the correct aggregate commitment from blobs", async () => {
+    const blobs = new Array(2).fill(0).map(generateRandomBlob);
     const commitments = blobs.map(blobToKzgCommitment);
-
     const proof = computeAggregateKzgProof(blobs);
-
-    console.log({
-      commitments,
-      proof,
-    });
-
-    const result = verifyAggregateKzgProof(blobs, commitments, proof);
-
-    expect(result).toBe(true);
+    expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 });
