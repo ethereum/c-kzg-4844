@@ -30,6 +30,8 @@
 #include "blst.h"
 
 #define FIELD_ELEMENTS_PER_BLOB 4096
+#define BYTES_PER_FIELD_ELEMENT 32
+const uint8_t FIAT_SHAMIR_PROTOCOL_DOMAIN[] = {70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95}; // "FSBLOBVERIFY_V1_"
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
@@ -38,6 +40,7 @@ typedef blst_fr fr_t;         /**< Internal Fr field element type */
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
+typedef uint8_t Blob[BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_BLOB];
 typedef BLSFieldElement Polynomial[FIELD_ELEMENTS_PER_BLOB];
 
 /**
@@ -53,18 +56,6 @@ typedef enum {
     C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
     C_KZG_MALLOC,  /**< Could not allocate memory */
 } C_KZG_RET;
-
-/**
- * KZGCommitment and KZGProof can be recovered as 48 bytes
- */
-void bytes_from_g1(uint8_t out[48], const g1_t*);
-C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t[48]);
-
-/**
- * BLSFieldElements can be recovered as 32 bytes
- */
-void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement*);
-void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]);
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
@@ -96,19 +87,19 @@ void free_trusted_setup(
     KZGSettings *s);
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-    const Polynomial blobs[],
+    const Blob blobs[],
     size_t n,
     const KZGSettings *s);
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-    const Polynomial blobs[],
+    const Blob blobs[],
     const KZGCommitment expected_kzg_commitments[],
     size_t n,
     const KZGProof *kzg_aggregated_proof,
     const KZGSettings *s);
 
 void blob_to_kzg_commitment(KZGCommitment *out,
-    const Polynomial blob,
+    const Blob blob,
     const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
