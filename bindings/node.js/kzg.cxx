@@ -170,16 +170,14 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
     blobs_count,
     kzg_settings
   );
+  free(blobs);
 
   if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Failed to compute proof")
       .ThrowAsJavaScriptException();
-
-    free(blobs);
     return env.Undefined();
   };
 
-  free(blobs);
   uint8_t proof_bytes[BYTES_PER_PROOF];
   bytes_from_g1(proof_bytes, &proof);
   return napi_typed_array_from_bytes(proof_bytes, BYTES_PER_PROOF, env);
@@ -256,19 +254,17 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     &proof,
     kzg_settings
   );
-  if (ret != C_KZG_OK) {
-    free(commitments);
-    free(blobs);
 
+  free(commitments);
+  free(blobs);
+
+  if (ret != C_KZG_OK) {
     Napi::Error::New(
       env,
       "verify_aggregate_kzg_proof failed with error code: " + std::to_string(ret)
     ).ThrowAsJavaScriptException();
     return env.Null();
   }
-
-  free(commitments);
-  free(blobs);
 
   return Napi::Boolean::New(env, verification_result);
 }
@@ -331,7 +327,8 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
   bool out;
   if (verify_kzg_proof(&out, &commitment, &fz, &fy, &proof, kzg_settings) != C_KZG_OK) {
-    return Napi::Boolean::New(env, false);
+    Napi::TypeError::New(env, "Failed to verify KZG proof").ThrowAsJavaScriptException();
+    return env.Null();
   }
 
   return Napi::Boolean::New(env, out);
