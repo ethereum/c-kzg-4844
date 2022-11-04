@@ -12,7 +12,7 @@ build: kzg.cxx kzg.ts package.json Makefile
 	cp build/Release/kzg.node .
 	cp build/Release/kzg.node ./dist
 
-test:
+test: build
 	yarn jest
 
 format:
