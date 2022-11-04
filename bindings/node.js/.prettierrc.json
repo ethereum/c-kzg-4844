@@ -1,4 +1,5 @@
 {
+  "trailingComma": "all",
   "overrides": [
     {
       "files": "binding.gyp",

@@ -36,7 +36,7 @@ describe("C-KZG", () => {
     commitments[0][0] = commitments[0][0] === 0 ? 1 : 0; // Mutate the commitment
     const proof = computeAggregateKzgProof(blobs);
     expect(() =>
-      verifyAggregateKzgProof(blobs, commitments, proof)
+      verifyAggregateKzgProof(blobs, commitments, proof),
     ).toThrowError("Invalid commitment data");
   });
 });

@@ -1,10 +1,8 @@
-// @ts-expect-error
-import bindings from "bindings";
-
 /**
  * The public interface of this module exposes the functions as specified by
  * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
  */
+const kzg = require("./kzg.node");
 
 export type BLSFieldElement = Uint8Array; // 32 bytes
 export type KZGProof = Uint8Array; // 48 bytes
@@ -26,14 +24,14 @@ type KZG = {
 
   computeAggregateKzgProof: (
     blobs: Blob[],
-    setupHandle: SetupHandle
+    setupHandle: SetupHandle,
   ) => KZGProof;
 
   verifyAggregateKzgProof: (
     blobs: Blob[],
     expectedKzgCommitments: KZGCommitment[],
     kzgAggregatedProof: KZGProof,
-    setupHandle: SetupHandle
+    setupHandle: SetupHandle,
   ) => boolean;
 
   // Currently unused -- not exported
@@ -42,11 +40,9 @@ type KZG = {
     z: BLSFieldElement,
     y: BLSFieldElement,
     kzgProof: KZGProof,
-    setupHandle: SetupHandle
+    setupHandle: SetupHandle,
   ) => boolean;
 };
-
-const kzg: KZG = bindings("kzg.node");
 
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 export const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
@@ -57,7 +53,7 @@ let setupHandle: SetupHandle | undefined;
 export function loadTrustedSetup(filePath: string): void {
   if (setupHandle) {
     throw new Error(
-      "Call freeTrustedSetup before loading a new trusted setup."
+      "Call freeTrustedSetup before loading a new trusted setup.",
     );
   }
   setupHandle = kzg.loadTrustedSetup(filePath);
@@ -88,7 +84,7 @@ export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
 export function verifyAggregateKzgProof(
   blobs: Blob[],
   expectedKzgCommitments: KZGCommitment[],
-  kzgAggregatedProof: KZGProof
+  kzgAggregatedProof: KZGProof,
 ): boolean {
   if (!setupHandle) {
     throw new Error("You must call loadTrustedSetup to initialize KZG.");
@@ -97,6 +93,6 @@ export function verifyAggregateKzgProof(
     blobs,
     expectedKzgCommitments,
     kzgAggregatedProof,
-    setupHandle
+    setupHandle,
   );
 }
