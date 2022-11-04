@@ -48,8 +48,7 @@ typedef blst_fr fr_t;         /**< Internal Fr field element type */
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
-typedef uint8_t Blob[BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_BLOB];
-typedef BLSFieldElement Polynomial[FIELD_ELEMENTS_PER_BLOB];
+typedef uint8_t Blob[BYTES_PER_BLOB];
 
 /**
  * The common return type for all routines in which something can go wrong.
