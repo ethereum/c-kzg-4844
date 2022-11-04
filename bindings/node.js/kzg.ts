@@ -50,6 +50,13 @@ export const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
 
+function requireSetupHandle(): SetupHandle {
+  if (!setupHandle) {
+    throw new Error("You must call loadTrustedSetup to initialize KZG.");
+  }
+  return setupHandle;
+}
+
 export function loadTrustedSetup(filePath: string): void {
   if (setupHandle) {
     throw new Error(
@@ -60,25 +67,16 @@ export function loadTrustedSetup(filePath: string): void {
 }
 
 export function freeTrustedSetup(): void {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup before freeTrustedSetup.");
-  }
-  kzg.freeTrustedSetup(setupHandle);
+  kzg.freeTrustedSetup(requireSetupHandle());
   setupHandle = undefined;
 }
 
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup to initialize KZG.");
-  }
-  return kzg.blobToKzgCommitment(blob, setupHandle);
+  return kzg.blobToKzgCommitment(blob, requireSetupHandle());
 }
 
 export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup to initialize KZG.");
-  }
-  return kzg.computeAggregateKzgProof(blobs, setupHandle);
+  return kzg.computeAggregateKzgProof(blobs, requireSetupHandle());
 }
 
 export function verifyAggregateKzgProof(
@@ -86,13 +84,10 @@ export function verifyAggregateKzgProof(
   expectedKzgCommitments: KZGCommitment[],
   kzgAggregatedProof: KZGProof,
 ): boolean {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup to initialize KZG.");
-  }
   return kzg.verifyAggregateKzgProof(
     blobs,
     expectedKzgCommitments,
     kzgAggregatedProof,
-    setupHandle,
+    requireSetupHandle(),
   );
 }
