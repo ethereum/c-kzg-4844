@@ -1,0 +1,9 @@
+{
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "binding.gyp",
+      "options": { "parser": "json" }
+    }
+  ]
+}

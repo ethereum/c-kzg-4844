@@ -29,8 +29,16 @@
 
 #include "blst.h"
 
+// Allow a library built from this code to be used from C++
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define BYTES_PER_COMMITMENT 48
+#define BYTES_PER_PROOF 48
 #define FIELD_ELEMENTS_PER_BLOB 4096
 #define BYTES_PER_FIELD_ELEMENT 32
+#define BYTES_PER_BLOB FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT
 static const uint8_t FIAT_SHAMIR_PROTOCOL_DOMAIN[] = {70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95}; // "FSBLOBVERIFY_V1_"
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
@@ -113,5 +121,9 @@ C_KZG_RET verify_kzg_proof(bool *out,
     const BLSFieldElement *y,
     const KZGProof *kzg_proof,
     const KZGSettings *s);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // C_KZG_4844_H

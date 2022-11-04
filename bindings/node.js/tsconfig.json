@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "dist/dts",
+    "target": "esnext",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true
+  }
+}
