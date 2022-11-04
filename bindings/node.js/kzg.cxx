@@ -135,7 +135,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 
   Polynomial polynomial;
   for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++)
-    bytes_to_bls_field(&polynomial[i], &blob[i * BYTES_PER_FIELD]);
+    bytes_to_bls_field(&polynomial[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
 
   KZGCommitment commitment;
   blob_to_kzg_commitment(&commitment, polynomial, kzg_settings);
@@ -168,7 +168,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
     for (size_t field_index = 0; field_index < FIELD_ELEMENTS_PER_BLOB; field_index++) {
       bytes_to_bls_field(
         &polynomial[blob_index][field_index],
-        &blob_bytes[field_index * BYTES_PER_FIELD]
+        &blob_bytes[field_index * BYTES_PER_FIELD_ELEMENT]
       );
     }
   }
@@ -222,7 +222,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
 
     // Populate the polynomial with a BLS field for each field element in the blob
     for (size_t field_index = 0; field_index < FIELD_ELEMENTS_PER_BLOB; field_index++) {
-       bytes_to_bls_field(&polynomial[blob_index][field_index], &blob_bytes[field_index * BYTES_PER_FIELD]);
+       bytes_to_bls_field(&polynomial[blob_index][field_index], &blob_bytes[field_index * BYTES_PER_FIELD_ELEMENT]);
     }
 
     // Extract a G1 point for each commitment
@@ -358,7 +358,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
 
   // Constants
   exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
-  exports["BYTES_PER_FIELD"] = Napi::Number::New(env, BYTES_PER_FIELD);
+  exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
 
   return exports;
 }

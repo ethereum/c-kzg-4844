@@ -14,7 +14,7 @@ type SetupHandle = Object;
 // The C++ native addon interface
 type KZG = {
   FIELD_ELEMENTS_PER_BLOB: number;
-  BYTES_PER_FIELD: number;
+  BYTES_PER_FIELD_ELEMENT: number;
 
   loadTrustedSetup: (filePath: string) => SetupHandle;
 
@@ -45,7 +45,7 @@ type KZG = {
 };
 
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
-export const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
+export const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
 
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;

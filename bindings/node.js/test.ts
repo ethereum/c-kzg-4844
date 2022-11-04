@@ -5,12 +5,12 @@ import {
   blobToKzgCommitment,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
-  BYTES_PER_FIELD,
+  BYTES_PER_FIELD_ELEMENT,
   FIELD_ELEMENTS_PER_BLOB,
 } from "./kzg";
 
 const SETUP_FILE_PATH = "../../src/trusted_setup.txt";
-const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD;
+const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 
 const generateRandomBlob = () => new Uint8Array(randomBytes(BLOB_BYTE_COUNT));
 
