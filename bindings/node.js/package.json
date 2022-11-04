@@ -5,13 +5,6 @@
   "author": "Dan Coffman",
   "license": "MIT",
   "main": "dist/kzg.js",
-  "scripts": {
-    "clean": "node-gyp clean",
-    "build": "node-gyp rebuild",
-    "test": "jest",
-    "format": "yarn prettier --write .",
-    "bundle": "rollup --config rollup.config.js --bundleConfigAsCjs"
-  },
   "devDependencies": {
     "@babel/preset-typescript": "^7.18.6",
     "@rollup/plugin-typescript": "^9.0.2",
@@ -20,9 +13,9 @@
     "node-addon-api": "^5.0.0",
     "node-gyp": "^9.3.0",
     "prettier": "2.7.1",
+    "rollup": "^3.2.5",
     "ts-jest": "^29.0.3",
     "tslib": "^2.4.1",
     "typescript": "^4.8.4"
-  },
-  "dependencies": {}
+  }
 }
