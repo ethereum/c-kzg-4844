@@ -133,12 +133,8 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
-  Polynomial polynomial;
-  for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++)
-    bytes_to_bls_field(&polynomial[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
-
   KZGCommitment commitment;
-  blob_to_kzg_commitment(&commitment, polynomial, kzg_settings);
+  blob_to_kzg_commitment(&commitment, blob, kzg_settings);
 
   uint8_t commitment_bytes[BYTES_PER_COMMITMENT];
   bytes_from_g1(commitment_bytes, &commitment);
@@ -159,35 +155,31 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   auto blobs_count = blobs_param.Length();
-  auto polynomial = (Polynomial*)calloc(blobs_count, sizeof(Polynomial));
+  auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
 
   for (uint32_t blob_index = 0; blob_index < blobs_count; blob_index++) {
     Napi::Value blob = blobs_param[blob_index];
     auto blob_bytes = blob.As<Napi::Uint8Array>().Data();
-
-    for (size_t field_index = 0; field_index < FIELD_ELEMENTS_PER_BLOB; field_index++) {
-      bytes_to_bls_field(
-        &polynomial[blob_index][field_index],
-        &blob_bytes[field_index * BYTES_PER_FIELD_ELEMENT]
-      );
-    }
+    memcpy(blobs[blob_index], blob_bytes, BYTES_PER_BLOB);
   }
 
   KZGProof proof;
   C_KZG_RET ret = compute_aggregate_kzg_proof(
     &proof,
-    polynomial,
+    blobs,
     blobs_count,
     kzg_settings
   );
-  free(polynomial);
 
   if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Failed to compute proof")
       .ThrowAsJavaScriptException();
+
+    free(blobs);
     return env.Undefined();
   };
 
+  free(blobs);
   uint8_t proof_bytes[BYTES_PER_PROOF];
   bytes_from_g1(proof_bytes, &proof);
   return napi_typed_array_from_bytes(proof_bytes, BYTES_PER_PROOF, env);
@@ -210,7 +202,8 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
 
   auto proof_bytes = proof_param.As<Napi::Uint8Array>().Data();
   auto blobs_count = blobs_param.Length();
-  auto polynomial = (Polynomial*)calloc(blobs_count, sizeof(Polynomial));
+
+  auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
   auto commitments = (KZGCommitment*)calloc(blobs_count, sizeof(KZGCommitment));
 
   C_KZG_RET ret;
@@ -220,10 +213,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     Napi::Value blob = blobs_param[blob_index];
     auto blob_bytes = blob.As<Napi::Uint8Array>().Data();
 
-    // Populate the polynomial with a BLS field for each field element in the blob
-    for (size_t field_index = 0; field_index < FIELD_ELEMENTS_PER_BLOB; field_index++) {
-       bytes_to_bls_field(&polynomial[blob_index][field_index], &blob_bytes[field_index * BYTES_PER_FIELD_ELEMENT]);
-    }
+    memcpy(blobs[blob_index], blob_bytes, BYTES_PER_BLOB);
 
     // Extract a G1 point for each commitment
     Napi::Value commitment = comittments_param[blob_index];
@@ -240,7 +230,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
       ).ThrowAsJavaScriptException();
 
       free(commitments);
-      free(polynomial);
+      free(blobs);
 
       return env.Null();
     }
@@ -250,7 +240,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   ret = bytes_to_g1(&proof, proof_bytes);
   if (ret != C_KZG_OK) {
     free(commitments);
-    free(polynomial);
+    free(blobs);
 
     Napi::Error::New(env, "Invalid proof data")
       .ThrowAsJavaScriptException();
@@ -260,7 +250,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   bool verification_result;
   ret = verify_aggregate_kzg_proof(
     &verification_result,
-    polynomial,
+    blobs,
     commitments,
     blobs_count,
     &proof,
@@ -268,7 +258,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   );
   if (ret != C_KZG_OK) {
     free(commitments);
-    free(polynomial);
+    free(blobs);
 
     Napi::Error::New(
       env,
@@ -278,7 +268,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   }
 
   free(commitments);
-  free(polynomial);
+  free(blobs);
 
   return Napi::Boolean::New(env, verification_result);
 }
