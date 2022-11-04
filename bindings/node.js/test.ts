@@ -43,10 +43,10 @@ describe("C-KZG", () => {
     expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 
-  it.only("fails when given incorrect commitments", () => {
+  it("fails when given incorrect commitments", () => {
     const blobs = new Array(2).fill(0).map(generateRandomBlob);
     const commitments = blobs.map(blobToKzgCommitment);
-    commitments[0][0] += 1;
+    commitments[0][0] += 1; // Mutate the commitment
     const proof = computeAggregateKzgProof(blobs);
     expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(false);
   });
