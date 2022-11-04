@@ -3,7 +3,7 @@ export declare type KZGProof = Uint8Array;
 export declare type KZGCommitment = Uint8Array;
 export declare type Blob = Uint8Array;
 export declare const FIELD_ELEMENTS_PER_BLOB: number;
-export declare const BYTES_PER_FIELD: number;
+export declare const BYTES_PER_FIELD_ELEMENT: number;
 export declare function loadTrustedSetup(filePath: string): void;
 export declare function freeTrustedSetup(): void;
 export declare function blobToKzgCommitment(blob: Blob): KZGCommitment;

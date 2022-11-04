@@ -1,3 +1,5 @@
+all: clean build format test bundle
+
 clean:
 	yarn node-gyp clean
 	rm -rf build

@@ -6,7 +6,7 @@
  */
 const kzg = require("./kzg.node");
 const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
-const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
+const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
 // Stored as internal state
 let setupHandle;
 function loadTrustedSetup(filePath) {
@@ -41,7 +41,7 @@ function verifyAggregateKzgProof(blobs, expectedKzgCommitments, kzgAggregatedPro
     return kzg.verifyAggregateKzgProof(blobs, expectedKzgCommitments, kzgAggregatedProof, setupHandle);
 }
 
-exports.BYTES_PER_FIELD = BYTES_PER_FIELD;
+exports.BYTES_PER_FIELD_ELEMENT = BYTES_PER_FIELD_ELEMENT;
 exports.FIELD_ELEMENTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB;
 exports.blobToKzgCommitment = blobToKzgCommitment;
 exports.computeAggregateKzgProof = computeAggregateKzgProof;
