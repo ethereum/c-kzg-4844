@@ -4,7 +4,7 @@
   "description": "NodeJS bindings for C-KZG",
   "author": "Dan Coffman",
   "license": "MIT",
-  "main": "dist/index.js",
+  "main": "dist/kzg.js",
   "scripts": {
     "clean": "node-gyp clean",
     "build": "node-gyp rebuild",
