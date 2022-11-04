@@ -36,6 +36,7 @@ type KZG = {
     setupHandle: SetupHandle
   ) => boolean;
 
+  // Currently unused -- not exported
   verifyKzgProof: (
     polynomialKzg: KZGCommitment,
     z: BLSFieldElement,
@@ -49,9 +50,6 @@ const kzg: KZG = bindings("kzg.node");
 
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 export const BYTES_PER_FIELD = kzg.BYTES_PER_FIELD;
-
-const isCommitmentValid = (commitment: KZGCommitment) =>
-  commitment.length === 48;
 
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
@@ -85,24 +83,6 @@ export function computeAggregateKzgProof(blobs: Blob[]) {
     throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return kzg.computeAggregateKzgProof(blobs, setupHandle);
-}
-
-/**
- * Verify KZG proof that ``p(z) == y`` where ``p(z)`` is the polynomial represented by ``polynomialKzg``.
- */
-export function verifyKzgProof(
-  polynomialKzg: KZGCommitment,
-  z: BLSFieldElement,
-  y: BLSFieldElement,
-  kzgProof: KZGProof
-): boolean {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup to initialize KZG.");
-  }
-  if (!isCommitmentValid(polynomialKzg)) {
-    throw new Error("Invalid polynomialKzg");
-  }
-  return kzg.verifyKzgProof(polynomialKzg, z, y, kzgProof, setupHandle);
 }
 
 export function verifyAggregateKzgProof(
