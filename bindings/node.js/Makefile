@@ -7,5 +7,5 @@ clean:
 
 build: kzg.cxx Makefile
 	cd ../../src; make lib
-	yarn build
+	yarn
 	cp build/Release/kzg.node .
