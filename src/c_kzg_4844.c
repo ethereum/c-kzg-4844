@@ -764,7 +764,7 @@ C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
   return C_KZG_OK;
 }
 
-void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement *in) {
+static void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement *in) {
   blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
@@ -825,7 +825,7 @@ void free_trusted_setup(KZGSettings *s) {
 
 static void compute_powers(fr_t out[], uint64_t n) {
     uint64_t i = 0;
-    out[++i] = fr_one;
+    out[i++] = fr_one;
     while (++i < n) fr_mul(&out[i], &out[i-1], &out[1]);
 }
 
@@ -835,7 +835,7 @@ void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
   blst_fr_from_scalar(out, &tmp);
 }
 
-static void vector_lincomb(Polynomial out, const Polynomial vectors[], const fr_t scalars[], uint64_t n) {
+static void poly_lincomb(Polynomial out, const Polynomial vectors[], const fr_t scalars[], uint64_t n) {
   fr_t tmp;
   uint64_t i, j;
   for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
@@ -904,8 +904,19 @@ static void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint6
     }
 }
 
-void blob_to_kzg_commitment(KZGCommitment *out, const Polynomial blob, const KZGSettings *s) {
-  g1_lincomb(out, s->g1_values, blob, FIELD_ELEMENTS_PER_BLOB);
+static void poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, const KZGSettings *s) {
+  g1_lincomb(out, s->g1_values, p, FIELD_ELEMENTS_PER_BLOB);
+}
+
+static void poly_from_blob(Polynomial p, const Blob blob) {
+  for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++)
+    bytes_to_bls_field(&p[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+}
+
+void blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
+  Polynomial p;
+  poly_from_blob(p, blob);
+  poly_to_kzg_commitment(out, p, s);
 }
 
 /**
@@ -1059,20 +1070,29 @@ static void hash(uint8_t md[32], uint8_t input[], size_t n) {
   sha256_final(md, &ctx);
 }
 
+static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
+  for (int i = 0; i < 8; i++) {
+    out[i] = n & 0xFF;
+    n >>= 8;
+  }
+}
+
 static C_KZG_RET hash_to_bytes(uint8_t out[32],
-    const uint8_t *initializer, const Polynomial polys[], const KZGCommitment comms[], size_t n) {
+    const Polynomial polys[], const KZGCommitment comms[], uint64_t n) {
   size_t i; uint64_t j;
-  size_t ni = initializer == NULL ? 0 : 32;
+  size_t ni = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
   size_t np = ni + n * FIELD_ELEMENTS_PER_BLOB * 32;
 
   uint8_t* bytes = calloc(np + n * 48, sizeof(uint8_t));
   if (bytes == NULL) return C_KZG_MALLOC;
 
-  if (ni) memcpy(bytes, initializer, ni);
+  memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
+  bytes_of_uint64(&bytes[16], n);
+  bytes_of_uint64(&bytes[16 + 8], FIELD_ELEMENTS_PER_BLOB);
 
   for (i = 0; i < n; i++)
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-      bytes_from_bls_field(&bytes[ni + i * 32], &polys[i][j]);
+      bytes_from_bls_field(&bytes[ni + i * BYTES_PER_FIELD_ELEMENT], &polys[i][j]);
 
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
@@ -1083,21 +1103,25 @@ static C_KZG_RET hash_to_bytes(uint8_t out[32],
   return C_KZG_OK;
 }
 
-static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZGCommitment *comm_out, uint8_t hash_out[32],
-    const Polynomial blobs[],
+static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZGCommitment *comm_out, BLSFieldElement *chal_out,
+    const Polynomial polys[],
     const KZGCommitment kzg_commitments[],
     size_t n) {
   BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
   if (r_powers == NULL) return C_KZG_MALLOC;
 
   C_KZG_RET ret;
-  ret = hash_to_bytes(hash_out, NULL, blobs, kzg_commitments, n);
-  if (ret != C_KZG_OK) { free(r_powers); return ret; }
-  bytes_to_bls_field(&r_powers[1], hash_out);
+  uint8_t* hash = calloc(32, sizeof(uint8_t));
+  if (hash == NULL) { free(r_powers); return C_KZG_MALLOC; }
+  ret = hash_to_bytes(hash, polys, kzg_commitments, n);
+  if (ret != C_KZG_OK) { free(r_powers); free(hash); return ret; }
+  bytes_to_bls_field(&r_powers[1], hash);
+  free(hash);
 
   compute_powers(r_powers, n);
+  fr_mul(chal_out, &r_powers[1], &r_powers[n - 1]);
 
-  vector_lincomb(poly_out, blobs, r_powers, n);
+  poly_lincomb(poly_out, polys, r_powers, n);
 
   g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
@@ -1106,45 +1130,53 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
 }
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-    const Polynomial blobs[],
+    const Blob blobs[],
     size_t n,
     const KZGSettings *s) {
   KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
   if (commitments == NULL) return C_KZG_MALLOC;
 
-  for (size_t i = 0; i < n; i++)
-    blob_to_kzg_commitment(&commitments[i], blobs[i], s);
+  Polynomial* polys = calloc(n, sizeof(Polynomial));
+  if (polys == NULL) { free(commitments); return C_KZG_MALLOC; }
+
+  for (size_t i = 0; i < n; i++) {
+    poly_from_blob(polys[i], blobs[i]);
+    poly_to_kzg_commitment(&commitments[i], polys[i], s);
+  }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
+  BLSFieldElement evaluation_challenge;
   C_KZG_RET ret;
-  uint8_t hash[32];
-  ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, hash, blobs, commitments, n);
+  ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, commitments, n);
   free(commitments);
+  free(polys);
   if (ret != C_KZG_OK) return ret;
 
-  TRY(hash_to_bytes(hash, hash, &aggregated_poly, &aggregated_poly_commitment, 1));
-  BLSFieldElement x;
-  bytes_to_bls_field(&x, hash);
-
-  return compute_kzg_proof(out, aggregated_poly, &x, s);
+  return compute_kzg_proof(out, aggregated_poly, &evaluation_challenge, s);
 }
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-    const Polynomial blobs[],
+    const Blob blobs[],
     const KZGCommitment expected_kzg_commitments[],
     size_t n,
     const KZGProof *kzg_aggregated_proof,
     const KZGSettings *s) {
+  Polynomial* polys = calloc(n, sizeof(Polynomial));
+  if (polys == NULL) return C_KZG_MALLOC;
+  for (size_t i = 0; i < n; i++)
+    poly_from_blob(polys[i], blobs[i]);
+
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
-  uint8_t hash[32];
-  TRY(compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, hash, blobs, expected_kzg_commitments, n));
+  BLSFieldElement evaluation_challenge;
+  C_KZG_RET ret;
+  ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
+  free(polys);
+  if (ret != C_KZG_OK) return ret;
 
-  BLSFieldElement x, y;
-  TRY(hash_to_bytes(hash, hash, &aggregated_poly, &aggregated_poly_commitment, 1));
-  bytes_to_bls_field(&x, hash);
-  TRY(evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &x, s));
+  BLSFieldElement y;
+  TRY(evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s));
 
-  return verify_kzg_proof(out, &aggregated_poly_commitment, &x, &y, kzg_aggregated_proof, s);
+  return verify_kzg_proof(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
 }

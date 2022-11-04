@@ -1,15 +1,6 @@
 *.o
 *.a
-*_test
-*_bench
-*_debug
-*_tune
-*.prof
 *.out
-*.log
-src/*_tune.c
-tmp/
-doc/
 inc/blst.h*
 inc/blst_aux.h*
 .vscode/

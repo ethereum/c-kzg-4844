@@ -8,7 +8,7 @@ This is a copy of C-KZG stripped down to support the [Polynomial Commitments](ht
 
 We also provide `load_trusted_setup` and `free_trusted_setup` to load the
 trusted setup data from a file into an object that can be passed to the API
-functions, and conversions to/from byte arrays for the relevant types.
+functions, and functions for converting commitments/proofs/points to/from bytes.
 
 The only dependency is [blst](https://github.com/supranational/blst).
 Ensure `blst.h` is provided in `inc` and `libblst.a` in `lib`.
