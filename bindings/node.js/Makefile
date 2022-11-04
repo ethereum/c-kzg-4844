@@ -6,11 +6,9 @@ clean:
 	rm -f *.a
 	rm -f *.o
 
-build: kzg.cxx kzg.ts package.json Makefile
+build: kzg.cxx kzg.ts package.json binding.gyp Makefile
 	cd ../../src; make lib
 	yarn node-gyp rebuild
-	cp build/Release/kzg.node .
-	cp build/Release/kzg.node ./dist
 
 test: build
 	yarn jest

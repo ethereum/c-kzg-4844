@@ -22,6 +22,21 @@
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
       "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"]
+    },
+    {
+      "target_name": "action_after_build",
+      "type": "none",
+      "dependencies": ["kzg"],
+      "copies": [
+        {
+          "files": ["./build/Release/kzg.node"],
+          "destination": "."
+        },
+        {
+          "files": ["./build/Release/kzg.node"],
+          "destination": "./dist"
+        }
+      ]
     }
   ]
 }

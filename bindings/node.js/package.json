@@ -5,6 +5,7 @@
   "author": "Dan Coffman",
   "license": "MIT",
   "main": "dist/kzg.js",
+  "types": "dist/dts/kzg.d.ts",
   "devDependencies": {
     "@babel/preset-typescript": "^7.18.6",
     "@rollup/plugin-typescript": "^9.0.2",
