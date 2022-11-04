@@ -752,11 +752,11 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 
-static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
+void bytes_from_g1(uint8_t out[48], const g1_t *in) {
   blst_p1_compress(out, in);
 }
 
-static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
+C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
   blst_p1_affine tmp;
   if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
     return C_KZG_BADARGS;
@@ -829,7 +829,7 @@ static void compute_powers(fr_t out[], uint64_t n) {
     while (++i < n) fr_mul(&out[i], &out[i-1], &out[1]);
 }
 
-static void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
+void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
   blst_scalar tmp;
   blst_scalar_from_lendian(&tmp, bytes);
   blst_fr_from_scalar(out, &tmp);
