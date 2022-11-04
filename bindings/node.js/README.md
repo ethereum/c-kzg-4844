@@ -23,6 +23,7 @@ This directory contains the code necessary to generate NodeJS bindings for C-KZG
 
 Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md
 
+First,
 `npm install -g yarn` if you don't have it.
 
 Install the blst submodule
@@ -47,4 +48,10 @@ After doing this once, you can re-build (if necessary) and re-run the tests with
 
 ```sh
 make build test
+```
+
+After making changes, regenerate the distributable JS and type defs
+
+```sh
+make bundle
 ```

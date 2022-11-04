@@ -17,7 +17,6 @@
       ],
       "libraries": [
         "<(module_root_dir)/c_kzg_4844.o",
-        "<(module_root_dir)/sha256.o",
         "<(module_root_dir)/../../lib/libblst.a"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],

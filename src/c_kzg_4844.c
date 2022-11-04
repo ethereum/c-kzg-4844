@@ -15,7 +15,6 @@
  */
 
 #include "c_kzg_4844.h"
-#include "sha256.h"
 
 #include <inttypes.h>
 #include <stdlib.h>
@@ -1042,11 +1041,22 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   return C_KZG_OK;
 }
 
+typedef struct {
+    unsigned int h[8];
+    unsigned long long N;
+    unsigned char buf[64];
+    size_t off;
+} SHA256_CTX;
+
+void sha256_init(SHA256_CTX *ctx);
+void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
+void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
+
 static void hash(uint8_t md[32], uint8_t input[], size_t n) {
   SHA256_CTX ctx;
   sha256_init(&ctx);
   sha256_update(&ctx, input, n);
-  sha256_final(&ctx, md);
+  sha256_final(md, &ctx);
 }
 
 static C_KZG_RET hash_to_bytes(uint8_t out[32],
