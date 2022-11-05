@@ -2,7 +2,7 @@
   "trailingComma": "all",
   "overrides": [
     {
-      "files": "binding.gyp",
+      "files": "*.gyp",
       "options": { "parser": "json" }
     }
   ]

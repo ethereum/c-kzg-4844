@@ -11,8 +11,8 @@
       },
       "sources": ["kzg.cxx"],
       "include_dirs": [
-        "../../inc",
-        "../../src",
+        "<(module_root_dir)/dist/deps/blst/bindings",
+        "<(module_root_dir)/dist/deps/c-kzg",
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
       "libraries": [
