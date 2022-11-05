@@ -30,10 +30,6 @@
         {
           "files": ["./build/Release/kzg.node"],
           "destination": "."
-        },
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "./dist"
         }
       ]
     }

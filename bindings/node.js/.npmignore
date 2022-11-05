@@ -13,4 +13,4 @@ jest.config.js
 rollup.config.js
 tsconfig.json
 babel.config.js
-dist/blst/bindings
+*.bak

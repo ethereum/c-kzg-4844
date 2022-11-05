@@ -26,4 +26,8 @@ bundle: clean
 	cp ../../src/c_kzg_4844.h dist/deps/c-kzg
 
 publish:
+	mv binding.gyp binding.gyp.bak
+	mv binding.dist.gyp binding.gyp
 	npm publish
+	mv binding.gyp binding.dist.gyp
+	mv binding.gyp.bak binding.gyp
