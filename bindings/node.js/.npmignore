@@ -1,5 +1,6 @@
 .vscode
 build
+!dist/deps/blst/build
 node_modules
 .gitignore
 .npmignore
