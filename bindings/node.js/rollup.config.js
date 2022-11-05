@@ -6,5 +6,9 @@ export default {
     dir: "dist",
     format: "cjs",
   },
-  plugins: [typescript()],
+  plugins: [
+    typescript({
+      exclude: ["test.ts"],
+    }),
+  ],
 };
