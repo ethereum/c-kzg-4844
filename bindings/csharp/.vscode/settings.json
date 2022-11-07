@@ -6,6 +6,7 @@
         "string.h": "c",
         "inttypes.h": "c",
         "stdlib.h": "c",
-        "sha256.h": "c"
+        "sha256.h": "c",
+        "ckzg.h": "c"
     }
 }

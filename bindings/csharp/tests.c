@@ -36,7 +36,7 @@ void main() {
    TestGeth("devnetv2-geth.txt");
 
    printf("\ntrusted_setup.txt\n");
-   TestE2e("trusted_setup.txt");
+   TestE2e("../../src/trusted_setup.txt");
    printf("\n");
-   TestGeth("trusted_setup.txt");
+   TestGeth("../../src/trusted_setup.txt");
 }
