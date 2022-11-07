@@ -29,6 +29,7 @@ jobs:
             native: win-x64
             host: windows-latest
     steps:
+    - uses: ilammy/msvc-dev-cmd@v1
     - uses: actions/checkout@v3
       with:
         submodules: recursive
@@ -38,7 +39,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ckzg-library-${{ matrix.target.native }}
-        path: bindings/csharp/Ckzg/runtimes/${{ matrix.target.native }}/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.native }}/native
   
   build-ckzg-dotnet:
     runs-on: ubuntu-latest
@@ -48,15 +49,15 @@ jobs:
     - uses: actions/download-artifact@v3
       with:
         name: ckzg-library-linux-x64
-        path: bindings/csharp/Ckzg/runtimes/linux-x64/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-x64/native
     - uses: actions/download-artifact@v3
       with:
         name: ckzg-library-osx-x64
-        path: bindings/csharp/Ckzg/runtimes/osx-x64/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-x64/native
     - uses: actions/download-artifact@v3
       with:
         name: ckzg-library-win-x64
-        path: bindings/csharp/Ckzg/runtimes/win-x64/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
 
     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v3
@@ -69,5 +70,5 @@ jobs:
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
-        name: Ckzg.nuget
-        path: bindings/csharp/build/Ckzg.1.0.0.nupkg
+        name: Ckzg.Bindings.nuget
+        path: bindings/csharp/build/Ckzg.Bindings.1.0.0.nupkg

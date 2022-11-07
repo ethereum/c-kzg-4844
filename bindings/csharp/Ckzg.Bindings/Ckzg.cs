@@ -7,17 +7,20 @@ public class Ckzg
 {
     static Ckzg()
     {
-        AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) => NativeLibrary.Load($"runtimes/{(
+        AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) =>
+        {
+            var a = $"runtimes/{(
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "")}-{RuntimeInformation.ProcessArchitecture switch
             {
-                Architecture.X86 => "x86",
-                Architecture.Arm => "arm",
                 Architecture.X64 => "x64",
                 Architecture.Arm64 => "arm64",
                 _ => ""
-            }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}");
+            }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}";
+
+            return NativeLibrary.Load(a);
+        };
     }
 
     [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment_wrap", CallingConvention = CallingConvention.Cdecl)]
@@ -32,7 +35,7 @@ public class Ckzg
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
     public static extern int verify_kzg_proof(byte[/*48*/] commitment, byte[/*32*/] x, byte[/*32*/] y, byte[/*48*/] proof, IntPtr ts);
 
-    [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)] // free result with free_trusted_setup()
+    [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")] // free result with free_trusted_setup()
     public static extern IntPtr load_trusted_setup(string filename);
 
     [DllImport("ckzg", EntryPoint = "free_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)]

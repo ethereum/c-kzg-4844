@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "c_kzg_4844.h"
 
-#ifdef WIN32
+#ifdef _WIN32
 #define DLLEXPORT __declspec(dllexport)
 #else
 #define DLLEXPORT 

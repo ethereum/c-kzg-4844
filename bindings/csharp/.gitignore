@@ -4,7 +4,7 @@
 .vs
 .vscode
 
-Ckzg/runtimes/*/native/*
+Ckzg.Bindings/runtimes/*/native/*
 !**/.gitkeep
 test_ckzg*
 *.so

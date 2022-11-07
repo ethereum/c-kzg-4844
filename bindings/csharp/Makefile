@@ -1,14 +1,14 @@
 INCLUDE_DIRS = ../../src ../../blst/bindings
 
 ifeq ($(OS),Windows_NT)
-	BLST_BUILDSCRIPT=./build.sh
-	BLST_OBJ=libblst.a
+	BLST_BUILDSCRIPT=./build.bat
+	BLST_OBJ=blst.lib
 	TESTS_EXECUTABLE=test_ckzg.exe
 	CSHARP_PLATFORM?=win-x64
 	CLANG_PLATFROM?=x86_64-win
 	CLANG_FLAGS=
-	CLANG_EXECUTABLE=gcc
-	CKZG_LIBRARY_PATH=Ckzg\runtimes\$(CSHARP_PLATFORM)\native\ckzg.dll
+	CLANG_EXECUTABLE=clang
+	CKZG_LIBRARY_PATH=Ckzg.Bindings\runtimes\$(CSHARP_PLATFORM)\native\ckzg.dll
 else
 	BLST_BUILDSCRIPT=./build.sh
 	BLST_OBJ=libblst.a
@@ -17,14 +17,13 @@ else
 	CLANG_PLATFORM?=x86_64-linux
 	CLANG_FLAGS=-fPIC
 	CLANG_EXECUTABLE=cc
-	CKZG_LIBRARY_PATH=Ckzg/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
+	CKZG_LIBRARY_PATH=Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
 endif
 
 .blst:
 	cd ../../blst &&\
 	git apply ../blst_sha.patch &&\
 	$(BLST_BUILDSCRIPT) &&\
-	uname -a && ls -a &&\
 	git apply -R ../blst_sha.patch &&\
 	cd ../bindings/csharp
 
@@ -39,7 +38,7 @@ ckzg:
 # E2e tests as an executable
 test: tests.c ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 	@make .blst
-	clang -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) $^ 
+	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) $^ 
 
 # E2e tests are built and run
 run-test:
