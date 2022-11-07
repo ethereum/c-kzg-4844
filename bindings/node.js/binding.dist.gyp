@@ -36,7 +36,7 @@
           ],
           "outputs": ["<(module_root_dir)/c_kzg_4844.o"],
           "action": [
-            "clang",
+            "cc",
             "-I<(module_root_dir)/dist/deps/blst/bindings",
             "-O2",
             "-c",
