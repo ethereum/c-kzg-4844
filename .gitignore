@@ -9,3 +9,4 @@ inc/blst_aux.h*
 *bindings/csharp/*.exe
 *bindings/csharp/*.dll
 __pycache__
+.DS_Store
