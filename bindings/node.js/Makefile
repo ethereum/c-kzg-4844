@@ -28,6 +28,4 @@ bundle: clean
 publish: bundle
 	mv binding.gyp binding.gyp.bak
 	cp binding.dist.gyp binding.gyp
-	npm publish
-	mv binding.gyp binding.dist.gyp
-	mv binding.gyp.bak binding.gyp
+	npm publish && mv binding.gyp.bak binding.gyp || mv binding.gyp.bak binding.gyp
