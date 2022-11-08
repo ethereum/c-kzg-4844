@@ -37,17 +37,17 @@ describe("C-KZG", () => {
     expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 
-  it("computes the aggregate proof when blobs is an empty array", () => {
-    const proof = computeAggregateKzgProof([]);
-
-    // Is this actually what the aggregate proof for an empty array should be?
-    expect(proof.toString()).toEqual(
-      [
-        192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-        0,
-      ].toString(),
+  it("throws an error when blobs is an empty array", () => {
+    expect(() => computeAggregateKzgProof([])).toThrowError(
+      "Failed to compute proof",
     );
+  });
+
+  it("computes the aggregate proof when for a single blob", () => {
+    let blobs = new Array(1).fill(0).map(generateRandomBlob);
+    let commitments = blobs.map(blobToKzgCommitment);
+    let proof = computeAggregateKzgProof(blobs);
+    expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 
   it("fails when given incorrect commitments", () => {
