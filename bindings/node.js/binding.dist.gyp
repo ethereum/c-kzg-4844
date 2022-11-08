@@ -53,6 +53,10 @@
         {
           "files": ["./build/Release/kzg.node"],
           "destination": "./dist"
+        },
+        {
+          "files": ["./build/Release/kzg.node"],
+          "destination": "./"
         }
       ]
     }

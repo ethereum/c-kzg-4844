@@ -29,3 +29,10 @@ publish: bundle
 	mv binding.gyp binding.gyp.bak
 	cp binding.dist.gyp binding.gyp
 	npm publish && mv binding.gyp.bak binding.gyp || mv binding.gyp.bak binding.gyp
+
+
+linux-test: bundle
+	cp ../../src/trusted_setup.txt .
+	docker build -t "linux-test" .
+	rm trusted_setup.txt
+	docker logs --follow `docker run -d linux-test`
