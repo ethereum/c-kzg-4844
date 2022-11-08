@@ -20,6 +20,8 @@ else
 	CKZG_LIBRARY_PATH=Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
 endif
 
+TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
+
 .blst:
 	cd ../../blst &&\
 	git apply ../blst_sha.patch &&\
@@ -27,8 +29,8 @@ endif
 	git apply -R ../blst_sha.patch &&\
 	cd ../bindings/csharp
 
-.ckzg: ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
-	$(CLANG_EXECUTABLE) -O -Wall -shared $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(CKZG_LIBRARY_PATH) $^
+.ckzg: 
+	$(CLANG_EXECUTABLE) -O -Wall -shared $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(CKZG_LIBRARY_PATH) $(TARGETS)
 
 # Ckzg library
 ckzg:
@@ -36,9 +38,9 @@ ckzg:
 	@make .ckzg
 
 # E2e tests as an executable
-test: tests.c ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
+test:
 	@make .blst
-	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) $^ 
+	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) tests.c $(TARGETS)
 
 # E2e tests are built and run
 run-test:
