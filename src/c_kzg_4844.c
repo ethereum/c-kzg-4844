@@ -1146,6 +1146,11 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     const Blob blobs[],
     size_t n,
     const KZGSettings *s) {
+  if (n == 0) {
+    *out = g1_identity;
+    return C_KZG_OK;
+  }
+
   KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
   if (commitments == NULL) return C_KZG_MALLOC;
 
