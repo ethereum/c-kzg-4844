@@ -16,8 +16,8 @@
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
       "libraries": [
-        "<(module_root_dir)/c_kzg_4844.o",
-        "<(module_root_dir)/../../lib/libblst.a"
+        "<(module_root_dir)/../../lib/libblst.a",
+        "<(module_root_dir)/c_kzg_4844.o"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
       "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"]
