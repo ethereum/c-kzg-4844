@@ -16,3 +16,5 @@ tsconfig.json
 babel.config.js
 *.bak
 Dockerfile
+binding.dist.gyp
+Makefile
