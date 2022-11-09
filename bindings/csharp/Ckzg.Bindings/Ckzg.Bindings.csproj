@@ -5,13 +5,13 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Ckzg</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Title>Ckzg</Title>
+    <Title>Ckzg.Bindings</Title>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Version>0.1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
