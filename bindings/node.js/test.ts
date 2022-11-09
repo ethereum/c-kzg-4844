@@ -38,8 +38,12 @@ describe("C-KZG", () => {
   });
 
   it("throws an error when blobs is an empty array", () => {
-    expect(() => computeAggregateKzgProof([])).toThrowError(
-      "Failed to compute proof",
+    expect(computeAggregateKzgProof([]).toString()).toEqual(
+      [
+        192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+      ].toString(),
     );
   });
 
