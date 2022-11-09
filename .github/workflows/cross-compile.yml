@@ -71,4 +71,4 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: Ckzg.Bindings.nuget
-        path: bindings/csharp/build/Ckzg.Bindings.1.0.0.nupkg
+        path: bindings/csharp/build/Ckzg.Bindings.*.nupkg
