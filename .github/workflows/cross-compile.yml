@@ -16,12 +16,12 @@ jobs:
           - clang: x86_64-linux
             native: linux-x64
             host: ubuntu-latest
-          #- clang: arm64-linux
-          #  native: linux-arm64
-          #  host: ubuntu-latest
-          #- clang: arm64-darwin
-          #  native: osx-arm64
-          #  host: macos-latest
+          - clang: arm64-linux
+            native: linux-arm64
+            host: ubuntu-latest
+          - clang: arm64-darwin
+            native: osx-arm64
+            host: macos-latest
           - clang: x86_64-darwin
             native: osx-x64
             host: macos-latest
@@ -34,7 +34,7 @@ jobs:
       with:
         submodules: recursive
     - name: Build native library for ${{ matrix.target.native }}
-      run: 	cd bindings/csharp && make -B ckzg CSHARP_PLATFORM=${{ matrix.target.native }} CLANG_PLATFORM=${{ matrix.target.clang }}
+      run:  cd bindings/csharp && make -B ckzg CSHARP_PLATFORM=${{ matrix.target.native }} CLANG_PLATFORM=${{ matrix.target.clang }}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
