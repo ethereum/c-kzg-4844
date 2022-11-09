@@ -1109,14 +1109,25 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
     const Polynomial polys[],
     const KZGCommitment kzg_commitments[],
     size_t n) {
-  BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
-  if (r_powers == NULL) return C_KZG_MALLOC;
+  if (n == 0) return C_KZG_BADARGS;
 
   C_KZG_RET ret;
   uint8_t* hash = calloc(32, sizeof(uint8_t));
-  if (hash == NULL) { free(r_powers); return C_KZG_MALLOC; }
+  if (hash == NULL) return C_KZG_MALLOC;
   ret = hash_to_bytes(hash, polys, kzg_commitments, n);
-  if (ret != C_KZG_OK) { free(r_powers); free(hash); return ret; }
+  if (ret != C_KZG_OK) { free(hash); return ret; }
+
+  if (n == 1) {
+    bytes_to_bls_field(chal_out, hash);
+    poly_lincomb(poly_out, polys, chal_out, n);
+    g1_lincomb(comm_out, kzg_commitments, chal_out, n);
+    free(hash);
+    return C_KZG_OK;
+  }
+
+  BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
+  if (r_powers == NULL) { free(hash); return C_KZG_MALLOC; }
+
   bytes_to_bls_field(&r_powers[1], hash);
   free(hash);
 
@@ -1135,6 +1146,11 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     const Blob blobs[],
     size_t n,
     const KZGSettings *s) {
+  if (n == 0) {
+    *out = g1_identity;
+    return C_KZG_OK;
+  }
+
   KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
   if (commitments == NULL) return C_KZG_MALLOC;
 

@@ -155,6 +155,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   auto blobs_count = blobs_param.Length();
+
   auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
 
   for (uint32_t blob_index = 0; blob_index < blobs_count; blob_index++) {
