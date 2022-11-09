@@ -37,7 +37,7 @@ describe("C-KZG", () => {
     expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 
-  it("throws an error when blobs is an empty array", () => {
+  it("returns the identity (aka zero, aka neutral) element when blobs is an empty array", () => {
     expect(computeAggregateKzgProof([]).toString()).toEqual(
       [
         192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
