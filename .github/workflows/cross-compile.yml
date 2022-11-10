@@ -58,6 +58,14 @@ jobs:
       with:
         name: ckzg-library-win-x64
         path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
+    - uses: actions/download-artifact@v3
+      with:
+        name: ckzg-library-osx-arm64
+        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-arm64/native
+    - uses: actions/download-artifact@v3
+      with:
+        name: ckzg-library-linux-arm64
+        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-arm64/native
 
     - name: Setup .NET Core SDK ${{ matrix.dotnet-version }}
       uses: actions/setup-dotnet@v3
