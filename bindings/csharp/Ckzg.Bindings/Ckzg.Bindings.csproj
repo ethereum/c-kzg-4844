@@ -11,7 +11,7 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>Ckzg.Bindings</Title>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>0.1.0.1</Version>
+    <Version>0.1.0.2</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,12 +25,12 @@
     <Content Include="runtimes\*\native\*.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\runtimes</PackagePath>
+      <PackagePath>runtimes\</PackagePath>
     </Content>
     <Content Include="runtimes\*\native\*.so">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\runtimes</PackagePath>
+      <PackagePath>runtimes\</PackagePath>
     </Content>
   </ItemGroup>
 
