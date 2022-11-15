@@ -2663,7 +2663,7 @@ fn bindgen_test_layout_FFTSettings() {
 }
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KZGSettings {
     #[doc = "< The corresponding settings for performing FFTs"]
     pub fs: *const FFTSettings,
