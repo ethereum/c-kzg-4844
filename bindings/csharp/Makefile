@@ -40,7 +40,7 @@ ckzg:
 # E2e tests as an executable
 test:
 	@make .blst
-	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) tests.c $(TARGETS)
+	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) kzg_tests.c $(TARGETS)
 
 # E2e tests are built and run
 run-test:
