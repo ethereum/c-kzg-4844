@@ -19,13 +19,14 @@ void TestProofs(char * path){
    int res0 = compute_aggregate_kzg_proof_wrap(proof, blob, 1, s);
    blob_to_kzg_commitment_wrap(commitment, blob, s);
 
-   // commitment
    FILE *f = fopen("output.txt", "wt");
+   // blob
    for(int i = 0; i< 4096*32; i++){
       fprintf(f, "%02x", blob[i]);
    }
    fprintf(f, "\n");
    
+   // commitment
    for(int i = 0; i< 48; i++){
       fprintf(f, "%02x", commitment[i]);
    }
