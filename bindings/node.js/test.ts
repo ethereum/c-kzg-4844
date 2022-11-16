@@ -63,4 +63,13 @@ describe("C-KZG", () => {
       verifyAggregateKzgProof(blobs, commitments, proof),
     ).toThrowError("Invalid commitment data");
   });
+
+  describe("computing commitment from blobs", () => {
+    it("throws as expected when given an argument of invalid type", () => {
+      // @ts-expect-error
+      expect(() => blobToKzgCommitment("wrong type")).toThrowError(
+        "Invalid argument type: blob. Expected UInt8Array",
+      );
+    });
+  });
 });
