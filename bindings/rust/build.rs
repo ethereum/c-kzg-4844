@@ -24,7 +24,7 @@ fn main() {
 
     Command::new("ar")
         .current_dir(&root_dir.join("src"))
-        .args(&["crus", "libckzg.a", "c_kzg_4844.o"])
+        .args(["crus", "libckzg.a", "c_kzg_4844.o"])
         .status()
         .unwrap();
     std::fs::copy(root_dir.join("src/libckzg.a"), &out_dir.join("libckzg.a")).unwrap();
