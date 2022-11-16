@@ -15,180 +15,33 @@ pub type limb_t = u64;
 pub struct blst_scalar {
     pub b: [byte; 32usize],
 }
-#[test]
-fn bindgen_test_layout_blst_scalar() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_scalar> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_scalar>(),
-        32usize,
-        concat!("Size of: ", stringify!(blst_scalar))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_scalar>(),
-        1usize,
-        concat!("Alignment of ", stringify!(blst_scalar))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).b) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_scalar),
-            "::",
-            stringify!(b)
-        )
-    );
-}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fr {
     pub l: [limb_t; 4usize],
 }
-#[test]
-fn bindgen_test_layout_blst_fr() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_fr> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_fr>(),
-        32usize,
-        concat!("Size of: ", stringify!(blst_fr))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_fr>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_fr))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).l) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_fr),
-            "::",
-            stringify!(l)
-        )
-    );
-}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fp {
     pub l: [limb_t; 6usize],
-}
-#[test]
-fn bindgen_test_layout_blst_fp() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_fp> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_fp>(),
-        48usize,
-        concat!("Size of: ", stringify!(blst_fp))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_fp>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_fp))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).l) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_fp),
-            "::",
-            stringify!(l)
-        )
-    );
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fp2 {
     pub fp: [blst_fp; 2usize],
 }
-#[test]
-fn bindgen_test_layout_blst_fp2() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_fp2> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_fp2>(),
-        96usize,
-        concat!("Size of: ", stringify!(blst_fp2))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_fp2>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_fp2))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).fp) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_fp2),
-            "::",
-            stringify!(fp)
-        )
-    );
-}
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fp6 {
     pub fp2: [blst_fp2; 3usize],
 }
-#[test]
-fn bindgen_test_layout_blst_fp6() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_fp6> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_fp6>(),
-        288usize,
-        concat!("Size of: ", stringify!(blst_fp6))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_fp6>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_fp6))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).fp2) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_fp6),
-            "::",
-            stringify!(fp2)
-        )
-    );
-}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_fp12 {
     pub fp6: [blst_fp6; 2usize],
-}
-#[test]
-fn bindgen_test_layout_blst_fp12() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_fp12> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_fp12>(),
-        576usize,
-        concat!("Size of: ", stringify!(blst_fp12))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_fp12>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_fp12))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).fp6) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_fp12),
-            "::",
-            stringify!(fp6)
-        )
-    );
 }
 
 #[repr(C)]
@@ -198,91 +51,12 @@ pub struct blst_p1 {
     pub y: blst_fp,
     pub z: blst_fp,
 }
-#[test]
-fn bindgen_test_layout_blst_p1() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_p1> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_p1>(),
-        144usize,
-        concat!("Size of: ", stringify!(blst_p1))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_p1>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_p1))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).x) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p1),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).y) as usize - ptr as usize },
-        48usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p1),
-            "::",
-            stringify!(y)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).z) as usize - ptr as usize },
-        96usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p1),
-            "::",
-            stringify!(z)
-        )
-    );
-}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_p1_affine {
     pub x: blst_fp,
     pub y: blst_fp,
-}
-#[test]
-fn bindgen_test_layout_blst_p1_affine() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_p1_affine> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_p1_affine>(),
-        96usize,
-        concat!("Size of: ", stringify!(blst_p1_affine))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_p1_affine>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_p1_affine))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).x) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p1_affine),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).y) as usize - ptr as usize },
-        48usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p1_affine),
-            "::",
-            stringify!(y)
-        )
-    );
 }
 
 #[repr(C)]
@@ -292,117 +66,12 @@ pub struct blst_p2 {
     pub y: blst_fp2,
     pub z: blst_fp2,
 }
-#[test]
-fn bindgen_test_layout_blst_p2() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_p2> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_p2>(),
-        288usize,
-        concat!("Size of: ", stringify!(blst_p2))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_p2>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_p2))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).x) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p2),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).y) as usize - ptr as usize },
-        96usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p2),
-            "::",
-            stringify!(y)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).z) as usize - ptr as usize },
-        192usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p2),
-            "::",
-            stringify!(z)
-        )
-    );
-}
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct blst_p2_affine {
     pub x: blst_fp2,
     pub y: blst_fp2,
-}
-#[test]
-fn bindgen_test_layout_blst_p2_affine() {
-    const UNINIT: ::std::mem::MaybeUninit<blst_p2_affine> = ::std::mem::MaybeUninit::uninit();
-    let ptr = UNINIT.as_ptr();
-    assert_eq!(
-        ::std::mem::size_of::<blst_p2_affine>(),
-        192usize,
-        concat!("Size of: ", stringify!(blst_p2_affine))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_p2_affine>(),
-        8usize,
-        concat!("Alignment of ", stringify!(blst_p2_affine))
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).x) as usize - ptr as usize },
-        0usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p2_affine),
-            "::",
-            stringify!(x)
-        )
-    );
-    assert_eq!(
-        unsafe { ::std::ptr::addr_of!((*ptr).y) as usize - ptr as usize },
-        96usize,
-        concat!(
-            "Offset of field: ",
-            stringify!(blst_p2_affine),
-            "::",
-            stringify!(y)
-        )
-    );
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
-pub struct blst_opaque {
-    _unused: [u8; 0],
-}
-
-#[repr(C)]
-#[repr(align(1))]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct blst_uniq {
-    pub _bindgen_opaque_blob: [u8; 0usize],
-}
-#[test]
-fn bindgen_test_layout_blst_uniq() {
-    assert_eq!(
-        ::std::mem::size_of::<blst_uniq>(),
-        0usize,
-        concat!("Size of: ", stringify!(blst_uniq))
-    );
-    assert_eq!(
-        ::std::mem::align_of::<blst_uniq>(),
-        1usize,
-        concat!("Alignment of ", stringify!(blst_uniq))
-    );
 }
 
 pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: [u8; 16usize] = [
