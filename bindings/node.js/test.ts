@@ -40,12 +40,19 @@ describe("C-KZG", () => {
   });
 
   it("returns the identity (aka zero, aka neutral) element when blobs is an empty array", () => {
-    expect(computeAggregateKzgProof([]).toString()).toEqual(
+    const aggregateProofOfNothing = computeAggregateKzgProof([]);
+    expect(aggregateProofOfNothing.toString()).toEqual(
       [
         192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0,
       ].toString(),
+    );
+  });
+
+  it("verifies the aggregate proof of empty blobs and commitments", () => {
+    expect(verifyAggregateKzgProof([], [], computeAggregateKzgProof([]))).toBe(
+      true,
     );
   });
 
