@@ -8,24 +8,28 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-void throw_invalid_arguments_count(
+Napi::Value throw_invalid_arguments_count(
   const uint expected,
   const uint actual,
   const Napi::Env env
 ) {
-  throw Napi::RangeError::New(
+  Napi::RangeError::New(
     env,
     "Wrong number of arguments. Expected: "
     + std::to_string(expected)
     + ", received " + std::to_string(actual)
-  );
+  ).ThrowAsJavaScriptException();
+
+  return env.Null();
 }
 
-void throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
-  throw Napi::TypeError::New(
+Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
+  Napi::TypeError::New(
     env,
     "Invalid argument type: " + name + ". Expected " + expectedType
-  );
+  ).ThrowAsJavaScriptException();
+
+  return env.Null();
 }
 
 Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t length, Napi::Env env) {
@@ -62,11 +66,11 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 1;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   if (!info[0].IsString()) {
-    throw_invalid_argument_type(env, "filePath", "string");
+    return throw_invalid_argument_type(env, "filePath", "string");
   }
 
   const std::string file_path = info[0].ToString().Utf8Value();
@@ -102,7 +106,7 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 1;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   auto kzg_settings = info[0].As<Napi::External<KZGSettings>>().Data();
@@ -118,12 +122,12 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 2;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   auto blob_param = info[0].As<Napi::TypedArray>();
   if (!blob_param.IsTypedArray() || blob_param.TypedArrayType() != napi_uint8_array) {
-    throw_invalid_argument_type(env, "blob", "UInt8Array");
+     return throw_invalid_argument_type(env, "blob", "UInt8Array");
   }
   auto blob = blob_param.As<Napi::Uint8Array>().Data();
 
@@ -144,7 +148,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 2;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   auto blobs_param = info[0].As<Napi::Array>();
@@ -187,7 +191,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 4;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   auto blobs_param = info[0].As<Napi::Array>();
@@ -273,30 +277,30 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   size_t argument_count = info.Length();
   size_t expected_argument_count = 5;
   if (argument_count != expected_argument_count) {
-    throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
   auto c_param = info[0].As<Napi::TypedArray>();
   if (c_param.TypedArrayType() != napi_uint8_array) {
-    throw_invalid_argument_type(env, "polynomialKzg", "UInt8Array");
+    return throw_invalid_argument_type(env, "polynomialKzg", "UInt8Array");
   }
   auto polynomial_kzg = c_param.As<Napi::Uint8Array>().Data();
 
   auto z_param = info[1].As<Napi::TypedArray>();
   if (z_param.TypedArrayType() != napi_uint8_array) {
-     throw_invalid_argument_type(env, "z", "UInt8Array");
+     return throw_invalid_argument_type(env, "z", "UInt8Array");
   }
   auto z = z_param.As<Napi::Uint8Array>().Data();
 
   auto y_param = info[2].As<Napi::TypedArray>();
   if (y_param.TypedArrayType() != napi_uint8_array) {
-    throw_invalid_argument_type(env, "y", "UInt8Array");
+    return throw_invalid_argument_type(env, "y", "UInt8Array");
   }
   auto y = y_param.As<Napi::Uint8Array>().Data();
 
   auto proof_param = info[3].As<Napi::TypedArray>();
   if (proof_param.TypedArrayType() != napi_uint8_array) {
-     throw_invalid_argument_type(env, "kzgProof", "UInt8Array");
+     return throw_invalid_argument_type(env, "kzgProof", "UInt8Array");
   }
   auto kzg_proof = proof_param.As<Napi::Uint8Array>().Data();
 
