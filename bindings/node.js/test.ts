@@ -37,9 +37,13 @@ describe("C-KZG", () => {
     expect(verifyAggregateKzgProof(blobs, commitments, proof)).toBe(true);
   });
 
-  it("throws an error when blobs is an empty array", () => {
-    expect(() => computeAggregateKzgProof([])).toThrowError(
-      "Failed to compute proof",
+  it("returns the identity (aka zero, aka neutral) element when blobs is an empty array", () => {
+    expect(computeAggregateKzgProof([]).toString()).toEqual(
+      [
+        192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0,
+      ].toString(),
     );
   });
 
@@ -58,5 +62,14 @@ describe("C-KZG", () => {
     expect(() =>
       verifyAggregateKzgProof(blobs, commitments, proof),
     ).toThrowError("Invalid commitment data");
+  });
+
+  describe("computing commitment from blobs", () => {
+    it("throws as expected when given an argument of invalid type", () => {
+      // @ts-expect-error
+      expect(() => blobToKzgCommitment("wrong type")).toThrowError(
+        "Invalid argument type: blob. Expected UInt8Array",
+      );
+    });
   });
 });
