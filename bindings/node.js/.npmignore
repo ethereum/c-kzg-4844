@@ -19,3 +19,4 @@ Dockerfile
 binding.dist.gyp
 Makefile
 testing_trusted_setups.txt
+testing_trusted_setups.json
