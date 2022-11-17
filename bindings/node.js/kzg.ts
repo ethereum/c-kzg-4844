@@ -3,6 +3,7 @@
  * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
  */
 const kzg: KZG = require("./kzg.node");
+const fs = require("fs");
 
 export type BLSFieldElement = Uint8Array; // 32 bytes
 export type KZGProof = Uint8Array; // 48 bytes
@@ -44,6 +45,13 @@ type KZG = {
   ) => boolean;
 };
 
+type TrustedSetupJSON = {
+  setup_G1: string[];
+  setup_G2: string[];
+  setup_G1_lagrange: string[];
+  roots_of_unity: string[];
+};
+
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 export const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
 
@@ -57,12 +65,38 @@ function requireSetupHandle(): SetupHandle {
   return setupHandle;
 }
 
+export async function transformTrustedSetupJSON(
+  filePath: string,
+): Promise<string> {
+  const data: TrustedSetupJSON = JSON.parse(fs.readFileSync(filePath));
+
+  const textFilePath = filePath.replace(".json", "") + ".txt";
+
+  try {
+    fs.unlinkSync(textFilePath);
+  } catch {}
+
+  const file = fs.createWriteStream(textFilePath);
+  file.write(`${FIELD_ELEMENTS_PER_BLOB}\n65\n`);
+  file.write(data.setup_G1.map((p) => p.replace("0x", "")).join("\n"));
+  file.write(data.setup_G2.map((p) => p.replace("0x", "")).join("\n"));
+  file.end();
+
+  const p = new Promise((resolve) => {
+    file.close(resolve);
+  });
+
+  await p;
+  return textFilePath;
+}
+
 export function loadTrustedSetup(filePath: string): void {
   if (setupHandle) {
     throw new Error(
       "Call freeTrustedSetup before loading a new trusted setup.",
     );
   }
+
   setupHandle = kzg.loadTrustedSetup(filePath);
 }
 

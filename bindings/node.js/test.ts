@@ -9,9 +9,10 @@ import {
   verifyAggregateKzgProof,
   BYTES_PER_FIELD_ELEMENT,
   FIELD_ELEMENTS_PER_BLOB,
+  transformTrustedSetupJSON,
 } from "./kzg";
 
-const setupFileName = "trusted_setup.txt";
+const setupFileName = "testing_trusted_setups.json";
 
 const SETUP_FILE_PATH = existsSync(setupFileName)
   ? setupFileName
@@ -22,8 +23,9 @@ const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 const generateRandomBlob = () => new Uint8Array(randomBytes(BLOB_BYTE_COUNT));
 
 describe("C-KZG", () => {
-  beforeAll(() => {
-    loadTrustedSetup(SETUP_FILE_PATH);
+  beforeAll(async () => {
+    const file = await transformTrustedSetupJSON(SETUP_FILE_PATH);
+    loadTrustedSetup(file);
   });
 
   afterAll(() => {
