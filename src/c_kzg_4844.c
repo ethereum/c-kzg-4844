@@ -1089,12 +1089,12 @@ static C_KZG_RET hash_to_bytes(uint8_t out[32],
   if (bytes == NULL) return C_KZG_MALLOC;
 
   memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
-  bytes_of_uint64(&bytes[16], n);
-  bytes_of_uint64(&bytes[16 + 8], FIELD_ELEMENTS_PER_BLOB);
+  bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
+  bytes_of_uint64(&bytes[16 + 8], n);
 
   for (i = 0; i < n; i++)
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-      bytes_from_bls_field(&bytes[ni + i * BYTES_PER_FIELD_ELEMENT], &polys[i][j]);
+      bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i][j]);
 
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
