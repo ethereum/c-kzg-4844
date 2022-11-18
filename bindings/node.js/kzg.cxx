@@ -86,7 +86,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
 
   if (f == NULL) {
     free(kzg_settings);
-    Napi::Error::New(env, "Error opening trusted setup file").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
     return env.Null();
   }
 

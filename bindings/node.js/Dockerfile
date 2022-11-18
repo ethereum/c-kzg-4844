@@ -4,7 +4,7 @@ FROM node:16
 
 COPY ./dist/ /app/dist/
 COPY test.ts /app
-COPY trusted_setup.txt /app
+COPY testing_trusted_setups.json /app
 COPY kzg.ts /app
 COPY kzg.cxx /app
 COPY package.json /app

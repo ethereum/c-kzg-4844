@@ -2,3 +2,4 @@ build
 dist
 *.node
 node_modules
+testing_trusted_setups.txt

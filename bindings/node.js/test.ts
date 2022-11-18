@@ -9,9 +9,10 @@ import {
   verifyAggregateKzgProof,
   BYTES_PER_FIELD_ELEMENT,
   FIELD_ELEMENTS_PER_BLOB,
+  transformTrustedSetupJSON,
 } from "./kzg";
 
-const setupFileName = "trusted_setup.txt";
+const setupFileName = "testing_trusted_setups.json";
 
 const SETUP_FILE_PATH = existsSync(setupFileName)
   ? setupFileName
@@ -22,8 +23,9 @@ const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 const generateRandomBlob = () => new Uint8Array(randomBytes(BLOB_BYTE_COUNT));
 
 describe("C-KZG", () => {
-  beforeAll(() => {
-    loadTrustedSetup(SETUP_FILE_PATH);
+  beforeAll(async () => {
+    const file = await transformTrustedSetupJSON(SETUP_FILE_PATH);
+    loadTrustedSetup(file);
   });
 
   afterAll(() => {
@@ -38,12 +40,20 @@ describe("C-KZG", () => {
   });
 
   it("returns the identity (aka zero, aka neutral) element when blobs is an empty array", () => {
-    expect(computeAggregateKzgProof([]).toString()).toEqual(
+    const aggregateProofOfNothing = computeAggregateKzgProof([]);
+    expect(aggregateProofOfNothing.toString()).toEqual(
       [
         192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0,
       ].toString(),
+    );
+  });
+
+  // Just don't call verifyAggregateKzgProof when there are no blobs or commitments
+  it.skip("verifies the aggregate proof of empty blobs and commitments", () => {
+    expect(verifyAggregateKzgProof([], [], computeAggregateKzgProof([]))).toBe(
+      true,
     );
   });
 
