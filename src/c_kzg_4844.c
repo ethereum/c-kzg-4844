@@ -826,9 +826,9 @@ void free_trusted_setup(KZGSettings *s) {
 }
 
 static void compute_powers(fr_t out[], uint64_t n) {
-    uint64_t i = 0;
-    out[i++] = fr_one;
-    while (++i < n) fr_mul(&out[i], &out[i-1], &out[1]);
+    out[0] = fr_one;
+    for (uint64_t i = 2; i < n; i++)
+      fr_mul(&out[i], &out[i-1], &out[1]);
 }
 
 void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
