@@ -1117,28 +1117,22 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
   ret = hash_to_bytes(hash, polys, kzg_commitments, n);
   if (ret != C_KZG_OK) { free(hash); return ret; }
 
-  if (n == 1) {
-    bytes_to_bls_field(chal_out, hash);
-    poly_lincomb(poly_out, polys, chal_out, n);
-    g1_lincomb(comm_out, kzg_commitments, chal_out, n);
-    free(hash);
-    return C_KZG_OK;
-  }
-
-  BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
+  BLSFieldElement* r_powers = calloc(n + 1, sizeof(BLSFieldElement));
   if (r_powers == NULL) { free(hash); return C_KZG_MALLOC; }
 
   bytes_to_bls_field(&r_powers[1], hash);
   free(hash);
 
-  compute_powers(r_powers, n);
-  fr_mul(chal_out, &r_powers[1], &r_powers[n - 1]);
+  compute_powers(r_powers, n + 1);
+
+  *chal_out = r_powers[n];
 
   poly_lincomb(poly_out, polys, r_powers, n);
 
   g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
   free(r_powers);
+
   return C_KZG_OK;
 }
 
