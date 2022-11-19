@@ -63,15 +63,12 @@ C_KZG_RET compute_aggregate_kzg_proof_wrap(uint8_t out[48], const Blob blobs[], 
 int verify_kzg_proof_wrap(const uint8_t c[48], const uint8_t x[32], const uint8_t y[32], const uint8_t p[48], KZGSettings *s) {
   KZGCommitment commitment;
   KZGProof proof;
-  BLSFieldElement fx, fy;
   bool out;
 
-  bytes_to_bls_field(&fx, x);
-  bytes_to_bls_field(&fy, y);
   if (bytes_to_g1(&commitment, c) != C_KZG_OK) return -1;
   if (bytes_to_g1(&proof, p) != C_KZG_OK) return -1;
 
-  if (verify_kzg_proof(&out, &commitment, &fx, &fy, &proof, s) != C_KZG_OK)
+  if (verify_kzg_proof(&out, &commitment, x, y, &proof, s) != C_KZG_OK)
     return -2;
 
   return out ? 0 : 1;
