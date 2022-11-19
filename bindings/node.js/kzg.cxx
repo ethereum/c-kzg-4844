@@ -26,7 +26,7 @@ Napi::Value throw_invalid_arguments_count(
 Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
   Napi::TypeError::New(
     env,
-    "Invalid parameter type: " + name + ". Expected " + expectedType
+    "Invalid argument type: " + name + ". Expected " + expectedType
   ).ThrowAsJavaScriptException();
 
   return env.Null();
@@ -86,7 +86,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
 
   if (f == NULL) {
     free(kzg_settings);
-    Napi::Error::New(env, "Error opening trusted setup file").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
     return env.Null();
   }
 
@@ -126,7 +126,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   }
 
   auto blob_param = info[0].As<Napi::TypedArray>();
-  if (blob_param.TypedArrayType() != napi_uint8_array) {
+  if (!blob_param.IsTypedArray() || blob_param.TypedArrayType() != napi_uint8_array) {
      return throw_invalid_argument_type(env, "blob", "UInt8Array");
   }
   auto blob = blob_param.As<Napi::Uint8Array>().Data();

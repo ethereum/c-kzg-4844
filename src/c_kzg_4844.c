@@ -826,9 +826,9 @@ void free_trusted_setup(KZGSettings *s) {
 }
 
 static void compute_powers(fr_t out[], uint64_t n) {
-    uint64_t i = 0;
-    out[i++] = fr_one;
-    while (++i < n) fr_mul(&out[i], &out[i-1], &out[1]);
+    out[0] = fr_one;
+    for (uint64_t i = 2; i < n; i++)
+      fr_mul(&out[i], &out[i-1], &out[1]);
 }
 
 void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
@@ -1065,7 +1065,7 @@ void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
 void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
 
-void hash(uint8_t md[32], uint8_t input[], size_t n) {
+void hash(uint8_t md[32], const uint8_t input[], size_t n) {
   SHA256_CTX ctx;
   sha256_init(&ctx);
   sha256_update(&ctx, input, n);
@@ -1089,12 +1089,12 @@ static C_KZG_RET hash_to_bytes(uint8_t out[32],
   if (bytes == NULL) return C_KZG_MALLOC;
 
   memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
-  bytes_of_uint64(&bytes[16], n);
-  bytes_of_uint64(&bytes[16 + 8], FIELD_ELEMENTS_PER_BLOB);
+  bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
+  bytes_of_uint64(&bytes[16 + 8], n);
 
   for (i = 0; i < n; i++)
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-      bytes_from_bls_field(&bytes[ni + i * BYTES_PER_FIELD_ELEMENT], &polys[i][j]);
+      bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i][j]);
 
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
@@ -1117,28 +1117,22 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
   ret = hash_to_bytes(hash, polys, kzg_commitments, n);
   if (ret != C_KZG_OK) { free(hash); return ret; }
 
-  if (n == 1) {
-    bytes_to_bls_field(chal_out, hash);
-    poly_lincomb(poly_out, polys, chal_out, n);
-    g1_lincomb(comm_out, kzg_commitments, chal_out, n);
-    free(hash);
-    return C_KZG_OK;
-  }
-
-  BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
+  BLSFieldElement* r_powers = calloc(n + 1, sizeof(BLSFieldElement));
   if (r_powers == NULL) { free(hash); return C_KZG_MALLOC; }
 
   bytes_to_bls_field(&r_powers[1], hash);
   free(hash);
 
-  compute_powers(r_powers, n);
-  fr_mul(chal_out, &r_powers[1], &r_powers[n - 1]);
+  compute_powers(r_powers, n + 1);
+
+  *chal_out = r_powers[n];
 
   poly_lincomb(poly_out, polys, r_powers, n);
 
   g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
   free(r_powers);
+
   return C_KZG_OK;
 }
 

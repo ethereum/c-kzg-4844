@@ -1,4 +1,36 @@
+This package wraps the c-kzg C code in C++ NAPI bindings which allow it to be imported into a NodeJS program.
+
+Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md
+
+# Usage
+
+Install this library with
+
+```sh
+yarn add c-kzg
+```
+
+Import from it like any other library
+
+```js
+import {
+  KZGCommitment,
+  blobToKzgCommitment,
+  verifyAggregateKzgProof,
+  loadTrustedSetup,
+  transformTrustedSetupJSON,
+} from "c-kzg";
+```
+
+Requirements
+
+- The C and C++ code is compiled by node-gyp on installation, so your environment will need a compiler like GCC or clang
+
+# Contributing
+
 This directory contains the code necessary to generate NodeJS bindings for C-KZG.
+
+The bindings file has the following interface:
 
 ```js
 
@@ -21,7 +53,7 @@ This directory contains the code necessary to generate NodeJS bindings for C-KZG
   ) => boolean;
 ```
 
-Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md
+But this library wraps it in module with manages the setupHandle internally.
 
 First,
 `npm install -g yarn` if you don't have it.

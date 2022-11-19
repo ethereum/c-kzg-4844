@@ -32,7 +32,5 @@ publish: bundle
 
 
 linux-test: bundle
-	cp ../../src/trusted_setup.txt .
 	docker build -t "linux-test" .
-	rm trusted_setup.txt
 	docker logs --follow `docker run -d linux-test`
