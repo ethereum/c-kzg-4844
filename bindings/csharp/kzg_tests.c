@@ -1,4 +1,3 @@
-
 // RUN: make run-test
 #include "ckzg.h"
 #include <stdio.h>
@@ -55,6 +54,6 @@ void TestProofs(char * path){
 
 
 int main() {
-   TestProofs("devnetv2-geth.txt");
+   TestProofs("devnetv3-geth.txt");
    return 0;
 }
