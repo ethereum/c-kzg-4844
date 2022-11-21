@@ -266,8 +266,8 @@ extern "C" {
     pub fn verify_kzg_proof(
         out: *mut bool,
         polynomial_kzg: *const KZGCommitment,
-        z: *const BLSFieldElement,
-        y: *const BLSFieldElement,
+        z: *const u8,
+        y: *const u8,
         kzg_proof: *const KZGProof,
         s: *const KZGSettings,
     ) -> C_KZG_RET;

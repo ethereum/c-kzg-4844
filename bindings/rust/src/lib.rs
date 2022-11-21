@@ -141,6 +141,7 @@ impl KZGProof {
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
+            // TODO: pass without allocating a vec
             let res = bindings::verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
                 blobs.as_ptr(),
@@ -164,8 +165,8 @@ impl KZGProof {
     pub fn verify_kzg_proof(
         &self,
         kzg_commitment: KZGCommitment,
-        z: BLSFieldElement,
-        y: BLSFieldElement,
+        z: [u8; BYTES_PER_FIELD_ELEMENT],
+        y: [u8; BYTES_PER_FIELD_ELEMENT],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -173,8 +174,8 @@ impl KZGProof {
             let res = bindings::verify_kzg_proof(
                 verified.as_mut_ptr(),
                 &kzg_commitment.0,
-                &z.0,
-                &y.0,
+                z.as_ptr(),
+                y.as_ptr(),
                 &self.0,
                 &kzg_settings.0,
             );
