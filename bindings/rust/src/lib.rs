@@ -220,14 +220,46 @@ impl KZGCommitment {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::{rngs::ThreadRng, Rng};
+
+    fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
+        let mut arr: Blob = [0; 131072];
+        rng.fill(&mut arr[..]);
+        arr
+    }
 
     #[test]
-    fn test_load() {
+    fn test_simple() {
         {
-            let a = KZGSettings::load_trusted_setup(PathBuf::from(
-                "/home/pawan/eth2/c-kzg/src/trusted_setup.txt",
-            ));
-            assert!(a.is_ok());
+            let mut rng = rand::thread_rng();
+            let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+            assert!(trusted_setup_file.exists());
+            let kzg_settings = KZGSettings::load_trusted_setup(trusted_setup_file).unwrap();
+
+            let num_blobs: usize = rng.gen_range(0..16);
+            let mut blobs: Vec<Blob> = (0..num_blobs)
+                .map(|_| generate_random_blob(&mut rng))
+                .collect();
+
+            let kzg_commitments: Vec<KZGCommitment> = blobs
+                .clone()
+                .into_iter()
+                .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+                .collect();
+
+            let kzg_proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
+
+            assert!(kzg_proof
+                .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+                .unwrap());
+
+            let incorrect_blob = generate_random_blob(&mut rng);
+            blobs.pop();
+            blobs.push(incorrect_blob);
+
+            assert!(!kzg_proof
+                .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+                .unwrap());
         }
     }
 }

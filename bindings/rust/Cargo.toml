@@ -9,3 +9,5 @@ edition = "2021"
 libc = "0.2"
 hex = "0.4.2"
 
+[dev-dependencies]
+rand = "0.8.5"
