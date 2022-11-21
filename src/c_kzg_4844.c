@@ -934,7 +934,7 @@ void blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettin
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
                            const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
@@ -946,6 +946,18 @@ C_KZG_RET verify_kzg_proof(bool *out, const g1_t *commitment, const fr_t *x, con
     *out = pairings_verify(&commitment_minus_y, &g2_generator, proof, &s_minus_x);
 
     return C_KZG_OK;
+}
+
+C_KZG_RET verify_kzg_proof(bool *out,
+    const KZGCommitment *commitment,
+    const uint8_t z[BYTES_PER_FIELD_ELEMENT],
+    const uint8_t y[BYTES_PER_FIELD_ELEMENT],
+    const KZGProof *kzg_proof,
+    const KZGSettings *s) {
+  BLSFieldElement frz, fry;
+  bytes_to_bls_field(&frz, z);
+  bytes_to_bls_field(&fry, y);
+  return verify_kzg_proof_impl(out, commitment, &frz, &fry, kzg_proof, s);
 }
 
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const Polynomial p, const BLSFieldElement *x, const KZGSettings *s) {
@@ -1190,5 +1202,5 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   BLSFieldElement y;
   TRY(evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s));
 
-  return verify_kzg_proof(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
+  return verify_kzg_proof_impl(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
 }

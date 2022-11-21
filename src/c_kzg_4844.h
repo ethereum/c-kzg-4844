@@ -116,8 +116,8 @@ void blob_to_kzg_commitment(KZGCommitment *out,
 
 C_KZG_RET verify_kzg_proof(bool *out,
     const KZGCommitment *polynomial_kzg,
-    const BLSFieldElement *z,
-    const BLSFieldElement *y,
+    const uint8_t z[BYTES_PER_FIELD_ELEMENT],
+    const uint8_t y[BYTES_PER_FIELD_ELEMENT],
     const KZGProof *kzg_proof,
     const KZGSettings *s);
 
