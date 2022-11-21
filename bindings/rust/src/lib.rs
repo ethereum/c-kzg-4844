@@ -105,8 +105,8 @@ impl KZGProof {
         Ok(Self(bytes_to_g1(bytes)?))
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        bytes_from_g1(self.0).to_vec()
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
+        bytes_from_g1(self.0)
     }
 
     pub fn as_hex_string(&self) -> String {
@@ -204,8 +204,8 @@ impl KZGCommitment {
         Ok(Self(bytes_to_g1(bytes)?))
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        bytes_from_g1(self.0).to_vec()
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
+        bytes_from_g1(self.0)
     }
 
     pub fn as_hex_string(&self) -> String {
