@@ -24,6 +24,8 @@ pub enum Error {
     InvalidKZGProof(String),
     /// The KZG commitment is invalid.
     InvalidKZGCommitment(String),
+    /// The provided trusted setup is invalid.
+    InvalidTrustedSetup(String),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
 }
@@ -61,8 +63,10 @@ impl BLSFieldElement {
 
 pub struct KZGSettings(bindings::KZGSettings);
 impl KZGSettings {
-    pub fn load_trusted_setup(file_path: PathBuf) -> Result<Self, C_KZG_RET> {
-        let file_path = CString::new(file_path.as_os_str().as_bytes()).unwrap();
+    pub fn load_trusted_setup(file_path: PathBuf) -> Result<Self, Error> {
+        let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
+            Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
+        })?;
         let mut kzg_settings = MaybeUninit::<bindings::KZGSettings>::uninit();
         unsafe {
             let file_ptr = fopen(file_path.as_ptr(), &('r' as libc::c_char));
@@ -70,7 +74,10 @@ impl KZGSettings {
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(Self(kzg_settings.assume_init()))
             } else {
-                Err(res)
+                Err(Error::InvalidTrustedSetup(format!(
+                    "Invalid trusted setup: {:?}",
+                    res
+                )))
             }
         }
     }
