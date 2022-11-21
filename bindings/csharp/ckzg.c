@@ -60,7 +60,7 @@ C_KZG_RET compute_aggregate_kzg_proof_wrap(uint8_t out[48], const Blob blobs[], 
   return C_KZG_OK;
 }
 
-int verify_kzg_proof_wrap(const uint8_t c[48], const uint8_t x[32], const uint8_t y[32], const uint8_t p[48], KZGSettings *s) {
+int verify_kzg_proof_wrap(const uint8_t c[48], const uint8_t z[32], const uint8_t y[32], const uint8_t p[48], KZGSettings *s) {
   KZGCommitment commitment;
   KZGProof proof;
   bool out;
@@ -68,7 +68,7 @@ int verify_kzg_proof_wrap(const uint8_t c[48], const uint8_t x[32], const uint8_
   if (bytes_to_g1(&commitment, c) != C_KZG_OK) return -1;
   if (bytes_to_g1(&proof, p) != C_KZG_OK) return -1;
 
-  if (verify_kzg_proof(&out, &commitment, x, y, &proof, s) != C_KZG_OK)
+  if (verify_kzg_proof(&out, &commitment, z, y, &proof, s) != C_KZG_OK)
     return -2;
 
   return out ? 0 : 1;
