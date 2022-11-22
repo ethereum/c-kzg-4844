@@ -1,6 +1,9 @@
 # Exists as a test harness for building and running tests in Linux
 
-FROM node:16
+
+FROM node:16-alpine
+RUN apk update && apk add --no-cache g++ make python3
+
 
 COPY ./dist/ /app/dist/
 COPY test.ts /app
