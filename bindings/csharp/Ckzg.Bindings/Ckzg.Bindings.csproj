@@ -5,13 +5,13 @@
     <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>Ckzg</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
-    <LangVersion>10</LangVersion>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <Title>Ckzg</Title>
+    <Title>Ckzg.Bindings</Title>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Version>0.1.0.4</Version>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,16 +22,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="runtimes\*\native\*.dll">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\runtimes</PackagePath>
-    </Content>
-    <Content Include="runtimes\*\native\*.so">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <Pack>true</Pack>
-      <PackagePath>lib\$(TargetFramework)\runtimes</PackagePath>
-    </Content>
+    <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/win-x64/native/ckzg.dll" Pack="true" PackagePath="runtimes/win-x64/native/ckzg.dll" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-x64/native/ckzg.so" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-arm64/native/ckzg.so" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/osx-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-x64/native/ckzg.so" />
+    <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/osx-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-arm64/native/ckzg.so" />
   </ItemGroup>
 
 </Project>
