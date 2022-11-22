@@ -10,6 +10,7 @@ clean:
 
 build: kzg.cxx kzg.ts package.json binding.gyp Makefile
 	cd ../../src; make lib
+	yarn install
 	yarn node-gyp rebuild
 
 test: build
