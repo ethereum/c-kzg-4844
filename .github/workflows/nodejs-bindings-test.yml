@@ -1,0 +1,20 @@
+name: NodeJS bindings tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-nodejs-bindings:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup
+        run: cd src && make blst
+      - name: Test
+        run: cd bindings/node.js && make build test
