@@ -22,9 +22,13 @@ import {
 } from "c-kzg";
 ```
 
-Requirements
+# Requirements
 
-- The C and C++ code is compiled by node-gyp on installation, so your environment will need a compiler like GCC or clang
+The C and C++ code is compiled by node-gyp on installation. Your environment will need
+
+- A compiler like g++ or clang
+- `make`
+- `python3`
 
 # Contributing
 

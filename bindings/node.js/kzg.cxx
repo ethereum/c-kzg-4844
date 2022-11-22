@@ -9,8 +9,8 @@
 #include "blst.h"
 
 Napi::Value throw_invalid_arguments_count(
-  const uint expected,
-  const uint actual,
+  const unsigned int expected,
+  const unsigned int actual,
   const Napi::Env env
 ) {
   Napi::RangeError::New(
