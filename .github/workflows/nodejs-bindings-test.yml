@@ -1,0 +1,19 @@
+name: NodeJS bindings tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-ckzg:
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup
+        run: cd src && make blst all
+      - name: Test
+        run: cd bindings/node.js && make build test
