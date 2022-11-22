@@ -1,5 +1,5 @@
 INCLUDE_DIRS = ../inc
-CFLAGS += -O2
+CFLAGS += -O2 -fPIC
 
 all: c_kzg_4844.o lib
 
