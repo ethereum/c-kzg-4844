@@ -33,6 +33,7 @@ describe("C-KZG", () => {
   });
 
   it("computes the correct commitments and aggregate proof from blobs", () => {
+    expect(false).toBe(true);
     let blobs = new Array(2).fill(0).map(generateRandomBlob);
     let commitments = blobs.map(blobToKzgCommitment);
     let proof = computeAggregateKzgProof(blobs);
