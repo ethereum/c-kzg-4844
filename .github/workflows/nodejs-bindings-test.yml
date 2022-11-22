@@ -8,7 +8,8 @@ on:
       - main
 
 jobs:
-  build-ckzg:
+  test-nodejs-bindings:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
