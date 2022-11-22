@@ -2,8 +2,8 @@
 #include "ckzg.h"
 #include <stdio.h>
 
-void TestProofs(char * path){
-   KZGSettings *s = load_trusted_setup_wrap(path);
+void calculate_proof_and_commitment(char * trusted_setup_path){
+   KZGSettings *s = load_trusted_setup_wrap(trusted_setup_path);
    size_t n = 1;
    uint8_t *commitment = (uint8_t *)calloc(48, 1);
    uint8_t *proof = (uint8_t *)calloc(48, 1);
@@ -19,23 +19,9 @@ void TestProofs(char * path){
    blob_to_kzg_commitment_wrap(commitment, blob, s);
 
    FILE *f = fopen("output.txt", "wt");
-   // blob
-   for(int i = 0; i< 4096*32; i++){
-      fprintf(f, "%02x", blob[i]);
-   }
-   fprintf(f, "\n");
-   
    // commitment
    for(int i = 0; i< 48; i++){
       fprintf(f, "%02x", commitment[i]);
-   }
-   fprintf(f, "\n");
-
-   // hash
-   hash(blobHash, commitment, 48);
-   blobHash[0] = 1;
-   for(int i = 0; i< 32; i++){
-      fprintf(f, "%02x", blobHash[i]);
    }
    fprintf(f, "\n");
 
@@ -54,6 +40,6 @@ void TestProofs(char * path){
 
 
 int main() {
-   TestProofs("devnetv3-geth.txt");
+   calculate_proof_and_commitment("../../src/trusted_setup.txt");
    return 0;
 }

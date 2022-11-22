@@ -1065,7 +1065,7 @@ void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
 void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
 
-void hash(uint8_t md[32], const uint8_t input[], size_t n) {
+static void hash(uint8_t md[32], const uint8_t input[], size_t n) {
   SHA256_CTX ctx;
   sha256_init(&ctx);
   sha256_update(&ctx, input, n);

@@ -121,8 +121,6 @@ C_KZG_RET verify_kzg_proof(bool *out,
     const KZGProof *kzg_proof,
     const KZGSettings *s);
 
-void hash(uint8_t md[32], const uint8_t input[], size_t n);
-
 #ifdef __cplusplus
 }
 #endif
