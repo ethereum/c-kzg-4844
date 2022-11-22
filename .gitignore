@@ -4,6 +4,7 @@
 inc/blst.h*
 inc/blst_aux.h*
 .vscode/
+.idea/
 .clang-format
 *bindings/*/*.so
 *bindings/csharp/*.exe
