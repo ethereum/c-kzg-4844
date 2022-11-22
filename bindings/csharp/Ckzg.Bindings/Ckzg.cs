@@ -58,13 +58,13 @@ public class Ckzg
     /// Verify the proof by point evaluation for the given commitment
     /// </summary>
     /// <param name="commitment">Commitment</param>
-    /// <param name="x">X</param>
+    /// <param name="z">Z</param>
     /// <param name="y">Y</param>
     /// <param name="proof">Proof</param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
-    public unsafe static extern int VerifyKzgProof(byte* commitment, byte* x, byte* y, byte* proof, IntPtr ts);
+    public unsafe static extern int VerifyKzgProof(byte* commitment, byte* z, byte* y, byte* proof, IntPtr ts);
 
     /// <summary>
     /// Load trusted setup settings from file
