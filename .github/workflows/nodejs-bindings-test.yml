@@ -15,6 +15,6 @@ jobs:
         with:
           submodules: recursive
       - name: Setup
-        run: cd src && make blst all
+        run: cd src && make blst
       - name: Test
         run: cd bindings/node.js && make build test
