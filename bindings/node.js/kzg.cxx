@@ -306,10 +306,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
 
-  BLSFieldElement fz, fy;
-  bytes_to_bls_field(&fz, z);
-  bytes_to_bls_field(&fy, y);
-
   KZGCommitment commitment;
   auto ret = bytes_to_g1(&commitment, polynomial_kzg);
   if (ret != C_KZG_OK) {
@@ -327,7 +323,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
 
   bool out;
-  if (verify_kzg_proof(&out, &commitment, &fz, &fy, &proof, kzg_settings) != C_KZG_OK) {
+  if (verify_kzg_proof(&out, &commitment, z, y, &proof, kzg_settings) != C_KZG_OK) {
     Napi::TypeError::New(env, "Failed to verify KZG proof").ThrowAsJavaScriptException();
     return env.Null();
   }
