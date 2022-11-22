@@ -3,7 +3,7 @@
 
 #include <vector>
 
-#include "../../src/c_kzg_4844.h"
+#include "c_kzg_4844.h"
 #include "exception.hpp"
 
 class Fr
@@ -48,14 +48,14 @@ private:
     }
 
 public:
-    static G1 from_compressed(uint8_t arr[48]) throw(KZGException)
+    static G1 from_bytes(uint8_t arr[48]) throw(KZGException)
     {
         return G1(arr);
     }
 
     G1() {}
 
-    void to_compressed(uint8_t out[48])
+    void to_bytes(uint8_t out[48])
     {
         bytes_from_g1(out, &g1);
     }
@@ -77,14 +77,14 @@ private:
     }
 
 public:
-    static G2 from_compressed(const signed char arr[96]) throw(KZGException)
+    static G2 from_bytes(const signed char arr[96]) throw(KZGException)
     {
         return new G2((byte *)arr);
     }
 
     G2() {}
 
-    void to_compressed(signed char out[96])
+    void to_bytes(signed char out[96])
     {
         blst_p2_compress((byte *)out, &g2);
     }
