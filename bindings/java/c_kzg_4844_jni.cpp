@@ -30,6 +30,8 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
 
   fclose(f);
   env->ReleaseStringUTFChars(file, file_native);
+
+  printf("Loaded Trusted Setup");
 }
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
