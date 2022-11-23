@@ -23,7 +23,7 @@ public class CKzg4844JNI {
     public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, int count,
             byte[] proof);
 
-    public static native byte[] blobToKzgCommitment(byte[] commitment);
+    public static native byte[] blobToKzgCommitment(byte[] blob);
 
     public static native boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof);
 
