@@ -1,2 +1,3 @@
-generated/
-*.cxx
+lib/
+*.class
+*.o
