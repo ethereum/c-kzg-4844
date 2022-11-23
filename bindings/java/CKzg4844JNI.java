@@ -14,34 +14,17 @@ public class CKzg4844JNI {
         }
     }
 
-    public static native KZGSettings loadTrustedSetup(String file);
+    public static native void loadTrustedSetup(String file);
 
-    public static native void freeTrustedSetup(KZGSettings settings);
+    public static native void freeTrustedSetup();
 
-    public static native byte[] computeAggregateKzgProof(byte[] blobs, int count, KZGSettings settings);
+    public static native byte[] computeAggregateKzgProof(byte[] blobs, int count);
 
     public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, int count,
-            byte[] proof,
-            KZGSettings settings);
+            byte[] proof);
 
-    public static native byte[] blobToKzgCommitment(byte[] commitment, KZGSettings settings);
+    public static native byte[] blobToKzgCommitment(byte[] commitment);
 
-    public static native boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof, KZGSettings settings);
-
-    public static class KZGSettings {
-        public FFTSettings fs;
-        public byte[] g1Values;
-        public byte[] g2Values;
-        public int g1ValuesCount;
-        public int g2ValuesCount;
-    }
-
-    public static class FFTSettings {
-        public long maxWidth;
-        public long[] expandedRootsOfUnity;
-        public long[] reverseRootsOfUnity;
-        public long[] rootsOfUnity;
-
-    }
+    public static native boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof);
 
 }

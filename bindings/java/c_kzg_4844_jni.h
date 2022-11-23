@@ -10,50 +10,50 @@ extern "C" {
 /*
  * Class:     CKzg4844JNI
  * Method:    loadTrustedSetup
- * Signature: (Ljava/lang/String;)LCKzg4844JNI/KZGSettings;
+ * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT jobject JNICALL Java_CKzg4844JNI_loadTrustedSetup
+JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup
   (JNIEnv *, jclass, jstring);
 
 /*
  * Class:     CKzg4844JNI
  * Method:    freeTrustedSetup
- * Signature: (LCKzg4844JNI/KZGSettings;)V
+ * Signature: ()V
  */
 JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup
-  (JNIEnv *, jclass, jobject);
+  (JNIEnv *, jclass);
 
 /*
  * Class:     CKzg4844JNI
  * Method:    computeAggregateKzgProof
- * Signature: ([BILCKzg4844JNI/KZGSettings;)[B
+ * Signature: ([BI)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof
-  (JNIEnv *, jclass, jbyteArray, jint, jobject);
+  (JNIEnv *, jclass, jbyteArray, jint);
 
 /*
  * Class:     CKzg4844JNI
  * Method:    verifyAggregateKzgProof
- * Signature: ([B[BI[BLCKzg4844JNI/KZGSettings;)Z
+ * Signature: ([B[BI[B)Z
  */
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof
-  (JNIEnv *, jclass, jbyteArray, jbyteArray, jint, jbyteArray, jobject);
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jint, jbyteArray);
 
 /*
  * Class:     CKzg4844JNI
  * Method:    blobToKzgCommitment
- * Signature: ([BLCKzg4844JNI/KZGSettings;)[B
+ * Signature: ([B)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment
-  (JNIEnv *, jclass, jbyteArray, jobject);
+  (JNIEnv *, jclass, jbyteArray);
 
 /*
  * Class:     CKzg4844JNI
  * Method:    verifyKzgProof
- * Signature: ([B[B[B[BLCKzg4844JNI/KZGSettings;)Z
+ * Signature: ([B[B[B[B)Z
  */
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof
-  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jbyteArray, jobject);
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jbyteArray);
 
 #ifdef __cplusplus
 }
