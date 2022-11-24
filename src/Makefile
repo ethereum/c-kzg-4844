@@ -1,5 +1,10 @@
 INCLUDE_DIRS = ../inc
-CFLAGS += -O2 -fPIC
+
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -O2
+else
+	CFLAGS += -O2 -fPIC
+endif
 
 all: c_kzg_4844.o lib
 
@@ -15,6 +20,7 @@ blst:
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
 
-# Copy make sure c_kzg_4844.o is built and copy it for the NodeJS bindings
+# Make sure c_kzg_4844.o is built and copy it for the NodeJS and Java bindings
 lib: c_kzg_4844.o Makefile
 	cp *.o ../bindings/node.js
+	cp *.o ../bindings/java
