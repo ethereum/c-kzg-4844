@@ -7,7 +7,7 @@
 
 ## Build
 ```bash
-make c_kzg_4844_jni
+make build
 ```
 
 This will install the library in the `src/main/resources/lib` folder according to your OS
