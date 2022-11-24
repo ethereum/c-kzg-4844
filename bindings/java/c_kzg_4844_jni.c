@@ -58,7 +58,7 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
     reset_trusted_setup();
     (*env)->ReleaseStringUTFChars(env, file, file_native);
     fclose(f);
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while loading the Trusted Setup: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return;
@@ -94,7 +94,7 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *e
 
   if (ret != C_KZG_OK)
   {
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while computing aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return NULL;
@@ -130,7 +130,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
 
   if (ret != C_KZG_OK)
   {
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return 0;
@@ -144,7 +144,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
     if (ret != C_KZG_OK)
     {
       free(c);
-      char arr[60];
+      char arr[100];
       sprintf(arr, "There was an error while converting commitment (%zu/%zu) bytes to g1: %s", i + 1, native_count, C_KZG_RETURN_TYPES[ret]);
       throw_exception(env, arr);
       return 0;
@@ -157,7 +157,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
   if (ret != C_KZG_OK)
   {
     free(c);
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while verifying aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return 0;
@@ -212,7 +212,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass t
 
   if (ret != C_KZG_OK)
   {
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while converting commitment bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return 0;
@@ -222,7 +222,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass t
 
   if (ret != C_KZG_OK)
   {
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return 0;
@@ -232,7 +232,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass t
 
   if (ret != C_KZG_OK)
   {
-    char arr[60];
+    char arr[100];
     sprintf(arr, "There was an error while verifying kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
     throw_exception(env, arr);
     return 0;
