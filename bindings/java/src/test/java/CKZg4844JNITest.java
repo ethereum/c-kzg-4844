@@ -1,4 +1,5 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -34,6 +35,9 @@ public class CKZg4844JNITest {
     assertEquals(CKzg4844JNI.BYTES_PER_PROOF, proof.length);
 
     assertTrue(CKzg4844JNI.verifyAggregateKzgProof(blobs, commitments, 2, proof));
+
+    final byte[] fakeProof = createRandomProof();
+    assertFalse(CKzg4844JNI.verifyAggregateKzgProof(blobs, commitments, 2, fakeProof));
 
     CKzg4844JNI.freeTrustedSetup();
 
@@ -98,6 +102,11 @@ public class CKZg4844JNITest {
     final byte[] blob = new byte[CKzg4844JNI.BYTES_PER_BLOB];
     random.nextBytes(blob);
     return blob;
+  }
+
+  private byte[] createRandomProof() {
+    final byte[] blob = createRandomBlob();
+    return CKzg4844JNI.computeAggregateKzgProof(blob, 1);
   }
 
   private byte[] flatten(byte[]... bytes) {
