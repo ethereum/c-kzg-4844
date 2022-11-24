@@ -30,6 +30,11 @@ void verify_trusted_setup_is_loaded(JNIEnv *env)
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
 {
+  if (settings != NULL)
+  {
+    throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
+    return;
+  }
   settings = malloc(sizeof(KZGSettings));
 
   const char *file_native = (*env)->GetStringUTFChars(env, file, 0);
@@ -69,36 +74,155 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thi
   verify_trusted_setup_is_loaded(env);
   free_trusted_setup(settings);
   reset_trusted_setup();
-  printf("Trusted Setup was unloaded\n");
+  printf("Trusted Setup was freed\n");
 }
 
-JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jint count)
+JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
   verify_trusted_setup_is_loaded(env);
-  // NOT YET IMPLEMENTED
-  // jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
-  jbyteArray proof = (*env)->NewByteArray(env, 48);
+
+  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
+
+  KZGProof p;
+
+  C_KZG_RET ret = compute_aggregate_kzg_proof(&p, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, (size_t)count, settings);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[60];
+    sprintf(arr, "There was an error while computing aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return NULL;
+  }
+
+  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
+  uint8_t *out = (uint8_t *)(*env)->GetByteArrayElements(env, proof, 0);
+
+  bytes_from_g1(out, &p);
+
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)out, 0);
+
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jint count, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
 {
   verify_trusted_setup_is_loaded(env);
-  // NOT YET IMPLEMENTED
-  return false;
+
+  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
+  uint8_t *commitments_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitments, NULL);
+  uint8_t *proof_native = (uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
+  size_t native_count = (size_t)count;
+
+  KZGProof f;
+
+  C_KZG_RET ret;
+
+  ret = bytes_to_g1(&f, proof_native);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[60];
+    sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
+
+  KZGCommitment *c = calloc(native_count, sizeof(KZGCommitment));
+
+  for (size_t i = 0; i < native_count; i++)
+  {
+    ret = bytes_to_g1(&c[i], &commitments_native[i * BYTES_PER_COMMITMENT]);
+    if (ret != C_KZG_OK)
+    {
+      free(c);
+      char arr[60];
+      sprintf(arr, "There was an error while converting commitment (%zu/%zu) bytes to g1: %s", i + 1, native_count, C_KZG_RETURN_TYPES[ret]);
+      throw_exception(env, arr);
+      return 0;
+    }
+  }
+
+  bool out;
+  ret = verify_aggregate_kzg_proof(&out, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, c, native_count, &f, settings);
+
+  if (ret != C_KZG_OK)
+  {
+    free(c);
+    char arr[60];
+    sprintf(arr, "There was an error while verifying aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
+
+  free(c);
+
+  return (jboolean)out;
 }
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
   verify_trusted_setup_is_loaded(env);
-  // NOT YET IMPLEMENTED
-  jbyteArray ret = (*env)->NewByteArray(env, 48);
-  return ret;
+
+  uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  KZGCommitment c;
+  blob_to_kzg_commitment(&c, blob_native, settings);
+
+  jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
+  uint8_t *out = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, 0);
+
+  bytes_from_g1(out, &c);
+
+  (*env)->ReleaseByteArrayElements(env, commitment, (jbyte *)out, 0);
+
+  return commitment;
 }
 
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
 {
   verify_trusted_setup_is_loaded(env);
-  // NOT YET IMPLEMENTED
-  return false;
+
+  uint8_t *commitment_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, NULL);
+  uint8_t *z_native = (uint8_t *)(*env)->GetByteArrayElements(env, z, NULL);
+  uint8_t *y_native = (uint8_t *)(*env)->GetByteArrayElements(env, y, NULL);
+  uint8_t *proof_native = (uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
+
+  KZGCommitment c;
+  KZGProof p;
+  bool out;
+
+  C_KZG_RET ret;
+
+  ret = bytes_to_g1(&c, commitment_native);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[60];
+    sprintf(arr, "There was an error while converting commitment bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
+
+  ret = bytes_to_g1(&p, proof_native);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[60];
+    sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
+
+  ret = verify_kzg_proof(&out, &c, z_native, y_native, &p, settings);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[60];
+    sprintf(arr, "There was an error while verifying kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
+
+  return (jboolean)out;
 }

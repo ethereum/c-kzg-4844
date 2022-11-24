@@ -18,9 +18,9 @@ public class CKzg4844JNI {
 
     public static native void freeTrustedSetup();
 
-    public static native byte[] computeAggregateKzgProof(byte[] blobs, int count);
+    public static native byte[] computeAggregateKzgProof(byte[] blobs, long count);
 
-    public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, int count,
+    public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, long count,
             byte[] proof);
 
     public static native byte[] blobToKzgCommitment(byte[] blob);
