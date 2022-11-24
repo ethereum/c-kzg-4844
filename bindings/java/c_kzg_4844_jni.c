@@ -20,12 +20,14 @@ void throw_exception(JNIEnv *env, const char *message)
   (*env)->ThrowNew(env, Exception, message);
 }
 
-void verify_trusted_setup_is_loaded(JNIEnv *env)
+bool verify_trusted_setup_is_loaded(JNIEnv *env)
 {
   if (settings == NULL)
   {
     throw_exception(env, "Trusted Setup is not loaded.");
+    return false;
   }
+  return true;
 }
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
@@ -71,7 +73,10 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
 {
-  verify_trusted_setup_is_loaded(env);
+  if (!verify_trusted_setup_is_loaded(env))
+  {
+    return;
+  }
   free_trusted_setup(settings);
   reset_trusted_setup();
   printf("Trusted Setup was freed\n");
@@ -79,7 +84,10 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thi
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
-  verify_trusted_setup_is_loaded(env);
+  if (!verify_trusted_setup_is_loaded(env))
+  {
+    return NULL;
+  }
 
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
@@ -107,7 +115,10 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *e
 
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
 {
-  verify_trusted_setup_is_loaded(env);
+  if (!verify_trusted_setup_is_loaded(env))
+  {
+    return 0;
+  }
 
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
   uint8_t *commitments_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitments, NULL);
@@ -162,7 +173,10 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
-  verify_trusted_setup_is_loaded(env);
+  if (!verify_trusted_setup_is_loaded(env))
+  {
+    return NULL;
+  }
 
   uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
 
@@ -181,7 +195,10 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, j
 
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
 {
-  verify_trusted_setup_is_loaded(env);
+  if (!verify_trusted_setup_is_loaded(env))
+  {
+    return 0;
+  }
 
   uint8_t *commitment_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, NULL);
   uint8_t *z_native = (uint8_t *)(*env)->GetByteArrayElements(env, z, NULL);

@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-* libblst.a is available in ../../blst/ directory. Follow the instructions in the home README.md.
-* JAVA_HOME environment variable is set to a jdk with `include` folder containing jni.
+* Follow the instructions in the home README.md to create the libblst.a. 
+* JAVA_HOME environment variable is set to a jdk with an `include` folder containing jni.h file.
 
 ## Windows
 
