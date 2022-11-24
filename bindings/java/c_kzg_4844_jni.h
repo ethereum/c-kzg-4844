@@ -26,7 +26,7 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup
 /*
  * Class:     CKzg4844JNI
  * Method:    computeAggregateKzgProof
- * Signature: ([BI)[B
+ * Signature: ([BJ)[B
  */
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof
   (JNIEnv *, jclass, jbyteArray, jlong);
@@ -34,7 +34,7 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof
 /*
  * Class:     CKzg4844JNI
  * Method:    verifyAggregateKzgProof
- * Signature: ([B[BI[B)Z
+ * Signature: ([B[BJ[B)Z
  */
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray, jlong, jbyteArray);
