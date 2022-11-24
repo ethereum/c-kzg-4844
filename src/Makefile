@@ -1,5 +1,10 @@
 INCLUDE_DIRS = ../inc
-CFLAGS += -O2 -fPIC
+
+ifeq ($(OS),Windows_NT)
+	CFLAGS += -O2
+else
+	CFLAGS += -O2 -fPIC
+endif
 
 all: c_kzg_4844.o lib
 
