@@ -67,7 +67,7 @@ public class CKZg4844JNITest {
     final RuntimeException exception = assertThrows(RuntimeException.class,
         () -> CKzg4844JNI.blobToKzgCommitment(createRandomBlob()));
 
-    assertEquals(exception.getMessage(), "Trusted Setup is not loaded.");
+    assertExceptionIsTrustedSetupIsNotLoaded(exception);
 
   }
 
@@ -78,8 +78,8 @@ public class CKZg4844JNITest {
 
     final RuntimeException exception = assertThrows(RuntimeException.class, this::loadTrustedSetup);
 
-    assertEquals(exception.getMessage(),
-        "Trusted Setup is already loaded. Free it before loading a new one.");
+    assertEquals("Trusted Setup is already loaded. Free it before loading a new one.",
+        exception.getMessage());
 
     CKzg4844JNI.freeTrustedSetup();
   }
@@ -90,8 +90,12 @@ public class CKZg4844JNITest {
     final RuntimeException exception = assertThrows(RuntimeException.class,
         CKzg4844JNI::freeTrustedSetup);
 
-    assertEquals(exception.getMessage(), "Trusted Setup is not loaded.");
+    assertExceptionIsTrustedSetupIsNotLoaded(exception);
 
+  }
+
+  private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {
+    assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
   private void loadTrustedSetup() {

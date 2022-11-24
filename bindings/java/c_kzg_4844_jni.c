@@ -6,6 +6,8 @@
 static const char *C_KZG_RETURN_TYPES[] = {
     "C_KZG_OK", "C_KZG_BADARGS", "C_KZG_ERROR", "C_KZG_MALLOC"};
 
+static const char *TRUSTED_SETUP_NOT_LOADED = "Trusted Setup is not loaded.";
+
 KZGSettings *settings;
 
 void reset_trusted_setup()
@@ -18,16 +20,6 @@ void throw_exception(JNIEnv *env, const char *message)
 {
   jclass Exception = (*env)->FindClass(env, "java/lang/RuntimeException");
   (*env)->ThrowNew(env, Exception, message);
-}
-
-bool verify_trusted_setup_is_loaded(JNIEnv *env)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, "Trusted Setup is not loaded.");
-    return false;
-  }
-  return true;
 }
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
@@ -71,8 +63,9 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
 
 JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
 {
-  if (!verify_trusted_setup_is_loaded(env))
+  if (settings == NULL)
   {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return;
   }
   free_trusted_setup(settings);
@@ -81,8 +74,9 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thi
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
-  if (!verify_trusted_setup_is_loaded(env))
+  if (settings == NULL)
   {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return NULL;
   }
 
@@ -112,8 +106,9 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *e
 
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
 {
-  if (!verify_trusted_setup_is_loaded(env))
+  if (settings == NULL)
   {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return 0;
   }
 
@@ -170,8 +165,9 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
-  if (!verify_trusted_setup_is_loaded(env))
+  if (settings == NULL)
   {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return NULL;
   }
 
@@ -192,8 +188,9 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, j
 
 JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
 {
-  if (!verify_trusted_setup_is_loaded(env))
+  if (settings == NULL)
   {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return 0;
   }
 
