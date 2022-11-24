@@ -63,7 +63,6 @@ public class CKZg4844JNITest {
 
   }
 
-
   private byte[] createRandomBlob() {
     final byte[] blob = new byte[CKzg4844JNI.BYTES_PER_BLOB];
     random.nextBytes(blob);
