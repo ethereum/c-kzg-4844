@@ -66,8 +66,6 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
 
   fclose(f);
 
-  printf("Loaded Trusted Setup from %s\n", file_native);
-
   (*env)->ReleaseStringUTFChars(env, file, file_native);
 }
 
@@ -79,7 +77,6 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thi
   }
   free_trusted_setup(settings);
   reset_trusted_setup();
-  printf("Trusted Setup was freed\n");
 }
 
 JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)

@@ -6,8 +6,8 @@ import java.nio.file.StandardCopyOption;
 
 public class CKzg4844JNI {
 
-  private final static String LIBRARY_NAME = "ckzg4844jni";
-  private final static String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
+  private static final String LIBRARY_NAME = "ckzg4844jni";
+  private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
   static {
     InputStream libraryResource = CKzg4844JNI.class.getResourceAsStream(
