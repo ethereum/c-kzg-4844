@@ -1,41 +1,29 @@
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class CKZg4844JNITest {
 
   private final Random random = new Random();
 
-  @BeforeEach
-  public void setUp() {
-    CKzg4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
-  }
-
-  @AfterEach
-  public void cleanUp() {
-    CKzg4844JNI.freeTrustedSetup();
-  }
-
   @Test
   public void computesAndVerifiesProofs() {
+
+    loadTrustedSetup();
 
     final byte[] blob = createRandomBlob();
     final byte[] blob2 = createRandomBlob();
 
-    assertEquals(blob.length, CKzg4844JNI.BYTES_PER_BLOB);
-    assertEquals(blob2.length, CKzg4844JNI.BYTES_PER_BLOB);
-
     final byte[] commitment = CKzg4844JNI.blobToKzgCommitment(blob);
     final byte[] commitment2 = CKzg4844JNI.blobToKzgCommitment(blob2);
 
-    assertEquals(commitment.length, CKzg4844JNI.BYTES_PER_COMMITMENT);
-    assertEquals(commitment2.length, CKzg4844JNI.BYTES_PER_COMMITMENT);
+    assertEquals(CKzg4844JNI.BYTES_PER_COMMITMENT, commitment.length);
+    assertEquals(CKzg4844JNI.BYTES_PER_COMMITMENT, commitment2.length);
 
     // flatten blobs and commitments
     final byte[] blobs = flatten(blob, blob2);
@@ -43,14 +31,18 @@ public class CKZg4844JNITest {
 
     final byte[] proof = CKzg4844JNI.computeAggregateKzgProof(blobs, 2);
 
-    assertEquals(proof.length, CKzg4844JNI.BYTES_PER_PROOF);
+    assertEquals(CKzg4844JNI.BYTES_PER_PROOF, proof.length);
 
     assertTrue(CKzg4844JNI.verifyAggregateKzgProof(blobs, commitments, 2, proof));
+
+    CKzg4844JNI.freeTrustedSetup();
 
   }
 
   @Test
   public void verifiesPointEvaluationPrecompile() {
+
+    loadTrustedSetup();
 
     final byte[] commitment = new byte[48];
     commitment[0] = (byte) 0xc0;
@@ -61,6 +53,45 @@ public class CKZg4844JNITest {
 
     assertTrue(CKzg4844JNI.verifyKzgProof(commitment, z, y, proof));
 
+    CKzg4844JNI.freeTrustedSetup();
+
+  }
+
+  @Test
+  public void throwsIfMethodIsUsedWithoutLoadingTrustedSetup() {
+
+    final RuntimeException exception = assertThrows(RuntimeException.class,
+        () -> CKzg4844JNI.blobToKzgCommitment(createRandomBlob()));
+
+    assertEquals(exception.getMessage(), "Trusted Setup is not loaded.");
+
+  }
+
+  @Test
+  public void throwsIfSetupIsLoadedTwice() {
+
+    loadTrustedSetup();
+
+    final RuntimeException exception = assertThrows(RuntimeException.class, this::loadTrustedSetup);
+
+    assertEquals(exception.getMessage(),
+        "Trusted Setup is already loaded. Free it before loading a new one.");
+
+    CKzg4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void throwsIfTryToFreeTrustedSetupWithoutLoadingIt() {
+
+    final RuntimeException exception = assertThrows(RuntimeException.class,
+        CKzg4844JNI::freeTrustedSetup);
+
+    assertEquals(exception.getMessage(), "Trusted Setup is not loaded.");
+
+  }
+
+  private void loadTrustedSetup() {
+    CKzg4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
   }
 
   private byte[] createRandomBlob() {
