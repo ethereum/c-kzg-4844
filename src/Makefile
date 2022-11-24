@@ -15,6 +15,7 @@ blst:
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
 
-# Copy make sure c_kzg_4844.o is built and copy it for the NodeJS bindings
+# Make sure c_kzg_4844.o is built and copy it for the NodeJS and Java bindings
 lib: c_kzg_4844.o Makefile
 	cp *.o ../bindings/node.js
+	cp *.o ../bindings/java
