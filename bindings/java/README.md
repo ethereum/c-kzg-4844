@@ -10,7 +10,7 @@
 make build
 ```
 
-This will install the library in the `src/main/resources/lib` folder with a name according to your OS
+This will install the library in the `src/main/resources/ethereum/ckzg4844/lib` folder with a name according to your OS
 
 ## Test
 ```bash
