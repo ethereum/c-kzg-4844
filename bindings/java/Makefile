@@ -1,7 +1,7 @@
 INCLUDE_DIRS = ../../src ../../blst/bindings
 
 ifeq ($(OS),Windows_NT)
-	CLANG_EXECUTABLE=gcc
+	CLANG_EXECUTABLE=clang
 	GRADLE_COMMAND=gradlew
 	CLANG_FLAGS=-shared
 	JNI_INCLUDE_FOLDER=win32
@@ -36,5 +36,4 @@ build:
 
 test:
 	${GRADLE_COMMAND} clean test
-
 

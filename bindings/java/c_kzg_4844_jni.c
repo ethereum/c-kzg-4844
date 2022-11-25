@@ -22,7 +22,7 @@ void throw_exception(JNIEnv *env, const char *message)
   (*env)->ThrowNew(env, Exception, message);
 }
 
-JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
 {
   if (settings != NULL)
   {
@@ -61,7 +61,7 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thi
   (*env)->ReleaseStringUTFChars(env, file, file_native);
 }
 
-JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
 {
   if (settings == NULL)
   {
@@ -72,7 +72,7 @@ JNIEXPORT void JNICALL Java_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thi
   reset_trusted_setup();
 }
 
-JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
   if (settings == NULL)
   {
@@ -104,7 +104,7 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *e
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
 {
   if (settings == NULL)
   {
@@ -163,7 +163,7 @@ JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env,
   return (jboolean)out;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
   if (settings == NULL)
   {
@@ -186,7 +186,7 @@ JNIEXPORT jbyteArray JNICALL Java_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, j
   return commitment;
 }
 
-JNIEXPORT jboolean JNICALL Java_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
 {
   if (settings == NULL)
   {
