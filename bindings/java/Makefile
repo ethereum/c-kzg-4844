@@ -1,5 +1,7 @@
 INCLUDE_DIRS = ../../src ../../blst/bindings
 
+LIBRARY_FOLDER=src/main/resources/ethereum/ckzg4844/lib
+
 ifeq ($(OS),Windows_NT)
 	CLANG_EXECUTABLE=clang
 	GRADLE_COMMAND=gradlew
@@ -32,7 +34,8 @@ endif
 all: build test
 
 build:
-	${CLANG_EXECUTABLE} ${CLANG_FLAGS} -O -Wall ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -o src/main/resources/lib/${LIBRARY_RESOURCE} c_kzg_4844_jni.c c_kzg_4844.o ../../lib/libblst.a
+	mkdir -p ${LIBRARY_FOLDER}
+	${CLANG_EXECUTABLE} ${CLANG_FLAGS} -O -Wall ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -o ${LIBRARY_FOLDER}/${LIBRARY_RESOURCE} c_kzg_4844_jni.c c_kzg_4844.o ../../lib/libblst.a
 
 test:
 	${GRADLE_COMMAND} clean test

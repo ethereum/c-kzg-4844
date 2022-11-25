@@ -12,9 +12,8 @@ public class CKzg4844JNI {
   private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
   static {
-    InputStream libraryResource = Thread.currentThread().getContextClassLoader()
-        .getResourceAsStream(
-            "lib/" + PLATFORM_NATIVE_LIBRARY_NAME);
+    InputStream libraryResource = CKzg4844JNI.class.getResourceAsStream(
+        "lib/" + PLATFORM_NATIVE_LIBRARY_NAME);
     if (libraryResource == null) {
       try {
         System.loadLibrary(LIBRARY_NAME);
