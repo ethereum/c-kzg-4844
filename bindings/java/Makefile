@@ -11,9 +11,9 @@ else
 	GRADLE_COMMAND=./gradlew
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
-	CLANG_FLAGS=-fPIC -shared
-	JNI_INCLUDE_FOLDER=linux
-	LIBRARY_RESOURCE=libckzg4844jni.so
+		CLANG_FLAGS=-fPIC -shared
+		JNI_INCLUDE_FOLDER=linux
+		LIBRARY_RESOURCE=libckzg4844jni.so
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		ifeq ($(JAVA_HOME),)
@@ -26,7 +26,7 @@ else
 endif
 
 ifeq ($(JAVA_HOME),)
-$(error JAVA_HOME is not set and autodetection failed)
+	$(error JAVA_HOME is not set and autodetection failed)
 endif
 
 all: build test
