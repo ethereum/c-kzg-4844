@@ -1112,8 +1112,7 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
 
-  uint8_t* hash_output = calloc(32, sizeof(uint8_t));
-  if (hash_output == NULL) { free(bytes); return C_KZG_MALLOC; }
+  uint8_t hash_output[32] = {0};
   hash(hash_output, bytes, nb);
   memcpy(bytes, hash_output, 32);
   bytes[32] = 0x0;
@@ -1128,7 +1127,6 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   hash(hash_output, bytes, 33);
   bytes_to_bls_field(out, hash_output);
 
-  free(hash_output);
   free(bytes);
   return C_KZG_OK;
 }
