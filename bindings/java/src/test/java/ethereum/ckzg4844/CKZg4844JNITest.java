@@ -11,6 +11,8 @@ import java.util.Random;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CKZg4844JNITest {
 
@@ -65,12 +67,11 @@ public class CKZg4844JNITest {
   }
 
   @Disabled("Use for manually testing performance.")
-  @Test
-  public void testPerformance() {
+  @ParameterizedTest
+  @ValueSource(ints = {1, 10, 100, 1000})
+  public void testPerformance(final int count) {
 
     loadTrustedSetup();
-
-    final int count = 100;
 
     final byte[] blobs = createRandomBlobs(count);
     final byte[] commitments = getCommitmentsForBlobs(blobs, count);
