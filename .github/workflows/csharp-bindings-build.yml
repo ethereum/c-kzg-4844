@@ -1,4 +1,4 @@
-name: Cross Compile
+name: C# bindings test and build
 on:
   push:
     branches:
@@ -73,8 +73,10 @@ jobs:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
+    - name: Test
+      run: cd bindings/csharp && dotnet test --configuration Release --no-restore
     - name: Build
-      run: cd bindings/csharp && dotnet build --configuration Release --no-restore -o build
+      run: cd bindings/csharp && dotnet build -p:Version=0.1.1.${{github.run_number}} --configuration Release --no-restore -o build
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
