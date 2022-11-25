@@ -19,9 +19,9 @@ else
 		ifeq ($(JAVA_HOME),)
 			JAVA_HOME := $(shell /usr/libexec/java_home)
 		endif
-	CLANG_FLAGS=-dynamiclib
-	JNI_INCLUDE_FOLDER=darwin
-	LIBRARY_RESOURCE=libckzg4844jni.dylib
+		CLANG_FLAGS=-dynamiclib
+		JNI_INCLUDE_FOLDER=darwin
+		LIBRARY_RESOURCE=libckzg4844jni.dylib
 	endif
 endif
 
