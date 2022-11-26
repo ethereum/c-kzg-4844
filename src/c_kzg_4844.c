@@ -1098,7 +1098,7 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   const size_t np = ni + n * BYTES_PER_BLOB;
   const size_t nb = np + n * 48;
 
-  uint8_t* bytes = calloc(nb, sizeof(uint8_t));
+  uint8_t* bytes = calloc(nb + (n == 0), sizeof(uint8_t)); // need at least 1 byte more than ni for hash later
   if (bytes == NULL) return C_KZG_MALLOC;
 
   memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
