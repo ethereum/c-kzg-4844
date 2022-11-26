@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class CKZg4844JNITest {
+public class CKzg4844JNITest {
 
   private final Random random = new Random();
 
@@ -145,7 +145,7 @@ public class CKZg4844JNITest {
   }
 
   private byte[] createRandomBlobs(final int count) {
-    final byte[][] blobs = IntStream.rangeClosed(1, count).mapToObj(__ -> createRandomBlob())
+    final byte[][] blobs = IntStream.range(0, count).mapToObj(__ -> createRandomBlob())
         .toArray(byte[][]::new);
     return flatten(blobs);
   }

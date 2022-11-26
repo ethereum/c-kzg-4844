@@ -47,7 +47,7 @@ public class CKzg4844JNI {
    * and then load the new one. If no trusted setup has been loaded, all the native calls will throw
    * an exception.
    *
-   * @param file A path to a trusted setup file
+   * @param file a path to a trusted setup file
    */
   public static native void loadTrustedSetup(String file);
 
