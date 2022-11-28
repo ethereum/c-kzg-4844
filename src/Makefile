@@ -6,17 +6,20 @@ else
 	CFLAGS += -O2 -fPIC
 endif
 
+CLANG_EXECUTABLE=clang
+BLST_BUILD_SCRIPT=./build.sh
+
 all: c_kzg_4844.o lib
 
 c_kzg_4844.o: c_kzg_4844.c Makefile
-	clang -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -c $<
+	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -c $<
 
 # Will fail with "patch does not apply" if it has already been patched.
 # Safe to ignore.
 blst:
 	cd ../blst; \
 	git apply < ../blst_sha.patch; \
-	./build.sh && \
+	${BLST_BUILD_SCRIPT} && \
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
 

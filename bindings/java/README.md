@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-* Follow the instructions in the [README.md](../../README.md) to install blst and build the C-KZG library.
+* Follow the instructions in the [README.md](../../README.md) to build blst and the C-KZG library.
 * `JAVA_HOME` environment variable is set to a JDK with an `include` folder containing a `jni.h` file.
 
 ## Build
