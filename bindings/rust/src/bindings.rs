@@ -108,12 +108,13 @@ pub struct FFTSettings {
     #[doc = "< The maximum size of FFT these settings support, a power of 2."]
     pub max_width: u64,
     #[doc = "< Ascending powers of the root of unity, size `width + 1`."]
-    pub expanded_roots_of_unity: *mut fr_t,
+    pub expanded_roots_of_unity: *const fr_t,
     #[doc = "< Descending powers of the root of unity, size `width + 1`."]
-    pub reverse_roots_of_unity: *mut fr_t,
+    pub reverse_roots_of_unity: *const fr_t,
     #[doc = "< Powers of the root of unity in bit-reversal permutation, size `width`."]
-    pub roots_of_unity: *mut fr_t,
+    pub roots_of_unity: *const fr_t,
 }
+
 #[test]
 fn bindgen_test_layout_FFTSettings() {
     const UNINIT: ::std::mem::MaybeUninit<FFTSettings> = ::std::mem::MaybeUninit::uninit();
@@ -176,10 +177,18 @@ pub struct KZGSettings {
     #[doc = "< The corresponding settings for performing FFTs"]
     pub fs: *const FFTSettings,
     #[doc = "< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation"]
-    pub g1_values: *mut g1_t,
+    pub g1_values: *const g1_t,
     #[doc = "< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements"]
-    pub g2_values: *mut g2_t,
+    pub g2_values: *const g2_t,
 }
+
+/// Safety: FFTSettings is initialized once on calling `load_trusted_setup`. After
+/// that, the struct is never modified. The memory for the arrays within `FFTSettings` and
+/// `g1_values` and `g2_values` are only freed on calling `free_trusted_setup` which only happens
+/// when we drop the struct.
+unsafe impl Sync for KZGSettings {}
+unsafe impl Send for KZGSettings {}
+
 #[test]
 fn bindgen_test_layout_KZGSettings() {
     const UNINIT: ::std::mem::MaybeUninit<KZGSettings> = ::std::mem::MaybeUninit::uninit();
