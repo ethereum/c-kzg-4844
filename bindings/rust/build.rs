@@ -29,7 +29,6 @@ fn main() {
         .unwrap();
     std::fs::copy(root_dir.join("src/libckzg.a"), &out_dir.join("libckzg.a")).unwrap();
 
-    println!("cargo:rustc-link-arg=-no-pie");
     println!("cargo:rustc-link-search={}", out_dir.display());
     println!("cargo:rustc-link-search={}", out_dir.display());
     println!("cargo:rustc-link-lib=static=ckzg");
