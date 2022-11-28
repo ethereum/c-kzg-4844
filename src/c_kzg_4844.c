@@ -1098,34 +1098,44 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   const size_t np = ni + n * BYTES_PER_BLOB;
   const size_t nb = np + n * 48;
 
-  uint8_t* bytes = calloc(nb + (n == 0), sizeof(uint8_t)); // need at least 1 byte more than ni for hash later
+  uint8_t* bytes = calloc(nb, sizeof(uint8_t));
   if (bytes == NULL) return C_KZG_MALLOC;
 
+  /* Copy domain seperator */
   memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
   bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
   bytes_of_uint64(&bytes[16 + 8], n);
 
+  /* Copy polynomials */
   for (i = 0; i < n; i++)
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
       bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i][j]);
 
+  /* Copy commitments */
   for (i = 0; i < n; i++)
     bytes_from_g1(&bytes[np + i * 48], &comms[i]);
 
-  uint8_t hash_output[32] = {0};
-  hash(hash_output, bytes, nb);
-  memcpy(bytes, hash_output, 32);
-  bytes[32] = 0x0;
-  hash(hash_output, bytes, 33);
+  /* Now let's create challenges! */
+  uint8_t hashed_data[32] = {0};
+  hash(hashed_data, bytes, nb);
+
+  uint8_t r[32] = {0};
+  uint8_t hash_input_0[33] = {0}; // hashed_data + b'\x00'
+  memcpy(hash_input_0, hashed_data, 32);
+  hash_input_0[32] = 0x0;
+  hash(r, hash_input_0, 33);
 
   if (n > 0) {
-    if (n > 1) bytes_to_bls_field(&r_powers[1], hash_output);
+    if (n > 1) bytes_to_bls_field(&r_powers[1], r);
     compute_powers(r_powers, n);
   }
 
-  bytes[32] = 0x1;
-  hash(hash_output, bytes, 33);
-  bytes_to_bls_field(out, hash_output);
+  uint8_t eval_challenge[32] = {0};
+  uint8_t hash_input_1[33] = {0}; // hashed_data + b'\x01'
+  memcpy(hash_input_1, hashed_data, 32);
+  hash_input_1[32] = 0x1;
+  hash(eval_challenge, hash_input_1, 33);
+  bytes_to_bls_field(out, eval_challenge);
 
   free(bytes);
   return C_KZG_OK;
