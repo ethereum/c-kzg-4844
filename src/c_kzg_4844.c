@@ -825,10 +825,12 @@ void free_trusted_setup(KZGSettings *s) {
   free_kzg_settings(s);
 }
 
-static void compute_powers(fr_t out[], uint64_t n) {
-    out[0] = fr_one;
-    for (uint64_t i = 2; i < n; i++)
-      fr_mul(&out[i], &out[i-1], &out[1]);
+static void compute_powers(fr_t out[], BLSFieldElement *x, uint64_t n) {
+  BLSFieldElement current_power = fr_one;
+  for (uint64_t i = 0; i < n; i++) {
+    out[i] = current_power;
+    fr_mul(&current_power, &current_power, x);
+  }
 }
 
 void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
@@ -1119,17 +1121,19 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   uint8_t hashed_data[32] = {0};
   hash(hashed_data, bytes, nb);
 
-  uint8_t r[32] = {0};
+  /* Compute r */
+  uint8_t r_bytes[32] = {0};
   uint8_t hash_input_0[33] = {0}; // hashed_data + b'\x00'
   memcpy(hash_input_0, hashed_data, 32);
   hash_input_0[32] = 0x0;
-  hash(r, hash_input_0, 33);
+  hash(r_bytes, hash_input_0, 33);
 
-  if (n > 0) {
-    if (n > 1) bytes_to_bls_field(&r_powers[1], r);
-    compute_powers(r_powers, n);
-  }
+  /* Compute r_powers */
+  BLSFieldElement r;
+  bytes_to_bls_field(&r, r_bytes);
+  compute_powers(r_powers, &r, n);
 
+  /* Compute eval_challenge */
   uint8_t eval_challenge[32] = {0};
   uint8_t hash_input_1[33] = {0}; // hashed_data + b'\x01'
   memcpy(hash_input_1, hashed_data, 32);
