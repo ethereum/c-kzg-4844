@@ -2,7 +2,9 @@ INCLUDE_DIRS = ../../src ../../blst/bindings
 
 LIBRARY_FOLDER=src/main/resources/ethereum/ckzg4844/lib
 
-CC_FLAGS=
+FIELD_ELEMENTS_PER_BLOB ?= 4096
+
+CC_FLAGS = -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 
 ifeq ($(OS),Windows_NT)
   CLANG_EXECUTABLE=clang

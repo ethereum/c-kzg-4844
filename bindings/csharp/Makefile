@@ -1,5 +1,7 @@
 INCLUDE_DIRS = ../../src ../../blst/bindings
 
+FIELD_ELEMENTS_PER_BLOB ?= 4096
+
 ifeq ($(OS),Windows_NT)
 	BLST_BUILDSCRIPT=./build.bat
 	BLST_OBJ=blst.lib
@@ -20,6 +22,8 @@ else
 	CKZG_LIBRARY_PATH=Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
 endif
 
+CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+
 TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 
 .blst:
@@ -29,7 +33,7 @@ TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 	git apply -R ../blst_sha.patch &&\
 	cd ../bindings/csharp
 
-.ckzg: 
+.ckzg:
 	$(CLANG_EXECUTABLE) -O -Wall -shared $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(CKZG_LIBRARY_PATH) $(TARGETS)
 
 # Ckzg library
