@@ -4,7 +4,7 @@ LIBRARY_FOLDER=src/main/resources/ethereum/ckzg4844/lib
 
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
-CC_FLAGS = -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+CC_FLAGS=
 
 ifeq ($(OS),Windows_NT)
   CLANG_EXECUTABLE=clang
@@ -42,7 +42,7 @@ all: build test
 
 build:
 	mkdir -p ${LIBRARY_FOLDER}/${OS_ARCH}
-	${CLANG_EXECUTABLE} ${CC_FLAGS} ${CLANG_FLAGS} -O -Wall ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -o ${LIBRARY_FOLDER}/${OS_ARCH}/${LIBRARY_RESOURCE} c_kzg_4844_jni.c c_kzg_4844.o ../../lib/libblst.a
+	${CLANG_EXECUTABLE} ${CC_FLAGS} ${CLANG_FLAGS} -O -Wall ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -DFIELD_ELEMENTS_PER_BLOB=${FIELD_ELEMENTS_PER_BLOB} -o ${LIBRARY_FOLDER}/${OS_ARCH}/${LIBRARY_RESOURCE} c_kzg_4844_jni.c c_kzg_4844.o ../../lib/libblst.a
 
 test:
 	${GRADLE_COMMAND} clean test
