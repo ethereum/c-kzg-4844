@@ -13,7 +13,7 @@ public class CKzg4844JNI {
 
   static {
     InputStream libraryResource = CKzg4844JNI.class.getResourceAsStream(
-        "lib/" + PLATFORM_NATIVE_LIBRARY_NAME);
+        "lib/" + System.getProperty("os.arch") + "/" + PLATFORM_NATIVE_LIBRARY_NAME);
     if (libraryResource == null) {
       try {
         System.loadLibrary(LIBRARY_NAME);
