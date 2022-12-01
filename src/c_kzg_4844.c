@@ -801,9 +801,8 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
     blst_p2_from_affine(&out->g2_values[i], &g2_affine);
   }
 
-  unsigned int max_scale = 12;
-  // no-op
-  // while (((uint64_t)1 << max_scale) < FIELD_ELEMENTS_PER_BLOB) max_scale++;
+  unsigned int max_scale = 0;
+  while (((uint64_t)1 << max_scale) < FIELD_ELEMENTS_PER_BLOB) max_scale++;
 
   out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
 
