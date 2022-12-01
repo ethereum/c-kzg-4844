@@ -39,8 +39,8 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
       !PyCapsule_IsValid(s, "KZGSettings"))
     return PyErr_Format(PyExc_ValueError, "expected bytes and trusted setup");
 
-  if (PyBytes_Size(b) != 32 * 4096)
-    return PyErr_Format(PyExc_ValueError, "expected 32 * 4096 bytes");
+  if (PyBytes_Size(b) != 32 * FIELD_ELEMENTS_PER_BLOB)
+    return PyErr_Format(PyExc_ValueError, "expected 32 * FIELD_ELEMENTS_PER_BLOB bytes");
 
   uint8_t* blob = (uint8_t*)PyBytes_AsString(b);
 
@@ -62,9 +62,9 @@ static PyObject* compute_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args
     return PyErr_Format(PyExc_ValueError, "expected bytes, trusted setup");
 
   Py_ssize_t n = PyBytes_Size(b);
-  if (n % (32 * 4096) != 0)
-    return PyErr_Format(PyExc_ValueError, "expected a multiple of 32 * 4096 bytes");
-  n = n / 32 / 4096;
+  if (n % (32 * FIELD_ELEMENTS_PER_BLOB) != 0)
+    return PyErr_Format(PyExc_ValueError, "expected a multiple of 32 * FIELD_ELEMENTS_PER_BLOB bytes");
+  n = n / 32 / FIELD_ELEMENTS_PER_BLOB;
 
   Blob* blobs = (Blob*)PyBytes_AsString(b);
 
@@ -95,9 +95,9 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
         "expected bytes, sequence, proof, trusted setup");
 
   Py_ssize_t n = PyBytes_Size(b);
-  if (n % (32 * 4096) != 0)
-    return PyErr_Format(PyExc_ValueError, "expected a multiple of 32 * 4096 bytes");
-  n = n / 32 / 4096;
+  if (n % (32 * FIELD_ELEMENTS_PER_BLOB) != 0)
+    return PyErr_Format(PyExc_ValueError, "expected a multiple of 32 * FIELD_ELEMENTS_PER_BLOB bytes");
+  n = n / 32 / FIELD_ELEMENTS_PER_BLOB;
 
   if (PySequence_Length(c) != n)
     return PyErr_Format(PyExc_ValueError, "expected same number of commitments as polynomials");
