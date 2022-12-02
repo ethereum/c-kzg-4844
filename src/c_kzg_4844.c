@@ -1121,12 +1121,14 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
   uint8_t hashed_data[32] = {0};
   hash(hashed_data, bytes, nb);
 
+  /* We will use hash_input in the computation of both challenges */
+  uint8_t hash_input[33];
+
   /* Compute r */
   uint8_t r_bytes[32] = {0};
-  uint8_t hash_input_0[33] = {0}; // hashed_data + b'\x00'
-  memcpy(hash_input_0, hashed_data, 32);
-  hash_input_0[32] = 0x0;
-  hash(r_bytes, hash_input_0, 33);
+  memcpy(hash_input, hashed_data, 32);
+  hash_input[32] = 0x0;
+  hash(r_bytes, hash_input, 33);
 
   /* Compute r_powers */
   BLSFieldElement r;
@@ -1135,10 +1137,8 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
 
   /* Compute eval_challenge */
   uint8_t eval_challenge[32] = {0};
-  uint8_t hash_input_1[33] = {0}; // hashed_data + b'\x01'
-  memcpy(hash_input_1, hashed_data, 32);
-  hash_input_1[32] = 0x1;
-  hash(eval_challenge, hash_input_1, 33);
+  hash_input[32] = 0x1;
+  hash(eval_challenge, hash_input, 33);
   bytes_to_bls_field(out, eval_challenge);
 
   free(bytes);
