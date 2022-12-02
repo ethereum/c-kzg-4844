@@ -825,7 +825,7 @@ void free_trusted_setup(KZGSettings *s) {
   free_kzg_settings(s);
 }
 
-static void compute_powers(fr_t out[], BLSFieldElement *x, uint64_t n) {
+static void compute_powers(BLSFieldElement out[], BLSFieldElement *x, uint64_t n) {
   BLSFieldElement current_power = fr_one;
   for (uint64_t i = 0; i < n; i++) {
     out[i] = current_power;
