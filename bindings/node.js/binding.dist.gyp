@@ -8,7 +8,8 @@
         "CLANG_CXX_LIBRARY": "libc++",
         "MACOSX_DEPLOYMENT_TARGET": "13.0"
       },
-      "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"],
+      "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS",
+                  "FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"],
       "sources": ["kzg.cxx"],
       "include_dirs": [
         "<(module_root_dir)/dist/deps/blst/bindings",
