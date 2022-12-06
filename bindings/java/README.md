@@ -16,7 +16,7 @@ This will install the library in `src/main/resources/ethereum/ckzg4844/lib` with
 and name according to the preset selected (mainnet or minimal) and your OS.
 
 All variables which could be passed to the `make` command and the defaults can be found in
-the [Makefile](./Makefile)
+the [Makefile](./Makefile).
 
 ## Test
 
