@@ -109,7 +109,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     const KZGProof *kzg_aggregated_proof,
     const KZGSettings *s);
 
-void blob_to_kzg_commitment(KZGCommitment *out,
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
     const Blob blob,
     const KZGSettings *s);
 

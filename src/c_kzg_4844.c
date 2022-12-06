@@ -805,6 +805,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
   while (((uint64_t)1 << max_scale) < FIELD_ELEMENTS_PER_BLOB) max_scale++;
 
   out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
+  if (out->fs == NULL) { free(g1_projective); return C_KZG_MALLOC; }
 
   C_KZG_RET ret;
   ret = new_fft_settings((FFTSettings*)out->fs, max_scale);
@@ -871,7 +872,7 @@ static void poly_lincomb(Polynomial out, const Polynomial vectors[], const fr_t 
  *
  * We do the second of these to save memory here.
  */
-static void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
+static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
     if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
         g1_t tmp;
@@ -883,8 +884,11 @@ static void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint6
     } else {
         // Blst's implementation of the Pippenger method
         void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
+        if (scratch == NULL) return C_KZG_MALLOC;
         blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
+        if (p_affine == NULL) { free(scratch); return C_KZG_MALLOC; }
         blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
+        if (scalars == NULL) { free(scratch); free(p_affine); return C_KZG_MALLOC; }
 
         // Transform the points to affine representation
         const blst_p1 *p_arg[2] = {p, NULL};
@@ -905,10 +909,11 @@ static void g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint6
         free(p_affine);
         free(scalars);
     }
+    return C_KZG_OK;
 }
 
-static void poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, const KZGSettings *s) {
-  g1_lincomb(out, s->g1_values, p, FIELD_ELEMENTS_PER_BLOB);
+static C_KZG_RET poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, const KZGSettings *s) {
+  return g1_lincomb(out, s->g1_values, p, FIELD_ELEMENTS_PER_BLOB);
 }
 
 static void poly_from_blob(Polynomial p, const Blob blob) {
@@ -916,10 +921,10 @@ static void poly_from_blob(Polynomial p, const Blob blob) {
     bytes_to_bls_field(&p[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
 }
 
-void blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
   Polynomial p;
   poly_from_blob(p, blob);
-  poly_to_kzg_commitment(out, p, s);
+  return poly_to_kzg_commitment(out, p, s);
 }
 
 /**
