@@ -10,7 +10,10 @@ on:
 
 jobs:
   test-java-bindings:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
         with:
@@ -19,7 +22,15 @@ jobs:
         with:
           distribution: "temurin"
           java-version: "11"
-      - name: Setup
-        run: cd src && make blst && make all
-      - name: Test
-        run: cd bindings/java && make build test
+      - name: Build blst
+        run: |
+          cd src
+          make blst
+      - name: Build and Test (mainnet preset)
+        run: |
+          cd bindings/java
+          make build test
+      - name: Build and Test (minimal preset)
+        run: |
+          cd bindings/java
+          make PRESET=minimal build test -B

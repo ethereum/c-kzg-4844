@@ -22,7 +22,12 @@ void throw_exception(JNIEnv *env, const char *message)
   (*env)->ThrowNew(env, Exception, message);
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
+JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
+{
+  return (jint)FIELD_ELEMENTS_PER_BLOB;
+}
+
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
 {
   if (settings != NULL)
   {
@@ -61,7 +66,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_loadTrustedSetup(JNIEn
   (*env)->ReleaseStringUTFChars(env, file, file_native);
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
 {
   if (settings == NULL)
   {
@@ -72,7 +77,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_freeTrustedSetup(JNIEn
   reset_trusted_setup();
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
   if (settings == NULL)
   {
@@ -104,11 +109,18 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_computeAggregate
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
 {
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
+  if (blobs_size == 0)
+  {
+    throw_exception(env, "Passing byte array with 0 elements for blobs is not supported.");
     return 0;
   }
 
@@ -163,7 +175,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_verifyAggregateKzg
   return (jboolean)out;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
   if (settings == NULL)
   {
@@ -171,10 +183,17 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_blobToKzgCommitm
     return NULL;
   }
 
-  uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size == 0)
+  {
+    throw_exception(env, "Passing byte array with 0 elements for a blob is not supported.");
+    return NULL;
+  }
+
+  jbyte *blob_native = (*env)->GetByteArrayElements(env, blob, NULL);
 
   KZGCommitment c;
-  blob_to_kzg_commitment(&c, blob_native, settings);
+  blob_to_kzg_commitment(&c, (uint8_t *)blob_native, settings);
 
   jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
   uint8_t *out = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, 0);
@@ -186,7 +205,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_blobToKzgCommitm
   return commitment;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKzg4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
 {
   if (settings == NULL)
   {
