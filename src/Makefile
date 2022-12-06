@@ -8,11 +8,13 @@ endif
 
 CLANG_EXECUTABLE=clang
 BLST_BUILD_SCRIPT=./build.sh
+FIELD_ELEMENTS_PER_BLOB?=4096
 
 all: c_kzg_4844.o lib
 
+# If you change FIELD_ELEMENTS_PER_BLOB, remember to rm c_kzg_4844.o and make again
 c_kzg_4844.o: c_kzg_4844.c Makefile
-	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) $(CFLAGS) -c $<
+	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) -c $<
 
 # Will fail with "patch does not apply" if it has already been patched.
 # Safe to ignore.
