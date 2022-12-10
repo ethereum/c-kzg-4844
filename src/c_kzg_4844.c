@@ -770,39 +770,26 @@ static void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement *in) {
   blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
+C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t n1, const uint8_t g2_bytes[], size_t n2) {
   uint64_t i;
-  int j; uint8_t c[96];
   blst_p2_affine g2_affine;
   g1_t *g1_projective;
 
-  fscanf(in, "%" SCNu64, &i);
-  CHECK(i == FIELD_ELEMENTS_PER_BLOB);
-  fscanf(in, "%" SCNu64, &i);
-  CHECK(i == 65);
+  TRY(new_g1_array(&out->g1_values, n1));
+  TRY(new_g2_array(&out->g2_values, n2));
 
-  TRY(new_g1_array(&out->g1_values, FIELD_ELEMENTS_PER_BLOB));
-  TRY(new_g2_array(&out->g2_values, 65));
+  TRY(new_g1_array(&g1_projective, n1));
 
-  TRY(new_g1_array(&g1_projective, FIELD_ELEMENTS_PER_BLOB));
+  for (i = 0; i < n1; i++)
+    bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
 
-  for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-    for (j = 0; j < 48; j++) {
-      fscanf(in, "%2hhx", &c[j]);
-    }
-    bytes_to_g1(&g1_projective[i], c);
-  }
-
-  for (i = 0; i < 65; i++) {
-    for (j = 0; j < 96; j++) {
-      fscanf(in, "%2hhx", &c[j]);
-    }
-    blst_p2_uncompress(&g2_affine, c);
+  for (i = 0; i < n2; i++) {
+    blst_p2_uncompress(&g2_affine, &g2_bytes[96 * i]);
     blst_p2_from_affine(&out->g2_values[i], &g2_affine);
   }
 
   unsigned int max_scale = 0;
-  while (((uint64_t)1 << max_scale) < FIELD_ELEMENTS_PER_BLOB) max_scale++;
+  while (((uint64_t)1 << max_scale) < n1) max_scale++;
 
   out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
   if (out->fs == NULL) { free(g1_projective); return C_KZG_MALLOC; }
@@ -811,13 +798,33 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
   ret = new_fft_settings((FFTSettings*)out->fs, max_scale);
   if (ret != C_KZG_OK) { free(g1_projective); return ret; }
 
-  ret = fft_g1(out->g1_values, g1_projective, true, FIELD_ELEMENTS_PER_BLOB, out->fs);
+  ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
   free(g1_projective);
   if (ret != C_KZG_OK) return ret;
 
-  TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), FIELD_ELEMENTS_PER_BLOB));
+  TRY(reverse_bit_order(out->g1_values, sizeof(g1_t), n1));
 
   return C_KZG_OK;
+}
+
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
+  uint64_t i;
+
+  fscanf(in, "%" SCNu64, &i);
+  CHECK(i == FIELD_ELEMENTS_PER_BLOB);
+  fscanf(in, "%" SCNu64, &i);
+  CHECK(i == 65);
+
+  uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * 48];
+  uint8_t g2_bytes[65 * 96];
+
+  for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * 48; i++)
+    fscanf(in, "%2hhx", &g1_bytes[i]);
+
+  for (i = 0; i < 65 * 96; i++)
+    fscanf(in, "%2hhx", &g2_bytes[i]);
+
+  return load_trusted_setup(out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, 65);
 }
 
 void free_trusted_setup(KZGSettings *s) {
