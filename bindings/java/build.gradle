@@ -8,6 +8,11 @@ repositories {
     mavenCentral()
 }
 
+java {
+    sourceCompatibility = 11
+    targetCompatibility = 11
+}
+
 dependencies {
 
     def junitVersion = "5.9.1"

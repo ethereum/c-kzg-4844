@@ -193,7 +193,17 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   jbyte *blob_native = (*env)->GetByteArrayElements(env, blob, NULL);
 
   KZGCommitment c;
-  blob_to_kzg_commitment(&c, (uint8_t *)blob_native, settings);
+  C_KZG_RET ret;
+
+  ret = blob_to_kzg_commitment(&c, (uint8_t *)blob_native, settings);
+
+  if (ret != C_KZG_OK)
+  {
+    char arr[100];
+    sprintf(arr, "There was an error while converting blob bytes to a commitment: %s", C_KZG_RETURN_TYPES[ret]);
+    throw_exception(env, arr);
+    return 0;
+  }
 
   jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
   uint8_t *out = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, 0);

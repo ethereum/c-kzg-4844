@@ -2,6 +2,7 @@ package ethereum.ckzg4844;
 
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.stream.IntStream;
@@ -20,9 +21,8 @@ public class TestUtils {
 
   public static byte[] createRandomBlob() {
     final byte[][] blob = IntStream.range(0, CKZG4844JNI.getFieldElementsPerBlob())
-        .mapToObj(__ -> randomBigIntegerInModulus())
-        .map(UInt256::valueOf)
-        .map(UInt256::toArray)
+        .mapToObj(__ -> randomBlsFieldElement())
+        .map(blsFieldElement -> blsFieldElement.toArray(ByteOrder.LITTLE_ENDIAN))
         .toArray(byte[][]::new);
     return flatten(blob);
   }
@@ -47,12 +47,12 @@ public class TestUtils {
     return flatten(commitments);
   }
 
-  private static BigInteger randomBigIntegerInModulus() {
+  private static UInt256 randomBlsFieldElement() {
     final BigInteger attempt = new BigInteger(CKZG4844JNI.BLS_MODULUS.bitLength(), RANDOM);
     if (attempt.compareTo(CKZG4844JNI.BLS_MODULUS) < 0) {
-      return attempt;
+      return UInt256.valueOf(attempt);
     }
-    return randomBigIntegerInModulus();
+    return randomBlsFieldElement();
   }
 
 }
