@@ -48,7 +48,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup(JNIEn
     return;
   }
 
-  C_KZG_RET ret = load_trusted_setup(settings, f);
+  C_KZG_RET ret = load_trusted_setup_file(settings, f);
 
   if (ret != C_KZG_OK)
   {

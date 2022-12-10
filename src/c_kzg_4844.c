@@ -770,7 +770,7 @@ static void bytes_from_bls_field(uint8_t out[32], const BLSFieldElement *in) {
   blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
-C_KZG_RET load_trusted_setup(KZGSettings *out, FILE *in) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
   uint64_t i;
   int j; uint8_t c[96];
   blst_p2_affine g2_affine;

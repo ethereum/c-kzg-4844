@@ -90,7 +90,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  if (load_trusted_setup(kzg_settings, f) != C_KZG_OK) {
+  if (load_trusted_setup_file(kzg_settings, f) != C_KZG_OK) {
     free(kzg_settings);
     Napi::Error::New(env, "Error loading trusted setup file").ThrowAsJavaScriptException();
     return env.Null();
