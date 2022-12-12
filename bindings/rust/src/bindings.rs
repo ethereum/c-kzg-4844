@@ -4,7 +4,6 @@ use libc::FILE;
 
 pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
-pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_BLOB: usize = 131072;
 
@@ -245,7 +244,7 @@ extern "C" {
     pub fn bytes_to_bls_field(out: *mut BLSFieldElement, in_: *const u8);
 }
 extern "C" {
-    pub fn load_trusted_setup(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
+    pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
 }
 extern "C" {
     pub fn free_trusted_setup(s: *mut KZGSettings);

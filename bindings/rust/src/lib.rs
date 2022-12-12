@@ -2,6 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+include!("./consts.rs");
+
 mod bindings;
 use bindings::{g1_t, Blob, C_KZG_RET};
 use libc::fopen;
@@ -12,7 +14,7 @@ use std::path::PathBuf;
 
 pub use bindings::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
-    FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
+    FIAT_SHAMIR_PROTOCOL_DOMAIN,
 };
 
 const BYTES_PER_G1_POINT: usize = 48;
@@ -70,7 +72,7 @@ impl KZGSettings {
         let mut kzg_settings = MaybeUninit::<bindings::KZGSettings>::uninit();
         unsafe {
             let file_ptr = fopen(file_path.as_ptr(), &('r' as libc::c_char));
-            let res = bindings::load_trusted_setup(kzg_settings.as_mut_ptr(), file_ptr);
+            let res = bindings::load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(Self(kzg_settings.assume_init()))
             } else {

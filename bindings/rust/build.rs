@@ -2,6 +2,9 @@ use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
+const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
+const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
+
 fn main() {
     let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("../../");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
@@ -15,10 +18,20 @@ fn main() {
         .unwrap();
     std::fs::copy(root_dir.join("lib/libblst.a"), &out_dir.join("libblst.a")).unwrap();
 
+    let field_elements_per_blob = if cfg!(minimal) {
+        MINIMAL_FIELD_ELEMENTS_PER_BLOB
+    } else {
+        MAINNET_FIELD_ELEMENTS_PER_BLOB
+    };
+
     // Ensure libckzg exists in `OUT_DIR`
     Command::new("make")
         .current_dir(root_dir.join("src"))
         .arg("all")
+        .arg(format!(
+            "FIELD_ELEMENTS_PER_BLOB={}",
+            field_elements_per_blob
+        ))
         .status()
         .unwrap();
 
@@ -37,4 +50,15 @@ fn main() {
         "cargo:rerun-if-changed={}",
         root_dir.join("src/c_kzg_4844.c").display()
     );
+
+    // Write the compile time variable to a consts.rs file to be imported to the bindings module.
+    let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/consts.rs");
+    std::fs::write(
+        &const_file,
+        format!(
+            "pub const FIELD_ELEMENTS_PER_BLOB: usize = {};",
+            field_elements_per_blob
+        ),
+    )
+    .unwrap();
 }
