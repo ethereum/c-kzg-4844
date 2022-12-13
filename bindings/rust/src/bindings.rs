@@ -247,6 +247,15 @@ extern "C" {
     pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
 }
 extern "C" {
+    pub fn load_trusted_setup(
+        out: *mut KZGSettings,
+        g1_bytes: *const u8, /* n1 * 48 bytes */
+        n1: usize,
+        g2_bytes: *const u8, /* n2 * 96 bytes */
+        n2: usize,
+    ) -> C_KZG_RET;
+}
+extern "C" {
     pub fn free_trusted_setup(s: *mut KZGSettings);
 }
 extern "C" {

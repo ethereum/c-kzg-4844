@@ -18,6 +18,7 @@ pub use bindings::{
 };
 
 const BYTES_PER_G1_POINT: usize = 48;
+const BYTES_PER_G2_POINT: usize = 96;
 
 #[derive(Debug)]
 // TODO(add separate error type for commitments and proof)
@@ -63,9 +64,47 @@ impl BLSFieldElement {
     }
 }
 
+/// Holds the parameters of a kzg trusted setup ceremony.
 pub struct KZGSettings(bindings::KZGSettings);
 impl KZGSettings {
-    pub fn load_trusted_setup(file_path: PathBuf) -> Result<Self, Error> {
+    /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points
+    /// and 65 g2 points in byte format.
+    ///
+    /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
+    pub fn load_trusted_setup(
+        g1_bytes: Vec<[u8; BYTES_PER_G1_POINT]>,
+        g2_bytes: Vec<[u8; BYTES_PER_G2_POINT]>,
+    ) -> Result<Self, Error> {
+        let mut kzg_settings = MaybeUninit::<bindings::KZGSettings>::uninit();
+        unsafe {
+            let n1 = g1_bytes.len();
+            let n2 = g2_bytes.len();
+
+            let res = bindings::load_trusted_setup(
+                kzg_settings.as_mut_ptr(),
+                g1_bytes.as_ptr() as *const u8,
+                n1,
+                g2_bytes.as_ptr() as *const u8,
+                n2,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(Self(kzg_settings.assume_init()))
+            } else {
+                Err(Error::InvalidTrustedSetup(format!(
+                    "Invalid trusted setup: {:?}",
+                    res
+                )))
+            }
+        }
+    }
+
+    /// Loads the trusted setup parameters from a file. The file format is as follows:
+    ///
+    /// FIELD_ELEMENTS_PER_BLOB
+    /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values
+    /// 65 g2 byte values
+    pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
         let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
             Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
         })?;
@@ -243,7 +282,7 @@ mod tests {
         let mut rng = rand::thread_rng();
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup(trusted_setup_file).unwrap();
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
         let num_blobs: usize = rng.gen_range(0..16);
         let mut blobs: Vec<Blob> = (0..num_blobs)
