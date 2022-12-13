@@ -59,6 +59,15 @@ Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t l
   return Napi::Uint8Array::New(env, length, buffer, 0);
 }
 
+const uint8_t * extract_byte_array_from_param(const Napi::CallbackInfo& info, const int index, const std::string name) {
+  auto param = info[index].As<Napi::TypedArray>();
+  if (!param.IsTypedArray() || param.TypedArrayType() != napi_uint8_array) {
+    throw_invalid_argument_type(info.Env(), name, "UInt8Array");
+  }
+  return param.As<Napi::Uint8Array>().Data();
+}
+
+
 // loadTrustedSetup: (filePath: string) => SetupHandle;
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   auto env = info.Env();
@@ -125,11 +134,10 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
-  auto blob_param = info[0].As<Napi::TypedArray>();
-  if (!blob_param.IsTypedArray() || blob_param.TypedArrayType() != napi_uint8_array) {
-     return throw_invalid_argument_type(env, "blob", "UInt8Array");
+  auto blob = extract_byte_array_from_param(info, 0, "blob");
+  if (env.IsExceptionPending()) {
+    return env.Null();
   }
-  auto blob = blob_param.As<Napi::Uint8Array>().Data();
 
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
@@ -280,31 +288,15 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
-  auto c_param = info[0].As<Napi::TypedArray>();
-  if (c_param.TypedArrayType() != napi_uint8_array) {
-    return throw_invalid_argument_type(env, "polynomialKzg", "UInt8Array");
-  }
-  auto polynomial_kzg = c_param.As<Napi::Uint8Array>().Data();
-
-  auto z_param = info[1].As<Napi::TypedArray>();
-  if (z_param.TypedArrayType() != napi_uint8_array) {
-     return throw_invalid_argument_type(env, "z", "UInt8Array");
-  }
-  auto z = z_param.As<Napi::Uint8Array>().Data();
-
-  auto y_param = info[2].As<Napi::TypedArray>();
-  if (y_param.TypedArrayType() != napi_uint8_array) {
-    return throw_invalid_argument_type(env, "y", "UInt8Array");
-  }
-  auto y = y_param.As<Napi::Uint8Array>().Data();
-
-  auto proof_param = info[3].As<Napi::TypedArray>();
-  if (proof_param.TypedArrayType() != napi_uint8_array) {
-     return throw_invalid_argument_type(env, "kzgProof", "UInt8Array");
-  }
-  auto kzg_proof = proof_param.As<Napi::Uint8Array>().Data();
-
+  auto polynomial_kzg = extract_byte_array_from_param(info, 0, "polynomialKzg");
+  auto z = extract_byte_array_from_param(info, 1, "z");
+  auto y = extract_byte_array_from_param(info, 2, "y");
+  auto kzg_proof = extract_byte_array_from_param(info, 3, "kzgProof");
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
+
+  if (env.IsExceptionPending()) {
+    return env.Null();
+  }
 
   KZGCommitment commitment;
   auto ret = bytes_to_g1(&commitment, polynomial_kzg);

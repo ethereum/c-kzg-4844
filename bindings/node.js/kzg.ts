@@ -35,7 +35,6 @@ type KZG = {
     setupHandle: SetupHandle,
   ) => boolean;
 
-  // Currently unused -- not exported
   verifyKzgProof: (
     polynomialKzg: KZGCommitment,
     z: BLSFieldElement,
@@ -111,6 +110,21 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment {
 
 export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
   return kzg.computeAggregateKzgProof(blobs, requireSetupHandle());
+}
+
+export function verifyKzgProof(
+  polynomialKzg: KZGCommitment,
+  z: BLSFieldElement,
+  y: BLSFieldElement,
+  kzgProof: KZGProof,
+): boolean {
+  return kzg.verifyKzgProof(
+    polynomialKzg,
+    z,
+    y,
+    kzgProof,
+    requireSetupHandle(),
+  );
 }
 
 export function verifyAggregateKzgProof(

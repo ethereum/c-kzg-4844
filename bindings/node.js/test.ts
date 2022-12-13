@@ -5,6 +5,7 @@ import {
   loadTrustedSetup,
   freeTrustedSetup,
   blobToKzgCommitment,
+  verifyKzgProof,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
   BYTES_PER_FIELD_ELEMENT,
@@ -66,6 +67,17 @@ describe("C-KZG", () => {
     expect(verifyAggregateKzgProof([], [], computeAggregateKzgProof([]))).toBe(
       true,
     );
+  });
+
+  it("verifies an invalid KZG proof without crashing", () => {
+    const commitment = new Uint8Array(48).fill(0);
+    commitment[0] = 0xc0;
+    const z = new Uint8Array(32).fill(0);
+    const y = new Uint8Array(32).fill(0);
+    const proof = new Uint8Array(48).fill(0);
+    proof[0] = 0xc0;
+
+    verifyKzgProof(commitment, z, y, proof);
   });
 
   it("computes the aggregate proof when for a single blob", () => {
