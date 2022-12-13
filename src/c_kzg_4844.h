@@ -89,7 +89,7 @@ typedef struct {
 C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t in[48]);
 void bytes_from_g1(uint8_t out[48], const g1_t *in);
 
-void bytes_to_bls_field(BLSFieldElement *out, const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
+C_KZG_RET bytes_to_bls_field(BLSFieldElement *out, const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
 
 C_KZG_RET load_trusted_setup(KZGSettings *out,
     const uint8_t g1_bytes[], /* n1 * 48 bytes */

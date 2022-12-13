@@ -840,10 +840,18 @@ static void compute_powers(BLSFieldElement out[], BLSFieldElement *x, uint64_t n
   }
 }
 
-void bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
+static void hash_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
   blst_scalar tmp;
   blst_scalar_from_lendian(&tmp, bytes);
   blst_fr_from_scalar(out, &tmp);
+}
+
+C_KZG_RET bytes_to_bls_field(BLSFieldElement *out, const uint8_t bytes[32]) {
+  blst_scalar tmp;
+  blst_scalar_from_lendian(&tmp, bytes);
+  if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
+  blst_fr_from_scalar(out, &tmp);
+  return C_KZG_OK;
 }
 
 static void poly_lincomb(Polynomial out, const Polynomial vectors[], const fr_t scalars[], uint64_t n) {
@@ -923,14 +931,19 @@ static C_KZG_RET poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, 
   return g1_lincomb(out, s->g1_values, p, FIELD_ELEMENTS_PER_BLOB);
 }
 
-static void poly_from_blob(Polynomial p, const Blob blob) {
-  for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++)
-    bytes_to_bls_field(&p[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+static C_KZG_RET poly_from_blob(Polynomial p, const Blob blob) {
+  C_KZG_RET ret;
+  for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    ret = bytes_to_bls_field(&p[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+    if (ret != C_KZG_OK) return ret;
+  }
+  return C_KZG_OK;
 }
 
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
   Polynomial p;
-  poly_from_blob(p, blob);
+  C_KZG_RET ret = poly_from_blob(p, blob);
+  if (ret != C_KZG_OK) return ret;
   return poly_to_kzg_commitment(out, p, s);
 }
 
@@ -968,8 +981,9 @@ C_KZG_RET verify_kzg_proof(bool *out,
     const KZGProof *kzg_proof,
     const KZGSettings *s) {
   BLSFieldElement frz, fry;
-  bytes_to_bls_field(&frz, z);
-  bytes_to_bls_field(&fry, y);
+  C_KZG_RET ret;
+  ret = bytes_to_bls_field(&frz, z); if (ret != C_KZG_OK) return ret;
+  ret = bytes_to_bls_field(&fry, y); if (ret != C_KZG_OK) return ret;
   return verify_kzg_proof_impl(out, commitment, &frz, &fry, kzg_proof, s);
 }
 
@@ -1143,14 +1157,14 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
 
   /* Compute r_powers */
   BLSFieldElement r;
-  bytes_to_bls_field(&r, r_bytes);
+  hash_to_bls_field(&r, r_bytes);
   compute_powers(r_powers, &r, n);
 
   /* Compute eval_challenge */
   uint8_t eval_challenge[32] = {0};
   hash_input[32] = 0x1;
   hash(eval_challenge, hash_input, 33);
-  bytes_to_bls_field(out, eval_challenge);
+  hash_to_bls_field(out, eval_challenge);
 
   free(bytes);
   return C_KZG_OK;
@@ -1185,15 +1199,20 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   Polynomial* polys = calloc(n, sizeof(Polynomial));
   if (0 < n && polys == NULL) { free(commitments); return C_KZG_MALLOC; }
 
+  C_KZG_RET ret;
   for (size_t i = 0; i < n; i++) {
-    poly_from_blob(polys[i], blobs[i]);
+    ret = poly_from_blob(polys[i], blobs[i]);
+    if (ret != C_KZG_OK) {
+      if (commitments != NULL) free(commitments);
+      if (polys != NULL) free(polys);
+      return ret;
+    }
     poly_to_kzg_commitment(&commitments[i], polys[i], s);
   }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
-  C_KZG_RET ret;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, commitments, n);
   if (commitments != NULL) free(commitments);
   if (polys != NULL) free(polys);
@@ -1210,13 +1229,15 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     const KZGSettings *s) {
   Polynomial* polys = calloc(n, sizeof(Polynomial));
   if (polys == NULL) return C_KZG_MALLOC;
-  for (size_t i = 0; i < n; i++)
-    poly_from_blob(polys[i], blobs[i]);
+  C_KZG_RET ret;
+  for (size_t i = 0; i < n; i++) {
+    ret = poly_from_blob(polys[i], blobs[i]);
+    if (ret != C_KZG_OK) { free(polys); return ret; }
+  }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
-  C_KZG_RET ret;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
   free(polys);
   if (ret != C_KZG_OK) return ret;

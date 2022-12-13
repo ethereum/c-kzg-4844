@@ -20,7 +20,19 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
 
 const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 
-const generateRandomBlob = () => new Uint8Array(randomBytes(BLOB_BYTE_COUNT));
+const MAX_TOP_BYTE = 114;
+
+const generateRandomBlob = () => {
+  return new Uint8Array(
+    randomBytes(BLOB_BYTE_COUNT).map((x, i) => {
+      // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
+      if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 31) {
+        return Math.floor(Math.random() * MAX_TOP_BYTE);
+      }
+      return x;
+    }),
+  );
+};
 
 describe("C-KZG", () => {
   beforeAll(async () => {
@@ -50,8 +62,7 @@ describe("C-KZG", () => {
     );
   });
 
-  // Just don't call verifyAggregateKzgProof when there are no blobs or commitments
-  it.skip("verifies the aggregate proof of empty blobs and commitments", () => {
+  it("verifies the aggregate proof of empty blobs and commitments", () => {
     expect(verifyAggregateKzgProof([], [], computeAggregateKzgProof([]))).toBe(
       true,
     );
