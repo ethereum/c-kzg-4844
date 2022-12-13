@@ -69,7 +69,7 @@ describe("C-KZG", () => {
     );
   });
 
-  it("verifies an invalid KZG proof without crashing", () => {
+  it("verifies a valid KZG proof", () => {
     const commitment = new Uint8Array(48).fill(0);
     commitment[0] = 0xc0;
     const z = new Uint8Array(32).fill(0);
@@ -77,7 +77,18 @@ describe("C-KZG", () => {
     const proof = new Uint8Array(48).fill(0);
     proof[0] = 0xc0;
 
-    verifyKzgProof(commitment, z, y, proof);
+    expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
+  });
+
+  it("verifies an invalid valid KZG proof", () => {
+    const commitment = new Uint8Array(48).fill(0);
+    commitment[0] = 0xc0;
+    const z = new Uint8Array(32).fill(1);
+    const y = new Uint8Array(32).fill(1);
+    const proof = new Uint8Array(48).fill(0);
+    proof[0] = 0xc0;
+
+    expect(verifyKzgProof(commitment, z, y, proof)).toBe(false);
   });
 
   it("computes the aggregate proof when for a single blob", () => {
