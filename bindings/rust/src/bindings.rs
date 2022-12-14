@@ -243,7 +243,7 @@ extern "C" {
     pub fn bytes_from_g1(out: *mut u8, in_: *const g1_t);
 }
 extern "C" {
-    pub fn bytes_to_bls_field(out: *mut BLSFieldElement, in_: *const u8);
+    pub fn bytes_to_bls_field(out: *mut BLSFieldElement, in_: *const u8) -> C_KZG_RET;
 }
 extern "C" {
     pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;

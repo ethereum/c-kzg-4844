@@ -53,11 +53,17 @@ pub fn bytes_from_g1(g1_point: g1_t) -> [u8; BYTES_PER_G1_POINT] {
 pub struct BLSFieldElement(bindings::BLSFieldElement);
 
 impl BLSFieldElement {
-    pub fn bytes_to_bls_field(bytes: [u8; BYTES_PER_FIELD_ELEMENT as usize]) -> Self {
+    pub fn bytes_to_bls_field(
+        bytes: [u8; BYTES_PER_FIELD_ELEMENT as usize],
+    ) -> Result<Self, Error> {
         let mut bls_field_element = MaybeUninit::<bindings::BLSFieldElement>::uninit();
         unsafe {
-            bindings::bytes_to_bls_field(bls_field_element.as_mut_ptr(), bytes.as_ptr());
-            Self(bls_field_element.assume_init())
+            let res = bindings::bytes_to_bls_field(bls_field_element.as_mut_ptr(), bytes.as_ptr());
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(Self(bls_field_element.assume_init()))
+            } else {
+                Err(Error::CError(res))
+            }
         }
     }
 }
