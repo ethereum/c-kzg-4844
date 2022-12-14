@@ -2,8 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-include!("./consts.rs");
-
 mod bindings;
 use bindings::{g1_t, Blob, C_KZG_RET};
 use libc::fopen;
@@ -14,7 +12,7 @@ use std::path::PathBuf;
 
 pub use bindings::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
-    FIAT_SHAMIR_PROTOCOL_DOMAIN,
+    FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
 };
 
 const BYTES_PER_G1_POINT: usize = 48;

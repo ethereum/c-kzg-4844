@@ -18,11 +18,13 @@ fn main() {
         .unwrap();
     std::fs::copy(root_dir.join("lib/libblst.a"), &out_dir.join("libblst.a")).unwrap();
 
-    let field_elements_per_blob = if cfg!(minimal) {
+    let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
         MINIMAL_FIELD_ELEMENTS_PER_BLOB
     } else {
         MAINNET_FIELD_ELEMENTS_PER_BLOB
     };
+
+    eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
 
     // Ensure libckzg exists in `OUT_DIR`
     Command::new("make")
@@ -46,10 +48,6 @@ fn main() {
     println!("cargo:rustc-link-search={}", out_dir.display());
     println!("cargo:rustc-link-lib=static=ckzg");
     println!("cargo:rustc-link-lib=static=blst");
-    println!(
-        "cargo:rerun-if-changed={}",
-        root_dir.join("src/c_kzg_4844.c").display()
-    );
 
     // Write the compile time variable to a consts.rs file to be imported to the bindings module.
     let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/consts.rs");
