@@ -16,7 +16,7 @@ fn main() {
         .arg("blst")
         .status()
         .unwrap();
-    std::fs::copy(root_dir.join("lib/libblst.a"), &out_dir.join("libblst.a")).unwrap();
+    std::fs::rename(root_dir.join("lib/libblst.a"), &out_dir.join("libblst.a")).unwrap();
 
     let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
         MINIMAL_FIELD_ELEMENTS_PER_BLOB
@@ -25,6 +25,13 @@ fn main() {
     };
 
     eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
+
+    // Deleting any existing assembly and object files to ensure that compiling with a different
+    // feature flag changes the final linked library file.
+    let obj_file = root_dir.join("src/c_kzg_4844.o");
+    if obj_file.exists() {
+        std::fs::remove_file(obj_file).unwrap();
+    }
 
     // Ensure libckzg exists in `OUT_DIR`
     Command::new("make")
@@ -42,7 +49,7 @@ fn main() {
         .args(["crus", "libckzg.a", "c_kzg_4844.o"])
         .status()
         .unwrap();
-    std::fs::copy(root_dir.join("src/libckzg.a"), &out_dir.join("libckzg.a")).unwrap();
+    std::fs::rename(root_dir.join("src/libckzg.a"), &out_dir.join("libckzg.a")).unwrap();
 
     println!("cargo:rustc-link-search={}", out_dir.display());
     println!("cargo:rustc-link-search={}", out_dir.display());

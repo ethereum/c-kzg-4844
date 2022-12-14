@@ -276,15 +276,18 @@ mod tests {
     use rand::{rngs::ThreadRng, Rng};
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
-        let mut arr: Blob = [0; 131072];
+        let mut arr: Blob = [0; BYTES_PER_BLOB];
         rng.fill(&mut arr[..]);
+        // Ensure that the blob is canonical by ensuring that
+        // each field element contained in the blob is < BLS_MODULUS
+        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+            arr[i * BYTES_PER_FIELD_ELEMENT + BYTES_PER_FIELD_ELEMENT - 1] = 0;
+        }
         arr
     }
 
-    #[test]
-    fn test_simple() {
+    fn test_simple(trusted_setup_file: PathBuf) {
         let mut rng = rand::thread_rng();
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
@@ -312,5 +315,16 @@ mod tests {
         assert!(!kzg_proof
             .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
             .unwrap());
+    }
+
+    #[test]
+    fn test_end_to_end() {
+        let trusted_setup_file;
+        if cfg!(feature = "minimal-spec") {
+            trusted_setup_file = PathBuf::from("../../src/trusted_setup_4.txt");
+        } else {
+            trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        }
+        test_simple(trusted_setup_file);
     }
 }
