@@ -327,4 +327,114 @@ mod tests {
         }
         test_simple(trusted_setup_file);
     }
+
+    #[test]
+    fn test_blob_commitment() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        dbg!("done loading trusted setup");
+        let test_file = PathBuf::from("test_vectors/public_blob_commit.json");
+        let json_data: serde_json::Value =
+            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
+
+        dbg!("done loading file");
+        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
+
+        for test in tests.iter() {
+            let blob = test.get("Blob").unwrap().as_str().unwrap();
+            let commitment = test.get("Commitment").unwrap().as_str().unwrap();
+            let blob = hex::decode(blob).unwrap();
+            let mut blob_data = [0; BYTES_PER_BLOB];
+            blob_data.copy_from_slice(&blob);
+
+            let expected_commitment =
+                KZGCommitment::blob_to_kzg_commitment(blob_data, &kzg_settings).as_hex_string();
+            assert_eq!(expected_commitment, commitment);
+        }
+    }
+
+    #[test]
+    fn test_compute_agg_proof() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        let test_file = PathBuf::from("test_vectors/public_agg_proof.json");
+        let json_data: serde_json::Value =
+            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
+
+        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
+        for test in tests.iter() {
+            let expected_proof = test.get("Proof").unwrap().as_str().unwrap();
+
+            let expected_kzg_commitments = test
+                .get("Commitments")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|data| data.as_str().unwrap())
+                .collect::<Vec<_>>();
+
+            let blobs = test
+                .get("Polynomials")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|data| {
+                    let data = data.as_str().unwrap();
+                    let blob = hex::decode(data).unwrap();
+                    let mut blob_data = [0; BYTES_PER_BLOB];
+                    blob_data.copy_from_slice(&blob);
+                    blob_data
+                })
+                .collect::<Vec<_>>();
+
+            let proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
+            assert_eq!(proof.as_hex_string(), expected_proof);
+
+            for (i, blob) in blobs.into_iter().enumerate() {
+                let commitment = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
+                assert_eq!(
+                    commitment.as_hex_string().as_str(),
+                    expected_kzg_commitments[i]
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_verify_kzg_proof() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        let test_file = PathBuf::from("test_vectors/public_verify_kzg_proof.json");
+        let json_data: serde_json::Value =
+            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
+
+        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
+        for test in tests.iter() {
+            let proof = test.get("Proof").unwrap().as_str().unwrap();
+            let kzg_proof = KZGProof::from_bytes(&hex::decode(proof).unwrap()).unwrap();
+
+            let commitment = test.get("Commitment").unwrap().as_str().unwrap();
+            let kzg_commitment =
+                KZGCommitment::from_bytes(&hex::decode(commitment).unwrap()).unwrap();
+
+            let z = test.get("InputPoint").unwrap().as_str().unwrap();
+            let mut z_bytes = [0; BYTES_PER_FIELD_ELEMENT];
+            z_bytes.copy_from_slice(&hex::decode(z).unwrap());
+
+            let y = test.get("ClaimedValue").unwrap().as_str().unwrap();
+            let mut y_bytes = [0; BYTES_PER_FIELD_ELEMENT];
+            y_bytes.copy_from_slice(&hex::decode(y).unwrap());
+
+            assert!(kzg_proof
+                .verify_kzg_proof(kzg_commitment, z_bytes, y_bytes, &kzg_settings)
+                .unwrap());
+        }
+    }
 }
