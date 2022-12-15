@@ -329,32 +329,6 @@ mod tests {
     }
 
     #[test]
-    fn test_blob_commitment() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-        dbg!("done loading trusted setup");
-        let test_file = PathBuf::from("test_vectors/public_blob_commit.json");
-        let json_data: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-
-        dbg!("done loading file");
-        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
-
-        for test in tests.iter() {
-            let blob = test.get("Blob").unwrap().as_str().unwrap();
-            let commitment = test.get("Commitment").unwrap().as_str().unwrap();
-            let blob = hex::decode(blob).unwrap();
-            let mut blob_data = [0; BYTES_PER_BLOB];
-            blob_data.copy_from_slice(&blob);
-
-            let expected_commitment =
-                KZGCommitment::blob_to_kzg_commitment(blob_data, &kzg_settings).as_hex_string();
-            assert_eq!(expected_commitment, commitment);
-        }
-    }
-
-    #[test]
     fn test_compute_agg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
