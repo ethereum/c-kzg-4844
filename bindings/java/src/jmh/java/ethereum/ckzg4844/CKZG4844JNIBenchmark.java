@@ -64,6 +64,24 @@ public class CKZG4844JNIBenchmark {
     }
   }
 
+  @State(Scope.Benchmark)
+  public static class VerifyKzgProofState {
+
+    private byte[] commitment;
+    private byte[] z;
+    private byte[] y;
+    private byte[] proof;
+
+    @Setup
+    public void setUp() {
+      final VerifyKzgProofParameters parameters = TestUtils.getVerifyKzgProofTestVectors().get(2);
+      commitment = parameters.getCommitment();
+      z = parameters.getZ();
+      y = parameters.getY();
+      proof = parameters.getProof();
+    }
+  }
+
   @Setup
   public void setUp() {
     CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
@@ -88,6 +106,12 @@ public class CKZG4844JNIBenchmark {
   public boolean verifyAggregateKzgProof(final ComputeAndVerifyState state) {
     return CKZG4844JNI.verifyAggregateKzgProof(state.blobs, state.commitments, state.count,
         state.proof);
+  }
+
+  @Benchmark
+  @OutputTimeUnit(TimeUnit.NANOSECONDS)
+  public boolean verifyKzgProof(final VerifyKzgProofState state) {
+    return CKZG4844JNI.verifyKzgProof(state.commitment, state.z, state.y, state.proof);
   }
 
 }
