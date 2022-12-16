@@ -3,9 +3,6 @@
 #include "c_kzg_4844_jni.h"
 #include "c_kzg_4844.h"
 
-static const char *C_KZG_RETURN_TYPES[] = {
-    "C_KZG_OK", "C_KZG_BADARGS", "C_KZG_ERROR", "C_KZG_MALLOC"};
-
 static const char *TRUSTED_SETUP_NOT_LOADED = "Trusted Setup is not loaded.";
 
 KZGSettings *settings;
@@ -18,8 +15,17 @@ void reset_trusted_setup()
 
 void throw_exception(JNIEnv *env, const char *message)
 {
-  jclass Exception = (*env)->FindClass(env, "java/lang/RuntimeException");
-  (*env)->ThrowNew(env, Exception, message);
+  jclass exception_class = (*env)->FindClass(env, "java/lang/RuntimeException");
+  (*env)->ThrowNew(env, exception_class, message);
+}
+
+void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code, const char *message)
+{
+  jclass exception_class = (*env)->FindClass(env, "ethereum/ckzg4844/CKZGException");
+  jstring error_message = (*env)->NewStringUTF(env, message);
+  jmethodID exception_init = (*env)->GetMethodID(env, exception_class, "<init>", "(ILjava/lang/String;)V");
+  jobject exception = (*env)->NewObject(env, exception_class, exception_init, error_code, error_message);
+  (*env)->Throw(env, exception);
 }
 
 JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
@@ -27,7 +33,7 @@ JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlo
   return (jint)FIELD_ELEMENTS_PER_BLOB;
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup(JNIEnv *env, jclass thisCls, jstring file)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
 {
   if (settings != NULL)
   {
@@ -55,15 +61,35 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup(JNIEn
     reset_trusted_setup();
     (*env)->ReleaseStringUTFChars(env, file, file_native);
     fclose(f);
-    char arr[100];
-    sprintf(arr, "There was an error while loading the Trusted Setup: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while loading the Trusted Setup.");
     return;
   }
 
   fclose(f);
 
   (*env)->ReleaseStringUTFChars(env, file, file_native);
+}
+
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
+{
+  if (settings != NULL)
+  {
+    throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
+    return;
+  }
+  settings = malloc(sizeof(KZGSettings));
+
+  uint8_t *g1_native = (uint8_t *)(*env)->GetByteArrayElements(env, g1, NULL);
+  uint8_t *g2_native = (uint8_t *)(*env)->GetByteArrayElements(env, g2, NULL);
+
+  C_KZG_RET ret = load_trusted_setup(settings, g1_native, (size_t)g1Count, g2_native, (size_t)g2Count);
+
+  if (ret != C_KZG_OK)
+  {
+    reset_trusted_setup();
+    throw_c_kzg_exception(env, ret, "There was an error while loading the Trusted Setup.");
+    return;
+  }
 }
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
@@ -85,6 +111,13 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
     return NULL;
   }
 
+  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
+  if (blobs_size == 0)
+  {
+    throw_exception(env, "Passing byte array with 0 elements for blobs is not supported.");
+    return 0;
+  }
+
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
   KZGProof p;
@@ -93,9 +126,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while computing aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while computing aggregate kzg proof.");
     return NULL;
   }
 
@@ -127,7 +158,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
   uint8_t *commitments_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitments, NULL);
   uint8_t *proof_native = (uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
-  size_t native_count = (size_t)count;
+  size_t count_native = (size_t)count;
 
   KZGProof f;
 
@@ -137,36 +168,32 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while converting proof to g1.");
     return 0;
   }
 
-  KZGCommitment *c = calloc(native_count, sizeof(KZGCommitment));
+  KZGCommitment *c = calloc(count_native, sizeof(KZGCommitment));
 
-  for (size_t i = 0; i < native_count; i++)
+  for (size_t i = 0; i < count_native; i++)
   {
     ret = bytes_to_g1(&c[i], &commitments_native[i * BYTES_PER_COMMITMENT]);
     if (ret != C_KZG_OK)
     {
       free(c);
       char arr[100];
-      sprintf(arr, "There was an error while converting commitment (%zu/%zu) bytes to g1: %s", i + 1, native_count, C_KZG_RETURN_TYPES[ret]);
-      throw_exception(env, arr);
+      sprintf(arr, "There was an error while converting commitment (%zu/%zu) to g1.", i + 1, count_native);
+      throw_c_kzg_exception(env, ret, arr);
       return 0;
     }
   }
 
   bool out;
-  ret = verify_aggregate_kzg_proof(&out, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, c, native_count, &f, settings);
+  ret = verify_aggregate_kzg_proof(&out, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, c, count_native, &f, settings);
 
   if (ret != C_KZG_OK)
   {
     free(c);
-    char arr[100];
-    sprintf(arr, "There was an error while verifying aggregate kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while verifying aggregate kzg proof.");
     return 0;
   }
 
@@ -199,10 +226,8 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while converting blob bytes to a commitment: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
-    return 0;
+    throw_c_kzg_exception(env, ret, "There was an error while converting blob to commitment.");
+    return NULL;
   }
 
   jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
@@ -238,9 +263,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while converting commitment bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while converting commitment to g1.");
     return 0;
   }
 
@@ -248,9 +271,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while converting proof bytes to g1: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while converting proof to g1.");
     return 0;
   }
 
@@ -258,9 +279,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
   if (ret != C_KZG_OK)
   {
-    char arr[100];
-    sprintf(arr, "There was an error while verifying kzg proof: %s", C_KZG_RETURN_TYPES[ret]);
-    throw_exception(env, arr);
+    throw_c_kzg_exception(env, ret, "There was an error while verifying kzg proof.");
     return 0;
   }
 
