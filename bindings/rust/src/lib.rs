@@ -166,7 +166,7 @@ impl KZGProof {
         unsafe {
             let res = bindings::compute_aggregate_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                blobs.as_ptr(),
+                blobs.as_ptr() as *const u8,
                 blobs.len(),
                 &kzg_settings.0,
             );
@@ -189,7 +189,7 @@ impl KZGProof {
             // TODO: pass without allocating a vec
             let res = bindings::verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
-                blobs.as_ptr(),
+                blobs.as_ptr() as *const u8,
                 expected_kzg_commitments
                     .iter()
                     .map(|c| c.0)

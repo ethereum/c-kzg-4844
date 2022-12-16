@@ -66,4 +66,10 @@ fn main() {
         ),
     )
     .unwrap();
+
+    // Cleanup
+    let obj_file = root_dir.join("src/c_kzg_4844.o");
+    if obj_file.exists() {
+        std::fs::remove_file(obj_file).unwrap();
+    }
 }

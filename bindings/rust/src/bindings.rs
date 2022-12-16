@@ -263,7 +263,7 @@ extern "C" {
 extern "C" {
     pub fn compute_aggregate_kzg_proof(
         out: *mut KZGProof,
-        blobs: *const Blob,
+        blobs: *const u8, // pointer to the first byte in a 2D array ([[u8; BYTES_PER_BLOB]])
         n: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
@@ -271,7 +271,7 @@ extern "C" {
 extern "C" {
     pub fn verify_aggregate_kzg_proof(
         out: *mut bool,
-        blobs: *const Blob,
+        blobs: *const u8, // pointer to the first byte in a 2D array ([[u8; BYTES_PER_BLOB]])
         expected_kzg_commitments: *const KZGCommitment,
         n: usize,
         kzg_aggregated_proof: *const KZGProof,
