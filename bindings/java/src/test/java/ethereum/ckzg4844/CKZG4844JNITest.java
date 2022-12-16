@@ -8,7 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public class CKZG4844JNITest {
 
@@ -64,22 +67,12 @@ public class CKZG4844JNITest {
 
   }
 
-  @Test
-  public void verifiesPointEvaluationPrecompile() {
-
-    loadTrustedSetup();
-
-    final byte[] commitment = new byte[CKZG4844JNI.BYTES_PER_COMMITMENT];
-    commitment[0] = (byte) 0xc0;
-    final byte[] z = new byte[32];
-    final byte[] y = new byte[32];
-    final byte[] proof = new byte[CKZG4844JNI.BYTES_PER_PROOF];
-    proof[0] = (byte) 0xc0;
-
-    assertTrue(CKZG4844JNI.verifyKzgProof(commitment, z, y, proof));
-
-    CKZG4844JNI.freeTrustedSetup();
-
+  @ParameterizedTest(name = "{index}")
+  @MethodSource("getVerifyKzgProofTestVectors")
+  public void testVerifyKzgProof(final VerifyKzgProofParameters parameters) {
+    assertTrue(
+        CKZG4844JNI.verifyKzgProof(parameters.getCommitment(), parameters.getZ(), parameters.getY(),
+            parameters.getProof()));
   }
 
   @Test
@@ -119,7 +112,8 @@ public class CKZG4844JNITest {
 
     loadTrustedSetup();
 
-    final RuntimeException exception = assertThrows(RuntimeException.class, this::loadTrustedSetup);
+    final RuntimeException exception = assertThrows(RuntimeException.class,
+        CKZG4844JNITest::loadTrustedSetup);
 
     assertEquals("Trusted Setup is already loaded. Free it before loading a new one.",
         exception.getMessage());
@@ -142,11 +136,17 @@ public class CKZG4844JNITest {
     assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
-  private void loadTrustedSetup() {
+  private static void loadTrustedSetup() {
     if (PRESET.equals(Preset.MINIMAL)) {
       CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup_4.txt");
     } else {
       CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
     }
+  }
+
+  private static Stream<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyKzgProofTestVectors().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
   }
 }
