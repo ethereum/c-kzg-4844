@@ -26,7 +26,14 @@ extern "C"
    * Method:    loadTrustedSetup
    * Signature: (Ljava/lang/String;)V
    */
-  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup(JNIEnv *, jclass, jstring);
+  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *, jclass, jstring);
+
+  /*
+   * Class:     ethereum_ckzg4844_CKZG4844JNI
+   * Method:    loadTrustedSetup
+   * Signature: ([BJ[BJ)V
+   */
+  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jlong);
 
   /*
    * Class:     ethereum_ckzg4844_CKZG4844JNI

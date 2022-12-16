@@ -87,11 +87,25 @@ public class CKZG4844JNI {
    * Loads the trusted setup from a file. Once loaded, the same setup will be used for all the
    * crypto native calls. To load a new setup, free the current one by calling
    * {@link #freeTrustedSetup()} and then load the new one. If no trusted setup has been loaded, all
-   * the crypto native calls will throw an exception.
+   * the crypto native calls will throw a {@link RuntimeException}.
    *
    * @param file a path to a trusted setup file
+   * @throws CKZGException if there is a crypto error
    */
   public static native void loadTrustedSetup(String file);
+
+  /**
+   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from method
+   * parameters instead of a file.
+   *
+   * @param g1      g1 values as bytes
+   * @param g1Count the count of the g1 values
+   * @param g2      g2 values as bytes
+   * @param g2Count the count of the g2 values
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2,
+      long g2Count);
 
   /**
    * Free the current trusted setup. This method will throw an exception if no trusted setup has
@@ -105,6 +119,7 @@ public class CKZG4844JNI {
    * @param blobs blobs as flattened bytes
    * @param count the count of the blobs
    * @return the aggregated proof
+   * @throws CKZGException if there is a crypto error
    */
   public static native byte[] computeAggregateKzgProof(byte[] blobs, long count);
 
@@ -116,6 +131,7 @@ public class CKZG4844JNI {
    * @param count       the count of the blobs (should be same as the count of the commitments)
    * @param proof       the proof that needs verifying
    * @return true if the proof is valid and false otherwise
+   * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, long count,
       byte[] proof);
@@ -125,6 +141,7 @@ public class CKZG4844JNI {
    *
    * @param blob blob bytes
    * @return the commitment
+   * @throws CKZGException if there is a crypto error
    */
   public static native byte[] blobToKzgCommitment(byte[] blob);
 
@@ -136,6 +153,7 @@ public class CKZG4844JNI {
    * @param y          Y
    * @param proof      the proof that needs verifying
    * @return true if the proof is valid and false otherwise
+   * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof);
 

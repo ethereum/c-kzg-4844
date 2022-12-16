@@ -6,16 +6,22 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
+import ethereum.ckzg4844.CKZGException.CKZGError;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class CKZG4844JNITest {
 
   private static final Preset PRESET;
+
+  private static final Map<Preset, String> TRUSTED_SETUP_FILE_BY_PRESET = Map.of(Preset.MAINNET,
+      "../../src/trusted_setup.txt", Preset.MINIMAL, "../../src/trusted_setup_4.txt");
 
   static {
     PRESET = Optional.ofNullable(System.getenv("PRESET")).map(String::toUpperCase)
@@ -30,10 +36,11 @@ public class CKZG4844JNITest {
         CKZG4844JNI.getBytesPerBlob());
   }
 
-  @Test
-  public void computesAndVerifiesProofs() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void computesAndVerifiesProofs(final boolean useTrustedSetupFile) {
 
-    loadTrustedSetup();
+    loadTrustedSetup(useTrustedSetupFile);
 
     final int count = 3;
 
@@ -76,6 +83,23 @@ public class CKZG4844JNITest {
   }
 
   @Test
+  public void checkCustomExceptionIsThrownAsExpected() {
+
+    loadTrustedSetup();
+
+    final byte[] blob = TestUtils.createNonCanonicalBlob();
+
+    final CKZGException exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.blobToKzgCommitment(blob));
+
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals("There was an error while converting blob to commitment.",
+        exception.getErrorMessage());
+
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
   public void passingZeroElementArraysForBlobsDoesNotCauseSegmentationFaultErrors() {
 
     loadTrustedSetup();
@@ -87,9 +111,14 @@ public class CKZG4844JNITest {
         exception.getMessage());
 
     exception = assertThrows(RuntimeException.class,
+        () -> CKZG4844JNI.computeAggregateKzgProof(new byte[0], 1));
+
+    assertEquals("Passing byte array with 0 elements for blobs is not supported.",
+        exception.getMessage());
+
+    exception = assertThrows(RuntimeException.class,
         () -> CKZG4844JNI.verifyAggregateKzgProof(new byte[0], TestUtils.createRandomCommitment(),
-            1,
-            TestUtils.createRandomProof(1)));
+            1, TestUtils.createRandomProof(1)));
 
     assertEquals("Passing byte array with 0 elements for blobs is not supported.",
         exception.getMessage());
@@ -136,17 +165,23 @@ public class CKZG4844JNITest {
     assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
-  private static void loadTrustedSetup() {
-    if (PRESET.equals(Preset.MINIMAL)) {
-      CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup_4.txt");
+  private static void loadTrustedSetup(final boolean useFile) {
+    if (useFile) {
+      loadTrustedSetup();
     } else {
-      CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
+      final LoadTrustedSetupParameters parameters = TestUtils.createLoadTrustedSetupParameters(
+          TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+      CKZG4844JNI.loadTrustedSetup(parameters.getG1(), parameters.getG1Count(), parameters.getG2(),
+          parameters.getG2Count());
     }
+  }
+
+  private static void loadTrustedSetup() {
+    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
   }
 
   private static Stream<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
     loadTrustedSetup();
-    return TestUtils.getVerifyKzgProofTestVectors().stream()
-        .onClose(CKZG4844JNI::freeTrustedSetup);
+    return TestUtils.getVerifyKzgProofTestVectors().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 }
