@@ -701,7 +701,7 @@ static void free_fft_settings(FFTSettings *fs) {
     free(fs->expanded_roots_of_unity);
     free(fs->reverse_roots_of_unity);
     free(fs->roots_of_unity);
-    free(fs);
+    fs->max_width = 0;
 }
 
 /**
@@ -829,6 +829,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
 
 void free_trusted_setup(KZGSettings *s) {
   free_fft_settings((FFTSettings*)s->fs);
+  free((FFTSettings*)s->fs);
   free_kzg_settings(s);
 }
 
