@@ -701,7 +701,7 @@ static void free_fft_settings(FFTSettings *fs) {
     free(fs->expanded_roots_of_unity);
     free(fs->reverse_roots_of_unity);
     free(fs->roots_of_unity);
-    fs->max_width = 0;
+    free(fs);
 }
 
 /**
