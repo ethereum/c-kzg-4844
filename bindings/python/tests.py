@@ -4,7 +4,6 @@ import random
 # Commit to a few random blobs
 
 BLOB_SIZE = 4096
-MAX_BLOBS_PER_BLOCK = 16
 
 blobs = [
   # use zero final bytes to easily ensure the encodings are valid
@@ -14,7 +13,7 @@ blobs = [
 
 ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
 
-kzg_commitments = [ckzg.blob_to_kzg_commitment(blob, ts) for blob in blobs]
+kzg_commitments = b''.join([ckzg.blob_to_kzg_commitment(blob, ts) for blob in blobs])
 
 # Compute proof for these blobs
 
