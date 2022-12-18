@@ -9,8 +9,12 @@ KZGSettings *settings;
 
 void reset_trusted_setup()
 {
-  free(settings);
-  settings = NULL;
+  if (settings)
+  {
+    free_trusted_setup(settings);
+    free(settings);
+    settings = NULL;
+  }
 }
 
 void throw_exception(JNIEnv *env, const char *message)
@@ -56,18 +60,15 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 
   C_KZG_RET ret = load_trusted_setup_file(settings, f);
 
+  (*env)->ReleaseStringUTFChars(env, file, file_native);
+  fclose(f);
+
   if (ret != C_KZG_OK)
   {
     reset_trusted_setup();
-    (*env)->ReleaseStringUTFChars(env, file, file_native);
-    fclose(f);
     throw_c_kzg_exception(env, ret, "There was an error while loading the Trusted Setup.");
     return;
   }
-
-  fclose(f);
-
-  (*env)->ReleaseStringUTFChars(env, file, file_native);
 }
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
@@ -79,10 +80,13 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
   }
   settings = malloc(sizeof(KZGSettings));
 
-  uint8_t *g1_native = (uint8_t *)(*env)->GetByteArrayElements(env, g1, NULL);
-  uint8_t *g2_native = (uint8_t *)(*env)->GetByteArrayElements(env, g2, NULL);
+  jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
+  jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
 
-  C_KZG_RET ret = load_trusted_setup(settings, g1_native, (size_t)g1Count, g2_native, (size_t)g2Count);
+  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_native, (size_t)g1Count, (uint8_t *)g2_native, (size_t)g2Count);
+
+  (*env)->ReleaseByteArrayElements(env, g1, g1_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g2, g2_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -99,7 +103,6 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEn
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
     return;
   }
-  free_trusted_setup(settings);
   reset_trusted_setup();
 }
 
@@ -123,6 +126,8 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   KZGProof p;
 
   C_KZG_RET ret = compute_aggregate_kzg_proof(&p, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, (size_t)count, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -155,16 +160,17 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
-  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
-  uint8_t *commitments_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitments, NULL);
-  uint8_t *proof_native = (uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
   size_t count_native = (size_t)count;
+
+  jbyte *proof_native = (*env)->GetByteArrayElements(env, proof, NULL);
 
   KZGProof f;
 
   C_KZG_RET ret;
 
-  ret = bytes_to_g1(&f, proof_native);
+  ret = bytes_to_g1(&f, (uint8_t *)proof_native);
+
+  (*env)->ReleaseByteArrayElements(env, proof, proof_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -174,11 +180,14 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
 
   KZGCommitment *c = calloc(count_native, sizeof(KZGCommitment));
 
+  uint8_t *commitments_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitments, NULL);
+
   for (size_t i = 0; i < count_native; i++)
   {
     ret = bytes_to_g1(&c[i], &commitments_native[i * BYTES_PER_COMMITMENT]);
     if (ret != C_KZG_OK)
     {
+      (*env)->ReleaseByteArrayElements(env, commitments, (jbyte *)commitments_native, JNI_ABORT);
       free(c);
       char arr[100];
       sprintf(arr, "There was an error while converting commitment (%zu/%zu) to g1.", i + 1, count_native);
@@ -187,17 +196,21 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     }
   }
 
+  (*env)->ReleaseByteArrayElements(env, commitments, (jbyte *)commitments_native, JNI_ABORT);
+
+  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
+
   bool out;
   ret = verify_aggregate_kzg_proof(&out, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, c, count_native, &f, settings);
 
+  (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
+  free(c);
+
   if (ret != C_KZG_OK)
   {
-    free(c);
     throw_c_kzg_exception(env, ret, "There was an error while verifying aggregate kzg proof.");
     return 0;
   }
-
-  free(c);
 
   return (jboolean)out;
 }
@@ -224,6 +237,8 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
 
   ret = blob_to_kzg_commitment(&c, (uint8_t *)blob_native, settings);
 
+  (*env)->ReleaseByteArrayElements(env, blob, blob_native, JNI_ABORT);
+
   if (ret != C_KZG_OK)
   {
     throw_c_kzg_exception(env, ret, "There was an error while converting blob to commitment.");
@@ -248,18 +263,15 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
-  uint8_t *commitment_native = (uint8_t *)(*env)->GetByteArrayElements(env, commitment, NULL);
-  uint8_t *z_native = (uint8_t *)(*env)->GetByteArrayElements(env, z, NULL);
-  uint8_t *y_native = (uint8_t *)(*env)->GetByteArrayElements(env, y, NULL);
-  uint8_t *proof_native = (uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
-
-  KZGCommitment c;
-  KZGProof p;
-  bool out;
-
   C_KZG_RET ret;
 
-  ret = bytes_to_g1(&c, commitment_native);
+  KZGCommitment c;
+
+  jbyte *commitment_native = (*env)->GetByteArrayElements(env, commitment, NULL);
+
+  ret = bytes_to_g1(&c, (uint8_t *)commitment_native);
+
+  (*env)->ReleaseByteArrayElements(env, commitment, commitment_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -267,7 +279,13 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
-  ret = bytes_to_g1(&p, proof_native);
+  KZGProof p;
+
+  jbyte *proof_native = (*env)->GetByteArrayElements(env, proof, NULL);
+
+  ret = bytes_to_g1(&p, (uint8_t *)proof_native);
+
+  (*env)->ReleaseByteArrayElements(env, proof, proof_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -275,7 +293,15 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
-  ret = verify_kzg_proof(&out, &c, z_native, y_native, &p, settings);
+  bool out;
+
+  jbyte *z_native = (*env)->GetByteArrayElements(env, z, NULL);
+  jbyte *y_native = (*env)->GetByteArrayElements(env, y, NULL);
+
+  ret = verify_kzg_proof(&out, &c, (uint8_t *)z_native, (uint8_t *)y_native, &p, settings);
+
+  (*env)->ReleaseByteArrayElements(env, z, z_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, y, y_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
