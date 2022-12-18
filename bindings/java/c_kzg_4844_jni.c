@@ -9,9 +9,12 @@ KZGSettings *settings;
 
 void reset_trusted_setup()
 {
-  free_trusted_setup(settings);
-  free(settings);
-  settings = NULL;
+  if (settings)
+  {
+    free_trusted_setup(settings);
+    free(settings);
+    settings = NULL;
+  }
 }
 
 void throw_exception(JNIEnv *env, const char *message)
