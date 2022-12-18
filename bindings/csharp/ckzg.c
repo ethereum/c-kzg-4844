@@ -25,9 +25,9 @@ void free_trusted_setup_wrap(KZGSettings *s) {
 
 C_KZG_RET blob_to_kzg_commitment_wrap(KZGCommitment out, const Blob blob, const KZGSettings *s) {
 
-  C_KZG_RET ret = blob_to_kzg_commitment(out, blob, s);
-  return ret;
+  return (blob_to_kzg_commitment(out, blob, s));
 }
+  
 
 int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const KZGCommitment commitments[], size_t n, const uint8_t proof[48], const KZGSettings *s)
 {
