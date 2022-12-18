@@ -1,7 +1,6 @@
 #ifndef CKZG_H
 #define CKZG_H
 
-
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,7 +15,6 @@
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
-
 
 
 DLLEXPORT KZGSettings* load_trusted_setup_wrap(const char* file);
