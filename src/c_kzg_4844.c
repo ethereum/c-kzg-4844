@@ -1254,7 +1254,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   if (0 < n && commitments == NULL) return C_KZG_MALLOC;
 
   for (size_t i = 0; i < n; i++) {
-    ret = bytes_to_g1(&commitments[i], expected_kzg_commitments[i * BYTES_PER_COMMITMENT]);
+    ret = bytes_to_g1(&commitments[i], expected_kzg_commitments[i]);
     if (ret != C_KZG_OK) {
       if (polys != NULL) free(polys);
       if (commitments != NULL) free(commitments);
