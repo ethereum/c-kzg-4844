@@ -803,13 +803,8 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   unsigned int max_scale = 0;
   while (((uint64_t)1 << max_scale) < n1) max_scale++;
 
-  out->fs = (FFTSettings*)malloc(sizeof(FFTSettings));
-  if (out->fs == NULL)
-  {
-    ret = C_KZG_MALLOC;
-    goto error_free_out;
-  }
-
+  ret = c_kzg_malloc((void**)&out->fs, sizeof(FFTSettings));
+  if (ret != C_KZG_OK) goto error_free_out;
   ret = new_fft_settings((FFTSettings*)out->fs, max_scale);
   if (ret != C_KZG_OK) goto error_free_out;
   ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
@@ -1284,9 +1279,6 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
   if (ret != C_KZG_OK) goto free_out;
-  
-  free(polys);
-  polys = NULL;
 
   BLSFieldElement y;
   ret = evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s);
