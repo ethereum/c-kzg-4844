@@ -44,7 +44,12 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
     return;
   }
+
   settings = malloc(sizeof(KZGSettings));
+  if (settings == NULL)
+  {
+    throw_exception(env, "Failed to allocate memory for settings.");
+  }
 
   const char *file_native = (*env)->GetStringUTFChars(env, file, 0);
 
@@ -78,7 +83,12 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
     return;
   }
+  
   settings = malloc(sizeof(KZGSettings));
+  if (settings == NULL)
+  {
+    throw_exception(env, "Failed to allocate memory for settings.");
+  }
 
   jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
   jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
