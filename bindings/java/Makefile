@@ -15,10 +15,11 @@ ifeq ($(OS),Windows_NT)
 else
   CLANG_EXECUTABLE=clang
   UNAME_S := $(shell uname -s)
+  UNAME_M := $(shell uname -m)
   ifeq ($(UNAME_S),Linux)
     CLANG_FLAGS=-fPIC -shared
     JNI_INCLUDE_FOLDER=linux
-    OS_ARCH=amd64
+    OS_ARCH=$(UNAME_M)
     LIBRARY_RESOURCE=libckzg4844jni.so
   endif
   ifeq ($(UNAME_S),Darwin)
@@ -27,7 +28,11 @@ else
     endif
     CLANG_FLAGS=-dynamiclib
     JNI_INCLUDE_FOLDER=darwin
-    OS_ARCH=x86_64
+    ifeq ($(UNAME_M),arm64)
+        OS_ARCH=aarch64
+    else
+        OS_ARCH=$(UNAME_M)
+    endif
     LIBRARY_RESOURCE=libckzg4844jni.dylib
   endif
   GRADLE_COMMAND=./gradlew
