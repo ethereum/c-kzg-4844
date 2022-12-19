@@ -40,13 +40,6 @@ static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
 #define CHECK(cond)                                                                                                    \
     if (!(cond)) return C_KZG_BADARGS
 
-#define TRY(result)                                                                                                    \
-    {                                                                                                                  \
-        C_KZG_RET ret = (result);                                                                                      \
-        if (ret == C_KZG_MALLOC) return ret;                                                                           \
-        if (ret != C_KZG_OK) return C_KZG_ERROR;                                                                       \
-    }
-
 /**
  * Allocate memory for an array of G1 group elements.
  *
@@ -265,11 +258,13 @@ static void fr_inv(fr_t *out, const fr_t *a) {
  * @param[in]  len Length
  */
 static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
-    fr_t *prod;
+    C_KZG_RET ret;
+    fr_t *prod = NULL;
     fr_t inv;
     size_t i;
 
-    TRY(new_fr_array(&prod, len));
+    ret = new_fr_array(&prod, len);
+    if (ret != C_KZG_OK) goto free_out;
 
     prod[0] = a[0];
 
@@ -285,8 +280,8 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     }
     out[0] = inv;
 
-    free(prod);
-
+free_out:
+    if (prod != NULL) free(prod);
     return C_KZG_OK;
 }
 
@@ -1065,17 +1060,18 @@ free_out:
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
 static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSFieldElement *x, const KZGSettings *s) {
-  C_KZG_RET ret = C_KZG_OK;
+  C_KZG_RET ret;
   BLSFieldElement y;
-  TRY(evaluate_polynomial_in_evaluation_form(&y, p, x, s));
+  fr_t *inverses_in = NULL;
+  fr_t *inverses = NULL;
+
+  ret = evaluate_polynomial_in_evaluation_form(&y, p, x, s);
+  if (ret != C_KZG_OK) goto free_out;
 
   fr_t tmp;
   Polynomial q;
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
   uint64_t i, m = 0;
-
-  fr_t *inverses_in = NULL;
-  fr_t *inverses = NULL;
 
   ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
   if (ret != C_KZG_OK) goto free_out;
@@ -1225,13 +1221,24 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     const Blob blobs[],
     size_t n,
     const KZGSettings *s) {
-  KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
-  if (0 < n && commitments == NULL) return C_KZG_MALLOC;
-
-  Polynomial* polys = calloc(n, sizeof(Polynomial));
-  if (0 < n && polys == NULL) { free(commitments); return C_KZG_MALLOC; }
-
   C_KZG_RET ret;
+  Polynomial* polys = NULL;
+  KZGCommitment* commitments = NULL;
+
+  commitments = calloc(n, sizeof(KZGCommitment));
+  if (0 < n && commitments == NULL)
+  {
+    ret = C_KZG_MALLOC;
+    goto error_free_out;
+  }
+
+  polys = calloc(n, sizeof(Polynomial));
+  if (0 < n && polys == NULL)
+  {
+    ret = C_KZG_MALLOC;
+    goto error_free_out;
+  }
+
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
     if (ret != C_KZG_OK) goto error_free_out;
