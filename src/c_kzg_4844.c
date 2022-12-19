@@ -282,7 +282,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
 
 free_out:
     if (prod != NULL) free(prod);
-    return C_KZG_OK;
+    return ret;
 }
 
 
@@ -690,12 +690,13 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     ret = reverse_bit_order(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
     if (ret != C_KZG_OK) goto error_free_out;
 
-    return C_KZG_OK;
+    goto success_out;
 
 error_free_out:
     if (fs->expanded_roots_of_unity != NULL) free(fs->expanded_roots_of_unity);
     if (fs->reverse_roots_of_unity != NULL) free(fs->reverse_roots_of_unity);
     if (fs->roots_of_unity != NULL) free(fs->roots_of_unity);
+success_out:
     return ret;
 }
 
@@ -820,13 +821,14 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   ret = reverse_bit_order(out->g1_values, sizeof(g1_t), n1);
   if (ret != C_KZG_OK) goto error_free_out;
 
-  return C_KZG_OK;
+  goto success_out;
 
 error_free_out:
   if (out->fs != NULL) free((void *)out->fs);
   if (out->g1_values != NULL) free(out->g1_values);
   if (out->g2_values != NULL) free(out->g2_values);
   if (g1_projective != NULL) free(g1_projective);
+success_out:
   return ret;
 }
 
@@ -1011,7 +1013,7 @@ C_KZG_RET verify_kzg_proof(bool *out,
 }
 
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, const Polynomial p, const BLSFieldElement *x, const KZGSettings *s) {
-  C_KZG_RET ret = C_KZG_OK;
+  C_KZG_RET ret;
   fr_t tmp;
   fr_t *inverses_in = NULL;
   fr_t *inverses = NULL;
@@ -1233,19 +1235,19 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   if (0 < n && commitments == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto error_free_out;
+    goto free_out;
   }
 
   polys = calloc(n, sizeof(Polynomial));
   if (0 < n && polys == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto error_free_out;
+    goto free_out;
   }
 
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto free_out;
     poly_to_kzg_commitment(&commitments[i], polys[i], s);
   }
 
@@ -1253,11 +1255,11 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, commitments, n);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto free_out;
 
   ret = compute_kzg_proof(out, aggregated_poly, &evaluation_challenge, s);
 
-error_free_out:
+free_out:
   if (commitments != NULL) free(commitments);
   if (polys != NULL) free(polys);
   return ret;
@@ -1274,7 +1276,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   if (polys == NULL) return C_KZG_MALLOC;
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto free_out;
   }
 
   Polynomial aggregated_poly;
@@ -1283,15 +1285,15 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
   free(polys);
   polys = NULL;
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto free_out;
 
   BLSFieldElement y;
   ret = evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto free_out;
 
   ret = verify_kzg_proof_impl(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
 
-error_free_out:
+free_out:
   if (polys != NULL) free(polys);
   return ret;
 }
