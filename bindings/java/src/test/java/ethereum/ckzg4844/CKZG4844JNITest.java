@@ -83,17 +83,33 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void checkCustomExceptionIsThrownAsExpected() {
+  public void checkCustomExceptionsAreThrownAsExpected() {
 
     loadTrustedSetup();
 
-    final byte[] blob = TestUtils.createNonCanonicalBlob();
+    final byte[] nonCanonicalBlob = TestUtils.createNonCanonicalBlob();
 
-    final CKZGException exception = assertThrows(CKZGException.class,
-        () -> CKZG4844JNI.blobToKzgCommitment(blob));
+    CKZGException exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.blobToKzgCommitment(nonCanonicalBlob));
 
     assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
     assertEquals("There was an error while converting blob to commitment.",
+        exception.getErrorMessage());
+
+    exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.computeAggregateKzgProof(nonCanonicalBlob, 1));
+
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals("There was an error while computing aggregate kzg proof.",
+        exception.getErrorMessage());
+
+    exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.verifyAggregateKzgProof(nonCanonicalBlob,
+            TestUtils.createRandomCommitments(1), 1,
+            TestUtils.createRandomProof(1)));
+
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals("There was an error while verifying aggregate kzg proof.",
         exception.getErrorMessage());
 
     CKZG4844JNI.freeTrustedSetup();
