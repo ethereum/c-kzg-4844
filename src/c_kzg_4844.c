@@ -1283,9 +1283,10 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
+  if (ret != C_KZG_OK) goto free_out;
+  
   free(polys);
   polys = NULL;
-  if (ret != C_KZG_OK) goto free_out;
 
   BLSFieldElement y;
   ret = evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s);
