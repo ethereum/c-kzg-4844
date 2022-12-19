@@ -49,6 +49,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   if (settings == NULL)
   {
     throw_exception(env, "Failed to allocate memory for settings.");
+    return;
   }
 
   const char *file_native = (*env)->GetStringUTFChars(env, file, 0);
@@ -88,6 +89,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
   if (settings == NULL)
   {
     throw_exception(env, "Failed to allocate memory for settings.");
+    return;
   }
 
   jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
