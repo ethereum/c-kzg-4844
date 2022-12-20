@@ -811,10 +811,6 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   if (ret != C_KZG_OK) goto error_free_out;
   ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
   if (ret != C_KZG_OK) goto error_free_out;
-
-  free(g1_projective);
-  g1_projective = NULL;
-
   ret = reverse_bit_order(out->g1_values, sizeof(g1_t), n1);
   if (ret != C_KZG_OK) goto error_free_out;
 
@@ -824,8 +820,8 @@ error_free_out:
   if (out->fs != NULL) free((void *)out->fs);
   if (out->g1_values != NULL) free(out->g1_values);
   if (out->g2_values != NULL) free(out->g2_values);
-  if (g1_projective != NULL) free(g1_projective);
 success_out:
+  if (g1_projective != NULL) free(g1_projective);
   return ret;
 }
 
