@@ -32,6 +32,13 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code, const char *messag
   (*env)->Throw(env, exception);
 }
 
+void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size, size_t expected_size)
+{
+  char message[100];
+  sprintf(message, "%s Expected %zu bytes but got %zu.", prefix, expected_size, size);
+  throw_c_kzg_exception(env, C_KZG_BADARGS, message);
+}
+
 JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
 {
   return (jint)FIELD_ELEMENTS_PER_BLOB;
@@ -39,7 +46,7 @@ JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlo
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
 {
-  if (settings != NULL)
+  if (settings)
   {
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
     return;
@@ -48,7 +55,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   settings = malloc(sizeof(KZGSettings));
   if (settings == NULL)
   {
-    throw_exception(env, "Failed to allocate memory for settings.");
+    throw_exception(env, "Failed to allocate memory for the trusted setup.");
     return;
   }
 
@@ -79,16 +86,16 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
 {
-  if (settings != NULL)
+  if (settings)
   {
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
     return;
   }
-  
+
   settings = malloc(sizeof(KZGSettings));
   if (settings == NULL)
   {
-    throw_exception(env, "Failed to allocate memory for settings.");
+    throw_exception(env, "Failed to allocate memory for the trusted setup.");
     return;
   }
 
@@ -127,9 +134,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   }
 
   size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  if (blobs_size == 0)
+  size_t expected_blobs_size = BYTES_PER_BLOB * (size_t)count;
+  if (blobs_size != expected_blobs_size)
   {
-    throw_exception(env, "Passing byte array with 0 elements for blobs is not supported.");
+    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
     return 0;
   }
 
@@ -166,9 +174,10 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
   }
 
   size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  if (blobs_size == 0)
+  size_t expected_blobs_size = BYTES_PER_BLOB * (size_t)count;
+  if (blobs_size != expected_blobs_size)
   {
-    throw_exception(env, "Passing byte array with 0 elements for blobs is not supported.");
+    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
     return 0;
   }
 
@@ -236,10 +245,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   }
 
   size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
-  if (blob_size == 0)
+  if (blob_size != BYTES_PER_BLOB)
   {
-    throw_exception(env, "Passing byte array with 0 elements for a blob is not supported.");
-    return NULL;
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return 0;
   }
 
   jbyte *blob_native = (*env)->GetByteArrayElements(env, blob, NULL);
