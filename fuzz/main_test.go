@@ -26,6 +26,58 @@ func TestMain(m *testing.M) {
     os.Exit(code)
 }
 
+func FuzzBytesToG1(f *testing.F) { 
+    f.Fuzz(func(t *testing.T, data []byte) {
+      tp, err := GetTypeProvider(data)
+      if (err != nil) {
+        return
+      }
+      bytes, err := tp.GetNBytes(48)
+      if (err != nil) {
+        return
+      }
+      var bytes48 [48]byte
+      copy(bytes48[:], bytes)
+
+      g1, ret := BytesToG1(bytes48)
+      t.Log(g1, ret)
+    })
+}
+
+func FuzzBytesFromG1(f *testing.F) { 
+    f.Fuzz(func(t *testing.T, data []byte) {
+      tp, err := GetTypeProvider(data)
+      if (err != nil) {
+        return
+      }
+      g1, err := tp.GetNBytes(144)
+      if (err != nil) {
+        return
+      }
+
+      bytes := BytesFromG1(g1)
+      t.Log(bytes)
+    })
+}
+
+func FuzzBytesToBlsField(f *testing.F) { 
+    f.Fuzz(func(t *testing.T, data []byte) {
+      tp, err := GetTypeProvider(data)
+      if (err != nil) {
+        return
+      }
+      bytes, err := tp.GetNBytes(32)
+      if (err != nil) {
+        return
+      }
+      var bytes32 [32]byte
+      copy(bytes32[:], bytes)
+
+      bls_field, ret := BytesToBlsField(bytes32)
+      t.Log(bls_field, ret)
+    })
+}
+
 func FuzzComputeAggregateKzgProof(f *testing.F) { 
     f.Fuzz(func(t *testing.T, data []byte, count uint) {
       tp, err := GetTypeProvider(data)

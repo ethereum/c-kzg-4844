@@ -5,6 +5,7 @@ package main
 // #include <stdlib.h>
 // #include "c_kzg_4844.h"
 import "C"
+import "fmt"
 import "unsafe"
 
 type Blob []byte
@@ -14,8 +15,49 @@ type Proof []byte
 var settings = C.KZGSettings{}
 
 func main() {
+    fmt.Println("Loading trusted setup")
     LoadTrustedSetupFile("../src/trusted_setup.txt")
+    fmt.Println("Freeing trusted setup")
     FreeTrustedSetup()
+}
+
+/*
+C_KZG_RET bytes_to_g1(
+    g1_t* out,
+    const uint8_t in[48]);
+*/
+func BytesToG1(bytes [48]byte) (C.g1_t, C.C_KZG_RET) {
+    out := C.g1_t{}
+    ret := C.bytes_to_g1(
+        &out,
+        (*C.uchar)(unsafe.Pointer(&bytes)))
+    return out, ret
+}
+
+/*
+void bytes_from_g1(
+    uint8_t out[48],
+    const g1_t *in);
+*/
+func BytesFromG1(g1 []byte) [48]byte {
+    var bytes [48]byte
+    C.bytes_from_g1(
+        (*C.uchar)(unsafe.Pointer(&bytes)),
+        (*C.g1_t)(unsafe.Pointer(&g1)))
+    return bytes
+}
+
+/*
+C_KZG_RET bytes_to_bls_field(
+    BLSFieldElement *out,
+    const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
+*/
+func BytesToBlsField(bytes [32]byte) (C.BLSFieldElement, C.C_KZG_RET) {
+    bls_field := C.BLSFieldElement{}
+    ret := C.bytes_to_bls_field(
+        &bls_field,
+        (*C.uchar)(unsafe.Pointer(&bytes)))
+    return bls_field, ret
 }
 
 /*
@@ -25,6 +67,9 @@ C_KZG_RET load_trusted_setup_file(
 */
 func LoadTrustedSetupFile(trusted_setup_file string) C.C_KZG_RET {
     fp := C.fopen(C.CString(trusted_setup_file), C.CString("rb"))
+    if fp == nil {
+        panic("Error reading trusted setup")
+    }
     ret := C.load_trusted_setup_file(&settings, fp)
     C.fclose(fp)
     return ret
@@ -46,10 +91,13 @@ C_KZG_RET compute_aggregate_kzg_proof(
     const KZGSettings *s);
 */
 func ComputeAggregateKzgProof(blobs []Blob) (C.KZGProof, C.C_KZG_RET) {
-  proof := C.KZGProof{}
-  b := unsafe.Pointer(&blobs)
-  ret := C.compute_aggregate_kzg_proof(&proof, (*C.Blob)(b), (C.ulong)(len(blobs)), &settings)
-  return proof, ret
+    proof := C.KZGProof{}
+    ret := C.compute_aggregate_kzg_proof(
+        &proof,
+        (*C.Blob)(unsafe.Pointer(&blobs)),
+        (C.ulong)(len(blobs)),
+        &settings)
+    return proof, ret
 }
 
 /*
@@ -62,18 +110,18 @@ C_KZG_RET verify_aggregate_kzg_proof(
     const KZGSettings *s);
 */
 func VerifyAggregateKzgProof(blobs []Blob, commitments []Commitment, proof Proof) (C.bool, C.C_KZG_RET) {
-  if len(blobs) != len(commitments) {
-      panic("len(blobs) != len(commitments)")
-  }
-  var result C.bool
-  ret := C.verify_aggregate_kzg_proof(
-      &result,
-      (*C.Blob)(unsafe.Pointer(&blobs)),
-      (*C.KZGCommitment)(unsafe.Pointer(&commitments)),
-      (C.ulong)(len(blobs)),
-      (*C.KZGProof)(unsafe.Pointer(&proof)),
-      &settings)
-  return result, ret
+    if len(blobs) != len(commitments) {
+        panic("len(blobs) != len(commitments)")
+    }
+    var result C.bool
+    ret := C.verify_aggregate_kzg_proof(
+        &result,
+        (*C.Blob)(unsafe.Pointer(&blobs)),
+        (*C.KZGCommitment)(unsafe.Pointer(&commitments)),
+        (C.ulong)(len(blobs)),
+        (*C.KZGProof)(unsafe.Pointer(&proof)),
+        &settings)
+    return result, ret
 }
 
 /*
@@ -83,12 +131,12 @@ C_KZG_RET blob_to_kzg_commitment(
     const KZGSettings *s);
 */
 func BlobToKzgCommitment(blob Blob) (C.KZGCommitment, C.C_KZG_RET) {
-  commitment := C.KZGCommitment{}
-  ret := C.blob_to_kzg_commitment(
-      &commitment,
-      (*C.uchar)(unsafe.Pointer(&blob)),
-      &settings)
-  return commitment, ret
+    commitment := C.KZGCommitment{}
+    ret := C.blob_to_kzg_commitment(
+        &commitment,
+        (*C.uchar)(unsafe.Pointer(&blob)),
+        &settings)
+    return commitment, ret
 }
 
 /*
@@ -101,13 +149,13 @@ C_KZG_RET verify_kzg_proof(
     const KZGSettings *s);
 */
 func VerifyKzgProof(commitment Commitment, z, y []byte, proof Proof) (C.bool, C.C_KZG_RET) {
-  var result C.bool
-  ret := C.verify_kzg_proof(
-      &result,
-      (*C.KZGCommitment)(unsafe.Pointer(&commitment)),
-      (*C.uchar)(unsafe.Pointer(&z)),
-      (*C.uchar)(unsafe.Pointer(&y)),
-      (*C.KZGProof)(unsafe.Pointer(&proof)),
-      &settings)
-  return result, ret
+    var result C.bool
+    ret := C.verify_kzg_proof(
+        &result,
+        (*C.KZGCommitment)(unsafe.Pointer(&commitment)),
+        (*C.uchar)(unsafe.Pointer(&z)),
+        (*C.uchar)(unsafe.Pointer(&y)),
+        (*C.KZGProof)(unsafe.Pointer(&proof)),
+        &settings)
+    return result, ret
 }
