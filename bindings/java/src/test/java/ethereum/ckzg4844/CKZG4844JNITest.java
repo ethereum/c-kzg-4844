@@ -100,28 +100,34 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void passingZeroElementArraysForBlobsDoesNotCauseSegmentationFaultErrors() {
+  public void passingInvalidLengthForBlobsThrowsAnException() {
 
     loadTrustedSetup();
 
-    RuntimeException exception = assertThrows(RuntimeException.class,
+    CKZGException exception = assertThrows(CKZGException.class,
         () -> CKZG4844JNI.blobToKzgCommitment(new byte[0]));
 
-    assertEquals("Passing byte array with 0 elements for a blob is not supported.",
-        exception.getMessage());
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(String.format("Invalid blob size. Expected %d bytes but got 0.",
+            CKZG4844JNI.getBytesPerBlob()),
+        exception.getErrorMessage());
 
-    exception = assertThrows(RuntimeException.class,
-        () -> CKZG4844JNI.computeAggregateKzgProof(new byte[0], 1));
+    exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.computeAggregateKzgProof(new byte[123], 1));
 
-    assertEquals("Passing byte array with 0 elements for blobs is not supported.",
-        exception.getMessage());
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(String.format("Invalid blobs size. Expected %d bytes but got 123.",
+            CKZG4844JNI.getBytesPerBlob()),
+        exception.getErrorMessage());
 
-    exception = assertThrows(RuntimeException.class,
-        () -> CKZG4844JNI.verifyAggregateKzgProof(new byte[0], TestUtils.createRandomCommitment(),
-            1, TestUtils.createRandomProof(1)));
+    exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.verifyAggregateKzgProof(new byte[42], TestUtils.createRandomCommitment(),
+            2, TestUtils.createRandomProof(2)));
 
-    assertEquals("Passing byte array with 0 elements for blobs is not supported.",
-        exception.getMessage());
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(String.format("Invalid blobs size. Expected %d bytes but got 42.",
+            CKZG4844JNI.getBytesPerBlob() * 2),
+        exception.getErrorMessage());
 
     CKZG4844JNI.freeTrustedSetup();
   }
