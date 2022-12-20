@@ -55,7 +55,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   settings = malloc(sizeof(KZGSettings));
   if (settings == NULL)
   {
-    throw_exception(env, "Failed to allocate memory for the trusted setup.");
+    throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
     return;
   }
 
@@ -95,7 +95,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
   settings = malloc(sizeof(KZGSettings));
   if (settings == NULL)
   {
-    throw_exception(env, "Failed to allocate memory for the trusted setup.");
+    throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
     return;
   }
 
@@ -138,7 +138,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   if (blobs_size != expected_blobs_size)
   {
     throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
-    return 0;
+    return NULL;
   }
 
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
@@ -248,7 +248,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   if (blob_size != BYTES_PER_BLOB)
   {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
-    return 0;
+    return NULL;
   }
 
   jbyte *blob_native = (*env)->GetByteArrayElements(env, blob, NULL);

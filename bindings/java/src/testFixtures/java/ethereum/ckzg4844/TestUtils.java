@@ -75,7 +75,8 @@ public class TestUtils {
    */
   public static List<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
     final JsonNode jsonNode;
-    try (InputStream testVectors = readResource("test-vectors/public_verify_kzg_proof.json")) {
+    try (final InputStream testVectors = readResource(
+        "test-vectors/public_verify_kzg_proof.json")) {
       jsonNode = OBJECT_MAPPER.readTree(testVectors);
     } catch (final IOException ex) {
       throw new UncheckedIOException(ex);
