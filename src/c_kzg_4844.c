@@ -792,8 +792,10 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   ret = new_g1_array(&g1_projective, n1);
   if (ret != C_KZG_OK) goto error_free_out;
 
-  for (i = 0; i < n1; i++)
-    bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
+  for (i = 0; i < n1; i++) {
+    ret = bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
+    if (ret != C_KZG_OK) goto error_free_out;
+  }
 
   for (i = 0; i < n2; i++) {
     blst_p2_uncompress(&g2_affine, &g2_bytes[96 * i]);
@@ -1114,7 +1116,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
     }
   }
 
-  g1_lincomb(out, s->g1_values, q, FIELD_ELEMENTS_PER_BLOB);
+  ret = g1_lincomb(out, s->g1_values, q, FIELD_ELEMENTS_PER_BLOB);
 
 free_out:
   if (inverses_in != NULL) free(inverses_in);
@@ -1208,12 +1210,13 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
 
   C_KZG_RET ret;
   ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
-  if (ret != C_KZG_OK) { if (r_powers != NULL) free(r_powers); return ret; }
+  if (ret != C_KZG_OK) goto free_out;
 
   poly_lincomb(poly_out, polys, r_powers, n);
 
-  g1_lincomb(comm_out, kzg_commitments, r_powers, n);
+  ret = g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
+free_out:
   if (r_powers != NULL) free(r_powers);
   return C_KZG_OK;
 }
@@ -1243,7 +1246,8 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
     if (ret != C_KZG_OK) goto free_out;
-    poly_to_kzg_commitment(&commitments[i], polys[i], s);
+    ret = poly_to_kzg_commitment(&commitments[i], polys[i], s);
+    if (ret != C_KZG_OK) goto free_out;
   }
 
   Polynomial aggregated_poly;
