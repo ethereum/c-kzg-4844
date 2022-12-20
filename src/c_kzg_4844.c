@@ -264,7 +264,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     size_t i;
 
     ret = new_fr_array(&prod, len);
-    if (ret != C_KZG_OK) goto free_out;
+    if (ret != C_KZG_OK) goto out_error;
 
     prod[0] = a[0];
 
@@ -280,7 +280,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     }
     out[0] = inv;
 
-free_out:
+out_error:
     if (prod != NULL) free(prod);
     return ret;
 }
@@ -670,15 +670,15 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
 
     // Allocate space for the roots of unity
     ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&fs->roots_of_unity, fs->max_width);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
 
     // Populate the roots of unity
     ret = expand_root_of_unity(fs->expanded_roots_of_unity, &root_of_unity, fs->max_width);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
 
     // Populate reverse roots of unity
     for (uint64_t i = 0; i <= fs->max_width; i++) {
@@ -688,15 +688,15 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     // Permute the roots of unity
     memcpy(fs->roots_of_unity, fs->expanded_roots_of_unity, sizeof(fr_t) * fs->max_width);
     ret = reverse_bit_order(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
 
-    goto success_out;
+    goto out_success;
 
-error_free_out:
+out_error:
     if (fs->expanded_roots_of_unity != NULL) free(fs->expanded_roots_of_unity);
     if (fs->reverse_roots_of_unity != NULL) free(fs->reverse_roots_of_unity);
     if (fs->roots_of_unity != NULL) free(fs->roots_of_unity);
-success_out:
+out_success:
     return ret;
 }
 
@@ -786,15 +786,15 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   C_KZG_RET ret;
 
   ret = new_g1_array(&out->g1_values, n1);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = new_g2_array(&out->g2_values, n2);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = new_g1_array(&g1_projective, n1);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   for (i = 0; i < n1; i++) {
     ret = bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
-    if (ret != C_KZG_OK) goto error_free_out;
+    if (ret != C_KZG_OK) goto out_error;
   }
 
   for (i = 0; i < n2; i++) {
@@ -806,21 +806,21 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   while (((uint64_t)1 << max_scale) < n1) max_scale++;
 
   ret = c_kzg_malloc((void**)&out->fs, sizeof(FFTSettings));
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = new_fft_settings((FFTSettings*)out->fs, max_scale);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = reverse_bit_order(out->g1_values, sizeof(g1_t), n1);
-  if (ret != C_KZG_OK) goto error_free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
-  goto success_out;
+  goto out_success;
 
-error_free_out:
+out_error:
   if (out->fs != NULL) free((void *)out->fs);
   if (out->g1_values != NULL) free(out->g1_values);
   if (out->g2_values != NULL) free(out->g2_values);
-success_out:
+out_success:
   if (g1_projective != NULL) free(g1_projective);
   return ret;
 }
@@ -1014,20 +1014,20 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
 
   ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     if (fr_equal(x, &roots_of_unity[i])) {
       *out = p[i];
-      goto free_out;
+      goto out_error;
     }
     fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
   }
 
   ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   *out = fr_zero;
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -1041,7 +1041,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
   fr_sub(&tmp, &tmp, &fr_one);
   fr_mul(out, out, &tmp);
 
-free_out:
+out_error:
   if (inverses_in != NULL) free(inverses_in);
   if (inverses != NULL) free(inverses);
   return ret;
@@ -1065,7 +1065,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   fr_t *inverses = NULL;
 
   ret = evaluate_polynomial_in_evaluation_form(&y, p, x, s);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   fr_t tmp;
   Polynomial q;
@@ -1073,9 +1073,9 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   uint64_t i, m = 0;
 
   ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
   ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     if (fr_equal(x, &roots_of_unity[i])) {
@@ -1088,7 +1088,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   }
 
   ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     fr_mul(&q[i], &q[i], &inverses[i]);
@@ -1103,7 +1103,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
       fr_mul(&inverses_in[i], &tmp, x);
     }
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-    if (ret != C_KZG_OK) goto free_out;
+    if (ret != C_KZG_OK) goto out_error;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
       fr_sub(&tmp, &p[i], &y);
       fr_mul(&tmp, &tmp, &roots_of_unity[i]);
@@ -1114,7 +1114,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
 
   ret = g1_lincomb(out, s->g1_values, q, FIELD_ELEMENTS_PER_BLOB);
 
-free_out:
+out_error:
   if (inverses_in != NULL) free(inverses_in);
   if (inverses != NULL) free(inverses);
   return ret;
@@ -1206,13 +1206,13 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
 
   C_KZG_RET ret;
   ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   poly_lincomb(poly_out, polys, r_powers, n);
 
   ret = g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
-free_out:
+out_error:
   if (r_powers != NULL) free(r_powers);
   return C_KZG_OK;
 }
@@ -1229,32 +1229,32 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   if (0 < n && commitments == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto free_out;
+    goto out_error;
   }
 
   polys = calloc(n, sizeof(Polynomial));
   if (0 < n && polys == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto free_out;
+    goto out_error;
   }
 
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto free_out;
+    if (ret != C_KZG_OK) goto out_error;
     ret = poly_to_kzg_commitment(&commitments[i], polys[i], s);
-    if (ret != C_KZG_OK) goto free_out;
+    if (ret != C_KZG_OK) goto out_error;
   }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, commitments, n);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   ret = compute_kzg_proof(out, aggregated_poly, &evaluation_challenge, s);
 
-free_out:
+out_error:
   if (commitments != NULL) free(commitments);
   if (polys != NULL) free(polys);
   return ret;
@@ -1271,22 +1271,22 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   if (polys == NULL) return C_KZG_MALLOC;
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto free_out;
+    if (ret != C_KZG_OK) goto out_error;
   }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   BLSFieldElement y;
   ret = evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s);
-  if (ret != C_KZG_OK) goto free_out;
+  if (ret != C_KZG_OK) goto out_error;
 
   ret = verify_kzg_proof_impl(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
 
-free_out:
+out_error:
   if (polys != NULL) free(polys);
   return ret;
 }
