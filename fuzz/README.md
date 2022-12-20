@@ -9,32 +9,45 @@ fuzz the exported KZG functions.
 It's only necessary that you build BLST first.
 
 ```
-cd ../src
+cd ..
+git submodule update --init
+cd src
 make blst
 ```
 
 ## Fuzzing
 
-### `compute_aggregate_kzg_proof`
+### `bytes_to_g1`
+```
+go test -fuzz=FuzzBytesToG1 .
+```
 
+### `bytes_from_g1`
+```
+go test -fuzz=FuzzBytesFromG1 .
+```
+
+### `bytes_to_bls_field`
+```
+go test -fuzz=FuzzBytesToBlsField .
+```
+
+### `compute_aggregate_kzg_proof`
 ```
 go test -fuzz=FuzzComputeAggregateKzgProof .
 ```
 
 ### `verify_aggregate_kzg_proof`
-
 ```
 go test -fuzz=FuzzVerifyAggregateKzgProof .
 ```
 
 ### `blob_to_kzg_commitment`
-
 ```
 go test -fuzz=FuzzBlobToKzgCommitment .
 ```
 
 ### `verify_kzg_proof`
-
 ```
 go test -fuzz=FuzzVerifyKzgProof .
 ```
