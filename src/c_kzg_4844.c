@@ -1227,15 +1227,13 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   KZGCommitment* commitments = NULL;
 
   commitments = calloc(n, sizeof(KZGCommitment));
-  if (0 < n && commitments == NULL)
-  {
+  if (0 < n && commitments == NULL) {
     ret = C_KZG_MALLOC;
     goto out;
   }
 
   polys = calloc(n, sizeof(Polynomial));
-  if (0 < n && polys == NULL)
-  {
+  if (0 < n && polys == NULL) {
     ret = C_KZG_MALLOC;
     goto out;
   }
