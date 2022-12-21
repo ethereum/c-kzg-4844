@@ -51,3 +51,32 @@ go test -fuzz=FuzzBlobToKzgCommitment .
 ```
 go test -fuzz=FuzzVerifyKzgProof .
 ```
+
+## Problems
+
+### Too many open files
+
+If you encounter an issue like this:
+```
+warning: starting with empty corpus
+fuzz: elapsed: 0s, execs: 0 (0/sec), new interesting: 0 (total: 0)
+fuzz: elapsed: 1s, execs: 0 (0/sec), new interesting: 0 (total: 0)
+--- FAIL: FuzzVerifyAggregateKzgProof (1.21s)
+    open /dev/null: too many open files
+FAIL
+exit status 1
+FAIL	fuzz	3.577s
+```
+
+Most likely, your system has a relatively low number of open files.
+```
+$ ulimit -n
+1024
+```
+
+Raise that value by running the following command:
+```
+$ ulimit -n 100000
+```
+
+Now, try running the fuzzer again.
