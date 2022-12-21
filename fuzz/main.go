@@ -104,8 +104,8 @@ C_KZG_RET load_trusted_setup_file(
     KZGSettings *out,
     FILE *in);
 */
-func LoadTrustedSetupFile(trusted_setup_file string) C.C_KZG_RET {
-    fp := C.fopen(C.CString(trusted_setup_file), C.CString("rb"))
+func LoadTrustedSetupFile(trustedSetupFile string) C.C_KZG_RET {
+    fp := C.fopen(C.CString(trustedSetupFile), C.CString("rb"))
     if fp == nil {
         panic("Error reading trusted setup")
     }
