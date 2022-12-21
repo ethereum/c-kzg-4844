@@ -95,3 +95,12 @@ $ ulimit -n 100000
 ```
 
 Now, try running the fuzzer again.
+
+## Other Notes
+
+* We use `TypeProvider#getNBytes` instead of `TypeProvider#Fill` because it's ~10 times faster.
+  * This requires we `copy` the bytes, but it's still that much faster.
+* For generating blobs, we use `bytes#Repeat` because it's rare to get 131,072+ bytes for fuzzing.
+  * It would be nice to ask for that many random bytes and actually get it.
+* When generating multiple blobs/commitments, we generate until we run out of bytes.
+  * If we get a random `count` and try to generate that many, it will almost always fail.
