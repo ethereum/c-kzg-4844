@@ -6,6 +6,7 @@ import (
     "testing"
 
     "github.com/trailofbits/go-fuzz-utils"
+    "github.com/stretchr/testify/require"
 )
 
 func GetTypeProvider(data []byte) (*go_fuzz_utils.TypeProvider, error) {
@@ -36,6 +37,7 @@ func FuzzBytesToG1(f *testing.F) {
         if err != nil {
             return
         }
+
         var bytes48 [48]byte
         copy(bytes48[:], bytes)
 
@@ -50,10 +52,13 @@ func FuzzBytesFromG1(f *testing.F) {
         if err != nil {
             return
         }
-        g1, err := tp.GetNBytes(144)
+        g1Bytes, err := tp.GetNBytes(g1Size)
         if err != nil {
             return
         }
+
+        var g1 [g1Size]byte
+        copy(g1[:], g1Bytes)
 
         bytes := BytesFromG1(g1)
         t.Log(bytes)
@@ -66,11 +71,12 @@ func FuzzBytesToBlsField(f *testing.F) {
         if err != nil {
             return
         }
-        bytes, err := tp.GetNBytes(32)
+        bytes, err := tp.GetNBytes(bytesPerFieldElement)
         if err != nil {
             return
         }
-        var bytes32 [32]byte
+
+        var bytes32 [bytesPerFieldElement]byte
         copy(bytes32[:], bytes)
 
         blsField, ret := BytesToBlsField(bytes32)
@@ -86,11 +92,15 @@ func FuzzComputeAggregateKzgProof(f *testing.F) {
         }
         blobs := []Blob{}
         for {
-            blobPart, err := tp.GetNBytes(32)
+            blobBytesPart, err := tp.GetNBytes(32)
             if err != nil {
                 break
             }
-            blob := bytes.Repeat(blobPart, 4096)
+            blobBytes := bytes.Repeat(blobBytesPart, 4096)
+            require.Len(t, blobBytes, blobSize)
+
+            var blob Blob
+            copy(blob[:], blobBytes)
             blobs = append(blobs, blob)
         }
 
@@ -105,23 +115,32 @@ func FuzzVerifyAggregateKzgProof(f *testing.F) {
         if err != nil {
             return
         }
-        proof, err := tp.GetNBytes(144)
+        proofBytes, err := tp.GetNBytes(proofSize)
         if err != nil {
             return
         }
+        var proof Proof
+        copy(proof[:], proofBytes)
+
         blobs := []Blob{}
         commitments := []Commitment{}
         for {
-            blobPart, err := tp.GetNBytes(32)
+            blobBytesPart, err := tp.GetNBytes(32)
             if err != nil {
                 break
             }
-            blob := bytes.Repeat(blobPart, 4096)
-            commitment, err := tp.GetNBytes(144)
+            blobBytes := bytes.Repeat(blobBytesPart, 4096)
+            require.Len(t, blobBytes, blobSize)
+            commitmentBytes, err := tp.GetNBytes(commitmentSize)
             if err != nil {
                 break
             }
+
+            var blob Blob
+            copy(blob[:], blobBytes)
             blobs = append(blobs, blob)
+            var commitment Commitment
+            copy(commitment[:], commitmentBytes)
             commitments = append(commitments, commitment)
         }
 
@@ -136,11 +155,15 @@ func FuzzBlobToKzgCommitment(f *testing.F) {
         if err != nil {
             return
         }
-        blobPart, err := tp.GetNBytes(32)
+        blobBytesPart, err := tp.GetNBytes(32)
         if err != nil {
             return
         }
-        blob := bytes.Repeat(blobPart, 4096)
+        blobBytes := bytes.Repeat(blobBytesPart, 4096)
+        require.Len(t, blobBytes, blobSize)
+
+        var blob Blob
+        copy(blob[:], blobBytes)
 
         commitment, ret := BlobToKzgCommitment(blob)
         t.Log(commitment, ret)
@@ -153,22 +176,31 @@ func FuzzVerifyKzgProof(f *testing.F) {
         if err != nil {
             return
         }
-        commitment, err := tp.GetNBytes(144)
+        commitmentBytes, err := tp.GetNBytes(commitmentSize)
         if err != nil {
             return
         }
-        z, err := tp.GetNBytes(32)
+        zBytes, err := tp.GetNBytes(32)
         if err != nil {
             return
         }
-        y, err := tp.GetNBytes(32)
+        yBytes, err := tp.GetNBytes(32)
         if err != nil {
             return
         }
-        proof, err := tp.GetNBytes(144)
+        proofBytes, err := tp.GetNBytes(proofSize)
         if err != nil {
             return
         }
+
+        var commitment Commitment
+        copy(commitment[:], commitmentBytes)
+        var z [32]byte
+        copy(z[:], zBytes)
+        var y [32]byte
+        copy(y[:], yBytes)
+        var proof Proof
+        copy(proof[:], proofBytes)
 
         result, ret := VerifyKzgProof(commitment, z, y, proof)
         t.Log(result, ret)

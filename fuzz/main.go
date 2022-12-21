@@ -8,9 +8,16 @@ import "C"
 import "fmt"
 import "unsafe"
 
-type Blob []byte
-type Commitment []byte
-type Proof []byte
+const blobSize = C.BYTES_PER_BLOB
+const commitmentSize = C.sizeof_KZGCommitment
+const proofSize = C.sizeof_KZGProof
+const g1Size = C.sizeof_g1_t
+const g2Size = C.sizeof_g2_t
+const bytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
+
+type Blob [blobSize]byte
+type Commitment [commitmentSize]byte
+type Proof [proofSize]byte
 
 var settings = C.KZGSettings{}
 
@@ -19,6 +26,13 @@ func main() {
     LoadTrustedSetupFile("../src/trusted_setup.txt")
     fmt.Println("Freeing trusted setup")
     FreeTrustedSetup()
+
+    fmt.Printf("blobSize: %v\n", blobSize)
+    fmt.Printf("commitmentSize: %v\n", commitmentSize)
+    fmt.Printf("proofSize: %v\n", proofSize)
+    fmt.Printf("g1Size: %v\n", g1Size)
+    fmt.Printf("g2Size: %v\n", g2Size)
+    fmt.Printf("bytesPerFieldElement: %v\n", bytesPerFieldElement)
 }
 
 /*
@@ -39,7 +53,7 @@ void bytes_from_g1(
     uint8_t out[48],
     const g1_t *in);
 */
-func BytesFromG1(g1 []byte) [48]byte {
+func BytesFromG1(g1 [g1Size]byte) [48]byte {
     var bytes [48]byte
     C.bytes_from_g1(
         (*C.uchar)(unsafe.Pointer(&bytes)),
@@ -52,7 +66,7 @@ C_KZG_RET bytes_to_bls_field(
     BLSFieldElement *out,
     const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
 */
-func BytesToBlsField(bytes [32]byte) (C.BLSFieldElement, C.C_KZG_RET) {
+func BytesToBlsField(bytes [bytesPerFieldElement]byte) (C.BLSFieldElement, C.C_KZG_RET) {
     bls_field := C.BLSFieldElement{}
     ret := C.bytes_to_bls_field(
         &bls_field,
@@ -80,7 +94,7 @@ void free_trusted_setup(
     KZGSettings *s);
 */
 func FreeTrustedSetup() {
-    C.free_trusted_setup(&settings);
+    C.free_trusted_setup(&settings)
 }
 
 /*
@@ -148,7 +162,7 @@ C_KZG_RET verify_kzg_proof(
     const KZGProof *kzg_proof,
     const KZGSettings *s);
 */
-func VerifyKzgProof(commitment Commitment, z, y []byte, proof Proof) (C.bool, C.C_KZG_RET) {
+func VerifyKzgProof(commitment Commitment, z, y [32]byte, proof Proof) (C.bool, C.C_KZG_RET) {
     var result C.bool
     ret := C.verify_kzg_proof(
         &result,
