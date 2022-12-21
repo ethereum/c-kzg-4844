@@ -264,7 +264,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     size_t i;
 
     ret = new_fr_array(&prod, len);
-    if (ret != C_KZG_OK) goto out_error;
+    if (ret != C_KZG_OK) goto out;
 
     prod[0] = a[0];
 
@@ -280,7 +280,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     }
     out[0] = inv;
 
-out_error:
+out:
     if (prod != NULL) free(prod);
     return ret;
 }
@@ -1014,20 +1014,21 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
   const fr_t *roots_of_unity = s->fs->roots_of_unity;
 
   ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
   ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     if (fr_equal(x, &roots_of_unity[i])) {
       *out = p[i];
-      goto out_error;
+      ret = C_KZG_OK;
+      goto out;
     }
     fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
   }
 
   ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   *out = fr_zero;
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -1041,7 +1042,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
   fr_sub(&tmp, &tmp, &fr_one);
   fr_mul(out, out, &tmp);
 
-out_error:
+out:
   if (inverses_in != NULL) free(inverses_in);
   if (inverses != NULL) free(inverses);
   return ret;
@@ -1065,7 +1066,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   fr_t *inverses = NULL;
 
   ret = evaluate_polynomial_in_evaluation_form(&y, p, x, s);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   fr_t tmp;
   Polynomial q;
@@ -1073,9 +1074,9 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   uint64_t i, m = 0;
 
   ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
   ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     if (fr_equal(x, &roots_of_unity[i])) {
@@ -1088,7 +1089,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
   }
 
   ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
     fr_mul(&q[i], &q[i], &inverses[i]);
@@ -1103,7 +1104,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
       fr_mul(&inverses_in[i], &tmp, x);
     }
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
-    if (ret != C_KZG_OK) goto out_error;
+    if (ret != C_KZG_OK) goto out;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
       fr_sub(&tmp, &p[i], &y);
       fr_mul(&tmp, &tmp, &roots_of_unity[i]);
@@ -1114,7 +1115,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSF
 
   ret = g1_lincomb(out, s->g1_values, q, FIELD_ELEMENTS_PER_BLOB);
 
-out_error:
+out:
   if (inverses_in != NULL) free(inverses_in);
   if (inverses != NULL) free(inverses);
   return ret;
@@ -1206,13 +1207,13 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZG
 
   C_KZG_RET ret;
   ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   poly_lincomb(poly_out, polys, r_powers, n);
 
   ret = g1_lincomb(comm_out, kzg_commitments, r_powers, n);
 
-out_error:
+out:
   if (r_powers != NULL) free(r_powers);
   return C_KZG_OK;
 }
@@ -1229,32 +1230,32 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
   if (0 < n && commitments == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto out_error;
+    goto out;
   }
 
   polys = calloc(n, sizeof(Polynomial));
   if (0 < n && polys == NULL)
   {
     ret = C_KZG_MALLOC;
-    goto out_error;
+    goto out;
   }
 
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto out_error;
+    if (ret != C_KZG_OK) goto out;
     ret = poly_to_kzg_commitment(&commitments[i], polys[i], s);
-    if (ret != C_KZG_OK) goto out_error;
+    if (ret != C_KZG_OK) goto out;
   }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, commitments, n);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   ret = compute_kzg_proof(out, aggregated_poly, &evaluation_challenge, s);
 
-out_error:
+out:
   if (commitments != NULL) free(commitments);
   if (polys != NULL) free(polys);
   return ret;
@@ -1271,22 +1272,22 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
   if (polys == NULL) return C_KZG_MALLOC;
   for (size_t i = 0; i < n; i++) {
     ret = poly_from_blob(polys[i], blobs[i]);
-    if (ret != C_KZG_OK) goto out_error;
+    if (ret != C_KZG_OK) goto out;
   }
 
   Polynomial aggregated_poly;
   KZGCommitment aggregated_poly_commitment;
   BLSFieldElement evaluation_challenge;
   ret = compute_aggregated_poly_and_commitment(aggregated_poly, &aggregated_poly_commitment, &evaluation_challenge, polys, expected_kzg_commitments, n);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   BLSFieldElement y;
   ret = evaluate_polynomial_in_evaluation_form(&y, aggregated_poly, &evaluation_challenge, s);
-  if (ret != C_KZG_OK) goto out_error;
+  if (ret != C_KZG_OK) goto out;
 
   ret = verify_kzg_proof_impl(out, &aggregated_poly_commitment, &evaluation_challenge, &y, kzg_aggregated_proof, s);
 
-out_error:
+out:
   if (polys != NULL) free(polys);
   return ret;
 }
