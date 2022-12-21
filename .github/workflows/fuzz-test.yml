@@ -22,4 +22,4 @@ jobs:
       - name: Setup
         run: cd src && make blst
       - name: Test
-        run: cd fuzz && go test .
+        run: cd fuzz && CC=clang go test .

@@ -54,6 +54,21 @@ go test -fuzz=FuzzVerifyKzgProof .
 
 ## Problems
 
+### Cannot use (*a*) as type (*b*) in variable declaration
+
+If you encounter an issue like this:
+```
+./main.go:136:9: cannot use (*_Ctype_Blob)(unsafe.Pointer(&blobs)) (value of type *_Ctype_Blob) as type *[131072]_Ctype_uchar in variable declaration
+./main.go:158:9: cannot use (*_Ctype_Blob)(unsafe.Pointer(&blobs)) (value of type *_Ctype_Blob) as type *[131072]_Ctype_uchar in variable declaration
+```
+
+Most likely, your system is defaulting to `gcc` as the compiler. We use `clang` instead.
+
+To fix this, install `clang` and prepend `CC=clang` to the command, like:
+```
+CC=clang go test -fuzz=FuzzBytesToG1 .
+```
+
 ### Too many open files
 
 If you encounter an issue like this:

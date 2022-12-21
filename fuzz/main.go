@@ -1,6 +1,6 @@
 package main
 
-// #cgo CFLAGS: -g -I../inc -DFIELD_ELEMENTS_PER_BLOB=4096
+// #cgo CFLAGS: -g -Wall -I../inc -DFIELD_ELEMENTS_PER_BLOB=4096
 // #cgo LDFLAGS: -L../lib -lblst
 // #include <stdlib.h>
 // #include "c_kzg_4844.h"
@@ -70,7 +70,7 @@ func BytesToBlsField(bytes [bytesPerFieldElement]byte) (C.BLSFieldElement, C.C_K
     bls_field := C.BLSFieldElement{}
     ret := C.bytes_to_bls_field(
         &bls_field,
-        (*C.uchar)(unsafe.Pointer(&bytes)))
+        (*C.uint8_t)(unsafe.Pointer(&bytes)))
     return bls_field, ret
 }
 
@@ -93,9 +93,9 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
     numG2Elements := len(g1Bytes) % 96
     return C.load_trusted_setup(
         &settings,
-        (*C.uchar)(unsafe.Pointer(&g1Bytes)),
+        (*C.uint8_t)(unsafe.Pointer(&g1Bytes)),
         (C.size_t)(numG1Elements),
-        (*C.uchar)(unsafe.Pointer(&g1Bytes)),
+        (*C.uint8_t)(unsafe.Pointer(&g1Bytes)),
         (C.size_t)(numG2Elements))
 }
 
@@ -133,7 +133,7 @@ func ComputeAggregateKzgProof(blobs []Blob) (C.KZGProof, C.C_KZG_RET) {
     proof := C.KZGProof{}
     ret := C.compute_aggregate_kzg_proof(
         &proof,
-        (*[blobSize]C.uchar)(unsafe.Pointer(&blobs)),
+        (*C.Blob)(unsafe.Pointer(&blobs)),
         (C.size_t)(len(blobs)),
         &settings)
     return proof, ret
@@ -155,7 +155,7 @@ func VerifyAggregateKzgProof(blobs []Blob, commitments []Commitment, proof Proof
     var result C.bool
     ret := C.verify_aggregate_kzg_proof(
         &result,
-        (*[blobSize]C.uchar)(unsafe.Pointer(&blobs)),
+        (*C.Blob)(unsafe.Pointer(&blobs)),
         (*C.KZGCommitment)(unsafe.Pointer(&commitments)),
         (C.size_t)(len(blobs)),
         (*C.KZGProof)(unsafe.Pointer(&proof)),
@@ -192,8 +192,8 @@ func VerifyKzgProof(commitment Commitment, z, y [32]byte, proof Proof) (C.bool, 
     ret := C.verify_kzg_proof(
         &result,
         (*C.KZGCommitment)(unsafe.Pointer(&commitment)),
-        (*C.uchar)(unsafe.Pointer(&z)),
-        (*C.uchar)(unsafe.Pointer(&y)),
+        (*C.uint8_t)(unsafe.Pointer(&z)),
+        (*C.uint8_t)(unsafe.Pointer(&y)),
         (*C.KZGProof)(unsafe.Pointer(&proof)),
         &settings)
     return result, ret
