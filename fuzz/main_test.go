@@ -79,16 +79,16 @@ func FuzzBytesToBlsField(f *testing.F) {
 }
 
 func FuzzComputeAggregateKzgProof(f *testing.F) { 
-    f.Fuzz(func(t *testing.T, data []byte, count uint) {
+    f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
         if (err != nil) {
             return
         }
         blobs := []Blob{}
-        for i := 0; uint(i) < count; i++ {
+        for {
             blob_part, err := tp.GetNBytes(32)
             if (err != nil) {
-                return
+                break
             }
             blob := bytes.Repeat(blob_part, 4096)
             blobs = append(blobs, blob)
@@ -100,31 +100,29 @@ func FuzzComputeAggregateKzgProof(f *testing.F) {
 }
 
 func FuzzVerifyAggregateKzgProof(f *testing.F) {
-    f.Fuzz(func(t *testing.T, data []byte, count uint) {
+    f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
         if (err != nil) {
             return
         }
-        blobs := []Blob{}
-        for i := 0; uint(i) < count; i++ {
-            blob_part, err := tp.GetNBytes(32)
-            if (err != nil) {
-                return
-            }
-            blob := bytes.Repeat(blob_part, 4096)
-            blobs = append(blobs, blob)
-        }
-        commitments := []Commitment{}
-        for i := 0; uint(i) < count; i++ {
-            commitment, err := tp.GetNBytes(144)
-            if (err != nil) {
-                return
-            }
-            commitments = append(commitments, commitment)
-        }
         proof, err := tp.GetNBytes(144)
         if (err != nil) {
             return
+        }
+        blobs := []Blob{}
+        commitments := []Commitment{}
+        for {
+            blob_part, err := tp.GetNBytes(32)
+            if (err != nil) {
+                break
+            }
+            blob := bytes.Repeat(blob_part, 4096)
+            commitment, err := tp.GetNBytes(144)
+            if (err != nil) {
+                break
+            }
+            blobs = append(blobs, blob)
+            commitments = append(commitments, commitment)
         }
 
         result, ret := VerifyAggregateKzgProof(blobs, commitments, proof)
@@ -142,8 +140,8 @@ func FuzzBlobToKzgCommitment(f *testing.F) {
         if (err != nil) {
             return
         }
-
         blob := bytes.Repeat(blob_part, 4096)
+
         commitment, ret := BlobToKzgCommitment(blob)
         t.Log(commitment, ret)
     })
