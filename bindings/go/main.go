@@ -3,7 +3,8 @@ package goczkg
 // #cgo CFLAGS: -g -Wall -I../../inc -DFIELD_ELEMENTS_PER_BLOB=4096
 // #cgo LDFLAGS: -L../../lib -lblst
 // #include <stdlib.h>
-// #include "c_kzg_4844.h"
+// #include "../../src/c_kzg_4844.h"
+// #include "../../src/c_kzg_4844.c"
 import "C"
 import "unsafe"
 
