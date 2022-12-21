@@ -68,7 +68,7 @@ exit status 1
 FAIL	fuzz	3.577s
 ```
 
-Most likely, your system has a relatively low number of open files.
+Most likely, your system has a relatively low number of open file limit.
 ```
 $ ulimit -n
 1024
