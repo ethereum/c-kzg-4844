@@ -810,20 +810,27 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
 
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
   uint64_t i;
+  int num_matches;
 
-  fscanf(in, "%" SCNu64, &i);
+  num_matches = fscanf(in, "%" SCNu64, &i);
+  CHECK(num_matches == 1);
   CHECK(i == FIELD_ELEMENTS_PER_BLOB);
-  fscanf(in, "%" SCNu64, &i);
+  num_matches = fscanf(in, "%" SCNu64, &i);
+  CHECK(num_matches == 1);
   CHECK(i == 65);
 
   uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * 48];
   uint8_t g2_bytes[65 * 96];
 
-  for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * 48; i++)
-    fscanf(in, "%2hhx", &g1_bytes[i]);
+  for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * 48; i++) {
+    num_matches = fscanf(in, "%2hhx", &g1_bytes[i]);
+    CHECK(num_matches == 1);
+  }
 
-  for (i = 0; i < 65 * 96; i++)
-    fscanf(in, "%2hhx", &g2_bytes[i]);
+  for (i = 0; i < 65 * 96; i++) {
+    num_matches = fscanf(in, "%2hhx", &g2_bytes[i]);
+    CHECK(num_matches == 1);
+  }
 
   return load_trusted_setup(out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, 65);
 }
