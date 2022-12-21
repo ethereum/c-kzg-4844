@@ -75,6 +75,31 @@ func BytesToBlsField(bytes [bytesPerFieldElement]byte) (C.BLSFieldElement, C.C_K
 }
 
 /*
+C_KZG_RET load_trusted_setup(
+    KZGSettings *out,
+    const uint8_t g1_bytes[], // n1 * 48 bytes
+    size_t n1,
+    const uint8_t g2_bytes[], // n2 * 96 bytes
+    size_t n2);
+*/
+func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
+    if len(g1Bytes)%48 != 0 {
+        panic("len(g1Bytes) is not a multiple of 48")
+    }
+    if len(g2Bytes)%96 != 0 {
+        panic("len(g2Bytes) is not a multiple of 96")
+    }
+    numG1Elements := len(g1Bytes) % 48
+    numG2Elements := len(g1Bytes) % 96
+    return C.load_trusted_setup(
+        &settings,
+        (*C.uchar)(unsafe.Pointer(&g1Bytes)),
+        numG1Elements,
+        (*C.uchar)(unsafe.Pointer(&g1Bytes)),
+        numG2Elements)
+}
+
+/*
 C_KZG_RET load_trusted_setup_file(
     KZGSettings *out,
     FILE *in);
