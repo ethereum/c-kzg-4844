@@ -1,11 +1,10 @@
-package main
+package goczkg
 
 // #cgo CFLAGS: -g -Wall -I../../inc -DFIELD_ELEMENTS_PER_BLOB=4096
 // #cgo LDFLAGS: -L../../lib -lblst
 // #include <stdlib.h>
 // #include "c_kzg_4844.h"
 import "C"
-import "fmt"
 import "unsafe"
 
 const blobSize = C.BYTES_PER_BLOB
@@ -21,20 +20,6 @@ type Proof [proofSize]byte
 
 var loaded = false
 var settings = C.KZGSettings{}
-
-func main() {
-    fmt.Println("Loading trusted setup")
-    LoadTrustedSetupFile("../../src/trusted_setup.txt")
-    fmt.Println("Freeing trusted setup")
-    FreeTrustedSetup()
-
-    fmt.Printf("blobSize: %v\n", blobSize)
-    fmt.Printf("commitmentSize: %v\n", commitmentSize)
-    fmt.Printf("proofSize: %v\n", proofSize)
-    fmt.Printf("g1Size: %v\n", g1Size)
-    fmt.Printf("g2Size: %v\n", g2Size)
-    fmt.Printf("bytesPerFieldElement: %v\n", bytesPerFieldElement)
-}
 
 /*
 BytesToG1 is the binding for:

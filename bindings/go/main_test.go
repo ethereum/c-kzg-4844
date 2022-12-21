@@ -1,4 +1,4 @@
-package main
+package goczkg
 
 import (
     "os"
@@ -195,9 +195,9 @@ func FuzzVerifyKzgProof(f *testing.F) {
 
         var commitment Commitment
         copy(commitment[:], commitmentBytes)
-        var z [32]byte
+        var z [bytesPerFieldElement]byte
         copy(z[:], zBytes)
-        var y [32]byte
+        var y [bytesPerFieldElement]byte
         copy(y[:], yBytes)
         var proof Proof
         copy(proof[:], proofBytes)
