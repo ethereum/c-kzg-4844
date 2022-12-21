@@ -1,6 +1,6 @@
 package main
 
-// #cgo CFLAGS: -g -Wall -I../inc -DFIELD_ELEMENTS_PER_BLOB=4096
+// #cgo CFLAGS: -g -I../inc -DFIELD_ELEMENTS_PER_BLOB=4096
 // #cgo LDFLAGS: -L../lib -lblst
 // #include <stdlib.h>
 // #include "c_kzg_4844.h"
