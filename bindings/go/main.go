@@ -1,7 +1,7 @@
 package main
 
-// #cgo CFLAGS: -g -Wall -I../inc -DFIELD_ELEMENTS_PER_BLOB=4096
-// #cgo LDFLAGS: -L../lib -lblst
+// #cgo CFLAGS: -g -Wall -I../../inc -DFIELD_ELEMENTS_PER_BLOB=4096
+// #cgo LDFLAGS: -L../../lib -lblst
 // #include <stdlib.h>
 // #include "c_kzg_4844.h"
 import "C"
@@ -24,7 +24,7 @@ var settings = C.KZGSettings{}
 
 func main() {
     fmt.Println("Loading trusted setup")
-    LoadTrustedSetupFile("../src/trusted_setup.txt")
+    LoadTrustedSetupFile("../../src/trusted_setup.txt")
     fmt.Println("Freeing trusted setup")
     FreeTrustedSetup()
 

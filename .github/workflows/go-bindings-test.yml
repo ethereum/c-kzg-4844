@@ -1,4 +1,4 @@
-name: Fuzz tests
+name: Go bindings tests
 on:
   push:
     branches:
@@ -22,4 +22,4 @@ jobs:
       - name: Setup
         run: cd src && make blst
       - name: Test
-        run: cd fuzz && CC=clang go test .
+        run: cd bindings/go && CC=clang go test .

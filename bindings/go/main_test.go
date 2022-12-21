@@ -18,7 +18,7 @@ func GetTypeProvider(data []byte) (*go_fuzz_utils.TypeProvider, error) {
 }
 
 func TestMain(m *testing.M) {
-    ret := LoadTrustedSetupFile("../src/trusted_setup.txt")
+    ret := LoadTrustedSetupFile("../../src/trusted_setup.txt")
     if ret != 0 {
         panic("Failed to load trusted setup")
     }

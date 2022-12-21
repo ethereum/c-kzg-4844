@@ -1,21 +1,21 @@
-# Fuzzing with Cgo
-
-This uses [Cgo](https://go.dev/blog/cgo) (which lets Go packages call C code)
-and [Go Fuzzing](https://go.dev/security/fuzz/) (Go's built in fuzzing tool) to
-fuzz the exported KZG functions.
+# Go Bindings for C-KZG-4844
 
 ## Prerequisites
 
 It's only necessary that you build BLST first.
 
 ```
-cd ..
+cd ../../
 git submodule update --init
 cd src
 make blst
 ```
 
 ## Fuzzing
+
+This uses [Cgo](https://go.dev/blog/cgo) (which lets Go packages call C code)
+and [Go Fuzzing](https://go.dev/security/fuzz/) (Go's built in fuzzing tool) to
+fuzz the exported KZG functions.
 
 ### `bytes_to_g1`
 ```
@@ -52,9 +52,9 @@ go test -fuzz=FuzzBlobToKzgCommitment .
 go test -fuzz=FuzzVerifyKzgProof .
 ```
 
-## Problems
+### Problems
 
-### Cannot use (*a*) as type (*b*) in variable declaration
+#### Cannot use (*a*) as type (*b*) in variable declaration
 
 If you encounter an issue like this:
 ```
@@ -69,7 +69,7 @@ To fix this, install `clang` and prepend `CC=clang` to the command, like:
 CC=clang go test -fuzz=FuzzBytesToG1 .
 ```
 
-### Too many open files
+#### Too many open files
 
 If you encounter an issue like this:
 ```
@@ -96,7 +96,7 @@ $ ulimit -n 100000
 
 Now, try running the fuzzer again.
 
-## Other Notes
+### Notes
 
 * We use `TypeProvider#getNBytes` instead of `TypeProvider#Fill` because it's ~10 times faster.
   * This requires we `copy` the bytes, but it's still that much faster.
