@@ -94,9 +94,9 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
     return C.load_trusted_setup(
         &settings,
         (*C.uchar)(unsafe.Pointer(&g1Bytes)),
-        numG1Elements,
+        (C.ulong)(numG1Elements),
         (*C.uchar)(unsafe.Pointer(&g1Bytes)),
-        numG2Elements)
+        (C.ulong)(numG2Elements))
 }
 
 /*
