@@ -26,14 +26,14 @@ func TestMain(m *testing.M) {
     os.Exit(code)
 }
 
-func FuzzBytesToG1(f *testing.F) { 
+func FuzzBytesToG1(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         bytes, err := tp.GetNBytes(48)
-        if (err != nil) {
+        if err != nil {
             return
         }
         var bytes48 [48]byte
@@ -44,14 +44,14 @@ func FuzzBytesToG1(f *testing.F) {
     })
 }
 
-func FuzzBytesFromG1(f *testing.F) { 
+func FuzzBytesFromG1(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         g1, err := tp.GetNBytes(144)
-        if (err != nil) {
+        if err != nil {
             return
         }
 
@@ -60,37 +60,37 @@ func FuzzBytesFromG1(f *testing.F) {
     })
 }
 
-func FuzzBytesToBlsField(f *testing.F) { 
+func FuzzBytesToBlsField(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         bytes, err := tp.GetNBytes(32)
-        if (err != nil) {
+        if err != nil {
             return
         }
         var bytes32 [32]byte
         copy(bytes32[:], bytes)
 
-        bls_field, ret := BytesToBlsField(bytes32)
-        t.Log(bls_field, ret)
+        blsField, ret := BytesToBlsField(bytes32)
+        t.Log(blsField, ret)
     })
 }
 
-func FuzzComputeAggregateKzgProof(f *testing.F) { 
+func FuzzComputeAggregateKzgProof(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         blobs := []Blob{}
         for {
-            blob_part, err := tp.GetNBytes(32)
-            if (err != nil) {
+            blobPart, err := tp.GetNBytes(32)
+            if err != nil {
                 break
             }
-            blob := bytes.Repeat(blob_part, 4096)
+            blob := bytes.Repeat(blobPart, 4096)
             blobs = append(blobs, blob)
         }
 
@@ -102,23 +102,23 @@ func FuzzComputeAggregateKzgProof(f *testing.F) {
 func FuzzVerifyAggregateKzgProof(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         proof, err := tp.GetNBytes(144)
-        if (err != nil) {
+        if err != nil {
             return
         }
         blobs := []Blob{}
         commitments := []Commitment{}
         for {
-            blob_part, err := tp.GetNBytes(32)
-            if (err != nil) {
+            blobPart, err := tp.GetNBytes(32)
+            if err != nil {
                 break
             }
-            blob := bytes.Repeat(blob_part, 4096)
+            blob := bytes.Repeat(blobPart, 4096)
             commitment, err := tp.GetNBytes(144)
-            if (err != nil) {
+            if err != nil {
                 break
             }
             blobs = append(blobs, blob)
@@ -133,14 +133,14 @@ func FuzzVerifyAggregateKzgProof(f *testing.F) {
 func FuzzBlobToKzgCommitment(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
-        blob_part, err := tp.GetNBytes(32)
-        if (err != nil) {
+        blobPart, err := tp.GetNBytes(32)
+        if err != nil {
             return
         }
-        blob := bytes.Repeat(blob_part, 4096)
+        blob := bytes.Repeat(blobPart, 4096)
 
         commitment, ret := BlobToKzgCommitment(blob)
         t.Log(commitment, ret)
@@ -150,23 +150,23 @@ func FuzzBlobToKzgCommitment(f *testing.F) {
 func FuzzVerifyKzgProof(f *testing.F) {
     f.Fuzz(func(t *testing.T, data []byte) {
         tp, err := GetTypeProvider(data)
-        if (err != nil) {
+        if err != nil {
             return
         }
         commitment, err := tp.GetNBytes(144)
-        if (err != nil) {
+        if err != nil {
             return
         }
         z, err := tp.GetNBytes(32)
-        if (err != nil) {
+        if err != nil {
             return
         }
         y, err := tp.GetNBytes(32)
-        if (err != nil) {
+        if err != nil {
             return
         }
         proof, err := tp.GetNBytes(144)
-        if (err != nil) {
+        if err != nil {
             return
         }
 
