@@ -94,9 +94,9 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
     return C.load_trusted_setup(
         &settings,
         (*C.uchar)(unsafe.Pointer(&g1Bytes)),
-        (C.ulong)(numG1Elements),
+        (C.size_t)(numG1Elements),
         (*C.uchar)(unsafe.Pointer(&g1Bytes)),
-        (C.ulong)(numG2Elements))
+        (C.size_t)(numG2Elements))
 }
 
 /*
@@ -133,8 +133,8 @@ func ComputeAggregateKzgProof(blobs []Blob) (C.KZGProof, C.C_KZG_RET) {
     proof := C.KZGProof{}
     ret := C.compute_aggregate_kzg_proof(
         &proof,
-        (*C.Blob)(unsafe.Pointer(&blobs)),
-        (C.ulong)(len(blobs)),
+        (*[blobSize]C.uchar)(unsafe.Pointer(&blobs)),
+        (C.size_t)(len(blobs)),
         &settings)
     return proof, ret
 }
@@ -155,9 +155,9 @@ func VerifyAggregateKzgProof(blobs []Blob, commitments []Commitment, proof Proof
     var result C.bool
     ret := C.verify_aggregate_kzg_proof(
         &result,
-        (*C.Blob)(unsafe.Pointer(&blobs)),
+        (*[blobSize]C.uchar)(unsafe.Pointer(&blobs)),
         (*C.KZGCommitment)(unsafe.Pointer(&commitments)),
-        (C.ulong)(len(blobs)),
+        (C.size_t)(len(blobs)),
         (*C.KZGProof)(unsafe.Pointer(&proof)),
         &settings)
     return result, ret
