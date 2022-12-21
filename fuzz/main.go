@@ -19,6 +19,7 @@ type Blob [blobSize]byte
 type Commitment [commitmentSize]byte
 type Proof [proofSize]byte
 
+var loaded = false
 var settings = C.KZGSettings{}
 
 func main() {
@@ -83,6 +84,9 @@ C_KZG_RET load_trusted_setup(
     size_t n2);
 */
 func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
+    if loaded == true {
+        panic("trusted setup is already loaded")
+    }
     if len(g1Bytes)%48 != 0 {
         panic("len(g1Bytes) is not a multiple of 48")
     }
@@ -91,12 +95,16 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
     }
     numG1Elements := len(g1Bytes) % 48
     numG2Elements := len(g1Bytes) % 96
-    return C.load_trusted_setup(
+    ret := C.load_trusted_setup(
         &settings,
         (*C.uint8_t)(unsafe.Pointer(&g1Bytes)),
         (C.size_t)(numG1Elements),
         (*C.uint8_t)(unsafe.Pointer(&g1Bytes)),
         (C.size_t)(numG2Elements))
+    if ret == 0 {
+        loaded = true
+    }
+    return ret
 }
 
 /*
@@ -105,12 +113,18 @@ C_KZG_RET load_trusted_setup_file(
     FILE *in);
 */
 func LoadTrustedSetupFile(trustedSetupFile string) C.C_KZG_RET {
+    if loaded == true {
+        panic("trusted setup is already loaded")
+    }
     fp := C.fopen(C.CString(trustedSetupFile), C.CString("rb"))
     if fp == nil {
         panic("Error reading trusted setup")
     }
     ret := C.load_trusted_setup_file(&settings, fp)
     C.fclose(fp)
+    if ret == 0 {
+        loaded = true
+    }
     return ret
 }
 
@@ -119,6 +133,9 @@ void free_trusted_setup(
     KZGSettings *s);
 */
 func FreeTrustedSetup() {
+    if loaded == false {
+        panic("trusted setup isn't loaded")
+    }
     C.free_trusted_setup(&settings)
 }
 
@@ -173,7 +190,7 @@ func BlobToKzgCommitment(blob Blob) (C.KZGCommitment, C.C_KZG_RET) {
     commitment := C.KZGCommitment{}
     ret := C.blob_to_kzg_commitment(
         &commitment,
-        (*C.uchar)(unsafe.Pointer(&blob)),
+        (*C.uint8_t)(unsafe.Pointer(&blob)),
         &settings)
     return commitment, ret
 }
@@ -187,7 +204,7 @@ C_KZG_RET verify_kzg_proof(
     const KZGProof *kzg_proof,
     const KZGSettings *s);
 */
-func VerifyKzgProof(commitment Commitment, z, y [32]byte, proof Proof) (C.bool, C.C_KZG_RET) {
+func VerifyKzgProof(commitment Commitment, z, y [bytesPerFieldElement]byte, proof Proof) (C.bool, C.C_KZG_RET) {
     var result C.bool
     ret := C.verify_kzg_proof(
         &result,
