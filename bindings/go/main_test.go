@@ -180,11 +180,11 @@ func FuzzVerifyKzgProof(f *testing.F) {
         if err != nil {
             return
         }
-        zBytes, err := tp.GetNBytes(32)
+        zBytes, err := tp.GetNBytes(bytesPerFieldElement)
         if err != nil {
             return
         }
-        yBytes, err := tp.GetNBytes(32)
+        yBytes, err := tp.GetNBytes(bytesPerFieldElement)
         if err != nil {
             return
         }

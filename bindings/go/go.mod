@@ -1,5 +1,4 @@
-// Testing change jtraglia -> ethereum.
-module github.com/jtraglia/c-kzg-4844/bindings/go
+module github.com/ethereum/c-kzg-4844/bindings/go
 
 go 1.18
 
