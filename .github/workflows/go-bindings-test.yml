@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  fuzz-test:
+  test-and-build:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
@@ -23,3 +23,10 @@ jobs:
         run: cd src && make blst
       - name: Test
         run: cd bindings/go && CC=clang go test .
+      - name: Build plugin
+        run: cd bindings/go && go build -buildmode=plugin -o gockzg.so
+      - name: Upload plugin
+        uses: actions/upload-artifact@v3
+        with:
+          name: plugin
+          path: bindings/go/gockzg.so
