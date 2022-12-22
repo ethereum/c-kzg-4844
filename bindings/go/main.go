@@ -1,4 +1,4 @@
-package main
+package goczkg
 
 // #cgo CFLAGS: -g -Wall -I../../inc -DFIELD_ELEMENTS_PER_BLOB=4096
 // #cgo LDFLAGS: -L../../lib -lblst
@@ -6,10 +6,18 @@ package main
 // #include "../../src/c_kzg_4844.h"
 // #include "../../src/c_kzg_4844.c"
 import "C"
-import (
-    "unsafe"
-    "github.com/jtraglia/c-kzg-4844/bindings/go/types"
-)
+import "unsafe"
+
+const blobSize = C.BYTES_PER_BLOB
+const commitmentSize = C.sizeof_KZGCommitment
+const proofSize = C.sizeof_KZGProof
+const g1Size = C.sizeof_g1_t
+const g2Size = C.sizeof_g2_t
+const bytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
+
+type Blob [blobSize]byte
+type Commitment [commitmentSize]byte
+type Proof [proofSize]byte
 
 var loaded = false
 var settings = C.KZGSettings{}
@@ -20,12 +28,12 @@ BytesToG1 is the binding for:
         g1_t* out,
         const uint8_t in[48]);
 */
-func BytesToG1(bytes [48]byte) (types.G1, types.CKzgRet) {
-    out := types.G1{}
+func BytesToG1(bytes [48]byte) (C.g1_t, C.C_KZG_RET) {
+    out := C.g1_t{}
     ret := C.bytes_to_g1(
-        (*C.g1_t)(unsafe.Pointer(&out)),
+        &out,
         (*C.uchar)(unsafe.Pointer(&bytes)))
-    return out, types.CKzgRet(ret)
+    return out, ret
 }
 
 /*
@@ -34,7 +42,7 @@ BytesFromG1 is the binding for:
         uint8_t out[48],
         const g1_t *in);
 */
-func BytesFromG1(g1 types.G1) [48]byte {
+func BytesFromG1(g1 [g1Size]byte) [48]byte {
     var bytes [48]byte
     C.bytes_from_g1(
         (*C.uchar)(unsafe.Pointer(&bytes)),
@@ -48,12 +56,12 @@ BytesToBlsField is the binding for:
         BLSFieldElement *out,
         const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
 */
-func BytesToBlsField(bytes [types.BytesPerFieldElement]byte) (types.FieldElement, types.CKzgRet) {
-    blsField := types.FieldElement{}
+func BytesToBlsField(bytes [bytesPerFieldElement]byte) (C.BLSFieldElement, C.C_KZG_RET) {
+    bls_field := C.BLSFieldElement{}
     ret := C.bytes_to_bls_field(
-        (*C.BLSFieldElement)(unsafe.Pointer(&blsField)),
+        &bls_field,
         (*C.uint8_t)(unsafe.Pointer(&bytes)))
-    return blsField, types.CKzgRet(ret)
+    return bls_field, ret
 }
 
 /*
@@ -65,7 +73,7 @@ LoadTrustedSetup is the binding for:
         const uint8_t g2_bytes[], // n2 * 96 bytes
         size_t n2);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte) types.CKzgRet {
+func LoadTrustedSetup(g1Bytes, g2Bytes []byte) C.C_KZG_RET {
     if loaded == true {
         panic("trusted setup is already loaded")
     }
@@ -86,7 +94,7 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) types.CKzgRet {
     if ret == 0 {
         loaded = true
     }
-    return types.CKzgRet(ret)
+    return ret
 }
 
 /*
@@ -95,7 +103,7 @@ LoadTrustedSetupFile is the binding for:
         KZGSettings *out,
         FILE *in);
 */
-func LoadTrustedSetupFile(trustedSetupFile string) types.CKzgRet {
+func LoadTrustedSetupFile(trustedSetupFile string) C.C_KZG_RET {
     if loaded == true {
         panic("trusted setup is already loaded")
     }
@@ -108,7 +116,7 @@ func LoadTrustedSetupFile(trustedSetupFile string) types.CKzgRet {
     if ret == 0 {
         loaded = true
     }
-    return types.CKzgRet(ret)
+    return ret
 }
 
 /*
@@ -131,14 +139,14 @@ ComputeAggregateKzgProof is the binding for:
         size_t n,
         const KZGSettings *s);
 */
-func ComputeAggregateKzgProof(blobs []types.Blob) (types.Proof, types.CKzgRet) {
-    proof := types.Proof{}
+func ComputeAggregateKzgProof(blobs []Blob) (C.KZGProof, C.C_KZG_RET) {
+    proof := C.KZGProof{}
     ret := C.compute_aggregate_kzg_proof(
-        (*C.KZGProof)(unsafe.Pointer(&proof)),
+        &proof,
         (*C.Blob)(unsafe.Pointer(&blobs)),
         (C.size_t)(len(blobs)),
         &settings)
-    return proof, types.CKzgRet(ret)
+    return proof, ret
 }
 
 /*
@@ -151,7 +159,7 @@ VerifyAggregateKzgProof is the binding for:
         const KZGProof *kzg_aggregated_proof,
         const KZGSettings *s);
 */
-func VerifyAggregateKzgProof(blobs []types.Blob, commitments []types.Commitment, proof types.Proof) (bool, types.CKzgRet) {
+func VerifyAggregateKzgProof(blobs []Blob, commitments []Commitment, proof Proof) (C.bool, C.C_KZG_RET) {
     if len(blobs) != len(commitments) {
         panic("len(blobs) != len(commitments)")
     }
@@ -163,7 +171,7 @@ func VerifyAggregateKzgProof(blobs []types.Blob, commitments []types.Commitment,
         (C.size_t)(len(blobs)),
         (*C.KZGProof)(unsafe.Pointer(&proof)),
         &settings)
-    return bool(result), types.CKzgRet(ret)
+    return result, ret
 }
 
 /*
@@ -173,13 +181,13 @@ BlobToKzgCommitment is the binding for:
         const Blob blob,
         const KZGSettings *s);
 */
-func BlobToKzgCommitment(blob types.Blob) (types.Commitment, types.CKzgRet) {
-    commitment := types.Commitment{}
+func BlobToKzgCommitment(blob Blob) (C.KZGCommitment, C.C_KZG_RET) {
+    commitment := C.KZGCommitment{}
     ret := C.blob_to_kzg_commitment(
-        (*C.KZGCommitment)(unsafe.Pointer(&commitment)),
+        &commitment,
         (*C.uint8_t)(unsafe.Pointer(&blob)),
         &settings)
-    return commitment, types.CKzgRet(ret)
+    return commitment, ret
 }
 
 /*
@@ -192,7 +200,7 @@ VerifyKzgProof is the binding for:
         const KZGProof *kzg_proof,
         const KZGSettings *s);
 */
-func VerifyKzgProof(commitment types.Commitment, z, y types.FieldElement, proof types.Proof) (bool, types.CKzgRet) {
+func VerifyKzgProof(commitment Commitment, z, y [bytesPerFieldElement]byte, proof Proof) (C.bool, C.C_KZG_RET) {
     var result C.bool
     ret := C.verify_kzg_proof(
         &result,
@@ -201,5 +209,5 @@ func VerifyKzgProof(commitment types.Commitment, z, y types.FieldElement, proof 
         (*C.uint8_t)(unsafe.Pointer(&y)),
         (*C.KZGProof)(unsafe.Pointer(&proof)),
         &settings)
-    return bool(result), types.CKzgRet(ret)
+    return result, ret
 }
