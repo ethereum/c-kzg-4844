@@ -663,9 +663,10 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     C_KZG_RET ret;
     fr_t root_of_unity;
 
-    memset(fs, 0, sizeof(FFTSettings));
-
     fs->max_width = (uint64_t)1 << max_scale;
+    fs->expanded_roots_of_unity = NULL;
+    fs->reverse_roots_of_unity = NULL;
+    fs->roots_of_unity = NULL;
 
     CHECK((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]));
     fr_from_uint64s(&root_of_unity, scale2_root_of_unity[max_scale]);
@@ -787,7 +788,9 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t 
   g1_t *g1_projective = NULL;
   C_KZG_RET ret;
 
-  memset(out, 0, sizeof(KZGSettings));
+  out->fs = NULL;
+  out->g1_values = NULL;
+  out->g2_values = NULL;
 
   ret = new_g1_array(&out->g1_values, n1);
   if (ret != C_KZG_OK) goto out_error;
