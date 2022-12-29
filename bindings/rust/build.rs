@@ -1,9 +1,17 @@
 use std::env;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
+
+fn move_file(src: &Path, dst: &Path) -> Result<(), String> {
+    std::fs::copy(src, dst)
+        .map_err(|_| format!("Failed to copy {} to {}", src.display(), dst.display()))?;
+    std::fs::remove_file(src)
+        .map_err(|_| format!("Failed to remove file {} from source", src.display()))?;
+    Ok(())
+}
 
 fn main() {
     let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("../../");
@@ -16,7 +24,11 @@ fn main() {
         .arg("blst")
         .status()
         .unwrap();
-    std::fs::rename(root_dir.join("lib/libblst.a"), &out_dir.join("libblst.a")).unwrap();
+    move_file(
+        root_dir.join("lib/libblst.a").as_path(),
+        &out_dir.join("libblst.a").as_path(),
+    )
+    .unwrap();
 
     let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
         MINIMAL_FIELD_ELEMENTS_PER_BLOB
@@ -49,7 +61,11 @@ fn main() {
         .args(["crus", "libckzg.a", "c_kzg_4844.o"])
         .status()
         .unwrap();
-    std::fs::rename(root_dir.join("src/libckzg.a"), &out_dir.join("libckzg.a")).unwrap();
+    move_file(
+        root_dir.join("src/libckzg.a").as_path(),
+        &out_dir.join("libckzg.a").as_path(),
+    )
+    .unwrap();
 
     println!("cargo:rustc-link-search={}", out_dir.display());
     println!("cargo:rustc-link-search={}", out_dir.display());
