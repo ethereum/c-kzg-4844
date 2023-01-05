@@ -3,7 +3,7 @@
 #![allow(non_snake_case)]
 
 mod bindings;
-use bindings::{g1_t, Blob, C_KZG_RET};
+use bindings::{g1_t, C_KZG_RET};
 use libc::fopen;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
@@ -11,7 +11,7 @@ use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 
 pub use bindings::{
-    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
+    Blob, BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF,
     FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
 };
 
