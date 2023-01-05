@@ -15,8 +15,8 @@ pub use bindings::{
     FIAT_SHAMIR_PROTOCOL_DOMAIN, FIELD_ELEMENTS_PER_BLOB,
 };
 
-const BYTES_PER_G1_POINT: usize = 48;
-const BYTES_PER_G2_POINT: usize = 96;
+pub const BYTES_PER_G1_POINT: usize = 48;
+pub const BYTES_PER_G2_POINT: usize = 96;
 
 #[derive(Debug)]
 // TODO(add separate error type for commitments and proof)
