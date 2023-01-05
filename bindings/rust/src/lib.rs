@@ -18,8 +18,11 @@ pub use bindings::{
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
 
+/// Number of G2 points required for the kzg trusted setup.
+/// 65 is fixed and is used for providing multiproofs up to 64 field elements.
+const NUM_G2_POINTS: usize = 65;
+
 #[derive(Debug)]
-// TODO(add separate error type for commitments and proof)
 pub enum Error {
     /// The KZG proof is invalid.
     InvalidKZGProof(String),
@@ -73,12 +76,24 @@ pub struct KZGSettings(bindings::KZGSettings);
 impl KZGSettings {
     /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points
     /// and 65 g2 points in byte format.
-    ///
-    /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
     pub fn load_trusted_setup(
         g1_bytes: Vec<[u8; BYTES_PER_G1_POINT]>,
         g2_bytes: Vec<[u8; BYTES_PER_G2_POINT]>,
     ) -> Result<Self, Error> {
+        if g1_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Invalid number of g1 points in trusted setup. Expected {} got {}",
+                FIELD_ELEMENTS_PER_BLOB,
+                g1_bytes.len()
+            )));
+        }
+        if g2_bytes.len() != NUM_G2_POINTS {
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Invalid number of g2 points in trusted setup. Expected {} got {}",
+                NUM_G2_POINTS,
+                g2_bytes.len()
+            )));
+        }
         let mut kzg_settings = MaybeUninit::<bindings::KZGSettings>::uninit();
         unsafe {
             let n1 = g1_bytes.len();
