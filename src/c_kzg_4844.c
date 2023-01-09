@@ -101,7 +101,7 @@ static int log_2_byte(byte b) {
     return r;
 }
 
-/** The zero field element */
+/** The zero field element. */
 static const fr_t fr_zero = {0L, 0L, 0L, 0L};
 
 /** This is 1 in Blst's `blst_fr` limb representation. Crazy but true. */
@@ -181,7 +181,7 @@ static void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
 }
 
 /**
- * Division of two field elements.
+ * Divide a field element by another.
  *
  * @param[out] out @p a divided by @p b in the field
  * @param[in]  a   The dividend
@@ -251,11 +251,11 @@ static void fr_inv(fr_t *out, const fr_t *a) {
 }
 
 /**
- * Montgomery batch inversion in finite field
+ * Montgomery batch inversion in finite field.
  *
  * @param[out] out The inverses of @p a, length @p len
  * @param[in]  a   A vector of field elements, length @p len
- * @param[in]  len Length
+ * @param[in]  len The number of field elements
  */
 static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     C_KZG_RET ret;
@@ -286,10 +286,10 @@ out:
 }
 
 
-/** The G1 identity/infinity */
+/** The G1 identity/infinity. */
 static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
-/** The G1 generator */
+/** The G1 generator. */
 static const g1_t g1_generator = {{
         0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
         0xedce6ecc21dbf440L, 0x120177419e0bfb75L
@@ -304,7 +304,7 @@ static const g1_t g1_generator = {{
     }
 };
 
-/** The G2 generator */
+/** The G2 generator. */
 static const g2_t g2_generator = {{{{
                 0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
                 0x6f67b7631863366bL, 0x058191924350bcd7L
@@ -1099,14 +1099,13 @@ out:
 }
 
 /**
- * Compute KZG proof for polynomial in Lagrange form at position x
+ * Compute KZG proof for polynomial in Lagrange form at position x.
  *
  * @param[out] out The combined proof as a single G1 element
  * @param[in]  p   The polynomial in Lagrange form
  * @param[in]  x   The generator x-value for the evaluation points
  * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_KZG_OK      All is well
- * @retval C_KZG_ERROR   An internal error occurred
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
 static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial p, const BLSFieldElement *x, const KZGSettings *s) {
