@@ -23,7 +23,7 @@ public class Ckzg
     /// <summary>
     /// Calculates commitment for the blob
     /// </summary>
-    /// <param name="commitment">Prealocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
+    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
     /// <param name="blob">Flatten array of blob elements</param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if successful</returns>
@@ -34,7 +34,7 @@ public class Ckzg
     /// <summary>
     /// Calculates aggregated proof for the blobs
     /// </summary>
-    /// <param name="proof">Prealocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
     /// <param name="blobs">Blobs as a flatten byte array</param>
     /// <param name="count">Blobs count</param>
     /// <param name="ts">Trusted setup settings</param>
