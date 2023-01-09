@@ -48,7 +48,10 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
 
   if (k == NULL) return PyErr_NoMemory();
 
-  blob_to_kzg_commitment(k, blob, PyCapsule_GetPointer(s, "KZGSettings"));
+  if (blob_to_kzg_commitment(k, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    free(k);
+    return PyErr_Format(PyExc_RuntimeError, "blob_to_kzg_commitment failed");
+  }
 
   return PyCapsule_New(k, "G1", free_G1);
 }
