@@ -16,7 +16,7 @@ void calculate_proof_and_commitment(char * trusted_setup_path){
       n++;
    }
    int res0 = compute_aggregate_kzg_proof_wrap(proof, blob, 1, s);
-   blob_to_kzg_commitment_wrap(commitment, blob, s);
+   int res1 = blob_to_kzg_commitment_wrap(commitment, blob, s);
 
    FILE *f = fopen("output.txt", "wt");
    // commitment
@@ -34,7 +34,7 @@ void calculate_proof_and_commitment(char * trusted_setup_path){
    fclose(f);
    free(blob);
    free(commitment);
-   free(proof); 
+   free(proof);
    free_trusted_setup_wrap(s);
 }
 
