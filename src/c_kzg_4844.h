@@ -92,39 +92,39 @@ void bytes_from_g1(uint8_t out[48], const g1_t *in);
 C_KZG_RET bytes_to_bls_field(BLSFieldElement *out, const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
 
 C_KZG_RET load_trusted_setup(KZGSettings *out,
-    const uint8_t g1_bytes[], /* n1 * 48 bytes */
-    size_t n1,
-    const uint8_t g2_bytes[], /* n2 * 96 bytes */
-    size_t n2);
+                             const uint8_t g1_bytes[], /* n1 * 48 bytes */
+                             size_t n1,
+                             const uint8_t g2_bytes[], /* n2 * 96 bytes */
+                             size_t n2);
 
 C_KZG_RET load_trusted_setup_file(KZGSettings *out,
-    FILE *in);
+                                  FILE *in);
 
 void free_trusted_setup(
     KZGSettings *s);
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-    const Blob blobs[],
-    size_t n,
-    const KZGSettings *s);
+                                      const Blob blobs[],
+                                      size_t n,
+                                      const KZGSettings *s);
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-    const Blob blobs[],
-    const KZGCommitment expected_kzg_commitments[],
-    size_t n,
-    const KZGProof *kzg_aggregated_proof,
-    const KZGSettings *s);
+                                     const Blob blobs[],
+                                     const KZGCommitment expected_kzg_commitments[],
+                                     size_t n,
+                                     const KZGProof *kzg_aggregated_proof,
+                                     const KZGSettings *s);
 
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
-    const Blob blob,
-    const KZGSettings *s);
+                                 const Blob blob,
+                                 const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
-    const KZGCommitment *polynomial_kzg,
-    const uint8_t z[BYTES_PER_FIELD_ELEMENT],
-    const uint8_t y[BYTES_PER_FIELD_ELEMENT],
-    const KZGProof *kzg_proof,
-    const KZGSettings *s);
+                           const KZGCommitment *polynomial_kzg,
+                           const uint8_t z[BYTES_PER_FIELD_ELEMENT],
+                           const uint8_t y[BYTES_PER_FIELD_ELEMENT],
+                           const KZGProof *kzg_proof,
+                           const KZGSettings *s);
 
 #ifdef __cplusplus
 }
