@@ -343,6 +343,7 @@ mod tests {
         test_simple(trusted_setup_file);
     }
 
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_agg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -394,6 +395,7 @@ mod tests {
         }
     }
 
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
