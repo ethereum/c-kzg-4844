@@ -14,8 +14,8 @@ public class BasicKzgTests
         Assert.That(_ts, Is.Not.EqualTo(IntPtr.Zero));
     }
 
-    [TestCase(0xff, -1, -1)]
-    [TestCase(0x73, -1, -1)]
+    [TestCase(0xff, 1, -1)]
+    [TestCase(0x73, 1, -1)]
     [TestCase(0x72, 0, 0)]
     [TestCase(0x00, 0, 0)]
     public unsafe void Test_Computes_And_Verifies(byte highByteValue, int expectedProofComputed, int expectedProofVerified)
