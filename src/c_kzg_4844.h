@@ -38,7 +38,7 @@ extern "C" {
 #define BYTES_PER_PROOF 48
 #define BYTES_PER_FIELD_ELEMENT 32
 #define BYTES_PER_BLOB FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT
-static const uint8_t FIAT_SHAMIR_PROTOCOL_DOMAIN[] = {70, 83, 66, 76, 79, 66, 86, 69, 82, 73, 70, 89, 95, 86, 49, 95}; // "FSBLOBVERIFY_V1_"
+static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 
 typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
@@ -51,10 +51,6 @@ typedef uint8_t Blob[BYTES_PER_BLOB];
 
 /**
  * The common return type for all routines in which something can go wrong.
- *
- * @warning In the case of @p C_KZG_OK or @p C_KZG_BADARGS, the caller can assume that all memory allocated by the
- * called routines has been deallocated. However, in the case of @p C_KZG_ERROR or @p C_KZG_MALLOC being returned, these
- * are unrecoverable and memory may have been leaked.
  */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
