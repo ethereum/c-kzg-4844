@@ -2,7 +2,7 @@ from py_ecc import optimized_bls12_381 as b
 from fft import fft
 from multicombs import lincomb
 
-# Generatore for the field
+# Generator for the field
 PRIMITIVE_ROOT = 7
 MODULUS = b.curve_order
 
@@ -34,7 +34,6 @@ def generate_setup(s, size):
 # Field operations
 #
 #########################################################################################
-
 
 def get_root_of_unity(order):
     """
@@ -79,7 +78,7 @@ def eval_poly_at(p, x):
 
 def div_polys(a, b):
     """
-    Long polynomial difivion for two polynomials in coefficient form
+    Long polynomial division for two polynomials in coefficient form
     """
     a = [x for x in a]
     o = []
@@ -101,7 +100,6 @@ def div_polys(a, b):
 #
 #########################################################################################
 
-
 def reverse_bit_order(n, order):
     """
     Reverse the bit order of an integer n
@@ -109,14 +107,12 @@ def reverse_bit_order(n, order):
     assert is_power_of_two(order)
     # Convert n to binary with the same number of bits as "order" - 1, then reverse its bit order
     return int(('{:0' + str(order.bit_length() - 1) + 'b}').format(n)[::-1], 2)
-    
 
 def list_to_reverse_bit_order(l):
     """
     Convert a list between normal and reverse bit order. This operation is idempotent.
     """
     return [l[reverse_bit_order(i, len(l))] for i in range(len(l))]
-
 
 #########################################################################################
 #
@@ -210,7 +206,7 @@ def check_proof_multi(commitment, proof, x, ys, setup):
     """
     n = len(ys)
     root_of_unity = get_root_of_unity(n)
-    
+
     # Interpolate at a coset. Note because it is a coset, not the subgroup, we have to multiply the
     # polynomial coefficients by x^i
     interpolation_polynomial = fft(ys, MODULUS, root_of_unity, True)
