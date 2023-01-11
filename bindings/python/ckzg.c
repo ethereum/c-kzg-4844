@@ -2,9 +2,7 @@
 #include <Python.h>
 #include "c_kzg_4844.h"
 
-static void free_G1(PyObject *c) {
-  free(PyCapsule_GetPointer(c, "G1"));
-}
+#define str(x) #x
 
 static void free_KZGSettings(PyObject *c) {
   KZGSettings *s = PyCapsule_GetPointer(c, "KZGSettings");
@@ -44,16 +42,16 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
 
   uint8_t* blob = (uint8_t*)PyBytes_AsString(b);
 
-  KZGCommitment *k = (KZGCommitment*)malloc(sizeof(KZGCommitment));
+  PyObject *out = PyBytes_FromStringAndSize(NULL, BYTES_PER_COMMITMENT);
 
-  if (k == NULL) return PyErr_NoMemory();
+  if (out == NULL) return PyErr_NoMemory();
 
-  if (blob_to_kzg_commitment(k, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    free(k);
+  if (blob_to_kzg_commitment((uint8_t*)PyBytes_AsString(out),
+                             blob,
+                             PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK)
     return PyErr_Format(PyExc_RuntimeError, "blob_to_kzg_commitment failed");
-  }
 
-  return PyCapsule_New(k, "G1", free_G1);
+  return out;
 }
 
 static PyObject* compute_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args) {
@@ -71,82 +69,59 @@ static PyObject* compute_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args
 
   Blob* blobs = (Blob*)PyBytes_AsString(b);
 
-  KZGProof *k = (KZGProof*)malloc(sizeof(KZGProof));
+  PyObject *out = PyBytes_FromStringAndSize(NULL, BYTES_PER_PROOF);
 
-  if (k == NULL) {
-    return PyErr_NoMemory();
-  }
+  if (out == NULL) return PyErr_NoMemory();
 
-  if (compute_aggregate_kzg_proof(k, blobs, n,
+  if (compute_aggregate_kzg_proof((uint8_t*)PyBytes_AsString(out), blobs, n,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    free(k);
+    Py_DECREF(out);
     return PyErr_Format(PyExc_RuntimeError, "compute_aggregate_kzg_proof failed");
   }
 
-  return PyCapsule_New(k, "G1", free_G1);
+  return out;
 }
 
 static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args) {
-  PyObject *b, *c, *p, *s, *e;
+  PyObject *b, *c, *p, *s;
 
   if (!PyArg_UnpackTuple(args, "verify_aggregate_kzg_proof", 4, 4, &b, &c, &p, &s) ||
       !PyBytes_Check(b) ||
-      !PySequence_Check(c) ||
-      !PyCapsule_IsValid(p, "G1") ||
+      !PyBytes_Check(c) ||
+      !PyBytes_Check(p) ||
       !PyCapsule_IsValid(s, "KZGSettings"))
     return PyErr_Format(PyExc_ValueError,
-        "expected bytes, sequence, proof, trusted setup");
+        "expected bytes, bytes (commitments), bytes (proof), trusted setup");
 
-  Py_ssize_t n = PyBytes_Size(b);
+  Py_ssize_t n = PyBytes_Size(p);
+  if (n != BYTES_PER_PROOF)
+    return PyErr_Format(PyExc_ValueError, "expected " str(BYTES_PER_PROOF) " bytes for the proof");
+
+  Py_ssize_t m = PyBytes_Size(c);
+  if (m % BYTES_PER_COMMITMENT != 0)
+    return PyErr_Format(PyExc_ValueError, "expected a multiple of " str(BYTES_PER_COMMITMENT) " bytes for commitments");
+  m = m / BYTES_PER_COMMITMENT;
+
+  n = PyBytes_Size(b);
   if (n % (32 * FIELD_ELEMENTS_PER_BLOB) != 0)
     return PyErr_Format(PyExc_ValueError, "expected a multiple of 32 * FIELD_ELEMENTS_PER_BLOB bytes");
   n = n / 32 / FIELD_ELEMENTS_PER_BLOB;
 
-  if (PySequence_Length(c) != n)
+  if (m != n)
     return PyErr_Format(PyExc_ValueError, "expected same number of commitments as polynomials");
 
-  KZGCommitment* commitments = calloc(n, sizeof(KZGCommitment));
-
-  if (commitments == NULL) {
-    return PyErr_NoMemory();
-  }
-
-  Blob* blobs = (Blob*)PyBytes_AsString(b);
-
-  for (Py_ssize_t i = 0; i < n; i++) {
-    e = PySequence_GetItem(c, i);
-    if (!PyCapsule_IsValid(e, "G1")) {
-      free(commitments);
-      return PyErr_Format(PyExc_ValueError, "expected G1 capsules");
-    }
-    memcpy(&commitments[i], PyCapsule_GetPointer(e, "G1"), sizeof(KZGCommitment));
-  }
+  const Blob* blobs = (Blob*)PyBytes_AsString(b);
+  const KZGCommitment* commitments = (KZGCommitment*)PyBytes_AsString(c);
+  const uint8_t* proof = (uint8_t*)PyBytes_AsString(p);
 
   bool out;
 
   if (verify_aggregate_kzg_proof(&out,
-        blobs, commitments, n,
-        PyCapsule_GetPointer(p, "G1"),
-        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    free(commitments);
+        blobs, commitments, n, proof,
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK)
     return PyErr_Format(PyExc_RuntimeError, "verify_aggregate_kzg_proof failed");
-  }
 
-  free(commitments);
   if (out) Py_RETURN_TRUE; else Py_RETURN_FALSE;
-}
-
-static PyObject* bytes_from_g1_wrap(PyObject *self, PyObject *args) {
-  PyObject *c;
-
-  if (!PyArg_UnpackTuple(args, "bytes_from_g1", 1, 1, &c) ||
-      !PyCapsule_IsValid(c, "G1"))
-    return PyErr_Format(PyExc_ValueError, "expected G1 capsule");
-
-  uint8_t bytes[48];
-  bytes_from_g1(bytes, PyCapsule_GetPointer(c, "G1"));
-
-  return PyBytes_FromStringAndSize((char*)bytes, 48);
 }
 
 static PyMethodDef ckzgmethods[] = {
@@ -154,8 +129,6 @@ static PyMethodDef ckzgmethods[] = {
   {"blob_to_kzg_commitment",      blob_to_kzg_commitment_wrap,      METH_VARARGS, "Create a commitment from a blob"},
   {"compute_aggregate_kzg_proof", compute_aggregate_kzg_proof_wrap, METH_VARARGS, "Compute aggregate KZG proof"},
   {"verify_aggregate_kzg_proof",  verify_aggregate_kzg_proof_wrap,  METH_VARARGS, "Verify aggregate KZG proof"},
-  // for tests/debugging
-  {"bytes_from_g1",               bytes_from_g1_wrap,               METH_VARARGS, "Convert a group element to 48 bytes"},
   {NULL, NULL, 0, NULL}
 };
 
