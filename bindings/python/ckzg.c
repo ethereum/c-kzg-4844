@@ -2,8 +2,12 @@
 #include <Python.h>
 #include "c_kzg_4844.h"
 
-static void free_G1(PyObject *c) {
-  free(PyCapsule_GetPointer(c, "G1"));
+static void free_KZGCommitment(PyObject *c) {
+  free(PyCapsule_GetPointer(c, "KZGCommitment"));
+}
+
+static void free_KZGProof(PyObject *c) {
+  free(PyCapsule_GetPointer(c, "KZGProof"));
 }
 
 static void free_KZGSettings(PyObject *c) {
@@ -53,7 +57,7 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError, "blob_to_kzg_commitment failed");
   }
 
-  return PyCapsule_New(k, "G1", free_G1);
+  return PyCapsule_New(k, "KZGCommitment", free_KZGCommitment);
 }
 
 static PyObject* compute_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args) {
@@ -83,7 +87,7 @@ static PyObject* compute_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args
     return PyErr_Format(PyExc_RuntimeError, "compute_aggregate_kzg_proof failed");
   }
 
-  return PyCapsule_New(k, "G1", free_G1);
+  return PyCapsule_New(k, "KZGProof", free_KZGProof);
 }
 
 static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args) {
@@ -92,7 +96,7 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
   if (!PyArg_UnpackTuple(args, "verify_aggregate_kzg_proof", 4, 4, &b, &c, &p, &s) ||
       !PyBytes_Check(b) ||
       !PySequence_Check(c) ||
-      !PyCapsule_IsValid(p, "G1") ||
+      !PyCapsule_IsValid(p, "KZGProof") ||
       !PyCapsule_IsValid(s, "KZGSettings"))
     return PyErr_Format(PyExc_ValueError,
         "expected bytes, sequence, proof, trusted setup");
@@ -115,18 +119,18 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
 
   for (Py_ssize_t i = 0; i < n; i++) {
     e = PySequence_GetItem(c, i);
-    if (!PyCapsule_IsValid(e, "G1")) {
+    if (!PyCapsule_IsValid(e, "KZGCommitment")) {
       free(commitments);
-      return PyErr_Format(PyExc_ValueError, "expected G1 capsules");
+      return PyErr_Format(PyExc_ValueError, "expected KZGCommitment capsules");
     }
-    memcpy(&commitments[i], PyCapsule_GetPointer(e, "G1"), sizeof(KZGCommitment));
+    memcpy(&commitments[i], PyCapsule_GetPointer(e, "KZGCommitment"), sizeof(KZGCommitment));
   }
 
   bool out;
 
   if (verify_aggregate_kzg_proof(&out,
         blobs, commitments, n,
-        PyCapsule_GetPointer(p, "G1"),
+        PyCapsule_GetPointer(p, "KZGProof"),
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     free(commitments);
     return PyErr_Format(PyExc_RuntimeError, "verify_aggregate_kzg_proof failed");
@@ -136,26 +140,11 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
   if (out) Py_RETURN_TRUE; else Py_RETURN_FALSE;
 }
 
-static PyObject* bytes_from_g1_wrap(PyObject *self, PyObject *args) {
-  PyObject *c;
-
-  if (!PyArg_UnpackTuple(args, "bytes_from_g1", 1, 1, &c) ||
-      !PyCapsule_IsValid(c, "G1"))
-    return PyErr_Format(PyExc_ValueError, "expected G1 capsule");
-
-  uint8_t bytes[48];
-  bytes_from_g1(bytes, PyCapsule_GetPointer(c, "G1"));
-
-  return PyBytes_FromStringAndSize((char*)bytes, 48);
-}
-
 static PyMethodDef ckzgmethods[] = {
   {"load_trusted_setup",          load_trusted_setup_wrap,          METH_VARARGS, "Load trusted setup from file path"},
   {"blob_to_kzg_commitment",      blob_to_kzg_commitment_wrap,      METH_VARARGS, "Create a commitment from a blob"},
   {"compute_aggregate_kzg_proof", compute_aggregate_kzg_proof_wrap, METH_VARARGS, "Compute aggregate KZG proof"},
   {"verify_aggregate_kzg_proof",  verify_aggregate_kzg_proof_wrap,  METH_VARARGS, "Verify aggregate KZG proof"},
-  // for tests/debugging
-  {"bytes_from_g1",               bytes_from_g1_wrap,               METH_VARARGS, "Convert a group element to 48 bytes"},
   {NULL, NULL, 0, NULL}
 };
 
