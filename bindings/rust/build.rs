@@ -26,7 +26,7 @@ fn main() {
         .unwrap();
     move_file(
         root_dir.join("lib/libblst.a").as_path(),
-        &out_dir.join("libblst.a").as_path(),
+        out_dir.join("libblst.a").as_path(),
     )
     .unwrap();
 
@@ -63,7 +63,7 @@ fn main() {
         .unwrap();
     move_file(
         root_dir.join("src/libckzg.a").as_path(),
-        &out_dir.join("libckzg.a").as_path(),
+        out_dir.join("libckzg.a").as_path(),
     )
     .unwrap();
 
@@ -75,7 +75,7 @@ fn main() {
     // Write the compile time variable to a consts.rs file to be imported to the bindings module.
     let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/consts.rs");
     std::fs::write(
-        &const_file,
+        const_file,
         format!(
             "pub const FIELD_ELEMENTS_PER_BLOB: usize = {};",
             field_elements_per_blob

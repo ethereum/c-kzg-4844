@@ -56,9 +56,7 @@ pub fn bytes_from_g1(g1_point: g1_t) -> [u8; BYTES_PER_G1_POINT] {
 pub struct BlsFieldElement(bindings::BLSFieldElement);
 
 impl BlsFieldElement {
-    pub fn bytes_to_bls_field(
-        bytes: [u8; BYTES_PER_FIELD_ELEMENT as usize],
-    ) -> Result<Self, Error> {
+    pub fn bytes_to_bls_field(bytes: [u8; BYTES_PER_FIELD_ELEMENT]) -> Result<Self, Error> {
         let mut bls_field_element = MaybeUninit::<bindings::BLSFieldElement>::uninit();
         unsafe {
             let res = bindings::bytes_to_bls_field(bls_field_element.as_mut_ptr(), bytes.as_ptr());
@@ -334,12 +332,11 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        let trusted_setup_file;
-        if cfg!(feature = "minimal-spec") {
-            trusted_setup_file = PathBuf::from("../../src/trusted_setup_4.txt");
+        let trusted_setup_file = if cfg!(feature = "minimal-spec") {
+            PathBuf::from("../../src/trusted_setup_4.txt")
         } else {
-            trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
-        }
+            PathBuf::from("../../src/trusted_setup.txt")
+        };
         test_simple(trusted_setup_file);
     }
 
