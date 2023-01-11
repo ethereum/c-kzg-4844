@@ -24,10 +24,13 @@ void free_trusted_setup_wrap(KZGSettings *s) {
   free(s);
 }
 
-void blob_to_kzg_commitment_wrap(uint8_t out[48], const Blob blob, const KZGSettings *s) {
+C_KZG_RET blob_to_kzg_commitment_wrap(uint8_t out[48], const Blob blob, const KZGSettings *s) {
   KZGCommitment c;
-  blob_to_kzg_commitment(&c, blob, s);
+  C_KZG_RET ret;
+  ret = blob_to_kzg_commitment(&c, blob, s);
+  if (ret != C_KZG_OK) return ret;
   bytes_from_g1(out, &c);
+  return C_KZG_OK;
 }
 
 int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const uint8_t commitments[], size_t n, const uint8_t proof[48], const KZGSettings *s) {
@@ -56,7 +59,7 @@ C_KZG_RET compute_aggregate_kzg_proof_wrap(uint8_t out[48], const Blob blobs[], 
   KZGProof f;
   C_KZG_RET ret;
   ret = compute_aggregate_kzg_proof(&f, blobs, n, s);
-  if (ret != C_KZG_OK) return -1;
+  if (ret != C_KZG_OK) return ret;
   bytes_from_g1(out, &f);
   return C_KZG_OK;
 }

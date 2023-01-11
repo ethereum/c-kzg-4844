@@ -23,21 +23,22 @@ public class Ckzg
     /// <summary>
     /// Calculates commitment for the blob
     /// </summary>
-    /// <param name="commitment">Prealocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
+    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
     /// <param name="blob">Flatten array of blob elements</param>
     /// <param name="ts">Trusted setup settings</param>
+    /// <returns>Returns error code or <c>0</c> if successful</returns>
     [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern void BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
+    public unsafe static extern int BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
 
 
     /// <summary>
     /// Calculates aggregated proof for the blobs
     /// </summary>
-    /// <param name="proof">Prealocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
     /// <param name="blobs">Blobs as a flatten byte array</param>
     /// <param name="count">Blobs count</param>
     /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if succeed</returns>
+    /// <returns>Returns error code or <c>0</c> if successful</returns>
     [DllImport("ckzg", EntryPoint = "compute_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
     public unsafe static extern int ComputeAggregatedKzgProof(byte* proof, byte* blobs, int count, IntPtr ts);
 
