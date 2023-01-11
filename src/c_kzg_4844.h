@@ -44,9 +44,9 @@ typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
 
-typedef g1_t KZGCommitment;
-typedef g1_t KZGProof;
-typedef fr_t BLSFieldElement;
+typedef struct { uint8_t data[BYTES_PER_COMMITMENT]; } KZGCommitment;
+typedef struct { uint8_t data[BYTES_PER_PROOF]; } KZGProof;
+typedef struct { uint8_t data[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
 typedef uint8_t Blob[BYTES_PER_BLOB];
 
 /**
@@ -85,7 +85,7 @@ typedef struct {
 C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t in[48]);
 void bytes_from_g1(uint8_t out[48], const g1_t *in);
 
-C_KZG_RET bytes_to_bls_field(BLSFieldElement *out, const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
+C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t in[BYTES_PER_FIELD_ELEMENT]);
 
 C_KZG_RET load_trusted_setup(KZGSettings *out,
                              const uint8_t g1_bytes[], /* n1 * 48 bytes */
@@ -117,8 +117,8 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
 
 C_KZG_RET verify_kzg_proof(bool *out,
                            const KZGCommitment *polynomial_kzg,
-                           const uint8_t z[BYTES_PER_FIELD_ELEMENT],
-                           const uint8_t y[BYTES_PER_FIELD_ELEMENT],
+                           const BLSFieldElement *z,
+                           const BLSFieldElement *y,
                            const KZGProof *kzg_proof,
                            const KZGSettings *s);
 
