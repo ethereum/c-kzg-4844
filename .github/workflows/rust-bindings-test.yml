@@ -1,0 +1,53 @@
+name: Rust bindings tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  cargo-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get latest version of stable rust
+        run: rustup update stable
+      - name: Check formatting with cargofmt
+        run: |
+        cd bindings/rust
+        cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    needs: cargo-fmt
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get latest version of stable rust
+        run: rustup update stable
+      - name: Lint code for quality and style with Clippy
+        run: |
+        cd bindings/rust
+        cargo clippy --workspace --tests --all-features -- -D warnings
+  release-tests-ubuntu:
+    runs-on: ubuntu-latest
+    needs: cargo-fmt
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get latest version of stable rust
+        run: rustup update stable
+      - name: Run tests in release
+        run: |
+        cd bindings/rust
+        cargo test --all --release --tests
+  test-minimal-feature:
+    runs-on: ubuntu-latest
+    container:
+      image: rust
+    needs: cargo-fmt
+    steps:
+      - uses: actions/checkout@v2
+      - name: Get latest version of stable rust
+        run: rustup update stable
+      - name: Run tests in release
+        run: cargo test --all --release --features="minimal-spec" --tests
