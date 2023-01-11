@@ -142,7 +142,12 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   KZGCommitment commitment;
-  blob_to_kzg_commitment(&commitment, blob, kzg_settings);
+  C_KZG_RET ret = blob_to_kzg_commitment(&commitment, blob, kzg_settings);
+  if (ret != C_KZG_OK) {
+     Napi::Error::New(env, "Failed to convert blob to commitment")
+      .ThrowAsJavaScriptException();
+    return env.Undefined();
+  };
 
   uint8_t commitment_bytes[BYTES_PER_COMMITMENT];
   bytes_from_g1(commitment_bytes, &commitment);
@@ -203,7 +208,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   }
 
   auto blobs_param = info[0].As<Napi::Array>();
-  auto comittments_param = info[1].As<Napi::Array>();
+  auto commitments_param = info[1].As<Napi::Array>();
   auto proof_param = info[2].As<Napi::TypedArray>();
   auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
 
@@ -223,7 +228,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     memcpy(blobs[blob_index], blob_bytes, BYTES_PER_BLOB);
 
     // Extract a G1 point for each commitment
-    Napi::Value commitment = comittments_param[blob_index];
+    Napi::Value commitment = commitments_param[blob_index];
     auto commitment_bytes = commitment.As<Napi::Uint8Array>().Data();
 
     ret = bytes_to_g1(&commitments[blob_index], commitment_bytes);
