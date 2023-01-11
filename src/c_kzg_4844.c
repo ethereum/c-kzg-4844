@@ -1015,7 +1015,8 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGS
     if (ret != C_KZG_OK) return ret;
     ret = poly_to_kzg_commitment(&commitment, p, s);
     if (ret != C_KZG_OK) return ret;
-    return bytes_to_g1(&commitment, (const uint8_t *)(out));
+    bytes_from_g1((uint8_t *)(out), &commitment);
+    return C_KZG_OK;
 }
 
 /**
