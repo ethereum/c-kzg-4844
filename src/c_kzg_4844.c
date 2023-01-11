@@ -1310,7 +1310,7 @@ out:
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob blobs[],
-                                     const KZGCommitment *expected_kzg_commitments,
+                                     const KZGCommitment expected_kzg_commitments[],
                                      size_t n,
                                      const KZGProof *kzg_aggregated_proof,
                                      const KZGSettings *s) {
