@@ -997,16 +997,16 @@ static C_KZG_RET poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, 
     return g1_lincomb(out, s->g1_values, p, FIELD_ELEMENTS_PER_BLOB);
 }
 
-static C_KZG_RET poly_from_blob(Polynomial p, const Blob blob) {
+static C_KZG_RET poly_from_blob(Polynomial p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p[i], &blob->data[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
 }
 
-C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s) {
     Polynomial p;
     C_KZG_RET ret = poly_from_blob(p, blob);
     if (ret != C_KZG_OK) return ret;
@@ -1250,7 +1250,7 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
 
 static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial poly_out, KZGCommitment *comm_out, BLSFieldElement *chal_out,
         const Polynomial polys[],
-        const KZGCommitment kzg_commitments[],
+        const KZGCommitment *kzg_commitments,
         size_t n) {
     BLSFieldElement* r_powers = calloc(n, sizeof(BLSFieldElement));
     if (0 < n && r_powers == NULL) return C_KZG_MALLOC;
@@ -1269,7 +1269,7 @@ out:
 }
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-                                      const Blob blobs[],
+                                      const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s) {
     C_KZG_RET ret;
@@ -1289,7 +1289,7 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = poly_from_blob(polys[i], blobs[i]);
+        ret = poly_from_blob(polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
         ret = poly_to_kzg_commitment(&commitments[i], polys[i], s);
         if (ret != C_KZG_OK) goto out;
@@ -1310,8 +1310,8 @@ out:
 }
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-                                     const Blob blobs[],
-                                     const KZGCommitment expected_kzg_commitments[],
+                                     const Blob *blobs,
+                                     const KZGCommitment *expected_kzg_commitments,
                                      size_t n,
                                      const KZGProof *kzg_aggregated_proof,
                                      const KZGSettings *s) {
@@ -1319,7 +1319,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     Polynomial* polys = calloc(n, sizeof(Polynomial));
     if (polys == NULL) return C_KZG_MALLOC;
     for (size_t i = 0; i < n; i++) {
-        ret = poly_from_blob(polys[i], blobs[i]);
+        ret = poly_from_blob(polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
     }
 
