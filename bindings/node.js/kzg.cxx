@@ -222,7 +222,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
 
     Napi::Value commitment_param = commitments_param[blob_index];
     auto commitment = commitment_param.As<Napi::External<KZGCommitment>>().Data();
-    memcpy(&commitments[blob_index], (uint8_t *)(&commitment), BYTES_PER_COMMITMENT);
+    memcpy(&commitments[blob_index], commitment, BYTES_PER_COMMITMENT);
   }
 
   bool verification_result;
