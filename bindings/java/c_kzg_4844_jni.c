@@ -149,7 +149,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   C_KZG_RET ret = compute_aggregate_kzg_proof(proof_native, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, count_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
 
   if (ret != C_KZG_OK)
   {
@@ -216,11 +216,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
   KZGCommitment *commitment_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitment, NULL);
 
-
   C_KZG_RET ret = blob_to_kzg_commitment(commitment_native, (uint8_t *)blob_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blob, blob_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, commitment, (jbyte *)commitment_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, commitment, (jbyte *)commitment_native, 0);
 
   if (ret != C_KZG_OK)
   {

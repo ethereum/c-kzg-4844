@@ -58,13 +58,16 @@ endif
 
 all: build test benchmark
 
+.PHONY: build
 build:
 	mkdir -p ${LIBRARY_FOLDER}
 	${CLANG_EXECUTABLE} ${CC_FLAGS} ${CLANG_FLAGS} ${OPTIMIZATION_LEVEL} -Wall -Wno-missing-braces ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -DFIELD_ELEMENTS_PER_BLOB=${FIELD_ELEMENTS_PER_BLOB} -o ${LIBRARY_FOLDER}/${LIBRARY_RESOURCE} ${TARGETS}
 
+.PHONY: test
 test:
 	${GRADLE_COMMAND} clean test
 
+.PHONY: benchmark
 benchmark:
 	${GRADLE_COMMAND} clean jmh
 
