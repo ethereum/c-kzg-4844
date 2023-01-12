@@ -6,6 +6,7 @@ inc/blst_aux.h*
 .vscode/
 .clang-format
 *bindings/*/*.so
+*bindings/rust/target
 *bindings/csharp/*.exe
 *bindings/csharp/*.dll
 __pycache__
