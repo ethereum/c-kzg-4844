@@ -793,11 +793,11 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 
 typedef fr_t Polynomial[FIELD_ELEMENTS_PER_BLOB];
 
-void bytes_from_g1(uint8_t out[48], const g1_t *in) {
+static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
     blst_p1_compress(out, in);
 }
 
-C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
+static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
     blst_p1_affine tmp;
     if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
@@ -905,7 +905,7 @@ static void hash_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
     blst_fr_from_scalar(out, &tmp);
 }
 
-C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
+static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
