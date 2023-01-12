@@ -1340,9 +1340,16 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (commitments == NULL) return C_KZG_MALLOC;
+    if (commitments == NULL) {
+        ret = C_KZG_MALLOC;
+        goto out;
+    }
+
     polys = calloc(n, sizeof(Polynomial));
-    if (polys == NULL) return C_KZG_MALLOC;
+    if (polys == NULL) {
+        ret = C_KZG_MALLOC;
+        goto out;
+    }
 
     for (size_t i = 0; i < n; i++) {
         ret = bytes_to_g1(&commitments[i], (uint8_t *)(&expected_kzg_commitments[i]));
