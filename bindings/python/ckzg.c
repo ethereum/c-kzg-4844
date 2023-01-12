@@ -106,7 +106,7 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
     e = PySequence_GetItem(c, i);
     if (!PyBytes_Check(e)) {
       free(commitments);
-      return PyErr_Format(PyExc_ValueError, "expected KZGCommitment capsules");
+      return PyErr_Format(PyExc_ValueError, "expected commitment to be bytes");
     }
     if (PyBytes_Size(e) != BYTES_PER_COMMITMENT) {
       free(commitments);
