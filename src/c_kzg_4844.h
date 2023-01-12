@@ -44,9 +44,9 @@ typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
 
-typedef struct { uint8_t data[BYTES_PER_COMMITMENT]; } KZGCommitment;
-typedef struct { uint8_t data[BYTES_PER_PROOF]; } KZGProof;
-typedef struct { uint8_t data[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
+typedef struct { uint8_t bytes[BYTES_PER_COMMITMENT]; } KZGCommitment;
+typedef struct { uint8_t bytes[BYTES_PER_PROOF]; } KZGProof;
+typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
 typedef uint8_t Blob[BYTES_PER_BLOB];
 
 /**
