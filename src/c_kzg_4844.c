@@ -808,7 +808,7 @@ static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
     blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
-C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t g1_bytes[], size_t n1, const uint8_t g2_bytes[], size_t n2) {
+C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n1, const uint8_t *g2_bytes, size_t n2) {
     uint64_t i;
     blst_p2_affine g2_affine;
     g1_t *g1_projective = NULL;
@@ -890,7 +890,7 @@ void free_trusted_setup(KZGSettings *s) {
     free_kzg_settings(s);
 }
 
-static void compute_powers(fr_t out[], fr_t *x, uint64_t n) {
+static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = fr_one;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
@@ -912,7 +912,7 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
     return C_KZG_OK;
 }
 
-static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t scalars[], uint64_t n) {
+static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n) {
     fr_t tmp;
     uint64_t i, j;
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
@@ -1193,7 +1193,7 @@ void sha256_init(SHA256_CTX *ctx);
 void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
 void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
 
-static void hash(uint8_t md[32], const uint8_t input[], size_t n) {
+static void hash(uint8_t md[32], const uint8_t *input, size_t n) {
     SHA256_CTX ctx;
     sha256_init(&ctx);
     sha256_update(&ctx, input, n);
