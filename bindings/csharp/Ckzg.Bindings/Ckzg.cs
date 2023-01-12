@@ -10,7 +10,7 @@ public class Ckzg
     public const int BlobLength = BlobElementLength * 4096;
     public const int ProofLength = 48;
 
-    static Ckzg() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) => NativeLibrary.Load($"runtimes/{(
+    static Ckzg() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) => path.Contains("ckzg", StringComparison.OrdinalIgnoreCase) ? NativeLibrary.Load($"runtimes/{(
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "")}-{RuntimeInformation.ProcessArchitecture switch
@@ -18,7 +18,7 @@ public class Ckzg
                 Architecture.X64 => "x64",
                 Architecture.Arm64 => "arm64",
                 _ => ""
-            }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}");
+            }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}") : IntPtr.Zero;
 
     /// <summary>
     /// Calculates commitment for the blob
