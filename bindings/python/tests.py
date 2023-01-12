@@ -14,7 +14,7 @@ blobs = [
 
 ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
 
-kzg_commitments = [ckzg.blob_to_kzg_commitment(blob, ts) for blob in blobs]
+kzg_commitments = b''.join([ckzg.blob_to_kzg_commitment(blob, ts) for blob in blobs])
 
 # Compute proof for these blobs
 
