@@ -790,7 +790,7 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
     return blst_fp12_is_one(&gt_point);
 }
 
-typedef struct { BLSFieldElement elements[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
+typedef struct { BLSFieldElement evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
 
 void bytes_from_g1(uint8_t out[48], const g1_t *in) {
     blst_p1_compress(out, in);
@@ -916,11 +916,11 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
     fr_t tmp;
     uint64_t i, j;
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-        out->elements[j] = fr_zero;
+        out->evals[j] = fr_zero;
     for (i = 0; i < n; i++) {
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
-            fr_mul(&tmp, &scalars[i], &vectors[i].elements[j]);
-            fr_add(&out->elements[j], &out->elements[j], &tmp);
+            fr_mul(&tmp, &scalars[i], &vectors[i].evals[j]);
+            fr_add(&out->evals[j], &out->evals[j], &tmp);
         }
     }
 }
@@ -993,13 +993,13 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
 }
 
 static C_KZG_RET poly_to_kzg_commitment(KZGCommitment *out, const Polynomial *p, const KZGSettings *s) {
-    return g1_lincomb(out, s->g1_values, (const fr_t *)(&p->elements), FIELD_ELEMENTS_PER_BLOB);
+    return g1_lincomb(out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB);
 }
 
 static C_KZG_RET poly_from_blob(Polynomial *p, const Blob blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p->elements[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p->evals[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
@@ -1069,7 +1069,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         if (fr_equal(x, &roots_of_unity[i])) {
-            *out = p->elements[i];
+            *out = p->evals[i];
             ret = C_KZG_OK;
             goto out;
         }
@@ -1082,7 +1082,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(BLSFieldElement *out, co
     *out = fr_zero;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
-        fr_mul(&tmp, &tmp, &p->elements[i]);
+        fr_mul(&tmp, &tmp, &p->evals[i]);
         fr_add(out, out, &tmp);
     }
     fr_from_uint64(&tmp, FIELD_ELEMENTS_PER_BLOB);
@@ -1132,7 +1132,7 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial *p, const BLS
             continue;
         }
         // (p_i - y) / (ω_i - x)
-        fr_sub(&q.elements[i], &p->elements[i], &y);
+        fr_sub(&q.evals[i], &p->evals[i], &y);
         fr_sub(&inverses_in[i], &roots_of_unity[i], x);
     }
 
@@ -1140,11 +1140,11 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial *p, const BLS
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        fr_mul(&q.elements[i], &q.elements[i], &inverses[i]);
+        fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
     if (m) { // ω_m == x
-        q.elements[--m] = fr_zero;
+        q.evals[--m] = fr_zero;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             // (p_i - y) * ω_i / (x * (x - ω_i))
@@ -1154,14 +1154,14 @@ static C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial *p, const BLS
         ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
         if (ret != C_KZG_OK) goto out;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-            fr_sub(&tmp, &p->elements[i], &y);
+            fr_sub(&tmp, &p->evals[i], &y);
             fr_mul(&tmp, &tmp, &roots_of_unity[i]);
             fr_mul(&tmp, &tmp, &inverses[i]);
-            fr_add(&q.elements[m], &q.elements[m], &tmp);
+            fr_add(&q.evals[m], &q.evals[m], &tmp);
         }
     }
 
-    ret = g1_lincomb(out, s->g1_values, (const fr_t *)(&q.elements), FIELD_ELEMENTS_PER_BLOB);
+    ret = g1_lincomb(out, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB);
 
 out:
     if (inverses_in != NULL) free(inverses_in);
@@ -1213,7 +1213,7 @@ static C_KZG_RET compute_challenges(BLSFieldElement *out, BLSFieldElement r_powe
     /* Copy polynomials */
     for (i = 0; i < n; i++)
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].elements[j]);
+            bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
 
     /* Copy commitments */
     for (i = 0; i < n; i++)
