@@ -1000,7 +1000,7 @@ static C_KZG_RET poly_to_kzg_commitment(KZGCommitment *out, const Polynomial p, 
 static C_KZG_RET poly_from_blob(Polynomial p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p[i], &blob->data[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p[i], &blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;

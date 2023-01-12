@@ -47,7 +47,7 @@ typedef blst_fr fr_t;         /**< Internal Fr field element type */
 typedef g1_t KZGCommitment;
 typedef g1_t KZGProof;
 typedef fr_t BLSFieldElement;
-typedef struct { uint8_t data[BYTES_PER_BLOB]; } Blob;
+typedef struct { uint8_t bytes[BYTES_PER_BLOB]; } Blob;
 
 /**
  * The common return type for all routines in which something can go wrong.
