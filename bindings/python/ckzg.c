@@ -108,6 +108,10 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
       free(commitments);
       return PyErr_Format(PyExc_ValueError, "expected KZGCommitment capsules");
     }
+    if (PyBytes_Size(e) != BYTES_PER_COMMITMENT) {
+      free(commitments);
+      return PyErr_Format(PyExc_ValueError, "expected commitment to be BYTES_PER_COMMITMENT bytes");
+    }
     memcpy(&commitments[i], PyBytes_AsString(e), sizeof(KZGCommitment));
   }
 
