@@ -24,7 +24,7 @@ void free_trusted_setup_wrap(KZGSettings *s) {
   free(s);
 }
 
-C_KZG_RET blob_to_kzg_commitment_wrap(uint8_t out[48], const Blob blob, const KZGSettings *s) {
+C_KZG_RET blob_to_kzg_commitment_wrap(uint8_t out[48], const Blob *blob, const KZGSettings *s) {
   KZGCommitment c;
   C_KZG_RET ret;
   ret = blob_to_kzg_commitment(&c, blob, s);

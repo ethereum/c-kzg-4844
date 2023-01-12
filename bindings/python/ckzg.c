@@ -42,7 +42,7 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
   if (PyBytes_Size(b) != 32 * FIELD_ELEMENTS_PER_BLOB)
     return PyErr_Format(PyExc_ValueError, "expected 32 * FIELD_ELEMENTS_PER_BLOB bytes");
 
-  uint8_t* blob = (uint8_t*)PyBytes_AsString(b);
+  Blob *blob = (Blob*)PyBytes_AsString(b);
 
   KZGCommitment *k = (KZGCommitment*)malloc(sizeof(KZGCommitment));
 

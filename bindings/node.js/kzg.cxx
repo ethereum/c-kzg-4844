@@ -134,7 +134,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
-  auto blob = extract_byte_array_from_param(info, 0, "blob");
+  Blob *blob = (Blob *)extract_byte_array_from_param(info, 0, "blob");
   if (env.IsExceptionPending()) {
     return env.Null();
   }
@@ -174,7 +174,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   for (uint32_t blob_index = 0; blob_index < blobs_count; blob_index++) {
     Napi::Value blob = blobs_param[blob_index];
     auto blob_bytes = blob.As<Napi::Uint8Array>().Data();
-    memcpy(blobs[blob_index], blob_bytes, BYTES_PER_BLOB);
+    memcpy(blobs[blob_index].bytes, blob_bytes, BYTES_PER_BLOB);
   }
 
   KZGProof proof;
@@ -225,7 +225,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     Napi::Value blob = blobs_param[blob_index];
     auto blob_bytes = blob.As<Napi::Uint8Array>().Data();
 
-    memcpy(blobs[blob_index], blob_bytes, BYTES_PER_BLOB);
+    memcpy(blobs[blob_index].bytes, blob_bytes, BYTES_PER_BLOB);
 
     // Extract a G1 point for each commitment
     Napi::Value commitment = commitments_param[blob_index];

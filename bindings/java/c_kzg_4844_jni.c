@@ -145,7 +145,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
 
   KZGProof p;
 
-  C_KZG_RET ret = compute_aggregate_kzg_proof(&p, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, (size_t)count, settings);
+  C_KZG_RET ret = compute_aggregate_kzg_proof(&p, (const Blob *)blobs_native, (size_t)count, settings);
 
   (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
 
@@ -222,7 +222,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
   bool out;
-  ret = verify_aggregate_kzg_proof(&out, (uint8_t const(*)[BYTES_PER_BLOB])blobs_native, c, count_native, &f, settings);
+  ret = verify_aggregate_kzg_proof(&out, (const Blob *)blobs_native, c, count_native, &f, settings);
 
   (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
   free(c);
@@ -256,7 +256,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   KZGCommitment c;
   C_KZG_RET ret;
 
-  ret = blob_to_kzg_commitment(&c, (uint8_t *)blob_native, settings);
+  ret = blob_to_kzg_commitment(&c, (const Blob *)blob_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blob, blob_native, JNI_ABORT);
 
