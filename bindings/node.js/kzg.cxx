@@ -252,7 +252,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, verification_result);
 }
 
-// verifyKzgProof: (polynomial_kzg: KZGCommitment, z: BLSFieldElement, y: BLSFieldElement, kzgProof: KZGProof, setupHandle: SetupHandle) => boolean;
+// verifyKzgProof: (polynomialKzg: KZGCommitment, z: BLSFieldElement, y: BLSFieldElement, kzgProof: KZGProof, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   auto env = info.Env();
 
