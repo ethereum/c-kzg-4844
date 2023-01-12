@@ -15,18 +15,18 @@ void calculate_proof_and_commitment(char * trusted_setup_path){
       blob[n] = i % 250;
       n++;
    }
-   int res0 = compute_aggregate_kzg_proof_wrap(proof, blob, 1, s);
-   int res1 = blob_to_kzg_commitment_wrap(commitment, blob, s);
+   int res0 = compute_aggregate_kzg_proof(proof, blob, 1, s);
+   int res1 = blob_to_kzg_commitment(commitment, blob, s);
 
    FILE *f = fopen("output.txt", "wt");
    // commitment
-   for(int i = 0; i< 48; i++){
+   for(int i = 0; i < 48; i++){
       fprintf(f, "%02x", commitment[i]);
    }
    fprintf(f, "\n");
 
    // proof
-   for(int i = 0; i< 48; i++){
+   for(int i = 0; i < 48; i++){
       fprintf(f, "%02x", proof[i]);
    }
    fprintf(f, "\n");

@@ -24,20 +24,12 @@ void free_trusted_setup_wrap(KZGSettings *s) {
   free(s);
 }
 
-C_KZG_RET blob_to_kzg_commitment_wrap(KZGCommitment *commitment, const Blob blob, const KZGSettings *s) {
-  return blob_to_kzg_commitment(commitment, blob, s);
-}
-
 int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const KZGCommitment *commitments, size_t n, const KZGProof *proof, const KZGSettings *s) {
   bool b;
   C_KZG_RET ret = verify_aggregate_kzg_proof(&b, blobs, commitments, n, proof, s);
   if (ret != C_KZG_OK) return -1;
 
   return b ? 0 : 1;
-}
-
-C_KZG_RET compute_aggregate_kzg_proof_wrap(KZGProof *out, const Blob blobs[], size_t n, const KZGSettings *s) {
-  return compute_aggregate_kzg_proof(out, blobs, n, s);
 }
 
 int verify_kzg_proof_wrap(const KZGCommitment *c, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *p, KZGSettings *s) {

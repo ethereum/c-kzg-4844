@@ -27,7 +27,7 @@ public class Ckzg
     /// <param name="blob">Flatten array of blob elements</param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment_wrap", CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
     public unsafe static extern int BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
 
 
@@ -39,7 +39,7 @@ public class Ckzg
     /// <param name="count">Blobs count</param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "compute_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
+    [DllImport("ckzg", EntryPoint = "compute_aggregate_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
     public unsafe static extern int ComputeAggregatedKzgProof(byte* proof, byte* blobs, int count, IntPtr ts);
 
 
@@ -52,7 +52,7 @@ public class Ckzg
     /// <param name="proof"></param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
-    [DllImport("ckzg", EntryPoint = "verify_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
+    [DllImport("ckzg", EntryPoint = "verify_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
     public unsafe static extern int VerifyAggregatedKzgProof(byte* blobs, byte* commitments, int count, byte* proof, IntPtr ts);
 
     /// <summary>
@@ -64,7 +64,7 @@ public class Ckzg
     /// <param name="proof">Proof</param>
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
-    [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)] // returns 0 on success
+    [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
     public unsafe static extern int VerifyKzgProof(byte* commitment, byte* z, byte* y, byte* proof, IntPtr ts);
 
     /// <summary>
