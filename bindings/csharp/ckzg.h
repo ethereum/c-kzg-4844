@@ -13,7 +13,7 @@ DLLEXPORT KZGSettings* load_trusted_setup_wrap(const char* file);
 
 DLLEXPORT void free_trusted_setup_wrap(KZGSettings *s);
 
-DLLEXPORT C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s);
+DLLEXPORT C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s);
 
 DLLEXPORT int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const KZGCommitment *commitments, size_t n, const KZGProof *proof, const KZGSettings *s);
 

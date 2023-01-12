@@ -996,16 +996,16 @@ static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZ
     return g1_lincomb(out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB);
 }
 
-static C_KZG_RET poly_from_blob(Polynomial *p, const Blob blob) {
+static C_KZG_RET poly_from_blob(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p->evals[i], &blob[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p->evals[i], &blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
 }
 
-C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob blob, const KZGSettings *s) {
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial p;
     g1_t commitment;
@@ -1281,7 +1281,7 @@ out:
 }
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-                                      const Blob blobs[],
+                                      const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s) {
     C_KZG_RET ret;
@@ -1301,7 +1301,7 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = poly_from_blob(&polys[i], blobs[i]);
+        ret = poly_from_blob(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
         ret = poly_to_kzg_commitment(&commitments[i], &polys[i], s);
         if (ret != C_KZG_OK) goto out;
@@ -1325,7 +1325,7 @@ out:
 }
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-                                     const Blob blobs[],
+                                     const Blob *blobs,
                                      const KZGCommitment *expected_kzg_commitments,
                                      size_t n,
                                      const KZGProof *kzg_aggregated_proof,
@@ -1353,7 +1353,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     for (size_t i = 0; i < n; i++) {
         ret = bytes_to_g1(&commitments[i], (uint8_t *)(&expected_kzg_commitments[i]));
         if (ret != C_KZG_OK) goto out;
-        ret = poly_from_blob(&polys[i], blobs[i]);
+        ret = poly_from_blob(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
     }
 

@@ -47,7 +47,7 @@ typedef blst_fr fr_t;         /**< Internal Fr field element type */
 typedef struct { uint8_t bytes[BYTES_PER_COMMITMENT]; } KZGCommitment;
 typedef struct { uint8_t bytes[BYTES_PER_PROOF]; } KZGProof;
 typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
-typedef uint8_t Blob[BYTES_PER_BLOB];
+typedef struct { uint8_t bytes[BYTES_PER_BLOB]; } Blob;
 
 /**
  * The common return type for all routines in which something can go wrong.
@@ -95,19 +95,19 @@ void free_trusted_setup(
     KZGSettings *s);
 
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-                                      const Blob blobs[],
+                                      const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s);
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-                                     const Blob blobs[],
-                                     const KZGCommitment expected_kzg_commitments[],
+                                     const Blob *blobs,
+                                     const KZGCommitment *expected_kzg_commitments,
                                      size_t n,
                                      const KZGProof *kzg_aggregated_proof,
                                      const KZGSettings *s);
 
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
-                                 const Blob blob,
+                                 const Blob *blob,
                                  const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
