@@ -142,19 +142,15 @@ impl Deref for KZGCommitment {
 
 #[repr(u32)]
 #[doc = " The common return type for all routines in which something can go wrong."]
-#[doc = ""]
-#[doc = " @warning In the case of @p C_KZG_OK or @p C_KZG_BADARGS, the caller can assume that all memory allocated by the"]
-#[doc = " called routines has been deallocated. However, in the case of @p C_KZG_ERROR or @p C_KZG_MALLOC being returned, these"]
-#[doc = " are unrecoverable and memory may have been leaked."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum C_KZG_RET {
     #[doc = "< Success!"]
     C_KZG_OK = 0,
-    #[doc = "< The supplied data is invalid in some way"]
+    #[doc = "< The supplied data is invalid in some way."]
     C_KZG_BADARGS = 1,
-    #[doc = "< Internal error - this should never occur and may indicate a bug in the library"]
+    #[doc = "< Internal error - this should never occur and may indicate a bug in the library."]
     C_KZG_ERROR = 2,
-    #[doc = "< Could not allocate memory"]
+    #[doc = "< Could not allocate memory."]
     C_KZG_MALLOC = 3,
 }
 #[doc = " Stores the setup and parameters needed for performing FFTs."]
@@ -175,11 +171,11 @@ pub struct FFTSettings {
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KZGSettings {
-    #[doc = "< The corresponding settings for performing FFTs"]
+    #[doc = "< The corresponding settings for performing FFTs."]
     fs: *const FFTSettings,
-    #[doc = "< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation"]
+    #[doc = "< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation."]
     g1_values: *const g1_t,
-    #[doc = "< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements"]
+    #[doc = "< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements."]
     g2_values: *const g2_t,
 }
 
