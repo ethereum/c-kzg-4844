@@ -226,7 +226,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   };
 
   auto commitments = (KZGCommitment*)calloc(blobs_count, sizeof(KZGCommitment));
-  if (blobs == NULL) {
+  if (commitments == NULL) {
     free(blobs);
     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
     return env.Null();
