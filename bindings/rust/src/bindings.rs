@@ -123,7 +123,7 @@ impl Deref for KZGProof {
     }
 }
 
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: &[u8; 17usize] = b"FSBLOBVERIFY_V1_\0";
+pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: &[u8; 16usize] = b"FSBLOBVERIFY_V1_";
 type g1_t = blst_p1;
 type g2_t = blst_p2;
 type fr_t = blst_fr;
