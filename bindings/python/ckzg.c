@@ -44,6 +44,7 @@ static PyObject* blob_to_kzg_commitment_wrap(PyObject *self, PyObject *args) {
   Blob *blob = (Blob *)PyBytes_AsString(b);
   KZGCommitment *k = (KZGCommitment *)PyBytes_AsString(out);
   if (blob_to_kzg_commitment(k, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    Py_DECREF(out);
     return PyErr_Format(PyExc_RuntimeError, "blob_to_kzg_commitment failed");
   }
 
@@ -94,7 +95,7 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
   Py_ssize_t n = PyBytes_Size(b);
   if (n % BYTES_PER_BLOB != 0)
     return PyErr_Format(PyExc_ValueError, "expected blobs to be a multiple of BYTES_PER_BLOB bytes");
-  n = n / BYTES_PER_BLOB; 
+  n = n / BYTES_PER_BLOB;
 
   Py_ssize_t m = PyBytes_Size(c);
    if (m % BYTES_PER_COMMITMENT != 0)
