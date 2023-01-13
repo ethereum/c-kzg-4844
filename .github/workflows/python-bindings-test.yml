@@ -25,6 +25,10 @@ jobs:
         run: |
           cd src
           make blst
+      - name: Build CKZG
+        run: |
+          cd src
+          make
       - name: Build Python bindings
         run: |
           cd bindings/python
