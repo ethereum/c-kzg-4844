@@ -21,7 +21,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install py_ecc
-      - name: Build
+      - name: Build BLST
+        run: |
+          cd src
+          make blst
+      - name: Build Python bindings
         run: |
           cd bindings/python
           make ckzg.so
@@ -29,7 +33,7 @@ jobs:
         run: |
           cd bindings/python
           make test
-      - name: ECC Test
+      - name: ECC test
         run: |
           cd bindings/python
           make ecc_test
