@@ -170,6 +170,10 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto blobs_count = blobs_param.Length();
 
   auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
+  if (blobs == NULL) {
+    Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
+    return env.Null();
+  };
 
   for (uint32_t blob_index = 0; blob_index < blobs_count; blob_index++) {
     Napi::Value blob = blobs_param[blob_index];
@@ -216,7 +220,17 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto blobs_count = blobs_param.Length();
 
   auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
+  if (blobs == NULL) {
+    Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
+    return env.Null();
+  };
+
   auto commitments = (KZGCommitment*)calloc(blobs_count, sizeof(KZGCommitment));
+  if (commitments == NULL) {
+    free(blobs);
+    Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
+    return env.Null();
+  };
 
   C_KZG_RET ret;
 
