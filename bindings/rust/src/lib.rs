@@ -136,7 +136,7 @@ impl KZGProof {
         unsafe {
             let res = compute_aggregate_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                blobs.as_ptr() as *const u8,
+                blobs.as_ptr(),
                 blobs.len(),
                 kzg_settings,
             );
@@ -158,8 +158,8 @@ impl KZGProof {
         unsafe {
             let res = verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
-                blobs.as_ptr() as *const u8,
-                expected_kzg_commitments.as_ptr() as *const KZGCommitment,
+                blobs.as_ptr(),
+                expected_kzg_commitments.as_ptr(),
                 blobs.len(),
                 self,
                 kzg_settings,
@@ -184,8 +184,8 @@ impl KZGProof {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
                 &kzg_commitment,
-                z.as_ptr(),
-                y.as_ptr(),
+                &z,
+                &y,
                 self,
                 kzg_settings,
             );
