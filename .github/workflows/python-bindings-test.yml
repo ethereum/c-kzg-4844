@@ -1,4 +1,4 @@
-name: Rust bindings tests
+name: Python bindings tests
 on:
   push:
     branches:
