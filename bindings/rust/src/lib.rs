@@ -225,7 +225,7 @@ impl KZGCommitment {
         unsafe {
             blob_to_kzg_commitment(
                 kzg_commitment.as_mut_ptr(),
-                blob.as_ptr() as *mut Blob,
+                blob.as_ptr() as *const Blob,
                 kzg_settings,
             );
             kzg_commitment.assume_init()
