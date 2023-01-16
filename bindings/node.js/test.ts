@@ -105,7 +105,7 @@ describe("C-KZG", () => {
     const proof = computeAggregateKzgProof(blobs);
     expect(() =>
       verifyAggregateKzgProof(blobs, commitments, proof),
-    ).toThrowError("Invalid commitment data");
+    ).toThrowError("verify_aggregate_kzg_proof failed with error code: 1");
   });
 
   describe("computing commitment from blobs", () => {

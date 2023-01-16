@@ -61,7 +61,7 @@ ts_pyecc = load_trusted_setup("../../src/trusted_setup.txt")
 commitment_pyecc = kzg_proofs.commit_to_poly(polynomial, ts_pyecc)
 commitment_ckzg  = ckzg.blob_to_kzg_commitment(b''.join([r.to_bytes(32, "little") for r in polynomial_l_rbo]), ts)
 
-assert compress_G1(commitment_pyecc).to_bytes(48, "big") == ckzg.bytes_from_g1(commitment_ckzg)
+assert compress_G1(commitment_pyecc).to_bytes(48, "big") == commitment_ckzg
 
 # TODO: update this test for the new ckzg interface
 # proof_pyecc = kzg_proofs.compute_proof_single(polynomial, x, ts_pyecc)

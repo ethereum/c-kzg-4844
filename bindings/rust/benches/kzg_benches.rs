@@ -6,25 +6,25 @@ use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
 fn generate_random_blob_for_bench(rng: &mut ThreadRng) -> Blob {
-    let mut arr: Blob = [0; BYTES_PER_BLOB];
+    let mut arr = [0u8; BYTES_PER_BLOB];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
     // each field element contained in the blob is < BLS_MODULUS
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         arr[i * BYTES_PER_FIELD_ELEMENT + BYTES_PER_FIELD_ELEMENT - 1] = 0;
     }
-    arr
+    arr.into()
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
     assert!(trusted_setup_file.exists());
-    let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
+    let kzg_settings = Arc::new(KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
     let blob = generate_random_blob_for_bench(&mut rng);
     c.bench_function("blob_to_kzg_commitment", |b| {
-        b.iter(|| KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+        b.iter(|| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
     });
 
     for num_blobs in [4, 8, 16].iter() {
@@ -37,15 +37,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(
             BenchmarkId::new("compute_aggregate_kzg_proof", *num_blobs),
             &blobs,
-            |b, blobs| b.iter(|| KzgProof::compute_aggregate_kzg_proof(blobs, &kzg_settings)),
+            |b, blobs| b.iter(|| KZGProof::compute_aggregate_kzg_proof(blobs, &kzg_settings)),
         );
 
-        let kzg_commitments: Vec<KzgCommitment> = blobs
+        let kzg_commitments: Vec<KZGCommitment> = blobs
             .clone()
             .into_iter()
-            .map(|blob| KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
             .collect();
-        let proof = KzgProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
+        let proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
 
         group.bench_with_input(
             BenchmarkId::new("verify_aggregate_kzg_proof", *num_blobs),
