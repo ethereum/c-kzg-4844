@@ -80,12 +80,11 @@ struct blst_p2_affine {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct BLSFieldElement {
-    bytes: [u8; 32usize],
+    bytes: [u8; BYTES_PER_FIELD_ELEMENT],
 }
 
 impl Deref for BLSFieldElement {
-    type Target = [u8; 32];
-
+    type Target = [u8; BYTES_PER_FIELD_ELEMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
@@ -113,11 +112,11 @@ impl DerefMut for Blob {
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KZGProof {
-    bytes: [u8; 48usize],
+    bytes: [u8; BYTES_PER_PROOF],
 }
 
 impl Deref for KZGProof {
-    type Target = [u8; 48];
+    type Target = [u8; BYTES_PER_PROOF];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
@@ -130,11 +129,11 @@ type fr_t = blst_fr;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KZGCommitment {
-    bytes: [u8; 48usize],
+    bytes: [u8; BYTES_PER_COMMITMENT],
 }
 
 impl Deref for KZGCommitment {
-    type Target = [u8; 48];
+    type Target = [u8; BYTES_PER_COMMITMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
