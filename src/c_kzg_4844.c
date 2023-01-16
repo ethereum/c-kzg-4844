@@ -1339,13 +1339,13 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (commitments == NULL) {
+    if (0 < n && commitments == NULL) {
         ret = C_KZG_MALLOC;
         goto out;
     }
 
     polys = calloc(n, sizeof(Polynomial));
-    if (polys == NULL) {
+    if (0 < n && polys == NULL) {
         ret = C_KZG_MALLOC;
         goto out;
     }
