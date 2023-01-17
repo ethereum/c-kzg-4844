@@ -168,15 +168,24 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
+  size_t count_native = (size_t)count;
+
   size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  size_t expected_blobs_size = BYTES_PER_BLOB * (size_t)count;
+  size_t expected_blobs_size = BYTES_PER_BLOB * count_native;
   if (blobs_size != expected_blobs_size)
   {
     throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
     return 0;
   }
 
-  size_t count_native = (size_t)count;
+  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments);
+  size_t expected_commitments_size = BYTES_PER_COMMITMENT * count_native;
+  if (commitments_size != expected_commitments_size)
+  {
+    throw_invalid_size_exception(env, "Invalid commitments size.", commitments_size, expected_commitments_size);
+    return 0;
+  }
+
   KZGProof *proof_native = (KZGProof *)(*env)->GetByteArrayElements(env, proof, NULL);
   KZGCommitment *commitments_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitments, NULL);
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
