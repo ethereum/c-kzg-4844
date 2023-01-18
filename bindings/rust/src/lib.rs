@@ -304,7 +304,6 @@ mod tests {
             .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
             .unwrap());
 
-        let incorrect_blob = generate_random_blob(&mut rng);
         blobs.pop();
 
         let error = kzg_proof
@@ -312,6 +311,7 @@ mod tests {
             .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
+        let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
         assert!(!kzg_proof
