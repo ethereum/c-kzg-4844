@@ -698,7 +698,7 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
     return C_KZG_OK;
 }
 
-static C_KZG_RET poly_from_blob(Polynomial *p, const Blob *blob) {
+static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         ret = bytes_to_bls_field(&p->evals[i], &blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
@@ -843,6 +843,7 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
     }
 }
 
+
 static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = fr_one;
     for (uint64_t i = 0; i < n; i++) {
@@ -911,7 +912,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
     Polynomial p;
     g1_t commitment;
 
-    ret = poly_from_blob(&p, blob);
+    ret = blob_to_polynomial(&p, blob);
     if (ret != C_KZG_OK) return ret;
     ret = poly_to_kzg_commitment(&commitment, &p, s);
     if (ret != C_KZG_OK) return ret;
@@ -1085,7 +1086,7 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = poly_from_blob(&polys[i], &blobs[i]);
+        ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
         ret = poly_to_kzg_commitment(&commitments[i], &polys[i], s);
         if (ret != C_KZG_OK) goto out;
@@ -1137,7 +1138,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     for (size_t i = 0; i < n; i++) {
         ret = bytes_to_g1(&commitments[i], (uint8_t *)(&expected_kzg_commitments[i]));
         if (ret != C_KZG_OK) goto out;
-        ret = poly_from_blob(&polys[i], &blobs[i]);
+        ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
     }
 

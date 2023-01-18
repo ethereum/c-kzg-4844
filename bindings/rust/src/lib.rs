@@ -25,6 +25,8 @@ pub enum Error {
     InvalidKzgCommitment(String),
     /// The provided trusted setup is invalid.
     InvalidTrustedSetup(String),
+    /// Paired arguments have different lengths.
+    MismatchLength(String),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
 }
@@ -53,15 +55,12 @@ impl KZGSettings {
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
-            let n1 = g1_bytes.len();
-            let n2 = g2_bytes.len();
-
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
                 g1_bytes.as_ptr() as *const u8,
-                n1,
+                g1_bytes.len(),
                 g2_bytes.as_ptr() as *const u8,
-                n2,
+                g2_bytes.len(),
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
@@ -154,6 +153,13 @@ impl KZGProof {
         expected_kzg_commitments: &[KZGCommitment],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
+        if blobs.len() != expected_kzg_commitments.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} blobs and {} commitments",
+                blobs.len(),
+                expected_kzg_commitments.len()
+            )));
+        }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_aggregate_kzg_proof(
@@ -278,7 +284,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let num_blobs: usize = rng.gen_range(0..16);
+        let num_blobs: usize = rng.gen_range(1..16);
         let mut blobs: Vec<Blob> = (0..num_blobs)
             .map(|_| generate_random_blob(&mut rng))
             .collect();
@@ -295,8 +301,14 @@ mod tests {
             .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
             .unwrap());
 
-        let incorrect_blob = generate_random_blob(&mut rng);
         blobs.pop();
+
+        let error = kzg_proof
+            .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+            .unwrap_err();
+        assert!(matches!(error, Error::MismatchLength(_)));
+
+        let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
         assert!(!kzg_proof
