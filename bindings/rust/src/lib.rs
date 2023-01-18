@@ -156,7 +156,6 @@ impl KZGProof {
         expected_kzg_commitments: &[KZGCommitment],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         if blobs.len() != expected_kzg_commitments.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} blobs and {} commitments",
@@ -164,6 +163,7 @@ impl KZGProof {
                 expected_kzg_commitments.len()
             )));
         }
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
