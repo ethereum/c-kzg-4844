@@ -58,7 +58,7 @@ impl KZGSettings {
                 g1_bytes.as_ptr() as *const u8,
                 g1_bytes.len(),
                 g2_bytes.as_ptr() as *const u8,
-                g1_bytes.len(),
+                g2_bytes.len(),
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
