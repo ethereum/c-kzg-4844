@@ -972,7 +972,6 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
     return C_KZG_OK;
 }
 
-
 /**
  * Compute KZG proof for polynomial in Lagrange form at position x.
  *
