@@ -55,15 +55,12 @@ impl KZGSettings {
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
-            let n1 = g1_bytes.len();
-            let n2 = g2_bytes.len();
-
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
                 g1_bytes.as_ptr() as *const u8,
-                n1,
+                g1_bytes.len(),
                 g2_bytes.as_ptr() as *const u8,
-                n2,
+                g2_bytes.len(),
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())

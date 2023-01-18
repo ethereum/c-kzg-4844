@@ -122,7 +122,6 @@ impl Deref for KZGProof {
     }
 }
 
-pub const FIAT_SHAMIR_PROTOCOL_DOMAIN: &[u8; 16usize] = b"FSBLOBVERIFY_V1_";
 type g1_t = blst_p1;
 type g2_t = blst_p2;
 type fr_t = blst_fr;
@@ -186,7 +185,6 @@ unsafe impl Sync for KZGSettings {}
 unsafe impl Send for KZGSettings {}
 
 extern "C" {
-    #[doc = " Interface functions"]
     pub fn load_trusted_setup(
         out: *mut KZGSettings,
         g1_bytes: *const u8, /* n1 * 48 bytes */
@@ -194,22 +192,18 @@ extern "C" {
         g2_bytes: *const u8, /* n2 * 96 bytes */
         n2: usize,
     ) -> C_KZG_RET;
-}
-extern "C" {
+
     pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
-}
-extern "C" {
+
     pub fn free_trusted_setup(s: *mut KZGSettings);
-}
-extern "C" {
+
     pub fn compute_aggregate_kzg_proof(
         out: *mut KZGProof,
         blobs: *const Blob,
         n: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-}
-extern "C" {
+
     pub fn verify_aggregate_kzg_proof(
         out: *mut bool,
         blobs: *const Blob,
@@ -218,15 +212,13 @@ extern "C" {
         kzg_aggregated_proof: *const KZGProof,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-}
-extern "C" {
+
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-}
-extern "C" {
+
     pub fn verify_kzg_proof(
         out: *mut bool,
         polynomial_kzg: *const KZGCommitment,
