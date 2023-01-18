@@ -100,6 +100,27 @@ public class CKZG4844JNITest {
   }
 
   @Test
+  public void passingDifferentLengthForCommitmentsThrowsAnException() {
+
+    loadTrustedSetup();
+
+    final int count = 2;
+    final byte[] blobs = TestUtils.createRandomBlobs(count);
+    final byte[] proof = TestUtils.createRandomProof(count);
+    // different length for commitments
+    final byte[] commitments = TestUtils.createRandomCommitments(3);
+
+    final CKZGException exception = assertThrows(CKZGException.class,
+        () -> CKZG4844JNI.verifyAggregateKzgProof(blobs, commitments, count, proof));
+
+    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals("Invalid commitments size. Expected 96 bytes but got 144.",
+        exception.getErrorMessage());
+
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
   public void passingInvalidLengthForBlobsThrowsAnException() {
 
     loadTrustedSetup();

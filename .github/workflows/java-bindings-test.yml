@@ -33,4 +33,4 @@ jobs:
       - name: Build and Test (minimal preset)
         run: |
           cd bindings/java
-          make PRESET=minimal build test -B
+          make PRESET=minimal build test
