@@ -565,9 +565,9 @@ typedef struct {
     size_t off;
 } SHA256_CTX;
 
-extern void sha256_init(SHA256_CTX *ctx);
-extern void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
-extern void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
+void sha256_init(SHA256_CTX *ctx);
+void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
+void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
 
 static void hash(uint8_t md[32], const uint8_t *input, size_t n) {
     SHA256_CTX ctx;
