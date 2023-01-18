@@ -547,6 +547,13 @@ static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
     blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
+static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
+    for (int i = 0; i < 8; i++) {
+        out[i] = n & 0xFF;
+        n >>= 8;
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // SHA-256 Hash Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -700,20 +707,8 @@ static C_KZG_RET poly_from_blob(Polynomial *p, const Blob *blob) {
     return C_KZG_OK;
 }
 
-static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
-    for (int i = 0; i < 8; i++) {
-        out[i] = n & 0xFF;
-        n >>= 8;
-    }
-}
-
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
-    fr_t current_power = fr_one;
-    for (uint64_t i = 0; i < n; i++) {
-        out[i] = current_power;
-        fr_mul(&current_power, &current_power, x);
-    }
-}
+/* Forward function definition */
+static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
 static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
@@ -848,6 +843,14 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
     }
 }
 
+static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+    fr_t current_power = fr_one;
+    for (uint64_t i = 0; i < n; i++) {
+        out[i] = current_power;
+        fr_mul(&current_power, &current_power, x);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Polynomials Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -916,6 +919,32 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
     return C_KZG_OK;
 }
 
+/* Forward function declaration */
+static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+                                       const g1_t *proof, const KZGSettings *ks);
+
+C_KZG_RET verify_kzg_proof(bool *out,
+                           const KZGCommitment *commitment,
+                           const BLSFieldElement *z,
+                           const BLSFieldElement *y,
+                           const KZGProof *kzg_proof,
+                           const KZGSettings *s) {
+    C_KZG_RET ret;
+    fr_t frz, fry;
+    g1_t g1commitment, g1proof;
+
+    ret = bytes_to_g1(&g1commitment, (const uint8_t *)(commitment));
+    if (ret != C_KZG_OK) return ret;
+    ret = bytes_to_bls_field(&frz, (const uint8_t *)(z));
+    if (ret != C_KZG_OK) return ret;
+    ret = bytes_to_bls_field(&fry, (const uint8_t *)(y));
+    if (ret != C_KZG_OK) return ret;
+    ret = bytes_to_g1(&g1proof, (const uint8_t *)(kzg_proof));
+    if (ret != C_KZG_OK) return ret;
+
+    return verify_kzg_proof_impl(out, &g1commitment, &frz, &fry, &g1proof, s);
+}
+
 /**
  * Check a KZG proof at a point against a commitment.
  *
@@ -943,27 +972,6 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
     return C_KZG_OK;
 }
 
-C_KZG_RET verify_kzg_proof(bool *out,
-                           const KZGCommitment *commitment,
-                           const BLSFieldElement *z,
-                           const BLSFieldElement *y,
-                           const KZGProof *kzg_proof,
-                           const KZGSettings *s) {
-    C_KZG_RET ret;
-    fr_t frz, fry;
-    g1_t g1commitment, g1proof;
-
-    ret = bytes_to_g1(&g1commitment, (const uint8_t *)(commitment));
-    if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&frz, (const uint8_t *)(z));
-    if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&fry, (const uint8_t *)(y));
-    if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&g1proof, (const uint8_t *)(kzg_proof));
-    if (ret != C_KZG_OK) return ret;
-
-    return verify_kzg_proof_impl(out, &g1commitment, &frz, &fry, &g1proof, s);
-}
 
 /**
  * Compute KZG proof for polynomial in Lagrange form at position x.
