@@ -27,5 +27,3 @@ jobs:
           cd bindings/rust
           cargo clean
           cargo test --all --release --features="minimal-spec" --tests
-
-  

@@ -24,7 +24,7 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CHECK(cond)                                                                                                    \
+#define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -527,6 +527,27 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
     return blst_fp12_is_one(&gt_point);
 }
 
+/**
+ * Calculate log base two of a power of two.
+ *
+ * In other words, the bit index of the one bit.
+ *
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ *
+ * @param[in] n The power of two
+ * @return the log base two of n
+ */
+static int log2_pow2(uint32_t n) {
+    const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
+    register uint32_t r;
+    r = (n & b[0]) != 0;
+    r |= ((n & b[1]) != 0) << 1;
+    r |= ((n & b[2]) != 0) << 2;
+    r |= ((n & b[3]) != 0) << 3;
+    r |= ((n & b[4]) != 0) << 4;
+    return r;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Bytes Conversion Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -627,27 +648,6 @@ static uint32_t reverse_bits(uint32_t a) {
 }
 
 /**
- * Calculate log base two of a power of two.
- *
- * In other words, the bit index of the one bit.
- *
- * @remark Works only for n a power of two, and only for n up to 2^31.
- *
- * @param[in] n The power of two
- * @return the log base two of n
- */
-static int log2_pow2(uint32_t n) {
-    const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
-    register uint32_t r;
-    r = (n & b[0]) != 0;
-    r |= ((n & b[1]) != 0) << 1;
-    r |= ((n & b[2]) != 0) << 2;
-    r |= ((n & b[3]) != 0) << 3;
-    r |= ((n & b[4]) != 0) << 4;
-    return r;
-}
-
-/**
  * Reorder an array in reverse bit order of its indices.
  *
  * @remark Operates in-place on the array.
@@ -659,7 +659,7 @@ static int log2_pow2(uint32_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-static C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
+static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
 
@@ -1307,7 +1307,7 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
 
     // Permute the roots of unity
     memcpy(fs->roots_of_unity, fs->expanded_roots_of_unity, sizeof(fr_t) * fs->max_width);
-    ret = reverse_bit_order(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
+    ret = bit_reversal_permutation(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
@@ -1379,7 +1379,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n
     if (ret != C_KZG_OK) goto out_error;
     ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
     if (ret != C_KZG_OK) goto out_error;
-    ret = reverse_bit_order(out->g1_values, sizeof(g1_t), n1);
+    ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
