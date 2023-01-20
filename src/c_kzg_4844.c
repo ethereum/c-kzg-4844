@@ -1343,6 +1343,21 @@ static void free_kzg_settings(KZGSettings *ks) {
     free(ks->g2_values);
 }
 
+/**
+ * Load trusted setup into a KZGSettings.
+ *
+ * @remark Free after use with #free_trusted_setup.
+ *
+ * @param[out] out Pointer to the stored trusted setup data
+ * @param g1_bytes Array of G1 elements
+ * @param n1       Length of `g1`
+ * @param g2_bytes Array of G2 elements
+ * @param n2       Length of `g2`
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n1, const uint8_t *g2_bytes, size_t n2) {
     uint64_t i;
     blst_p2_affine g2_affine;
@@ -1393,6 +1408,17 @@ out_success:
     return ret;
 }
 
+/*
+ * Load trusted setup from a file.
+ *
+ * @remark The file format is n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2
+ * @remark where the first two numbers are in decimal and the remainder
+ * @remark are hexstrings and any whitespace can be used as separators.
+ * @remark See also #load_trusted_setup.
+ *
+ * @param[out] out Pointer to the loaded trusted setup data
+ * @param in       File handle for input - will not be closed
+ */
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     uint64_t i;
     int num_matches;
@@ -1420,6 +1446,9 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     return load_trusted_setup(out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, 65);
 }
 
+/*
+ * Free a trusted setup (KZGSettings).
+ */
 void free_trusted_setup(KZGSettings *s) {
     free_fft_settings((FFTSettings*)s->fs);
     free_kzg_settings(s);
