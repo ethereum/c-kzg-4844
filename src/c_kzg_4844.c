@@ -947,23 +947,23 @@ C_KZG_RET verify_kzg_proof(bool *out,
 }
 
 /**
- * Check a KZG proof at a point against a commitment.
+ * Helper function: Verify KZG proof claiming that p(z) == y
  *
- * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed value @p y at @p x, verify the claim.
+ * Given a @p commitment to a polynomial, a @p proof for @p z, and the claimed value @p y at @p z, verify the claim.
  *
  * @param[out] out        `true` if the proof is valid, `false` if not
  * @param[in]  commitment The commitment to a polynomial
- * @param[in]  x          The point at which the proof is to be checked (opened)
+ * @param[in]  z          The point at which the proof is to be checked (opened)
  * @param[in]  y          The claimed value of the polynomial at @p x
  * @param[in]  proof      A proof of the value of the polynomial at the point @p x
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
-    g2_mul(&x_g2, &g2_generator, x);
+    g2_mul(&x_g2, &g2_generator, z);
     g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
     g1_mul(&y_g1, &g1_generator, y);
     g1_sub(&commitment_minus_y, commitment, &y_g1);
@@ -978,18 +978,18 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
  *
  * @param[out] out The combined proof as a single G1 element
  * @param[in]  p   The polynomial in Lagrange form
- * @param[in]  x   The generator x-value for the evaluation points
+ * @param[in]  z   The evaluation point
  * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
-static C_KZG_RET compute_kzg_proof(g1_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s) {
+static C_KZG_RET compute_kzg_proof(g1_t *out, const Polynomial *p, const fr_t *z, const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t y;
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
 
-    ret = evaluate_polynomial_in_evaluation_form(&y, p, x, s);
+    ret = evaluate_polynomial_in_evaluation_form(&y, p, z, s);
     if (ret != C_KZG_OK) goto out;
 
     fr_t tmp;
