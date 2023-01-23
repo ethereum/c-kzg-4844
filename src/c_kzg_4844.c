@@ -1095,7 +1095,7 @@ out:
     return C_KZG_OK;
 }
 
-C_KZG_RET compute_aggregate_kzg_proof(KZGProof *proof,
+C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
                                       const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s) {
@@ -1134,7 +1134,7 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *proof,
     BLSFieldElement evaluation_challenge;
     bytes_from_bls_field(evaluation_challenge.bytes, &evaluation_challenge_fr);
 
-    ret = compute_kzg_proof(proof, &aggregated_poly, &evaluation_challenge, s);
+    ret = compute_kzg_proof(out, &aggregated_poly, &evaluation_challenge, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
