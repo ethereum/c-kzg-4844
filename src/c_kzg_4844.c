@@ -528,7 +528,7 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Bytes Conversion Helper Functions
+// Conversion Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
@@ -554,6 +554,7 @@ static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
     }
 }
 
+/* Forward function definition */
 static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]);
 
 static C_KZG_RET polynomial_to_polynomial_fr(PolynomialFr *out, const Polynomial *in) {
