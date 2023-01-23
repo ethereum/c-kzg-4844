@@ -543,8 +543,8 @@ static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
     return C_KZG_OK;
 }
 
-static void bytes_from_bls_field(BLSFieldElement *out, const fr_t *in) {
-    blst_scalar_from_fr((blst_scalar*)out->bytes, in);
+static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
+    blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
 static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
@@ -568,7 +568,7 @@ static C_KZG_RET polynomial_to_polynomial_fr(PolynomialFr *out, const Polynomial
 
 static void polynomial_fr_to_polynomial(Polynomial *out, const PolynomialFr *in) {
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        bytes_from_bls_field(&out->evals[i], &in->evals[i]);
+        bytes_from_bls_field(out->evals[i].bytes, &in->evals[i]);
     }
 }
 
@@ -747,7 +747,7 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     /* Copy polynomials */
     for (i = 0; i < n; i++)
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field((BLSFieldElement *)&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
+            bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
 
     /* Copy commitments */
     for (i = 0; i < n; i++)
@@ -1132,7 +1132,7 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *proof,
     polynomial_fr_to_polynomial(&aggregated_poly, &aggregated_poly_fr);
 
     BLSFieldElement evaluation_challenge;
-    bytes_from_bls_field(&evaluation_challenge, &evaluation_challenge_fr);
+    bytes_from_bls_field(evaluation_challenge.bytes, &evaluation_challenge_fr);
 
     ret = compute_kzg_proof(proof, &aggregated_poly, &evaluation_challenge, s);
     if (ret != C_KZG_OK) goto out;
