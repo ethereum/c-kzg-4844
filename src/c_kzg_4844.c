@@ -1266,7 +1266,7 @@ out:
 /**
  * Computes the aggregate KZG proof for multiple blobs.
  *
- * @param[out] out Pointer to the KZGProof object to store the result in.
+ * @param[out] out `true` if the proof is valid, `false` if not
  * @param[in] blobs Array of Blob objects to compute the aggregate proof for.
  * @param[in] n The number of blobs in the array.
  * @param[in] s The settings struct containing the commitment verification key (i.e. the trusted setup)
