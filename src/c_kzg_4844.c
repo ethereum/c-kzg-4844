@@ -710,7 +710,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 /* Forward function definition */
 static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
-static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
+static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out,
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
     size_t i;
     uint64_t j;
@@ -751,13 +751,13 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     /* Compute r_powers */
     fr_t r;
     hash_to_bls_field(&r, r_bytes);
-    compute_powers(r_powers, &r, n);
+    compute_powers(r_powers_out, &r, n);
 
     /* Compute eval_challenge */
     uint8_t eval_challenge[32] = {0};
     hash_input[32] = 0x1;
     hash(eval_challenge, hash_input, 33);
-    hash_to_bls_field(out, eval_challenge);
+    hash_to_bls_field(eval_challenge_out, eval_challenge);
 
     free(bytes);
     return C_KZG_OK;
