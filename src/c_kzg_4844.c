@@ -1127,13 +1127,13 @@ static C_KZG_RET compute_kzg_proof(g1_t *out, const Polynomial *p, const fr_t *z
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        if (fr_equal(x, &roots_of_unity[i])) {
+        if (fr_equal(z, &roots_of_unity[i])) {
             m = i + 1;
             continue;
         }
-        // (p_i - y) / (ω_i - x)
+        // (p_i - y) / (ω_i - z)
         fr_sub(&q.evals[i], &p->evals[i], &y);
-        fr_sub(&inverses_in[i], &roots_of_unity[i], x);
+        fr_sub(&inverses_in[i], &roots_of_unity[i], z);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -1143,13 +1143,13 @@ static C_KZG_RET compute_kzg_proof(g1_t *out, const Polynomial *p, const fr_t *z
         fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
-    if (m) { // ω_m == x
+    if (m) { // ω_m == z
         q.evals[--m] = fr_zero;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
-            // (p_i - y) * ω_i / (x * (x - ω_i))
-            fr_sub(&tmp, x, &roots_of_unity[i]);
-            fr_mul(&inverses_in[i], &tmp, x);
+            // (p_i - y) * ω_i / (z * (z - ω_i))
+            fr_sub(&tmp, z, &roots_of_unity[i]);
+            fr_mul(&inverses_in[i], &tmp, z);
         }
         ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
         if (ret != C_KZG_OK) goto out;
