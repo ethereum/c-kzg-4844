@@ -92,7 +92,7 @@ static const g2_t g2_generator = {{{{
  * The first 32 roots of unity in the finite field F_r.
  *
  * For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be
- * converted to an `fr_t` type via the #blst_fr_from_uint64s library function.
+ * converted to an `fr_t` type via the #blst_fr_from_uint64 function.
  *
  * The decimal values may be calculated with the following Python code:
  * @code{.py}
