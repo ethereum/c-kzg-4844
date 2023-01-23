@@ -44,9 +44,10 @@ typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
 
+typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
 typedef struct { uint8_t bytes[BYTES_PER_COMMITMENT]; } KZGCommitment;
 typedef struct { uint8_t bytes[BYTES_PER_PROOF]; } KZGProof;
-typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
+typedef struct { BLSFieldElement evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
 typedef struct { uint8_t bytes[BYTES_PER_BLOB]; } Blob;
 
 /**
@@ -116,6 +117,11 @@ C_KZG_RET verify_kzg_proof(bool *out,
                            const BLSFieldElement *y,
                            const KZGProof *kzg_proof,
                            const KZGSettings *s);
+
+C_KZG_RET compute_kzg_proof(KZGProof *out,
+                            const Polynomial *p,
+                            const BLSFieldElement *x,
+                            const KZGSettings *s);
 
 #ifdef __cplusplus
 }
