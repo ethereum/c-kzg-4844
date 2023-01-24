@@ -19,4 +19,4 @@ DLLEXPORT int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const KZGCommi
 
 DLLEXPORT C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out, const Blob blobs[], size_t n, const KZGSettings *s);
 
-DLLEXPORT int verify_kzg_proof_wrap(const KZGCommitment *c, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *p, KZGSettings *s);
+DLLEXPORT int verify_kzg_proof_wrap(const KZGCommitment *c, const Bytes32 *z, const Bytes32 *y, const KZGProof *p, KZGSettings *s);

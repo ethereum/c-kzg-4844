@@ -249,8 +249,8 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
   KZGCommitment *commitment_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitment, NULL);
   KZGProof *proof_native = (KZGProof *)(*env)->GetByteArrayElements(env, proof, NULL);
-  BLSFieldElement *z_native = (BLSFieldElement *)(*env)->GetByteArrayElements(env, z, NULL);
-  BLSFieldElement *y_native = (BLSFieldElement *)(*env)->GetByteArrayElements(env, y, NULL);
+  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z, NULL);
+  Bytes32 *y_native = (Bytes32 *)(*env)->GetByteArrayElements(env, y, NULL);
 
   bool out;
   C_KZG_RET ret = verify_kzg_proof(&out, commitment_native, z_native, y_native, proof_native, settings);

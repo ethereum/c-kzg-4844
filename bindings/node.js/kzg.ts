@@ -5,7 +5,7 @@
 const kzg: KZG = require("./kzg.node");
 const fs = require("fs");
 
-export type BLSFieldElement = Uint8Array; // 32 bytes
+export type Bytes32 = Uint8Array; // 32 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
@@ -37,8 +37,8 @@ type KZG = {
 
   verifyKzgProof: (
     polynomialKzg: KZGCommitment,
-    z: BLSFieldElement,
-    y: BLSFieldElement,
+    z: Bytes32,
+    y: Bytes32,
     kzgProof: KZGProof,
     setupHandle: SetupHandle,
   ) => boolean;
@@ -115,8 +115,8 @@ export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
 
 export function verifyKzgProof(
   polynomialKzg: KZGCommitment,
-  z: BLSFieldElement,
-  y: BLSFieldElement,
+  z: Bytes32,
+  y: Bytes32,
   kzgProof: KZGProof,
 ): boolean {
   return kzg.verifyKzgProof(
