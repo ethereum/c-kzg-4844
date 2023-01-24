@@ -1,0 +1,23 @@
+name: Go bindings tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.19
+        id: go
+      - uses: actions/checkout@v3
+      - name: Test
+        run: |
+          cd bindings/go
+          go test .
