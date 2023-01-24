@@ -708,7 +708,7 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
  * We do the second of these to save memory here.
  */
 static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
-    C_KZG_RET ret = C_KZG_OK;
+    C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
@@ -725,20 +725,11 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
     } else {
         // Blst's implementation of the Pippenger method
         scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-        if (scratch == NULL) {
-            ret = C_KZG_MALLOC;
-            goto out;
-        };
+        if (scratch == NULL) goto out;
         p_affine = malloc(len * sizeof(blst_p1_affine));
-        if (p_affine == NULL) {
-            ret = C_KZG_MALLOC;
-            goto out;
-        }
+        if (p_affine == NULL) goto out;
         scalars = malloc(len * sizeof(blst_scalar));
-        if (scalars == NULL) {
-            ret = C_KZG_MALLOC;
-            goto out;
-        }
+        if (scalars == NULL) goto out;
 
         // Transform the points to affine representation
         const blst_p1 *p_arg[2] = {p, NULL};
@@ -754,6 +745,8 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
     }
+
+    ret = C_KZG_OK;
 
 out:
     free(scratch);
