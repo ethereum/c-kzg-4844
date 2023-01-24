@@ -843,9 +843,9 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
 }
 
 /**
- * Compute and return [ x^0, x^1, ..., x^{n-1} ]
+ * Compute and return [ x^0, x^1, ..., x^{n-1} ].
  *
- * @remark `out` is left untouched if n == 0
+ * @remark `out` is left untouched if `n == 0`.
  *
  * @param[out] out The array to store the powers
  * @param[in] x The field element to raise to powers
@@ -961,7 +961,7 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
                                        const g1_t *proof, const KZGSettings *ks);
 
 /**
- * Verify a KZG proof claiming that p(z) == y.
+ * Verify a KZG proof claiming that `p(z) == y`.
  *
  * @param[out] out `true` if the proof is valid, `false` if not
  * @param[in] commitment The KZG commitment corresponding to polynomial p(x)
@@ -995,7 +995,7 @@ C_KZG_RET verify_kzg_proof(bool *out,
 }
 
 /**
- * Helper function: Verify KZG proof claiming that p(z) == y
+ * Helper function: Verify KZG proof claiming that `p(z) == y`.
  *
  * Given a @p commitment to a polynomial, a @p proof for @p z, and the claimed value @p y at @p z, verify the claim.
  *
@@ -1131,7 +1131,7 @@ out:
 }
 
 /**
- * Computes aggregate KZG proof given for multiple blobs
+ * Computes aggregate KZG proof given for multiple blobs.
  *
  * @remark This function should work even if `n==0`.
  *
