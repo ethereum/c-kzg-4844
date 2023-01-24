@@ -642,9 +642,9 @@ static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n)
  * @param[out] out The field element to store the result
  * @param[in] bytes A 32-byte array containing the input
  */
-static void hash_to_bls_field(fr_t *out, const Bytes32 *bytes) {
+static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, bytes->bytes);
+    blst_scalar_from_lendian(&tmp, b->bytes);
     blst_fr_from_scalar(out, &tmp);
 }
 
@@ -656,9 +656,9 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *bytes) {
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Input was not a valid scalar field element
  */
-static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *bytes) {
+static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, bytes->bytes);
+    blst_scalar_from_lendian(&tmp, b->bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
     blst_fr_from_scalar(out, &tmp);
     return C_KZG_OK;
