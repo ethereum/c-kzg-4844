@@ -473,7 +473,7 @@ static int log2_pow2(uint32_t n) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Conversion Helper Functions
+// Bytes Conversion Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
@@ -858,13 +858,13 @@ C_KZG_RET verify_kzg_proof(bool *out,
     fr_t frz, fry;
     g1_t g1commitment, g1proof;
 
-    ret = bytes_to_g1(&g1commitment, (const uint8_t *)(commitment));
+    ret = bytes_to_g1(&g1commitment, commitment->bytes);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_bls_field(&frz, z->bytes);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_bls_field(&fry, y->bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&g1proof, (const uint8_t *)(kzg_proof));
+    ret = bytes_to_g1(&g1proof, kzg_proof->bytes);
     if (ret != C_KZG_OK) return ret;
 
     return verify_kzg_proof_impl(out, &g1commitment, &frz, &fry, &g1proof, s);
@@ -901,11 +901,11 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
 C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, const fr_t *z, const KZGSettings *s);
 
 /**
- * Compute KZG proof for polynomial in Lagrange form at position x.
+ * Compute KZG proof for polynomial in Lagrange form at position z.
  *
  * @param[out] out  The combined proof as a single G1 element
  * @param[in]  blob The blob (polynomial) to generate a proof for
- * @param[in]  x    The generator x-value for the evaluation points
+ * @param[in]  z    The generator z-value for the evaluation points
  * @param[in]  s    The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
@@ -1075,7 +1075,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     Polynomial* polys = NULL;
 
     g1_t proof;
-    ret = bytes_to_g1(&proof, (uint8_t *)(kzg_aggregated_proof));
+    ret = bytes_to_g1(&proof, kzg_aggregated_proof->bytes);
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
@@ -1091,7 +1091,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = bytes_to_g1(&commitments[i], (uint8_t *)(&expected_kzg_commitments[i]));
+        ret = bytes_to_g1(&commitments[i], expected_kzg_commitments[i].bytes);
         if (ret != C_KZG_OK) goto out;
         ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
