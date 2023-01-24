@@ -24,7 +24,7 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
-#define CHECK(cond)                                                                                                    \
+#define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ static const g2_t g2_generator = {{{{
  * The first 32 roots of unity in the finite field F_r.
  *
  * For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be
- * converted to an `fr_t` type via the #fr_from_uint64s library function.
+ * converted to an `fr_t` type via the #blst_fr_from_uint64 function.
  *
  * The decimal values may be calculated with the following Python code:
  * @code{.py}
@@ -236,16 +236,6 @@ static int log_2_byte(byte b) {
 }
 
 /**
- * Create a field element from an array of four 64-bit unsigned integers.
- *
- * @param out  The field element equivalent of @p vals
- * @param vals The array of 64-bit integers to be converted, little-endian ordering of the 64-bit words
- */
-static void fr_from_uint64s(fr_t *out, const uint64_t vals[4]) {
-    blst_fr_from_uint64(out, vals);
-}
-
-/**
  * Test whether the operand is one in the finite field.
  *
  * @param p The field element to be checked
@@ -276,39 +266,6 @@ static bool fr_equal(const fr_t *aa, const fr_t *bb) {
 }
 
 /**
- * Add two field elements.
- *
- * @param[out] out @p a plus @p b in the field
- * @param[in]  a   Field element
- * @param[in]  b   Field element
- */
-static void fr_add(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr_add(out, a, b);
-}
-
-/**
- * Subtract one field element from another.
- *
- * @param[out] out @p a minus @p b in the field
- * @param[in]  a   Field element
- * @param[in]  b   Field element
- */
-static void fr_sub(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr_sub(out, a, b);
-}
-
-/**
- * Multiply two field elements.
- *
- * @param[out] out @p a multiplied by @p b in the field
- * @param[in]  a   Multiplicand
- * @param[in]  b   Multiplier
- */
-static void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr_mul(out, a, b);
-}
-
-/**
  * Divide a field element by another.
  *
  * @param[out] out @p a divided by @p b in the field
@@ -319,16 +276,6 @@ static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
     blst_fr tmp;
     blst_fr_eucl_inverse(&tmp, b);
     blst_fr_mul(out, a, &tmp);
-}
-
-/**
- * Square a field element.
- *
- * @param[out] out @p a squared
- * @param[in]  a   A field element
- */
-static void fr_sqr(fr_t *out, const fr_t *a) {
-    blst_fr_sqr(out, a);
 }
 
 /**
@@ -348,10 +295,10 @@ static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
 
     while (true) {
         if (n & 1) {
-            fr_mul(out, out, &tmp);
+            blst_fr_mul(out, out, &tmp);
         }
         if ((n >>= 1) == 0) break;
-        fr_sqr(&tmp, &tmp);
+        blst_fr_sqr(&tmp, &tmp);
     }
 }
 
@@ -365,17 +312,7 @@ static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
  */
 static void fr_from_uint64(fr_t *out, uint64_t n) {
     uint64_t vals[] = {n, 0, 0, 0};
-    fr_from_uint64s(out, vals);
-}
-
-/**
- * Inverse of a field element.
- *
- * @param[out] out The inverse of @p a
- * @param[in]  a   A field element
- */
-static void fr_inv(fr_t *out, const fr_t *a) {
-    blst_fr_eucl_inverse(out, a);
+    blst_fr_from_uint64(out, vals);
 }
 
 /**
@@ -397,33 +334,20 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     prod[0] = a[0];
 
     for(i = 1; i < len; i++) {
-        fr_mul(&prod[i], &a[i], &prod[i - 1]);
+        blst_fr_mul(&prod[i], &a[i], &prod[i - 1]);
     }
 
     blst_fr_eucl_inverse(&inv, &prod[len - 1]);
 
     for(i = len - 1; i > 0; i--) {
-        fr_mul(&out[i], &inv, &prod[i - 1]);
-        fr_mul(&inv, &a[i], &inv);
+        blst_fr_mul(&out[i], &inv, &prod[i - 1]);
+        blst_fr_mul(&inv, &a[i], &inv);
     }
     out[0] = inv;
 
 out:
     free(prod);
     return ret;
-}
-
-/**
- * Add or double G1 points.
- *
- * This is safe if the two points are the same.
- *
- * @param[out] out @p a plus @p b in the group
- * @param[in]  a   G1 group point
- * @param[in]  b   G1 group point
- */
-static void g1_add_or_dbl(g1_t *out, const g1_t *a, const g1_t *b) {
-    blst_p1_add_or_double(out, a, b);
 }
 
 /**
@@ -525,6 +449,27 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
     blst_final_exp(&gt_point, &gt_point);
 
     return blst_fp12_is_one(&gt_point);
+}
+
+/**
+ * Calculate log base two of a power of two.
+ *
+ * In other words, the bit index of the one bit.
+ *
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ *
+ * @param[in] n The power of two
+ * @return the log base two of n
+ */
+static int log2_pow2(uint32_t n) {
+    const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
+    register uint32_t r;
+    r = (n & b[0]) != 0;
+    r |= ((n & b[1]) != 0) << 1;
+    r |= ((n & b[2]) != 0) << 2;
+    r |= ((n & b[3]) != 0) << 3;
+    r |= ((n & b[4]) != 0) << 4;
+    return r;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -645,27 +590,6 @@ static uint32_t reverse_bits(uint32_t a) {
 }
 
 /**
- * Calculate log base two of a power of two.
- *
- * In other words, the bit index of the one bit.
- *
- * @remark Works only for n a power of two, and only for n up to 2^31.
- *
- * @param[in] n The power of two
- * @return the log base two of n
- */
-static int log2_pow2(uint32_t n) {
-    const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
-    register uint32_t r;
-    r = (n & b[0]) != 0;
-    r |= ((n & b[1]) != 0) << 1;
-    r |= ((n & b[2]) != 0) << 2;
-    r |= ((n & b[3]) != 0) << 3;
-    r |= ((n & b[4]) != 0) << 4;
-    return r;
-}
-
-/**
  * Reorder an array in reverse bit order of its indices.
  *
  * @remark Operates in-place on the array.
@@ -677,7 +601,7 @@ static int log2_pow2(uint32_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-static C_KZG_RET reverse_bit_order(void *values, size_t size, uint64_t n) {
+static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
 
@@ -855,8 +779,8 @@ static void poly_lincomb(PolynomialFr *out, const PolynomialFr *vectors, const f
         out->evals[j] = fr_zero;
     for (i = 0; i < n; i++) {
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
-            fr_mul(&tmp, &scalars[i], &vectors[i].evals[j]);
-            fr_add(&out->evals[j], &out->evals[j], &tmp);
+            blst_fr_mul(&tmp, &scalars[i], &vectors[i].evals[j]);
+            blst_fr_add(&out->evals[j], &out->evals[j], &tmp);
         }
     }
 }
@@ -866,7 +790,7 @@ static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = fr_one;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
-        fr_mul(&current_power, &current_power, x);
+        blst_fr_mul(&current_power, &current_power, x);
     }
 }
 
@@ -893,7 +817,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynom
             ret = C_KZG_OK;
             goto out;
         }
-        fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
+        blst_fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -901,15 +825,15 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynom
 
     *out = fr_zero;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
-        fr_mul(&tmp, &tmp, &p->evals[i]);
-        fr_add(out, out, &tmp);
+        blst_fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
+        blst_fr_mul(&tmp, &tmp, &p->evals[i]);
+        blst_fr_add(out, out, &tmp);
     }
     fr_from_uint64(&tmp, FIELD_ELEMENTS_PER_BLOB);
     fr_div(out, out, &tmp);
     fr_pow(&tmp, x, FIELD_ELEMENTS_PER_BLOB);
-    fr_sub(&tmp, &tmp, &fr_one);
-    fr_mul(out, out, &tmp);
+    blst_fr_sub(&tmp, &tmp, &fr_one);
+    blst_fr_mul(out, out, &tmp);
 
 out:
     free(inverses_in);
@@ -1034,15 +958,15 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial *polynomial, const B
             continue;
         }
         // (p_i - y) / (ω_i - x)
-        fr_sub(&q.evals[i], &p.evals[i], &y);
-        fr_sub(&inverses_in[i], &roots_of_unity[i], &frx);
+        blst_fr_sub(&q.evals[i], &p.evals[i], &y);
+        blst_fr_sub(&inverses_in[i], &roots_of_unity[i], &frx);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
+        blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
     if (m) { // ω_m == x
@@ -1050,16 +974,16 @@ C_KZG_RET compute_kzg_proof(KZGProof *out, const Polynomial *polynomial, const B
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             // (p_i - y) * ω_i / (x * (x - ω_i))
-            fr_sub(&tmp, &frx, &roots_of_unity[i]);
-            fr_mul(&inverses_in[i], &tmp, &frx);
+            blst_fr_sub(&tmp, &frx, &roots_of_unity[i]);
+            blst_fr_mul(&inverses_in[i], &tmp, &frx);
         }
         ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
         if (ret != C_KZG_OK) goto out;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-            fr_sub(&tmp, &p.evals[i], &y);
-            fr_mul(&tmp, &tmp, &roots_of_unity[i]);
-            fr_mul(&tmp, &tmp, &inverses[i]);
-            fr_add(&q.evals[m], &q.evals[m], &tmp);
+            blst_fr_sub(&tmp, &p.evals[i], &y);
+            blst_fr_mul(&tmp, &tmp, &roots_of_unity[i]);
+            blst_fr_mul(&tmp, &tmp, &inverses[i]);
+            blst_fr_add(&q.evals[m], &q.evals[m], &tmp);
         }
     }
 
@@ -1229,7 +1153,7 @@ static void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *
             g1_t y_times_root;
             g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
             g1_sub(&out[i + half], &out[i], &y_times_root);
-            g1_add_or_dbl(&out[i], &out[i], &y_times_root);
+            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;
@@ -1254,7 +1178,7 @@ static C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, con
     if (inverse) {
         fr_t inv_len;
         fr_from_uint64(&inv_len, n);
-        fr_inv(&inv_len, &inv_len);
+        blst_fr_eucl_inverse(&inv_len, &inv_len);
         fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
         for (uint64_t i = 0; i < n; i++) {
             g1_mul(&out[i], &out[i], &inv_len);
@@ -1283,7 +1207,7 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t widt
 
     for (uint64_t i = 2; !fr_is_one(&out[i - 1]); i++) {
         CHECK(i <= width);
-        fr_mul(&out[i], &out[i - 1], root);
+        blst_fr_mul(&out[i], &out[i - 1], root);
     }
     CHECK(fr_is_one(&out[width]));
 
@@ -1320,7 +1244,7 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fs->roots_of_unity = NULL;
 
     CHECK((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]));
-    fr_from_uint64s(&root_of_unity, scale2_root_of_unity[max_scale]);
+    blst_fr_from_uint64(&root_of_unity, scale2_root_of_unity[max_scale]);
 
     // Allocate space for the roots of unity
     ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
@@ -1341,7 +1265,7 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
 
     // Permute the roots of unity
     memcpy(fs->roots_of_unity, fs->expanded_roots_of_unity, sizeof(fr_t) * fs->max_width);
-    ret = reverse_bit_order(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
+    ret = bit_reversal_permutation(fs->roots_of_unity, sizeof(fr_t), fs->max_width);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
@@ -1377,6 +1301,21 @@ static void free_kzg_settings(KZGSettings *ks) {
     free(ks->g2_values);
 }
 
+/**
+ * Load trusted setup into a KZGSettings.
+ *
+ * @remark Free after use with #free_trusted_setup.
+ *
+ * @param[out] out Pointer to the stored trusted setup data
+ * @param g1_bytes Array of G1 elements
+ * @param n1       Length of `g1`
+ * @param g2_bytes Array of G2 elements
+ * @param n2       Length of `g2`
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
 C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n1, const uint8_t *g2_bytes, size_t n2) {
     uint64_t i;
     blst_p2_affine g2_affine;
@@ -1413,7 +1352,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n
     if (ret != C_KZG_OK) goto out_error;
     ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
     if (ret != C_KZG_OK) goto out_error;
-    ret = reverse_bit_order(out->g1_values, sizeof(g1_t), n1);
+    ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
@@ -1427,6 +1366,17 @@ out_success:
     return ret;
 }
 
+/*
+ * Load trusted setup from a file.
+ *
+ * @remark The file format is n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2
+ * @remark where the first two numbers are in decimal and the remainder
+ * @remark are hexstrings and any whitespace can be used as separators.
+ * @remark See also #load_trusted_setup.
+ *
+ * @param[out] out Pointer to the loaded trusted setup data
+ * @param in       File handle for input - will not be closed
+ */
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     uint64_t i;
     int num_matches;
@@ -1454,6 +1404,9 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     return load_trusted_setup(out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, 65);
 }
 
+/*
+ * Free a trusted setup (KZGSettings).
+ */
 void free_trusted_setup(KZGSettings *s) {
     free_fft_settings((FFTSettings*)s->fs);
     free_kzg_settings(s);

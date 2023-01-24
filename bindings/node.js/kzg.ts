@@ -78,6 +78,7 @@ export async function transformTrustedSetupJSON(
   const file = fs.createWriteStream(textFilePath);
   file.write(`${FIELD_ELEMENTS_PER_BLOB}\n65\n`);
   file.write(data.setup_G1.map((p) => p.replace("0x", "")).join("\n"));
+  file.write("\n");
   file.write(data.setup_G2.map((p) => p.replace("0x", "")).join("\n"));
   file.end();
 
