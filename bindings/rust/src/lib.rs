@@ -181,8 +181,8 @@ impl KZGProof {
     pub fn verify_kzg_proof(
         &self,
         kzg_commitment: KZGCommitment,
-        z: BLSFieldElement,
-        y: BLSFieldElement,
+        z: Bytes32,
+        y: Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -257,8 +257,8 @@ impl From<[u8; BYTES_PER_BLOB]> for Blob {
     }
 }
 
-impl From<[u8; BYTES_PER_FIELD_ELEMENT]> for BLSFieldElement {
-    fn from(value: [u8; BYTES_PER_FIELD_ELEMENT]) -> Self {
+impl From<[u8; 32]> for Bytes32 {
+    fn from(value: [u8; 32]) -> Self {
         Self { bytes: value }
     }
 }

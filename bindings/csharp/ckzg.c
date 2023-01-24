@@ -32,7 +32,7 @@ int verify_aggregate_kzg_proof_wrap(const Blob *blobs, const KZGCommitment *comm
   return b ? 0 : 1;
 }
 
-int verify_kzg_proof_wrap(const KZGCommitment *c, const BLSFieldElement *z, const BLSFieldElement *y, const KZGProof *p, KZGSettings *s) {
+int verify_kzg_proof_wrap(const KZGCommitment *c, const Bytes32 *z, const Bytes32 *y, const KZGProof *p, KZGSettings *s) {
   bool out;
   if (verify_kzg_proof(&out, c, z, y, p, s) != C_KZG_OK)
     return -2;

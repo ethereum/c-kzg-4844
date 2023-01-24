@@ -3,10 +3,11 @@
 This is a copy of [C-KZG](https://github.com/benjaminion/c-kzg) stripped-down to support the
 [Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md) API:
 
-- `compute_aggregate_kzg_proof`
-- `verify_aggregate_kzg_proof`
 - `blob_to_kzg_commitment`
+- `compute_kzg_proof`
+- `compute_aggregate_kzg_proof`
 - `verify_kzg_proof`
+- `verify_aggregate_kzg_proof`
 
 We also provide functions for loading/freeing the trusted setup:
 
