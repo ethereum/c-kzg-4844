@@ -931,7 +931,7 @@ out:
  *
  * @param[out] out The combined proof as a single G1 element
  * @param[in]  p   The polynomial in Lagrange form
- * @param[in]  x   The generator x-value for the evaluation points
+ * @param[in]  z   The generator z-value for the evaluation points
  * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
