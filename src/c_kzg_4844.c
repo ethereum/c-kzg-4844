@@ -608,15 +608,15 @@ static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n)
 // BLS12-381 Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-static void hash_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
+static void hash_to_bls_field(fr_t *out, const Bytes32 *bytes) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, bytes);
+    blst_scalar_from_lendian(&tmp, bytes->bytes);
     blst_fr_from_scalar(out, &tmp);
 }
 
-static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
+static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *bytes) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, bytes);
+    blst_scalar_from_lendian(&tmp, bytes->bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
     blst_fr_from_scalar(out, &tmp);
     return C_KZG_OK;
@@ -625,7 +625,7 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const uint8_t bytes[32]) {
 static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p->evals[i], &blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p->evals[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
@@ -667,21 +667,21 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     uint8_t hash_input[33];
 
     /* Compute r */
-    uint8_t r_bytes[32] = {0};
+    Bytes32 r_bytes;
     memcpy(hash_input, hashed_data, 32);
     hash_input[32] = 0x0;
-    hash(r_bytes, hash_input, 33);
+    hash(r_bytes.bytes, hash_input, 33);
 
     /* Compute r_powers */
     fr_t r;
-    hash_to_bls_field(&r, r_bytes);
+    hash_to_bls_field(&r, &r_bytes);
     compute_powers(r_powers, &r, n);
 
     /* Compute eval_challenge */
-    uint8_t eval_challenge[32] = {0};
+    Bytes32 eval_challenge;
     hash_input[32] = 0x1;
-    hash(eval_challenge, hash_input, 33);
-    hash_to_bls_field(out, eval_challenge);
+    hash(eval_challenge.bytes, hash_input, 33);
+    hash_to_bls_field(out, &eval_challenge);
 
     free(bytes);
     return C_KZG_OK;
@@ -850,8 +850,8 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
 
 C_KZG_RET verify_kzg_proof(bool *out,
                            const KZGCommitment *commitment,
-                           const BLSFieldElement *z,
-                           const BLSFieldElement *y,
+                           const Bytes32 *z,
+                           const Bytes32 *y,
                            const KZGProof *kzg_proof,
                            const KZGSettings *s) {
     C_KZG_RET ret;
@@ -860,9 +860,9 @@ C_KZG_RET verify_kzg_proof(bool *out,
 
     ret = bytes_to_g1(&g1commitment, commitment->bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&frz, z->bytes);
+    ret = bytes_to_bls_field(&frz, z);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&fry, y->bytes);
+    ret = bytes_to_bls_field(&fry, y);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_g1(&g1proof, kzg_proof->bytes);
     if (ret != C_KZG_OK) return ret;
@@ -910,14 +910,14 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const BLSFieldElement *z, const KZGSettings *s) {
+C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial polynomial;
     fr_t frz;
 
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_bls_field(&frz, z->bytes);
+    ret = bytes_to_bls_field(&frz, z);
     if (ret != C_KZG_OK) goto out;
     ret = compute_kzg_proof_impl(out, &polynomial, &frz, s);
     if (ret != C_KZG_OK) goto out;

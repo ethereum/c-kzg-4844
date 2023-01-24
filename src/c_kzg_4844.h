@@ -44,6 +44,7 @@ typedef blst_p1 g1_t;         /**< Internal G1 group element type */
 typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
 
+typedef struct { uint8_t bytes[32]; } Bytes32;
 typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
 typedef struct { uint8_t bytes[BYTES_PER_COMMITMENT]; } KZGCommitment;
 typedef struct { uint8_t bytes[BYTES_PER_PROOF]; } KZGProof;
@@ -112,14 +113,14 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
 
 C_KZG_RET verify_kzg_proof(bool *out,
                            const KZGCommitment *polynomial_kzg,
-                           const BLSFieldElement *z,
-                           const BLSFieldElement *y,
+                           const Bytes32 *z,
+                           const Bytes32 *y,
                            const KZGProof *kzg_proof,
                            const KZGSettings *s);
 
 C_KZG_RET compute_kzg_proof(KZGProof *out,
                             const Blob *p,
-                            const BLSFieldElement *z,
+                            const Bytes32 *z,
                             const KZGSettings *s);
 
 #ifdef __cplusplus
