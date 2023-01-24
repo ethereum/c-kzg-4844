@@ -708,7 +708,13 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
  * We do the second of these to save memory here.
  */
 static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
-    if (len < 8) { // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+    C_KZG_RET ret = C_KZG_OK;
+    void *scratch = NULL;
+    blst_p1_affine *p_affine = NULL;
+    blst_scalar *scalars = NULL;
+
+    // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+    if (len < 8) {
         // Direct approach
         g1_t tmp;
         *out = g1_identity;
@@ -718,18 +724,20 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
         }
     } else {
         // Blst's implementation of the Pippenger method
-        void *scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-        if (scratch == NULL) return C_KZG_MALLOC;
-        blst_p1_affine *p_affine = malloc(len * sizeof(blst_p1_affine));
+        scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
+        if (scratch == NULL) {
+            ret = C_KZG_MALLOC;
+            goto out;
+        };
+        p_affine = malloc(len * sizeof(blst_p1_affine));
         if (p_affine == NULL) {
-            free(scratch);
-            return C_KZG_MALLOC;
+            ret = C_KZG_MALLOC;
+            goto out;
         }
-        blst_scalar *scalars = malloc(len * sizeof(blst_scalar));
+        scalars = malloc(len * sizeof(blst_scalar));
         if (scalars == NULL) {
-            free(scratch);
-            free(p_affine);
-            return C_KZG_MALLOC;
+            ret = C_KZG_MALLOC;
+            goto out;
         }
 
         // Transform the points to affine representation
@@ -745,13 +753,13 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
         const byte *scalars_arg[2] = {(byte *)scalars, NULL};
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, 256, scratch);
-
-        // Tidy up
-        free(scratch);
-        free(p_affine);
-        free(scalars);
     }
-    return C_KZG_OK;
+
+out:
+    free(scratch);
+    free(p_affine);
+    free(scalars);
+    return ret;
 }
 
 static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n) {
