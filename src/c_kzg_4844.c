@@ -500,28 +500,6 @@ static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SHA-256 Hash Functions
-///////////////////////////////////////////////////////////////////////////////
-
-typedef struct {
-    unsigned int h[8];
-    unsigned long long N;
-    unsigned char buf[64];
-    size_t off;
-} SHA256_CTX;
-
-void sha256_init(SHA256_CTX *ctx);
-void sha256_update(SHA256_CTX *ctx, const void *_inp, size_t len);
-void sha256_final(unsigned char md[32], SHA256_CTX *ctx);
-
-static void hash(uint8_t md[32], const uint8_t *input, size_t n) {
-    SHA256_CTX ctx;
-    sha256_init(&ctx);
-    sha256_update(&ctx, input, n);
-    sha256_final(md, &ctx);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Bit-reversal Permutation Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -661,7 +639,7 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
 
     /* Now let's create challenges! */
     uint8_t hashed_data[32] = {0};
-    hash(hashed_data, bytes, nb);
+    blst_sha256(hashed_data, bytes, nb);
 
     /* We will use hash_input in the computation of both challenges */
     uint8_t hash_input[33];
@@ -670,7 +648,7 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     uint8_t r_bytes[32] = {0};
     memcpy(hash_input, hashed_data, 32);
     hash_input[32] = 0x0;
-    hash(r_bytes, hash_input, 33);
+    blst_sha256(r_bytes, hash_input, 33);
 
     /* Compute r_powers */
     fr_t r;
@@ -680,7 +658,7 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     /* Compute eval_challenge */
     uint8_t eval_challenge[32] = {0};
     hash_input[32] = 0x1;
-    hash(eval_challenge, hash_input, 33);
+    blst_sha256(eval_challenge, hash_input, 33);
     hash_to_bls_field(out, eval_challenge);
 
     free(bytes);

@@ -1,4 +1,3 @@
 [submodule "blst"]
 	path = blst
 	url = https://github.com/supranational/blst
-	ignore = dirty # because we apply a patch

@@ -27,11 +27,7 @@ CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 
 .blst:
-	cd ../../blst &&\
-	git apply ../blst_sha.patch &&\
-	$(BLST_BUILDSCRIPT) &&\
-	git apply -R ../blst_sha.patch &&\
-	cd ../bindings/csharp
+	cd ../../blst && $(BLST_BUILDSCRIPT)
 
 .ckzg:
 	$(CLANG_EXECUTABLE) -O -Wall -shared $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(CKZG_LIBRARY_PATH) $(TARGETS)
