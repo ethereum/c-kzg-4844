@@ -45,7 +45,6 @@ typedef blst_p2 g2_t;         /**< Internal G2 group element type */
 typedef blst_fr fr_t;         /**< Internal Fr field element type */
 
 typedef struct { uint8_t bytes[32]; } Bytes32;
-typedef struct { uint8_t bytes[BYTES_PER_FIELD_ELEMENT]; } BLSFieldElement;
 typedef struct { uint8_t bytes[BYTES_PER_COMMITMENT]; } KZGCommitment;
 typedef struct { uint8_t bytes[BYTES_PER_PROOF]; } KZGProof;
 typedef struct { uint8_t bytes[BYTES_PER_BLOB]; } Blob;

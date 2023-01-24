@@ -79,12 +79,12 @@ struct blst_p2_affine {
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct BLSFieldElement {
-    bytes: [u8; BYTES_PER_FIELD_ELEMENT],
+pub struct Bytes32 {
+    bytes: [u8; 32],
 }
 
-impl Deref for BLSFieldElement {
-    type Target = [u8; BYTES_PER_FIELD_ELEMENT];
+impl Deref for Bytes32 {
+    type Target = [u8; 32];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
@@ -222,8 +222,8 @@ extern "C" {
     pub fn verify_kzg_proof(
         out: *mut bool,
         polynomial_kzg: *const KZGCommitment,
-        z: *const BLSFieldElement,
-        y: *const BLSFieldElement,
+        z: *const Bytes32,
+        y: *const Bytes32,
         kzg_proof: *const KZGProof,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
