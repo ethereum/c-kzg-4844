@@ -476,10 +476,25 @@ static int log2_pow2(uint32_t n) {
 // Bytes Conversion Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Serialize a G1 group element into bytes.
+ *
+ * @param[out] out A 48-byte array to store the serialized G1 element
+ * @param[in] in The G1 element to be serialized
+ */
 static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
     blst_p1_compress(out, in);
 }
 
+
+/**
+ * Deserialize bytes into a G1 group element.
+ *
+ * @param[out] out The G1 element to store the deserialized data
+ * @param[in] bytes A 48-byte array containing the serialized G1 element
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Input bytes were not a valid G1 element
+ */
 static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
     blst_p1_affine tmp;
     if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
@@ -488,10 +503,23 @@ static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
     return C_KZG_OK;
 }
 
+
+/**
+ * Serialize a BLS field element into bytes.
+ *
+ * @param[out] out A 32-byte array to store the serialized field element
+ * @param[in] in The field element to be serialized
+ */
 static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
     blst_scalar_from_fr((blst_scalar*)out, in);
 }
 
+/**
+ * Serialize a 64-bit unsigned integer into bytes.
+
+ * @param[out] out An 8-byte array to store the serialized integer
+ * @param[in] n The integer to be serialized
+ */
 static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
     for (int i = 0; i < 8; i++) {
         out[i] = n & 0xFF;
@@ -608,12 +636,26 @@ static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n)
 // BLS12-381 Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Map bytes to a BLS field element.
+ *
+ * @param[out] out The field element to store the result
+ * @param[in] bytes A 32-byte array containing the input
+ */
 static void hash_to_bls_field(fr_t *out, const Bytes32 *bytes) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, bytes->bytes);
     blst_fr_from_scalar(out, &tmp);
 }
 
+/**
+ * Deserialize bytes into a BLS field element.
+ *
+ * @param[out] out The field element to store the deserialized data
+ * @param[in] bytes A 32-byte array containing the serialized field element
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Input was not a valid scalar field element
+ */
 static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *bytes) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, bytes->bytes);
@@ -622,6 +664,14 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *bytes) {
     return C_KZG_OK;
 }
 
+/**
+ * Deserialize a Blob (array of bytes) into a Polynomial (array of field elements).
+ *
+ * @param[out] p The output polynomial (array of field elements)
+ * @param[in] blob The blob (an array of bytes)
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ */
 static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -634,7 +684,20 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 /* Forward function definition */
 static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
-static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
+/**
+ * Return the Fiat-Shamir challenges required by the rest of the protocol.
+ *
+ * @remark This function should compute challenges even if `n==0`.
+ *
+ * @param[out] eval_challenge_out The evaluation challenge
+ * @param[out] r_powers_out The powers of r, where r is a randomly generated scalar
+ * @param[in] polys The array of polynomials
+ * @param[in] comms The array of commitments
+ * @param[in] n The number of polynomials and commitments
+ * @retval C_KZG_OK Challenge computation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ */
+static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out,
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
     size_t i;
     uint64_t j;
@@ -675,13 +738,13 @@ static C_KZG_RET compute_challenges(fr_t *out, fr_t *r_powers,
     /* Compute r_powers */
     fr_t r;
     hash_to_bls_field(&r, &r_bytes);
-    compute_powers(r_powers, &r, n);
+    compute_powers(r_powers_out, &r, n);
 
     /* Compute eval_challenge */
     Bytes32 eval_challenge;
     hash_input[32] = 0x1;
     hash(eval_challenge.bytes, hash_input, 33);
-    hash_to_bls_field(out, &eval_challenge);
+    hash_to_bls_field(eval_challenge_out, &eval_challenge);
 
     free(bytes);
     return C_KZG_OK;
@@ -754,6 +817,17 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
     return C_KZG_OK;
 }
 
+/**
+ * Given an array of polynomials, interpret it as a 2D matrix and compute the linear combination
+ * of each column with a set of scalars: return the resulting polynomial.
+ *
+ * @remark If `n==0` then this function should return the zero polynomial.
+ *
+ * @param[out] out The result polynomial
+ * @param[in] vectors The array of polynomials to be combined
+ * @param[in] scalars The array of scalars to multiply the polynomials with
+ * @param[in] n The number of polynomials and scalars
+ */
 static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n) {
     fr_t tmp;
     uint64_t i, j;
@@ -767,7 +841,15 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
     }
 }
 
-
+/**
+ * Compute and return [ x^0, x^1, ..., x^{n-1} ].
+ *
+ * @remark `out` is left untouched if `n == 0`.
+ *
+ * @param[out] out The array to store the powers
+ * @param[in] x The field element to raise to powers
+ * @param[in] n The number of powers to compute
+ */
 static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = fr_one;
     for (uint64_t i = 0; i < n; i++) {
@@ -780,6 +862,16 @@ static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
 // Polynomials Functions
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * Evaluate a polynomial in evaluation form at a given point.
+ *
+ * @param[out] out The result of the evaluation
+ * @param[in] p The polynomial in evaluation form
+ * @param[in] x The point to evaluate the polynomial at
+ * @param[in] s The settings struct containing the roots of unity
+ * @retval C_KZG_OK Evaluation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ */
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t tmp;
@@ -827,10 +919,29 @@ out:
 // KZG Functions
 ///////////////////////////////////////////////////////////////////////////////
 
+
+/**
+ * Compute a KZG commitment from a polynomial.
+ *
+ * @param[out] out The resulting commitment
+ * @param[in] p The polynomial to commit to
+ * @param[in] s The settings struct containing the commitment key (i.e. the trusted setup)
+ * @retval C_KZG_OK Commitment computation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ */
 static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
     return g1_lincomb(out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB);
 }
 
+/**
+ * Convert a blob to a KZG commitment.
+ *
+ * @param[out] out The resulting commitment
+ * @param[in] blob The blob representing the polynomial to be committed to
+ * @param[in] s The settings struct containing the commitment key (i.e. the trusted setup)
+ * @retval C_KZG_OK Commitment successful
+ * @retval C_KZG_BADARGS Invalid input blob
+ */
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial p;
@@ -848,6 +959,18 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
 static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks);
 
+/**
+ * Verify a KZG proof claiming that `p(z) == y`.
+ *
+ * @param[out] out `true` if the proof is valid, `false` if not
+ * @param[in] commitment The KZG commitment corresponding to polynomial p(x)
+ * @param[in] z The evaluation point
+ * @param[in] y The claimed evaluation result
+ * @param[in] kzg_proof The KZG proof
+ * @param[in] s The settings struct containing the commitment verification key (i.e. trusted setup)
+ * @retval C_KZG_OK Verification successful
+ * @retval C_KZG_BADARGS Invalid inputs
+ */
 C_KZG_RET verify_kzg_proof(bool *out,
                            const KZGCommitment *commitment,
                            const Bytes32 *z,
@@ -871,23 +994,23 @@ C_KZG_RET verify_kzg_proof(bool *out,
 }
 
 /**
- * Check a KZG proof at a point against a commitment.
+ * Helper function: Verify KZG proof claiming that `p(z) == y`.
  *
- * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed value @p y at @p x, verify the claim.
+ * Given a @p commitment to a polynomial, a @p proof for @p z, and the claimed value @p y at @p z, verify the claim.
  *
  * @param[out] out        `true` if the proof is valid, `false` if not
  * @param[in]  commitment The commitment to a polynomial
- * @param[in]  x          The point at which the proof is to be checked (opened)
+ * @param[in]  z          The point at which the proof is to be checked (opened)
  * @param[in]  y          The claimed value of the polynomial at @p x
  * @param[in]  proof      A proof of the value of the polynomial at the point @p x
  * @param[in]  ks  The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK      All is well
  */
-static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
-    g2_mul(&x_g2, &g2_generator, x);
+    g2_mul(&x_g2, &g2_generator, z);
     g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
     g1_mul(&y_g1, &g1_generator, y);
     g1_sub(&commitment_minus_y, commitment, &y_g1);
@@ -929,10 +1052,10 @@ out:
 /**
  * Helper function for compute_kzg_proof() and compute_aggregate_kzg_proof().
  *
- * @param[out] out The combined proof as a single G1 element
- * @param[in]  p   The polynomial in Lagrange form
- * @param[in]  z   The generator z-value for the evaluation points
- * @param[in]  s   The settings containing the secrets, previously initialised with #new_kzg_settings
+ * @param[out] out        The combined proof as a single G1 element
+ * @param[in]  polynomial The polynomial in Lagrange form
+ * @param[in]  z          The evaluation point
+ * @param[in]  s          The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
@@ -960,7 +1083,7 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
             m = i + 1;
             continue;
         }
-        // (p_i - y) / (ω_i - x)
+        // (p_i - y) / (ω_i - z)
         blst_fr_sub(&q.evals[i], &polynomial->evals[i], &y);
         blst_fr_sub(&inverses_in[i], &roots_of_unity[i], z);
     }
@@ -972,11 +1095,11 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
         blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
-    if (m) { // ω_m == x
+    if (m) { // ω_m == z
         q.evals[--m] = fr_zero;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
-            // (p_i - y) * ω_i / (x * (x - ω_i))
+            // (p_i - y) * ω_i / (z * (z - ω_i))
             blst_fr_sub(&tmp, z, &roots_of_unity[i]);
             blst_fr_mul(&inverses_in[i], &tmp, z);
         }
@@ -1002,6 +1125,23 @@ out:
     return ret;
 }
 
+/**
+ * Given a list of polynomials and commitments, compute and return:
+ * 1. the aggregated polynomial
+ * 2. the aggregated KZG commitment,
+ * 3. the polynomial evaluation random challenge.
+ *
+ * @remark This function should work even if `n==0`.
+ *
+ * @param[out] poly_out The output aggregated polynomial
+ * @param[out] comm_out The output aggregated commitment
+ * @param[out] chal_out The output evaluation challenge
+ * @param[in] polys Array of polynomials
+ * @param[in] kzg_commitments Array of KZG commitments
+ * @param[in] n Number of polynomials and commitments
+ * @retval C_KZG_OK Operation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ */
 static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1_t *comm_out, fr_t *chal_out,
         const Polynomial *polys,
         const g1_t *kzg_commitments,
@@ -1022,6 +1162,19 @@ out:
     return C_KZG_OK;
 }
 
+/**
+ * Computes aggregate KZG proof given for multiple blobs.
+ *
+ * @remark This function should work even if `n==0`.
+ *
+ * @param[out] out The output aggregate KZG proof.
+ * @param[in] blobs Array of Blob objects to compute the aggregate proof for.
+ * @param[in] n The number of blobs in the array.
+ * @param[in] s The settings struct containing the commitment key (i.e. the trusted setup)
+ * @retval C_KZG_OK Operation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ * @retval C_KZG_BADARGS Invalid input blob bytes
+ */
 C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
                                       const Blob *blobs,
                                       size_t n,
@@ -1064,6 +1217,17 @@ out:
     return ret;
 }
 
+/**
+ * Computes the aggregate KZG proof for multiple blobs.
+ *
+ * @param[out] out `true` if the proof is valid, `false` if not
+ * @param[in] blobs Array of Blob objects to compute the aggregate proof for.
+ * @param[in] n The number of blobs in the array.
+ * @param[in] s The settings struct containing the commitment verification key (i.e. the trusted setup)
+ * @retval C_KZG_OK Operation successful
+ * @retval C_KZG_MALLOC Memory allocation failed
+ * @retval C_KZG_BADARGS Invalid input
+ */
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob *blobs,
                                      const KZGCommitment *expected_kzg_commitments,
