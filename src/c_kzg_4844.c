@@ -680,10 +680,10 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
 static C_KZG_RET validate_kzg_g1(const Bytes48 *b) {
     blst_p1_affine tmp;
 
-    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(Bytes48)) != 0)
+    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) != 0)
         return C_KZG_OK;
-    if (blst_p1_uncompress(&tmp, b->bytes) != BLST_SUCCESS)
-        return C_KZG_BADARGS;
+
+    // TODO: validate the point.
 
     return C_KZG_OK;
 }
