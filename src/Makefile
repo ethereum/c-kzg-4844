@@ -16,11 +16,8 @@ all: c_kzg_4844.o lib
 c_kzg_4844.o: c_kzg_4844.c Makefile
 	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) -c $<
 
-# Will fail with "patch does not apply" if it has already been patched.
-# Safe to ignore.
 blst:
 	cd ../blst; \
-	git apply < ../blst_sha.patch; \
 	${BLST_BUILD_SCRIPT} && \
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
