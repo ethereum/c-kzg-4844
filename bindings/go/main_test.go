@@ -61,15 +61,15 @@ func (c *KZGCommitment) UnmarshalText(input []byte) error {
 	return nil
 }
 
-func (f *BLSFieldElement) UnmarshalText(input []byte) error {
-	fieldElementBytes, err := hex.DecodeString(string(input))
+func (f *Bytes32) UnmarshalText(input []byte) error {
+	bytes, err := hex.DecodeString(string(input))
 	if err != nil {
 		return err
 	}
-	if len(fieldElementBytes) != len(f) {
-		return errors.New("invalid BLSFieldElement")
+	if len(bytes) != len(f) {
+		return errors.New("invalid Bytes32")
 	}
-	copy(f[:], fieldElementBytes)
+	copy(f[:], bytes)
 	return nil
 }
 
@@ -108,11 +108,11 @@ func TestComputeAggregateKZGProof(t *testing.T) {
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		TestCases []struct {
-			Polynomial   Blob            `json:"Polynomial"`
-			Proof        KZGProof        `json:"Proof"`
-			Commitment   KZGCommitment   `json:"Commitment"`
-			InputPoint   BLSFieldElement `json:"InputPoint"`
-			ClaimedValue BLSFieldElement `json:"ClaimedValue"`
+			Polynomial   Blob          `json:"Polynomial"`
+			Proof        KZGProof      `json:"Proof"`
+			Commitment   KZGCommitment `json:"Commitment"`
+			InputPoint   Bytes32       `json:"InputPoint"`
+			ClaimedValue Bytes32       `json:"ClaimedValue"`
 		}
 	}
 
@@ -142,8 +142,8 @@ func Benchmark(b *testing.B) {
 		blobs[i][0] = byte(i)
 		commitments[i], _ = BlobToKZGCommitment(blobs[i])
 	}
-	z := BLSFieldElement{1, 2, 3}
-	y := BLSFieldElement{4, 5, 6}
+	z := Bytes32{1, 2, 3}
+	y := Bytes32{4, 5, 6}
 	proof, _ := ComputeAggregateKZGProof(blobs[:1])
 
 	for i := 1; i <= len(blobs); i *= 2 {

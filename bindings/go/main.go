@@ -22,11 +22,11 @@ const (
 )
 
 type (
-	CKzgRet         int
-	Blob            [BytesPerBlob]byte
-	KZGCommitment   [BytesPerCommitment]byte
-	BLSFieldElement [BytesPerFieldElement]byte
-	KZGProof        [BytesPerProof]byte
+	CKzgRet       int
+	Bytes32       [32]byte
+	Blob          [BytesPerBlob]byte
+	KZGCommitment [BytesPerCommitment]byte
+	KZGProof      [BytesPerProof]byte
 )
 
 const (
@@ -189,12 +189,12 @@ VerifyKZGProof is the binding for:
 	C_KZG_RET verify_kzg_proof(
 	    bool *out,
 	    const KZGCommitment *polynomial_kzg,
-	    const BLSFieldElement *z,
-	    const BLSFieldElement *y,
+	    const Bytes32 *z,
+	    const Bytes32 *y,
 	    const KZGProof *kzg_proof,
 	    const KZGSettings *s);
 */
-func VerifyKZGProof(polynomialKzg KZGCommitment, z, y BLSFieldElement, kzgProof KZGProof) (bool, CKzgRet) {
+func VerifyKZGProof(polynomialKzg KZGCommitment, z, y Bytes32, kzgProof KZGProof) (bool, CKzgRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -202,8 +202,8 @@ func VerifyKZGProof(polynomialKzg KZGCommitment, z, y BLSFieldElement, kzgProof 
 	ret := C.verify_kzg_proof(
 		&result,
 		(*C.KZGCommitment)(unsafe.Pointer(&polynomialKzg)),
-		(*C.BLSFieldElement)(unsafe.Pointer(&z)),
-		(*C.BLSFieldElement)(unsafe.Pointer(&y)),
+		(*C.Bytes32)(unsafe.Pointer(&z)),
+		(*C.Bytes32)(unsafe.Pointer(&y)),
 		(*C.KZGProof)(unsafe.Pointer(&kzgProof)),
 		&settings)
 	return bool(result), CKzgRet(ret)
