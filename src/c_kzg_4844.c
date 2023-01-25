@@ -657,7 +657,7 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
 }
 
 /**
- * Deserialize bytes into a BLS field element.
+ * Convert untrusted bytes to a trusted and validated BLS scalar field element.
  *
  * @param[out] out The field element to store the deserialized data
  * @param[in] bytes A 32-byte array containing the serialized field element
