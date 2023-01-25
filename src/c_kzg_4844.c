@@ -37,7 +37,17 @@ typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-/** The G1 identity/infinity. */
+/** Serialized form of the point at infinity on the G1 group. */
+static const Bytes48 G1_POINT_AT_INFINITY = {
+    0xc1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+/** Deserialized form of the G1 identity/infinity point. */
 static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 /** The G1 generator. */
@@ -669,8 +679,12 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  */
 static C_KZG_RET validate_kzg_g1(const Bytes48 *b) {
     blst_p1_affine tmp;
+
+    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(Bytes48)) != 0)
+        return C_KZG_OK;
     if (blst_p1_uncompress(&tmp, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
+
     return C_KZG_OK;
 }
 
