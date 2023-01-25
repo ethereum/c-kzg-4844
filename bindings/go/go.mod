@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.1
-	github.com/supranational/blst v0.3.10
+	github.com/supranational/blst v0.3.11-0.20230124161941-ca03e11a3ff2
 )
 
 require (
