@@ -510,8 +510,8 @@ static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
-static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
-    blst_scalar_from_fr((blst_scalar*)out, in);
+static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
+    blst_scalar_from_fr((blst_scalar*)out->bytes, in);
 }
 
 /**
@@ -716,7 +716,7 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
     /* Copy polynomials */
     for (i = 0; i < n; i++)
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
+            bytes_from_bls_field((Bytes32 *)&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
 
     /* Copy commitments */
     for (i = 0; i < n; i++)
@@ -973,25 +973,25 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
  * @retval C_KZG_BADARGS Invalid inputs
  */
 C_KZG_RET verify_kzg_proof(bool *out,
-                           const KZGCommitment *commitment,
+                           const Bytes48 *commitment,
                            const Bytes32 *z,
                            const Bytes32 *y,
-                           const KZGProof *kzg_proof,
+                           const Bytes48 *proof,
                            const KZGSettings *s) {
     C_KZG_RET ret;
-    fr_t frz, fry;
-    g1_t g1commitment, g1proof;
+    fr_t z_fr, y_fr;
+    g1_t commitment_g1, proof_g1;
 
-    ret = bytes_to_g1(&g1commitment, commitment->bytes);
+    ret = bytes_to_g1(&commitment_g1, commitment->bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&frz, z);
+    ret = bytes_to_bls_field(&z_fr, z);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&fry, y);
+    ret = bytes_to_bls_field(&y_fr, y);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&g1proof, kzg_proof->bytes);
+    ret = bytes_to_g1(&proof_g1, proof->bytes);
     if (ret != C_KZG_OK) return ret;
 
-    return verify_kzg_proof_impl(out, &g1commitment, &frz, &fry, &g1proof, s);
+    return verify_kzg_proof_impl(out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s);
 }
 
 /**
@@ -1231,9 +1231,9 @@ out:
  */
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob *blobs,
-                                     const KZGCommitment *expected_kzg_commitments,
+                                     const Bytes48 *expected_kzg_commitments,
                                      size_t n,
-                                     const KZGProof *kzg_aggregated_proof,
+                                     const Bytes48 *kzg_aggregated_proof,
                                      const KZGSettings *s) {
     C_KZG_RET ret;
     g1_t* commitments = NULL;

@@ -30,11 +30,13 @@ struct blst_fr {
 struct blst_fp {
     l: [limb_t; 6usize],
 }
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_fp2 {
     fp: [blst_fp; 2usize],
 }
+
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_fp6 {
@@ -85,6 +87,19 @@ pub struct Bytes32 {
 
 impl Deref for Bytes32 {
     type Target = [u8; 32];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct Bytes48 {
+    bytes: [u8; 48],
+}
+
+impl Deref for Bytes48 {
+    type Target = [u8; 48];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
@@ -207,9 +222,9 @@ extern "C" {
     pub fn verify_aggregate_kzg_proof(
         out: *mut bool,
         blobs: *const Blob,
-        expected_kzg_commitments: *const KZGCommitment,
+        expected_commitments: *const Bytes48,
         n: usize,
-        kzg_aggregated_proof: *const KZGProof,
+        aggregated_proof: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 
@@ -221,10 +236,10 @@ extern "C" {
 
     pub fn verify_kzg_proof(
         out: *mut bool,
-        polynomial_kzg: *const KZGCommitment,
+        commitment: *const Bytes48,
         z: *const Bytes32,
         y: *const Bytes32,
-        kzg_proof: *const KZGProof,
+        proof: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 }
