@@ -222,9 +222,9 @@ extern "C" {
     pub fn verify_aggregate_kzg_proof(
         out: *mut bool,
         blobs: *const Blob,
-        expected_commitments: *const Bytes48,
+        commitments_bytes: *const Bytes48,
         n: usize,
-        aggregated_proof: *const Bytes48,
+        aggregated_proof_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 
@@ -236,10 +236,10 @@ extern "C" {
 
     pub fn verify_kzg_proof(
         out: *mut bool,
-        commitment: *const Bytes48,
-        z: *const Bytes32,
-        y: *const Bytes32,
-        proof: *const Bytes48,
+        commitment_bytes: *const Bytes48,
+        z_bytes: *const Bytes32,
+        y_bytes: *const Bytes32,
+        proof_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 }

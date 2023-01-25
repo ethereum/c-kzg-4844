@@ -482,8 +482,8 @@ static int log2_pow2(uint32_t n) {
  * @param[out] out A 48-byte array to store the serialized G1 element
  * @param[in] in The G1 element to be serialized
  */
-static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
-    blst_p1_compress(out, in);
+static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
+    blst_p1_compress(out->bytes, in);
 }
 
 
@@ -495,9 +495,9 @@ static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Input bytes were not a valid G1 element
  */
-static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
+static C_KZG_RET bytes_to_g1(g1_t* out, const Bytes48 *in) {
     blst_p1_affine tmp;
-    if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
+    if (blst_p1_uncompress(&tmp, in->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &tmp);
     return C_KZG_OK;
@@ -720,7 +720,7 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
 
     /* Copy commitments */
     for (i = 0; i < n; i++)
-        bytes_from_g1(&bytes[np + i * 48], &comms[i]);
+        bytes_from_g1((Bytes48 *)&bytes[np + i * 48], &comms[i]);
 
     /* Now let's create challenges! */
     uint8_t hashed_data[32] = {0};
@@ -920,7 +920,6 @@ out:
 // KZG Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-
 /**
  * Compute a KZG commitment from a polynomial.
  *
@@ -952,7 +951,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
     if (ret != C_KZG_OK) return ret;
     ret = poly_to_kzg_commitment(&commitment, &p, s);
     if (ret != C_KZG_OK) return ret;
-    bytes_from_g1((uint8_t *)(out), &commitment);
+    bytes_from_g1(out, &commitment);
     return C_KZG_OK;
 }
 
@@ -973,22 +972,22 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
  * @retval C_KZG_BADARGS Invalid inputs
  */
 C_KZG_RET verify_kzg_proof(bool *out,
-                           const Bytes48 *commitment,
-                           const Bytes32 *z,
-                           const Bytes32 *y,
-                           const Bytes48 *proof,
+                           const Bytes48 *commitment_bytes,
+                           const Bytes32 *z_bytes,
+                           const Bytes32 *y_bytes,
+                           const Bytes48 *proof_bytes,
                            const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t z_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
-    ret = bytes_to_g1(&commitment_g1, commitment->bytes);
+    ret = bytes_to_g1(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&z_fr, z);
+    ret = bytes_to_bls_field(&z_fr, z_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&y_fr, y);
+    ret = bytes_to_bls_field(&y_fr, y_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&proof_g1, proof->bytes);
+    ret = bytes_to_g1(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
     return verify_kzg_proof_impl(out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s);
@@ -1034,14 +1033,14 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z, const KZGSettings *s) {
+C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z_bytes, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial polynomial;
     fr_t frz;
 
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_bls_field(&frz, z);
+    ret = bytes_to_bls_field(&frz, z_bytes);
     if (ret != C_KZG_OK) goto out;
     ret = compute_kzg_proof_impl(out, &polynomial, &frz, s);
     if (ret != C_KZG_OK) goto out;
@@ -1118,7 +1117,7 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
     ret = g1_lincomb(&out_g1, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    bytes_from_g1(out->bytes, &out_g1);
+    bytes_from_g1(out, &out_g1);
 
 out:
     free(inverses_in);
@@ -1231,16 +1230,16 @@ out:
  */
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob *blobs,
-                                     const Bytes48 *expected_kzg_commitments,
+                                     const Bytes48 *commitments_bytes,
                                      size_t n,
-                                     const Bytes48 *kzg_aggregated_proof,
+                                     const Bytes48 *aggregated_proof_bytes,
                                      const KZGSettings *s) {
     C_KZG_RET ret;
     g1_t* commitments = NULL;
     Polynomial* polys = NULL;
 
     g1_t proof;
-    ret = bytes_to_g1(&proof, kzg_aggregated_proof->bytes);
+    ret = bytes_to_g1(&proof, aggregated_proof_bytes);
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
@@ -1256,7 +1255,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = bytes_to_g1(&commitments[i], expected_kzg_commitments[i].bytes);
+        ret = bytes_to_g1(&commitments[i], &commitments_bytes[i]);
         if (ret != C_KZG_OK) goto out;
         ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
@@ -1496,7 +1495,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n
     if (ret != C_KZG_OK) goto out_error;
 
     for (i = 0; i < n1; i++) {
-        ret = bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
+        ret = bytes_to_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
         if (ret != C_KZG_OK) goto out_error;
     }
 

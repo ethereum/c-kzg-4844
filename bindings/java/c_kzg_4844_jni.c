@@ -160,7 +160,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments, jlong count, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray expected_commitments_bytes, jlong count, jbyteArray proof_bytes)
 {
   if (settings == NULL)
   {
@@ -178,7 +178,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
-  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments);
+  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, expected_commitments_bytes);
   size_t expected_commitments_size = BYTES_PER_COMMITMENT * count_native;
   if (commitments_size != expected_commitments_size)
   {
@@ -186,15 +186,15 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
-  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
-  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, expected_commitments_bytes, NULL);
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
   bool out;
   C_KZG_RET ret = verify_aggregate_kzg_proof(&out, (const Blob *)blobs_native, commitments_native, count_native, proof_native, settings);
 
-  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, commitments, (jbyte *)commitments_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, expected_commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
@@ -239,7 +239,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   return commitment;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment, jbyteArray z, jbyteArray y, jbyteArray proof)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray expected_commitment_bytes, jbyteArray z_bytes, jbyteArray y_bytes, jbyteArray proof_bytes)
 {
   if (settings == NULL)
   {
@@ -247,18 +247,18 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
-  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment, NULL);
-  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
-  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z, NULL);
-  Bytes32 *y_native = (Bytes32 *)(*env)->GetByteArrayElements(env, y, NULL);
+  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, expected_commitment_bytes, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
+  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
+  Bytes32 *y_native = (Bytes32 *)(*env)->GetByteArrayElements(env, y_bytes, NULL);
 
   bool out;
   C_KZG_RET ret = verify_kzg_proof(&out, commitment_native, z_native, y_native, proof_native, settings);
 
-  (*env)->ReleaseByteArrayElements(env, commitment, (jbyte *)commitment_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, z, (jbyte *)z_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, y, (jbyte *)y_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, expected_commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, z_bytes, (jbyte *)z_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, y_bytes, (jbyte *)y_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {

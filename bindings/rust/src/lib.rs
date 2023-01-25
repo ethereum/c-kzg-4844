@@ -185,14 +185,14 @@ impl KZGProof {
     pub fn verify_aggregate_kzg_proof(
         &self,
         blobs: &[Blob],
-        expected_commitments: &[Bytes48],
+        commitments_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        if blobs.len() != expected_commitments.len() {
+        if blobs.len() != commitments_bytes.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} blobs and {} commitments",
                 blobs.len(),
-                expected_commitments.len()
+                commitments_bytes.len()
             )));
         }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -200,7 +200,7 @@ impl KZGProof {
             let res = verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
                 blobs.as_ptr(),
-                expected_commitments.as_ptr(),
+                commitments_bytes.as_ptr(),
                 blobs.len(),
                 &self.to_bytes48(),
                 kzg_settings,
@@ -215,18 +215,18 @@ impl KZGProof {
 
     pub fn verify_kzg_proof(
         &self,
-        commitment: Bytes48,
-        z: Bytes32,
-        y: Bytes32,
+        commitment_bytes: Bytes48,
+        z_bytes: Bytes32,
+        y_bytes: Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
-                &commitment,
-                &z,
-                &y,
+                &commitment_bytes,
+                &z_bytes,
+                &y_bytes,
                 &self.to_bytes48(),
                 kzg_settings,
             );

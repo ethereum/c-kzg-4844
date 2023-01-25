@@ -103,9 +103,9 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
 
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob *blobs,
-                                     const Bytes48 *expected_commitments,
+                                     const Bytes48 *commitments_bytes,
                                      size_t n,
-                                     const Bytes48 *aggregated_proof,
+                                     const Bytes48 *aggregated_proof_bytes,
                                      const KZGSettings *s);
 
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
@@ -113,15 +113,15 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
                                  const KZGSettings *s);
 
 C_KZG_RET verify_kzg_proof(bool *out,
-                           const Bytes48 *commitment,
-                           const Bytes32 *z,
-                           const Bytes32 *y,
-                           const Bytes48 *proof,
+                           const Bytes48 *commitment_bytes,
+                           const Bytes32 *z_bytes,
+                           const Bytes32 *y_bytes,
+                           const Bytes48 *proof_bytes,
                            const KZGSettings *s);
 
 C_KZG_RET compute_kzg_proof(KZGProof *out,
-                            const Blob *p,
-                            const Bytes32 *z,
+                            const Blob *blobs,
+                            const Bytes32 *z_bytes,
                             const KZGSettings *s);
 
 #ifdef __cplusplus
