@@ -133,8 +133,8 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments, long count,
-      byte[] proof);
+  public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] expected_commitments, long count,
+      byte[] aggregated_proof);
 
   /**
    * Calculates commitment for a given blob
@@ -155,6 +155,6 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof);
+  public static native boolean verifyKzgProof(byte[] expected_commitment, byte[] z, byte[] y, byte[] proof);
 
 }

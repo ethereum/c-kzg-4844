@@ -186,8 +186,8 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
-  KZGProof *proof_native = (KZGProof *)(*env)->GetByteArrayElements(env, proof, NULL);
-  KZGCommitment *commitments_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitments, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments, NULL);
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
   bool out;
@@ -247,8 +247,8 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
-  KZGCommitment *commitment_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitment, NULL);
-  KZGProof *proof_native = (KZGProof *)(*env)->GetByteArrayElements(env, proof, NULL);
+  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
   Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z, NULL);
   Bytes32 *y_native = (Bytes32 *)(*env)->GetByteArrayElements(env, y, NULL);
 
