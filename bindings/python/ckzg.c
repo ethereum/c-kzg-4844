@@ -106,8 +106,8 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
     return PyErr_Format(PyExc_ValueError, "expected same number of commitments as polynomials");
 
   const Blob* blobs = (Blob *)PyBytes_AsString(b);
-  const KZGProof *proof = (KZGProof *)PyBytes_AsString(p);
-  const KZGCommitment *commitments = (KZGCommitment *)PyBytes_AsString(c);
+  const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
+  const Bytes48 *commitments_bytes = (Bytes48 *)PyBytes_AsString(c);
 
   bool out;
   if (verify_aggregate_kzg_proof(&out,
