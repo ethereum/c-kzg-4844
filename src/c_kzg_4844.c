@@ -486,7 +486,6 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
     blst_p1_compress(out->bytes, in);
 }
 
-
 /**
  * Deserialize bytes into a G1 group element.
  *
@@ -495,14 +494,13 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Input bytes were not a valid G1 element
  */
-static C_KZG_RET bytes_to_g1(g1_t* out, const Bytes48 *in) {
+static C_KZG_RET bytes_to_g1(g1_t* out, const Bytes48 *b) {
     blst_p1_affine tmp;
-    if (blst_p1_uncompress(&tmp, in->bytes) != BLST_SUCCESS)
+    if (blst_p1_uncompress(&tmp, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &tmp);
     return C_KZG_OK;
 }
-
 
 /**
  * Serialize a BLS field element into bytes.
@@ -662,6 +660,58 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
     blst_fr_from_scalar(out, &tmp);
     return C_KZG_OK;
+}
+
+/**
+ * Perform BLS validation required by the types KZGProof and KZGCommitment.
+ *
+ * @param[in]   b   The proof/commitment bytes
+ */
+static C_KZG_RET validate_kzg_g1(const Bytes48 *b) {
+    blst_p1_affine tmp;
+    if (blst_p1_uncompress(&tmp, b->bytes) != BLST_SUCCESS)
+        return C_KZG_BADARGS;
+    return C_KZG_OK;
+}
+
+/**
+ * Convert untrusted bytes into a trusted and validated KZGCommitment.
+ *
+ * @param[out]  out The output commitment
+ * @param[in]   in  The commitment bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ */
+static C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
+    C_KZG_RET ret;
+
+    ret = validate_kzg_g1(b);
+    if (ret != C_KZG_OK) goto out;
+    ret = bytes_to_g1(out, b);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    return ret;
+}
+
+/**
+ * Convert untrusted bytes into a trusted and validated KZGProof.
+ *
+ * @param[out]  out The output proof
+ * @param[in]   in  The proof bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ */
+static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
+    C_KZG_RET ret;
+
+    ret = validate_kzg_g1(b);
+    if (ret != C_KZG_OK) goto out;
+    ret = bytes_to_g1(out, b);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    return ret;
 }
 
 /**
@@ -981,13 +1031,13 @@ C_KZG_RET verify_kzg_proof(bool *out,
     fr_t z_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
-    ret = bytes_to_g1(&commitment_g1, commitment_bytes);
+    ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_bls_field(&z_fr, z_bytes);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_bls_field(&y_fr, y_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&proof_g1, proof_bytes);
+    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
     return verify_kzg_proof_impl(out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s);
@@ -1239,7 +1289,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     Polynomial* polys = NULL;
 
     g1_t proof;
-    ret = bytes_to_g1(&proof, aggregated_proof_bytes);
+    ret = bytes_to_kzg_proof(&proof, aggregated_proof_bytes);
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
@@ -1255,7 +1305,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = bytes_to_g1(&commitments[i], &commitments_bytes[i]);
+        ret = bytes_to_kzg_commitment(&commitments[i], &commitments_bytes[i]);
         if (ret != C_KZG_OK) goto out;
         ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
