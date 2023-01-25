@@ -146,6 +146,27 @@ func Benchmark(b *testing.B) {
 	y := Bytes32{4, 5, 6}
 	proof, _ := ComputeAggregateKZGProof(blobs[:1])
 
+	b.Run("BlobToKZGCommitment", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, ret := BlobToKZGCommitment(blobs[0])
+			require.Equal(b, C_KZG_OK, ret)
+		}
+	})
+
+	b.Run("ComputeKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, ret := ComputeKZGProof(blobs[0], z)
+			require.Equal(b, C_KZG_OK, ret)
+		}
+	})
+
+	b.Run("VerifyKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, ret := VerifyKZGProof(commitments[0], z, y, proof)
+			require.Equal(b, C_KZG_OK, ret)
+		}
+	})
+
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("ComputeAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
@@ -163,18 +184,4 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
-
-	b.Run("BlobToKZGCommitment", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			_, ret := BlobToKZGCommitment(blobs[0])
-			require.Equal(b, C_KZG_OK, ret)
-		}
-	})
-
-	b.Run("VerifyKZGProof", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			_, ret := VerifyKZGProof(commitments[0], z, y, proof)
-			require.Equal(b, C_KZG_OK, ret)
-		}
-	})
 }

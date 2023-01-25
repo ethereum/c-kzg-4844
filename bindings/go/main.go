@@ -113,6 +113,74 @@ func FreeTrustedSetup() {
 }
 
 /*
+BlobToKZGCommitment is the binding for:
+
+	C_KZG_RET blob_to_kzg_commitment(
+	    KZGCommitment *out,
+	    const Blob *blob,
+	    const KZGSettings *s);
+*/
+func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKzgRet) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	commitment := KZGCommitment{}
+	ret := C.blob_to_kzg_commitment(
+		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
+		(*C.Blob)(unsafe.Pointer(&blob)),
+		&settings)
+	return commitment, CKzgRet(ret)
+}
+
+/*
+ComputeKZGProof is the binding for:
+
+	C_KZG_RET compute_kzg_proof(
+			KZGProof *out,
+			const Blob *blob,
+			const Bytes32 *z,
+			const KZGSettings *s);
+*/
+func ComputeKZGProof(blob Blob, z Bytes32) (KZGProof, CKzgRet) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	proof := KZGProof{}
+	ret := C.compute_kzg_proof(
+		(*C.KZGProof)(unsafe.Pointer(&proof)),
+		(*C.Blob)(unsafe.Pointer(&blob)),
+		(*C.Bytes32)(unsafe.Pointer(&z)),
+		&settings)
+	return proof, CKzgRet(ret)
+}
+
+/*
+VerifyKZGProof is the binding for:
+
+	C_KZG_RET verify_kzg_proof(
+	    bool *out,
+	    const KZGCommitment *polynomial_kzg,
+	    const Bytes32 *z,
+	    const Bytes32 *y,
+	    const KZGProof *kzg_proof,
+	    const KZGSettings *s);
+*/
+func VerifyKZGProof(polynomialKzg KZGCommitment, z, y Bytes32, kzgProof KZGProof) (bool, CKzgRet) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	var result C.bool
+	ret := C.verify_kzg_proof(
+		&result,
+		(*C.KZGCommitment)(unsafe.Pointer(&polynomialKzg)),
+		(*C.Bytes32)(unsafe.Pointer(&z)),
+		(*C.Bytes32)(unsafe.Pointer(&y)),
+		(*C.KZGProof)(unsafe.Pointer(&kzgProof)),
+		&settings)
+	return bool(result), CKzgRet(ret)
+}
+
+/*
 ComputeAggregateKZGProof is the binding for:
 
 	C_KZG_RET compute_aggregate_kzg_proof(
@@ -159,52 +227,6 @@ func VerifyAggregateKZGProof(blobs []Blob, expectedKzgCommitments []KZGCommitmen
 		*(**C.KZGCommitment)(unsafe.Pointer(&expectedKzgCommitments)),
 		(C.size_t)(len(blobs)),
 		(*C.KZGProof)(unsafe.Pointer(&kzgAggregatedProof)),
-		&settings)
-	return bool(result), CKzgRet(ret)
-}
-
-/*
-BlobToKZGCommitment is the binding for:
-
-	C_KZG_RET blob_to_kzg_commitment(
-	    KZGCommitment *out,
-	    const Blob *blob,
-	    const KZGSettings *s);
-*/
-func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKzgRet) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-	commitment := KZGCommitment{}
-	ret := C.blob_to_kzg_commitment(
-		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
-		(*C.Blob)(unsafe.Pointer(&blob)),
-		&settings)
-	return commitment, CKzgRet(ret)
-}
-
-/*
-VerifyKZGProof is the binding for:
-
-	C_KZG_RET verify_kzg_proof(
-	    bool *out,
-	    const KZGCommitment *polynomial_kzg,
-	    const Bytes32 *z,
-	    const Bytes32 *y,
-	    const KZGProof *kzg_proof,
-	    const KZGSettings *s);
-*/
-func VerifyKZGProof(polynomialKzg KZGCommitment, z, y Bytes32, kzgProof KZGProof) (bool, CKzgRet) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-	var result C.bool
-	ret := C.verify_kzg_proof(
-		&result,
-		(*C.KZGCommitment)(unsafe.Pointer(&polynomialKzg)),
-		(*C.Bytes32)(unsafe.Pointer(&z)),
-		(*C.Bytes32)(unsafe.Pointer(&y)),
-		(*C.KZGProof)(unsafe.Pointer(&kzgProof)),
 		&settings)
 	return bool(result), CKzgRet(ret)
 }
