@@ -111,7 +111,7 @@ static PyObject* verify_aggregate_kzg_proof_wrap(PyObject *self, PyObject *args)
 
   bool out;
   if (verify_aggregate_kzg_proof(&out,
-        blobs, commitments, n, proof,
+        blobs, commitments_bytes, n, proof_bytes,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     return PyErr_Format(PyExc_RuntimeError, "verify_aggregate_kzg_proof failed");
   }
