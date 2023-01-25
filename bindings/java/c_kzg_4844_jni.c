@@ -160,7 +160,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregate
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray expected_commitments_bytes, jlong count, jbyteArray proof_bytes)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes, jlong count, jbyteArray proof_bytes)
 {
   if (settings == NULL)
   {
@@ -178,7 +178,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
     return 0;
   }
 
-  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, expected_commitments_bytes);
+  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments_bytes);
   size_t expected_commitments_size = BYTES_PER_COMMITMENT * count_native;
   if (commitments_size != expected_commitments_size)
   {
@@ -187,14 +187,14 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzg
   }
 
   Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
-  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, expected_commitments_bytes, NULL);
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
   jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
 
   bool out;
   C_KZG_RET ret = verify_aggregate_kzg_proof(&out, (const Blob *)blobs_native, commitments_native, count_native, proof_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, expected_commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
