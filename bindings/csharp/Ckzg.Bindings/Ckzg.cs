@@ -53,7 +53,7 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
     [DllImport("ckzg", EntryPoint = "verify_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int VerifyAggregatedKzgProof(byte* blobs, byte* commitments, int count, byte* proof, IntPtr ts);
+    public unsafe static extern int VerifyAggregatedKzgProof(byte* blobs, byte* commitments_bytes, int count, byte* aggregated_proof_bytes, IntPtr ts);
 
     /// <summary>
     /// Verify the proof by point evaluation for the given commitment
@@ -65,7 +65,7 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int VerifyKzgProof(byte* commitment, byte* z, byte* y, byte* proof, IntPtr ts);
+    public unsafe static extern int VerifyKzgProof(byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
 
     /// <summary>
     /// Load trusted setup settings from file
