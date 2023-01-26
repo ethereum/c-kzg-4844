@@ -62,6 +62,30 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	return nil
 }
 
+func GetRandFieldElement(seed int64) Bytes32 {
+	rand.Seed(seed)
+	bytes := make([]byte, 31)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		panic("failed to get random field element")
+	}
+
+	// This leaves the last byte in fieldElementBytes as
+	// zero, which guarantees it's a canonical field element.
+	var fieldElementBytes Bytes32
+	copy(fieldElementBytes[:], bytes)
+	return fieldElementBytes
+}
+
+func GetRandBlob(seed int64) Blob {
+	var blob Blob
+	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
+		fieldElementBytes := GetRandFieldElement(seed + int64(i))
+		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
+	}
+	return blob
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests
 ///////////////////////////////////////////////////////////////////////////////
@@ -122,28 +146,6 @@ func TestVerifyKZGProof(t *testing.T) {
 ///////////////////////////////////////////////////////////////////////////////
 // Benchmarks
 ///////////////////////////////////////////////////////////////////////////////
-
-func GetRandFieldElement(seed int64) Bytes32 {
-	rand.Seed(seed)
-	bytes := make([]byte, 31)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		panic("failed to get random field element")
-	}
-
-	var fieldElementBytes Bytes32
-	copy(fieldElementBytes[:], bytes)
-	return fieldElementBytes
-}
-
-func GetRandBlob(seed int64) Blob {
-	var blob Blob
-	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
-		fieldElementBytes := GetRandFieldElement(seed + int64(i))
-		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
-	}
-	return blob
-}
 
 func Benchmark(b *testing.B) {
 	const length = 64
