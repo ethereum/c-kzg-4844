@@ -1,4 +1,4 @@
-module github.com/ethereum/c-kzg-4844/bindings/go
+module github.com/ethereum/c-kzg-4844
 
 go 1.19
 
