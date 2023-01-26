@@ -17,7 +17,13 @@ jobs:
           go-version: ^1.19
         id: go
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
       - name: Test
         run: |
           cd bindings/go
           go test .
+      - name: Check headers
+        run: |
+          cmp blst/bindings/blst.h bindings/go/blst_headers/blst.h
+          cmp blst/bindings/blst_aux.h bindings/go/blst_headers/blst_aux.h
