@@ -502,7 +502,7 @@ static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in] n The integer to be serialized
  */
-static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
+static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
     for (int i = 0; i < 8; i++) {
         out[i] = n & 0xFF;
         n >>= 8;
@@ -643,13 +643,15 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
-    /* Check if it's the point at infinity */
+    /* The point at infinity is accepted! */
     if (blst_p1_is_inf(out))
         return C_KZG_OK;
 
-    /* Key validation */
+    /* The point must be on the curve */
     if (!blst_p1_on_curve(out))
         return C_KZG_BADARGS;
+
+    /* The point must be on the right subgroup */
     if (!blst_p1_in_g1(out))
         return C_KZG_BADARGS;
 
@@ -1173,7 +1175,7 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1
         const g1_t *kzg_commitments,
         size_t n) {
     fr_t* r_powers = calloc(n, sizeof(fr_t));
-    if (0 < n && r_powers == NULL) return C_KZG_MALLOC;
+    if (n > 0 && r_powers == NULL) return C_KZG_MALLOC;
 
     C_KZG_RET ret;
     ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
@@ -1206,19 +1208,17 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
                                       const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     Polynomial* polys = NULL;
     g1_t* commitments = NULL;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (0 < n && commitments == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && commitments == NULL) {
         goto out;
     }
 
     polys = calloc(n, sizeof(Polynomial));
-    if (0 < n && polys == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && polys == NULL) {
         goto out;
     }
 
@@ -1261,7 +1261,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      size_t n,
                                      const Bytes48 *aggregated_proof_bytes,
                                      const KZGSettings *s) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     g1_t* commitments = NULL;
     Polynomial* polys = NULL;
 
@@ -1270,14 +1270,12 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (0 < n && commitments == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && commitments == NULL) {
         goto out;
     }
 
     polys = calloc(n, sizeof(Polynomial));
-    if (0 < n && polys == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && polys == NULL) {
         goto out;
     }
 
