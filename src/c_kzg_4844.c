@@ -670,7 +670,7 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     /* Fast check without needing to uncompress */
-    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) != 0)
+    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) == 0)
         return C_KZG_OK;
 
     /* Convert the bytes to a p1 point */
