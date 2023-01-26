@@ -663,28 +663,30 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @param[in]   b   The proof/commitment bytes
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
+ *
+ * @remark This function deviates from the spec because it returns (via an
+ *     output argument) the g1 point. This way is more efficient (faster) but
+ *     the function name is a bit misleading.
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
-    blst_p1 p1;
-    blst_p1_affine p1_affine;
-
     /* Fast check without needing to uncompress */
     if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) != 0)
         return C_KZG_OK;
 
     /* Convert the bytes to a p1 point */
+    blst_p1_affine p1_affine;
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
-    blst_p1_from_affine(&p1, &p1_affine);
+    blst_p1_from_affine(out, &p1_affine);
 
     /* Duplicate check, just in case */
-    if (blst_p1_is_inf(&p1))
+    if (blst_p1_is_inf(out))
         return C_KZG_OK;
 
     /* Key validation */
-    if (!blst_p1_on_curve(&p1))
+    if (!blst_p1_on_curve(out))
         return C_KZG_BADARGS;
-    if (!blst_p1_in_g1(&p1))
+    if (!blst_p1_in_g1(out))
         return C_KZG_BADARGS;
 
     return C_KZG_OK;
