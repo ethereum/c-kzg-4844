@@ -197,7 +197,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   return napi_typed_array_from_bytes((uint8_t *)(&proof), BYTES_PER_PROOF, env);
 }
 
-// verifyAggregateKzgProof: (blobs: Blob[], commitmentsBytes: Bytes48[], aggregatedProof: Bytes48, setupHandle: SetupHandle) => boolean;
+// verifyAggregateKzgProof: (blobs: Blob[], commitmentsBytes: Bytes48[], aggregatedProofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto env = info.Env();
 
