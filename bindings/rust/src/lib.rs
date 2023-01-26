@@ -19,8 +19,8 @@ const NUM_G2_POINTS: usize = 65;
 
 #[derive(Debug)]
 pub enum Error {
-    /// The Bytes48 is invalid.
-    InvalidBytes48(String),
+    /// Wrong number of bytes.
+    InvalidBytesLength(String),
     /// The KZG proof is invalid.
     InvalidKzgProof(String),
     /// The KZG commitment is invalid.
@@ -107,10 +107,25 @@ impl Drop for KZGSettings {
     }
 }
 
+impl Bytes32 {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != 32 {
+            return Err(Error::InvalidBytesLength(format!(
+                "Invalid byte length. Expected {} got {}",
+                32,
+                bytes.len(),
+            )));
+        }
+        let mut new_bytes = [0; 32];
+        new_bytes.copy_from_slice(bytes);
+        Ok(Self { bytes: new_bytes })
+    }
+}
+
 impl Bytes48 {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 48 {
-            return Err(Error::InvalidBytes48(format!(
+            return Err(Error::InvalidBytesLength(format!(
                 "Invalid byte length. Expected {} got {}",
                 48,
                 bytes.len(),
@@ -119,18 +134,6 @@ impl Bytes48 {
         let mut new_bytes = [0; 48];
         new_bytes.copy_from_slice(bytes);
         Ok(Self { bytes: new_bytes })
-    }
-
-    pub fn to_proof(self) -> Result<KZGProof, Error> {
-        let mut proof_bytes = [0; BYTES_PER_PROOF];
-        proof_bytes.copy_from_slice(&self.bytes);
-        Ok(KZGProof { bytes: proof_bytes })
-    }
-
-    pub fn to_commitment(self) -> Result<KZGCommitment, Error> {
-        let mut commitment_bytes = [0; BYTES_PER_COMMITMENT];
-        commitment_bytes.copy_from_slice(&self.bytes);
-        Ok(KZGCommitment { bytes: commitment_bytes })
     }
 }
 
@@ -148,18 +151,14 @@ impl KZGProof {
         Ok(Self { bytes: proof_bytes })
     }
 
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
-        self.bytes
-    }
-
-    pub fn to_bytes48(&self) -> Bytes48 {
+    pub fn to_bytes(&self) -> Bytes48 {
         let mut bytes = [0; 48];
         bytes.copy_from_slice(&self.bytes);
         Bytes48 { bytes }
     }
 
     pub fn as_hex_string(&self) -> String {
-        hex::encode(self.to_bytes())
+        hex::encode(self.bytes)
     }
 
     pub fn compute_aggregate_kzg_proof(
@@ -202,7 +201,7 @@ impl KZGProof {
                 blobs.as_ptr(),
                 commitments_bytes.as_ptr(),
                 blobs.len(),
-                &self.to_bytes48(),
+                &self.to_bytes(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -227,7 +226,7 @@ impl KZGProof {
                 &commitment_bytes,
                 &z_bytes,
                 &y_bytes,
-                &self.to_bytes48(),
+                &self.to_bytes(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -253,18 +252,14 @@ impl KZGCommitment {
         Ok(Self { bytes: commitment })
     }
 
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
-        self.bytes
-    }
-
-    pub fn to_bytes48(&self) -> Bytes48 {
+    pub fn to_bytes(&self) -> Bytes48 {
         let mut bytes = [0; 48];
         bytes.copy_from_slice(&self.bytes);
         Bytes48 { bytes }
     }
 
     pub fn as_hex_string(&self) -> String {
-        hex::encode(self.to_bytes())
+        hex::encode(self.bytes)
     }
 
     pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Self {
@@ -340,7 +335,7 @@ mod tests {
             .clone()
             .into_iter()
             .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
-            .map(|commitment| commitment.to_bytes48())
+            .map(|commitment| commitment.to_bytes())
             .collect();
 
         let kzg_proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
@@ -445,19 +440,17 @@ mod tests {
             let commitment_hex = test.get("Commitment").unwrap().as_str().unwrap();
             let commitment = Bytes48::from_bytes(&hex::decode(commitment_hex).unwrap()).unwrap();
 
-            let z = test.get("InputPoint").unwrap().as_str().unwrap();
-            let mut z_bytes = [0; BYTES_PER_FIELD_ELEMENT];
-            z_bytes.copy_from_slice(&hex::decode(z).unwrap());
+            let z_hex = test.get("InputPoint").unwrap().as_str().unwrap();
+            let z_bytes = Bytes32::from_bytes(&hex::decode(z_hex).unwrap()).unwrap();
 
-            let y = test.get("ClaimedValue").unwrap().as_str().unwrap();
-            let mut y_bytes = [0; BYTES_PER_FIELD_ELEMENT];
-            y_bytes.copy_from_slice(&hex::decode(y).unwrap());
+            let y_hex = test.get("ClaimedValue").unwrap().as_str().unwrap();
+            let y_bytes = Bytes32::from_bytes(&hex::decode(y_hex).unwrap()).unwrap();
 
             assert!(kzg_proof
                 .verify_kzg_proof(
                     commitment,
-                    z_bytes.into(),
-                    y_bytes.into(),
+                    z_bytes,
+                    y_bytes,
                     &kzg_settings
                 )
                 .unwrap());
