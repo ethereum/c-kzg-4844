@@ -80,9 +80,9 @@ func (f *Bytes32) UnmarshalText(input []byte) error {
 func TestComputeAggregateKZGProof(t *testing.T) {
 	type Test struct {
 		TestCases []struct {
-			Polynomials []Blob          `json:"Polynomials"`
-			Proof       KZGProof        `json:"Proof"`
-			Commitments []KZGCommitment `json:"Commitments"`
+			Polynomials []Blob    `json:"Polynomials"`
+			Proof       Bytes48   `json:"Proof"`
+			Commitments []Bytes48 `json:"Commitments"`
 		}
 	}
 
@@ -108,11 +108,11 @@ func TestComputeAggregateKZGProof(t *testing.T) {
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		TestCases []struct {
-			Polynomial   Blob          `json:"Polynomial"`
-			Proof        KZGProof      `json:"Proof"`
-			Commitment   KZGCommitment `json:"Commitment"`
-			InputPoint   Bytes32       `json:"InputPoint"`
-			ClaimedValue Bytes32       `json:"ClaimedValue"`
+			Polynomial   Blob    `json:"Polynomial"`
+			Proof        Bytes48 `json:"Proof"`
+			Commitment   Bytes48 `json:"Commitment"`
+			InputPoint   Bytes32 `json:"InputPoint"`
+			ClaimedValue Bytes32 `json:"ClaimedValue"`
 		}
 	}
 
@@ -137,14 +137,16 @@ func TestVerifyKZGProof(t *testing.T) {
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := [length]Blob{}
-	commitments := [length]KZGCommitment{}
+	commitments := [length]Bytes48{}
 	for i := 0; i < length; i++ {
 		blobs[i][0] = byte(i)
-		commitments[i], _ = BlobToKZGCommitment(blobs[i])
+		commitment, _ := BlobToKZGCommitment(blobs[i])
+		commitments[i] = Bytes48(commitment)
 	}
 	z := Bytes32{1, 2, 3}
 	y := Bytes32{4, 5, 6}
-	proof, _ := ComputeAggregateKZGProof(blobs[:1])
+	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
+	proof := Bytes48(trustedProof)
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
