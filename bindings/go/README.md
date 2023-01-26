@@ -63,3 +63,10 @@ Run the benchmarks with this command:
 ```
 go test -bench=Benchmark
 ```
+
+## Note
+
+The `go.mod` and `go.sum` files are in the project's root directory because the
+bindings need access to the c-kzg-4844 source, but Go cannot reference files
+outside its module/package. The best way to deal with this is to make the whole
+project available, that way everything is accessible.
