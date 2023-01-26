@@ -155,7 +155,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyKzgProof(byte[] expected_commitment_bytes, byte[] z_bytes, byte[] y_bytes,
+  public static native boolean verifyKzgProof(byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes,
                                               byte[] proof_bytes);
 
 }
