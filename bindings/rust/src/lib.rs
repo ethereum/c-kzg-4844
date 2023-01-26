@@ -19,6 +19,8 @@ const NUM_G2_POINTS: usize = 65;
 
 #[derive(Debug)]
 pub enum Error {
+    /// Wrong number of bytes.
+    InvalidBytesLength(String),
     /// The KZG proof is invalid.
     InvalidKzgProof(String),
     /// The KZG commitment is invalid.
@@ -105,6 +107,36 @@ impl Drop for KZGSettings {
     }
 }
 
+impl Bytes32 {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != 32 {
+            return Err(Error::InvalidBytesLength(format!(
+                "Invalid byte length. Expected {} got {}",
+                32,
+                bytes.len(),
+            )));
+        }
+        let mut new_bytes = [0; 32];
+        new_bytes.copy_from_slice(bytes);
+        Ok(Self { bytes: new_bytes })
+    }
+}
+
+impl Bytes48 {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != 48 {
+            return Err(Error::InvalidBytesLength(format!(
+                "Invalid byte length. Expected {} got {}",
+                48,
+                bytes.len(),
+            )));
+        }
+        let mut new_bytes = [0; 48];
+        new_bytes.copy_from_slice(bytes);
+        Ok(Self { bytes: new_bytes })
+    }
+}
+
 impl KZGProof {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_PROOF {
@@ -119,12 +151,14 @@ impl KZGProof {
         Ok(Self { bytes: proof_bytes })
     }
 
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
-        self.bytes
+    pub fn to_bytes(&self) -> Bytes48 {
+        let mut bytes = [0; 48];
+        bytes.copy_from_slice(&self.bytes);
+        Bytes48 { bytes }
     }
 
     pub fn as_hex_string(&self) -> String {
-        hex::encode(self.to_bytes())
+        hex::encode(self.bytes)
     }
 
     pub fn compute_aggregate_kzg_proof(
@@ -150,14 +184,14 @@ impl KZGProof {
     pub fn verify_aggregate_kzg_proof(
         &self,
         blobs: &[Blob],
-        expected_kzg_commitments: &[KZGCommitment],
+        commitments_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        if blobs.len() != expected_kzg_commitments.len() {
+        if blobs.len() != commitments_bytes.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} blobs and {} commitments",
                 blobs.len(),
-                expected_kzg_commitments.len()
+                commitments_bytes.len()
             )));
         }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -165,9 +199,9 @@ impl KZGProof {
             let res = verify_aggregate_kzg_proof(
                 verified.as_mut_ptr(),
                 blobs.as_ptr(),
-                expected_kzg_commitments.as_ptr(),
+                commitments_bytes.as_ptr(),
                 blobs.len(),
-                self,
+                &self.to_bytes(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -180,19 +214,19 @@ impl KZGProof {
 
     pub fn verify_kzg_proof(
         &self,
-        kzg_commitment: KZGCommitment,
-        z: Bytes32,
-        y: Bytes32,
+        commitment_bytes: Bytes48,
+        z_bytes: Bytes32,
+        y_bytes: Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
-                &kzg_commitment,
-                &z,
-                &y,
-                self,
+                &commitment_bytes,
+                &z_bytes,
+                &y_bytes,
+                &self.to_bytes(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -218,12 +252,14 @@ impl KZGCommitment {
         Ok(Self { bytes: commitment })
     }
 
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_G1_POINT] {
-        self.bytes
+    pub fn to_bytes(&self) -> Bytes48 {
+        let mut bytes = [0; 48];
+        bytes.copy_from_slice(&self.bytes);
+        Bytes48 { bytes }
     }
 
     pub fn as_hex_string(&self) -> String {
-        hex::encode(self.to_bytes())
+        hex::encode(self.bytes)
     }
 
     pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Self {
@@ -263,6 +299,12 @@ impl From<[u8; 32]> for Bytes32 {
     }
 }
 
+impl From<[u8; 48]> for Bytes48 {
+    fn from(value: [u8; 48]) -> Self {
+        Self { bytes: value }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -289,22 +331,23 @@ mod tests {
             .map(|_| generate_random_blob(&mut rng))
             .collect();
 
-        let kzg_commitments: Vec<KZGCommitment> = blobs
+        let commitments: Vec<Bytes48> = blobs
             .clone()
             .into_iter()
             .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+            .map(|commitment| commitment.to_bytes())
             .collect();
 
         let kzg_proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
 
         assert!(kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
             .unwrap());
 
         blobs.pop();
 
         let error = kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
             .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
@@ -312,7 +355,7 @@ mod tests {
         blobs.push(incorrect_blob);
 
         assert!(!kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
             .unwrap());
     }
 
@@ -341,7 +384,7 @@ mod tests {
         for test in tests.iter() {
             let expected_proof = test.get("Proof").unwrap().as_str().unwrap();
 
-            let expected_kzg_commitments = test
+            let expected_commitments = test
                 .get("Commitments")
                 .unwrap()
                 .as_array()
@@ -372,7 +415,7 @@ mod tests {
                 let commitment = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
                 assert_eq!(
                     commitment.as_hex_string().as_str(),
-                    expected_kzg_commitments[i]
+                    expected_commitments[i]
                 );
             }
         }
@@ -394,23 +437,20 @@ mod tests {
             let proof = test.get("Proof").unwrap().as_str().unwrap();
             let kzg_proof = KZGProof::from_bytes(&hex::decode(proof).unwrap()).unwrap();
 
-            let commitment = test.get("Commitment").unwrap().as_str().unwrap();
-            let kzg_commitment =
-                KZGCommitment::from_bytes(&hex::decode(commitment).unwrap()).unwrap();
+            let commitment_hex = test.get("Commitment").unwrap().as_str().unwrap();
+            let commitment = Bytes48::from_bytes(&hex::decode(commitment_hex).unwrap()).unwrap();
 
-            let z = test.get("InputPoint").unwrap().as_str().unwrap();
-            let mut z_bytes = [0; BYTES_PER_FIELD_ELEMENT];
-            z_bytes.copy_from_slice(&hex::decode(z).unwrap());
+            let z_hex = test.get("InputPoint").unwrap().as_str().unwrap();
+            let z_bytes = Bytes32::from_bytes(&hex::decode(z_hex).unwrap()).unwrap();
 
-            let y = test.get("ClaimedValue").unwrap().as_str().unwrap();
-            let mut y_bytes = [0; BYTES_PER_FIELD_ELEMENT];
-            y_bytes.copy_from_slice(&hex::decode(y).unwrap());
+            let y_hex = test.get("ClaimedValue").unwrap().as_str().unwrap();
+            let y_bytes = Bytes32::from_bytes(&hex::decode(y_hex).unwrap()).unwrap();
 
             assert!(kzg_proof
                 .verify_kzg_proof(
-                    kzg_commitment,
-                    z_bytes.into(),
-                    y_bytes.into(),
+                    commitment,
+                    z_bytes,
+                    y_bytes,
                     &kzg_settings
                 )
                 .unwrap());

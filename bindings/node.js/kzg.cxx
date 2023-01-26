@@ -197,7 +197,7 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   return napi_typed_array_from_bytes((uint8_t *)(&proof), BYTES_PER_PROOF, env);
 }
 
-// verifyAggregateKzgProof: (blobs: Blob[], expectedKzgCommitments: KZGCommitment[], kzgAggregatedProof: KZGProof, setupHandle: SetupHandle) => boolean;
+// verifyAggregateKzgProof: (blobs: Blob[], commitmentsBytes: Bytes48[], aggregatedProofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   auto env = info.Env();
 
@@ -221,7 +221,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     return env.Null();
   };
 
-  auto commitments = (KZGCommitment*)calloc(blobs_count, sizeof(KZGCommitment));
+  auto commitments = (Bytes48*)calloc(blobs_count, sizeof(Bytes48));
   if (commitments == NULL) {
     free(blobs);
     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
@@ -248,7 +248,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
     blobs,
     commitments,
     blobs_count,
-    (KZGProof *)proof_bytes,
+    (Bytes48 *)proof_bytes,
     kzg_settings
   );
 
@@ -266,7 +266,7 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, verification_result);
 }
 
-// verifyKzgProof: (polynomialKzg: KZGCommitment, z: Bytes32, y: Bytes32, kzgProof: KZGProof, setupHandle: SetupHandle) => boolean;
+// verifyKzgProof: (commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   auto env = info.Env();
 
@@ -276,10 +276,10 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
 
-  auto polynomial_kzg = extract_byte_array_from_param(info, 0, "polynomialKzg");
-  auto z = extract_byte_array_from_param(info, 1, "z");
-  auto y = extract_byte_array_from_param(info, 2, "y");
-  auto kzg_proof = extract_byte_array_from_param(info, 3, "kzgProof");
+  auto commitment_bytes = extract_byte_array_from_param(info, 0, "commitmentBytes");
+  auto z_bytes = extract_byte_array_from_param(info, 1, "zBytes");
+  auto y_bytes = extract_byte_array_from_param(info, 2, "yBytes");
+  auto proof_bytes = extract_byte_array_from_param(info, 3, "proofBytes");
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
@@ -289,10 +289,10 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   bool out;
   C_KZG_RET ret = verify_kzg_proof(
     &out,
-    (KZGCommitment *)polynomial_kzg,
-    (Bytes32 *)z,
-    (Bytes32 *)y,
-    (KZGProof *)kzg_proof,
+    (Bytes48 *)commitment_bytes,
+    (Bytes32 *)z_bytes,
+    (Bytes32 *)y_bytes,
+    (Bytes48 *)proof_bytes,
     kzg_settings
   );
 

@@ -6,6 +6,7 @@ const kzg: KZG = require("./kzg.node");
 const fs = require("fs");
 
 export type Bytes32 = Uint8Array; // 32 bytes
+export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
@@ -30,16 +31,16 @@ type KZG = {
 
   verifyAggregateKzgProof: (
     blobs: Blob[],
-    expectedKzgCommitments: KZGCommitment[],
-    kzgAggregatedProof: KZGProof,
+    commitmentsBytes: Bytes48[],
+    aggregatedProofBytes: Bytes48,
     setupHandle: SetupHandle,
   ) => boolean;
 
   verifyKzgProof: (
-    polynomialKzg: KZGCommitment,
-    z: Bytes32,
-    y: Bytes32,
-    kzgProof: KZGProof,
+    commitmentBytes: Bytes48,
+    zBytes: Bytes32,
+    yBytes: Bytes32,
+    proofBytes: Bytes48,
     setupHandle: SetupHandle,
   ) => boolean;
 };
@@ -114,29 +115,29 @@ export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
 }
 
 export function verifyKzgProof(
-  polynomialKzg: KZGCommitment,
-  z: Bytes32,
-  y: Bytes32,
-  kzgProof: KZGProof,
+  commitmentBytes: Bytes48,
+  zBytes: Bytes32,
+  yBytes: Bytes32,
+  proofBytes: Bytes48,
 ): boolean {
   return kzg.verifyKzgProof(
-    polynomialKzg,
-    z,
-    y,
-    kzgProof,
+    commitmentBytes,
+    zBytes,
+    yBytes,
+    proofBytes,
     requireSetupHandle(),
   );
 }
 
 export function verifyAggregateKzgProof(
   blobs: Blob[],
-  expectedKzgCommitments: KZGCommitment[],
-  kzgAggregatedProof: KZGProof,
+  commitmentsBytes: Bytes48[],
+  proofBytes: Bytes48,
 ): boolean {
   return kzg.verifyAggregateKzgProof(
     blobs,
-    expectedKzgCommitments,
-    kzgAggregatedProof,
+    commitmentsBytes,
+    proofBytes,
     requireSetupHandle(),
   );
 }
