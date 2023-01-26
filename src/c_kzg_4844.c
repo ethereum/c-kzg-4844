@@ -37,11 +37,11 @@ typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-/** The G1 identity/infinity. */
-static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+/** Deserialized form of the G1 identity/infinity point. */
+static const g1_t G1_IDENTITY = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 /** The G1 generator. */
-static const g1_t g1_generator = {{
+static const g1_t G1_GENERATOR = {{
         0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
         0xedce6ecc21dbf440L, 0x120177419e0bfb75L
     },
@@ -56,7 +56,7 @@ static const g1_t g1_generator = {{
 };
 
 /** The G2 generator. */
-static const g2_t g2_generator = {{{{
+static const g2_t G2_GENERATOR = {{{{
                 0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
                 0x6f67b7631863366bL, 0x058191924350bcd7L
             },
@@ -108,7 +108,7 @@ static const g2_t g2_generator = {{{{
  * to create the roots of unity below. There are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
-static const uint64_t scale2_root_of_unity[][4] = {
+static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0x0000000000000001L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},
     {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L},
     {0x0001000000000000L, 0xec03000276030000L, 0x8d51ccce760304d0L, 0x0000000000000000L},
@@ -367,7 +367,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     int i = sizeof(blst_scalar);
     while (i && !s.b[i - 1]) --i;
     if (i == 0) {
-        *out = g1_identity;
+        *out = G1_IDENTITY;
     } else if (i == 1 && s.b[0] == 1) {
         *out = *a;
     } else {
@@ -482,27 +482,9 @@ static int log2_pow2(uint32_t n) {
  * @param[out] out A 48-byte array to store the serialized G1 element
  * @param[in] in The G1 element to be serialized
  */
-static void bytes_from_g1(uint8_t out[48], const g1_t *in) {
-    blst_p1_compress(out, in);
+static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
+    blst_p1_compress(out->bytes, in);
 }
-
-
-/**
- * Deserialize bytes into a G1 group element.
- *
- * @param[out] out The G1 element to store the deserialized data
- * @param[in] bytes A 48-byte array containing the serialized G1 element
- * @retval C_KZG_OK Deserialization successful
- * @retval C_KZG_BADARGS Input bytes were not a valid G1 element
- */
-static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
-    blst_p1_affine tmp;
-    if (blst_p1_uncompress(&tmp, bytes) != BLST_SUCCESS)
-        return C_KZG_BADARGS;
-    blst_p1_from_affine(out, &tmp);
-    return C_KZG_OK;
-}
-
 
 /**
  * Serialize a BLS field element into bytes.
@@ -510,8 +492,8 @@ static C_KZG_RET bytes_to_g1(g1_t* out, const uint8_t bytes[48]) {
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
-static void bytes_from_bls_field(uint8_t out[32], const fr_t *in) {
-    blst_scalar_from_fr((blst_scalar*)out, in);
+static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
+    blst_scalar_from_fr((blst_scalar*)out->bytes, in);
 }
 
 /**
@@ -627,7 +609,7 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
 }
 
 /**
- * Deserialize bytes into a BLS field element.
+ * Convert untrusted bytes to a trusted and validated BLS scalar field element.
  *
  * @param[out] out The field element to store the deserialized data
  * @param[in] bytes A 32-byte array containing the serialized field element
@@ -640,6 +622,62 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
     blst_fr_from_scalar(out, &tmp);
     return C_KZG_OK;
+}
+
+/**
+ * Perform BLS validation required by the types KZGProof and KZGCommitment.
+ *
+ * @param[out]  out The output g1 point
+ * @param[in]   b   The proof/commitment bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ *
+ * @remark This function deviates from the spec because it returns (via an
+ *     output argument) the g1 point. This way is more efficient (faster) but
+ *     the function name is a bit misleading.
+ */
+static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
+    /* Convert the bytes to a p1 point */
+    blst_p1_affine p1_affine;
+    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
+        return C_KZG_BADARGS;
+    blst_p1_from_affine(out, &p1_affine);
+
+    /* Check if it's the point at infinity */
+    if (blst_p1_is_inf(out))
+        return C_KZG_OK;
+
+    /* Key validation */
+    if (!blst_p1_on_curve(out))
+        return C_KZG_BADARGS;
+    if (!blst_p1_in_g1(out))
+        return C_KZG_BADARGS;
+
+    return C_KZG_OK;
+}
+
+/**
+ * Convert untrusted bytes into a trusted and validated KZGCommitment.
+ *
+ * @param[out]  out The output commitment
+ * @param[in]   b   The commitment bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ */
+static C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
+    return validate_kzg_g1(out, b);
+}
+
+/**
+ * Convert untrusted bytes into a trusted and validated KZGProof.
+ *
+ * @param[out]  out The output proof
+ * @param[in]   b   The proof bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
+ */
+static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
+    return validate_kzg_g1(out, b);
 }
 
 /**
@@ -686,7 +724,7 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
     uint8_t* bytes = calloc(nb, sizeof(uint8_t));
     if (bytes == NULL) return C_KZG_MALLOC;
 
-    /* Copy domain seperator */
+    /* Copy domain separator */
     memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
     bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
     bytes_of_uint64(&bytes[16 + 8], n);
@@ -694,11 +732,11 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
     /* Copy polynomials */
     for (i = 0; i < n; i++)
         for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field(&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
+            bytes_from_bls_field((Bytes32 *)&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
 
     /* Copy commitments */
     for (i = 0; i < n; i++)
-        bytes_from_g1(&bytes[np + i * 48], &comms[i]);
+        bytes_from_g1((Bytes48 *)&bytes[np + i * 48], &comms[i]);
 
     /* Now let's create challenges! */
     uint8_t hashed_data[32] = {0};
@@ -758,7 +796,7 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
     if (len < 8) {
         // Direct approach
         g1_t tmp;
-        *out = g1_identity;
+        *out = G1_IDENTITY;
         for (uint64_t i = 0; i < len; i++) {
             g1_mul(&tmp, &p[i], &coeffs[i]);
             blst_p1_add_or_double(out, out, &tmp);
@@ -898,7 +936,6 @@ out:
 // KZG Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-
 /**
  * Compute a KZG commitment from a polynomial.
  *
@@ -930,7 +967,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
     if (ret != C_KZG_OK) return ret;
     ret = poly_to_kzg_commitment(&commitment, &p, s);
     if (ret != C_KZG_OK) return ret;
-    bytes_from_g1((uint8_t *)(out), &commitment);
+    bytes_from_g1(out, &commitment);
     return C_KZG_OK;
 }
 
@@ -951,25 +988,25 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
  * @retval C_KZG_BADARGS Invalid inputs
  */
 C_KZG_RET verify_kzg_proof(bool *out,
-                           const KZGCommitment *commitment,
-                           const Bytes32 *z,
-                           const Bytes32 *y,
-                           const KZGProof *kzg_proof,
+                           const Bytes48 *commitment_bytes,
+                           const Bytes32 *z_bytes,
+                           const Bytes32 *y_bytes,
+                           const Bytes48 *proof_bytes,
                            const KZGSettings *s) {
     C_KZG_RET ret;
-    fr_t frz, fry;
-    g1_t g1commitment, g1proof;
+    fr_t z_fr, y_fr;
+    g1_t commitment_g1, proof_g1;
 
-    ret = bytes_to_g1(&g1commitment, commitment->bytes);
+    ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&frz, z);
+    ret = bytes_to_bls_field(&z_fr, z_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&fry, y);
+    ret = bytes_to_bls_field(&y_fr, y_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_g1(&g1proof, kzg_proof->bytes);
+    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
-    return verify_kzg_proof_impl(out, &g1commitment, &frz, &fry, &g1proof, s);
+    return verify_kzg_proof_impl(out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s);
 }
 
 /**
@@ -989,12 +1026,12 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
                                        const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
-    g2_mul(&x_g2, &g2_generator, z);
+    g2_mul(&x_g2, &G2_GENERATOR, z);
     g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
-    g1_mul(&y_g1, &g1_generator, y);
+    g1_mul(&y_g1, &G1_GENERATOR, y);
     g1_sub(&commitment_minus_y, commitment, &y_g1);
 
-    *out = pairings_verify(&commitment_minus_y, &g2_generator, proof, &s_minus_x);
+    *out = pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x);
 
     return C_KZG_OK;
 }
@@ -1012,14 +1049,14 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
  * @retval C_KZG_OK      All is well
  * @retval C_KZG_MALLOC  Memory allocation failed
  */
-C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z, const KZGSettings *s) {
+C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z_bytes, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial polynomial;
     fr_t frz;
 
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_bls_field(&frz, z);
+    ret = bytes_to_bls_field(&frz, z_bytes);
     if (ret != C_KZG_OK) goto out;
     ret = compute_kzg_proof_impl(out, &polynomial, &frz, s);
     if (ret != C_KZG_OK) goto out;
@@ -1096,7 +1133,7 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
     ret = g1_lincomb(&out_g1, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    bytes_from_g1(out->bytes, &out_g1);
+    bytes_from_g1(out, &out_g1);
 
 out:
     free(inverses_in);
@@ -1209,16 +1246,16 @@ out:
  */
 C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      const Blob *blobs,
-                                     const KZGCommitment *expected_kzg_commitments,
+                                     const Bytes48 *commitments_bytes,
                                      size_t n,
-                                     const KZGProof *kzg_aggregated_proof,
+                                     const Bytes48 *aggregated_proof_bytes,
                                      const KZGSettings *s) {
     C_KZG_RET ret;
     g1_t* commitments = NULL;
     Polynomial* polys = NULL;
 
     g1_t proof;
-    ret = bytes_to_g1(&proof, kzg_aggregated_proof->bytes);
+    ret = bytes_to_kzg_proof(&proof, aggregated_proof_bytes);
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
@@ -1234,7 +1271,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     }
 
     for (size_t i = 0; i < n; i++) {
-        ret = bytes_to_g1(&commitments[i], expected_kzg_commitments[i].bytes);
+        ret = bytes_to_kzg_commitment(&commitments[i], &commitments_bytes[i]);
         if (ret != C_KZG_OK) goto out;
         ret = blob_to_polynomial(&polys[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
@@ -1383,8 +1420,8 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fs->reverse_roots_of_unity = NULL;
     fs->roots_of_unity = NULL;
 
-    CHECK((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]));
-    blst_fr_from_uint64(&root_of_unity, scale2_root_of_unity[max_scale]);
+    CHECK((max_scale < sizeof SCALE2_ROOT_OF_UNITY / sizeof SCALE2_ROOT_OF_UNITY[0]));
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     // Allocate space for the roots of unity
     ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
@@ -1474,7 +1511,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n
     if (ret != C_KZG_OK) goto out_error;
 
     for (i = 0; i < n1; i++) {
-        ret = bytes_to_g1(&g1_projective[i], &g1_bytes[48 * i]);
+        ret = validate_kzg_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
         if (ret != C_KZG_OK) goto out_error;
     }
 
