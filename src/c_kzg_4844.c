@@ -48,10 +48,10 @@ static const Bytes48 G1_POINT_AT_INFINITY = {
 };
 
 /** Deserialized form of the G1 identity/infinity point. */
-static const g1_t g1_identity = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+static const g1_t G1_IDENTITY = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 /** The G1 generator. */
-static const g1_t g1_generator = {{
+static const g1_t G1_GENERATOR = {{
         0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
         0xedce6ecc21dbf440L, 0x120177419e0bfb75L
     },
@@ -66,7 +66,7 @@ static const g1_t g1_generator = {{
 };
 
 /** The G2 generator. */
-static const g2_t g2_generator = {{{{
+static const g2_t G2_GENERATOR = {{{{
                 0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
                 0x6f67b7631863366bL, 0x058191924350bcd7L
             },
@@ -118,7 +118,7 @@ static const g2_t g2_generator = {{{{
  * to create the roots of unity below. There are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
-static const uint64_t scale2_root_of_unity[][4] = {
+static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0x0000000000000001L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},
     {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L},
     {0x0001000000000000L, 0xec03000276030000L, 0x8d51ccce760304d0L, 0x0000000000000000L},
@@ -377,7 +377,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     int i = sizeof(blst_scalar);
     while (i && !s.b[i - 1]) --i;
     if (i == 0) {
-        *out = g1_identity;
+        *out = G1_IDENTITY;
     } else if (i == 1 && s.b[0] == 1) {
         *out = *a;
     } else {
@@ -675,15 +675,33 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
 /**
  * Perform BLS validation required by the types KZGProof and KZGCommitment.
  *
+ * @param[out]  out The output g1 point
  * @param[in]   b   The proof/commitment bytes
+ * @retval C_KZG_OK Deserialization successful
+ * @retval C_KZG_BADARGS Invalid input bytes
  */
-static C_KZG_RET validate_kzg_g1(const Bytes48 *b) {
-    blst_p1_affine tmp;
+static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
+    blst_p1 p1;
+    blst_p1_affine p1_affine;
 
+    /* Fast check without needing to uncompress */
     if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) != 0)
         return C_KZG_OK;
 
-    // TODO: validate the point.
+    /* Convert the bytes to a p1 point */
+    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
+        return C_KZG_BADARGS;
+    blst_p1_from_affine(&p1, &p1_affine);
+
+    /* Duplicate check, just in case */
+    if (blst_p1_is_inf(&p1))
+        return C_KZG_OK;
+
+    /* Key validation */
+    if (!blst_p1_on_curve(&p1))
+        return C_KZG_BADARGS;
+    if (!blst_p1_in_g1(&p1))
+        return C_KZG_BADARGS;
 
     return C_KZG_OK;
 }
@@ -692,40 +710,24 @@ static C_KZG_RET validate_kzg_g1(const Bytes48 *b) {
  * Convert untrusted bytes into a trusted and validated KZGCommitment.
  *
  * @param[out]  out The output commitment
- * @param[in]   in  The commitment bytes
+ * @param[in]   b   The commitment bytes
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
 static C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
-    C_KZG_RET ret;
-
-    ret = validate_kzg_g1(b);
-    if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_g1(out, b);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    return ret;
+    return validate_kzg_g1(out, b);
 }
 
 /**
  * Convert untrusted bytes into a trusted and validated KZGProof.
  *
  * @param[out]  out The output proof
- * @param[in]   in  The proof bytes
+ * @param[in]   b   The proof bytes
  * @retval C_KZG_OK Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
 static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
-    C_KZG_RET ret;
-
-    ret = validate_kzg_g1(b);
-    if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_g1(out, b);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    return ret;
+    return validate_kzg_g1(out, b);
 }
 
 /**
@@ -772,7 +774,7 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
     uint8_t* bytes = calloc(nb, sizeof(uint8_t));
     if (bytes == NULL) return C_KZG_MALLOC;
 
-    /* Copy domain seperator */
+    /* Copy domain separator */
     memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
     bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
     bytes_of_uint64(&bytes[16 + 8], n);
@@ -844,7 +846,7 @@ static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const 
     if (len < 8) {
         // Direct approach
         g1_t tmp;
-        *out = g1_identity;
+        *out = G1_IDENTITY;
         for (uint64_t i = 0; i < len; i++) {
             g1_mul(&tmp, &p[i], &coeffs[i]);
             blst_p1_add_or_double(out, out, &tmp);
@@ -1074,12 +1076,12 @@ static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const 
                                        const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
-    g2_mul(&x_g2, &g2_generator, z);
+    g2_mul(&x_g2, &G2_GENERATOR, z);
     g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
-    g1_mul(&y_g1, &g1_generator, y);
+    g1_mul(&y_g1, &G1_GENERATOR, y);
     g1_sub(&commitment_minus_y, commitment, &y_g1);
 
-    *out = pairings_verify(&commitment_minus_y, &g2_generator, proof, &s_minus_x);
+    *out = pairings_verify(&commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x);
 
     return C_KZG_OK;
 }
@@ -1468,8 +1470,8 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     fs->reverse_roots_of_unity = NULL;
     fs->roots_of_unity = NULL;
 
-    CHECK((max_scale < sizeof scale2_root_of_unity / sizeof scale2_root_of_unity[0]));
-    blst_fr_from_uint64(&root_of_unity, scale2_root_of_unity[max_scale]);
+    CHECK((max_scale < sizeof SCALE2_ROOT_OF_UNITY / sizeof SCALE2_ROOT_OF_UNITY[0]));
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     // Allocate space for the roots of unity
     ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
