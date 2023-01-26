@@ -37,16 +37,6 @@ typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-/** Serialized form of the point at infinity on the G1 group. */
-static const Bytes48 G1_POINT_AT_INFINITY = {
-    0xc1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
@@ -669,17 +659,13 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  *     the function name is a bit misleading.
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
-    /* Fast check without needing to uncompress */
-    if (memcmp(G1_POINT_AT_INFINITY.bytes, b->bytes, sizeof(b)) == 0)
-        return C_KZG_OK;
-
     /* Convert the bytes to a p1 point */
     blst_p1_affine p1_affine;
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
-    /* Duplicate check, just in case */
+    /* Check if it's the point at infinity */
     if (blst_p1_is_inf(out))
         return C_KZG_OK;
 
