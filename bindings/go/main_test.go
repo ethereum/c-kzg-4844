@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"testing"
 
@@ -122,12 +123,34 @@ func TestVerifyKZGProof(t *testing.T) {
 // Benchmarks
 ///////////////////////////////////////////////////////////////////////////////
 
+func GetRandFieldElement(seed int64) Bytes32 {
+	rand.Seed(seed)
+	bytes := make([]byte, 31)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		panic("failed to get random field element")
+	}
+
+	var fieldElementBytes Bytes32
+	copy(fieldElementBytes[:], bytes)
+	return fieldElementBytes
+}
+
+func GetRandBlob(seed int64) Blob {
+	var blob Blob
+	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
+		fieldElementBytes := GetRandFieldElement(seed + int64(i))
+		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
+	}
+	return blob
+}
+
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := [length]Blob{}
 	commitments := [length]Bytes48{}
 	for i := 0; i < length; i++ {
-		blobs[i][0] = byte(i)
+		blobs[i] = GetRandBlob(int64(i))
 		commitment, _ := BlobToKZGCommitment(blobs[i])
 		commitments[i] = Bytes48(commitment)
 	}
