@@ -1182,10 +1182,11 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1
     poly_lincomb(poly_out, polys, r_powers, n);
 
     ret = g1_lincomb(comm_out, kzg_commitments, r_powers, n);
+    if (ret != C_KZG_OK) goto out;
 
 out:
     free(r_powers);
-    return C_KZG_OK;
+    return ret;
 }
 
 /**
