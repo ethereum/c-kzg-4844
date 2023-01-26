@@ -502,7 +502,7 @@ static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
  */
-static void bytes_of_uint64(uint8_t out[8], uint64_t n) {
+static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
     for (int i = 0; i < 8; i++) {
         out[i] = n & 0xFF;
         n >>= 8;
@@ -643,13 +643,15 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
-    /* Check if it's the point at infinity */
+    /* The point at infinity is accepted! */
     if (blst_p1_is_inf(out))
         return C_KZG_OK;
 
-    /* Key validation */
+    /* The point must be on the curve */
     if (!blst_p1_on_curve(out))
         return C_KZG_BADARGS;
+
+    /* The point must be on the right subgroup */
     if (!blst_p1_in_g1(out))
         return C_KZG_BADARGS;
 
@@ -717,30 +719,40 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
     size_t i;
     uint64_t j;
-    const size_t ni = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
-    const size_t np = ni + n * BYTES_PER_BLOB;
-    const size_t nb = np + n * 48;
 
-    uint8_t* bytes = calloc(nb, sizeof(uint8_t));
+    // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8 + n blobs + n commitments
+    size_t input_size = 32 + (n * BYTES_PER_BLOB) + (n * 48);
+    uint8_t *bytes = calloc(input_size, sizeof(uint8_t));
     if (bytes == NULL) return C_KZG_MALLOC;
 
+    /* Pointer tracking `bytes` for writing on top of it */
+    uint8_t *offset = bytes;
+
     /* Copy domain separator */
-    memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
-    bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
-    bytes_of_uint64(&bytes[16 + 8], n);
+    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
+    offset += 16;
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    offset += 8;
+    bytes_from_uint64(offset, n);
+    offset += 8;
 
     /* Copy polynomials */
-    for (i = 0; i < n; i++)
-        for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field((Bytes32 *)&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
+        bytes_from_bls_field((Bytes32 *)offset, &polys[i].evals[j]);
+        offset += BYTES_PER_FIELD_ELEMENT;
+      }
+    }
 
     /* Copy commitments */
-    for (i = 0; i < n; i++)
-        bytes_from_g1((Bytes48 *)&bytes[np + i * 48], &comms[i]);
+    for (i = 0; i < n; i++) {
+        bytes_from_g1((Bytes48 *)offset, &comms[i]);
+        offset += BYTES_PER_COMMITMENT;
+    }
 
     /* Now let's create challenges! */
     uint8_t hashed_data[32] = {0};
-    blst_sha256(hashed_data, bytes, nb);
+    blst_sha256(hashed_data, bytes, input_size);
 
     /* We will use hash_input in the computation of both challenges */
     uint8_t hash_input[33];
@@ -1163,7 +1175,7 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1
         const g1_t *kzg_commitments,
         size_t n) {
     fr_t* r_powers = calloc(n, sizeof(fr_t));
-    if (0 < n && r_powers == NULL) return C_KZG_MALLOC;
+    if (n > 0 && r_powers == NULL) return C_KZG_MALLOC;
 
     C_KZG_RET ret;
     ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
@@ -1172,10 +1184,11 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1
     poly_lincomb(poly_out, polys, r_powers, n);
 
     ret = g1_lincomb(comm_out, kzg_commitments, r_powers, n);
+    if (ret != C_KZG_OK) goto out;
 
 out:
     free(r_powers);
-    return C_KZG_OK;
+    return ret;
 }
 
 /**
@@ -1195,19 +1208,17 @@ C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
                                       const Blob *blobs,
                                       size_t n,
                                       const KZGSettings *s) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     Polynomial* polys = NULL;
     g1_t* commitments = NULL;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (0 < n && commitments == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && commitments == NULL) {
         goto out;
     }
 
     polys = calloc(n, sizeof(Polynomial));
-    if (0 < n && polys == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && polys == NULL) {
         goto out;
     }
 
@@ -1250,7 +1261,7 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
                                      size_t n,
                                      const Bytes48 *aggregated_proof_bytes,
                                      const KZGSettings *s) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     g1_t* commitments = NULL;
     Polynomial* polys = NULL;
 
@@ -1259,14 +1270,12 @@ C_KZG_RET verify_aggregate_kzg_proof(bool *out,
     if (ret != C_KZG_OK) goto out;
 
     commitments = calloc(n, sizeof(g1_t));
-    if (0 < n && commitments == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && commitments == NULL) {
         goto out;
     }
 
     polys = calloc(n, sizeof(Polynomial));
-    if (0 < n && polys == NULL) {
-        ret = C_KZG_MALLOC;
+    if (n > 0 && polys == NULL) {
         goto out;
     }
 
