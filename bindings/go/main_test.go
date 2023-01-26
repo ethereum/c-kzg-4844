@@ -25,42 +25,6 @@ func TestMain(m *testing.M) {
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-func (b *Blob) UnmarshalText(input []byte) error {
-	blobBytes, err := hex.DecodeString(string(input))
-	if err != nil {
-		return err
-	}
-	if len(blobBytes) != len(b) {
-		return errors.New("invalid Blob")
-	}
-	copy(b[:], blobBytes)
-	return nil
-}
-
-func (p *KZGProof) UnmarshalText(input []byte) error {
-	proofBytes, err := hex.DecodeString(string(input))
-	if err != nil {
-		return err
-	}
-	if len(proofBytes) != len(p) {
-		return errors.New("invalid KZGProof")
-	}
-	copy(p[:], proofBytes)
-	return nil
-}
-
-func (c *KZGCommitment) UnmarshalText(input []byte) error {
-	commitmentBytes, err := hex.DecodeString(string(input))
-	if err != nil {
-		return err
-	}
-	if len(commitmentBytes) != len(c) {
-		return errors.New("invalid KZGCommitment")
-	}
-	copy(c[:], commitmentBytes)
-	return nil
-}
-
 func (f *Bytes32) UnmarshalText(input []byte) error {
 	bytes, err := hex.DecodeString(string(input))
 	if err != nil {
@@ -70,6 +34,30 @@ func (f *Bytes32) UnmarshalText(input []byte) error {
 		return errors.New("invalid Bytes32")
 	}
 	copy(f[:], bytes)
+	return nil
+}
+
+func (f *Bytes48) UnmarshalText(input []byte) error {
+	bytes, err := hex.DecodeString(string(input))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(f) {
+		return errors.New("invalid Bytes48")
+	}
+	copy(f[:], bytes)
+	return nil
+}
+
+func (b *Blob) UnmarshalText(input []byte) error {
+	blobBytes, err := hex.DecodeString(string(input))
+	if err != nil {
+		return err
+	}
+	if len(blobBytes) != len(b) {
+		return errors.New("invalid Blob")
+	}
+	copy(b[:], blobBytes)
 	return nil
 }
 
