@@ -717,30 +717,40 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
     size_t i;
     uint64_t j;
-    const size_t ni = 32; // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8
-    const size_t np = ni + n * BYTES_PER_BLOB;
-    const size_t nb = np + n * 48;
 
-    uint8_t* bytes = calloc(nb, sizeof(uint8_t));
+    // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8 + n blobs + n commitments
+    size_t input_size = 32 + (n * BYTES_PER_BLOB) + (n * 48);
+    uint8_t *bytes = calloc(input_size, sizeof(uint8_t));
     if (bytes == NULL) return C_KZG_MALLOC;
 
+    /* Pointer tracking `bytes` for writing on top of it */
+    uint8_t *offset = bytes;
+
     /* Copy domain separator */
-    memcpy(bytes, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
-    bytes_of_uint64(&bytes[16], FIELD_ELEMENTS_PER_BLOB);
-    bytes_of_uint64(&bytes[16 + 8], n);
+    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
+    offset += 16;
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    offset += 8;
+    bytes_from_uint64(offset, n);
+    offset += 8;
 
     /* Copy polynomials */
-    for (i = 0; i < n; i++)
-        for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-            bytes_from_bls_field((Bytes32 *)&bytes[ni + BYTES_PER_FIELD_ELEMENT * (i * FIELD_ELEMENTS_PER_BLOB + j)], &polys[i].evals[j]);
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
+        bytes_from_bls_field((Bytes32 *)offset, &polys[i].evals[j]);
+        offset += BYTES_PER_FIELD_ELEMENT;
+      }
+    }
 
     /* Copy commitments */
-    for (i = 0; i < n; i++)
-        bytes_from_g1((Bytes48 *)&bytes[np + i * 48], &comms[i]);
+    for (i = 0; i < n; i++) {
+        bytes_from_g1((Bytes48 *)offset, &comms[i]);
+        offset += BYTES_PER_COMMITMENT;
+    }
 
     /* Now let's create challenges! */
     uint8_t hashed_data[32] = {0};
-    blst_sha256(hashed_data, bytes, nb);
+    blst_sha256(hashed_data, bytes, input_size);
 
     /* We will use hash_input in the computation of both challenges */
     uint8_t hash_input[33];
