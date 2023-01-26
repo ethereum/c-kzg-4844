@@ -497,22 +497,6 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
 }
 
 /**
- * Deserialize bytes into a G1 group element.
- *
- * @param[out] out The G1 element to store the deserialized data
- * @param[in] bytes A 48-byte array containing the serialized G1 element
- * @retval C_KZG_OK Deserialization successful
- * @retval C_KZG_BADARGS Input bytes were not a valid G1 element
- */
-static C_KZG_RET bytes_to_g1(g1_t* out, const Bytes48 *b) {
-    blst_p1_affine tmp;
-    if (blst_p1_uncompress(&tmp, b->bytes) != BLST_SUCCESS)
-        return C_KZG_BADARGS;
-    blst_p1_from_affine(out, &tmp);
-    return C_KZG_OK;
-}
-
-/**
  * Serialize a BLS field element into bytes.
  *
  * @param[out] out A 32-byte array to store the serialized field element
@@ -1561,7 +1545,7 @@ C_KZG_RET load_trusted_setup(KZGSettings *out, const uint8_t *g1_bytes, size_t n
     if (ret != C_KZG_OK) goto out_error;
 
     for (i = 0; i < n1; i++) {
-        ret = bytes_to_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
+        ret = validate_kzg_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
         if (ret != C_KZG_OK) goto out_error;
     }
 
