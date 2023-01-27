@@ -125,6 +125,34 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEn
   reset_trusted_setup();
 }
 
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray z_bytes)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
+
+  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
+  KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
+
+  C_KZG_RET ret = compute_kzg_proof(proof_native, blob_native, z_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error while computing kzg proof.");
+    return NULL;
+  }
+
+  return proof;
+}
+
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
 {
   if (settings == NULL)

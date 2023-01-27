@@ -128,6 +128,10 @@ public class TestUtils {
     return randomBLSFieldElement();
   }
 
+  public static byte[] randomBLSFieldElementBytes() {
+    return randomBLSFieldElement().toArray(ByteOrder.LITTLE_ENDIAN);
+  }
+
   private static InputStream readResource(final String resource) {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
   }

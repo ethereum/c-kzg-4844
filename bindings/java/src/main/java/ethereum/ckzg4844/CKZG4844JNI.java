@@ -114,6 +114,16 @@ public class CKZG4844JNI {
   public static native void freeTrustedSetup();
 
   /**
+   * Compute proof at point z for the polynomial represented by blob.
+   *
+   * @param blob blob bytes
+   * @param z_bytes a point
+   * @return the proof
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] computeKzgProof(byte[] blob, byte[] z_bytes);
+
+  /**
    * Calculates aggregated proof for the given blobs
    *
    * @param blobs blobs as flattened bytes
