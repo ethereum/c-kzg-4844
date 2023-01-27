@@ -161,6 +161,27 @@ impl KZGProof {
         hex::encode(self.bytes)
     }
 
+    pub fn compute_kzg_proof(
+        blob: &[Blob],
+        z_bytes: Bytes32,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
+        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
+        unsafe {
+            let res = compute_kzg_proof(
+                kzg_proof.as_mut_ptr(),
+                blob.as_ptr(),
+                &z_bytes,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(kzg_proof.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
     pub fn compute_aggregate_kzg_proof(
         blobs: &[Blob],
         kzg_settings: &KZGSettings,
