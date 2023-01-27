@@ -6,6 +6,7 @@ import {
   freeTrustedSetup,
   blobToKzgCommitment,
   verifyKzgProof,
+  computeKzgProof,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
   BYTES_PER_FIELD_ELEMENT,
@@ -43,6 +44,13 @@ describe("C-KZG", () => {
 
   afterAll(() => {
     freeTrustedSetup();
+  });
+
+  it("computes a proof from blob", () => {
+    let blob = generateRandomBlob();
+    const zBytes = new Uint8Array(32).fill(0);
+    computeKzgProof(blob, zBytes);
+    // No check, just make sure it doesn't crash.
   });
 
   it("computes the correct commitments and aggregate proof from blobs", () => {

@@ -24,6 +24,12 @@ type KZG = {
 
   blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
 
+  computeKzgProof: (
+    blob: Blob,
+    zBytes: Bytes32,
+    setupHandle: SetupHandle,
+  ) => KZGProof;
+
   computeAggregateKzgProof: (
     blobs: Blob[],
     setupHandle: SetupHandle,
@@ -108,6 +114,10 @@ export function freeTrustedSetup(): void {
 
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
   return kzg.blobToKzgCommitment(blob, requireSetupHandle());
+}
+
+export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
+  return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
 export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
