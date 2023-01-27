@@ -1,4 +1,6 @@
+test_c_kzg_4844
 *.o
+*.s
 *.a
 *.out
 inc/blst.h*
