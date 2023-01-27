@@ -120,7 +120,7 @@ C_KZG_RET verify_kzg_proof(bool *out,
                            const KZGSettings *s);
 
 C_KZG_RET compute_kzg_proof(KZGProof *out,
-                            const Blob *blobs,
+                            const Blob *blob,
                             const Bytes32 *z_bytes,
                             const KZGSettings *s);
 

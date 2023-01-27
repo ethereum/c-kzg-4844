@@ -212,6 +212,13 @@ extern "C" {
 
     pub fn free_trusted_setup(s: *mut KZGSettings);
 
+    pub fn compute_kzg_proof(
+        out: *mut KZGProof,
+        blob: *const Blob,
+        z_bytes: *const Bytes32,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+
     pub fn compute_aggregate_kzg_proof(
         out: *mut KZGProof,
         blobs: *const Blob,
