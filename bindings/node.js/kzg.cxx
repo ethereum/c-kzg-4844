@@ -189,6 +189,37 @@ Napi::Value ComputeAggregateKzgProof(const Napi::CallbackInfo& info) {
   free(blobs);
 
   if (ret != C_KZG_OK) {
+     Napi::Error::New(env, "Failed to compute aggregated proof")
+      .ThrowAsJavaScriptException();
+    return env.Undefined();
+  };
+
+  return napi_typed_array_from_bytes((uint8_t *)(&proof), BYTES_PER_PROOF, env);
+}
+
+// computeKzgProof: (blob: Blob, zBytes: Bytes32, setupHandle: SetupHandle) => KZGProof;
+Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
+  auto env = info.Env();
+
+  size_t argument_count = info.Length();
+  size_t expected_argument_count = 3;
+  if (argument_count != expected_argument_count) {
+    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  }
+
+  auto blob = extract_byte_array_from_param(info, 0, "blob");
+  auto z_bytes = extract_byte_array_from_param(info, 1, "zBytes");
+  auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
+
+  KZGProof proof;
+  C_KZG_RET ret = compute_kzg_proof(
+    &proof,
+    (Blob *)blob,
+    (Bytes32 *)z_bytes,
+    kzg_settings
+  );
+
+  if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Failed to compute proof")
       .ThrowAsJavaScriptException();
     return env.Undefined();
@@ -308,8 +339,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   // Functions
   exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup);
   exports["freeTrustedSetup"] = Napi::Function::New(env, FreeTrustedSetup);
-  exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
   exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment);
+  exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof);
+  exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
   exports["computeAggregateKzgProof"] = Napi::Function::New(env, ComputeAggregateKzgProof);
   exports["verifyAggregateKzgProof"] = Napi::Function::New(env, VerifyAggregateKzgProof);
 
