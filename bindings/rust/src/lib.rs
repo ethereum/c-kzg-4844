@@ -7,8 +7,7 @@ include!("bindings.rs");
 use libc::fopen;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
-use std::os::unix::prelude::OsStrExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
@@ -81,8 +80,9 @@ impl KZGSettings {
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
-    pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
-        let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
+    pub fn load_trusted_setup_file(file_path: &Path) -> Result<Self, Error> {
+        let file_path_str = format!("{}", file_path.display());
+        let file_path = CString::new(file_path_str.as_bytes()).map_err(|e| {
             Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
         })?;
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
@@ -324,7 +324,8 @@ mod tests {
     fn test_simple(trusted_setup_file: PathBuf) {
         let mut rng = rand::thread_rng();
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings =
+            KZGSettings::load_trusted_setup_file(trusted_setup_file.as_path()).unwrap();
 
         let num_blobs: usize = rng.gen_range(1..16);
         let mut blobs: Vec<Blob> = (0..num_blobs)
@@ -374,7 +375,8 @@ mod tests {
     fn test_compute_agg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings =
+            KZGSettings::load_trusted_setup_file(trusted_setup_file.as_path()).unwrap();
 
         let test_file = PathBuf::from("test_vectors/public_agg_proof.json");
         let json_data: serde_json::Value =
@@ -413,10 +415,7 @@ mod tests {
 
             for (i, blob) in blobs.into_iter().enumerate() {
                 let commitment = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
-                assert_eq!(
-                    commitment.as_hex_string().as_str(),
-                    expected_commitments[i]
-                );
+                assert_eq!(commitment.as_hex_string().as_str(), expected_commitments[i]);
             }
         }
     }
@@ -426,7 +425,8 @@ mod tests {
     fn test_verify_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings =
+            KZGSettings::load_trusted_setup_file(trusted_setup_file.as_path()).unwrap();
 
         let test_file = PathBuf::from("test_vectors/public_verify_kzg_proof.json");
         let json_data: serde_json::Value =
@@ -447,12 +447,7 @@ mod tests {
             let y_bytes = Bytes32::from_bytes(&hex::decode(y_hex).unwrap()).unwrap();
 
             assert!(kzg_proof
-                .verify_kzg_proof(
-                    commitment,
-                    z_bytes,
-                    y_bytes,
-                    &kzg_settings
-                )
+                .verify_kzg_proof(commitment, z_bytes, y_bytes, &kzg_settings)
                 .unwrap());
         }
     }
