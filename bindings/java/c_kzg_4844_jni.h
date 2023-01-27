@@ -44,6 +44,13 @@ extern "C"
 
   /*
    * Class:     ethereum_ckzg4844_CKZG4844JNI
+   * Method:    computeKzgProof
+   * Signature: ([B[B)[B
+   */
+  JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *, jclass, jbyteArray, jbyteArray);
+
+  /*
+   * Class:     ethereum_ckzg4844_CKZG4844JNI
    * Method:    computeAggregateKzgProof
    * Signature: ([BJ)[B
    */

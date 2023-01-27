@@ -83,6 +83,15 @@ public class CKZG4844JNITest {
   }
 
   @Test
+  public void checkComputeKzgProof() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
+    CKZG4844JNI.computeKzgProof(blob, z_bytes);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
   public void checkCustomExceptionIsThrownAsExpected() {
 
     loadTrustedSetup();
