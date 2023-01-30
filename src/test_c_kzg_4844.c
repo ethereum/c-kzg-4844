@@ -92,7 +92,7 @@ static void test_blob_to_kzg_commitment__valid_blob(void) {
      * x = int(bls_modulus - 1).to_bytes(32, 'little')
      * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
      */
-    uint8_t valid_field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
+    uint8_t field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
         0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
         0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
         0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
@@ -100,7 +100,7 @@ static void test_blob_to_kzg_commitment__valid_blob(void) {
     };
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, valid_field_element_bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element_bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
@@ -118,7 +118,7 @@ static void test_blob_to_kzg_commitment__invalid_blob(void) {
      * x = int(bls_modulus).to_bytes(32, 'little')
      * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
      */
-    uint8_t valid_field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
+    uint8_t field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
         0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
         0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
         0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
@@ -126,7 +126,7 @@ static void test_blob_to_kzg_commitment__invalid_blob(void) {
     };
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, valid_field_element_bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element_bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
