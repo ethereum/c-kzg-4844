@@ -15,7 +15,7 @@ KZGSettings s;
 void load_setup() {
   FILE *fp;
   C_KZG_RET ret;
-  fp = fopen("trusted_setup.txt", "rb");
+  fp = fopen("trusted_setup.txt", "r");
 
   ret = load_trusted_setup_file(&s, fp);
   assert(ret == C_KZG_OK);
