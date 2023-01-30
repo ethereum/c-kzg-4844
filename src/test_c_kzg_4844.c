@@ -31,8 +31,6 @@ static void get_rand_field_element(Bytes32 *out) {
     fr_t tmp_fr;
     Bytes32 tmp_bytes;
 
-    memset(out, 0, sizeof(Bytes32));
-
     /*
      * Take 32 random bytes, make them an Fr, and then
      * turn the Fr back to a bytes array.
@@ -43,11 +41,8 @@ static void get_rand_field_element(Bytes32 *out) {
 }
 
 void get_rand_blob(Blob *out) {
-    memset(out, 0, sizeof(Blob));
-
-    uint8_t *blob_bytes = (uint8_t *) out;
-    for (int i = 0; i < 128; i++) {
-        get_rand_field_element((Bytes32 *)&blob_bytes[i * 32]);
+    for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
     }
 }
 

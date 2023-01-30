@@ -1,0 +1,25 @@
+name: CKZG tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Build
+        run: |
+          cd src
+          make blst
+          make
+      - name: Test
+        run: |
+          cd src
+          make test
