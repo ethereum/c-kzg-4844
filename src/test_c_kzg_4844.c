@@ -137,13 +137,15 @@ static void test_blob_to_kzg_commitment__point_at_infinity(void) {
     Blob blob;
 
     /*
-     * The commitment for a blob that's all zeros should result in a
-     * commitment that's the point at infinity.
+     * Get the commitment for a blob that's all zeros.
      */
     memset(&blob, 0, sizeof(blob));
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
+    /*
+     * The commitment should be the serialized point at infinity.
+     */
     uint8_t point_at_infinity[BYTES_PER_COMMITMENT] = {
         0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
