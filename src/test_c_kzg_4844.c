@@ -111,7 +111,7 @@ static void test_blob_to_kzg_commitment__invalid_blob(void) {
     Blob blob;
 
     /*
-     * For a valid field element x < BLS_MODULUS. Therefore x = BLS_MODULUS should fail.
+     * For a valid field element x < BLS_MODULUS. Therefore x = BLS_MODULUS should be invalid.
      * Zero out blob and make the first field element invalid.
      *
      * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
