@@ -11,29 +11,20 @@
 #include <string.h>
 #include <assert.h>
 
+///////////////////////////////////////////////////////////////////////////////
+// Globals
+///////////////////////////////////////////////////////////////////////////////
+
 KZGSettings s;
 
-static void setup(void) {
-    FILE *fp;
-    C_KZG_RET ret;
-
-    fp = fopen("trusted_setup.txt", "r");
-    assert(fp != NULL);
-
-    ret = load_trusted_setup_file(&s, fp);
-    assert(ret == C_KZG_OK);
-
-    fclose(fp);
-}
-
-static void teardown(void) {
-    free_trusted_setup(&s);
-}
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////////////////////////
 
 static void get_32_rand_bytes(uint8_t *out) {
     static uint64_t seed = 0;
-    seed++;
     blst_sha256(out, (uint8_t*)&seed, sizeof(seed));
+    seed++;
 }
 
 static void get_rand_field_element(Bytes32 *out) {
@@ -60,24 +51,9 @@ void get_rand_blob(Blob *out) {
     }
 }
 
-static void test_compute_kzg_proof(void) {
-    C_KZG_RET ret;
-    Bytes48 proof;
-    Bytes32 z;
-    KZGCommitment c;
-    Blob blob;
-
-    get_rand_field_element(&z);
-    get_rand_blob(&blob);
-
-    ret = blob_to_kzg_commitment(&c, &blob, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    ret = compute_kzg_proof(&proof, &blob, &z, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    // XXX now verify it!
-}
+///////////////////////////////////////////////////////////////////////////////
+// Tests for blob_to_kzg_commitment
+///////////////////////////////////////////////////////////////////////////////
 
 static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     C_KZG_RET ret;
@@ -184,14 +160,57 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     ASSERT_EQUALS(diff, 0);
 }
 
-int main(void)
-{
+///////////////////////////////////////////////////////////////////////////////
+// Tests for compute_kzg_proof
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_compute_kzg_proof(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    Bytes32 z;
+    KZGCommitment c;
+    Blob blob;
+
+    get_rand_field_element(&z);
+    get_rand_blob(&blob);
+
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = compute_kzg_proof(&proof, &blob, &z, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    // XXX now verify it!
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Main logic
+///////////////////////////////////////////////////////////////////////////////
+
+static void setup(void) {
+    FILE *fp;
+    C_KZG_RET ret;
+
+    fp = fopen("trusted_setup.txt", "r");
+    assert(fp != NULL);
+
+    ret = load_trusted_setup_file(&s, fp);
+    assert(ret == C_KZG_OK);
+
+    fclose(fp);
+}
+
+static void teardown(void) {
+    free_trusted_setup(&s);
+}
+
+int main(void) {
     setup();
-    RUN(test_compute_kzg_proof);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
     RUN(test_blob_to_kzg_commitment__succeeds_point_at_infinity);
+    RUN(test_compute_kzg_proof);
     teardown();
 
     return TEST_REPORT();
