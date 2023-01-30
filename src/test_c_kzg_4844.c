@@ -131,12 +131,38 @@ static void test_blob_to_kzg_commitment__invalid_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
+static void test_blob_to_kzg_commitment__point_at_infinity(void) {
+    C_KZG_RET ret;
+    KZGCommitment c;
+    Blob blob;
+
+    /*
+     * The commitment for a blob that's all zeros should result in a
+     * commitment that's the point at infinity.
+     */
+    memset(&blob, 0, sizeof(blob));
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    uint8_t point_at_infinity[BYTES_PER_COMMITMENT] = {
+        0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+    int diff = memcmp(c.bytes, point_at_infinity, BYTES_PER_COMMITMENT);
+    ASSERT_EQUALS(diff, 0);
+}
+
 int main(void)
 {
     setup();
     RUN(test_compute_kzg_proof);
     RUN(test_blob_to_kzg_commitment__valid_blob);
     RUN(test_blob_to_kzg_commitment__invalid_blob);
+    RUN(test_blob_to_kzg_commitment__point_at_infinity);
     teardown();
 
     return TEST_REPORT();
