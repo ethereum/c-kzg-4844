@@ -50,9 +50,8 @@ static void get_rand_field_element(Bytes32 *out) {
 }
 
 void get_rand_blob(Blob *out) {
-    uint8_t *blob_bytes = (uint8_t *)out;
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        get_rand_field_element((Bytes32 *)&blob_bytes[i * 32]);
+        get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
     }
 }
 
