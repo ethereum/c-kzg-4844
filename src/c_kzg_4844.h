@@ -124,6 +124,13 @@ C_KZG_RET compute_kzg_proof(KZGProof *out,
                             const Bytes32 *z_bytes,
                             const KZGSettings *s);
 
+#ifdef UNIT_TESTS
+
+void hash_to_bls_field(fr_t *out, const Bytes32 *b);
+void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
+
+#endif
+
 #ifdef __cplusplus
 }
 #endif

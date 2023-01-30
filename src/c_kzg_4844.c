@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "blst.h"
 #include "c_kzg_4844.h"
 
 #include <inttypes.h>
@@ -26,6 +27,12 @@
 
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
+
+#ifdef UNIT_TESTS
+#define STATIC
+#else /* !defined(UNIT_TESTS) */
+#define STATIC static
+#endif /* defined(UNIT_TESTS) */
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -492,7 +499,7 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
-static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
+STATIC void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
     blst_scalar_from_fr((blst_scalar*)out->bytes, in);
 }
 
@@ -602,7 +609,7 @@ static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n)
  * @param[out] out   The field element to store the result
  * @param[in]  bytes A 32-byte array containing the input
  */
-static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
+STATIC void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, b->bytes);
     blst_fr_from_scalar(out, &tmp);
@@ -984,7 +991,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
 }
 
 /* Forward function declaration */
-static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *x, const fr_t *y,
+static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks);
 
 /**
