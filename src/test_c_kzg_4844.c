@@ -63,7 +63,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
      * x = int(bls_modulus - 1).to_bytes(32, 'little')
      * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
      */
-    uint8_t field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
+    Bytes32 field_element = {
         0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
         0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
         0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
@@ -71,7 +71,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     };
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element_bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
@@ -89,7 +89,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
      * x = int(bls_modulus).to_bytes(32, 'little')
      * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
      */
-    uint8_t field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
+    Bytes32 field_element = {
         0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
         0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
         0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
@@ -97,7 +97,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
     };
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element_bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -115,7 +115,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
      * x = int(bls_modulus + 1).to_bytes(32, 'little')
      * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
      */
-    uint8_t field_element_bytes[BYTES_PER_FIELD_ELEMENT] = {
+    Bytes32 field_element = {
         0x02, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
         0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
         0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
@@ -123,7 +123,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
     };
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element_bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -143,7 +143,7 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     /*
      * The commitment should be the serialized point at infinity.
      */
-    uint8_t point_at_infinity[BYTES_PER_COMMITMENT] = {
+    Bytes48 point_at_infinity = {
         0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -151,7 +151,7 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
-    int diff = memcmp(c.bytes, point_at_infinity, BYTES_PER_COMMITMENT);
+    int diff = memcmp(c.bytes, point_at_infinity.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
 }
 
@@ -171,7 +171,7 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
      * We expect the commitment to match. If it doesn't
      * match, something important has changed.
      */
-    uint8_t expected_commitment[BYTES_PER_COMMITMENT] = {
+    Bytes48 expected_commitment = {
         0xaf, 0x19, 0xe4, 0x60, 0x16, 0x9c, 0x57, 0x95,
         0x9c, 0x04, 0x78, 0x6c, 0x95, 0x8e, 0x01, 0xf9,
         0x84, 0xc1, 0x95, 0xbc, 0x56, 0xe9, 0x9b, 0x04,
@@ -179,7 +179,7 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
         0x66, 0xa4, 0x77, 0x1b, 0x8b, 0x13, 0x8c, 0xd8,
         0xee, 0xd6, 0x7e, 0xfa, 0x81, 0x16, 0x56, 0x63
     };
-    int diff = memcmp(c.bytes, expected_commitment, BYTES_PER_COMMITMENT);
+    int diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
 }
 
