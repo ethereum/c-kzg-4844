@@ -155,6 +155,34 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     ASSERT_EQUALS(diff, 0);
 }
 
+static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
+    C_KZG_RET ret;
+    KZGCommitment c;
+    Blob blob;
+
+    /*
+     * Get a commitment to a random blob.
+     */
+    get_rand_blob(&blob);
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /*
+     * We expect the commitment to match. If it doesn't
+     * match, something important has changed.
+     */
+    uint8_t expected_commitment[BYTES_PER_COMMITMENT] = {
+        0xaf, 0x19, 0xe4, 0x60, 0x16, 0x9c, 0x57, 0x95,
+        0x9c, 0x04, 0x78, 0x6c, 0x95, 0x8e, 0x01, 0xf9,
+        0x84, 0xc1, 0x95, 0xbc, 0x56, 0xe9, 0x9b, 0x04,
+        0xc0, 0x7e, 0x0c, 0x97, 0x47, 0xe5, 0xdf, 0xa5,
+        0x66, 0xa4, 0x77, 0x1b, 0x8b, 0x13, 0x8c, 0xd8,
+        0xee, 0xd6, 0x7e, 0xfa, 0x81, 0x16, 0x56, 0x63
+    };
+    int diff = memcmp(c.bytes, expected_commitment, BYTES_PER_COMMITMENT);
+    ASSERT_EQUALS(diff, 0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
@@ -205,6 +233,7 @@ int main(void) {
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
     RUN(test_blob_to_kzg_commitment__succeeds_point_at_infinity);
+    RUN(test_blob_to_kzg_commitment__succeeds_consistent_commitment);
     RUN(test_compute_kzg_proof);
     teardown();
 
