@@ -35,12 +35,6 @@
 #endif /* defined(UNIT_TESTS) */
 
 ///////////////////////////////////////////////////////////////////////////////
-// Types
-///////////////////////////////////////////////////////////////////////////////
-
-typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
-
-///////////////////////////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -623,7 +617,7 @@ STATIC void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Input was not a valid scalar field element
  */
-static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
+STATIC C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, b->bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
@@ -697,7 +691,7 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
-static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
+STATIC C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         ret = bytes_to_bls_field(&p->evals[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
@@ -908,7 +902,7 @@ static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
  * @retval C_KZG_OK Evaluation successful
  * @retval C_KZG_MALLOC Memory allocation failed
  */
-static C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s) {
+STATIC C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t tmp;
     fr_t *inverses_in = NULL;
