@@ -85,8 +85,8 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     Blob blob;
 
     /*
-     * For a valid field element x < BLS_MODULUS. Therefore x = BLS_MODULUS - 1 should be valid.
-     * Zero out blob and make the first field element valid.
+     * A valid field element is x < BLS_MODULUS.
+     * Therefore, x = BLS_MODULUS - 1 should be valid.
      *
      * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
      * x = int(bls_modulus - 1).to_bytes(32, 'little')
@@ -111,8 +111,8 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
     Blob blob;
 
     /*
-     * For a valid field element x < BLS_MODULUS. Therefore x = BLS_MODULUS should be invalid.
-     * Zero out blob and make the first field element invalid.
+     * A valid field element is x < BLS_MODULUS.
+     * Therefore, x = BLS_MODULUS should be invalid.
      *
      * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
      * x = int(bls_modulus).to_bytes(32, 'little')
@@ -137,8 +137,8 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
     Blob blob;
 
     /*
-     * For a valid field element x < BLS_MODULUS. Therefore x = BLS_MODULUS + 1 should be invalid.
-     * Zero out blob and make the first field element invalid.
+     * A valid field element is x < BLS_MODULUS.
+     * Therefore, x = BLS_MODULUS + 1 should be invalid.
      *
      * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
      * x = int(bls_modulus + 1).to_bytes(32, 'little')
