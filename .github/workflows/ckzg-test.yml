@@ -23,3 +23,8 @@ jobs:
         run: |
           cd src
           make test
+      - name: Test Coverage
+        run: |
+          cd src
+          make test_cov
+          make test_cov | grep TOTAL | awk '{print $4" "$7" "$10}' | grep -q "100.00% 100.00% 100.00%"

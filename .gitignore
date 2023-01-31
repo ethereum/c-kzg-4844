@@ -1,4 +1,6 @@
 test_c_kzg_4844
+*.profraw
+*.profdata
 *.o
 *.s
 *.a
@@ -6,6 +8,7 @@ test_c_kzg_4844
 inc/blst.h*
 inc/blst_aux.h*
 .vscode/
+.idea/
 .clang-format
 *bindings/*/*.so
 *bindings/rust/target
