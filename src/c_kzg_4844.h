@@ -135,6 +135,7 @@ void bytes_from_g1(Bytes48 *out, const g1_t *in);
 C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s);
 C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
+uint32_t reverse_bits(uint32_t a);
 
 #endif
 

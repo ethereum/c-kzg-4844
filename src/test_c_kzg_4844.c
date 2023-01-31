@@ -75,6 +75,12 @@ static void bytes48_from_hex(Bytes48 *out, const char *hex) {
     }
 }
 
+static void get_rand_uint32(uint32_t *out) {
+    Bytes32 b;
+    get_rand_bytes32(&b);
+    *out = *(uint32_t *)(b.bytes);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for blob_to_kzg_commitment
 ///////////////////////////////////////////////////////////////////////////////
@@ -314,6 +320,39 @@ static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for reverse_bits
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_reverse_bits__round_trip(void) {
+    uint32_t original;
+    uint32_t reversed;
+    uint32_t reversed_reversed;
+
+    get_rand_uint32(&original);
+    reversed = reverse_bits(original);
+    reversed_reversed = reverse_bits(reversed);
+    ASSERT_EQUALS(reversed_reversed, original);
+}
+
+static void test_reverse_bits__all_bits_are_zero(void) {
+    uint32_t original = 0b00000000000000000000000000000000;
+    uint32_t reversed = 0b00000000000000000000000000000000;
+    ASSERT_EQUALS(reverse_bits(original), reversed);
+}
+
+static void test_reverse_bits__some_bits_are_one(void) {
+    uint32_t original = 0b10101000011111100000000000000010;
+    uint32_t reversed = 0b01000000000000000111111000010101;
+    ASSERT_EQUALS(reverse_bits(original), reversed);
+}
+
+static void test_reverse_bits__all_bits_are_one(void) {
+    uint32_t original = 0b11111111111111111111111111111111;
+    uint32_t reversed = 0b11111111111111111111111111111111;
+    ASSERT_EQUALS(reverse_bits(original), reversed);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -402,6 +441,10 @@ int main(void) {
     RUN(test_validate_kzg_g1__fails_with_wrong_c_flag);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true);
+    RUN(test_reverse_bits__round_trip);
+    RUN(test_reverse_bits__all_bits_are_zero);
+    RUN(test_reverse_bits__some_bits_are_one);
+    RUN(test_reverse_bits__all_bits_are_one);
     RUN(test_compute_and_verify_kzg_proof);
     teardown();
 
