@@ -1,4 +1,5 @@
 test_c_kzg_4844
+coverage.html
 *.profraw
 *.profdata
 *.o

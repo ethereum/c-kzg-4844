@@ -45,6 +45,7 @@ test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c Makefile
 test_cov: test_c_kzg_4844_cov
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./test_c_kzg_4844
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
+	@$(XCRUN) llvm-cov show ./test_c_kzg_4844 --instr-profile=ckzg.profdata --format=html c_kzg_4844.c > coverage.html
 	@$(XCRUN) llvm-cov report ./test_c_kzg_4844 --instr-profile=ckzg.profdata --show-functions c_kzg_4844.c
 
 clean:

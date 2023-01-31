@@ -28,3 +28,9 @@ jobs:
           cd src
           make test_cov
           make test_cov | grep TOTAL | awk '{print $4" "$7" "$10}' | grep -q "100.00% 100.00% 100.00%"
+      - name: Save coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage
+          path: |
+            coverage.html
