@@ -124,12 +124,17 @@ C_KZG_RET compute_kzg_proof(KZGProof *out,
                             const Bytes32 *z_bytes,
                             const KZGSettings *s);
 
+typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
+
 #ifdef UNIT_TESTS
 
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
 void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
 C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b);
 void bytes_from_g1(Bytes48 *out, const g1_t *in);
+C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s);
+C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
+C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 
 #endif
 
