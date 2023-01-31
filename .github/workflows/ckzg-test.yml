@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: coverage
-          path: coverage.html
+          path: src/coverage.html
       - name: Check coverage
         run: |
           cd src
