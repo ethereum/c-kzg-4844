@@ -27,10 +27,10 @@ lib: c_kzg_4844.o Makefile
 	cp *.o ../bindings/node.js
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c Makefile
-	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) -L ../lib -lblst -o test_c_kzg_4844 $<
+	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) -L../lib -lblst -o test_c_kzg_4844 $<
 
 test: test_c_kzg_4844
-		./test_c_kzg_4844
+	./test_c_kzg_4844
 
 clean:
-		rm -f  *.o test_c_kzg_4844
+	rm -f  *.o test_c_kzg_4844
