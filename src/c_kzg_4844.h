@@ -128,6 +128,8 @@ C_KZG_RET compute_kzg_proof(KZGProof *out,
 
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
 void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
+C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b);
+void bytes_from_g1(Bytes48 *out, const g1_t *in);
 
 #endif
 
