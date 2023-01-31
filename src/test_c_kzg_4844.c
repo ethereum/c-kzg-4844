@@ -187,23 +187,49 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_compute_kzg_proof(void) {
+static void test_compute_and_verify_kzg_proof(void) {
     C_KZG_RET ret;
     Bytes48 proof;
-    Bytes32 z;
+    Bytes32 z, y;
     KZGCommitment c;
     Blob blob;
+    Polynomial poly;
+    fr_t y_fr, z_fr;
+    bool ok;
 
+    /* Some preparation */
     get_rand_field_element(&z);
     get_rand_blob(&blob);
 
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
+    /* Compute the proof */
     ret = compute_kzg_proof(&proof, &blob, &z, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    // XXX now verify it!
+    /* Now let's attempt to verify the proof */
+    /* First convert the blob to field elements */
+    ret = blob_to_polynomial(&poly, &blob);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Also convert z to a field element */
+    ret = bytes_to_bls_field(&z_fr, &z);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Now evaluate the poly at `z` to learn `y` */
+    ret = evaluate_polynomial_in_evaluation_form(&y_fr, &poly, &z_fr, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Now also get `y` in bytes */
+    bytes_from_bls_field(&y, &y_fr);
+
+    /* Finally verify the proof */
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The proof should verify! */
+    ASSERT_EQUALS(ok, 1);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,7 +260,7 @@ int main(void) {
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
     RUN(test_blob_to_kzg_commitment__succeeds_point_at_infinity);
     RUN(test_blob_to_kzg_commitment__succeeds_consistent_commitment);
-    RUN(test_compute_kzg_proof);
+    RUN(test_compute_and_verify_kzg_proof);
     teardown();
 
     return TEST_REPORT();
