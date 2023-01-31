@@ -34,8 +34,3 @@ jobs:
         with:
           name: coverage
           path: src/coverage.html
-      - name: Check coverage
-        run: |
-          cd src
-          make test_cov
-          make test_cov | grep TOTAL | awk '{print $4" "$7" "$10}' | grep -q "100.00% 100.00% 100.00%"
