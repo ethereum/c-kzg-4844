@@ -6,7 +6,6 @@
 #include "tinytest.h"
 #include "blst.h"
 #include "c_kzg_4844.c"
-#include "c_kzg_4844.h"
 
 #include <stdio.h>
 #include <string.h>
