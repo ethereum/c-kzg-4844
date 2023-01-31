@@ -6,7 +6,6 @@ else
 	CFLAGS += -O2 -fPIC
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Darwin)
-		CCFLAGS += -D OSX
 		XCRUN = xcrun
 	endif
 endif
