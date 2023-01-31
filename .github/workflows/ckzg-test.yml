@@ -24,17 +24,18 @@ jobs:
           cd src
           make test
       - name: Install LLVM
-        uses: KyleMayes/install-llvm-action@v1
-        with:
-          version: "14.0"
-      - name: Test Coverage
+        uses: egor-tensin/setup-clang@v1
+      - name: Generate coverage report
         run: |
           cd src
           make test_cov
-          make test_cov | grep TOTAL | awk '{print $4" "$7" "$10}' | grep -q "100.00% 100.00% 100.00%"
       - name: Save coverage report
         uses: actions/upload-artifact@v3
         with:
           name: coverage
-          path: |
-            coverage.html
+          path: coverage.html
+      - name: Check coverage
+        run: |
+          cd src
+          make test_cov
+          make test_cov | grep TOTAL | awk '{print $4" "$7" "$10}' | grep -q "100.00% 100.00% 100.00%"
