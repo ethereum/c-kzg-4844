@@ -21,9 +21,9 @@ KZGSettings s;
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
 
-static void get_32_rand_bytes(uint8_t *out) {
+static void get_rand_bytes32(Bytes32 *out) {
     static uint64_t seed = 0;
-    blst_sha256(out, (uint8_t*)&seed, sizeof(seed));
+    blst_sha256(out->bytes, (uint8_t*)&seed, sizeof(seed));
     seed++;
 }
 
@@ -35,14 +35,35 @@ static void get_rand_field_element(Bytes32 *out) {
      * Take 32 random bytes, make them an Fr, and then
      * turn the Fr back to a bytes array.
      */
-    get_32_rand_bytes((uint8_t *)&tmp_bytes);
+    get_rand_bytes32(&tmp_bytes);
     hash_to_bls_field(&tmp_fr, &tmp_bytes);
     bytes_from_bls_field(out, &tmp_fr);
 }
 
-void get_rand_blob(Blob *out) {
+static void get_rand_blob(Blob *out) {
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
+    }
+}
+
+static void get_rand_g1_bytes(Bytes48 *out) {
+    C_KZG_RET ret;
+    Blob blob;
+
+    /*
+     * Get the commitment to a random blob.
+     * This commitment is a valid g1 point.
+     */
+    get_rand_blob(&blob);
+    ret = blob_to_kzg_commitment(out, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void bytes48_from_hex(Bytes48 *out, const char *hex) {
+    int matches;
+    for (int i = 0; i < sizeof(Bytes48); i++) {
+        matches = sscanf(hex + i*2, "%2hhx", &out->bytes[i]);
+        ASSERT_EQUALS(matches, 1);
     }
 }
 
@@ -184,6 +205,134 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for validate_kzg_g1
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_validate_kzg_g1__succeeds_round_trip(void) {
+    C_KZG_RET ret;
+    Bytes48 a, b;
+    g1_t g1;
+
+    get_rand_g1_bytes(&a);
+    ret = validate_kzg_g1(&g1, &a);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    bytes_from_g1(&b, &g1);
+
+    int diff = memcmp(a.bytes, b.bytes, sizeof(Bytes48));
+    ASSERT_EQUALS(diff, 0);
+}
+
+static void test_validate_kzg_g1__succeeds_correct_point(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "a491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e2644f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void test_validate_kzg_g1__fails_not_in_g1(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_not_in_curve(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "8123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcde0");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_x_equal_to_modulus(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_x_greater_than_modulus(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaac");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__succeeds_infinity_with_true_b_flag(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void test_validate_kzg_g1__fails_infinity_with_true_b_flag(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "c01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_infinity_with_false_b_flag(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "800000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_with_wrong_c_flag(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "c123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
+    C_KZG_RET ret;
+    Bytes48 b;
+    g1_t g1;
+
+    bytes48_from_hex(&b, "e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    ret = validate_kzg_g1(&g1, &b);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -260,6 +409,18 @@ int main(void) {
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
     RUN(test_blob_to_kzg_commitment__succeeds_point_at_infinity);
     RUN(test_blob_to_kzg_commitment__succeeds_consistent_commitment);
+    RUN(test_validate_kzg_g1__succeeds_round_trip);
+    RUN(test_validate_kzg_g1__succeeds_correct_point);
+    RUN(test_validate_kzg_g1__fails_not_in_g1);
+    RUN(test_validate_kzg_g1__fails_not_in_curve);
+    RUN(test_validate_kzg_g1__fails_x_equal_to_modulus);
+    RUN(test_validate_kzg_g1__fails_x_greater_than_modulus);
+    RUN(test_validate_kzg_g1__succeeds_infinity_with_true_b_flag);
+    RUN(test_validate_kzg_g1__fails_infinity_with_true_b_flag);
+    RUN(test_validate_kzg_g1__fails_infinity_with_false_b_flag);
+    RUN(test_validate_kzg_g1__fails_with_wrong_c_flag);
+    RUN(test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero);
+    RUN(test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true);
     RUN(test_compute_and_verify_kzg_proof);
     teardown();
 

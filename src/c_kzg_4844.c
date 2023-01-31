@@ -483,7 +483,7 @@ static int log2_pow2(uint32_t n) {
  * @param[out] out A 48-byte array to store the serialized G1 element
  * @param[in]  in  The G1 element to be serialized
  */
-static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
+STATIC void bytes_from_g1(Bytes48 *out, const g1_t *in) {
     blst_p1_compress(out->bytes, in);
 }
 
@@ -637,7 +637,7 @@ STATIC C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  *     output argument) the g1 point. This way is more efficient (faster) but
  *     the function name is a bit misleading.
  */
-static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
+STATIC C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     /* Convert the bytes to a p1 point */
     blst_p1_affine p1_affine;
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
