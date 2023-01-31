@@ -4,7 +4,6 @@
 #define UNIT_TESTS
 
 #include "tinytest.h"
-#include "blst.h"
 #include "c_kzg_4844.c"
 
 #include <stdio.h>
