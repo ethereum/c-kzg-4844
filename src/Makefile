@@ -49,4 +49,4 @@ test_cov: test_c_kzg_4844_cov
 	@$(XCRUN) llvm-cov report ./test_c_kzg_4844 --instr-profile=ckzg.profdata --show-functions c_kzg_4844.c
 
 clean:
-	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata
+	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata *.html
