@@ -59,6 +59,14 @@ static void get_rand_g1_bytes(Bytes48 *out) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
+static void bytes32_from_hex(Bytes32 *out, const char *hex) {
+    int matches;
+    for (int i = 0; i < sizeof(Bytes32); i++) {
+        matches = sscanf(hex + i*2, "%2hhx", &out->bytes[i]);
+        ASSERT_EQUALS(matches, 1);
+    }
+}
+
 static void bytes48_from_hex(Bytes48 *out, const char *hex) {
     int matches;
     for (int i = 0; i < sizeof(Bytes48); i++) {
@@ -75,24 +83,18 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes32 b;
 
     /*
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS - 1 should be valid.
      *
-     * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-     * x = int(bls_modulus - 1).to_bytes(32, 'little')
-     * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
+     * int(BLS_MODULUS - 1).to_bytes(32, 'little').hex()
      */
-    Bytes32 field_element = {
-        0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
-        0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
-        0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
-        0x48, 0x7d, 0x9d, 0x29, 0x53, 0xa7, 0xed, 0x73
-    };
+    bytes32_from_hex(&b, "00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73");
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
@@ -101,24 +103,18 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes32 b;
 
     /*
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS should be invalid.
      *
-     * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-     * x = int(bls_modulus).to_bytes(32, 'little')
-     * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
+     * int(BLS_MODULUS).to_bytes(32, 'little').hex()
      */
-    Bytes32 field_element = {
-        0x01, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
-        0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
-        0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
-        0x48, 0x7d, 0x9d, 0x29, 0x53, 0xa7, 0xed, 0x73
-    };
+    bytes32_from_hex(&b, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73");
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -127,24 +123,18 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes32 b;
 
     /*
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS + 1 should be invalid.
      *
-     * bls_modulus = 52435875175126190479447740508185965837690552500527637822603658699938581184513
-     * x = int(bls_modulus + 1).to_bytes(32, 'little')
-     * print("{" + ", ".join([f"0x{i:02x}" for i in x]) + "}")
+     * int(BLS_MODULUS + 1).to_bytes(32, 'little').hex()
      */
-    Bytes32 field_element = {
-        0x02, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
-        0xfe, 0x5b, 0xfe, 0xff, 0x02, 0xa4, 0xbd, 0x53,
-        0x05, 0xd8, 0xa1, 0x09, 0x08, 0xd8, 0x39, 0x33,
-        0x48, 0x7d, 0x9d, 0x29, 0x53, 0xa7, 0xed, 0x73
-    };
+    bytes32_from_hex(&b, "02000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73");
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -153,6 +143,8 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes48 point_at_infinity;
+    int diff;
 
     /*
      * Get the commitment for a blob that's all zeros.
@@ -164,15 +156,8 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     /*
      * The commitment should be the serialized point at infinity.
      */
-    Bytes48 point_at_infinity = {
-        0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-    };
-    int diff = memcmp(c.bytes, point_at_infinity.bytes, BYTES_PER_COMMITMENT);
+    bytes48_from_hex(&point_at_infinity, "c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+    diff = memcmp(c.bytes, point_at_infinity.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
 }
 
@@ -180,6 +165,8 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes48 expected_commitment;
+    int diff;
 
     /*
      * Get a commitment to a random blob.
@@ -192,15 +179,8 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
      * We expect the commitment to match. If it doesn't
      * match, something important has changed.
      */
-    Bytes48 expected_commitment = {
-        0xaf, 0x19, 0xe4, 0x60, 0x16, 0x9c, 0x57, 0x95,
-        0x9c, 0x04, 0x78, 0x6c, 0x95, 0x8e, 0x01, 0xf9,
-        0x84, 0xc1, 0x95, 0xbc, 0x56, 0xe9, 0x9b, 0x04,
-        0xc0, 0x7e, 0x0c, 0x97, 0x47, 0xe5, 0xdf, 0xa5,
-        0x66, 0xa4, 0x77, 0x1b, 0x8b, 0x13, 0x8c, 0xd8,
-        0xee, 0xd6, 0x7e, 0xfa, 0x81, 0x16, 0x56, 0x63
-    };
-    int diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
+    bytes48_from_hex(&expected_commitment, "af19e460169c57959c04786c958e01f984c195bc56e99b04c07e0c9747e5dfa566a4771b8b138cd8eed67efa81165663");
+    diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
 }
 
@@ -212,13 +192,14 @@ static void test_validate_kzg_g1__succeeds_round_trip(void) {
     C_KZG_RET ret;
     Bytes48 a, b;
     g1_t g1;
+    int diff;
 
     get_rand_g1_bytes(&a);
     ret = validate_kzg_g1(&g1, &a);
     ASSERT_EQUALS(ret, C_KZG_OK);
     bytes_from_g1(&b, &g1);
 
-    int diff = memcmp(a.bytes, b.bytes, sizeof(Bytes48));
+    diff = memcmp(a.bytes, b.bytes, sizeof(Bytes48));
     ASSERT_EQUALS(diff, 0);
 }
 
