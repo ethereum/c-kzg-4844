@@ -35,14 +35,23 @@
 #endif /* defined(UNIT_TESTS) */
 
 ///////////////////////////////////////////////////////////////////////////////
+// Types
+///////////////////////////////////////////////////////////////////////////////
+
+typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
+
+///////////////////////////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
+/** The Fiat-Shamir domain. */
+STATIC const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
+
 /** Deserialized form of the G1 identity/infinity point. */
-static const g1_t G1_IDENTITY = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+STATIC const g1_t G1_IDENTITY = {{0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 /** The G1 generator. */
-static const g1_t G1_GENERATOR = {{
+STATIC const g1_t G1_GENERATOR = {{
         0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L, 0xf0ae6acdf3d0e747L,
         0xedce6ecc21dbf440L, 0x120177419e0bfb75L
     },
@@ -57,7 +66,7 @@ static const g1_t G1_GENERATOR = {{
 };
 
 /** The G2 generator. */
-static const g2_t G2_GENERATOR = {{{{
+STATIC const g2_t G2_GENERATOR = {{{{
                 0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L, 0x9894999d1a3caee9L,
                 0x6f67b7631863366bL, 0x058191924350bcd7L
             },
@@ -109,7 +118,7 @@ static const g2_t G2_GENERATOR = {{{{
  * to create the roots of unity below. There are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
-static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
+STATIC const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0x0000000000000001L, 0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L},
     {0xffffffff00000000L, 0x53bda402fffe5bfeL, 0x3339d80809a1d805L, 0x73eda753299d7d48L},
     {0x0001000000000000L, 0xec03000276030000L, 0x8d51ccce760304d0L, 0x0000000000000000L},
@@ -145,10 +154,10 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
 };
 
 /** The zero field element. */
-static const fr_t fr_zero = {0L, 0L, 0L, 0L};
+STATIC const fr_t fr_zero = {0L, 0L, 0L, 0L};
 
 /** This is 1 in Blst's `blst_fr` limb representation. Crazy but true. */
-static const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
+STATIC const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Memory Allocation Functions
@@ -162,7 +171,7 @@ static const fr_t fr_one = {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fef
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
+STATIC C_KZG_RET c_kzg_malloc(void **x, size_t n) {
     if (n > 0) {
         *x = malloc(n);
         return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
@@ -181,7 +190,7 @@ static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
+STATIC C_KZG_RET new_g1_array(g1_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
 
@@ -195,7 +204,7 @@ static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
+STATIC C_KZG_RET new_g2_array(g2_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
 
@@ -209,7 +218,7 @@ static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
+STATIC C_KZG_RET new_fr_array(fr_t **x, size_t n) {
     return c_kzg_malloc((void **)x, n * sizeof **x);
 }
 
@@ -226,7 +235,7 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
  * @param[in] b A non-zero byte
  * @return The index of the highest set bit
  */
-static int log_2_byte(byte b) {
+STATIC int log_2_byte(byte b) {
     int r, shift;
     r = (b > 0xF) << 2;
     b >>= r;
@@ -245,7 +254,7 @@ static int log_2_byte(byte b) {
  *
  * @todo See if there is a more efficient way to check for one in the finite field.
  */
-static bool fr_is_one(const fr_t *p) {
+STATIC bool fr_is_one(const fr_t *p) {
     uint64_t a[4];
     blst_uint64_from_fr(a, p);
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
@@ -259,7 +268,7 @@ static bool fr_is_one(const fr_t *p) {
  * @retval true  if @p aa and @p bb are equal
  * @retval false otherwise
  */
-static bool fr_equal(const fr_t *aa, const fr_t *bb) {
+STATIC bool fr_equal(const fr_t *aa, const fr_t *bb) {
     uint64_t a[4], b[4];
     blst_uint64_from_fr(a, aa);
     blst_uint64_from_fr(b, bb);
@@ -273,7 +282,7 @@ static bool fr_equal(const fr_t *aa, const fr_t *bb) {
  * @param[in]  a   The dividend
  * @param[in]  b   The divisor
  */
-static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
+STATIC void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
     blst_fr tmp;
     blst_fr_eucl_inverse(&tmp, b);
     blst_fr_mul(out, a, &tmp);
@@ -290,7 +299,7 @@ static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
  * @param[in]  a   The field element to be exponentiated
  * @param[in]  n   The exponent
  */
-static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
+STATIC void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
     fr_t tmp = *a;
     *out = fr_one;
 
@@ -311,7 +320,7 @@ static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
  * @param out The field element equivalent of @p n
  * @param n   The 64-bit integer to be converted
  */
-static void fr_from_uint64(fr_t *out, uint64_t n) {
+STATIC void fr_from_uint64(fr_t *out, uint64_t n) {
     uint64_t vals[] = {n, 0, 0, 0};
     blst_fr_from_uint64(out, vals);
 }
@@ -323,7 +332,7 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
  * @param[in]  a   A vector of field elements, length @p len
  * @param[in]  len The number of field elements
  */
-static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
+STATIC C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     C_KZG_RET ret;
     fr_t *prod = NULL;
     fr_t inv;
@@ -360,7 +369,7 @@ out:
  * @param[in]  a   The G1 group element
  * @param[in]  b   The multiplier
  */
-static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
+STATIC void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
 
@@ -384,7 +393,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
  * @param[in]  a   A G1 group element
  * @param[in]  b   The G1 group element to be subtracted
  */
-static void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
+STATIC void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
     g1_t bneg = *b;
     blst_p1_cneg(&bneg, true);
     blst_p1_add_or_double(out, a, &bneg);
@@ -397,7 +406,7 @@ static void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
  * @param[in]  a   A G2 group element
  * @param[in]  b   The G2 group element to be subtracted
  */
-static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
+STATIC void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
     g2_t bneg = *b;
     blst_p2_cneg(&bneg, true);
     blst_p2_add_or_double(out, a, &bneg);
@@ -410,7 +419,7 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
  * @param[in]  a   The G2 group element
  * @param[in]  b   The multiplier
  */
-static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
+STATIC void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
     blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
@@ -428,7 +437,7 @@ static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal
  */
-static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
+STATIC bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
     blst_fp12 loop0, loop1, gt_point;
     blst_p1_affine aa1, bb1;
     blst_p2_affine aa2, bb2;
@@ -462,7 +471,7 @@ static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, cons
  * @param[in] n The power of two
  * @return the log base two of n
  */
-static int log2_pow2(uint32_t n) {
+STATIC int log2_pow2(uint32_t n) {
     const uint32_t b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
     register uint32_t r;
     r = (n & b[0]) != 0;
@@ -503,7 +512,7 @@ STATIC void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
  */
-static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
+STATIC void bytes_from_uint64(uint8_t out[8], uint64_t n) {
     for (int i = 0; i < 8; i++) {
         out[i] = n & 0xFF;
         n >>= 8;
@@ -524,7 +533,7 @@ static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
  * @retval true  if @p n is a power of two or zero
  * @retval false otherwise
  */
-static bool is_power_of_two(uint64_t n) {
+STATIC bool is_power_of_two(uint64_t n) {
     return (n & (n - 1)) == 0;
 }
 
@@ -556,7 +565,7 @@ static bool is_power_of_two(uint64_t n) {
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
  */
-static uint32_t reverse_bits(uint32_t a) {
+STATIC uint32_t reverse_bits(uint32_t a) {
     return rev_4byte(a);
 }
 
@@ -572,7 +581,7 @@ static uint32_t reverse_bits(uint32_t a) {
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
+STATIC C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
 
@@ -667,7 +676,7 @@ STATIC C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
-static C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
+STATIC C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
     return validate_kzg_g1(out, b);
 }
 
@@ -679,7 +688,7 @@ static C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
-static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
+STATIC C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
     return validate_kzg_g1(out, b);
 }
 
@@ -701,7 +710,7 @@ STATIC C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Forward function definition */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
+STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
 /**
  * Return the Fiat-Shamir challenges required by the rest of the protocol.
@@ -716,7 +725,7 @@ static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
  * @retval C_KZG_OK     Challenge computation successful
  * @retval C_KZG_MALLOC Memory allocation failed
  */
-static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out,
+STATIC C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out,
                                     const Polynomial *polys, const g1_t *comms, uint64_t n) {
     size_t i;
     uint64_t j;
@@ -799,7 +808,7 @@ static C_KZG_RET compute_challenges(fr_t *eval_challenge_out, fr_t *r_powers_out
  *
  * We do the second of these to save memory here.
  */
-static C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
+STATIC C_KZG_RET g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
     C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
@@ -858,7 +867,7 @@ out:
  * @param[in]  scalars The array of scalars to multiply the polynomials with
  * @param[in]  n       The number of polynomials and scalars
  */
-static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n) {
+STATIC void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n) {
     fr_t tmp;
     uint64_t i, j;
     for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
@@ -880,7 +889,7 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
  */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = fr_one;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
@@ -958,7 +967,7 @@ out:
  * @retval C_KZG_OK     Commitment computation successful
  * @retval C_KZG_MALLOC Memory allocation failed
  */
-static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
+STATIC C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
     return g1_lincomb(out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB);
 }
 
@@ -985,7 +994,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
 }
 
 /* Forward function declaration */
-static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
+STATIC C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks);
 
 /**
@@ -1035,7 +1044,7 @@ C_KZG_RET verify_kzg_proof(bool *out,
  * @param[in]  ks         The settings containing the secrets, previously initialised with #new_kzg_settings
  * @retval C_CZK_OK All is well
  */
-static C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
+STATIC C_KZG_RET verify_kzg_proof_impl(bool *out, const g1_t *commitment, const fr_t *z, const fr_t *y,
                                        const g1_t *proof, const KZGSettings *ks) {
     g2_t x_g2, s_minus_x;
     g1_t y_g1, commitment_minus_y;
@@ -1171,7 +1180,7 @@ out:
  * @retval C_KZG_OK     Operation successful
  * @retval C_KZG_MALLOC Memory allocation failed
  */
-static C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1_t *comm_out, fr_t *chal_out,
+STATIC C_KZG_RET compute_aggregated_poly_and_commitment(Polynomial *poly_out, g1_t *comm_out, fr_t *chal_out,
         const Polynomial *polys,
         const g1_t *kzg_commitments,
         size_t n) {
@@ -1330,7 +1339,7 @@ out:
  * @param[in]  roots_stride The stride interval among the roots of unity
  * @param[in]  n            Length of the FFT, must be a power of two
  */
-static void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride,
+STATIC void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride,
                         uint64_t n) {
     uint64_t half = n / 2;
     if (half > 0) { // Tunable parameter
@@ -1358,7 +1367,7 @@ static void fft_g1_fast(g1_t *out, const g1_t *in, uint64_t stride, const fr_t *
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-static C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs) {
+STATIC C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs) {
     uint64_t stride = fs->max_width / n;
     CHECK(n <= fs->max_width);
     CHECK(is_power_of_two(n));
@@ -1388,7 +1397,7 @@ static C_KZG_RET fft_g1(g1_t *out, const g1_t *in, bool inverse, uint64_t n, con
  * @retval C_CZK_OK      All is well
  * @retval C_CZK_BADARGS Invalid parameters were supplied
  */
-static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
+STATIC C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
     out[0] = fr_one;
     out[1] = *root;
 
@@ -1421,7 +1430,7 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t widt
  * @retval C_CZK_ERROR   An internal error occurred
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
-static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
+STATIC C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     C_KZG_RET ret;
     fr_t root_of_unity;
 
@@ -1470,7 +1479,7 @@ out_success:
  *
  * @param fs The settings to be freed
  */
-static void free_fft_settings(FFTSettings *fs) {
+STATIC void free_fft_settings(FFTSettings *fs) {
     free(fs->expanded_roots_of_unity);
     free(fs->reverse_roots_of_unity);
     free(fs->roots_of_unity);
@@ -1482,7 +1491,7 @@ static void free_fft_settings(FFTSettings *fs) {
  *
  * @param ks The settings to be freed
  */
-static void free_kzg_settings(KZGSettings *ks) {
+STATIC void free_kzg_settings(KZGSettings *ks) {
     free((FFTSettings*)ks->fs);
     free(ks->g1_values);
     free(ks->g2_values);
