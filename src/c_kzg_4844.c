@@ -695,7 +695,7 @@ STATIC C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Forward function definition */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
+STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
 /**
  * Return the Fiat-Shamir challenges required by the rest of the protocol.
@@ -874,7 +874,7 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
  */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = FR_ONE;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;

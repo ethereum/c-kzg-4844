@@ -413,6 +413,67 @@ static void test_reverse_bits__all_bits_are_one(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for compute_powers
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_compute_powers__expected_result(void) {
+    C_KZG_RET ret;
+    Bytes32 field_element_bytes;
+    fr_t field_element_fr;
+    int n = 3, diff;
+    fr_t powers[n];
+    Bytes32 powers_bytes[n];
+    Bytes32 expected_bytes[n];
+
+    /*
+     * Convert random field element to a fr_t.
+     */
+    bytes32_from_hex(
+        &field_element_bytes,
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
+    );
+    ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /*
+     * Compute three powers for the given field element.
+     */
+    compute_powers((fr_t *)&powers, &field_element_fr, n);
+
+    /*
+     * These are the expected results. Notable, the first element should always
+     * be 1 since x^0 is 1. The second element should be equivalent to the
+     * input field element. The third element can be verified with Python.
+     */
+    bytes32_from_hex(
+        &expected_bytes[0],
+        "0100000000000000000000000000000000000000000000000000000000000000"
+    );
+    bytes32_from_hex(
+        &expected_bytes[1],
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
+    );
+
+    /*
+     * b = bytes.fromhex("e1c3192925d...")
+     * i = (int.from_bytes(b, "little") ** 2) % BLS_MODULUS
+     * print(i.to_bytes(32, "little").hex())
+     */
+    bytes32_from_hex(
+        &expected_bytes[2],
+        "0e8a454760e9de40001e89f33d8c9ea9f30345d4b6615dbcf83f6988cb7b412f"
+    );
+
+    for (int i = 0; i < n; i++) {
+        bytes_from_bls_field(&powers_bytes[i], &powers[i]);
+        diff = memcmp(
+            powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32)
+        );
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for log_2_byte
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -575,6 +636,7 @@ int main(void) {
     RUN(test_reverse_bits__all_bits_are_zero);
     RUN(test_reverse_bits__some_bits_are_one);
     RUN(test_reverse_bits__all_bits_are_one);
+    RUN(test_compute_powers__expected_result);
     RUN(test_log_2_byte__expected_values);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
