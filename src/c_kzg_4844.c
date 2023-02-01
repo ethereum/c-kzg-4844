@@ -886,6 +886,7 @@ STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
 
     /* We know that x^0 will result in one */
     memcpy(&out[0], &FR_ONE, sizeof(fr_t));
+    if (n == 1) return;
 
     /* We know that x^1 will result in itself */
     memcpy(&out[1], x, sizeof(fr_t));
