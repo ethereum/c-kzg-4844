@@ -1103,7 +1103,9 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         if (fr_equal(z, &roots_of_unity[i])) {
+            /* We are asked to compute a KZG proof inside the domain */
             m = i + 1;
+            inverses_in[i] = FR_ONE;
             continue;
         }
         // (p_i - y) / (ω_i - z)
@@ -1122,15 +1124,20 @@ C_KZG_RET compute_kzg_proof_impl(KZGProof *out, const Polynomial *polynomial, co
         q.evals[--m] = FR_ZERO;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
-            // (p_i - y) * ω_i / (z * (z - ω_i))
+            /* Build denominator: z * (z - ω_i) */
             blst_fr_sub(&tmp, z, &roots_of_unity[i]);
             blst_fr_mul(&inverses_in[i], &tmp, z);
         }
+
         ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
         if (ret != C_KZG_OK) goto out;
+
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+            if (i == m) continue;
+            /* Build numerator: ω_i * (p_i - y) */
             blst_fr_sub(&tmp, &polynomial->evals[i], &y);
             blst_fr_mul(&tmp, &tmp, &roots_of_unity[i]);
+            /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
             blst_fr_mul(&tmp, &tmp, &inverses[i]);
             blst_fr_add(&q.evals[m], &q.evals[m], &tmp);
         }
