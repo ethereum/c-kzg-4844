@@ -16,5 +16,6 @@ jobs:
           submodules: recursive
       - name: Check formatting
         run: |
+          cd src
           make format
           git diff --exit-code
