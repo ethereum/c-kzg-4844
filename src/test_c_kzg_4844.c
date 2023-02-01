@@ -353,6 +353,52 @@ static void test_reverse_bits__all_bits_are_one(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for compute_powers
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_compute_powers__expected_result(void) {
+    C_KZG_RET ret;
+    Bytes32 field_element_bytes;
+    fr_t field_element_fr;
+    fr_t *powers = NULL;
+    int n = 3, diff;
+    Bytes32 expected[n];
+    Bytes32 powers_bytes[n];
+
+    get_rand_field_element(&field_element_bytes);
+    ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    powers = calloc(n, sizeof(fr_t));
+    ASSERT("failed to allocate powers", powers != NULL);
+    compute_powers(powers, &field_element_fr, n);
+
+#if 0
+    /*
+     * Generate the expected results.
+     */
+    for (int i = 0; i < n; i++) {
+        Bytes32 tmp;
+        bytes_from_bls_field(&tmp, &powers[i]);
+        for (int j = 0; j < 32; j++) {
+            printf("%02x", tmp.bytes[j]);
+        }
+        printf("\n");
+    }
+#endif
+
+    bytes32_from_hex(&expected[0], "0100000000000000000000000000000000000000000000000000000000000000");
+    bytes32_from_hex(&expected[1], "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b");
+    bytes32_from_hex(&expected[2], "0e8a454760e9de40001e89f33d8c9ea9f30345d4b6615dbcf83f6988cb7b412f");
+
+    for (int i = 0; i < n; i++) {
+        bytes_from_bls_field(&powers_bytes[i], &powers[i]);
+        diff = memcmp(powers_bytes[i].bytes, expected[i].bytes, sizeof(Bytes32));
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -445,6 +491,7 @@ int main(void) {
     RUN(test_reverse_bits__all_bits_are_zero);
     RUN(test_reverse_bits__some_bits_are_one);
     RUN(test_reverse_bits__all_bits_are_one);
+    RUN(test_compute_powers__expected_result);
     RUN(test_compute_and_verify_kzg_proof);
     teardown();
 
