@@ -482,7 +482,8 @@ static void test_log_2_byte__expected_values(void) {
     while (true) {
         /*
          * Corresponds to the index of the highest bit set in the byte.
-         * Adapted from https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
+         * Adapted from
+         * https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
          */
         byte b = i;
         int r, shift;
