@@ -245,6 +245,13 @@ Napi::Value VerifyAggregateKzgProof(const Napi::CallbackInfo& info) {
 
   auto proof_bytes = proof_param.As<Napi::Uint8Array>().Data();
   auto blobs_count = blobs_param.Length();
+  auto commitments_count = commitments_param.Length();
+
+  if (blobs_count != commitments_count) {
+    Napi::Error::New(env, "verifyAggregateKzgProof requires blobs count to match expectedKzgCommitments count")
+      .ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
 
   auto blobs = (Blob*)calloc(blobs_count, sizeof(Blob));
   if (blobs == NULL) {

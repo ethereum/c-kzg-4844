@@ -116,6 +116,17 @@ describe("C-KZG", () => {
     ).toThrowError("verify_aggregate_kzg_proof failed with error code: 1");
   });
 
+  it("throws the expected error when given fewer commitments than blobs", () => {
+    let blobs = new Array(1).fill(0).map(generateRandomBlob);
+    let commitments = [] as Uint8Array[];
+    let proof = computeAggregateKzgProof(blobs);
+    expect(() =>
+      verifyAggregateKzgProof(blobs, commitments, proof),
+    ).toThrowError(
+      "verifyAggregateKzgProof requires blobs count to match expectedKzgCommitments count",
+    );
+  });
+
   describe("computing commitment from blobs", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
