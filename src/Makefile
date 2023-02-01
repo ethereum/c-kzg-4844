@@ -49,3 +49,6 @@ test_cov: test_c_kzg_4844_cov
 
 clean:
 	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata *.html
+
+format:
+	clang-format -i --sort-includes test_c_kzg_4844.c
