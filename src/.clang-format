@@ -1,0 +1,5 @@
+BasedOnStyle: llvm
+IndentWidth: 4
+AllowAllParametersOfDeclarationOnNextLine: True
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: OnlyFirstIf
