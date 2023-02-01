@@ -88,7 +88,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
-    Bytes32 b;
+    Bytes32 field_element;
 
     /*
      * A valid field element is x < BLS_MODULUS.
@@ -97,11 +97,12 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
      * int(BLS_MODULUS - 1).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
-        &b, "00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+        &field_element,
+        "00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
@@ -110,7 +111,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
-    Bytes32 b;
+    Bytes32 field_element;
 
     /*
      * A valid field element is x < BLS_MODULUS.
@@ -119,11 +120,12 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
      * int(BLS_MODULUS).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
-        &b, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+        &field_element,
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -132,7 +134,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
-    Bytes32 b;
+    Bytes32 field_element;
 
     /*
      * A valid field element is x < BLS_MODULUS.
@@ -141,11 +143,12 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
      * int(BLS_MODULUS + 1).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
-        &b, "02000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+        &field_element,
+        "02000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, b.bytes, BYTES_PER_FIELD_ELEMENT);
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -224,155 +227,155 @@ static void test_validate_kzg_g1__succeeds_round_trip(void) {
 
 static void test_validate_kzg_g1__succeeds_correct_point(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "a491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e264"
         "4f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
 static void test_validate_kzg_g1__fails_not_in_g1(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "8123456789abcdef0123456789abcdef0123456789abcdef"
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_not_in_curve(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "8123456789abcdef0123456789abcdef0123456789abcdef"
         "0123456789abcdef0123456789abcdef0123456789abcde0"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_x_equal_to_modulus(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf"
         "6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_x_greater_than_modulus(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "9a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf"
         "6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaac"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__succeeds_infinity_with_true_b_flag(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "c00000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
 static void test_validate_kzg_g1__fails_infinity_with_true_b_flag(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "c01000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_infinity_with_false_b_flag(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "800000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_with_wrong_c_flag(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "0123456789abcdef0123456789abcdef0123456789abcdef"
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "c123456789abcdef0123456789abcdef0123456789abcdef"
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
     C_KZG_RET ret;
-    Bytes48 b;
+    Bytes48 g1_bytes;
     g1_t g1;
 
     bytes48_from_hex(
-        &b,
+        &g1_bytes,
         "e00000000000000000000000000000000000000000000000"
         "000000000000000000000000000000000000000000000000"
     );
-    ret = validate_kzg_g1(&g1, &b);
+    ret = validate_kzg_g1(&g1, &g1_bytes);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
