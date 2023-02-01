@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test:
+  test-go-bindings:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go
