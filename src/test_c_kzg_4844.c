@@ -421,7 +421,8 @@ static void test_log_2_byte__expected_values(void) {
     while (true) {
         /*
          * Corresponds to the index of the highest bit set in the byte.
-         * Adapted from https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
+         * Adapted from
+         * https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
          */
         byte b = i;
         int r, shift;
@@ -487,7 +488,6 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     ASSERT_EQUALS(ok, 1);
 }
 
-
 static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
     const int SAMPLES = 25;
     for (int i = 0; i < SAMPLES; i++) {
@@ -530,7 +530,6 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ASSERT_EQUALS(ok, 1);
     }
 }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Main logic
