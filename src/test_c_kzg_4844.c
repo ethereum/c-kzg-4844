@@ -442,7 +442,7 @@ static void test_log_2_byte__expected_values(void) {
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_compute_and_verify_kzg_proof(void) {
+static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     Bytes32 z, y;
@@ -486,6 +486,51 @@ static void test_compute_and_verify_kzg_proof(void) {
     /* The proof should verify! */
     ASSERT_EQUALS(ok, 1);
 }
+
+
+static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
+    const int SAMPLES = 25;
+    for (int i = 0; i < SAMPLES; i++) {
+        C_KZG_RET ret;
+        Blob blob;
+        KZGCommitment c;
+        Polynomial poly;
+        Bytes48 proof;
+        Bytes32 z, y;
+        fr_t y_fr, z_fr;
+        bool ok;
+
+        get_rand_blob(&blob);
+
+        ret = blob_to_kzg_commitment(&c, &blob, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        ret = blob_to_polynomial(&poly, &blob);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        z_fr = s.fs->roots_of_unity[i];
+        bytes_from_bls_field(&z, &z_fr);
+
+        /* Compute the proof */
+        ret = compute_kzg_proof(&proof, &blob, &z, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* Now evaluate the poly at `z` to learn `y` */
+        ret = evaluate_polynomial_in_evaluation_form(&y_fr, &poly, &z_fr, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* Now also get `y` in bytes */
+        bytes_from_bls_field(&y, &y_fr);
+
+        /* Finally verify the proof */
+        ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* The proof should verify! */
+        ASSERT_EQUALS(ok, 1);
+    }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Main logic
@@ -532,7 +577,8 @@ int main(void) {
     RUN(test_reverse_bits__some_bits_are_one);
     RUN(test_reverse_bits__all_bits_are_one);
     RUN(test_log_2_byte__expected_values);
-    RUN(test_compute_and_verify_kzg_proof);
+    RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
+    RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
     teardown();
 
     return TEST_REPORT();
