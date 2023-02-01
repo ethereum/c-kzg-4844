@@ -881,17 +881,10 @@ static void poly_lincomb(Polynomial *out, const Polynomial *vectors, const fr_t 
  * @param[in]  n   The number of powers to compute
  */
 STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+    fr_t current_power = FR_ONE;
     for (uint64_t i = 0; i < n; i++) {
-        if (i == 0) {
-            /* We know that x^0 will result in one */
-            memcpy(&out[i], &FR_ONE, sizeof(fr_t));
-        } else if (i == 1) {
-            /* We know that x^1 will result in itself */
-            memcpy(&out[i], x, sizeof(fr_t));
-        } else {
-            /* The other powers must be computed */
-            blst_fr_mul(&out[i], &out[i-1], x);
-        }
+        out[i] = current_power;
+        blst_fr_mul(&current_power, &current_power, x);
     }
 }
 
