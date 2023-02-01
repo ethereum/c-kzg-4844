@@ -220,20 +220,18 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
 /**
  * Fast log base 2 of a byte.
  *
- * Corresponds to the index of the highest bit set in the byte. Adapted from
- * https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
- *
  * @param[in] b A non-zero byte
  * @return The index of the highest set bit
  */
 STATIC int log_2_byte(byte b) {
-    int r, shift;
-    r = (b > 0xF) << 2;
-    b >>= r;
-    shift = (b > 0x3) << 1;
-    b >>= (shift + 1);
-    r |= shift | b;
-    return r;
+    if (b < 2) return 0;
+    if (b < 4) return 1;
+    if (b < 8) return 2;
+    if (b < 16) return 3;
+    if (b < 32) return 4;
+    if (b < 64) return 5;
+    if (b < 128) return 6;
+    return 7;
 }
 
 /**
@@ -242,8 +240,6 @@ STATIC int log_2_byte(byte b) {
  * @param p The field element to be checked
  * @retval true  The element is one
  * @retval false The element is not one
- *
- * @todo See if there is a more efficient way to check for one in the finite field.
  */
 static bool fr_is_one(const fr_t *p) {
     uint64_t a[4];
@@ -535,8 +531,6 @@ static bool is_power_of_two(uint64_t n) {
  *
  * @param a A byte
  * @return A byte that is bit-reversed with respect to @p a
- *
- * @todo Benchmark some of the other bit-reversal options in the list. Maybe.
  */
 #define rev_byte(a) ((((a)&0xff) * 0x0202020202ULL & 0x010884422010ULL) % 1023)
 
