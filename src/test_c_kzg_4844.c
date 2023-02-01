@@ -474,6 +474,32 @@ static void test_compute_powers__expected_result(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for log_2_byte
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_log_2_byte__expected_values(void) {
+    byte i = 0;
+    while (true) {
+        /*
+         * Corresponds to the index of the highest bit set in the byte.
+         * Adapted from https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
+         */
+        byte b = i;
+        int r, shift;
+        r = (b > 0xF) << 2;
+        b >>= r;
+        shift = (b > 0x3) << 1;
+        b >>= (shift + 1);
+        r |= shift | b;
+
+        ASSERT_EQUALS(r, log_2_byte(i));
+
+        if (i == 255) break;
+        i += 1;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -567,6 +593,7 @@ int main(void) {
     RUN(test_reverse_bits__some_bits_are_one);
     RUN(test_reverse_bits__all_bits_are_one);
     RUN(test_compute_powers__expected_result);
+    RUN(test_log_2_byte__expected_values);
     RUN(test_compute_and_verify_kzg_proof);
     teardown();
 

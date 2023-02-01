@@ -137,6 +137,7 @@ C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 uint32_t reverse_bits(uint32_t a);
 void compute_powers(fr_t *out, fr_t *x, uint64_t n);
+int log_2_byte(byte b);
 
 #endif
 
