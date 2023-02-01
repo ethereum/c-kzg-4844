@@ -428,7 +428,10 @@ static void test_compute_powers__expected_result(void) {
     /*
      * Convert random field element to a fr_t.
      */
-    bytes32_from_hex(&field_element_bytes, "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b");
+    bytes32_from_hex(
+        &field_element_bytes,
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
+    );
     ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -442,18 +445,30 @@ static void test_compute_powers__expected_result(void) {
      * be 1 since x^0 is 1. The second element should be equivalent to the
      * input field element. The third element can be verified with Python.
      */
-    bytes32_from_hex(&expected_bytes[0], "0100000000000000000000000000000000000000000000000000000000000000");
-    bytes32_from_hex(&expected_bytes[1], "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b");
+    bytes32_from_hex(
+        &expected_bytes[0],
+        "0100000000000000000000000000000000000000000000000000000000000000"
+    );
+    bytes32_from_hex(
+        &expected_bytes[1],
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
+    );
 
     /*
-     * b = bytes.fromhex("e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b")
-     * print(((int.from_bytes(b, "little") ** 2) % BLS_MODULUS).to_bytes(32, "little").hex())
+     * b = bytes.fromhex("e1c3192925d...")
+     * i = (int.from_bytes(b, "little") ** 2) % BLS_MODULUS
+     * print(i.to_bytes(32, "little").hex())
      */
-    bytes32_from_hex(&expected_bytes[2], "0e8a454760e9de40001e89f33d8c9ea9f30345d4b6615dbcf83f6988cb7b412f");
+    bytes32_from_hex(
+        &expected_bytes[2],
+        "0e8a454760e9de40001e89f33d8c9ea9f30345d4b6615dbcf83f6988cb7b412f"
+    );
 
     for (int i = 0; i < n; i++) {
         bytes_from_bls_field(&powers_bytes[i], &powers[i]);
-        diff = memcmp(powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32));
+        diff = memcmp(
+            powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32)
+        );
         ASSERT_EQUALS(diff, 0);
     }
 }
