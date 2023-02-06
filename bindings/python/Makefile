@@ -1,8 +1,3 @@
-INCLUDE_DIRS = .. ../../src ../../inc
-INCLUDE_PY = $(shell python3 -c 'import sysconfig; print(sysconfig.get_config_var("INCLUDEPY"))')
-
-FIELD_ELEMENTS_PER_BLOB?=4096
-
 .PHONY: all
 all: install test ecc_test
 
