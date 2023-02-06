@@ -32,7 +32,7 @@ jobs:
       - name: Build Python bindings
         run: |
           cd bindings/python
-          make ckzg.so
+          make install
       - name: Test
         run: |
           cd bindings/python
