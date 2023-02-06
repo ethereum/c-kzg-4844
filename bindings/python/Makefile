@@ -1,7 +1,7 @@
 .PHONY: all
 all: install test ecc_test
 
-.PHONY: test
+.PHONY: install
 install: setup.py ckzg.c
 	python3 setup.py install
 
