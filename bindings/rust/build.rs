@@ -24,9 +24,17 @@ fn main() {
         .arg("blst")
         .status()
         .unwrap();
+
+    #[cfg(target_os = "unix")]
     move_file(
         root_dir.join("lib/libblst.a").as_path(),
         out_dir.join("libblst.a").as_path(),
+    )
+    .unwrap();
+    #[cfg(target_os = "windows")]
+    move_file(
+        root_dir.join("lib/libblst.a").as_path(),
+        out_dir.join("blst.lib").as_path(),
     )
     .unwrap();
 
@@ -61,9 +69,17 @@ fn main() {
         .args(["crus", "libckzg.a", "c_kzg_4844.o"])
         .status()
         .unwrap();
+
+    #[cfg(target_os = "unix")]
     move_file(
         root_dir.join("src/libckzg.a").as_path(),
         out_dir.join("libckzg.a").as_path(),
+    )
+    .unwrap();
+    #[cfg(target_os = "windows")]
+    move_file(
+        root_dir.join("src/libckzg.a").as_path(),
+        out_dir.join("ckzg.lib").as_path(),
     )
     .unwrap();
 
