@@ -19,36 +19,74 @@
  *
  * Minimal interface required for EIP-4844.
  */
-
 #ifndef C_KZG_4844_H
 #define C_KZG_4844_H
 
-#include <stdio.h>
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #include "blst.h"
 
-// Allow a library built from this code to be used from C++
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+///////////////////////////////////////////////////////////////////////////////
+// Macros
+///////////////////////////////////////////////////////////////////////////////
 
 #define BYTES_PER_COMMITMENT 48
 #define BYTES_PER_PROOF 48
 #define BYTES_PER_FIELD_ELEMENT 32
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
-static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 
-typedef blst_p1 g1_t;         /**< Internal G1 group element type */
-typedef blst_p2 g2_t;         /**< Internal G2 group element type */
-typedef blst_fr fr_t;         /**< Internal Fr field element type */
+///////////////////////////////////////////////////////////////////////////////
+// Types
+///////////////////////////////////////////////////////////////////////////////
 
-typedef struct { uint8_t bytes[32]; } Bytes32;
-typedef struct { uint8_t bytes[48]; } Bytes48;
-typedef struct { uint8_t bytes[BYTES_PER_BLOB]; } Blob;
+typedef blst_p1 g1_t; /**< Internal G1 group element type. */
+typedef blst_p2 g2_t; /**< Internal G2 group element type. */
+typedef blst_fr fr_t; /**< Internal Fr field element type. */
 
+/**
+ * Internal representation of a polynomial.
+ */
+typedef struct {
+    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
+} Polynomial;
+
+/**
+ * An array of 32 bytes. Represents an untrusted
+ * (potentially invalid) field element.
+ */
+typedef struct {
+    uint8_t bytes[32];
+} Bytes32;
+
+/**
+ * An array of 48 bytes. Represents an untrusted
+ * (potentially invalid) commitment/proof.
+ */
+typedef struct {
+    uint8_t bytes[48];
+} Bytes48;
+
+/**
+ * A basic blob data.
+ */
+typedef struct {
+    uint8_t bytes[BYTES_PER_BLOB];
+} Blob;
+
+/**
+ * A trusted (valid) KZG commitment.
+ */
 typedef Bytes48 KZGCommitment;
+
+/**
+ * A trusted (valid) KZG proof.
+ */
 typedef Bytes48 KZGProof;
 
 /**
@@ -56,93 +94,106 @@ typedef Bytes48 KZGProof;
  */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
-    C_KZG_BADARGS, /**< The supplied data is invalid in some way */
-    C_KZG_ERROR,   /**< Internal error - this should never occur and may indicate a bug in the library */
-    C_KZG_MALLOC,  /**< Could not allocate memory */
+    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
+    C_KZG_ERROR,   /**< Internal error - this should never occur. */
+    C_KZG_MALLOC,  /**< Could not allocate memory. */
 } C_KZG_RET;
 
 /**
  * Stores the setup and parameters needed for performing FFTs.
  */
 typedef struct {
-    uint64_t max_width;            /**< The maximum size of FFT these settings support, a power of 2. */
-    fr_t *expanded_roots_of_unity; /**< Ascending powers of the root of unity, size `width + 1`. */
-    fr_t *reverse_roots_of_unity;  /**< Descending powers of the root of unity, size `width + 1`. */
-    fr_t *roots_of_unity;          /**< Powers of the root of unity in bit-reversal permutation, size `width`. */
+    /** The maximum size of FFT these settings support, a power of 2. */
+    uint64_t max_width;
+    /** Ascending powers of the root of unity, size `width + 1`. */
+    fr_t *expanded_roots_of_unity;
+    /** Descending powers of the root of unity, size `width + 1`. */
+    fr_t *reverse_roots_of_unity;
+    /** Powers of the root of unity in bit-reversal permutation,
+     * size `width`. */
+    fr_t *roots_of_unity;
 } FFTSettings;
 
 /**
  * Stores the setup and parameters needed for computing KZG proofs.
  */
 typedef struct {
-    const FFTSettings *fs; /**< The corresponding settings for performing FFTs */
-    g1_t *g1_values;       /**< G1 group elements from the trusted setup, in Lagrange form bit-reversal permutation */
-    g2_t *g2_values;       /**< G2 group elements from the trusted setup; both arrays have FIELD_ELEMENTS_PER_BLOB elements */
+    /** The corresponding settings for performing FFTs. */
+    const FFTSettings *fs;
+    /** G1 group elements from the trusted setup,
+     * in Lagrange form bit-reversal permutation. */
+    g1_t *g1_values;
+    /** G2 group elements from the trusted setup;
+     * both arrays have `FIELD_ELEMENTS_PER_BLOB` elements. */
+    g2_t *g2_values;
 } KZGSettings;
 
-/**
- * Interface functions
- */
+///////////////////////////////////////////////////////////////////////////////
+// Interface functions
+///////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET load_trusted_setup(KZGSettings *out,
-                             const uint8_t *g1_bytes, /* n1 * 48 bytes */
-                             size_t n1,
-                             const uint8_t *g2_bytes, /* n2 * 96 bytes */
-                             size_t n2);
+C_KZG_RET load_trusted_setup(
+    KZGSettings *out,
+    const uint8_t *g1_bytes, /* n1 * 48 bytes */
+    size_t n1,
+    const uint8_t *g2_bytes, /* n2 * 96 bytes */
+    size_t n2
+);
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out,
-                                  FILE *in);
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
 
-void free_trusted_setup(
-    KZGSettings *s);
+void free_trusted_setup(KZGSettings *s);
 
-C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out,
-                                      const Blob *blobs,
-                                      size_t n,
-                                      const KZGSettings *s);
+C_KZG_RET compute_aggregate_kzg_proof(
+    KZGProof *out, const Blob *blobs, size_t n, const KZGSettings *s
+);
 
-C_KZG_RET verify_aggregate_kzg_proof(bool *out,
-                                     const Blob *blobs,
-                                     const Bytes48 *commitments_bytes,
-                                     size_t n,
-                                     const Bytes48 *aggregated_proof_bytes,
-                                     const KZGSettings *s);
+C_KZG_RET verify_aggregate_kzg_proof(
+    bool *out,
+    const Blob *blobs,
+    const Bytes48 *commitments_bytes,
+    size_t n,
+    const Bytes48 *aggregated_proof_bytes,
+    const KZGSettings *s
+);
 
-C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out,
-                                 const Blob *blob,
-                                 const KZGSettings *s);
+C_KZG_RET blob_to_kzg_commitment(
+    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+);
 
-C_KZG_RET verify_kzg_proof(bool *out,
-                           const Bytes48 *commitment_bytes,
-                           const Bytes32 *z_bytes,
-                           const Bytes32 *y_bytes,
-                           const Bytes48 *proof_bytes,
-                           const KZGSettings *s);
+C_KZG_RET verify_kzg_proof(
+    bool *out,
+    const Bytes48 *commitment_bytes,
+    const Bytes32 *z_bytes,
+    const Bytes32 *y_bytes,
+    const Bytes48 *proof_bytes,
+    const KZGSettings *s
+);
 
-C_KZG_RET compute_kzg_proof(KZGProof *out,
-                            const Blob *blob,
-                            const Bytes32 *z_bytes,
-                            const KZGSettings *s);
-
-typedef struct { fr_t evals[FIELD_ELEMENTS_PER_BLOB]; } Polynomial;
+C_KZG_RET compute_kzg_proof(
+    KZGProof *out,
+    const Blob *blob,
+    const Bytes32 *z_bytes,
+    const KZGSettings *s
+);
 
 #ifdef UNIT_TESTS
-
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
 void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
 C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b);
 void bytes_from_g1(Bytes48 *out, const g1_t *in);
-C_KZG_RET evaluate_polynomial_in_evaluation_form(fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s);
+C_KZG_RET evaluate_polynomial_in_evaluation_form(
+    fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
+);
 C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 uint32_t reverse_bits(uint32_t a);
 void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 int log_2_byte(byte b);
-
 #endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // C_KZG_4844_H
+#endif /* C_KZG_4844_H */

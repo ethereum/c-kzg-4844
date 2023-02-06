@@ -51,4 +51,4 @@ clean:
 	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata *.html
 
 format:
-	clang-format -i --sort-includes test_c_kzg_4844.c
+	clang-format -i --sort-includes c_kzg_4844.* test_c_kzg_4844.c
