@@ -156,10 +156,16 @@ func Benchmark(b *testing.B) {
 		commitment, _ := BlobToKZGCommitment(blobs[i])
 		commitments[i] = Bytes48(commitment)
 	}
-	z := Bytes32{1, 2, 3}
-	y := Bytes32{4, 5, 6}
+	fieldElements := [length]Bytes32{}
+	for i := 0; i < length; i++ {
+		fieldElements[i] = GetRandFieldElement(int64(i))
+	}
 	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
 	proof := Bytes48(trustedProof)
+
+	///////////////////////////////////////////////////////////////////////////
+	// Public Functions
+	///////////////////////////////////////////////////////////////////////////
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -170,19 +176,19 @@ func Benchmark(b *testing.B) {
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := ComputeKZGProof(blobs[0], z)
+			_, ret := ComputeKZGProof(blobs[0], fieldElements[0])
 			require.Equal(b, C_KZG_OK, ret)
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := VerifyKZGProof(commitments[0], z, y, proof)
+			_, ret := VerifyKZGProof(commitments[0], fieldElements[0], fieldElements[1], proof)
 			require.Equal(b, C_KZG_OK, ret)
 		}
 	})
 
-	for i := 1; i <= len(blobs); i *= 2 {
+	for i := 1; i <= length; i *= 2 {
 		b.Run(fmt.Sprintf("ComputeAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, ret := ComputeAggregateKZGProof(blobs[:i])
@@ -191,10 +197,23 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	for i := 1; i <= len(blobs); i *= 2 {
+	for i := 1; i <= length; i *= 2 {
 		b.Run(fmt.Sprintf("VerifyAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, ret := VerifyAggregateKZGProof(blobs[:i], commitments[:i], proof)
+				require.Equal(b, C_KZG_OK, ret)
+			}
+		})
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// Private Functions
+	///////////////////////////////////////////////////////////////////////////
+
+	for i := 1; i <= length; i *= 2 {
+		b.Run(fmt.Sprintf("g1Lincomb(length=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, ret := g1Lincomb(commitments[:i], fieldElements[:i])
 				require.Equal(b, C_KZG_OK, ret)
 			}
 		})

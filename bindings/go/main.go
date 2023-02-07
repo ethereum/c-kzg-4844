@@ -42,6 +42,10 @@ var (
 	settings = C.KZGSettings{}
 )
 
+///////////////////////////////////////////////////////////////////////////////
+// Public Functions
+///////////////////////////////////////////////////////////////////////////////
+
 /*
 LoadTrustedSetup is the binding for:
 
@@ -230,4 +234,57 @@ func VerifyAggregateKZGProof(blobs []Blob, commitmentsBytes []Bytes48, aggregate
 		(*C.Bytes48)(unsafe.Pointer(&aggregatedProofBytes)),
 		&settings)
 	return bool(result), CKzgRet(ret)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Private Functions
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+g1Lincomb is the binding for:
+
+	C_KZG_RET g1_lincomb(
+		g1_t *out,
+		const g1_t *p,
+		const fr_t *coeffs,
+		uint64_t len)
+*/
+func g1Lincomb(groupElements []Bytes48, fieldElements []Bytes32) (Bytes48, CKzgRet) {
+	if len(groupElements) != len(fieldElements) {
+		panic("len(groupElements) != len(fieldElements)")
+	}
+	var nativeGroupElements []C.g1_t
+	for _, ge := range groupElements {
+		var g1 C.g1_t
+		ret := C.validate_kzg_g1(
+			&g1,
+			(*C.Bytes48)(unsafe.Pointer(&ge)))
+		if CKzgRet(ret) != C_KZG_OK {
+			panic("invalid group element")
+		}
+		nativeGroupElements = append(nativeGroupElements, g1)
+	}
+	var nativeFieldElements []C.fr_t
+	for _, fe := range fieldElements {
+		var fr C.fr_t
+		ret := C.bytes_to_bls_field(
+			&fr,
+			(*C.Bytes32)(unsafe.Pointer(&fe)))
+		if CKzgRet(ret) != C_KZG_OK {
+			panic("invalid field element")
+		}
+		nativeFieldElements = append(nativeFieldElements, fr)
+	}
+
+	var nativeResult C.g1_t
+	ret := C.g1_lincomb(
+		&nativeResult,
+		*(**C.g1_t)(unsafe.Pointer(&nativeGroupElements)),
+		*(**C.fr_t)(unsafe.Pointer(&nativeFieldElements)),
+		(C.uint64_t)(len(groupElements)))
+	var result Bytes48
+	C.bytes_from_g1(
+		(*C.Bytes48)(unsafe.Pointer(&result)),
+		&nativeResult)
+	return result, CKzgRet(ret)
 }
