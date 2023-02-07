@@ -5,7 +5,7 @@
 #
 # By default, we use clang. GCC should work too though.
 #
-CC = clang
+CC ?= clang
 
 #
 # By default, this is set to the mainnet value.
@@ -13,7 +13,7 @@ CC = clang
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 #
-# Gather the compiler flags.
+# The base compiler flags. Can be added on command line.
 #
 CFLAGS += -I../inc
 CFLAGS += -Wall -Wextra -Werror -O2
