@@ -78,7 +78,8 @@ test_cov: test_c_kzg_4844_cov
 
 .PHONY: clean
 clean:
-	rm -f  *.o test_c_kzg_4844 test_c_kzg_4844_cov *.profraw *.profdata *.html
+	rm -f  *.o *.profraw *.profdata *.html test_c_kzg_4844 \
+            test_c_kzg_4844_cov
 
 .PHONY: format
 format:
