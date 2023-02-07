@@ -253,8 +253,8 @@ func g1Lincomb(groupElements []Bytes48, fieldElements []Bytes32) (Bytes48, CKzgR
 	if len(groupElements) != len(fieldElements) {
 		panic("len(groupElements) != len(fieldElements)")
 	}
-	var nativeGroupElements []C.g1_t
-	for _, ge := range groupElements {
+	nativeGroupElements := make([]C.g1_t, len(groupElements))
+	for i, ge := range groupElements {
 		var g1 C.g1_t
 		ret := C.validate_kzg_g1(
 			&g1,
@@ -262,10 +262,10 @@ func g1Lincomb(groupElements []Bytes48, fieldElements []Bytes32) (Bytes48, CKzgR
 		if CKzgRet(ret) != C_KZG_OK {
 			panic("invalid group element")
 		}
-		nativeGroupElements = append(nativeGroupElements, g1)
+		nativeGroupElements[i] = g1
 	}
-	var nativeFieldElements []C.fr_t
-	for _, fe := range fieldElements {
+	nativeFieldElements := make([]C.fr_t, len(fieldElements))
+	for i, fe := range fieldElements {
 		var fr C.fr_t
 		ret := C.bytes_to_bls_field(
 			&fr,
@@ -273,7 +273,7 @@ func g1Lincomb(groupElements []Bytes48, fieldElements []Bytes32) (Bytes48, CKzgR
 		if CKzgRet(ret) != C_KZG_OK {
 			panic("invalid field element")
 		}
-		nativeFieldElements = append(nativeFieldElements, fr)
+		nativeFieldElements[i] = fr
 	}
 
 	var nativeResult C.g1_t
