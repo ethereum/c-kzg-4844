@@ -810,7 +810,7 @@ static C_KZG_RET compute_challenges(
  * We do the second of these to save memory here.
  */
 static C_KZG_RET
-g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
+g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
     C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
@@ -839,7 +839,7 @@ g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
         blst_p1s_to_affine(p_affine, p_arg, len);
 
         // Transform the field elements to 256-bit scalars
-        for (int i = 0; i < len; i++) {
+        for (uint64_t i = 0; i < len; i++) {
             blst_scalar_from_fr(&scalars[i], &coeffs[i]);
         }
 
