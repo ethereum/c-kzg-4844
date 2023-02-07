@@ -3,9 +3,9 @@
 ###############################################################################
 
 #
-# By default, we use clang. GCC should work too though.
+# We use clang. Some versions of GCC report missing-braces warnings.
 #
-CC ?= clang
+CC = clang
 
 #
 # By default, this is set to the mainnet value.
