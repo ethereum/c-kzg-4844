@@ -2,8 +2,15 @@
 # Configuration Options
 ###############################################################################
 
-CC=clang
-FIELD_ELEMENTS_PER_BLOB?=4096
+#
+# By default, we use clang. GCC should work too though.
+#
+CC = clang
+
+#
+# By default, this is set to the mainnet value.
+#
+FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 #
 # Gather the compiler flags.
@@ -13,10 +20,13 @@ CFLAGS += -Wall -Wextra -Werror -O2
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 
 #
-# Compiler flags for specific actions.
+# Compiler flags for including blst. Must be put after the module.
 #
 BLST = -L../lib -lblst
-TEST = -DUNIT_TESTS
+
+#
+# Compiler flags for generating coverage data.
+#
 COVERAGE = -fprofile-instr-generate -fcoverage-mapping
 
 #
@@ -40,10 +50,10 @@ all: c_kzg_4844.o
 	$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	$(CC) $(CFLAGS) $(BLST) $(TEST) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $< $(BLST) 
 
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	$(CC) $(CFLAGS) $(BLST) $(COVERAGE) $(TEST) -o $@ $^
+	$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST) 
 
 .PHONY: blst
 blst:
@@ -68,7 +78,7 @@ test_cov: test_c_kzg_4844_cov
 
 .PHONY: clean
 clean:
-	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata *.html
+	rm -f  *.o test_c_kzg_4844 test_c_kzg_4844_cov *.profraw *.profdata *.html
 
 .PHONY: format
 format:
