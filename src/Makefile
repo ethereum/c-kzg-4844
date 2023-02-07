@@ -13,7 +13,7 @@ CC ?= clang
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 #
-# The base compiler flags. Can be added on command line.
+# The base compiler flags. More can be added on command line.
 #
 CFLAGS += -I../inc
 CFLAGS += -Wall -Wextra -Werror -O2
