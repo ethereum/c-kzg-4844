@@ -177,4 +177,8 @@ C_KZG_RET compute_kzg_proof(
     const KZGSettings *s
 );
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* C_KZG_4844_H */
