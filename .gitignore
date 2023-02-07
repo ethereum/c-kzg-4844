@@ -1,4 +1,5 @@
 test_c_kzg_4844
+test_c_kzg_4844_cov
 coverage.html
 *.profraw
 *.profdata
