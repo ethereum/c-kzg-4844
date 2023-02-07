@@ -1,8 +1,6 @@
 /*
  * This file contains unit tests for C-KZG-4844.
  */
-#define UNIT_TESTS
-
 #include "c_kzg_4844.h"
 #include "tinytest.h"
 
