@@ -58,7 +58,7 @@ static void get_rand_g1_bytes(Bytes48 *out) {
 
 static void bytes32_from_hex(Bytes32 *out, const char *hex) {
     int matches;
-    for (int i = 0; i < sizeof(Bytes32); i++) {
+    for (size_t i = 0; i < sizeof(Bytes32); i++) {
         matches = sscanf(hex + i * 2, "%2hhx", &out->bytes[i]);
         ASSERT_EQUALS(matches, 1);
     }
@@ -66,7 +66,7 @@ static void bytes32_from_hex(Bytes32 *out, const char *hex) {
 
 static void bytes48_from_hex(Bytes48 *out, const char *hex) {
     int matches;
-    for (int i = 0; i < sizeof(Bytes48); i++) {
+    for (size_t i = 0; i < sizeof(Bytes48); i++) {
         matches = sscanf(hex + i * 2, "%2hhx", &out->bytes[i]);
         ASSERT_EQUALS(matches, 1);
     }
