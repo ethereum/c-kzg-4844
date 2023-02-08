@@ -104,8 +104,7 @@ public class CKZG4844JNI {
    * @param g2Count the count of the g2 values
    * @throws CKZGException if there is a crypto error
    */
-  public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2,
-      long g2Count);
+  public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2, long g2Count);
 
   /**
    * Free the current trusted setup. This method will throw an exception if no trusted setup has
@@ -116,7 +115,7 @@ public class CKZG4844JNI {
   /**
    * Compute proof at point z for the polynomial represented by blob.
    *
-   * @param blob blob bytes
+   * @param blob    blob bytes
    * @param z_bytes a point
    * @return the proof
    * @throws CKZGException if there is a crypto error
@@ -136,15 +135,16 @@ public class CKZG4844JNI {
   /**
    * Verify aggregated proof and commitments for the given blobs
    *
-   * @param blobs               blobs as flattened bytes
-   * @param commitments_bytes   commitments as flattened bytes
-   * @param count               the count of the blobs (should be same as the count of the commitments)
-   * @param proof_bytes         the proof that needs verifying
+   * @param blobs             blobs as flattened bytes
+   * @param commitments_bytes commitments as flattened bytes
+   * @param count             the count of the blobs (should be same as the count of the
+   *                          commitments)
+   * @param proof_bytes       the proof that needs verifying
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments_bytes, long count,
-                                                       byte[] aggregated_proof_bytes);
+  public static native boolean verifyAggregateKzgProof(byte[] blobs, byte[] commitments_bytes,
+      long count, byte[] aggregated_proof_bytes);
 
   /**
    * Calculates commitment for a given blob
@@ -158,14 +158,14 @@ public class CKZG4844JNI {
   /**
    * Verify the proof by point evaluation for the given commitment
    *
-   * @param commitment_bytes  commitment bytes
-   * @param z_bytes           Z
-   * @param y_bytes           Y
-   * @param proof_bytes       the proof that needs verifying
+   * @param commitment_bytes commitment bytes
+   * @param z_bytes          Z
+   * @param y_bytes          Y
+   * @param proof_bytes      the proof that needs verifying
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyKzgProof(byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes,
-                                              byte[] proof_bytes);
+  public static native boolean verifyKzgProof(byte[] commitment_bytes, byte[] z_bytes,
+      byte[] y_bytes, byte[] proof_bytes);
 
 }

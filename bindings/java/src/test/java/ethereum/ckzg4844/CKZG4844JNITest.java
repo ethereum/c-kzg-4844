@@ -84,11 +84,18 @@ public class CKZG4844JNITest {
 
   @Test
   public void checkComputeKzgProof() {
+
     loadTrustedSetup();
+
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
-    CKZG4844JNI.computeKzgProof(blob, z_bytes);
+
+    final byte[] proof = CKZG4844JNI.computeKzgProof(blob, z_bytes);
+
+    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proof.length);
+
     CKZG4844JNI.freeTrustedSetup();
+
   }
 
   @Test

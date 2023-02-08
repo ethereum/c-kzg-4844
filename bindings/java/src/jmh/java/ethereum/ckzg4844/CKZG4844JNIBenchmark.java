@@ -41,6 +41,19 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
+  public static class ComputeKzgProofState {
+
+    private byte[] blob;
+    private byte[] z;
+
+    @Setup(Level.Iteration)
+    public void setUp() {
+      blob = TestUtils.createRandomBlob();
+      z = TestUtils.randomBLSFieldElementBytes();
+    }
+  }
+
+  @State(Scope.Benchmark)
   public static class ComputeAndVerifyState {
 
     @Param({"1", "4", "8", "16"})
@@ -95,6 +108,11 @@ public class CKZG4844JNIBenchmark {
   @Benchmark
   public byte[] blobToKzgCommitment(final BlobToKzgCommitmentState state) {
     return CKZG4844JNI.blobToKzgCommitment(state.blob);
+  }
+
+  @Benchmark
+  public byte[] computeKzgProof(final ComputeKzgProofState state) {
+    return CKZG4844JNI.computeKzgProof(state.blob, state.z);
   }
 
   @Benchmark
