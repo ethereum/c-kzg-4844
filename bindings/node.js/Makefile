@@ -9,7 +9,7 @@ clean:
 	rm -f *.o
 
 build: kzg.cxx kzg.ts package.json binding.gyp Makefile
-	cd ../../src; make lib
+	cd ../../src && make c_kzg_4844.o && cp c_kzg_4844.o ../bindings/node.js
 	yarn install
 	yarn node-gyp rebuild
 

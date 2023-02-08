@@ -1,54 +1,85 @@
-INCLUDE_DIRS = ../inc
+###############################################################################
+# Configuration Options
+###############################################################################
 
-ifeq ($(OS),Windows_NT)
-	CFLAGS += -O2
-else
-	CFLAGS += -O2 -fPIC
-	UNAME_S := $(shell uname -s)
-	ifeq ($(UNAME_S),Darwin)
-		XCRUN = xcrun
-	endif
+#
+# We use clang. Some versions of GCC report missing-braces warnings.
+#
+CC = clang
+
+#
+# By default, this is set to the mainnet value.
+#
+FIELD_ELEMENTS_PER_BLOB ?= 4096
+
+#
+# The base compiler flags. More can be added on command line.
+#
+CFLAGS += -I../inc
+CFLAGS += -Wall -Wextra -Werror -O2
+CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+
+#
+# Compiler flags for including blst. Must be put after the module.
+#
+BLST = -L../lib -lblst
+
+#
+# Compiler flags for generating coverage data.
+#
+COVERAGE = -fprofile-instr-generate -fcoverage-mapping
+
+#
+# Platform specific options.
+#
+ifneq ($(OS),Windows_NT)
+    CFLAGS += -fPIC
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Darwin)
+        XCRUN = xcrun
+    endif
 endif
 
-CLANG_EXECUTABLE=clang
-BLST_BUILD_SCRIPT=./build.sh
-FIELD_ELEMENTS_PER_BLOB?=4096
+###############################################################################
+# Makefile Rules
+###############################################################################
 
-all: c_kzg_4844.o lib
+all: c_kzg_4844.o
 
-# If you change FIELD_ELEMENTS_PER_BLOB, remember to rm c_kzg_4844.o and make again
-c_kzg_4844.o: c_kzg_4844.c Makefile
-	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) -c $<
+%.o: %.c
+	@$(CC) $(CFLAGS) -c $<
 
+test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) -o $@ $< $(BLST) 
+
+test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST) 
+
+.PHONY: blst
 blst:
-	cd ../blst; \
-	${BLST_BUILD_SCRIPT} && \
+	@cd ../blst && \
+	./build.sh && \
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
 
-# Make sure c_kzg_4844.o is built and copy it for the NodeJS bindings
-lib: c_kzg_4844.o Makefile
-	cp *.o ../bindings/node.js
-
-test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c Makefile
-	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) -DUNIT_TESTS $(CFLAGS) -c c_kzg_4844.c -o test_c_kzg_4844.o
-	${CLANG_EXECUTABLE} -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) test_c_kzg_4844.o -L ../lib -lblst -o test_c_kzg_4844 $<
-
+.PHONY: test
 test: test_c_kzg_4844
-	./test_c_kzg_4844
+	@./test_c_kzg_4844
 
-test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c Makefile
-	@${CLANG_EXECUTABLE} -fprofile-instr-generate -fcoverage-mapping -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) -DUNIT_TESTS $(CFLAGS) -c c_kzg_4844.c -o test_c_kzg_4844.o
-	@${CLANG_EXECUTABLE} -fprofile-instr-generate -fcoverage-mapping -Wall -I$(INCLUDE_DIRS) -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB) $(CFLAGS) test_c_kzg_4844.o -L../lib -lblst -o test_c_kzg_4844 $<
-
+.PHONY: test_cov
 test_cov: test_c_kzg_4844_cov
-	@LLVM_PROFILE_FILE="ckzg.profraw" ./test_c_kzg_4844
+	@LLVM_PROFILE_FILE="ckzg.profraw" ./test_c_kzg_4844_cov
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
-	@$(XCRUN) llvm-cov show ./test_c_kzg_4844 --instr-profile=ckzg.profdata --format=html c_kzg_4844.c > coverage.html
-	@$(XCRUN) llvm-cov report ./test_c_kzg_4844 --instr-profile=ckzg.profdata --show-functions c_kzg_4844.c
+	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
+	    $< c_kzg_4844.c > coverage.html
+	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
+	    --show-functions $< c_kzg_4844.c
 
+.PHONY: clean
 clean:
-	rm -f  *.o test_c_kzg_4844 *.profraw *.profdata *.html
+	@rm -f *.o *.profraw *.profdata *.html \
+	    test_c_kzg_4844 test_c_kzg_4844_cov
 
+.PHONY: format
 format:
-	clang-format -i --sort-includes c_kzg_4844.* test_c_kzg_4844.c
+	@clang-format -i --sort-includes c_kzg_4844.* test_c_kzg_4844.c

@@ -32,12 +32,6 @@
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
-#ifdef UNIT_TESTS
-#define STATIC
-#else /* !defined(UNIT_TESTS) */
-#define STATIC static
-#endif /* defined(UNIT_TESTS) */
-
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
@@ -210,7 +204,7 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
  *
  * @return The index of the highest set bit
  */
-STATIC int log_2_byte(byte b) {
+static int log_2_byte(byte b) {
     if (b < 2) return 0;
     if (b < 4) return 1;
     if (b < 8) return 2;
@@ -476,7 +470,7 @@ static int log2_pow2(uint32_t n) {
  * @param[out] out A 48-byte array to store the serialized G1 element
  * @param[in]  in  The G1 element to be serialized
  */
-STATIC void bytes_from_g1(Bytes48 *out, const g1_t *in) {
+static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
     blst_p1_compress(out->bytes, in);
 }
 
@@ -486,7 +480,7 @@ STATIC void bytes_from_g1(Bytes48 *out, const g1_t *in) {
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
-STATIC void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
+static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
     blst_scalar_from_fr((blst_scalar *)out->bytes, in);
 }
 
@@ -550,7 +544,7 @@ static bool is_power_of_two(uint64_t n) {
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
  */
-STATIC uint32_t reverse_bits(uint32_t a) {
+static uint32_t reverse_bits(uint32_t a) {
     return rev_4byte(a);
 }
 
@@ -598,7 +592,7 @@ bit_reversal_permutation(void *values, size_t size, uint64_t n) {
  * @param[out] out   The field element to store the result
  * @param[in]  bytes A 32-byte array containing the input
  */
-STATIC void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
+static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, b->bytes);
     blst_fr_from_scalar(out, &tmp);
@@ -614,7 +608,7 @@ STATIC void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Input was not a valid scalar field element
  */
-STATIC C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
+static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
     blst_scalar_from_lendian(&tmp, b->bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
@@ -635,7 +629,7 @@ STATIC C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
-STATIC C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
+static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     /* Convert the bytes to a p1 point */
     blst_p1_affine p1_affine;
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
@@ -690,7 +684,7 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
  * @retval C_KZG_OK      Deserialization successful
  * @retval C_KZG_BADARGS Invalid input bytes
  */
-STATIC C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
+static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         ret = bytes_to_bls_field(
@@ -702,7 +696,7 @@ STATIC C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Forward function definition */
-STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n);
+static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
 
 /**
  * Return the Fiat-Shamir challenges required by the rest of the protocol.
@@ -810,7 +804,7 @@ static C_KZG_RET compute_challenges(
  * We do the second of these to save memory here.
  */
 static C_KZG_RET
-g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
+g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
     C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
@@ -839,7 +833,7 @@ g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
         blst_p1s_to_affine(p_affine, p_arg, len);
 
         // Transform the field elements to 256-bit scalars
-        for (int i = 0; i < len; i++) {
+        for (uint64_t i = 0; i < len; i++) {
             blst_scalar_from_fr(&scalars[i], &coeffs[i]);
         }
 
@@ -896,7 +890,7 @@ static void poly_lincomb(
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
  */
-STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
     fr_t current_power = FR_ONE;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
@@ -919,7 +913,7 @@ STATIC void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
  * @retval C_KZG_OK Evaluation successful
  * @retval C_KZG_MALLOC Memory allocation failed
  */
-STATIC C_KZG_RET evaluate_polynomial_in_evaluation_form(
+static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
 ) {
     C_KZG_RET ret;
