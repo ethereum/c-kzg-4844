@@ -847,7 +847,7 @@ g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, const uint64_t len) {
         const byte *scalars_arg[2] = {(byte *)scalars, NULL};
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(
-            out, points_arg, len, scalars_arg, 256, scratch
+            out, points_arg, len, scalars_arg, 255, scratch
         );
     }
 
