@@ -94,8 +94,8 @@ run_profiler: test_c_kzg_4844_prof
 .PHONY: profile_%
 profile_%: run_profiler
 	@echo Profiling $*...
-	@pprof --pdf --nodefraction=0.0001 --edgefraction=0.0001 \
-	    --focus=$* ./test_c_kzg_4844_prof $*.prof > $*.pdf
+	@pprof --pdf --nodefraction=0.00001 --edgefraction=0.00001 \
+	    ./test_c_kzg_4844_prof $*.prof > $*.pdf
 
 .PHONY: profile
 profile: \
