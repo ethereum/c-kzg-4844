@@ -59,10 +59,10 @@ all: c_kzg_4844.o
 	@$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) -o $@ $< $(BLST) 
+	@$(CC) $(CFLAGS) -o $@ $< $(BLST)
 
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST) 
+	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST)
 
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
 	@$(CC) $(CFLAGS) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
@@ -100,7 +100,9 @@ profile_%: run_profiler
 profile: \
 	profile_blob_to_kzg_commitment \
 	profile_verify_kzg_proof \
-	profile_verify_aggregate_kzg_proof
+	profile_verify_aggregate_kzg_proof \
+	profile_compute_kzg_proof \
+	profile_compute_aggregate_kzg_proof
 
 .PHONY: clean
 clean:
