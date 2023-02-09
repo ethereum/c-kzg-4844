@@ -28,9 +28,21 @@ There is a Makefile rule that should just auto-magically work:
 make profile
 ```
 
-For each profiled function, this will produce two files (a `.prof` and `.pdf`
-file). The `.prof` file is the raw profiling data and the `.pdf` is the
+For each profiled function, this will produce two files (a PROF and PDF
+file). The PROF file is the raw profiling data and the PDF is the
 human-friendly graph that generated from that profiling data.
+
+#### Errors on macOS
+
+Note, on macOS there may a lot of "errors" like:
+
+```
+otool-classic: can't open file: /usr/lib/libc++.1.dylib
+```
+
+In my experience, you can ignore these. It's somewhat a known issue and may be
+resolved later. The PDFs should still generate successfully. I think it's the
+reason some function names are a hexadecimal address though.
 
 ### Viewing profiling graphs
 
