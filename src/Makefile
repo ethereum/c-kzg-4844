@@ -34,7 +34,7 @@ COVERAGE = -fprofile-instr-generate -fcoverage-mapping
 #
 PROFILE = -DPROFILE
 PROFILER = -lprofiler
-PROFILER_OPTS = CPUPROFILE_FREQUENCY=1000000000 CPUPROFILE_REALTIME=1
+PROFILER_OPTS = CPUPROFILE_FREQUENCY=1000000000
 
 #
 # Platform specific options.
@@ -94,7 +94,8 @@ run_profiler: test_c_kzg_4844_prof
 .PHONY: profile_%
 profile_%: run_profiler
 	@echo Profiling $*...
-	@pprof --pdf --focus=$* ./test_c_kzg_4844_prof $*.prof > $*.pdf
+	@pprof --pdf --nodefraction=0.0001 --edgefraction=0.0001 \
+	    --focus=$* ./test_c_kzg_4844_prof $*.prof > $*.pdf
 
 .PHONY: profile
 profile: \
