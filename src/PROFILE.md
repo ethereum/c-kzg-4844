@@ -3,7 +3,8 @@
 We use [`gperftools`](https://github.com/gperftools/gperftools) (Google
 Performance Tools) for profiling. Note, we also considered using
 [`llvm-xray`](https://llvm.org/docs/XRay.html) but found it lacking in
-comparison.
+comparison. This will not tell you how long (wall clock time) each function
+took, but it will help you determine which functions are the most expensive.
 
 ## Prequisities
 
@@ -54,9 +55,7 @@ These might not make much sense without guidance. From a high-level, this works
 by polling the instruction pointer (what's being executed) at a specific rate
 (like once every 5 nanoseconds) and tracking this information. From this, you
 can infer the relative time each function uses by counting the number of samples
-that are in each function. To be clear, this will not tell you how long (wall
-clock time) each function took, but it will help you determine which functions
-are the most expensive.
+that are in each function. 
 
 Given a box containing:
 
