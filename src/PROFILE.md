@@ -23,7 +23,6 @@ brew install gperftools ghostscript graphviz
 ### Generating profiling graphs
 
 There is a Makefile rule that should just auto-magically work:
-
 ```
 make profile
 ```
@@ -35,7 +34,6 @@ human-friendly graph that generated from that profiling data.
 #### Errors on macOS
 
 Note, on macOS there may a lot of "errors" like:
-
 ```
 otool-classic: can't open file: /usr/lib/libc++.1.dylib
 ```
@@ -70,7 +68,6 @@ can infer the relative time each function uses by counting the number of samples
 that are in each function. 
 
 Given a box containing:
-
 ```
 my_func 189 (0.6%) of 28758 (96.8%)
 ```
