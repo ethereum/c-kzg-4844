@@ -160,6 +160,11 @@ func Benchmark(b *testing.B) {
 	y := Bytes32{4, 5, 6}
 	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
 	proof := Bytes48(trustedProof)
+	randBytes := blobs[0][:]
+
+	///////////////////////////////////////////////////////////////////////////
+	// Public functions
+	///////////////////////////////////////////////////////////////////////////
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -199,4 +204,14 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// Private functions
+	///////////////////////////////////////////////////////////////////////////
+
+	b.Run("sha256", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			sha256(randBytes)
+		}
+	})
 }
