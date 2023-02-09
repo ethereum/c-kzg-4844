@@ -87,7 +87,7 @@ test_cov: test_c_kzg_4844_cov
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
 	    --show-functions $< c_kzg_4844.c
 
-# Don't make it phony. It only needs to be run once.
+.PHONY: run_profiler
 run_profiler: test_c_kzg_4844_prof
 	@$(PROFILER_OPTS) ./$<
 
