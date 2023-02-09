@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef PROFILE
+#include <gperftools/profiler.h>
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////////////////////////
@@ -591,6 +595,65 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Profiling Functions
+///////////////////////////////////////////////////////////////////////////////
+
+#ifdef PROFILE
+static void profile_blob_to_kzg_commitment(void) {
+    KZGCommitment c;
+    Blob blob;
+    Bytes32 field_element;
+
+    get_rand_field_element(&field_element);
+    memset(&blob, 0, sizeof(blob));
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+
+    ProfilerStart("blob_to_kzg_commitment.prof");
+    for (int i = 0; i < 1000; i++) {
+        blob_to_kzg_commitment(&c, &blob, &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_kzg_proof(void) {
+    Bytes48 commitment, proof;
+    Bytes32 z, y;
+    bool out;
+
+    get_rand_g1_bytes(&commitment);
+    get_rand_field_element(&z);
+    get_rand_field_element(&y);
+    get_rand_g1_bytes(&proof);
+
+    ProfilerStart("verify_kzg_proof.prof");
+    for (int i = 0; i < 1000; i++) {
+        verify_kzg_proof(&out, &commitment, &z, &y, &proof, &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_aggregate_kzg_proof(void) {
+    int n = 16;
+    Bytes48 commitments[n];
+    Blob blobs[n];
+    Bytes48 proof;
+    bool out;
+
+    for (int i = 0; i < n; i++) {
+        get_rand_g1_bytes(&commitments[i]);
+        get_rand_blob(&blobs[i]);
+    }
+    get_rand_g1_bytes(&proof);
+
+    ProfilerStart("verify_aggregate_kzg_proof.prof");
+    for (int i = 0; i < 1000; i++) {
+        verify_aggregate_kzg_proof(&out, blobs, commitments, n, &proof, &s);
+    }
+    ProfilerStop();
+}
+#endif /* PROFILE */
+
+///////////////////////////////////////////////////////////////////////////////
 // Main logic
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -638,6 +701,11 @@ int main(void) {
     RUN(test_log_2_byte__expected_values);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
+#ifdef PROFILE
+    profile_blob_to_kzg_commitment();
+    profile_verify_kzg_proof();
+    profile_verify_aggregate_kzg_proof();
+#endif
     teardown();
 
     return TEST_REPORT();
