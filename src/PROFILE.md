@@ -73,6 +73,7 @@ my_func 189 (0.6%) of 28758 (96.8%)
 ```
 
 * Each box is a unique function.
+* Bigger boxes are more expensive.
 * Lines between boxes are function calls.
 * 189 is the number of profiling samples in this function.
 * 0.6% is the percentage of profiling samples in the functions.
