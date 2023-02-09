@@ -44,6 +44,8 @@ ifneq ($(OS),Windows_NT)
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
         XCRUN = xcrun
+        PROFILE += -L$(shell brew --prefix gperftools)/lib
+        PROFILE += -I$(shell brew --prefix gperftools)/include
     endif
 endif
 
