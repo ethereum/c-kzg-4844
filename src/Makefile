@@ -2,36 +2,24 @@
 # Configuration Options
 ###############################################################################
 
-#
 # We use clang. Some versions of GCC report missing-braces warnings.
-#
 CC = clang
 
-#
 # By default, this is set to the mainnet value.
-#
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
-#
 # The base compiler flags. More can be added on command line.
-#
 CFLAGS += -I../inc
 CFLAGS += -Wall -Wextra -Werror -O2
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 
-#
-# Compiler flags for including blst. Must be put after the module.
-#
+# Compiler flags for including blst. Put after source files.
 BLST = -L../lib -lblst
 
-#
 # Compiler flags for generating coverage data.
-#
 COVERAGE = -fprofile-instr-generate -fcoverage-mapping
 
-#
 # Platform specific options.
-#
 ifneq ($(OS),Windows_NT)
     CFLAGS += -fPIC
     UNAME_S := $(shell uname -s)
