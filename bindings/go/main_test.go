@@ -86,6 +86,23 @@ func GetRandBlob(seed int64) Blob {
 	return blob
 }
 
+/*
+HumanBytes will convert an integer to a human-readable value. Adapted from:
+https://programming.guide/go/formatting-byte-size-to-human-readable-format.html
+*/
+func HumanBytes(b int64) string {
+	const unit = 1024
+	if b < unit {
+		return fmt.Sprintf("%dB", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%v%cB", float64(b)/float64(div), "KMGTPE"[exp])
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests
 ///////////////////////////////////////////////////////////////////////////////
@@ -161,6 +178,10 @@ func Benchmark(b *testing.B) {
 	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
 	proof := Bytes48(trustedProof)
 
+	///////////////////////////////////////////////////////////////////////////
+	// Public functions
+	///////////////////////////////////////////////////////////////////////////
+
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, ret := BlobToKZGCommitment(blobs[0])
@@ -196,6 +217,21 @@ func Benchmark(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, ret := VerifyAggregateKZGProof(blobs[:i], commitments[:i], proof)
 				require.Equal(b, C_KZG_OK, ret)
+			}
+		})
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// Private functions
+	///////////////////////////////////////////////////////////////////////////
+
+	for i := 2; i <= 20; i += 2 {
+		var numBytes = int64(1 << i)
+		var bytes = make([]byte, numBytes)
+		b.Run(fmt.Sprintf("sha256(size=%v)", HumanBytes(numBytes)), func(b *testing.B) {
+			b.SetBytes(numBytes)
+			for n := 0; n < b.N; n++ {
+				sha256(bytes)
 			}
 		})
 	}

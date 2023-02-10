@@ -42,6 +42,10 @@ var (
 	settings = C.KZGSettings{}
 )
 
+///////////////////////////////////////////////////////////////////////////////
+// Public functions
+///////////////////////////////////////////////////////////////////////////////
+
 /*
 LoadTrustedSetup is the binding for:
 
@@ -230,4 +234,25 @@ func VerifyAggregateKZGProof(blobs []Blob, commitmentsBytes []Bytes48, aggregate
 		(*C.Bytes48)(unsafe.Pointer(&aggregatedProofBytes)),
 		&settings)
 	return bool(result), CKzgRet(ret)
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Private functions
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+sha256 is the binding for:
+
+	void blst_sha256(
+		byte out[32],
+		const byte *msg,
+		size_t msg_len);
+*/
+func sha256(msg []byte) Bytes32 {
+	var out Bytes32
+	C.blst_sha256(
+		(*C.byte)(unsafe.Pointer(&out)),
+		*(**C.byte)(unsafe.Pointer(&msg)),
+		(C.size_t)(len(msg)))
+	return out
 }
