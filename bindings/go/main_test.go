@@ -226,8 +226,8 @@ func Benchmark(b *testing.B) {
 	///////////////////////////////////////////////////////////////////////////
 
 	for i := 2; i <= 20; i += 2 {
-		var bytes = make([]byte, 1<<i)
-		numBytes := int64(1 << i)
+		var numBytes = int64(1 << i)
+		var bytes = make([]byte, numBytes)
 		b.Run(fmt.Sprintf("sha256(size=%v)", HumanBytes(numBytes)), func(b *testing.B) {
 			b.SetBytes(numBytes)
 			for n := 0; n < b.N; n++ {
