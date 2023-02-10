@@ -1,5 +1,6 @@
 package cgokzg4844
 
+// #cgo CFLAGS: -Ofast
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers
 // #cgo CFLAGS: -DFIELD_ELEMENTS_PER_BLOB=4096

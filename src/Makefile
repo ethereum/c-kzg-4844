@@ -9,7 +9,7 @@ CC = clang
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -Ofast -fno-builtin -Wall -Wextra -Werror
+CFLAGS += -Ofast -Wall -Wextra -Werror
 
 # Platform specific options.
 ifneq ($(OS),Windows_NT)
@@ -24,7 +24,7 @@ endif
 CKZG_CFLAGS += $(CFLAGS) -I../inc
 CKZG_CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 
-# Compiler flags for blst. Must be put after the module.
+# Compiler flags for blst.
 BLST_CFLAGS = $(CFLAGS)
 BLST = -L../lib -lblst
 
