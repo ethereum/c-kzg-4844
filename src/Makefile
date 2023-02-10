@@ -2,36 +2,16 @@
 # Configuration Options
 ###############################################################################
 
-#
 # We use clang. Some versions of GCC report missing-braces warnings.
-#
 CC = clang
 
-#
 # By default, this is set to the mainnet value.
-#
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
-#
 # The base compiler flags. More can be added on command line.
-#
-CFLAGS += -I../inc
-CFLAGS += -Wall -Wextra -Werror -O2
-CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+CFLAGS += -Ofast -fno-builtin -Wall -Wextra -Werror
 
-#
-# Compiler flags for including blst. Must be put after the module.
-#
-BLST = -L../lib -lblst
-
-#
-# Compiler flags for generating coverage data.
-#
-COVERAGE = -fprofile-instr-generate -fcoverage-mapping
-
-#
 # Platform specific options.
-#
 ifneq ($(OS),Windows_NT)
     CFLAGS += -fPIC
     UNAME_S := $(shell uname -s)
@@ -40,6 +20,17 @@ ifneq ($(OS),Windows_NT)
     endif
 endif
 
+# Compiler flags for c-kzg-4844.
+CKZG_CFLAGS += $(CFLAGS) -I../inc
+CKZG_CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+
+# Compiler flags for blst. Must be put after the module.
+BLST_CFLAGS = $(CFLAGS)
+BLST = -L../lib -lblst
+
+# Compiler flags for generating coverage data.
+COVERAGE = -fprofile-instr-generate -fcoverage-mapping
+
 ###############################################################################
 # Makefile Rules
 ###############################################################################
@@ -47,18 +38,18 @@ endif
 all: c_kzg_4844.o
 
 %.o: %.c
-	@$(CC) $(CFLAGS) -c $<
+	@$(CC) $(CKZG_CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) -o $@ $< $(BLST) 
+	@$(CC) $(CKZG_CFLAGS) -o $@ $< $(BLST)
 
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST) 
+	@$(CC) $(CKZG_CFLAGS) $(COVERAGE) -o $@ $< $(BLST)
 
 .PHONY: blst
 blst:
 	@cd ../blst && \
-	./build.sh && \
+	CFLAGS="$(BLST_CFLAGS)" ./build.sh && \
 	cp libblst.a ../lib && \
 	cp bindings/*.h ../inc
 
