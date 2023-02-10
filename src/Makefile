@@ -115,6 +115,7 @@ analyze: c_kzg_4844.c
 clean:
 	@rm -f *.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
 	    test_c_kzg_4844 test_c_kzg_4844_cov test_c_kzg_4844_prof
+	@rm -rf analysis-report
 
 .PHONY: format
 format:
