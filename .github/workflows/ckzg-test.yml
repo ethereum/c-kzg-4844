@@ -23,6 +23,10 @@ jobs:
         run: |
           cd src
           make test
+      - name: Clang Static Analyzer
+        run: |
+          cd src
+          make analyze
       - name: Install LLVM
         uses: egor-tensin/setup-clang@v1
       - name: Generate coverage report
