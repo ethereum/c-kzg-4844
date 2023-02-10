@@ -145,6 +145,8 @@ static const fr_t FR_ONE = {
 /**
  * Wrapped `malloc()` that reports failures to allocate.
  *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
+ *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of bytes to be allocated
  */
