@@ -139,6 +139,60 @@ static const fr_t FR_ONE = {
 // clang-format on
 
 ///////////////////////////////////////////////////////////////////////////////
+// Memory Allocation Functions
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Wrapped `malloc()` that reports failures to allocate.
+ *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of bytes to be allocated
+ */
+static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
+    if (n == 0) return C_KZG_BADARGS;
+    *x = malloc(n);
+    return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
+}
+
+/**
+ * Allocate memory for an array of G1 group elements.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of G1 elements to be allocated
+ */
+static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+/**
+ * Allocate memory for an array of G2 group elements.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of G2 elements to be allocated
+ */
+static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+/**
+ * Allocate memory for an array of field elements.
+ *
+ * @remark Free the space later using `free()`.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of field elements to be allocated
+ */
+static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
+    return c_kzg_malloc((void **)x, n * sizeof **x);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -254,9 +308,8 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     fr_t inv;
     size_t i;
 
-    ret = C_KZG_MALLOC;
-    prod = calloc(len, sizeof(fr_t));
-    if (len > 0 && prod == NULL) goto out;
+    ret = new_fr_array(&prod, len);
+    if (ret != C_KZG_OK) goto out;
 
     prod[0] = a[0];
 
@@ -271,8 +324,6 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
         blst_fr_mul(&inv, &a[i], &inv);
     }
     out[0] = inv;
-
-    ret = C_KZG_OK;
 
 out:
     free(prod);
@@ -754,7 +805,7 @@ static C_KZG_RET compute_challenges(
  */
 static C_KZG_RET
 g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
@@ -770,7 +821,6 @@ g1_lincomb(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
         }
     } else {
         // Blst's implementation of the Pippenger method
-        ret = C_KZG_MALLOC;
         scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
         if (scratch == NULL) goto out;
         p_affine = malloc(len * sizeof(blst_p1_affine));
@@ -873,11 +923,10 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     uint64_t i;
     const fr_t *roots_of_unity = s->fs->roots_of_unity;
 
-    ret = C_KZG_MALLOC;
-    inverses_in = calloc(FIELD_ELEMENTS_PER_BLOB, sizeof(fr_t));
-    if (inverses_in == NULL) goto out;
-    inverses = calloc(FIELD_ELEMENTS_PER_BLOB, sizeof(fr_t));
-    if (inverses == NULL) goto out;
+    ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
+    if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         if (fr_equal(x, &roots_of_unity[i])) {
@@ -1112,11 +1161,10 @@ C_KZG_RET compute_kzg_proof_impl(
     const fr_t *roots_of_unity = s->fs->roots_of_unity;
     uint64_t i, m = 0;
 
-    ret = C_KZG_MALLOC;
-    inverses_in = calloc(FIELD_ELEMENTS_PER_BLOB, sizeof(fr_t));
-    if (inverses_in == NULL) goto out;
-    inverses = calloc(FIELD_ELEMENTS_PER_BLOB, sizeof(fr_t));
-    if (inverses == NULL) goto out;
+    ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
+    if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         if (fr_equal(z, &roots_of_unity[i])) {
@@ -1235,15 +1283,19 @@ out:
 C_KZG_RET compute_aggregate_kzg_proof(
     KZGProof *out, const Blob *blobs, size_t n, const KZGSettings *s
 ) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     Polynomial *polys = NULL;
     g1_t *commitments = NULL;
 
-    ret = C_KZG_MALLOC;
     commitments = calloc(n, sizeof(g1_t));
-    if (n > 0 && commitments == NULL) goto out;
+    if (n > 0 && commitments == NULL) {
+        goto out;
+    }
+
     polys = calloc(n, sizeof(Polynomial));
-    if (n > 0 && polys == NULL) goto out;
+    if (n > 0 && polys == NULL) {
+        goto out;
+    }
 
     for (size_t i = 0; i < n; i++) {
         ret = blob_to_polynomial(&polys[i], &blobs[i]);
@@ -1296,7 +1348,7 @@ C_KZG_RET verify_aggregate_kzg_proof(
     const Bytes48 *aggregated_proof_bytes,
     const KZGSettings *s
 ) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     g1_t *commitments = NULL;
     Polynomial *polys = NULL;
 
@@ -1304,11 +1356,15 @@ C_KZG_RET verify_aggregate_kzg_proof(
     ret = bytes_to_kzg_proof(&proof, aggregated_proof_bytes);
     if (ret != C_KZG_OK) goto out;
 
-    ret = C_KZG_MALLOC;
     commitments = calloc(n, sizeof(g1_t));
-    if (n > 0 && commitments == NULL) goto out;
+    if (n > 0 && commitments == NULL) {
+        goto out;
+    }
+
     polys = calloc(n, sizeof(Polynomial));
-    if (n > 0 && polys == NULL) goto out;
+    if (n > 0 && polys == NULL) {
+        goto out;
+    }
 
     for (size_t i = 0; i < n; i++) {
         ret = bytes_to_kzg_commitment(&commitments[i], &commitments_bytes[i]);
@@ -1478,24 +1534,24 @@ expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
 static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     C_KZG_RET ret;
     fr_t root_of_unity;
-    fs->roots_of_unity = NULL;
-    fs->reverse_roots_of_unity = NULL;
-    fs->expanded_roots_of_unity = NULL;
 
     fs->max_width = (uint64_t)1 << max_scale;
+    fs->expanded_roots_of_unity = NULL;
+    fs->reverse_roots_of_unity = NULL;
+    fs->roots_of_unity = NULL;
+
     CHECK((
         max_scale < sizeof SCALE2_ROOT_OF_UNITY / sizeof SCALE2_ROOT_OF_UNITY[0]
     ));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     // Allocate space for the roots of unity
-    ret = C_KZG_MALLOC;
-    fs->roots_of_unity = calloc(fs->max_width, sizeof(fr_t));
-    if (fs->roots_of_unity == NULL) goto out_error;
-    fs->reverse_roots_of_unity = calloc(fs->max_width + 1, sizeof(fr_t));
-    if (fs->reverse_roots_of_unity == NULL) goto out_error;
-    fs->expanded_roots_of_unity = calloc(fs->max_width + 1, sizeof(fr_t));
-    if (fs->expanded_roots_of_unity == NULL) goto out_error;
+    ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&fs->roots_of_unity, fs->max_width);
+    if (ret != C_KZG_OK) goto out_error;
 
     // Populate the roots of unity
     ret = expand_root_of_unity(
@@ -1523,9 +1579,9 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     goto out_success;
 
 out_error:
-    free(fs->roots_of_unity);
-    free(fs->reverse_roots_of_unity);
     free(fs->expanded_roots_of_unity);
+    free(fs->reverse_roots_of_unity);
+    free(fs->roots_of_unity);
 out_success:
     return ret;
 }
@@ -1536,10 +1592,10 @@ out_success:
  * @param[in] fs The settings to be freed
  */
 static void free_fft_settings(FFTSettings *fs) {
-    fs->max_width = 0;
-    free(fs->roots_of_unity);
-    free(fs->reverse_roots_of_unity);
     free(fs->expanded_roots_of_unity);
+    free(fs->reverse_roots_of_unity);
+    free(fs->roots_of_unity);
+    fs->max_width = 0;
 }
 
 /**
@@ -1580,20 +1636,14 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g2_values = NULL;
 
-    if (n1 == 0 || n2 == 0) {
-        ret = C_KZG_BADARGS;
-        goto out_error;
-    }
-
-    ret = C_KZG_MALLOC;
-    out->fs = malloc(sizeof(FFTSettings));
-    if (out->fs == NULL) goto out_error;
-    out->g1_values = calloc(n1, sizeof(g1_t));
-    if (out->g1_values == NULL) goto out_error;
-    out->g2_values = calloc(n2, sizeof(g2_t));
-    if (out->g2_values == NULL) goto out_error;
-    g1_projective = calloc(n1, sizeof(g1_t));
-    if (g1_projective == NULL) goto out_error;
+    CHECK(n1 > 0);
+    CHECK(n2 > 0);
+    ret = new_g1_array(&out->g1_values, n1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g2_array(&out->g2_values, n2);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g1_array(&g1_projective, n1);
+    if (ret != C_KZG_OK) goto out_error;
 
     for (i = 0; i < n1; i++) {
         ret = validate_kzg_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
@@ -1609,7 +1659,9 @@ C_KZG_RET load_trusted_setup(
     while (((uint64_t)1 << max_scale) < n1)
         max_scale++;
 
-    ret = new_fft_settings(out->fs, max_scale);
+    ret = c_kzg_malloc((void **)&out->fs, sizeof(FFTSettings));
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fft_settings((FFTSettings *)out->fs, max_scale);
     if (ret != C_KZG_OK) goto out_error;
     ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
     if (ret != C_KZG_OK) goto out_error;
@@ -1619,7 +1671,7 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
-    free(out->fs);
+    free((void *)out->fs);
     free(out->g1_values);
     free(out->g2_values);
 out_success:
