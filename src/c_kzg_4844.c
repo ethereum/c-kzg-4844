@@ -1618,8 +1618,6 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g2_values = NULL;
 
-    CHECK(n1 > 0);
-    CHECK(n2 > 0);
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
