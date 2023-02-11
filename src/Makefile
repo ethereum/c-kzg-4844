@@ -91,10 +91,17 @@ profile: \
 	profile_compute_kzg_proof \
 	profile_compute_aggregate_kzg_proof
 
+.PHONY: analyze
+analyze: c_kzg_4844.c
+	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
+	    -o analysis-report $(CFLAGS) -c $<
+	@[ -d analysis-report ] && exit 1 || exit 0
+
 .PHONY: clean
 clean:
 	@rm -f *.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
 	    test_c_kzg_4844 test_c_kzg_4844_cov test_c_kzg_4844_prof
+	@rm -rf analysis-report
 
 .PHONY: format
 format:

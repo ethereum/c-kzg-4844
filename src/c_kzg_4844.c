@@ -145,16 +145,15 @@ static const fr_t FR_ONE = {
 /**
  * Wrapped `malloc()` that reports failures to allocate.
  *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
+ *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of bytes to be allocated
  */
 static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
-    if (n > 0) {
-        *x = malloc(n);
-        return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
-    }
-    *x = NULL;
-    return C_KZG_OK;
+    if (n == 0) return C_KZG_BADARGS;
+    *x = malloc(n);
+    return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
 }
 
 /**
@@ -564,6 +563,7 @@ static C_KZG_RET bit_reversal_permutation(
 ) {
     CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
+    CHECK(log2_pow2(n) != 0);
 
     // Pointer arithmetic on `void *` is naughty, so cast to something
     // definite
@@ -1601,6 +1601,8 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g2_values = NULL;
 
+    CHECK(n1 > 0);
+    CHECK(n2 > 0);
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
