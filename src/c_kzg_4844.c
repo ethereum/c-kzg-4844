@@ -151,6 +151,7 @@ static const fr_t FR_ONE = {
  * @param[in]  size The number of bytes to be allocated
  */
 static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
+    *out = NULL;
     if (size == 0) return C_KZG_BADARGS;
     *out = malloc(size);
     return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
@@ -166,6 +167,7 @@ static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
  * @param[in]  size  The size of each element
  */
 static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
+    *out = NULL;
     if (count == 0 || size == 0) return C_KZG_BADARGS;
     *out = calloc(count, size);
     return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;

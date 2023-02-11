@@ -83,6 +83,55 @@ static void get_rand_uint32(uint32_t *out) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for memory allocation functions
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_c_kzg_malloc__succeeds_size_greater_than_zero(void) {
+    C_KZG_RET ret;
+    void *ptr = NULL;
+
+    ret = c_kzg_malloc(&ptr, 123);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("valid pointer", ptr != NULL);
+}
+
+static void test_c_kzg_malloc__fails_size_equal_to_zero(void) {
+    C_KZG_RET ret;
+    void *ptr = (void *)0x123;
+
+    ret = c_kzg_malloc(&ptr, 0);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+    ASSERT_EQUALS(ptr, NULL);
+}
+
+static void test_c_kzg_calloc__succeeds_size_greater_than_zero(void) {
+    C_KZG_RET ret;
+    void *ptr = NULL;
+
+    ret = c_kzg_calloc(&ptr, 123, 456);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("valid pointer", ptr != NULL);
+}
+
+static void test_c_kzg_calloc__fails_count_equal_to_zero(void) {
+    C_KZG_RET ret;
+    void *ptr = (void *)0x123;
+
+    ret = c_kzg_calloc(&ptr, 0, 456);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+    ASSERT_EQUALS(ptr, NULL);
+}
+
+static void test_c_kzg_calloc__fails_size_equal_to_zero(void) {
+    C_KZG_RET ret;
+    void *ptr = (void *)0x123;
+
+    ret = c_kzg_calloc(&ptr, 123, 0);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+    ASSERT_EQUALS(ptr, NULL);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for blob_to_kzg_commitment
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -707,6 +756,11 @@ static void teardown(void) {
 
 int main(void) {
     setup();
+    RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
+    RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
+    RUN(test_c_kzg_calloc__succeeds_size_greater_than_zero);
+    RUN(test_c_kzg_calloc__fails_size_equal_to_zero);
+    RUN(test_c_kzg_calloc__fails_count_equal_to_zero);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
