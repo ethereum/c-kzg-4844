@@ -147,13 +147,28 @@ static const fr_t FR_ONE = {
  *
  * @remark Will return C_KZG_BADARGS if the requested size is zero.
  *
- * @param[out] x Pointer to the allocated space
- * @param[in]  n The number of bytes to be allocated
+ * @param[out] out  Pointer to the allocated space
+ * @param[in]  size The number of bytes to be allocated
  */
-static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
-    if (n == 0) return C_KZG_BADARGS;
-    *x = malloc(n);
-    return *x != NULL ? C_KZG_OK : C_KZG_MALLOC;
+static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
+    if (size == 0) return C_KZG_BADARGS;
+    *out = malloc(size);
+    return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
+}
+
+/**
+ * Wrapped `calloc()` that reports failures to allocate.
+ *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
+ *
+ * @param[out] out   Pointer to the allocated space
+ * @param[in]  count The number of elements
+ * @param[in]  size  The size of each element
+ */
+static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
+    if (count == 0 || size == 0) return C_KZG_BADARGS;
+    *out = calloc(count, size);
+    return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
 }
 
 /**
@@ -165,7 +180,7 @@ static C_KZG_RET c_kzg_malloc(void **x, size_t n) {
  * @param[in]  n The number of G1 elements to be allocated
  */
 static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
-    return c_kzg_malloc((void **)x, n * sizeof **x);
+    return c_kzg_calloc((void **)x, n, sizeof(g1_t));
 }
 
 /**
@@ -177,7 +192,7 @@ static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
  * @param[in]  n The number of G2 elements to be allocated
  */
 static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
-    return c_kzg_malloc((void **)x, n * sizeof **x);
+    return c_kzg_calloc((void **)x, n, sizeof(g2_t));
 }
 
 /**
@@ -189,7 +204,7 @@ static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
  * @param[in]  n The number of field elements to be allocated
  */
 static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
-    return c_kzg_malloc((void **)x, n * sizeof **x);
+    return c_kzg_calloc((void **)x, n, sizeof(fr_t));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -703,13 +718,15 @@ static C_KZG_RET compute_challenges(
     const g1_t *comms,
     uint64_t n
 ) {
+    C_KZG_RET ret;
     size_t i;
     uint64_t j;
+    uint8_t *bytes = NULL;
 
     // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8 + n blobs + n commitments
     size_t input_size = 32 + (n * BYTES_PER_BLOB) + (n * 48);
-    uint8_t *bytes = calloc(input_size, sizeof(uint8_t));
-    if (bytes == NULL) return C_KZG_MALLOC;
+    ret = c_kzg_malloc((void **)&bytes, input_size);
+    if (ret != C_KZG_OK) goto out;
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
@@ -760,8 +777,9 @@ static C_KZG_RET compute_challenges(
     blst_sha256(eval_challenge.bytes, hash_input, 33);
     hash_to_bls_field(eval_challenge_out, &eval_challenge);
 
+out:
     free(bytes);
-    return C_KZG_OK;
+    return ret;
 }
 
 /**
@@ -789,7 +807,7 @@ static C_KZG_RET compute_challenges(
 static C_KZG_RET g1_lincomb(
     g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
 ) {
-    C_KZG_RET ret = C_KZG_MALLOC;
+    C_KZG_RET ret;
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
@@ -805,12 +823,13 @@ static C_KZG_RET g1_lincomb(
         }
     } else {
         // Blst's implementation of the Pippenger method
-        scratch = malloc(blst_p1s_mult_pippenger_scratch_sizeof(len));
-        if (scratch == NULL) goto out;
-        p_affine = malloc(len * sizeof(blst_p1_affine));
-        if (p_affine == NULL) goto out;
-        scalars = malloc(len * sizeof(blst_scalar));
-        if (scalars == NULL) goto out;
+        size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
+        ret = c_kzg_malloc(&scratch, scratch_size);
+        if (ret != C_KZG_OK) goto out;
+        ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
+        if (ret != C_KZG_OK) goto out;
+        ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
+        if (ret != C_KZG_OK) goto out;
 
         // Transform the points to affine representation
         const blst_p1 *p_arg[2] = {p, NULL};
@@ -1219,10 +1238,14 @@ static C_KZG_RET compute_aggregated_poly_and_commitment(
     const g1_t *kzg_commitments,
     size_t n
 ) {
-    fr_t *r_powers = calloc(n, sizeof(fr_t));
-    if (n > 0 && r_powers == NULL) return C_KZG_MALLOC;
-
     C_KZG_RET ret;
+    fr_t *r_powers = NULL;
+
+    if (n > 0) {
+        ret = new_fr_array(&r_powers, n);
+        if (ret != C_KZG_OK) goto out;
+    }
+
     ret = compute_challenges(chal_out, r_powers, polys, kzg_commitments, n);
     if (ret != C_KZG_OK) goto out;
 
@@ -1250,18 +1273,15 @@ out:
 C_KZG_RET compute_aggregate_kzg_proof(
     KZGProof *out, const Blob *blobs, size_t n, const KZGSettings *s
 ) {
-    C_KZG_RET ret = C_KZG_MALLOC;
-    Polynomial *polys = NULL;
+    C_KZG_RET ret;
     g1_t *commitments = NULL;
+    Polynomial *polys = NULL;
 
-    commitments = calloc(n, sizeof(g1_t));
-    if (n > 0 && commitments == NULL) {
-        goto out;
-    }
-
-    polys = calloc(n, sizeof(Polynomial));
-    if (n > 0 && polys == NULL) {
-        goto out;
+    if (n > 0) {
+        ret = new_g1_array(&commitments, n);
+        if (ret != C_KZG_OK) goto out;
+        ret = c_kzg_calloc((void **)&polys, n, sizeof(Polynomial));
+        if (ret != C_KZG_OK) goto out;
     }
 
     for (size_t i = 0; i < n; i++) {
@@ -1312,7 +1332,7 @@ C_KZG_RET verify_aggregate_kzg_proof(
     const Bytes48 *aggregated_proof_bytes,
     const KZGSettings *s
 ) {
-    C_KZG_RET ret = C_KZG_MALLOC;
+    C_KZG_RET ret;
     g1_t *commitments = NULL;
     Polynomial *polys = NULL;
 
@@ -1320,14 +1340,11 @@ C_KZG_RET verify_aggregate_kzg_proof(
     ret = bytes_to_kzg_proof(&proof, aggregated_proof_bytes);
     if (ret != C_KZG_OK) goto out;
 
-    commitments = calloc(n, sizeof(g1_t));
-    if (n > 0 && commitments == NULL) {
-        goto out;
-    }
-
-    polys = calloc(n, sizeof(Polynomial));
-    if (n > 0 && polys == NULL) {
-        goto out;
+    if (n > 0) {
+        ret = new_g1_array(&commitments, n);
+        if (ret != C_KZG_OK) goto out;
+        ret = c_kzg_calloc((void **)&polys, n, sizeof(Polynomial));
+        if (ret != C_KZG_OK) goto out;
     }
 
     for (size_t i = 0; i < n; i++) {
