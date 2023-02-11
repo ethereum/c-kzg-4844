@@ -93,6 +93,7 @@ static void test_c_kzg_malloc__succeeds_size_greater_than_zero(void) {
     ret = c_kzg_malloc(&ptr, 123);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT("valid pointer", ptr != NULL);
+    free(ptr);
 }
 
 static void test_c_kzg_malloc__fails_size_equal_to_zero(void) {
@@ -111,6 +112,7 @@ static void test_c_kzg_calloc__succeeds_size_greater_than_zero(void) {
     ret = c_kzg_calloc(&ptr, 123, 456);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT("valid pointer", ptr != NULL);
+    free(ptr);
 }
 
 static void test_c_kzg_calloc__fails_count_equal_to_zero(void) {
