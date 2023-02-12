@@ -1,6 +1,7 @@
 test_c_kzg_4844
 test_c_kzg_4844_*
 coverage.html
+analysis-report/
 *.profraw
 *.profdata
 *.prof
