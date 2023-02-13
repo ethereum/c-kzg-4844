@@ -13,6 +13,9 @@ CFLAGS += -I../inc
 CFLAGS += -Wall -Wextra -Werror -O2
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 
+# Disable optimizations. Put after $CFLAGS.
+NO_OPTIMIZE = -O0
+
 # Compiler flags for including blst. Put after source files.
 BLST = -L../lib -lblst
 
@@ -45,13 +48,13 @@ all: c_kzg_4844.o
 	@$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) -o $@ $< $(BLST)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -o $@ $< $(BLST)
 
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(COVERAGE) -o $@ $< $(BLST)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(COVERAGE) -o $@ $< $(BLST)
 
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
 
 .PHONY: blst
 blst:
@@ -64,8 +67,8 @@ blst:
 test: test_c_kzg_4844
 	@./test_c_kzg_4844
 
-.PHONY: test_cov
-test_cov: test_c_kzg_4844_cov
+.PHONY: coverage
+coverage: test_c_kzg_4844_cov
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
