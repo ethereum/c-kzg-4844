@@ -434,10 +434,7 @@ mod tests {
 
             for (i, blob) in blobs.into_iter().enumerate() {
                 let commitment = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
-                assert_eq!(
-                    commitment.as_hex_string().as_str(),
-                    expected_commitments[i]
-                );
+                assert_eq!(commitment.as_hex_string().as_str(), expected_commitments[i]);
             }
         }
     }
@@ -468,12 +465,7 @@ mod tests {
             let y_bytes = Bytes32::from_bytes(&hex::decode(y_hex).unwrap()).unwrap();
 
             assert!(kzg_proof
-                .verify_kzg_proof(
-                    commitment,
-                    z_bytes,
-                    y_bytes,
-                    &kzg_settings
-                )
+                .verify_kzg_proof(commitment, z_bytes, y_bytes, &kzg_settings)
                 .unwrap());
         }
     }

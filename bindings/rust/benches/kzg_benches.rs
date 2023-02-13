@@ -40,10 +40,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             |b, blobs| b.iter(|| KZGProof::compute_aggregate_kzg_proof(blobs, &kzg_settings)),
         );
 
-        let kzg_commitments: Vec<KZGCommitment> = blobs
+        let kzg_commitments: Vec<Bytes48> = blobs
             .clone()
             .into_iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings).to_bytes())
             .collect();
         let proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
 
@@ -53,7 +53,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             |b, blobs| {
                 b.iter(|| {
                     proof
-                        .verify_aggregate_kzg_proof(&blobs, &kzg_commitments, &kzg_settings)
+                        .verify_aggregate_kzg_proof(
+                            &blobs,
+                            kzg_commitments.as_slice(),
+                            &kzg_settings,
+                        )
                         .unwrap()
                 })
             },
