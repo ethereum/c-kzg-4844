@@ -32,7 +32,7 @@ jobs:
       - name: Generate coverage report
         run: |
           cd src
-          make test_cov
+          make coverage
       - name: Save coverage report
         uses: actions/upload-artifact@v3
         with:
