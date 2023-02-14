@@ -13,10 +13,15 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 public class CKZG4844JNITest {
+  private enum TrustedSetupSource {
+    FILE,
+    PARAMETERS,
+    RESOURCE;
+  }
 
   private static final Preset PRESET;
 
@@ -37,10 +42,10 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void computesAndVerifiesProofs(final boolean useTrustedSetupFile) {
+  @EnumSource(TrustedSetupSource.class)
+  public void computesAndVerifiesProofs(final TrustedSetupSource trustedSetupSource) {
 
-    loadTrustedSetup(useTrustedSetupFile);
+    loadTrustedSetup(trustedSetupSource);
 
     final int count = 3;
 
@@ -208,19 +213,29 @@ public class CKZG4844JNITest {
     assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
-  private static void loadTrustedSetup(final boolean useFile) {
-    if (useFile) {
-      loadTrustedSetup();
-    } else {
-      final LoadTrustedSetupParameters parameters = TestUtils.createLoadTrustedSetupParameters(
-          TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
-      CKZG4844JNI.loadTrustedSetup(parameters.getG1(), parameters.getG1Count(), parameters.getG2(),
-          parameters.getG2Count());
+  private static void loadTrustedSetup(final TrustedSetupSource trustedSetupSource) {
+    switch (trustedSetupSource) {
+      case FILE:
+        loadTrustedSetup();
+        break;
+      case PARAMETERS:
+        final LoadTrustedSetupParameters parameters = TestUtils.createLoadTrustedSetupParameters(
+                TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+        CKZG4844JNI.loadTrustedSetup(parameters.getG1(), parameters.getG1Count(), parameters.getG2(),
+                parameters.getG2Count());
+        break;
+      case RESOURCE:
+        loadTrustedSetupFromResource();
+        break;
     }
   }
 
   private static void loadTrustedSetup() {
     CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+  }
+
+  public static void loadTrustedSetupFromResource() {
+    CKZG4844JNI.loadTrustedSetupFromResource("/test-vectors/trusted_setup.txt", CKZG4844JNITest.class);
   }
 
   private static Stream<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
