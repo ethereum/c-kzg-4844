@@ -9,8 +9,10 @@ import {
   computeKzgProof,
   computeAggregateKzgProof,
   verifyAggregateKzgProof,
+  BYTES_PER_BLOB,
+  BYTES_PER_COMMITMENT,
+  BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  FIELD_ELEMENTS_PER_BLOB,
   transformTrustedSetupJSON,
 } from "./kzg";
 
@@ -20,13 +22,11 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
   ? setupFileName
   : `../../src/${setupFileName}`;
 
-const BLOB_BYTE_COUNT = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
-
 const MAX_TOP_BYTE = 114;
 
 const generateRandomBlob = () => {
   return new Uint8Array(
-    randomBytes(BLOB_BYTE_COUNT).map((x, i) => {
+    randomBytes(BYTES_PER_BLOB).map((x, i) => {
       // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
       if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 31) {
         return Math.floor(Math.random() * MAX_TOP_BYTE);
@@ -48,7 +48,7 @@ describe("C-KZG", () => {
 
   it("computes a proof from blob", () => {
     let blob = generateRandomBlob();
-    const zBytes = new Uint8Array(32).fill(0);
+    const zBytes = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
     computeKzgProof(blob, zBytes);
     // No check, just make sure it doesn't crash.
   });
@@ -78,22 +78,22 @@ describe("C-KZG", () => {
   });
 
   it("verifies a valid KZG proof", () => {
-    const commitment = new Uint8Array(48).fill(0);
+    const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
     commitment[0] = 0xc0;
-    const z = new Uint8Array(32).fill(0);
-    const y = new Uint8Array(32).fill(0);
-    const proof = new Uint8Array(48).fill(0);
+    const z = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
+    const y = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
+    const proof = new Uint8Array(BYTES_PER_PROOF).fill(0);
     proof[0] = 0xc0;
 
     expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
   });
 
   it("verifies an invalid valid KZG proof", () => {
-    const commitment = new Uint8Array(48).fill(0);
+    const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
     commitment[0] = 0xc0;
-    const z = new Uint8Array(32).fill(1);
-    const y = new Uint8Array(32).fill(1);
-    const proof = new Uint8Array(48).fill(0);
+    const z = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(1);
+    const y = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(1);
+    const proof = new Uint8Array(BYTES_PER_PROOF).fill(0);
     proof[0] = 0xc0;
 
     expect(verifyKzgProof(commitment, z, y, proof)).toBe(false);
@@ -131,8 +131,14 @@ describe("C-KZG", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
       expect(() => blobToKzgCommitment("wrong type")).toThrowError(
-        "Invalid argument type: blob. Expected UInt8Array",
+        "Expected blob to be UInt8Array of 131072 bytes",
       );
+    });
+
+    it("throws as expected when given an argument of invalid length", () => {
+      expect(() =>
+        blobToKzgCommitment(randomBytes(BYTES_PER_BLOB - 1)),
+      ).toThrowError("Expected blob to be UInt8Array of 131072 bytes");
     });
   });
 });

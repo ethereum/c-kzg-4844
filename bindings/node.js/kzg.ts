@@ -15,8 +15,11 @@ type SetupHandle = Object;
 
 // The C++ native addon interface
 type KZG = {
-  FIELD_ELEMENTS_PER_BLOB: number;
+  BYTES_PER_BLOB: number;
+  BYTES_PER_COMMITMENT: number;
   BYTES_PER_FIELD_ELEMENT: number;
+  BYTES_PER_PROOF: number;
+  FIELD_ELEMENTS_PER_BLOB: number;
 
   loadTrustedSetup: (filePath: string) => SetupHandle;
 
@@ -58,8 +61,11 @@ type TrustedSetupJSON = {
   roots_of_unity: string[];
 };
 
-export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
+export const BYTES_PER_BLOB = kzg.BYTES_PER_BLOB;
+export const BYTES_PER_COMMITMENT = kzg.BYTES_PER_COMMITMENT;
 export const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
+export const BYTES_PER_PROOF = kzg.BYTES_PER_PROOF;
+export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 
 // Stored as internal state
 let setupHandle: SetupHandle | undefined;
@@ -69,6 +75,50 @@ function requireSetupHandle(): SetupHandle {
     throw new Error("You must call loadTrustedSetup to initialize KZG.");
   }
   return setupHandle;
+}
+
+function checkBlob(blob: Blob) {
+  if (blob.length != BYTES_PER_BLOB) {
+    throw new Error(
+      `Expected blob to be UInt8Array of ${BYTES_PER_BLOB} bytes.`,
+    );
+  }
+}
+
+function checkBlobs(blobs: Blob[]) {
+  for (let blob of blobs) {
+    checkBlob(blob);
+  }
+}
+
+function checkCommitment(commitment: KZGCommitment) {
+  if (commitment.length != BYTES_PER_COMMITMENT) {
+    throw new Error(
+      `Expected commitment to be UInt8Array of ${BYTES_PER_COMMITMENT} bytes.`,
+    );
+  }
+}
+
+function checkCommitments(commitments: KZGCommitment[]) {
+  for (let commitment of commitments) {
+    checkCommitment(commitment);
+  }
+}
+
+function checkProof(proof: KZGProof) {
+  if (proof.length != BYTES_PER_PROOF) {
+    throw new Error(
+      `Expected proof to be UInt8Array of ${BYTES_PER_PROOF} bytes.`,
+    );
+  }
+}
+
+function checkFieldElement(field: Bytes32) {
+  if (field.length != BYTES_PER_FIELD_ELEMENT) {
+    throw new Error(
+      `Expected field element to be UInt8Array of ${BYTES_PER_FIELD_ELEMENT} bytes.`,
+    );
+  }
 }
 
 export async function transformTrustedSetupJSON(
@@ -113,14 +163,18 @@ export function freeTrustedSetup(): void {
 }
 
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
+  checkBlob(blob);
   return kzg.blobToKzgCommitment(blob, requireSetupHandle());
 }
 
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
+  checkBlob(blob);
+  checkFieldElement(zBytes);
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
 export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
+  checkBlobs(blobs);
   return kzg.computeAggregateKzgProof(blobs, requireSetupHandle());
 }
 
@@ -130,6 +184,10 @@ export function verifyKzgProof(
   yBytes: Bytes32,
   proofBytes: Bytes48,
 ): boolean {
+  checkCommitment(commitmentBytes);
+  checkFieldElement(zBytes);
+  checkFieldElement(yBytes);
+  checkProof(proofBytes);
   return kzg.verifyKzgProof(
     commitmentBytes,
     zBytes,
@@ -144,6 +202,9 @@ export function verifyAggregateKzgProof(
   commitmentsBytes: Bytes48[],
   proofBytes: Bytes48,
 ): boolean {
+  checkBlobs(blobs);
+  checkCommitments(commitmentsBytes);
+  checkProof(proofBytes);
   return kzg.verifyAggregateKzgProof(
     blobs,
     commitmentsBytes,

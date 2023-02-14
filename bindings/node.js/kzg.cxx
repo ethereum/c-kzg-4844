@@ -353,8 +353,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
   exports["verifyAggregateKzgProof"] = Napi::Function::New(env, VerifyAggregateKzgProof);
 
   // Constants
-  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
+  exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
+  exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, BYTES_PER_COMMITMENT);
   exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
+  exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
+  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
 
   return exports;
 }
