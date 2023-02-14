@@ -231,16 +231,12 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     Bytes48 point_at_infinity;
     int diff;
 
-    /*
-     * Get the commitment for a blob that's all zeros.
-     */
+    /* Get the commitment for a blob that's all zeros */
     memset(&blob, 0, sizeof(blob));
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /*
-     * The commitment should be the serialized point at infinity.
-     */
+    /* The commitment should be the serialized point at infinity */
     bytes48_from_hex(
         &point_at_infinity,
         "c00000000000000000000000000000000000000000000000"
@@ -257,9 +253,7 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
     Bytes48 expected_commitment;
     int diff;
 
-    /*
-     * Get a commitment to a random blob.
-     */
+    /* Get a commitment to a random blob */
     get_rand_blob(&blob);
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -454,7 +448,7 @@ static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
 // Tests for reverse_bits
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_reverse_bits__round_trip(void) {
+static void test_reverse_bits__succeeds_round_trip(void) {
     uint32_t original;
     uint32_t reversed;
     uint32_t reversed_reversed;
@@ -465,19 +459,19 @@ static void test_reverse_bits__round_trip(void) {
     ASSERT_EQUALS(reversed_reversed, original);
 }
 
-static void test_reverse_bits__all_bits_are_zero(void) {
+static void test_reverse_bits__succeeds_all_bits_are_zero(void) {
     uint32_t original = 0b00000000000000000000000000000000;
     uint32_t reversed = 0b00000000000000000000000000000000;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
-static void test_reverse_bits__some_bits_are_one(void) {
+static void test_reverse_bits__succeeds_some_bits_are_one(void) {
     uint32_t original = 0b10101000011111100000000000000010;
     uint32_t reversed = 0b01000000000000000111111000010101;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
-static void test_reverse_bits__all_bits_are_one(void) {
+static void test_reverse_bits__succeeds_all_bits_are_one(void) {
     uint32_t original = 0b11111111111111111111111111111111;
     uint32_t reversed = 0b11111111111111111111111111111111;
     ASSERT_EQUALS(reverse_bits(original), reversed);
@@ -487,18 +481,17 @@ static void test_reverse_bits__all_bits_are_one(void) {
 // Tests for compute_powers
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_compute_powers__expected_result(void) {
+static void test_compute_powers__succeeds_expected_powers(void) {
     C_KZG_RET ret;
     Bytes32 field_element_bytes;
     fr_t field_element_fr;
-    int n = 3, diff;
+    const int n = 3;
+    int diff;
     fr_t powers[n];
     Bytes32 powers_bytes[n];
     Bytes32 expected_bytes[n];
 
-    /*
-     * Convert random field element to a fr_t.
-     */
+    /* Convert random field element to a fr_t */
     bytes32_from_hex(
         &field_element_bytes,
         "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
@@ -506,9 +499,7 @@ static void test_compute_powers__expected_result(void) {
     ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /*
-     * Compute three powers for the given field element.
-     */
+    /* Compute three powers for the given field element */
     compute_powers((fr_t *)&powers, &field_element_fr, n);
 
     /*
@@ -548,7 +539,7 @@ static void test_compute_powers__expected_result(void) {
 // Tests for log_2_byte
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_log_2_byte__expected_values(void) {
+static void test_log_2_byte__succeeds_expected_values(void) {
     byte i = 0;
     while (true) {
         /*
@@ -575,6 +566,41 @@ static void test_log_2_byte__expected_values(void) {
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
+static void test_compute_kzg_proof__succeeds_expected_proof(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Bytes32 input_value, field_element;
+    Bytes48 proof, expected_proof;
+    int diff;
+
+    bytes32_from_hex(
+        &field_element,
+        "138a16c66bdd9b0b17978ebd00bedf62307aa545d6b899b35703aedb696e3869"
+    );
+    bytes32_from_hex(
+        &input_value,
+        "0d32bafe47065f59692005d9d4b8b4ef67bd0de4c517a91ae0f9b441b84fea03"
+    );
+
+    /* Initialize the blob with a single field element */
+    memset(&blob, 0, sizeof(blob));
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+
+    /* Compute the KZG proof for the given blob & z */
+    ret = compute_kzg_proof(&proof, &blob, &input_value, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    bytes48_from_hex(
+        &expected_proof,
+        "899b7e1e7ff2e9b28c631d2f9d6b9ae828749c9dbf84f3f4"
+        "3b910bda9558f360f2fa0dac1143460b55908406038eb538"
+    );
+
+    /* Compare the computed proof to the expected proof */
+    diff = memcmp(proof.bytes, expected_proof.bytes, sizeof(Bytes48));
+    ASSERT_EQUALS(diff, 0);
+}
+
 static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     C_KZG_RET ret;
     Bytes48 proof;
@@ -585,10 +611,10 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     fr_t y_fr, z_fr;
     bool ok;
 
-    /* Some preparation */
     get_rand_field_element(&z);
     get_rand_blob(&blob);
 
+    /* Get a commitment to that particular blob */
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -596,8 +622,10 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     ret = compute_kzg_proof(&proof, &blob, &z, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Now let's attempt to verify the proof */
-    /* First convert the blob to field elements */
+    /*
+     * Now let's attempt to verify the proof.
+     * First convert the blob to field elements.
+     */
     ret = blob_to_polynomial(&poly, &blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -615,14 +643,11 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     /* Finally verify the proof */
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* The proof should verify! */
     ASSERT_EQUALS(ok, 1);
 }
 
 static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
-    const int SAMPLES = 25;
-    for (int i = 0; i < SAMPLES; i++) {
+    for (int i = 0; i < 25; i++) {
         C_KZG_RET ret;
         Blob blob;
         KZGCommitment c;
@@ -634,9 +659,11 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 
         get_rand_blob(&blob);
 
+        /* Get a commitment to that particular blob */
         ret = blob_to_kzg_commitment(&c, &blob, &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
+        /* Get the polynomial version of the blob */
         ret = blob_to_polynomial(&poly, &blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -657,8 +684,6 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         /* Finally verify the proof */
         ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-
-        /* The proof should verify! */
         ASSERT_EQUALS(ok, 1);
     }
 }
@@ -670,12 +695,9 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 #ifdef PROFILE
 static void profile_blob_to_kzg_commitment(void) {
     Blob blob;
-    Bytes32 field_element;
     KZGCommitment c;
 
-    get_rand_field_element(&field_element);
-    memset(&blob, 0, sizeof(blob));
-    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+    get_rand_blob(&blob);
 
     ProfilerStart("blob_to_kzg_commitment.prof");
     for (int i = 0; i < 1000; i++) {
@@ -702,7 +724,7 @@ static void profile_verify_kzg_proof(void) {
 }
 
 static void profile_verify_aggregate_kzg_proof(void) {
-    int n = 16;
+    const int n = 16;
     Blob blobs[n];
     Bytes48 commitments[n];
     Bytes48 proof;
@@ -737,7 +759,7 @@ static void profile_compute_kzg_proof(void) {
 }
 
 static void profile_compute_aggregate_kzg_proof(void) {
-    int n = 16;
+    const int n = 16;
     Blob blobs[n];
     KZGProof out;
 
@@ -761,9 +783,11 @@ static void setup(void) {
     FILE *fp;
     C_KZG_RET ret;
 
+    /* Open the mainnet trusted setup file */
     fp = fopen("trusted_setup.txt", "r");
     assert(fp != NULL);
 
+    /* Load that trusted setup file */
     ret = load_trusted_setup_file(&s, fp);
     assert(ret == C_KZG_OK);
 
@@ -800,12 +824,13 @@ int main(void) {
     RUN(test_validate_kzg_g1__fails_with_wrong_c_flag);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true);
-    RUN(test_reverse_bits__round_trip);
-    RUN(test_reverse_bits__all_bits_are_zero);
-    RUN(test_reverse_bits__some_bits_are_one);
-    RUN(test_reverse_bits__all_bits_are_one);
-    RUN(test_compute_powers__expected_result);
-    RUN(test_log_2_byte__expected_values);
+    RUN(test_reverse_bits__succeeds_round_trip);
+    RUN(test_reverse_bits__succeeds_all_bits_are_zero);
+    RUN(test_reverse_bits__succeeds_some_bits_are_one);
+    RUN(test_reverse_bits__succeeds_all_bits_are_one);
+    RUN(test_compute_powers__succeeds_expected_powers);
+    RUN(test_log_2_byte__succeeds_expected_values);
+    RUN(test_compute_kzg_proof__succeeds_expected_proof);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
 
