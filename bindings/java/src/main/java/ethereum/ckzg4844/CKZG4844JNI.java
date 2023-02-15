@@ -12,7 +12,6 @@ public class CKZG4844JNI {
 
   private static final String LIBRARY_NAME = "ckzg4844jni";
   private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
-  private static Path tempDir;
 
   /**
    * Loads the appropriate native library based on your platform and the selected {@link Preset}
@@ -35,7 +34,9 @@ public class CKZG4844JNI {
       }
     } else {
       try {
-        Path tempDll = tempDir().resolve(PLATFORM_NATIVE_LIBRARY_NAME);
+        Path tempDir = Files.createTempDirectory(LIBRARY_NAME + "@");
+        tempDir.toFile().deleteOnExit();
+        Path tempDll = tempDir.resolve(PLATFORM_NATIVE_LIBRARY_NAME);
         tempDll.toFile().deleteOnExit();
         Files.copy(libraryResource, tempDll, StandardCopyOption.REPLACE_EXISTING);
         libraryResource.close();
@@ -120,7 +121,7 @@ public class CKZG4844JNI {
     }
 
     try (is) {
-      Path jniWillLoadFrom = tempDir().resolve("kzg-trusted-setup.txt");
+      Path jniWillLoadFrom = Files.createTempFile("kzg-trusted-setup", ".txt");
       jniWillLoadFrom.toFile().deleteOnExit();
       Files.copy(is, jniWillLoadFrom, StandardCopyOption.REPLACE_EXISTING);
       loadTrustedSetup(jniWillLoadFrom.toString());
@@ -128,7 +129,6 @@ public class CKZG4844JNI {
       throw new UncheckedIOException("Error loading trusted setup from resource " + resource, ex);
     }
   }
-
 
   /**
    * Free the current trusted setup. This method will throw an exception if no trusted setup has
@@ -191,12 +191,4 @@ public class CKZG4844JNI {
    */
   public static native boolean verifyKzgProof(byte[] commitment_bytes, byte[] z_bytes,
       byte[] y_bytes, byte[] proof_bytes);
-
-  private static synchronized Path tempDir() throws IOException {
-    if(tempDir == null) {
-      tempDir = Files.createTempDirectory(LIBRARY_NAME + "@");
-      tempDir.toFile().deleteOnExit();
-    }
-    return tempDir;
-  }
 }
