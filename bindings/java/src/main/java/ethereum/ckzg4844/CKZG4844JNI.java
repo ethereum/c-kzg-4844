@@ -107,6 +107,30 @@ public class CKZG4844JNI {
   public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2, long g2Count);
 
   /**
+   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from a resource.
+   *
+   * @param resource the resource name that contains the trusted setup
+   * @param clazz    the class to use to get the resource
+   * @throws CKZGException if there is a crypto error
+   * @throws IllegalArgumentException if the resource does not exist
+   */
+  public static void loadTrustedSetupFromResource(String resource, Class clazz) {
+    InputStream is = clazz.getResourceAsStream(resource);
+    if (is == null) {
+      throw new IllegalArgumentException("Resource " + resource + " does not exist.");
+    }
+
+    try (is) {
+      Path jniWillLoadFrom = Files.createTempFile("kzg-trusted-setup", ".txt");
+      jniWillLoadFrom.toFile().deleteOnExit();
+      Files.copy(is, jniWillLoadFrom, StandardCopyOption.REPLACE_EXISTING);
+      loadTrustedSetup(jniWillLoadFrom.toString());
+    } catch (IOException ex) {
+      throw new UncheckedIOException("Error loading trusted setup from resource " + resource, ex);
+    }
+  }
+
+  /**
    * Free the current trusted setup. This method will throw an exception if no trusted setup has
    * been loaded.
    */
@@ -167,5 +191,4 @@ public class CKZG4844JNI {
    */
   public static native boolean verifyKzgProof(byte[] commitment_bytes, byte[] z_bytes,
       byte[] y_bytes, byte[] proof_bytes);
-
 }
