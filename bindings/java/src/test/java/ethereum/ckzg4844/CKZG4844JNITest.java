@@ -28,6 +28,9 @@ public class CKZG4844JNITest {
   private static final Map<Preset, String> TRUSTED_SETUP_FILE_BY_PRESET = Map.of(Preset.MAINNET,
       "../../src/trusted_setup.txt", Preset.MINIMAL, "../../src/trusted_setup_4.txt");
 
+  private static final Map<Preset, String> TRUSTED_SETUP_RESOURCE_BY_PRESET = Map.of(Preset.MAINNET,
+          "/test-vectors/trusted_setup.txt", Preset.MINIMAL, "/test-vectors/trusted_setup_4.txt");
+
   static {
     PRESET = Optional.ofNullable(System.getenv("PRESET")).map(String::toUpperCase)
         .map(Preset::valueOf).orElse(Preset.MAINNET);
@@ -235,7 +238,7 @@ public class CKZG4844JNITest {
   }
 
   public static void loadTrustedSetupFromResource() {
-    CKZG4844JNI.loadTrustedSetupFromResource("/test-vectors/trusted_setup.txt", CKZG4844JNITest.class);
+    CKZG4844JNI.loadTrustedSetupFromResource(TRUSTED_SETUP_RESOURCE_BY_PRESET.get(PRESET), CKZG4844JNITest.class);
   }
 
   private static Stream<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
