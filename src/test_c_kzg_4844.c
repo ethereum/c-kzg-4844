@@ -41,6 +41,13 @@ static void get_rand_field_element(Bytes32 *out) {
     bytes_from_bls_field(out, &tmp_fr);
 }
 
+static void get_rand_fr(fr_t *out) {
+    Bytes32 tmp_bytes;
+
+    get_rand_bytes32(&tmp_bytes);
+    hash_to_bls_field(out, &tmp_bytes);
+}
+
 static void get_rand_blob(Blob *out) {
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
@@ -149,6 +156,99 @@ static void test_c_kzg_calloc__fails_too_big(void) {
     ret = c_kzg_calloc(&ptr, UINT64_MAX, UINT64_MAX);
     ASSERT_EQUALS(ret, C_KZG_MALLOC);
     ASSERT_EQUALS(ptr, NULL);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for fr_div
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_fr_div__by_one_is_equal(void) {
+    fr_t a, q;
+
+    get_rand_fr(&a);
+
+    fr_div(&q, &a, &FR_ONE);
+
+    bool ok = fr_equal(&q, &a);
+    ASSERT_EQUALS(ok, true);
+}
+
+static void test_fr_div__succeeds_round_trip(void) {
+    fr_t a, b, q, r;
+
+    get_rand_fr(&a);
+    get_rand_fr(&b);
+
+    fr_div(&q, &a, &b);
+    blst_fr_mul(&r, &q, &b);
+
+
+    bool ok = fr_equal(&r, &a);
+    ASSERT_EQUALS(ok, true);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for fr_pow
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_fr_pow__test_power_of_two(void) {
+    fr_t a, r, check;
+
+    fr_from_uint64(&a, 2);
+    fr_from_uint64(&check, 0x100000000);
+
+    fr_pow(&r, &a, 32);
+
+    bool ok = fr_equal(&r, &check);
+    ASSERT_EQUALS(ok, true);
+}
+
+static void test_fr_pow__test_inverse_on_root_of_unity(void) {
+    fr_t a, r;
+
+    blst_fr_from_uint64(&a, SCALE2_ROOT_OF_UNITY[31]);
+
+    fr_pow(&r, &a, 1 << 31);
+
+    bool ok = fr_equal(&r, &FR_ONE);
+    ASSERT_EQUALS(ok, true);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for fr_batch_inv
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_fr_batch_inv__test_consistent(void) {
+    fr_t a[32], batch_inverses[32], check_inverses[32];
+
+    for(size_t i = 0; i < 32; i++) {
+        get_rand_fr(&a[i]);
+        blst_fr_eucl_inverse(&check_inverses[i], &a[i]);
+    }
+
+    fr_batch_inv(batch_inverses, a, 32);
+
+    for(size_t i = 0; i < 32; i++) {
+        bool ok = fr_equal(&check_inverses[i], &batch_inverses[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+static void test_fr_batch_inv__test_zero(void) {
+    fr_t a[32], batch_inverses[32];
+
+    for(size_t i = 0; i < 32; i++) {
+        get_rand_fr(&a[i]);
+    }
+
+    a[5] = FR_ZERO;
+
+    fr_batch_inv(batch_inverses, a, 32);
+
+    for(size_t i = 0; i < 32; i++) {
+        bool ok = fr_equal(&batch_inverses[i], &FR_ZERO);
+        ASSERT_EQUALS(ok, true);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -807,6 +907,12 @@ int main(void) {
     RUN(test_c_kzg_calloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_calloc__fails_count_equal_to_zero);
     RUN(test_c_kzg_calloc__fails_too_big);
+    RUN(test_fr_div__by_one_is_equal);
+    RUN(test_fr_div__succeeds_round_trip);
+    RUN(test_fr_pow__test_power_of_two);
+    RUN(test_fr_pow__test_inverse_on_root_of_unity);
+    RUN(test_fr_batch_inv__test_consistent);
+    RUN(test_fr_batch_inv__test_zero);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
