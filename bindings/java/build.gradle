@@ -2,6 +2,7 @@ plugins {
     id "application"
     id "java-test-fixtures"
     id "me.champeau.jmh" version "0.6.8"
+    id "com.diffplug.spotless" version "6.15.0"
 }
 
 repositories {
@@ -15,14 +16,20 @@ java {
 
 dependencies {
 
-    def junitVersion = "5.9.1"
+    def junitVersion = "5.9.2"
 
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
 
     testFixturesImplementation("org.apache.tuweni:tuweni-units:2.3.1")
-    testFixturesImplementation("com.fasterxml.jackson.core:jackson-databind:2.14.1")
+    testFixturesImplementation("com.fasterxml.jackson.core:jackson-databind:2.14.2")
 
+}
+
+spotless {
+    java {
+        googleJavaFormat()
+    }
 }
 
 test {

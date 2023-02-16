@@ -7,8 +7,8 @@ public class LoadTrustedSetupParameters {
   private final byte[] g2;
   private final long g2Count;
 
-  public LoadTrustedSetupParameters(final byte[] g1, final long g1Count, final byte[] g2,
-      final long g2Count) {
+  public LoadTrustedSetupParameters(
+      final byte[] g1, final long g1Count, final byte[] g2, final long g2Count) {
     this.g1 = g1;
     this.g1Count = g1Count;
     this.g2 = g2;

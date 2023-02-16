@@ -67,10 +67,12 @@ public class CKZG4844JNIBenchmark {
     public void setUp() {
       final byte[][] blobs = new byte[count][];
       final byte[][] commitments = new byte[count][];
-      IntStream.range(0, count).forEach(i -> {
-        blobs[i] = TestUtils.createRandomBlob();
-        commitments[i] = CKZG4844JNI.blobToKzgCommitment(blobs[i]);
-      });
+      IntStream.range(0, count)
+          .forEach(
+              i -> {
+                blobs[i] = TestUtils.createRandomBlob();
+                commitments[i] = CKZG4844JNI.blobToKzgCommitment(blobs[i]);
+              });
       this.blobs = TestUtils.flatten(blobs);
       this.commitments = TestUtils.flatten(commitments);
       proof = CKZG4844JNI.computeAggregateKzgProof(TestUtils.flatten(blobs), count);
@@ -122,8 +124,8 @@ public class CKZG4844JNIBenchmark {
 
   @Benchmark
   public boolean verifyAggregateKzgProof(final ComputeAndVerifyState state) {
-    return CKZG4844JNI.verifyAggregateKzgProof(state.blobs, state.commitments, state.count,
-        state.proof);
+    return CKZG4844JNI.verifyAggregateKzgProof(
+        state.blobs, state.commitments, state.count, state.proof);
   }
 
   @Benchmark
@@ -131,5 +133,4 @@ public class CKZG4844JNIBenchmark {
   public boolean verifyKzgProof(final VerifyKzgProofState state) {
     return CKZG4844JNI.verifyKzgProof(state.commitment, state.z, state.y, state.proof);
   }
-
 }

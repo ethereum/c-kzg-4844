@@ -19,8 +19,8 @@ public class VerifyKzgProofParameters {
   private final byte[] y;
   private final byte[] proof;
 
-  public VerifyKzgProofParameters(final byte[] commitment, final byte[] z, final byte[] y,
-      final byte[] proof) {
+  public VerifyKzgProofParameters(
+      final byte[] commitment, final byte[] z, final byte[] y, final byte[] proof) {
     this.commitment = commitment;
     this.z = z;
     this.y = y;
@@ -42,5 +42,4 @@ public class VerifyKzgProofParameters {
   public byte[] getProof() {
     return proof;
   }
-
 }
