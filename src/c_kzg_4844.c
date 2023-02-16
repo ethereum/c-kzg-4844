@@ -823,33 +823,6 @@ out:
 }
 
 /**
- * Given an array of polynomials, interpret it as a 2D matrix and compute
- * the linear combination of each column with a set of scalars: return the
- * resulting polynomial.
- *
- * @remark If `n==0` then this function should return the zero polynomial.
- *
- * @param[out] out     The result polynomial
- * @param[in]  vectors The array of polynomials to be combined
- * @param[in]  scalars The array of scalars to multiply the polynomials with
- * @param[in]  n       The number of polynomials and scalars
- */
-static void poly_lincomb(
-    Polynomial *out, const Polynomial *vectors, const fr_t *scalars, uint64_t n
-) {
-    fr_t tmp;
-    uint64_t i, j;
-    for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++)
-        out->evals[j] = FR_ZERO;
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
-            blst_fr_mul(&tmp, &scalars[i], &vectors[i].evals[j]);
-            blst_fr_add(&out->evals[j], &out->evals[j], &tmp);
-        }
-    }
-}
-
-/**
  * Compute and return [ x^0, x^1, ..., x^{n-1} ].
  *
  * @remark `out` is left untouched if `n == 0`.

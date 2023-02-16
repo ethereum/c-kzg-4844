@@ -144,19 +144,6 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
 
 void free_trusted_setup(KZGSettings *s);
 
-C_KZG_RET compute_aggregate_kzg_proof(
-    KZGProof *out, const Blob *blobs, size_t n, const KZGSettings *s
-);
-
-C_KZG_RET verify_aggregate_kzg_proof(
-    bool *out,
-    const Blob *blobs,
-    const Bytes48 *commitments_bytes,
-    size_t n,
-    const Bytes48 *aggregated_proof_bytes,
-    const KZGSettings *s
-);
-
 C_KZG_RET blob_to_kzg_commitment(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
 );
