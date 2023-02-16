@@ -164,6 +164,27 @@ C_KZG_RET compute_kzg_proof(
     const KZGSettings *s
 );
 
+C_KZG_RET compute_blob_kzg_proof(
+    KZGProof *out, const Blob *blob, const KZGSettings *s
+);
+
+C_KZG_RET verify_blob_kzg_proof(
+    bool *ok,
+    const Blob *blob,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const KZGSettings *s
+);
+
+C_KZG_RET verify_blob_kzg_proof_multi(
+    bool *ok,
+    const Blob *blobs,
+    const Bytes48 *commitments_bytes,
+    const Bytes48 *proofs_bytes,
+    size_t n,
+    const KZGSettings *s
+);
+
 #ifdef __cplusplus
 }
 #endif

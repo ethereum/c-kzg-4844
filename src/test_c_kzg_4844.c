@@ -689,6 +689,106 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for compute_blob_kzg_proof
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute the proof */
+    ret = compute_blob_kzg_proof(&proof, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof(&ok, &blob, &c, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The proof should verify! */
+    ASSERT_EQUALS(ok, 1);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for verify_kzg_proof_batch
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
+    C_KZG_RET ret;
+    bool ok;
+
+    /* Verify batched proofs for 0,1,2..,16 blobs */
+    for (int n_samples = 0; n_samples < 16; n_samples++) {
+        Bytes48 proofs[n_samples];
+        KZGCommitment commitments[n_samples];
+        Blob blobs[n_samples];
+
+        /* Some preparation */
+        for (int i = 0; i < n_samples; i++) {
+            get_rand_blob(&blobs[i]);
+
+            ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+            ASSERT_EQUALS(ret, C_KZG_OK);
+
+            /* Compute the proof */
+            ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+            ASSERT_EQUALS(ret, C_KZG_OK);
+        }
+
+        /* Finally verify the proof */
+        ret = verify_blob_kzg_proof_batch(
+            &ok, blobs, commitments, proofs, n_samples, &s
+        );
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* The proof should verify! */
+        ASSERT_EQUALS(ok, 1);
+    }
+}
+
+static void test_verify_kzg_proof_batch__fails_round_trip(void) {
+    C_KZG_RET ret;
+    bool ok;
+    const size_t n_samples = 2;
+
+    /* Verify batched proofs for 0,1,2..,16 blobs */
+    Bytes48 proofs[n_samples];
+    KZGCommitment commitments[n_samples];
+    Blob blobs[n_samples];
+
+    /* Some preparation */
+    for (size_t i = 0; i < n_samples; i++) {
+        get_rand_blob(&blobs[i]);
+
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Create a proof just for the first blob and reuse it for the second blob
+     */
+    ret = compute_blob_kzg_proof(&proofs[0], &blobs[0], &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    proofs[1] = proofs[0];
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof_batch(
+        &ok, blobs, commitments, proofs, n_samples, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The proof must not verify! */
+    ASSERT_EQUALS(ok, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -833,6 +933,9 @@ int main(void) {
     RUN(test_compute_kzg_proof__succeeds_expected_proof);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
+    RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
+    RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
+    RUN(test_verify_kzg_proof_batch__fails_round_trip);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
