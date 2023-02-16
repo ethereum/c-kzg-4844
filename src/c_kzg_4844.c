@@ -38,8 +38,9 @@
 
 // clang-format off
 
-/** The Fiat-Shamir protocol domain. */
+/** The Fiat-Shamir protocol domains. */
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
+static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
@@ -698,37 +699,24 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     return C_KZG_OK;
 }
 
-/* Forward function definition */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n);
+/* Input size to the Fiat-Shamir challenge computation */
+#define CHALLENGE_INPUT_SIZE 32 + BYTES_PER_BLOB + 48
 
 /**
- * Return the Fiat-Shamir challenges required by the rest of the protocol.
+ * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
  *
  * @remark This function should compute challenges even if `n==0`.
  *
  * @param[out] eval_challenge_out The evaluation challenge
- * @param[out] r_powers_out       The powers of r, where r is a randomly
- *                                generated scalar
- * @param[in]  polys              The array of polynomials
- * @param[in]  comms              The array of commitments
+ * @param[in]  blob               A blob
+ * @param[in]  commitment         A commitment
  * @param[in]  n                  The number of polynomials and commitments
  */
-static C_KZG_RET compute_challenges(
-    fr_t *eval_challenge_out,
-    fr_t *r_powers_out,
-    const Polynomial *polys,
-    const g1_t *comms,
-    uint64_t n
+static void compute_challenge(
+    fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
 ) {
-    C_KZG_RET ret;
-    size_t i;
-    uint64_t j;
-    uint8_t *bytes = NULL;
-
-    // len(FIAT_SHAMIR_PROTOCOL_DOMAIN) + 8 + 8 + n blobs + n commitments
-    size_t input_size = 32 + (n * BYTES_PER_BLOB) + (n * 48);
-    ret = c_kzg_malloc((void **)&bytes, input_size);
-    if (ret != C_KZG_OK) goto out;
+    Bytes32 eval_challenge;
+    uint8_t bytes[CHALLENGE_INPUT_SIZE];
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
@@ -736,52 +724,27 @@ static C_KZG_RET compute_challenges(
     /* Copy domain separator */
     memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
     offset += 16;
+    bytes_from_uint64(
+        offset, 0
+    ); /* need to fill 16 bytes with the degree in little-endian */
+    offset += 8;
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
     offset += 8;
-    bytes_from_uint64(offset, n);
-    offset += 8;
 
-    /* Copy polynomials */
-    for (i = 0; i < n; i++) {
-        for (j = 0; j < FIELD_ELEMENTS_PER_BLOB; j++) {
-            bytes_from_bls_field((Bytes32 *)offset, &polys[i].evals[j]);
-            offset += BYTES_PER_FIELD_ELEMENT;
-        }
-    }
+    /* Copy blob */
+    memcpy(offset, blob->bytes, BYTES_PER_BLOB);
+    offset += BYTES_PER_BLOB;
 
-    /* Copy commitments */
-    for (i = 0; i < n; i++) {
-        bytes_from_g1((Bytes48 *)offset, &comms[i]);
-        offset += BYTES_PER_COMMITMENT;
-    }
+    /* Copy commitment */
+    bytes_from_g1((Bytes48 *)offset, commitment);
+    offset += BYTES_PER_COMMITMENT;
 
-    /* Now let's create challenges! */
-    uint8_t hashed_data[32] = {0};
-    blst_sha256(hashed_data, bytes, input_size);
+    /* Make sure we wrote the entire buffer */
+    assert(offset == bytes + CHALLENGE_INPUT_SIZE);
 
-    /* We will use hash_input in the computation of both challenges */
-    uint8_t hash_input[33];
-
-    /* Compute r */
-    Bytes32 r_bytes;
-    memcpy(hash_input, hashed_data, 32);
-    hash_input[32] = 0x0;
-    blst_sha256(r_bytes.bytes, hash_input, 33);
-
-    /* Compute r_powers */
-    fr_t r;
-    hash_to_bls_field(&r, &r_bytes);
-    compute_powers(r_powers_out, &r, n);
-
-    /* Compute eval_challenge */
-    Bytes32 eval_challenge;
-    hash_input[32] = 0x1;
-    blst_sha256(eval_challenge.bytes, hash_input, 33);
+    /* Now let's create the challenge! */
+    blst_sha256(eval_challenge.bytes, bytes, CHALLENGE_INPUT_SIZE);
     hash_to_bls_field(eval_challenge_out, &eval_challenge);
-
-out:
-    free(bytes);
-    return ret;
 }
 
 /**
