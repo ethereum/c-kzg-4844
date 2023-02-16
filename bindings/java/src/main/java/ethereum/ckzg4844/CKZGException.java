@@ -4,9 +4,7 @@ import static ethereum.ckzg4844.CKZGException.CKZGError.fromErrorCode;
 
 import java.util.Arrays;
 
-/**
- * Thrown when there is an error in the underlying c-kzg library.
- */
+/** Thrown when there is an error in the underlying c-kzg library. */
 public class CKZGException extends RuntimeException {
 
   private final CKZGError error;
@@ -27,8 +25,10 @@ public class CKZGException extends RuntimeException {
   }
 
   public enum CKZGError {
-
-    UNKNOWN(0), C_KZG_BADARGS(1), C_KZG_ERROR(2), C_KZG_MALLOC(3);
+    UNKNOWN(0),
+    C_KZG_BADARGS(1),
+    C_KZG_ERROR(2),
+    C_KZG_MALLOC(3);
 
     public final int errorCode;
 
@@ -37,9 +37,10 @@ public class CKZGException extends RuntimeException {
     }
 
     public static CKZGError fromErrorCode(int errorCode) {
-      return Arrays.stream(CKZGError.values()).filter(error -> error.errorCode == errorCode)
-          .findFirst().orElse(UNKNOWN);
+      return Arrays.stream(CKZGError.values())
+          .filter(error -> error.errorCode == errorCode)
+          .findFirst()
+          .orElse(UNKNOWN);
     }
   }
-
 }
