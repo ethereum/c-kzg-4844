@@ -186,52 +186,80 @@ func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes 
 }
 
 /*
-ComputeAggregateKZGProof is the binding for:
+ComputeBlobKZGProof is the binding for:
 
-	C_KZG_RET compute_aggregate_kzg_proof(
-	    KZGProof *out,
-	    const Blob *blobs,
-	    size_t n,
-	    const KZGSettings *s);
+C_KZG_RET compute_blob_kzg_proof(
+    bool *ok,
+    const Blob *blob,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const KZGSettings *s
 */
-func ComputeAggregateKZGProof(blobs []Blob) (KZGProof, CKzgRet) {
+func ComputeBlobKZGProof(blob Blob) (KZGProof, CKzgRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	proof := KZGProof{}
-	ret := C.compute_aggregate_kzg_proof(
+	ret := C.compute_blob_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(&proof)),
-		*(**C.Blob)(unsafe.Pointer(&blobs)),
-		(C.size_t)(len(blobs)),
+		(*C.Blob)(unsafe.Pointer(&blob)),
 		&settings)
 	return proof, CKzgRet(ret)
 }
 
 /*
-VerifyAggregateKZGProof is the binding for:
+VerifyBlobKZGProof is the binding for:
 
-	C_KZG_RET verify_aggregate_kzg_proof(
-	    bool *out,
-	    const Blob *blobs,
-	    const Bytes48 *commitments_bytes,
-	    size_t n,
-	    const Bytes48 *aggregated_proof_bytes,
-	    const KZGSettings *s);
+C_KZG_RET verify_blob_kzg_proof(
+    bool *ok,
+    const Blob *blob,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const KZGSettings *s
 */
-func VerifyAggregateKZGProof(blobs []Blob, commitmentsBytes []Bytes48, aggregatedProofBytes Bytes48) (bool, CKzgRet) {
+func VerifyBlobKZGProof(blob Blob, commitmentBytes Bytes48, proofBytes Bytes48) (bool, CKzgRet) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	var result C.bool
+	ret := C.verify_blob_kzg_proof(
+		&result,
+		(*C.Blob)(unsafe.Pointer(&blob)),
+		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
+		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
+		&settings)
+	return bool(result), CKzgRet(ret)
+}
+
+/*
+VerifyBlobKZGProofBatch is the binding for:
+
+C_KZG_RET verify_blob_kzg_proof_batch(
+    bool *ok,
+    Blob *blobs,
+    Bytes48 *commitments_bytes,
+    Bytes48 *proofs_bytes,
+    size_t n,
+    const KZGSettings *s,
+*/
+func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes []Bytes48, proofsBytes []Bytes48) (bool, CKzgRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	if len(blobs) != len(commitmentsBytes) {
 		panic("len(blobs) != len(commitments)")
 	}
+	if len(commitmentsBytes) != len(proofsBytes) {
+		panic("len(comms) != len(proofs)")
+	}
+
 	var result C.bool
-	ret := C.verify_aggregate_kzg_proof(
+	ret := C.verify_blob_kzg_proof_batch(
 		&result,
 		*(**C.Blob)(unsafe.Pointer(&blobs)),
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
+		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),
-		(*C.Bytes48)(unsafe.Pointer(&aggregatedProofBytes)),
 		&settings)
 	return bool(result), CKzgRet(ret)
 }

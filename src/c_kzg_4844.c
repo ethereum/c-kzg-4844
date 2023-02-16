@@ -652,10 +652,8 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
 
     /* The point at infinity is accepted! */
     if (blst_p1_is_inf(out)) return C_KZG_OK;
-
     /* The point must be on the curve */
     if (!blst_p1_on_curve(out)) return C_KZG_BADARGS;
-
     /* The point must be on the right subgroup */
     if (!blst_p1_in_g1(out)) return C_KZG_BADARGS;
 

@@ -107,34 +107,6 @@ func HumanBytes(b int64) string {
 // Tests
 ///////////////////////////////////////////////////////////////////////////////
 
-func TestComputeAggregateKZGProof(t *testing.T) {
-	type Test struct {
-		TestCases []struct {
-			Polynomials []Blob    `json:"Polynomials"`
-			Proof       Bytes48   `json:"Proof"`
-			Commitments []Bytes48 `json:"Commitments"`
-		}
-	}
-
-	testFile, err := os.Open("../rust/test_vectors/public_agg_proof.json")
-	require.NoError(t, err)
-	defer testFile.Close()
-	test := Test{}
-	err = json.NewDecoder(testFile).Decode(&test)
-	require.NoError(t, err)
-
-	for _, tc := range test.TestCases {
-		proof, ret := ComputeAggregateKZGProof(tc.Polynomials)
-		require.Zero(t, ret)
-		require.Equal(t, tc.Proof[:], proof[:])
-		for i := range tc.Polynomials {
-			commitment, ret := BlobToKZGCommitment(tc.Polynomials[i])
-			require.Equal(t, C_KZG_OK, ret)
-			require.Equal(t, tc.Commitments[i][:], commitment[:])
-		}
-	}
-}
-
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		TestCases []struct {
@@ -167,16 +139,17 @@ func TestVerifyKZGProof(t *testing.T) {
 func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := [length]Blob{}
+	proofs := [length]Bytes48{}
 	commitments := [length]Bytes48{}
+	z := Bytes32{1, 2, 3}
+	y := Bytes32{4, 5, 6}
 	for i := 0; i < length; i++ {
 		blobs[i] = GetRandBlob(int64(i))
 		commitment, _ := BlobToKZGCommitment(blobs[i])
 		commitments[i] = Bytes48(commitment)
+		trustedProof, _ := ComputeBlobKZGProof(blobs[i])
+		proofs[i] = Bytes48(trustedProof)
 	}
-	z := Bytes32{1, 2, 3}
-	y := Bytes32{4, 5, 6}
-	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
-	proof := Bytes48(trustedProof)
 
 	///////////////////////////////////////////////////////////////////////////
 	// Public functions
@@ -198,24 +171,29 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := VerifyKZGProof(commitments[0], z, y, proof)
+			_, ret := VerifyKZGProof(commitments[0], z, y, proofs[0])
+			require.Equal(b, C_KZG_OK, ret)
+		}
+	})
+
+	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, ret := ComputeBlobKZGProof(blobs[0])
+			require.Equal(b, C_KZG_OK, ret)
+		}
+	})
+
+	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, ret := VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
 			require.Equal(b, C_KZG_OK, ret)
 		}
 	})
 
 	for i := 1; i <= len(blobs); i *= 2 {
-		b.Run(fmt.Sprintf("ComputeAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
+		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(blobs=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, ret := ComputeAggregateKZGProof(blobs[:i])
-				require.Equal(b, C_KZG_OK, ret)
-			}
-		})
-	}
-
-	for i := 1; i <= len(blobs); i *= 2 {
-		b.Run(fmt.Sprintf("VerifyAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
-			for n := 0; n < b.N; n++ {
-				_, ret := VerifyAggregateKZGProof(blobs[:i], commitments[:i], proof)
+				_, ret := VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
 				require.Equal(b, C_KZG_OK, ret)
 			}
 		})
