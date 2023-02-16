@@ -65,7 +65,7 @@ build:
 
 .PHONY: test
 test:
-	${GRADLE_COMMAND} clean spotlessCheck test
+	${GRADLE_COMMAND} clean check
 
 .PHONY: benchmark
 benchmark:
