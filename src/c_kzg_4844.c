@@ -775,9 +775,18 @@ static C_KZG_RET g1_lincomb(
     void *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
+    bool point_is_inf = false;
+
+    /* blst cannot handle batch affine with zero inputs so if an input point is
+     * zero we go through the slow path */
+    for (size_t i = 0; i < len; i++) {
+        if (blst_p1_is_inf(&p[i])) {
+            point_is_inf = true;
+        }
+    }
 
     // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
-    if (len < 8) {
+    if (point_is_inf || len < 8) {
         // Direct approach
         g1_t tmp;
         *out = G1_IDENTITY;
