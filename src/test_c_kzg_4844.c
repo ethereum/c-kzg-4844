@@ -300,18 +300,16 @@ static void test_g1_mul__test_consistent(void) {
     blst_scalar s;
     Bytes32 b;
     fr_t f;
+    g1_t g, r, check;
 
     get_rand_field_element(&b);
     blst_scalar_from_lendian(&s, b.bytes);
     blst_fr_from_scalar(&f, &s);
 
-    g1_t g, r, check;
-
     get_rand_g1(&g);
 
     blst_p1_mult(&check, &g, (const byte *)&b, 256);
     g1_mul(&r, &g, &f);
-
 
     ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 }
@@ -326,6 +324,28 @@ static void test_g1_mul__test_scalar_is_zero(void) {
     g1_mul(&r, &g, &f);
 
     ASSERT("result is neutral element", blst_p1_is_inf(&r));
+}
+
+static void test_g1_mul__test_different_bit_lengths(void) {
+    Bytes32 b;
+    fr_t f, two;
+    g1_t g, r, check;
+
+    fr_from_uint64(&f, 1);
+    fr_from_uint64(&two, 2);
+    bytes_from_bls_field(&b, &f);
+
+    for(int i = 1; i < 255; i++) {
+        get_rand_g1(&g);
+
+        blst_p1_mult(&check, &g, (const byte *)&b, 256);
+        g1_mul(&r, &g, &f);
+        
+        ASSERT("points are equal", blst_p1_is_equal(&check, &r));
+
+        blst_fr_mul(&f, &f, &two);
+        bytes_from_bls_field(&b, &f);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -994,6 +1014,7 @@ int main(void) {
     RUN(test_fr_batch_inv__test_zero);
     RUN(test_g1_mul__test_consistent);
     RUN(test_g1_mul__test_scalar_is_zero);
+    RUN(test_g1_mul__test_different_bit_lengths);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
