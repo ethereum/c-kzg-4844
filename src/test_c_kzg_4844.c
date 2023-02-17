@@ -48,6 +48,15 @@ static void get_rand_fr(fr_t *out) {
     hash_to_bls_field(out, &tmp_bytes);
 }
 
+/*static void get_rand_scalar(blst_scalar *out) {
+    Bytes32 tmp_bytes;
+    fr_t tmp_fr;
+
+    get_rand_bytes32(&tmp_bytes);
+    hash_to_bls_field(&tmp_fr, &tmp_bytes);
+    blst_scalar_from_fr(out, &tmp_fr);
+}*/
+
 static void get_rand_blob(Blob *out) {
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
@@ -65,6 +74,14 @@ static void get_rand_g1_bytes(Bytes48 *out) {
     get_rand_blob(&blob);
     ret = blob_to_kzg_commitment(out, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void get_rand_g1(g1_t *out) {
+    Bytes32 tmp_bytes;
+
+    get_rand_bytes32(&tmp_bytes);
+
+    blst_hash_to_g1(out, tmp_bytes.bytes, 32, NULL, 0, NULL, 0);
 }
 
 static void bytes32_from_hex(Bytes32 *out, const char *hex) {
@@ -173,6 +190,30 @@ static void test_fr_div__by_one_is_equal(void) {
     ASSERT_EQUALS(ok, true);
 }
 
+static void test_fr_div__by_itself_is_one(void) {
+    fr_t a, q;
+
+    get_rand_fr(&a);
+
+    fr_div(&q, &a, &a);
+
+    bool ok = fr_equal(&q, &FR_ONE);
+    ASSERT_EQUALS(ok, true);
+}
+
+static void test_fr_div__specific_value(void) {
+    fr_t a, b, q, check;
+
+    fr_from_uint64(&a, 2345);
+    fr_from_uint64(&b, 54321);
+    blst_fr_from_hexascii(&check, (const byte*)("0x264d23155705ca938a1f22117681ea9759f348cb177a07ffe0813de67e85c684"));
+
+    fr_div(&q, &a, &b);
+
+    bool ok = fr_equal(&q, &check);
+    ASSERT_EQUALS(ok, true);
+}
+
 static void test_fr_div__succeeds_round_trip(void) {
     fr_t a, b, q, r;
 
@@ -249,6 +290,42 @@ static void test_fr_batch_inv__test_zero(void) {
         bool ok = fr_equal(&batch_inverses[i], &FR_ZERO);
         ASSERT_EQUALS(ok, true);
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for g1_mul
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_g1_mul__test_consistent(void) {
+    blst_scalar s;
+    Bytes32 b;
+    fr_t f;
+
+    get_rand_field_element(&b);
+    blst_scalar_from_lendian(&s, b.bytes);
+    blst_fr_from_scalar(&f, &s);
+
+    g1_t g, r, check;
+
+    get_rand_g1(&g);
+
+    blst_p1_mult(&check, &g, (const byte *)&b, 256);
+    g1_mul(&r, &g, &f);
+
+
+    ASSERT("points are equal", blst_p1_is_equal(&check, &r));
+}
+
+static void test_g1_mul__test_scalar_is_zero(void) {
+    fr_t f;
+    g1_t g, r;
+
+    fr_from_uint64(&f, 0);
+    get_rand_g1(&g);
+
+    g1_mul(&r, &g, &f);
+
+    ASSERT("result is neutral element", blst_p1_is_inf(&r));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -908,11 +985,15 @@ int main(void) {
     RUN(test_c_kzg_calloc__fails_count_equal_to_zero);
     RUN(test_c_kzg_calloc__fails_too_big);
     RUN(test_fr_div__by_one_is_equal);
+    RUN(test_fr_div__by_itself_is_one);
+    RUN(test_fr_div__specific_value);
     RUN(test_fr_div__succeeds_round_trip);
     RUN(test_fr_pow__test_power_of_two);
     RUN(test_fr_pow__test_inverse_on_root_of_unity);
     RUN(test_fr_batch_inv__test_consistent);
     RUN(test_fr_batch_inv__test_zero);
+    RUN(test_g1_mul__test_consistent);
+    RUN(test_g1_mul__test_scalar_is_zero);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
