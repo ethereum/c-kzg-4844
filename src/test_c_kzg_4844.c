@@ -754,6 +754,47 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     }
 }
 
+/** verify_kzg_proof_batch() should work properly even if one of the inputs is
+ * the zero blob/commitment/proof.  This is an edge-case because a naive
+ * g1_lincomb() does not handle zero inputs well */
+static void test_verify_kzg_proof_batch__fails_zero_proof(void) {
+    C_KZG_RET ret;
+    bool ok;
+
+    Bytes48 proofs[15];
+    KZGCommitment commitments[15];
+    Blob blobs[15];
+
+    /* Wipe out the first blob/commitment/proof */
+    memset(blobs[0].bytes, 0, BYTES_PER_BLOB);
+    Bytes48 zero_proof;
+    bytes_from_g1(&zero_proof, &G1_IDENTITY);
+    proofs[0] = zero_proof;
+    commitments[0] = zero_proof;
+
+    /* Initialize all the rest to some reasonable non-zero values */
+    for (int i = 1; i < 15; i++) {
+        get_rand_blob(&blobs[i]);
+
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* Compute the proof */
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Mix up two commitments: verification should fail */
+    commitments[4] = commitments[6];
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, 15, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The proof must not verify! */
+    ASSERT_EQUALS(ok, 0);
+}
+
 static void test_verify_kzg_proof_batch__fails_round_trip(void) {
     C_KZG_RET ret;
     bool ok;
@@ -936,6 +977,7 @@ int main(void) {
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_round_trip);
+    RUN(test_verify_kzg_proof_batch__fails_zero_proof);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
