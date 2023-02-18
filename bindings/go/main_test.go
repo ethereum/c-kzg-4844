@@ -2,11 +2,12 @@ package cgokzg4844
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -104,59 +105,191 @@ func HumanBytes(b int64) string {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Test Helper Functions
+///////////////////////////////////////////////////////////////////////////////
+
+var (
+	testDir                      = "../../tests/"
+	blobToKZGCommitmentTests     = testDir + "blob_to_kzg_commitment/*"
+	computeKZGProofTests         = testDir + "compute_kzg_proof/*"
+	computeBlobKZGProofTests     = testDir + "compute_blob_kzg_proof/*"
+	verifyKZGProofTests          = testDir + "verify_kzg_proof/*"
+	verifyBlobKZGProofTests      = testDir + "verify_blob_kzg_proof/*"
+	verifyBlobKZGProofBatchTests = testDir + "verify_blob_kzg_proof_batch/*"
+)
+
+func getBlob(path string) Blob {
+	inputBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	var blob Blob
+	err = blob.UnmarshalText(inputBytes)
+	if err != nil {
+		panic(err)
+	}
+	return blob
+}
+
+func getBytes32(path string) Bytes32 {
+	inputBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	var bytes32 Bytes32
+	err = bytes32.UnmarshalText(inputBytes)
+	if err != nil {
+		panic(err)
+	}
+	return bytes32
+}
+
+func getBytes48(path string) Bytes48 {
+	inputBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	var bytes48 Bytes48
+	err = bytes48.UnmarshalText(inputBytes)
+	if err != nil {
+		panic(err)
+	}
+	return bytes48
+}
+
+func getBoolean(path string) bool {
+	inputBytes, err := os.ReadFile(path)
+	if err != nil {
+		panic(err)
+	}
+	return strings.Contains(string(inputBytes), "true")
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests
 ///////////////////////////////////////////////////////////////////////////////
 
-func TestComputeAggregateKZGProof(t *testing.T) {
-	type Test struct {
-		TestCases []struct {
-			Polynomials []Blob    `json:"Polynomials"`
-			Proof       Bytes48   `json:"Proof"`
-			Commitments []Bytes48 `json:"Commitments"`
+func TestBlobToKZGCommitment(t *testing.T) {
+	tests, err := filepath.Glob(blobToKZGCommitmentTests)
+	require.NoError(t, err)
+	for _, test := range tests {
+		blob := getBlob(filepath.Join(test, "blob.txt"))
+		commitment, ret := BlobToKZGCommitment(blob)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedCommitment := KZGCommitment(getBytes48(filepath.Join(test, "commitment.txt")))
+			require.Equal(t, commitment, expectedCommitment, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "commitment.txt"))
 		}
 	}
+}
 
-	testFile, err := os.Open("../rust/test_vectors/public_agg_proof.json")
+func TestComputeKZGProof(t *testing.T) {
+	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
-	defer testFile.Close()
-	test := Test{}
-	err = json.NewDecoder(testFile).Decode(&test)
-	require.NoError(t, err)
+	for _, test := range tests {
+		blob := getBlob(filepath.Join(test, "blob.txt"))
+		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
+		proof, ret := ComputeKZGProof(blob, inputPoint)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
+			require.Equal(t, proof, expectedProof, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
+		}
+	}
+}
 
-	for _, tc := range test.TestCases {
-		proof, ret := ComputeAggregateKZGProof(tc.Polynomials)
-		require.Zero(t, ret)
-		require.Equal(t, tc.Proof[:], proof[:])
-		for i := range tc.Polynomials {
-			commitment, ret := BlobToKZGCommitment(tc.Polynomials[i])
-			require.Equal(t, C_KZG_OK, ret)
-			require.Equal(t, tc.Commitments[i][:], commitment[:])
+func TestComputeBlobKZGProof(t *testing.T) {
+	tests, err := filepath.Glob(computeBlobKZGProofTests)
+	require.NoError(t, err)
+	for _, test := range tests {
+		blob := getBlob(filepath.Join(test, "blob.txt"))
+		proof, ret := ComputeBlobKZGProof(blob)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
+			require.Equal(t, proof, expectedProof, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
 		}
 	}
 }
 
 func TestVerifyKZGProof(t *testing.T) {
-	type Test struct {
-		TestCases []struct {
-			Polynomial   Blob    `json:"Polynomial"`
-			Proof        Bytes48 `json:"Proof"`
-			Commitment   Bytes48 `json:"Commitment"`
-			InputPoint   Bytes32 `json:"InputPoint"`
-			ClaimedValue Bytes32 `json:"ClaimedValue"`
+	tests, err := filepath.Glob(verifyKZGProofTests)
+	require.NoError(t, err)
+	for _, test := range tests {
+		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
+		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
+		claimedValue := getBytes32(filepath.Join(test, "claimed_value.txt"))
+		proof := getBytes48(filepath.Join(test, "proof.txt"))
+
+		ok, ret := VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
+			require.Equal(t, ok, expectedOk, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
 		}
 	}
+}
 
-	testFile, err := os.Open("../rust/test_vectors/public_verify_kzg_proof.json")
+func TestVerifyBlobKZGProof(t *testing.T) {
+	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
-	defer testFile.Close()
-	test := Test{}
-	err = json.NewDecoder(testFile).Decode(&test)
-	require.NoError(t, err)
+	for _, test := range tests {
+		blob := getBlob(filepath.Join(test, "blob.txt"))
+		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
+		proof := getBytes48(filepath.Join(test, "proof.txt"))
 
-	for _, tc := range test.TestCases {
-		result, ret := VerifyKZGProof(tc.Commitment, tc.InputPoint, tc.ClaimedValue, tc.Proof)
-		require.Equal(t, C_KZG_OK, ret)
-		require.True(t, result)
+		ok, ret := VerifyBlobKZGProof(blob, commitment, proof)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
+			require.Equal(t, ok, expectedOk, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+		}
+	}
+}
+
+func TestVerifyBlobKZGProofBatch(t *testing.T) {
+	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
+	require.NoError(t, err)
+	for _, test := range tests {
+		blobFiles, err := filepath.Glob(filepath.Join(test, "blobs/*"))
+		require.NoError(t, err)
+		blobs := make([]Blob, len(blobFiles))
+		for i, blobFile := range blobFiles {
+			blobs[i] = getBlob(blobFile)
+		}
+		commitmentFiles, err := filepath.Glob(filepath.Join(test, "commitments/*"))
+		require.NoError(t, err)
+		commitments := make([]Bytes48, len(commitmentFiles))
+		for i, commitmentFile := range commitmentFiles {
+			commitments[i] = getBytes48(commitmentFile)
+		}
+		proofFiles, err := filepath.Glob(filepath.Join(test, "proofs/*"))
+		require.NoError(t, err)
+		proofs := make([]Bytes48, len(proofFiles))
+		for i, proofFile := range proofFiles {
+			proofs[i] = getBytes48(proofFile)
+		}
+
+		require.Len(t, commitments, len(blobs))
+		require.Len(t, proofs, len(blobs))
+		ok, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+		require.Equal(t, ret, C_KZG_OK, test)
+		if ret == C_KZG_OK {
+			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
+			require.Equal(t, ok, expectedOk, test)
+		} else {
+			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+		}
 	}
 }
 
@@ -168,15 +301,20 @@ func Benchmark(b *testing.B) {
 	const length = 64
 	blobs := [length]Blob{}
 	commitments := [length]Bytes48{}
+	proofs := [length]Bytes48{}
+	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
-		blobs[i] = GetRandBlob(int64(i))
-		commitment, _ := BlobToKZGCommitment(blobs[i])
+		blob := GetRandBlob(int64(i))
+		commitment, ret := BlobToKZGCommitment(blob)
+		require.Equal(b, ret, C_KZG_OK)
+		proof, ret := ComputeBlobKZGProof(blob)
+		require.Equal(b, ret, C_KZG_OK)
+
+		blobs[i] = blob
 		commitments[i] = Bytes48(commitment)
+		proofs[i] = Bytes48(proof)
+		fields[i] = GetRandFieldElement(int64(i))
 	}
-	z := Bytes32{1, 2, 3}
-	y := Bytes32{4, 5, 6}
-	trustedProof, _ := ComputeAggregateKZGProof(blobs[:1])
-	proof := Bytes48(trustedProof)
 
 	///////////////////////////////////////////////////////////////////////////
 	// Public functions
@@ -184,39 +322,38 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := BlobToKZGCommitment(blobs[0])
-			require.Equal(b, C_KZG_OK, ret)
+			BlobToKZGCommitment(blobs[0])
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := ComputeKZGProof(blobs[0], z)
-			require.Equal(b, C_KZG_OK, ret)
+			ComputeKZGProof(blobs[0], fields[0])
+		}
+	})
+
+	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			ComputeBlobKZGProof(blobs[0])
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, ret := VerifyKZGProof(commitments[0], z, y, proof)
-			require.Equal(b, C_KZG_OK, ret)
+			VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
+		}
+	})
+
+	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
 		}
 	})
 
 	for i := 1; i <= len(blobs); i *= 2 {
-		b.Run(fmt.Sprintf("ComputeAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
+		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, ret := ComputeAggregateKZGProof(blobs[:i])
-				require.Equal(b, C_KZG_OK, ret)
-			}
-		})
-	}
-
-	for i := 1; i <= len(blobs); i *= 2 {
-		b.Run(fmt.Sprintf("VerifyAggregateKZGProof(blobs=%v)", i), func(b *testing.B) {
-			for n := 0; n < b.N; n++ {
-				_, ret := VerifyAggregateKZGProof(blobs[:i], commitments[:i], proof)
-				require.Equal(b, C_KZG_OK, ret)
+				VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
 			}
 		})
 	}
@@ -226,8 +363,8 @@ func Benchmark(b *testing.B) {
 	///////////////////////////////////////////////////////////////////////////
 
 	for i := 2; i <= 20; i += 2 {
-		var numBytes = int64(1 << i)
-		var bytes = make([]byte, numBytes)
+		numBytes := int64(1 << i)
+		bytes := make([]byte, numBytes)
 		b.Run(fmt.Sprintf("sha256(size=%v)", HumanBytes(numBytes)), func(b *testing.B) {
 			b.SetBytes(numBytes)
 			for n := 0; n < b.N; n++ {
