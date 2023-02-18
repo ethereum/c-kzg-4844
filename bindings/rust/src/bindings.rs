@@ -212,6 +212,12 @@ extern "C" {
 
     pub fn free_trusted_setup(s: *mut KZGSettings);
 
+    pub fn blob_to_kzg_commitment(
+        out: *mut KZGCommitment,
+        blob: *const Blob,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+
     pub fn compute_kzg_proof(
         out: *mut KZGProof,
         blob: *const Blob,
@@ -219,24 +225,8 @@ extern "C" {
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 
-    pub fn compute_aggregate_kzg_proof(
+    pub fn compute_blob_kzg_proof(
         out: *mut KZGProof,
-        blobs: *const Blob,
-        n: usize,
-        s: *const KZGSettings,
-    ) -> C_KZG_RET;
-
-    pub fn verify_aggregate_kzg_proof(
-        out: *mut bool,
-        blobs: *const Blob,
-        commitments_bytes: *const Bytes48,
-        n: usize,
-        aggregated_proof_bytes: *const Bytes48,
-        s: *const KZGSettings,
-    ) -> C_KZG_RET;
-
-    pub fn blob_to_kzg_commitment(
-        out: *mut KZGCommitment,
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
@@ -247,6 +237,23 @@ extern "C" {
         z_bytes: *const Bytes32,
         y_bytes: *const Bytes32,
         proof_bytes: *const Bytes48,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+
+    pub fn verify_blob_kzg_proof(
+        out: *mut bool,
+        blob: *const Blob,
+        commitment_bytes: *const Bytes48,
+        proof_bytes: *const Bytes48,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+
+    pub fn verify_blob_kzg_proof_batch(
+        out: *mut bool,
+        blobs: *const Blob,
+        commitments_bytes: *const Bytes48,
+        proofs_bytes: *const Bytes48,
+        count: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 }
