@@ -33,23 +33,27 @@ type KZG = {
     setupHandle: SetupHandle,
   ) => KZGProof;
 
-  computeAggregateKzgProof: (
-    blobs: Blob[],
-    setupHandle: SetupHandle,
-  ) => KZGProof;
-
-  verifyAggregateKzgProof: (
-    blobs: Blob[],
-    commitmentsBytes: Bytes48[],
-    aggregatedProofBytes: Bytes48,
-    setupHandle: SetupHandle,
-  ) => boolean;
+  computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
 
   verifyKzgProof: (
     commitmentBytes: Bytes48,
     zBytes: Bytes32,
     yBytes: Bytes32,
     proofBytes: Bytes48,
+    setupHandle: SetupHandle,
+  ) => boolean;
+
+  verifyBlobKzgProof: (
+    blob: Blob,
+    commitmentBytes: Bytes48,
+    proofBytes: Bytes48,
+    setupHandle: SetupHandle,
+  ) => boolean;
+
+  verifyBlobKzgProofBatch: (
+    blobs: Blob[],
+    commitmentsBytes: Bytes48[],
+    proofsBytes: Bytes48[],
     setupHandle: SetupHandle,
   ) => boolean;
 };
@@ -113,6 +117,12 @@ function checkProof(proof: KZGProof) {
   }
 }
 
+function checkProofs(proofs: KZGProof[]) {
+  for (let proof of proofs) {
+    checkProof(proof);
+  }
+}
+
 function checkFieldElement(field: Bytes32) {
   if (field.length != BYTES_PER_FIELD_ELEMENT) {
     throw new Error(
@@ -173,9 +183,9 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
-export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
-  checkBlobs(blobs);
-  return kzg.computeAggregateKzgProof(blobs, requireSetupHandle());
+export function computeBlobKzgProof(blob: Blob): KZGProof {
+  checkBlob(blob);
+  return kzg.computeBlobKzgProof(blob, requireSetupHandle());
 }
 
 export function verifyKzgProof(
@@ -197,18 +207,34 @@ export function verifyKzgProof(
   );
 }
 
-export function verifyAggregateKzgProof(
+export function verifyBlobKzgProof(
+  blob: Blob,
+  commitmentBytes: Bytes48,
+  proofBytes: Bytes48,
+): boolean {
+  checkBlob(blob);
+  checkCommitment(commitmentBytes);
+  checkProof(proofBytes);
+  return kzg.verifyBlobKzgProof(
+    blob,
+    commitmentBytes,
+    proofBytes,
+    requireSetupHandle(),
+  );
+}
+
+export function verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
-  proofBytes: Bytes48,
+  proofsBytes: Bytes48[],
 ): boolean {
   checkBlobs(blobs);
   checkCommitments(commitmentsBytes);
-  checkProof(proofBytes);
-  return kzg.verifyAggregateKzgProof(
+  checkProofs(proofsBytes);
+  return kzg.verifyBlobKzgProofBatch(
     blobs,
     commitmentsBytes,
-    proofBytes,
+    proofsBytes,
     requireSetupHandle(),
   );
 }
