@@ -125,115 +125,6 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEn
   reset_trusted_setup();
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray z_bytes)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return NULL;
-  }
-
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
-  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
-
-  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
-  KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
-
-  C_KZG_RET ret = compute_kzg_proof(proof_native, blob_native, z_native, settings);
-
-  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error while computing kzg proof.");
-    return NULL;
-  }
-
-  return proof;
-}
-
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jlong count)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return NULL;
-  }
-
-  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  size_t expected_blobs_size = BYTES_PER_BLOB * (size_t)count;
-  if (blobs_size != expected_blobs_size)
-  {
-    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
-    return NULL;
-  }
-
-  size_t count_native = (size_t)count;
-  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
-  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
-  KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
-
-  C_KZG_RET ret = compute_aggregate_kzg_proof(proof_native, (const Blob *)blobs_native, count_native, settings);
-
-  (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error while computing aggregate kzg proof.");
-    return NULL;
-  }
-
-  return proof;
-}
-
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes, jlong count, jbyteArray proof_bytes)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return 0;
-  }
-
-  size_t count_native = (size_t)count;
-
-  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  size_t expected_blobs_size = BYTES_PER_BLOB * count_native;
-  if (blobs_size != expected_blobs_size)
-  {
-    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, expected_blobs_size);
-    return 0;
-  }
-
-  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments_bytes);
-  size_t expected_commitments_size = BYTES_PER_COMMITMENT * count_native;
-  if (commitments_size != expected_commitments_size)
-  {
-    throw_invalid_size_exception(env, "Invalid commitments size.", commitments_size, expected_commitments_size);
-    return 0;
-  }
-
-  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
-  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
-  jbyte *blobs_native = (*env)->GetByteArrayElements(env, blobs, NULL);
-
-  bool out;
-  C_KZG_RET ret = verify_aggregate_kzg_proof(&out, (const Blob *)blobs_native, commitments_native, count_native, proof_native, settings);
-
-  (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, blobs, blobs_native, JNI_ABORT);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error while verifying aggregate kzg proof.");
-    return 0;
-  }
-
-  return (jboolean)out;
-}
-
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
   if (settings == NULL)
@@ -260,11 +151,73 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error while converting blob to commitment.");
+    throw_c_kzg_exception(env, ret, "There was an error in blobToKzgCommitment.");
     return NULL;
   }
 
   return commitment;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray z_bytes)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
+
+  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
+  KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
+
+  C_KZG_RET ret = compute_kzg_proof(proof_native, blob_native, z_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in computeKzgProof.");
+    return NULL;
+  }
+
+  return proof;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return NULL;
+  }
+
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
+  KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
+
+  C_KZG_RET ret = compute_blob_kzg_proof(proof_native, blob_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in computeBlobKzgProof.");
+    return NULL;
+  }
+
+  return proof;
 }
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jbyteArray z_bytes, jbyteArray y_bytes, jbyteArray proof_bytes)
@@ -290,7 +243,106 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error while verifying kzg proof.");
+    throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+    return 0;
+  }
+
+  return (jboolean)out;
+}
+
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes, jbyteArray proof_bytes)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return 0;
+  }
+
+  size_t commitment_bytes_size = (size_t)(*env)->GetArrayLength(env, commitment_bytes);
+  if (commitment_bytes_size != BYTES_PER_COMMITMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid commitment size.", commitment_bytes_size, BYTES_PER_COMMITMENT);
+    return 0;
+  }
+
+  size_t proof_bytes_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
+  if (proof_bytes_size != BYTES_PER_COMMITMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid proof size.", proof_bytes_size, BYTES_PER_PROOF);
+    return 0;
+  }
+
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
+
+  bool out;
+  C_KZG_RET ret = verify_blob_kzg_proof(&out, blob_native, commitment_native, proof_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProof.");
+    return 0;
+  }
+
+  return (jboolean)out;
+}
+
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes, jbyteArray proofs_bytes, jlong count)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  size_t count_native = (size_t)count;
+  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
+  if (blobs_size != count_native * BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, count_native * BYTES_PER_BLOB);
+    return 0;
+  }
+
+  size_t commitments_bytes_size = (size_t)(*env)->GetArrayLength(env, commitments_bytes);
+  if (commitments_bytes_size != count_native * BYTES_PER_COMMITMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid commitments size.", commitments_bytes_size, count_native * BYTES_PER_COMMITMENT);
+    return 0;
+  }
+
+  size_t proofs_bytes_size = (size_t)(*env)->GetArrayLength(env, proofs_bytes);
+  if (proofs_bytes_size != count_native * BYTES_PER_PROOF)
+  {
+    throw_invalid_size_exception(env, "Invalid proofs size.", proofs_bytes_size, count_native * BYTES_PER_PROOF);
+    return 0;
+  }
+
+  Blob *blobs_native = (Blob *)(*env)->GetByteArrayElements(env, blobs, NULL);
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
+  Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
+
+  bool out;
+  C_KZG_RET ret = verify_blob_kzg_proof_batch(&out, blobs_native, commitments_native, proofs_native, count_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, blobs, (jbyte *)blobs_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProofBatch.");
     return 0;
   }
 
