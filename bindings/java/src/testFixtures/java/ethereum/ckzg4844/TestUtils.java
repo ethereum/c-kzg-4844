@@ -152,23 +152,7 @@ public class TestUtils {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
   }
 
-  public static byte[] getBlob(Path path) {
-    try {
-      return Bytes.fromHexString(Files.readString(path)).toArray();
-    } catch (final IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-  }
-
-  public static byte[] getBytes32(Path path) {
-    try {
-      return Bytes.fromHexString(Files.readString(path)).toArray();
-    } catch (final IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-  }
-
-  public static byte[] getBytes48(Path path) {
+  public static byte[] getBytes(Path path) {
     try {
       return Bytes.fromHexString(Files.readString(path)).toArray();
     } catch (final IOException ex) {

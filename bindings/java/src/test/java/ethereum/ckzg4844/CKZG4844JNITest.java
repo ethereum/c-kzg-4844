@@ -65,10 +65,10 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     for (String test : TestUtils.getFiles(BLOB_TO_KZG_COMMITMENT_TESTS)) {
-      byte[] blob = TestUtils.getBlob(Paths.get(test, "blob.txt"));
+      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
       try {
         byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-        byte[] expectedCommitment = TestUtils.getBytes48(Paths.get(test, "commitment.txt"));
+        byte[] expectedCommitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
         assertArrayEquals(commitment, expectedCommitment);
       } catch (CKZGException ex) {
         assertFalse(Files.exists(Paths.get(test, "commitment.txt")));
@@ -84,11 +84,11 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     for (String test : TestUtils.getFiles(COMPUTE_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBlob(Paths.get(test, "blob.txt"));
-      byte[] inputPoint = TestUtils.getBytes32(Paths.get(test, "input_point.txt"));
+      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
+      byte[] inputPoint = TestUtils.getBytes(Paths.get(test, "input_point.txt"));
       try {
         byte[] proof = CKZG4844JNI.computeKzgProof(blob, inputPoint);
-        byte[] expectedProof = TestUtils.getBytes48(Paths.get(test, "proof.txt"));
+        byte[] expectedProof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
         assertArrayEquals(proof, expectedProof);
       } catch (CKZGException ex) {
         assertFalse(Files.exists(Paths.get(test, "proof.txt")));
@@ -104,10 +104,10 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     for (String test : TestUtils.getFiles(COMPUTE_BLOB_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBlob(Paths.get(test, "blob.txt"));
+      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
       try {
         byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob);
-        byte[] expectedProof = TestUtils.getBytes48(Paths.get(test, "proof.txt"));
+        byte[] expectedProof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
         assertArrayEquals(proof, expectedProof);
       } catch (CKZGException ex) {
         assertFalse(Files.exists(Paths.get(test, "proof.txt")));
@@ -123,10 +123,10 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     for (String test : TestUtils.getFiles(VERIFY_KZG_PROOF_TESTS)) {
-      byte[] commitment = TestUtils.getBytes48(Paths.get(test, "commitment.txt"));
-      byte[] inputPoint = TestUtils.getBytes32(Paths.get(test, "input_point.txt"));
-      byte[] claimedValue = TestUtils.getBytes32(Paths.get(test, "claimed_value.txt"));
-      byte[] proof = TestUtils.getBytes48(Paths.get(test, "proof.txt"));
+      byte[] commitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
+      byte[] inputPoint = TestUtils.getBytes(Paths.get(test, "input_point.txt"));
+      byte[] claimedValue = TestUtils.getBytes(Paths.get(test, "claimed_value.txt"));
+      byte[] proof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
       try {
         boolean ok = CKZG4844JNI.verifyKzgProof(commitment, inputPoint, claimedValue, proof);
         boolean expectedOk = TestUtils.getBoolean(Paths.get(test, "ok.txt"));
@@ -145,9 +145,9 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     for (String test : TestUtils.getFiles(VERIFY_BLOB_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBlob(Paths.get(test, "blob.txt"));
-      byte[] commitment = TestUtils.getBytes48(Paths.get(test, "commitment.txt"));
-      byte[] proof = TestUtils.getBytes48(Paths.get(test, "proof.txt"));
+      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
+      byte[] commitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
+      byte[] proof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
       try {
         boolean ok = CKZG4844JNI.verifyBlobKzgProof(blob, commitment, proof);
         boolean expectedOk = TestUtils.getBoolean(Paths.get(test, "ok.txt"));
@@ -170,19 +170,19 @@ public class CKZG4844JNITest {
           TestUtils.flatten(
               TestUtils.getFiles(Paths.get(test, "blobs").toString()).stream()
                   .map(Paths::get)
-                  .map(TestUtils::getBlob)
+                  .map(TestUtils::getBytes)
                   .toArray(byte[][]::new));
       byte[] commitments =
           TestUtils.flatten(
               TestUtils.getFiles(Paths.get(test, "commitments").toString()).stream()
                   .map(Paths::get)
-                  .map(TestUtils::getBlob)
+                  .map(TestUtils::getBytes)
                   .toArray(byte[][]::new));
       byte[] proofs =
           TestUtils.flatten(
               TestUtils.getFiles(Paths.get(test, "proofs").toString()).stream()
                   .map(Paths::get)
-                  .map(TestUtils::getBlob)
+                  .map(TestUtils::getBytes)
                   .toArray(byte[][]::new));
 
       try {
