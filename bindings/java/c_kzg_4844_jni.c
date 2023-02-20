@@ -47,11 +47,13 @@ KZGSettings *allocate_settings(JNIEnv *env) {
   if (s == NULL)
   {
     throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
-    return NULL;
   }
-  s->fs = NULL;
-  s->g1_values = NULL;
-  s->g2_values = NULL;
+  else
+  {
+    s->fs = NULL;
+    s->g1_values = NULL;
+    s->g2_values = NULL;
+  }
   return s;
 }
 
