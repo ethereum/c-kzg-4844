@@ -153,6 +153,7 @@ impl Deref for KZGCommitment {
     }
 }
 
+#[must_use]
 #[repr(u32)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
