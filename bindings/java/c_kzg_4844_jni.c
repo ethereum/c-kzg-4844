@@ -11,7 +11,10 @@ void reset_trusted_setup()
 {
   if (settings)
   {
-    free_trusted_setup(settings);
+    if (settings->fs)
+    {
+      free_trusted_setup(settings);
+    }
     free(settings);
     settings = NULL;
   }
@@ -39,6 +42,21 @@ void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size, 
   throw_c_kzg_exception(env, C_KZG_BADARGS, message);
 }
 
+KZGSettings *allocate_settings(JNIEnv *env) {
+  KZGSettings *s = malloc(sizeof(KZGSettings));
+  if (s == NULL)
+  {
+    throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
+  }
+  else
+  {
+    s->fs = NULL;
+    s->g1_values = NULL;
+    s->g2_values = NULL;
+  }
+  return s;
+}
+
 JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
 {
   return (jint)FIELD_ELEMENTS_PER_BLOB;
@@ -52,12 +70,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
     return;
   }
 
-  settings = malloc(sizeof(KZGSettings));
-  if (settings == NULL)
-  {
-    throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
-    return;
-  }
+  settings = allocate_settings(env);
 
   const char *file_native = (*env)->GetStringUTFChars(env, file, 0);
 
@@ -92,12 +105,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
     return;
   }
 
-  settings = malloc(sizeof(KZGSettings));
-  if (settings == NULL)
-  {
-    throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
-    return;
-  }
+  settings = allocate_settings(env);
 
   jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
   jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
