@@ -720,6 +720,60 @@ static void test_reverse_bits__succeeds_all_bits_are_one(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for bit_reversal_permutation
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_bit_reversal_permutation__succeeds_round_trip(void) {
+    uint32_t original[128];
+    uint32_t reversed_reversed[128];
+
+    for(size_t i = 0; i < 128; i++) {
+        get_rand_uint32(&original[i]);
+        reversed_reversed[i] = original[i];
+    }
+    bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    for(size_t i = 0; i < 128; i++) {
+        ASSERT_EQUALS(reversed_reversed[i], original[i]);
+    }
+}
+
+static void test_bit_reversal_permutation__specific_items(void) {
+    uint32_t original[128];
+    uint32_t reversed[128];
+
+    for(size_t i = 0; i < 128; i++) {
+        get_rand_uint32(&original[i]);
+        reversed[i] = original[i];
+    }
+    bit_reversal_permutation(&reversed, sizeof(uint32_t), 128);
+    ASSERT_EQUALS(reversed[0], original[0]);
+    ASSERT_EQUALS(reversed[1], original[64]);
+    ASSERT_EQUALS(reversed[2], original[32]);
+    ASSERT_EQUALS(reversed[3], original[96]);
+    ASSERT_EQUALS(reversed[4], original[16]);
+    ASSERT_EQUALS(reversed[5], original[80]);
+    ASSERT_EQUALS(reversed[6], original[48]);
+    ASSERT_EQUALS(reversed[7], original[112]);
+}
+
+static void test_bit_reversal_permutation__coset_structure(void) {
+    uint32_t original[256];
+    uint32_t reversed[256];
+
+    for(size_t i = 0; i < 256; i++) {
+        original[i] = i % 16;
+        reversed[i] = original[i];
+    }
+    bit_reversal_permutation(&reversed, sizeof(uint32_t), 256);
+    for(size_t i = 0; i < 16; i++) {
+        for(size_t j = 1; j < 16; j++) {
+            ASSERT_EQUALS(reversed[16 * i], reversed[16 * i + j]);
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_powers
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -775,6 +829,29 @@ static void test_compute_powers__succeeds_expected_powers(void) {
         );
         ASSERT_EQUALS(diff, 0);
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for g1_lincomb
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_g1_lincomb__verify_consistent(void) {
+    C_KZG_RET ret;
+    g1_t points[128], out, check, tmp;
+    fr_t scalars[128];
+
+    check = G1_IDENTITY;
+    for(size_t i = 0; i < 128; i++) {
+        get_rand_fr(&scalars[i]);
+        get_rand_g1(&points[i]);
+        g1_mul(&tmp, &points[i], &scalars[i]);
+        blst_p1_add(&check, &check, &tmp);
+    }
+
+    ret = g1_lincomb(&out, points, scalars, 128);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ASSERT("lincomb matches direct multiplication", blst_p1_is_equal(&out, &check));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1116,7 +1193,11 @@ int main(void) {
     RUN(test_reverse_bits__succeeds_all_bits_are_zero);
     RUN(test_reverse_bits__succeeds_some_bits_are_one);
     RUN(test_reverse_bits__succeeds_all_bits_are_one);
+    RUN(test_bit_reversal_permutation__succeeds_round_trip);
+    RUN(test_bit_reversal_permutation__specific_items);
+    RUN(test_bit_reversal_permutation__coset_structure);
     RUN(test_compute_powers__succeeds_expected_powers);
+    RUN(test_g1_lincomb__verify_consistent);
     RUN(test_log_2_byte__succeeds_expected_values);
     RUN(test_log2_pow2__succeeds_expected_values);
     RUN(test_is_power_of_two__succeeds_powers_of_two);
