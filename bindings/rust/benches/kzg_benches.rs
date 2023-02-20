@@ -104,8 +104,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                         .take(count)
                         .collect::<Vec<Bytes48>>(),
                     &kzg_settings,
-                )
-                .expect("verify failed");
+                ).unwrap();
             })
         });
 
