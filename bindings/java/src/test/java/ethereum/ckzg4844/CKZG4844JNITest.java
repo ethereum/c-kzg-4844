@@ -23,7 +23,7 @@ public class CKZG4844JNITest {
   private enum TrustedSetupSource {
     FILE,
     PARAMETERS,
-    RESOURCE;
+    RESOURCE
   }
 
   private static final Preset PRESET;
@@ -380,6 +380,32 @@ public class CKZG4844JNITest {
         assertThrows(RuntimeException.class, CKZG4844JNI::freeTrustedSetup);
 
     assertExceptionIsTrustedSetupIsNotLoaded(exception);
+  }
+
+  @Test
+  public void shouldThrowExceptionOnIncorrectTrustedSetupParameters() {
+    final LoadTrustedSetupParameters parameters =
+        TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+    final CKZGException ckzgException =
+        assertThrows(
+            CKZGException.class,
+            () ->
+                CKZG4844JNI.loadTrustedSetup(
+                    parameters.getG1(),
+                    parameters.getG1Count() + 1,
+                    parameters.getG2(),
+                    parameters.getG2Count()));
+    assertTrue(ckzgException.getMessage().contains("C_KZG_BADARGS"));
+  }
+
+  @Test
+  public void shouldThrowExceptionOnIncorrectTrustedSetupFromFile() {
+    final Preset incorrectPreset = PRESET == Preset.MAINNET ? Preset.MINIMAL : Preset.MAINNET;
+    final CKZGException ckzgException =
+        assertThrows(
+            CKZGException.class,
+            () -> CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(incorrectPreset)));
+    assertTrue(ckzgException.getMessage().contains("C_KZG_BADARGS"));
   }
 
   private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {

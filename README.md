@@ -5,9 +5,10 @@ This is a copy of [C-KZG](https://github.com/benjaminion/c-kzg) stripped-down to
 
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
-- `compute_aggregate_kzg_proof`
 - `verify_kzg_proof`
-- `verify_aggregate_kzg_proof`
+- `compute_blob_kzg_proof`
+- `verify_blob_kzg_proof`
+- `verify_blob_kzg_proof_batch`
 
 We also provide functions for loading/freeing the trusted setup:
 
