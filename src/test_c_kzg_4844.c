@@ -84,6 +84,14 @@ static void get_rand_g1(g1_t *out) {
     blst_hash_to_g1(out, tmp_bytes.bytes, 32, NULL, 0, NULL, 0);
 }
 
+static void get_rand_g2(g2_t *out) {
+    Bytes32 tmp_bytes;
+
+    get_rand_bytes32(&tmp_bytes);
+
+    blst_hash_to_g2(out, tmp_bytes.bytes, 32, NULL, 0, NULL, 0);
+}
+
 static void bytes32_from_hex(Bytes32 *out, const char *hex) {
     int matches;
     for (size_t i = 0; i < sizeof(Bytes32); i++) {
@@ -346,6 +354,43 @@ static void test_g1_mul__test_different_bit_lengths(void) {
         blst_fr_mul(&f, &f, &two);
         bytes_from_bls_field(&b, &f);
     }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for pairings_verify
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_pairings_verify__good_pairing(void) {
+    fr_t s;
+    g1_t g1, sg1;
+    g2_t g2, sg2;
+
+    get_rand_fr(&s);
+
+    get_rand_g1(&g1);
+    get_rand_g2(&g2);
+
+    g1_mul(&sg1, &g1, &s);
+    g2_mul(&sg2, &g2, &s);
+
+    ASSERT("pairings verify", pairings_verify(&g1, &sg2, &sg1, &g2));
+}
+
+static void test_pairings_verify__bad_pairing(void) {
+    fr_t s, splusone;
+    g1_t g1, sg1;
+    g2_t g2, s1g2;
+
+    get_rand_fr(&s);
+    blst_fr_add(&splusone, &s, &FR_ONE);
+
+    get_rand_g1(&g1);
+    get_rand_g2(&g2);
+
+    g1_mul(&sg1, &g1, &s);
+    g2_mul(&s1g2, &g2, &splusone);
+
+    ASSERT("pairings fail", !pairings_verify(&g1, &s1g2, &sg1, &g2));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -760,6 +805,18 @@ static void test_log_2_byte__succeeds_expected_values(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for log2_pow2
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_log2_pow2__succeeds_expected_values(void) {
+    uint32_t x = 1;
+    for (int i = 0; i < 31; i++) {
+        ASSERT_EQUALS(i, log2_pow2(x));
+        x <<= 1;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1015,6 +1072,8 @@ int main(void) {
     RUN(test_g1_mul__test_consistent);
     RUN(test_g1_mul__test_scalar_is_zero);
     RUN(test_g1_mul__test_different_bit_lengths);
+    RUN(test_pairings_verify__good_pairing);
+    RUN(test_pairings_verify__bad_pairing);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
@@ -1038,6 +1097,7 @@ int main(void) {
     RUN(test_reverse_bits__succeeds_all_bits_are_one);
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_log_2_byte__succeeds_expected_values);
+    RUN(test_log2_pow2__succeeds_expected_values);
     RUN(test_compute_kzg_proof__succeeds_expected_proof);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
