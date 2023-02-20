@@ -817,6 +817,27 @@ static void test_log2_pow2__succeeds_expected_values(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for is_power_of_two
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_is_power_of_two__succeeds_powers_of_two(void) {
+    uint64_t x = 1;
+    for (int i = 0; i < 63; i++) {
+        ASSERT("is_power_of_two good", is_power_of_two(x));
+        x <<= 1;
+    }
+}
+
+static void test_is_power_of_two__fails_not_powers_of_two(void) {
+    uint64_t x = 4;
+    for (int i = 2; i < 63; i++) {
+        ASSERT("is_power_of_two bad", !is_power_of_two(x + 1));
+        ASSERT("is_power_of_two bad", !is_power_of_two(x - 1));
+        x <<= 1;
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1098,6 +1119,8 @@ int main(void) {
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_log_2_byte__succeeds_expected_values);
     RUN(test_log2_pow2__succeeds_expected_values);
+    RUN(test_is_power_of_two__succeeds_powers_of_two);
+    RUN(test_is_power_of_two__fails_not_powers_of_two);    
     RUN(test_compute_kzg_proof__succeeds_expected_proof);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
