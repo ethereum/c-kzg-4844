@@ -699,7 +699,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Input size to the Fiat-Shamir challenge computation */
-#define CHALLENGE_INPUT_SIZE 32 + BYTES_PER_BLOB + 48
+static const int CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
 
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
