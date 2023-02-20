@@ -11,6 +11,9 @@ import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -49,8 +52,14 @@ public class TestUtils {
     return flatten(blobs);
   }
 
-  public static byte[] createRandomProof(final int count) {
-    return CKZG4844JNI.computeAggregateKzgProof(createRandomBlobs(count), count);
+  public static byte[] createRandomProof() {
+    return CKZG4844JNI.computeBlobKzgProof(createRandomBlob());
+  }
+
+  public static byte[] createRandomProofs(final int count) {
+    final byte[][] proofs =
+        IntStream.range(0, count).mapToObj(__ -> createRandomProof()).toArray(byte[][]::new);
+    return flatten(proofs);
   }
 
   public static byte[] createRandomCommitment() {
@@ -141,5 +150,31 @@ public class TestUtils {
 
   private static InputStream readResource(final String resource) {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
+  }
+
+  public static byte[] getBytes(Path path) {
+    try {
+      return Bytes.fromHexString(Files.readString(path)).toArray();
+    } catch (final IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+  }
+
+  public static boolean getBoolean(Path path) {
+    try {
+      return Files.readString(path).contains("true");
+    } catch (final IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+  }
+
+  public static List<String> getFiles(String path) {
+    try {
+      try (Stream<Path> stream = Files.list(Paths.get(path))) {
+        return stream.map(Path::toString).sorted().collect(Collectors.toList());
+      }
+    } catch (final IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
   }
 }
