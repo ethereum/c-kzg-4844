@@ -79,8 +79,8 @@ describe("C-KZG", () => {
     freeTrustedSetup();
   });
 
-  describe("reference tests", () => {
-    it("blobToKzgCommitment", () => {
+  describe("reference tests should pass", () => {
+    it("reference tests for blobToKzgCommitment should pass", () => {
       let tests = fs.readdirSync(BLOB_TO_KZG_COMMITMENT_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(BLOB_TO_KZG_COMMITMENT_TESTS, test);
@@ -99,7 +99,7 @@ describe("C-KZG", () => {
       });
     });
 
-    it("computeKzgProof", () => {
+    it("reference tests for computeKzgProof should pass", () => {
       let tests = fs.readdirSync(COMPUTE_KZG_PROOF_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(COMPUTE_KZG_PROOF_TESTS, test);
@@ -115,7 +115,7 @@ describe("C-KZG", () => {
       });
     });
 
-    it("computeBlobKzgProof", () => {
+    it("reference tests for computeBlobKzgProof should pass", () => {
       let tests = fs.readdirSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(COMPUTE_BLOB_KZG_PROOF_TESTS, test);
@@ -130,7 +130,7 @@ describe("C-KZG", () => {
       });
     });
 
-    it("verifyKzgProof", () => {
+    it("reference tests for verifyKzgProof should pass", () => {
       let tests = fs.readdirSync(VERIFY_KZG_PROOF_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(VERIFY_KZG_PROOF_TESTS, test);
@@ -148,7 +148,7 @@ describe("C-KZG", () => {
       });
     });
 
-    it("verifyBlobKzgProof", () => {
+    it("reference tests for verifyBlobKzgProof should pass", () => {
       let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(VERIFY_BLOB_KZG_PROOF_TESTS, test);
@@ -165,7 +165,7 @@ describe("C-KZG", () => {
       });
     });
 
-    it("verifyBlobKzgProofBatch", () => {
+    it("reference tests for verifyBlobKzgProofBatch should pass", () => {
       let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       tests.forEach((test) => {
         let testPath = path.join(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS, test);
@@ -201,7 +201,7 @@ describe("C-KZG", () => {
     });
   });
 
-  describe("blobToKzgCommitment", () => {
+  describe("edge cases for blobToKzgCommitment", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
       expect(() => blobToKzgCommitment("wrong type")).toThrowError(
@@ -216,7 +216,8 @@ describe("C-KZG", () => {
     });
   });
 
-  describe("computeKzgProof", () => {
+  // TODO: add more tests for this function.
+  describe("edge cases for computeKzgProof", () => {
     it("computes a proof from blob/field element", () => {
       let blob = generateRandomBlob();
       const zBytes = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
@@ -224,15 +225,16 @@ describe("C-KZG", () => {
     });
   });
 
-  describe("computeBlobKzgProof", () => {
+  // TODO: add more tests for this function.
+  describe("edge cases for computeBlobKzgProof", () => {
     it("computes a proof from blob", () => {
       let blob = generateRandomBlob();
       computeBlobKzgProof(blob);
     });
   });
 
-  describe("verifyKzgProof", () => {
-    it("valid proof", () => {
+  describe("edge cases for verifyKzgProof", () => {
+    it("valid proof should result in true", () => {
       const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
       commitment[0] = 0xc0;
       const z = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
@@ -243,7 +245,7 @@ describe("C-KZG", () => {
       expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
     });
 
-    it("invalid proof", () => {
+    it("invalid proof should result in false", () => {
       const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
       commitment[0] = 0xc0;
       const z = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(1);
@@ -255,22 +257,22 @@ describe("C-KZG", () => {
     });
   });
 
-  describe("verifyBlobKzgProof", () => {
-    it("correct blob/commitment/proof", () => {
+  describe("edge cases for verifyBlobKzgProof", () => {
+    it("correct blob/commitment/proof should verify as true", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(blob);
       let proof = computeBlobKzgProof(blob);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(true);
     });
 
-    it("incorrect commitment", () => {
+    it("incorrect commitment should verify as false", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(generateRandomBlob());
       let proof = computeBlobKzgProof(blob);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
 
-    it("incorrect proof", () => {
+    it("incorrect proof should verify as false", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(blob);
       let proof = computeBlobKzgProof(generateRandomBlob());
@@ -278,12 +280,12 @@ describe("C-KZG", () => {
     });
   });
 
-  describe("verifyBlobKzgProofBatch", () => {
-    it("zero blobs/commitments/proofs", () => {
+  describe("edge cases for verifyBlobKzgProofBatch", () => {
+    it("zero blobs/commitments/proofs should verify as true", () => {
       expect(verifyBlobKzgProofBatch([], [], [])).toBe(true);
     });
 
-    it("mismatching blobs/commitments/proofs count", () => {
+    it("mismatching blobs/commitments/proofs should throw error", () => {
       let count = 3;
       let blobs = new Array(count);
       let commitments = new Array(count);
