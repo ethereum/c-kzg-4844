@@ -1124,6 +1124,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     C_KZG_RET ret;
     Bytes48 proof;
+    g1_t proof_g1;
     Bytes32 z, y;
     KZGCommitment c;
     Blob blob;
@@ -1161,7 +1162,10 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     bytes_from_bls_field(&y, &y_fr);
 
     /* Change the proof so it should not verify */
-    blst_p1_add(&proof, &proof, &G1_GENERATOR);
+    ret = bytes_to_kzg_commitment(&proof_g1, &proof);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    blst_p1_add(&proof_g1, &proof_g1, &G1_GENERATOR);
+    bytes_from_g1(&proof, &proof_g1);
 
     /* Finally verify the proof */
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
