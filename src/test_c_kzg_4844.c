@@ -744,6 +744,7 @@ static void test_reverse_bits__succeeds_all_bits_are_one(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void test_bit_reversal_permutation__succeeds_round_trip(void) {
+    C_KZG_RET ret;
     uint32_t original[128];
     uint32_t reversed_reversed[128];
 
@@ -751,14 +752,17 @@ static void test_bit_reversal_permutation__succeeds_round_trip(void) {
         get_rand_uint32(&original[i]);
         reversed_reversed[i] = original[i];
     }
-    bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
-    bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    ASSERT_EQUALS(ret, C_KZG_OK);
     for(size_t i = 0; i < 128; i++) {
         ASSERT_EQUALS(reversed_reversed[i], original[i]);
     }
 }
 
 static void test_bit_reversal_permutation__specific_items(void) {
+    C_KZG_RET ret;
     uint32_t original[128];
     uint32_t reversed[128];
 
@@ -766,7 +770,9 @@ static void test_bit_reversal_permutation__specific_items(void) {
         get_rand_uint32(&original[i]);
         reversed[i] = original[i];
     }
-    bit_reversal_permutation(&reversed, sizeof(uint32_t), 128);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 128);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
     ASSERT_EQUALS(reversed[0], original[0]);
     ASSERT_EQUALS(reversed[1], original[64]);
     ASSERT_EQUALS(reversed[2], original[32]);
@@ -778,6 +784,7 @@ static void test_bit_reversal_permutation__specific_items(void) {
 }
 
 static void test_bit_reversal_permutation__coset_structure(void) {
+    C_KZG_RET ret;
     uint32_t original[256];
     uint32_t reversed[256];
 
@@ -785,12 +792,46 @@ static void test_bit_reversal_permutation__coset_structure(void) {
         original[i] = i % 16;
         reversed[i] = original[i];
     }
-    bit_reversal_permutation(&reversed, sizeof(uint32_t), 256);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 256);
+    ASSERT_EQUALS(ret, C_KZG_OK);
     for(size_t i = 0; i < 16; i++) {
         for(size_t j = 1; j < 16; j++) {
             ASSERT_EQUALS(reversed[16 * i], reversed[16 * i + j]);
         }
     }
+}
+
+static void test_bit_reversal_permutation__fails_n_too_large(void) {
+    C_KZG_RET ret;
+    uint32_t reversed[256];
+
+    for(size_t i = 0; i < 256; i++) {
+        reversed[i] = 0;
+    }
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), (uint64_t) 1 << 32);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_bit_reversal_permutation__fails_n_not_power_of_two(void) {
+    C_KZG_RET ret;
+    uint32_t reversed[256];
+
+    for(size_t i = 0; i < 256; i++) {
+        reversed[i] = 0;
+    }
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 255);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_bit_reversal_permutation__fails_n_is_one(void) {
+    C_KZG_RET ret;
+    uint32_t reversed[1];
+
+    for(size_t i = 0; i < 1; i++) {
+        reversed[i] = 0;
+    }
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 1);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1186,6 +1227,92 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for verify_kzg_proof
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_verify_kzg_proof__fails_proof_not_in_g1(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Bytes32 y, z;
+    bool ok;
+
+    get_rand_field_element(&z);
+    get_rand_field_element(&y);
+
+    get_rand_g1_bytes(&c);
+    bytes48_from_hex(
+        &proof,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_verify_kzg_proof__fails_commitment_not_in_g1(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Bytes32 y, z;
+    bool ok;
+
+    get_rand_field_element(&z);
+    get_rand_field_element(&y);
+
+    get_rand_g1_bytes(&proof);
+    bytes48_from_hex(
+        &c,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_verify_kzg_proof__fails_z_not_field_element(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Bytes32 y, z;
+    bool ok;
+
+    bytes32_from_hex(
+        &z,
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+    );
+    get_rand_field_element(&y);
+
+    get_rand_g1_bytes(&c);
+    get_rand_g1_bytes(&proof);
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_verify_kzg_proof__fails_y_not_field_element(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Bytes32 y, z;
+    bool ok;
+
+    bytes32_from_hex(
+        &y,
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+    );
+    get_rand_field_element(&z);
+
+    get_rand_g1_bytes(&c);
+    get_rand_g1_bytes(&proof);
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for compute_blob_kzg_proof
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1268,6 +1395,85 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT_EQUALS(ok, false);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for fft_g1
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_fft_g1__succeeds_round_trip(void) {
+    C_KZG_RET ret;
+    g1_t original[32], transformed[32], inversed[32];
+
+    for (size_t i = 0; i < 32; i++) {
+        get_rand_g1(&original[i]);
+    }
+
+    ret = fft_g1(transformed, original, false, 32, s.fs);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = fft_g1(inversed, transformed, true, 32, s.fs);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t i = 0; i < 32; i++) {
+        ASSERT("same as original", blst_p1_is_equal(&original[i], &inversed[i]));
+    }
+}
+
+static void test_fft_g1__n_not_power_of_two(void) {
+    C_KZG_RET ret;
+    g1_t original[32], transformed[32];
+
+    ret = fft_g1(transformed, original, false, 31, s.fs);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_fft_g1__n_too_large(void) {
+    C_KZG_RET ret;
+    g1_t original[32], transformed[32];
+
+    ret = fft_g1(transformed, original, false, 2 * s.fs->max_width, s.fs);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for expand_root_of_unity
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_expand_root_of_unity__succeeds_with_root(void) {
+    C_KZG_RET ret;
+    fr_t roots[257], root_of_unity;
+
+    printf("1\n");
+
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[8]);
+
+    ret = expand_root_of_unity(roots, &root_of_unity, 256);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void test_expand_root_of_unity__fails_not_root_of_unity(void) {
+    C_KZG_RET ret;
+    fr_t roots[257], root_of_unity;
+
+    printf("2\n");
+
+    fr_from_uint64(&root_of_unity, 3);
+
+    ret = expand_root_of_unity(roots, &root_of_unity, 256);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
+    C_KZG_RET ret;
+    fr_t roots[257], root_of_unity;
+
+    printf("3\n");
+
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[7]);
+
+    ret = expand_root_of_unity(roots, &root_of_unity, 256);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1426,6 +1632,9 @@ int main(void) {
     RUN(test_bit_reversal_permutation__succeeds_round_trip);
     RUN(test_bit_reversal_permutation__specific_items);
     RUN(test_bit_reversal_permutation__coset_structure);
+    RUN(test_bit_reversal_permutation__fails_n_too_large);
+    RUN(test_bit_reversal_permutation__fails_n_not_power_of_two);
+    RUN(test_bit_reversal_permutation__fails_n_is_one);
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_g1_lincomb__verify_consistent);
     RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial);
@@ -1439,9 +1648,20 @@ int main(void) {
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
     RUN(test_compute_and_verify_kzg_proof__fails_incorrect_proof);
+    RUN(test_verify_kzg_proof__fails_proof_not_in_g1);
+    RUN(test_verify_kzg_proof__fails_commitment_not_in_g1);
+    RUN(test_verify_kzg_proof__fails_z_not_field_element);
+    RUN(test_verify_kzg_proof__fails_y_not_field_element);
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_with_incorrect_proof);
+    RUN(test_fft_g1__succeeds_round_trip);
+    RUN(test_fft_g1__n_not_power_of_two);
+    RUN(test_fft_g1__n_too_large);
+    RUN(test_expand_root_of_unity__succeeds_with_root);
+    RUN(test_expand_root_of_unity__fails_not_root_of_unity);
+    RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
+
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
