@@ -769,21 +769,66 @@ static void compute_challenge(
  * We do the second of these to save memory here.
  */
 static C_KZG_RET g1_lincomb(
-    g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
+    g1_t *point_out, const g1_t *p, const fr_t *coeffs, uint64_t len
 ) {
-    C_KZG_RET ret;
+    C_KZG_RET ret = C_KZG_MALLOC;
     void *scratch = NULL;
+    g1_t *new_p = NULL;
+    fr_t *new_coeffs = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
 
-    // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
-    if (len < 8) {
+    /* Figure out if we have any zero points (and how many they are) */
+    size_t new_len = len;
+    for (size_t i = 0; i < len; i++) {
+        if (blst_p1_is_inf(&p[i])) {
+            new_len--;
+        }
+    }
+
+    /* Exit early if we have nothing to do */
+    if (new_len == 0) {
+        ret = C_KZG_OK;
+        *point_out = G1_IDENTITY;
+        goto out;
+    }
+
+    /* If we have zero points, weed them out (since blst's pippenger can't
+     * handle them) */
+    if (new_len < len) {
+        /* Create arrays for the non-zero points and scalars */
+        ret = new_g1_array(&new_p, new_len);
+        if (ret != C_KZG_OK) goto out;
+        ret = new_fr_array(&new_coeffs, new_len);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Copy non-zero points and their scalars to the new arrays by skipping
+         * zeroes */
+        size_t j = 0;
+        for (size_t i = 0; i < len; i++) {
+            if (!blst_p1_is_inf(&p[i])) {
+                new_p[j] = p[i];
+                new_coeffs[j] = coeffs[i];
+                j++;
+            }
+        }
+
+        assert(j == new_len);
+
+        /* Update the pointers and the linear combination length */
+        p = new_p;
+        coeffs = new_coeffs;
+        len = new_len;
+    }
+
+    /* Time to do the linear combination! */
+    if (len < 8) { // Tunable: must be at least 2 since Blst fails for 0 or 1
         // Direct approach
         g1_t tmp;
-        *out = G1_IDENTITY;
+        *point_out = G1_IDENTITY;
         for (uint64_t i = 0; i < len; i++) {
             g1_mul(&tmp, &p[i], &coeffs[i]);
-            blst_p1_add_or_double(out, out, &tmp);
+            blst_p1_add_or_double(point_out, point_out, &tmp);
         }
     } else {
         // Blst's implementation of the Pippenger method
@@ -808,7 +853,7 @@ static C_KZG_RET g1_lincomb(
         const byte *scalars_arg[2] = {(byte *)scalars, NULL};
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(
-            out, points_arg, len, scalars_arg, 255, scratch
+            point_out, points_arg, len, scalars_arg, 255, scratch
         );
     }
 
@@ -818,6 +863,8 @@ out:
     free(scratch);
     free(p_affine);
     free(scalars);
+    free(new_p);
+    free(new_coeffs);
     return ret;
 }
 
