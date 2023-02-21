@@ -24,6 +24,6 @@
     <Content Include="..\..\..\src\trusted_setup.txt" Link="trusted_setup.txt">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-</ItemGroup>
+  </ItemGroup>
 
 </Project>

@@ -15,8 +15,12 @@ DLLEXPORT void free_trusted_setup_wrap(KZGSettings *s);
 
 DLLEXPORT C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s);
 
-DLLEXPORT int verify_aggregate_kzg_proof_wrap(const Blob blobs[], const Bytes48 *commitments_bytes, size_t n, const Bytes48 *aggregated_proof_bytes, const KZGSettings *s);
+DLLEXPORT C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z_bytes, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET compute_aggregate_kzg_proof(KZGProof *out, const Blob blobs[], size_t n, const KZGSettings *s);
+DLLEXPORT C_KZG_RET compute_blob_kzg_proof(KZGProof *out, const Blob *blob, const KZGSettings *s);
 
-DLLEXPORT int verify_kzg_proof_wrap(const Bytes48 *commitment_bytes, const Bytes32 *z_bytes, const Bytes32 *y_bytes, const Bytes48 *proof_bytes, KZGSettings *s);
+DLLEXPORT C_KZG_RET verify_kzg_proof(bool *result, const Bytes48 *commitments_bytes, const Bytes32 *z_bytes, const Bytes32 *y_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
+
+DLLEXPORT C_KZG_RET verify_blob_kzg_proof(bool *result, const Blob *blob, const Bytes48 *commitment_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
+
+DLLEXPORT C_KZG_RET verify_blob_kzg_proof_batch(bool *result, const Blob *blobs, const Bytes48 *commitments_bytes, const Bytes48 *proofs_bytes, size_t count, const KZGSettings *s);
