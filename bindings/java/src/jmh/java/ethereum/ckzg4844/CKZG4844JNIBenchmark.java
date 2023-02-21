@@ -2,7 +2,6 @@ package ethereum.ckzg4844;
 
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -31,7 +30,6 @@ public class CKZG4844JNIBenchmark {
 
   @State(Scope.Benchmark)
   public static class BlobToKzgCommitmentState {
-
     private byte[] blob;
 
     @Setup(Level.Iteration)
@@ -42,7 +40,6 @@ public class CKZG4844JNIBenchmark {
 
   @State(Scope.Benchmark)
   public static class ComputeKzgProofState {
-
     private byte[] blob;
     private byte[] z;
 
@@ -54,34 +51,48 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class ComputeAndVerifyState {
+  public static class ComputeBlobKzgProofState {
+    private byte[] blob;
 
-    @Param({"1", "4", "8", "16"})
-    private int count;
+    @Setup(Level.Iteration)
+    public void setUp() {
+      blob = TestUtils.createRandomBlob();
+    }
+  }
 
-    private byte[] blobs;
-    private byte[] commitments;
+  @State(Scope.Benchmark)
+  public static class VerifyBlobKzgProofState {
+    private byte[] blob;
+    private byte[] commitment;
     private byte[] proof;
 
     @Setup(Level.Iteration)
     public void setUp() {
-      final byte[][] blobs = new byte[count][];
-      final byte[][] commitments = new byte[count][];
-      IntStream.range(0, count)
-          .forEach(
-              i -> {
-                blobs[i] = TestUtils.createRandomBlob();
-                commitments[i] = CKZG4844JNI.blobToKzgCommitment(blobs[i]);
-              });
-      this.blobs = TestUtils.flatten(blobs);
-      this.commitments = TestUtils.flatten(commitments);
-      proof = CKZG4844JNI.computeAggregateKzgProof(TestUtils.flatten(blobs), count);
+      blob = TestUtils.createRandomBlobs(1);
+      commitment = TestUtils.createRandomCommitments(1);
+      proof = TestUtils.createRandomProofs(1);
+    }
+  }
+
+  @State(Scope.Benchmark)
+  public static class VerifyBlobKzgProofBatchState {
+    @Param({"1", "4", "8", "16", "32", "64"})
+    private int count;
+
+    private byte[] blobs;
+    private byte[] commitments;
+    private byte[] proofs;
+
+    @Setup(Level.Iteration)
+    public void setUp() {
+      blobs = TestUtils.createRandomBlobs(count);
+      commitments = TestUtils.createRandomCommitments(count);
+      proofs = TestUtils.createRandomProofs(count);
     }
   }
 
   @State(Scope.Benchmark)
   public static class VerifyKzgProofState {
-
     private byte[] commitment;
     private byte[] z;
     private byte[] y;
@@ -118,19 +129,23 @@ public class CKZG4844JNIBenchmark {
   }
 
   @Benchmark
-  public byte[] computeAggregateKzgProof(final ComputeAndVerifyState state) {
-    return CKZG4844JNI.computeAggregateKzgProof(state.blobs, state.count);
+  public byte[] computeBlobKzgProof(final ComputeBlobKzgProofState state) {
+    return CKZG4844JNI.computeBlobKzgProof(state.blob);
   }
 
   @Benchmark
-  public boolean verifyAggregateKzgProof(final ComputeAndVerifyState state) {
-    return CKZG4844JNI.verifyAggregateKzgProof(
-        state.blobs, state.commitments, state.count, state.proof);
-  }
-
-  @Benchmark
-  @OutputTimeUnit(TimeUnit.NANOSECONDS)
   public boolean verifyKzgProof(final VerifyKzgProofState state) {
     return CKZG4844JNI.verifyKzgProof(state.commitment, state.z, state.y, state.proof);
+  }
+
+  @Benchmark
+  public boolean verifyBlobKzgProof(final VerifyBlobKzgProofState state) {
+    return CKZG4844JNI.verifyBlobKzgProof(state.blob, state.commitment, state.proof);
+  }
+
+  @Benchmark
+  public boolean verifyBlobKzgProofBatch(final VerifyBlobKzgProofBatchState state) {
+    return CKZG4844JNI.verifyBlobKzgProofBatch(
+        state.blobs, state.commitments, state.proofs, state.count);
   }
 }

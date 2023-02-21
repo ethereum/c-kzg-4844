@@ -13,20 +13,15 @@ jobs:
     strategy:
       matrix:
         target:
-          - clang: x86_64-linux
-            native: linux-x64
+          - native: linux-x64
             host: ubuntu-latest
-          - clang: arm64-linux
-            native: linux-arm64
+          - native: linux-arm64
             host: ubuntu-latest
-          - clang: arm64-darwin
-            native: osx-arm64
+          - native: osx-arm64
             host: macos-latest
-          - clang: x86_64-darwin
-            native: osx-x64
+          - native: osx-x64
             host: macos-latest
-          - clang: x86_64-win
-            native: win-x64
+          - native: win-x64
             host: windows-latest
     steps:
     - uses: ilammy/msvc-dev-cmd@v1
@@ -34,7 +29,7 @@ jobs:
       with:
         submodules: recursive
     - name: Build native library for ${{ matrix.target.native }}
-      run:  cd bindings/csharp && make -B ckzg CSHARP_PLATFORM=${{ matrix.target.native }} CLANG_PLATFORM=${{ matrix.target.clang }}
+      run:  cd bindings/csharp && make -B ckzg CSHARP_PLATFORM=${{ matrix.target.native }}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
@@ -76,7 +71,7 @@ jobs:
     - name: Test
       run: cd bindings/csharp && dotnet test --configuration Release --no-restore
     - name: Build
-      run: cd bindings/csharp && dotnet build -p:Version=0.1.1.${{github.run_number}} --configuration Release --no-restore -o build
+      run: cd bindings/csharp && dotnet build -p:Version=0.1.1.${{github.run_number}} --configuration Release --no-restore
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:

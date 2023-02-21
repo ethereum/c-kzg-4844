@@ -143,6 +143,15 @@ public class CKZG4844JNI {
   public static native void freeTrustedSetup();
 
   /**
+   * Calculates commitment for a given blob
+   *
+   * @param blob blob bytes
+   * @return the commitment
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] blobToKzgCommitment(byte[] blob);
+
+  /**
    * Compute proof at point z for the polynomial represented by blob.
    *
    * @param blob blob bytes
@@ -153,36 +162,13 @@ public class CKZG4844JNI {
   public static native byte[] computeKzgProof(byte[] blob, byte[] z_bytes);
 
   /**
-   * Calculates aggregated proof for the given blobs
+   * Given a blob, return the KZG proof that is used to verify it against the commitment
    *
-   * @param blobs blobs as flattened bytes
-   * @param count the count of the blobs
+   * @param blob blob bytes
    * @return the aggregated proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeAggregateKzgProof(byte[] blobs, long count);
-
-  /**
-   * Verify aggregated proof and commitments for the given blobs
-   *
-   * @param blobs blobs as flattened bytes
-   * @param commitments_bytes commitments as flattened bytes
-   * @param count the count of the blobs (should be same as the count of the commitments)
-   * @param aggregated_proof_bytes the proof that needs verifying
-   * @return true if the proof is valid and false otherwise
-   * @throws CKZGException if there is a crypto error
-   */
-  public static native boolean verifyAggregateKzgProof(
-      byte[] blobs, byte[] commitments_bytes, long count, byte[] aggregated_proof_bytes);
-
-  /**
-   * Calculates commitment for a given blob
-   *
-   * @param blob blob bytes
-   * @return the commitment
-   * @throws CKZGException if there is a crypto error
-   */
-  public static native byte[] blobToKzgCommitment(byte[] blob);
+  public static native byte[] computeBlobKzgProof(byte[] blob);
 
   /**
    * Verify the proof by point evaluation for the given commitment
@@ -196,4 +182,29 @@ public class CKZG4844JNI {
    */
   public static native boolean verifyKzgProof(
       byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes, byte[] proof_bytes);
+
+  /**
+   * Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
+   *
+   * @param blob blob bytes
+   * @param commitment_bytes commitment bytes
+   * @param proof_bytes proof bytes
+   * @return true if the proof is valid and false otherwise
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native boolean verifyBlobKzgProof(
+      byte[] blob, byte[] commitment_bytes, byte[] proof_bytes);
+
+  /**
+   * Given a list of blobs and blob KZG proofs, verify that they correspond to the provided
+   * commitments.
+   *
+   * @param blobs flattened blobs bytes
+   * @param commitments_bytes flattened commitments bytes
+   * @param proofs_bytes flattened proofs bytes
+   * @return true if the proof is valid and false otherwise
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native boolean verifyBlobKzgProofBatch(
+      byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
 }

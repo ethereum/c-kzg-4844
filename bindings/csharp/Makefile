@@ -1,54 +1,54 @@
-INCLUDE_DIRS = ../../src ../../blst/bindings
-
-FIELD_ELEMENTS_PER_BLOB ?= 4096
-
 ifeq ($(OS),Windows_NT)
-	BLST_BUILDSCRIPT=./build.bat
-	BLST_OBJ=blst.lib
-	TESTS_EXECUTABLE=test_ckzg.exe
-	CSHARP_PLATFORM?=win-x64
-	CLANG_PLATFROM?=x86_64-win
-	CLANG_FLAGS=
-	CLANG_EXECUTABLE=clang
-	CKZG_LIBRARY_PATH=Ckzg.Bindings\runtimes\$(CSHARP_PLATFORM)\native\ckzg.dll
+    BLST_BUILDSCRIPT = ./build.bat
+    BLST_OBJ = blst.lib
+    CSHARP_PLATFORM ?= win-x64
+    CLANG_EXECUTABLE = clang
+    CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(CSHARP_PLATFORM)\native\ckzg.dll
 else
-	BLST_BUILDSCRIPT=./build.sh
-	BLST_OBJ=libblst.a
-	TESTS_EXECUTABLE=./test_ckzg
-	CSHARP_PLATFORM?=linux-x64
-	CLANG_PLATFORM?=x86_64-linux
-	CLANG_FLAGS=-fPIC
-	CLANG_EXECUTABLE=cc
-	CKZG_LIBRARY_PATH=Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
+    BLST_BUILDSCRIPT = ./build.sh
+    BLST_OBJ = libblst.a
+    CLANG_EXECUTABLE = clang
+
+    UNAME_S := $(shell uname -s)
+    UNAME_M := $(shell uname -m)
+    ifeq ($(UNAME_S),Linux)
+        ifeq ($(UNAME_M),x86_64)
+            CSHARP_PLATFORM ?= linux-x64
+        else
+            CSHARP_PLATFORM ?= linux-arm64
+        endif
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        ifeq ($(UNAME_M),arm64)
+            CSHARP_PLATFORM ?= osx-arm64
+        else
+            CSHARP_PLATFORM ?= osx-x64
+        endif
+    endif
+
+    CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
 endif
 
-CLANG_FLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+FIELD_ELEMENTS_PER_BLOB ?= 4096
+INCLUDE_DIRS = ../../src ../../blst/bindings
+TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 
-TARGETS=ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
+CFLAGS += -O2 -Wall -Wextra -shared
+CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
 
-.blst:
+.PHONY: all
+all: blst ckzg ckzg-dotnet
+
+.PHONY: blst
+blst:
 	cd ../../blst && $(BLST_BUILDSCRIPT)
 
-.ckzg:
-	$(CLANG_EXECUTABLE) -O -Wall -shared $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(CKZG_LIBRARY_PATH) $(TARGETS)
+.PHONY: ckzg
+ckzg: blst
+	$(CLANG_EXECUTABLE) $(CFLAGS) -o $(CKZG_LIBRARY_PATH) $(TARGETS)
 
-# Ckzg library
-ckzg:
-	@make .blst
-	@make .ckzg
-
-# E2e tests as an executable
-test:
-	@make .blst
-	$(CLANG_EXECUTABLE) -O -w -Wall $(CLANG_FLAGS) ${addprefix -I,${INCLUDE_DIRS}} -o $(TESTS_EXECUTABLE) kzg_tests.c $(TARGETS)
-
-# E2e tests are built and run
-run-test:
-	@make test
-	$(TESTS_EXECUTABLE)
-
-# Makes a build and a nuget package just for windows or linux
-# To build full package - use ckzg command on every plaform and dotnet build
-ckzg-dotnet:
-	@make ckzg
+.PHONY: ckzg-dotnet
+ckzg-dotnet: ckzg
 	dotnet build
+	dotnet test

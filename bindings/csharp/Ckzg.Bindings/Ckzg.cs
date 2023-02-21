@@ -5,10 +5,18 @@ namespace Ckzg;
 
 public class Ckzg
 {
-    public const int CommitmentLength = 48;
-    public const int BlobElementLength = 32;
-    public const int BlobLength = BlobElementLength * 4096;
-    public const int ProofLength = 48;
+    public const int BytesPerFieldElement = 32;
+    public const int BytesPerBlob = BytesPerFieldElement * 4096;
+    public const int BytesPerCommitment = 48;
+    public const int BytesPerProof = 48;
+
+    public enum Ret
+    {
+        Ok,
+        BadArgs,
+        Error,
+        Malloc
+    }
 
     static Ckzg() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) => NativeLibrary.Load($"runtimes/{(
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
@@ -21,58 +29,11 @@ public class Ckzg
             }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}");
 
     /// <summary>
-    /// Calculates commitment for the blob
-    /// </summary>
-    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
-    /// <param name="blob">Flatten array of blob elements</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
-
-
-    /// <summary>
-    /// Calculates aggregated proof for the blobs
-    /// </summary>
-    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
-    /// <param name="blobs">Blobs as a flatten byte array</param>
-    /// <param name="count">Blobs count</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "compute_aggregate_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int ComputeAggregatedKzgProof(byte* proof, byte* blobs, int count, IntPtr ts);
-
-
-    /// <summary>
-    /// Verify aggregated proof and commitments for the given blobs
-    /// </summary>
-    /// <param name="blobs">Blobs as a flatten byte array</param>
-    /// <param name="commitments">Commitments as a flatten byte array</param>
-    /// <param name="count">Blobs and commitments count</param>
-    /// <param name="proof"></param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
-    [DllImport("ckzg", EntryPoint = "verify_aggregate_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int VerifyAggregatedKzgProof(byte* blobs, byte* commitments_bytes, int count, byte* aggregated_proof_bytes, IntPtr ts);
-
-    /// <summary>
-    /// Verify the proof by point evaluation for the given commitment
-    /// </summary>
-    /// <param name="commitment">Commitment</param>
-    /// <param name="z">Z</param>
-    /// <param name="y">Y</param>
-    /// <param name="proof">Proof</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if the proof is correct</returns>
-    [DllImport("ckzg", EntryPoint = "verify_kzg_proof_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern int VerifyKzgProof(byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
-
-    /// <summary>
     /// Load trusted setup settings from file
     /// </summary>
     /// <param name="filename">Settings file path</param>
     /// <returns>Trusted setup settings as a pointer or <c>0</c> in case of failure</returns>
-    [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")] // free result with free_trusted_setup()
+    [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")]
     public static extern IntPtr LoadTrustedSetup(string filename);
 
     /// <summary>
@@ -81,5 +42,74 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     [DllImport("ckzg", EntryPoint = "free_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)]
     public static extern void FreeTrustedSetup(IntPtr ts);
+
+    /// <summary>
+    /// Calculates commitment for the blob
+    /// </summary>
+    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
+    /// <param name="blob">Flatten array of blob elements</param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns>Returns error code or <c>0</c> if successful</returns>
+    [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
+
+    /// <summary>
+    /// Compute KZG proof at point `z` for the polynomial represented by `blob`.
+    /// </summary>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
+    /// <param name="blob">Blob byte array</param>
+    /// <param name="z_bytes"></param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns>Returns error code or <c>0</c> if successful</returns>
+    [DllImport("ckzg", EntryPoint = "compute_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret ComputeKzgProof(byte* proof, byte* blob, byte* z_bytes, IntPtr ts);
+
+    /// <summary>
+    /// Given a blob, return the KZG proof that is used to verify it against the commitment.
+    /// </summary>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
+    /// <param name="blob">Blob byte array</param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns>Returns error code or <c>0</c> if successful</returns>
+    [DllImport("ckzg", EntryPoint = "compute_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret ComputeBlobKzgProof(byte* proof, byte* blob, IntPtr ts);
+
+    /// <summary>
+    ///
+    /// </summary>
+    /// <param name="result">True if the proof is valid</param>
+    /// <param name="commitment_bytes"></param>
+    /// <param name="z_bytes"></param>
+    /// <param name="y_bytes"></param>
+    /// <param name="proof_bytes"></param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns></returns>
+    [DllImport("ckzg", EntryPoint = "verify_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret VerifyKzgProof(bool* result, byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
+
+    /// <summary>
+    /// Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
+    /// </summary>
+    /// <param name="result">True if the proof is valid</param>
+    /// <param name="blob"></param>
+    /// <param name="commitment"></param>
+    /// <param name="proof"></param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns></returns>
+    [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret VerifyBlobKzgProof(bool* result, byte* blob, byte* commitment_bytes, byte* proof_bytes, IntPtr ts);
+
+    /// <summary>
+    /// Given a list of blobs and blob KZG proofs, verify that they correspond to the provided commitments.
+    /// </summary>
+    /// <param name="result">True if the proofs are valid</param>
+    /// <param name="blobs">Blobs as a flattened byte array</param>
+    /// <param name="commitments">Commitments as a flattened byte array</param>
+    /// <param name="proofs">Proofs as a flattened byte array</param>
+    /// <param name="count">The number of blobs/commitments/proofs</param>
+    /// <param name="ts">Trusted setup settings</param>
+    /// <returns></returns>
+    [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
+    public unsafe static extern Ret VerifyBlobKzgProofBatch(bool* result, byte* blobs, byte* commitments_bytes, byte* proofs_bytes, int count, IntPtr ts);
 }
 
