@@ -246,15 +246,24 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     ASSERT_EQUALS(diff, 0);
 }
 
-static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
+static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     C_KZG_RET ret;
     KZGCommitment c;
     Blob blob;
+    Bytes32 field_element;
     Bytes48 expected_commitment;
     int diff;
 
-    /* Get a commitment to a random blob */
-    get_rand_blob(&blob);
+    bytes32_from_hex(
+        &field_element,
+        "ad5570f5a3810b7af9d4b24bc1c2ea670245db2eaa49aae654b8f7393a9a6214"
+    );
+
+    /* Initialize the blob with a single field element */
+    memset(&blob, 0, sizeof(blob));
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+
+    /* Get a commitment to this particular blob */
     ret = blob_to_kzg_commitment(&c, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -264,8 +273,8 @@ static void test_blob_to_kzg_commitment__succeeds_consistent_commitment(void) {
      */
     bytes48_from_hex(
         &expected_commitment,
-        "af19e460169c57959c04786c958e01f984c195bc56e99b04"
-        "c07e0c9747e5dfa566a4771b8b138cd8eed67efa81165663"
+        "9815ded2101b6d233fdf31d826ba0557778506df8526f42a"
+        "87ccd82db36a238b50f8965c25d4484782097436d29e458e"
     );
     diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
@@ -896,7 +905,7 @@ int main(void) {
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
     RUN(test_blob_to_kzg_commitment__succeeds_point_at_infinity);
-    RUN(test_blob_to_kzg_commitment__succeeds_consistent_commitment);
+    RUN(test_blob_to_kzg_commitment__succeeds_expected_commitment);
     RUN(test_validate_kzg_g1__succeeds_round_trip);
     RUN(test_validate_kzg_g1__succeeds_correct_point);
     RUN(test_validate_kzg_g1__fails_not_in_g1);
