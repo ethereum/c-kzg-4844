@@ -275,6 +275,7 @@ static void test_fr_pow__test_inverse_on_root_of_unity(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void test_fr_batch_inv__test_consistent(void) {
+    C_KZG_RET ret;
     fr_t a[32], batch_inverses[32], check_inverses[32];
 
     for(size_t i = 0; i < 32; i++) {
@@ -282,7 +283,8 @@ static void test_fr_batch_inv__test_consistent(void) {
         blst_fr_eucl_inverse(&check_inverses[i], &a[i]);
     }
 
-    fr_batch_inv(batch_inverses, a, 32);
+    ret = fr_batch_inv(batch_inverses, a, 32);
+    ASSERT_EQUALS(ret, C_KZG_OK);
 
     for(size_t i = 0; i < 32; i++) {
         bool ok = fr_equal(&check_inverses[i], &batch_inverses[i]);
