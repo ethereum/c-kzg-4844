@@ -114,9 +114,9 @@ static void get_rand_uint32(uint32_t *out) {
     *out = *(uint32_t *)(b.bytes);
 }
 
-static void eval_poly(fr_t* out, fr_t* poly_coefficients, fr_t* x) {
+static void eval_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
     *out = poly_coefficients[FIELD_ELEMENTS_PER_BLOB - 1];
-    for(size_t i = FIELD_ELEMENTS_PER_BLOB - 1; i > 0; i--) {
+    for (size_t i = FIELD_ELEMENTS_PER_BLOB - 1; i > 0; i--) {
         blst_fr_mul(out, out, x);
         blst_fr_add(out, out, &poly_coefficients[i - 1]);
     }
@@ -222,7 +222,11 @@ static void test_fr_div__specific_value(void) {
 
     fr_from_uint64(&a, 2345);
     fr_from_uint64(&b, 54321);
-    blst_fr_from_hexascii(&check, (const byte*)("0x264d23155705ca938a1f22117681ea9759f348cb177a07ffe0813de67e85c684"));
+    blst_fr_from_hexascii(
+        &check,
+        (const byte *)("0x264d23155705ca938a1f22117681ea9759f348cb177a07ffe0813"
+                       "de67e85c684")
+    );
 
     fr_div(&q, &a, &b);
 
@@ -278,7 +282,7 @@ static void test_fr_batch_inv__test_consistent(void) {
     C_KZG_RET ret;
     fr_t a[32], batch_inverses[32], check_inverses[32];
 
-    for(size_t i = 0; i < 32; i++) {
+    for (size_t i = 0; i < 32; i++) {
         get_rand_fr(&a[i]);
         blst_fr_eucl_inverse(&check_inverses[i], &a[i]);
     }
@@ -286,7 +290,7 @@ static void test_fr_batch_inv__test_consistent(void) {
     ret = fr_batch_inv(batch_inverses, a, 32);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    for(size_t i = 0; i < 32; i++) {
+    for (size_t i = 0; i < 32; i++) {
         bool ok = fr_equal(&check_inverses[i], &batch_inverses[i]);
         ASSERT_EQUALS(ok, true);
     }
@@ -296,7 +300,7 @@ static void test_fr_batch_inv__test_zero(void) {
     C_KZG_RET ret;
     fr_t a[32], batch_inverses[32];
 
-    for(size_t i = 0; i < 32; i++) {
+    for (size_t i = 0; i < 32; i++) {
         get_rand_fr(&a[i]);
     }
 
@@ -305,7 +309,7 @@ static void test_fr_batch_inv__test_zero(void) {
     ret = fr_batch_inv(batch_inverses, a, 32);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    for(size_t i = 0; i < 32; i++) {
+    for (size_t i = 0; i < 32; i++) {
         bool ok = fr_equal(&batch_inverses[i], &FR_ZERO);
         ASSERT_EQUALS(ok, true);
     }
@@ -354,12 +358,12 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     fr_from_uint64(&two, 2);
     bytes_from_bls_field(&b, &f);
 
-    for(int i = 1; i < 255; i++) {
+    for (int i = 1; i < 255; i++) {
         get_rand_g1(&g);
 
         blst_p1_mult(&check, &g, (const byte *)&b, 256);
         g1_mul(&r, &g, &f);
-        
+
         ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 
         blst_fr_mul(&f, &f, &two);
@@ -748,7 +752,7 @@ static void test_bit_reversal_permutation__succeeds_round_trip(void) {
     uint32_t original[128];
     uint32_t reversed_reversed[128];
 
-    for(size_t i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         get_rand_uint32(&original[i]);
         reversed_reversed[i] = original[i];
     }
@@ -756,7 +760,7 @@ static void test_bit_reversal_permutation__succeeds_round_trip(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    for(size_t i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         ASSERT_EQUALS(reversed_reversed[i], original[i]);
     }
 }
@@ -766,7 +770,7 @@ static void test_bit_reversal_permutation__specific_items(void) {
     uint32_t original[128];
     uint32_t reversed[128];
 
-    for(size_t i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         get_rand_uint32(&original[i]);
         reversed[i] = original[i];
     }
@@ -788,14 +792,14 @@ static void test_bit_reversal_permutation__coset_structure(void) {
     uint32_t original[256];
     uint32_t reversed[256];
 
-    for(size_t i = 0; i < 256; i++) {
+    for (size_t i = 0; i < 256; i++) {
         original[i] = i % 16;
         reversed[i] = original[i];
     }
     ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 256);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    for(size_t i = 0; i < 16; i++) {
-        for(size_t j = 1; j < 16; j++) {
+    for (size_t i = 0; i < 16; i++) {
+        for (size_t j = 1; j < 16; j++) {
             ASSERT_EQUALS(reversed[16 * i], reversed[16 * i + j]);
         }
     }
@@ -805,10 +809,12 @@ static void test_bit_reversal_permutation__fails_n_too_large(void) {
     C_KZG_RET ret;
     uint32_t reversed[256];
 
-    for(size_t i = 0; i < 256; i++) {
+    for (size_t i = 0; i < 256; i++) {
         reversed[i] = 0;
     }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), (uint64_t) 1 << 32);
+    ret = bit_reversal_permutation(
+        &reversed, sizeof(uint32_t), (uint64_t)1 << 32
+    );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
@@ -816,7 +822,7 @@ static void test_bit_reversal_permutation__fails_n_not_power_of_two(void) {
     C_KZG_RET ret;
     uint32_t reversed[256];
 
-    for(size_t i = 0; i < 256; i++) {
+    for (size_t i = 0; i < 256; i++) {
         reversed[i] = 0;
     }
     ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 255);
@@ -827,7 +833,7 @@ static void test_bit_reversal_permutation__fails_n_is_one(void) {
     C_KZG_RET ret;
     uint32_t reversed[1];
 
-    for(size_t i = 0; i < 1; i++) {
+    for (size_t i = 0; i < 1; i++) {
         reversed[i] = 0;
     }
     ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 1);
@@ -902,7 +908,7 @@ static void test_g1_lincomb__verify_consistent(void) {
     fr_t scalars[128];
 
     check = G1_IDENTITY;
-    for(size_t i = 0; i < 128; i++) {
+    for (size_t i = 0; i < 128; i++) {
         get_rand_fr(&scalars[i]);
         get_rand_g1(&points[i]);
         g1_mul(&tmp, &points[i], &scalars[i]);
@@ -912,14 +918,18 @@ static void test_g1_lincomb__verify_consistent(void) {
     ret = g1_lincomb(&out, points, scalars, 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    ASSERT("lincomb matches direct multiplication", blst_p1_is_equal(&out, &check));
+    ASSERT(
+        "lincomb matches direct multiplication", blst_p1_is_equal(&out, &check)
+    );
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for evaluate_polynomial_in_evaluation_form
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(void) {
+static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(
+    void
+) {
     C_KZG_RET ret;
     Polynomial p;
     fr_t x, y, c;
@@ -927,7 +937,7 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(voi
     get_rand_fr(&c);
     get_rand_fr(&x);
 
-    for(size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         p.evals[i] = c;
     }
 
@@ -937,7 +947,9 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(voi
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
 }
 
-static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void) {
+static void
+test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
+) {
     C_KZG_RET ret;
     Polynomial p;
     fr_t x, y, c;
@@ -945,7 +957,7 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_
     get_rand_fr(&c);
     x = s.fs->roots_of_unity[123];
 
-    for(size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         p.evals[i] = c;
     }
 
@@ -955,18 +967,18 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
 }
 
-
-static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void) {
+static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
+) {
     C_KZG_RET ret;
     fr_t poly_coefficients[FIELD_ELEMENTS_PER_BLOB];
     Polynomial p;
     fr_t x, y, check;
 
-    for(size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_fr(&poly_coefficients[i]);
     }
 
-    for(size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         eval_poly(&p.evals[i], poly_coefficients, &s.fs->roots_of_unity[i]);
     }
 
@@ -1280,8 +1292,7 @@ static void test_verify_kzg_proof__fails_z_not_field_element(void) {
     bool ok;
 
     bytes32_from_hex(
-        &z,
-        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+        &z, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     get_rand_field_element(&y);
 
@@ -1300,8 +1311,7 @@ static void test_verify_kzg_proof__fails_y_not_field_element(void) {
     bool ok;
 
     bytes32_from_hex(
-        &y,
-        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+        &y, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     get_rand_field_element(&z);
 
@@ -1416,7 +1426,9 @@ static void test_fft_g1__succeeds_round_trip(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     for (size_t i = 0; i < 32; i++) {
-        ASSERT("same as original", blst_p1_is_equal(&original[i], &inversed[i]));
+        ASSERT(
+            "same as original", blst_p1_is_equal(&original[i], &inversed[i])
+        );
     }
 }
 
@@ -1638,12 +1650,13 @@ int main(void) {
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_g1_lincomb__verify_consistent);
     RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial);
-    RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range);
+    RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range
+    );
     RUN(test_evaluate_polynomial_in_evaluation_form__random_polynomial);
     RUN(test_log_2_byte__succeeds_expected_values);
     RUN(test_log2_pow2__succeeds_expected_values);
     RUN(test_is_power_of_two__succeeds_powers_of_two);
-    RUN(test_is_power_of_two__fails_not_powers_of_two);    
+    RUN(test_is_power_of_two__fails_not_powers_of_two);
     RUN(test_compute_kzg_proof__succeeds_expected_proof);
     RUN(test_compute_and_verify_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_kzg_proof__succeeds_within_domain);
@@ -1661,7 +1674,6 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
-
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
