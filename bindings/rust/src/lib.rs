@@ -107,6 +107,21 @@ impl Drop for KZGSettings {
     }
 }
 
+impl Blob {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != BYTES_PER_BLOB {
+            return Err(Error::InvalidBytesLength(format!(
+                "Invalid byte length. Expected {} got {}",
+                BYTES_PER_BLOB,
+                bytes.len(),
+            )));
+        }
+        let mut new_bytes = [0; BYTES_PER_BLOB];
+        new_bytes.copy_from_slice(bytes);
+        Ok(Self { bytes: new_bytes })
+    }
+}
+
 impl Bytes32 {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 32 {
@@ -162,18 +177,13 @@ impl KZGProof {
     }
 
     pub fn compute_kzg_proof(
-        blob: &[Blob],
+        blob: Blob,
         z_bytes: Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<Self, Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
-            let res = compute_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                blob.as_ptr(),
-                &z_bytes,
-                kzg_settings,
-            );
+            let res = compute_kzg_proof(kzg_proof.as_mut_ptr(), &blob, &z_bytes, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_proof.assume_init())
             } else {
@@ -182,18 +192,10 @@ impl KZGProof {
         }
     }
 
-    pub fn compute_aggregate_kzg_proof(
-        blobs: &[Blob],
-        kzg_settings: &KZGSettings,
-    ) -> Result<Self, Error> {
+    pub fn compute_blob_kzg_proof(blob: Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
-            let res = compute_aggregate_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                blobs.as_ptr(),
-                blobs.len(),
-                kzg_settings,
-            );
+            let res = compute_blob_kzg_proof(kzg_proof.as_mut_ptr(), &blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_proof.assume_init())
             } else {
@@ -202,27 +204,21 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_aggregate_kzg_proof(
-        &self,
-        blobs: &[Blob],
-        commitments_bytes: &[Bytes48],
+    pub fn verify_kzg_proof(
+        commitment_bytes: Bytes48,
+        z_bytes: Bytes32,
+        y_bytes: Bytes32,
+        proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        if blobs.len() != commitments_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} blobs and {} commitments",
-                blobs.len(),
-                commitments_bytes.len()
-            )));
-        }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_aggregate_kzg_proof(
+            let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
-                blobs.as_ptr(),
-                commitments_bytes.as_ptr(),
-                blobs.len(),
-                &self.to_bytes(),
+                &commitment_bytes,
+                &z_bytes,
+                &y_bytes,
+                &proof_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -233,21 +229,57 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_kzg_proof(
-        &self,
+    pub fn verify_blob_kzg_proof(
+        blob: Blob,
         commitment_bytes: Bytes48,
-        z_bytes: Bytes32,
-        y_bytes: Bytes32,
+        proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_kzg_proof(
+            let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
+                &blob,
                 &commitment_bytes,
-                &z_bytes,
-                &y_bytes,
-                &self.to_bytes(),
+                &proof_bytes,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_blob_kzg_proof_batch(
+        blobs: &[Blob],
+        commitments_bytes: &[Bytes48],
+        proofs_bytes: &[Bytes48],
+        kzg_settings: &KZGSettings,
+    ) -> Result<bool, Error> {
+        if blobs.len() != commitments_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} blobs and {} commitments",
+                blobs.len(),
+                commitments_bytes.len()
+            )));
+        }
+        if blobs.len() != proofs_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} blobs and {} proofs",
+                blobs.len(),
+                proofs_bytes.len()
+            )));
+        }
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_blob_kzg_proof_batch(
+                verified.as_mut_ptr(),
+                blobs.as_ptr(),
+                commitments_bytes.as_ptr(),
+                proofs_bytes.as_ptr(),
+                blobs.len(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -283,15 +315,19 @@ impl KZGCommitment {
         hex::encode(self.bytes)
     }
 
-    pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Self {
+    pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
-            blob_to_kzg_commitment(
+            let res = blob_to_kzg_commitment(
                 kzg_commitment.as_mut_ptr(),
                 blob.as_ptr() as *const Blob,
                 kzg_settings,
             );
-            kzg_commitment.assume_init()
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(kzg_commitment.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
         }
     }
 }
@@ -330,6 +366,7 @@ impl From<[u8; 48]> for Bytes48 {
 mod tests {
     use super::*;
     use rand::{rngs::ThreadRng, Rng};
+    use std::fs;
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
         let mut arr = [0u8; BYTES_PER_BLOB];
@@ -355,29 +392,42 @@ mod tests {
         let commitments: Vec<Bytes48> = blobs
             .clone()
             .into_iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings).unwrap())
             .map(|commitment| commitment.to_bytes())
             .collect();
 
-        let kzg_proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
+        let proofs: Vec<Bytes48> = blobs
+            .clone()
+            .into_iter()
+            .map(|blob| KZGProof::compute_blob_kzg_proof(blob, &kzg_settings).unwrap())
+            .map(|proof| proof.to_bytes())
+            .collect();
 
-        assert!(kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
-            .unwrap());
+        assert!(KZGProof::verify_blob_kzg_proof_batch(
+            &blobs,
+            &commitments,
+            &proofs,
+            &kzg_settings
+        )
+        .unwrap());
 
         blobs.pop();
 
-        let error = kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
-            .unwrap_err();
+        let error =
+            KZGProof::verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &kzg_settings)
+                .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
         let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
-        assert!(!kzg_proof
-            .verify_aggregate_kzg_proof(&blobs, &commitments, &kzg_settings)
-            .unwrap());
+        assert!(!KZGProof::verify_blob_kzg_proof_batch(
+            &blobs,
+            &commitments,
+            &proofs,
+            &kzg_settings
+        )
+        .unwrap());
     }
 
     #[test]
@@ -390,51 +440,102 @@ mod tests {
         test_simple(trusted_setup_file);
     }
 
+    fn get_blob(path: PathBuf) -> Blob {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Blob::from_bytes(input_bytes.as_slice()).unwrap()
+    }
+
+    fn get_bytes32(path: PathBuf) -> Bytes32 {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Bytes32::from_bytes(input_bytes.as_slice()).unwrap()
+    }
+
+    fn get_bytes48(path: PathBuf) -> Bytes48 {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Bytes48::from_bytes(input_bytes.as_slice()).unwrap()
+    }
+
+    fn get_boolean(path: PathBuf) -> bool {
+        let input_str = fs::read_to_string(path).unwrap();
+        input_str.contains("true")
+    }
+
+    const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "../../tests/blob_to_kzg_commitment/";
+    const COMPUTE_KZG_PROOF_TESTS: &str = "../../tests/compute_kzg_proof/";
+    const COMPUTE_BLOB_KZG_PROOF_TESTS: &str = "../../tests/compute_blob_kzg_proof/";
+    const VERIFY_KZG_PROOF_TESTS: &str = "../../tests/verify_kzg_proof/";
+    const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/";
+    const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/";
+
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
-    fn test_compute_agg_proof() {
+    fn test_blob_to_kzg_commitment() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let test_file = PathBuf::from("test_vectors/public_agg_proof.json");
-        let json_data: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
+        let tests = fs::read_dir(BLOB_TO_KZG_COMMITMENT_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let blob = get_blob(test.join("blob.txt"));
+            let res = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
 
-        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
-        for test in tests.iter() {
-            let expected_proof = test.get("Proof").unwrap().as_str().unwrap();
+            if res.is_ok() {
+                let expectedCommitment = get_bytes48(test.join("commitment.txt"));
+                assert_eq!(res.unwrap().bytes, expectedCommitment.bytes)
+            } else {
+                assert!(!test.join("commitment.txt").exists());
+            }
+        }
+    }
 
-            let expected_commitments = test
-                .get("Commitments")
-                .unwrap()
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|data| data.as_str().unwrap())
-                .collect::<Vec<_>>();
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    fn test_compute_kzg_proof() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-            let blobs = test
-                .get("Polynomials")
-                .unwrap()
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|data| {
-                    let data = data.as_str().unwrap();
-                    let blob = hex::decode(data).unwrap();
-                    let mut blob_data = [0; BYTES_PER_BLOB];
-                    blob_data.copy_from_slice(&blob);
-                    Blob { bytes: blob_data }
-                })
-                .collect::<Vec<_>>();
+        let tests = fs::read_dir(COMPUTE_KZG_PROOF_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let blob = get_blob(test.join("blob.txt"));
+            let input_point = get_bytes32(test.join("input_point.txt"));
+            let res = KZGProof::compute_kzg_proof(blob, input_point, &kzg_settings);
 
-            let proof = KZGProof::compute_aggregate_kzg_proof(&blobs, &kzg_settings).unwrap();
-            assert_eq!(proof.as_hex_string(), expected_proof);
+            if res.is_ok() {
+                let expected_proof = get_bytes48(test.join("proof.txt"));
+                assert_eq!(res.unwrap().bytes, expected_proof.bytes)
+            } else {
+                assert!(!test.join("proof.txt").exists());
+            }
+        }
+    }
 
-            for (i, blob) in blobs.into_iter().enumerate() {
-                let commitment = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
-                assert_eq!(commitment.as_hex_string().as_str(), expected_commitments[i]);
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    fn test_compute_blob_kzg_proof() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        let tests = fs::read_dir(COMPUTE_BLOB_KZG_PROOF_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let blob = get_blob(test.join("blob.txt"));
+            let res = KZGProof::compute_blob_kzg_proof(blob, &kzg_settings);
+
+            if res.is_ok() {
+                let expected_proof = get_bytes48(test.join("proof.txt"));
+                assert_eq!(res.unwrap().bytes, expected_proof.bytes)
+            } else {
+                assert!(!test.join("proof.txt").exists());
             }
         }
     }
@@ -446,27 +547,110 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let test_file = PathBuf::from("test_vectors/public_verify_kzg_proof.json");
-        let json_data: serde_json::Value =
-            serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
+        let tests = fs::read_dir(VERIFY_KZG_PROOF_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let commitment = get_bytes48(test.join("commitment.txt"));
+            let input_point = get_bytes32(test.join("input_point.txt"));
+            let claimed_value = get_bytes32(test.join("claimed_value.txt"));
+            let proof = get_bytes48(test.join("proof.txt"));
+            let res = KZGProof::verify_kzg_proof(
+                commitment,
+                input_point,
+                claimed_value,
+                proof,
+                &kzg_settings,
+            );
 
-        let tests = json_data.get("TestCases").unwrap().as_array().unwrap();
-        for test in tests.iter() {
-            let proof = test.get("Proof").unwrap().as_str().unwrap();
-            let kzg_proof = KZGProof::from_bytes(&hex::decode(proof).unwrap()).unwrap();
+            if res.is_ok() {
+                let expected_ok = get_boolean(test.join("ok.txt"));
+                assert_eq!(res.unwrap(), expected_ok)
+            } else {
+                assert!(!test.join("ok.txt").exists());
+            }
+        }
+    }
 
-            let commitment_hex = test.get("Commitment").unwrap().as_str().unwrap();
-            let commitment = Bytes48::from_bytes(&hex::decode(commitment_hex).unwrap()).unwrap();
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    fn test_verify_blob_kzg_proof() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-            let z_hex = test.get("InputPoint").unwrap().as_str().unwrap();
-            let z_bytes = Bytes32::from_bytes(&hex::decode(z_hex).unwrap()).unwrap();
+        let tests = fs::read_dir(VERIFY_BLOB_KZG_PROOF_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let blob = get_blob(test.join("blob.txt"));
+            let commitment = get_bytes48(test.join("commitment.txt"));
+            let proof = get_bytes48(test.join("proof.txt"));
+            let res = KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings);
 
-            let y_hex = test.get("ClaimedValue").unwrap().as_str().unwrap();
-            let y_bytes = Bytes32::from_bytes(&hex::decode(y_hex).unwrap()).unwrap();
+            if res.is_ok() {
+                let expected_ok = get_boolean(test.join("ok.txt"));
+                assert_eq!(res.unwrap(), expected_ok)
+            } else {
+                assert!(!test.join("ok.txt").exists());
+            }
+        }
+    }
 
-            assert!(kzg_proof
-                .verify_kzg_proof(commitment, z_bytes, y_bytes, &kzg_settings)
-                .unwrap());
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    fn test_verify_blob_kzg_proof_batch() {
+        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        let tests = fs::read_dir(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
+            .unwrap()
+            .map(|t| t.unwrap().path());
+        for test in tests {
+            let mut blobFiles = fs::read_dir(test.join("blobs"))
+                .unwrap()
+                .map(|entry| entry.unwrap())
+                .collect::<Vec<_>>();
+            blobFiles.sort_by_key(|dir| dir.path());
+            let blobs = blobFiles
+                .iter()
+                .map(|blobFile| get_blob(blobFile.path()))
+                .collect::<Vec<Blob>>();
+
+            let mut commitmentFiles = fs::read_dir(test.join("commitments"))
+                .unwrap()
+                .map(|entry| entry.unwrap())
+                .collect::<Vec<_>>();
+            commitmentFiles.sort_by_key(|dir| dir.path());
+            let commitments = commitmentFiles
+                .iter()
+                .map(|commitmentFile| get_bytes48(commitmentFile.path()))
+                .collect::<Vec<Bytes48>>();
+
+            let mut proof_files = fs::read_dir(test.join("proofs"))
+                .unwrap()
+                .map(|entry| entry.unwrap())
+                .collect::<Vec<_>>();
+            proof_files.sort_by_key(|dir| dir.path());
+            let proofs = proof_files
+                .iter()
+                .map(|proof_file| get_bytes48(proof_file.path()))
+                .collect::<Vec<Bytes48>>();
+
+            let res = KZGProof::verify_blob_kzg_proof_batch(
+                blobs.as_slice(),
+                commitments.as_slice(),
+                proofs.as_slice(),
+                &kzg_settings,
+            );
+
+            if res.is_ok() {
+                let expectedOk = get_boolean(test.join("ok.txt"));
+                assert_eq!(res.unwrap(), expectedOk)
+            } else {
+                assert!(!test.join("ok.txt").exists());
+            }
         }
     }
 }
