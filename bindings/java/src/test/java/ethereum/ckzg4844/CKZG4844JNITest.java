@@ -1,5 +1,6 @@
 package ethereum.ckzg4844;
 
+import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -7,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
-import ethereum.ckzg4844.CKZGException.CKZGError;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
@@ -278,7 +278,7 @@ public class CKZG4844JNITest {
     final CKZGException exception =
         assertThrows(CKZGException.class, () -> CKZG4844JNI.blobToKzgCommitment(blob));
 
-    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals("There was an error in blobToKzgCommitment.", exception.getErrorMessage());
 
     CKZG4844JNI.freeTrustedSetup();
@@ -298,7 +298,7 @@ public class CKZG4844JNITest {
         assertThrows(
             CKZGException.class,
             () -> CKZG4844JNI.verifyBlobKzgProofBatch(blobs, commitments, proofs, count));
-    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
         "Invalid commitments size. Expected 96 bytes but got 144.", exception.getErrorMessage());
 
@@ -313,7 +313,7 @@ public class CKZG4844JNITest {
     CKZGException exception =
         assertThrows(CKZGException.class, () -> CKZG4844JNI.blobToKzgCommitment(new byte[0]));
 
-    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
         String.format(
             "Invalid blob size. Expected %d bytes but got 0.", CKZG4844JNI.getBytesPerBlob()),
@@ -322,7 +322,7 @@ public class CKZG4844JNITest {
     exception =
         assertThrows(CKZGException.class, () -> CKZG4844JNI.computeBlobKzgProof(new byte[123]));
 
-    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
         String.format(
             "Invalid blob size. Expected %d bytes but got 123.", CKZG4844JNI.getBytesPerBlob()),
@@ -338,7 +338,7 @@ public class CKZG4844JNITest {
                     TestUtils.createRandomProofs(2),
                     2));
 
-    assertEquals(CKZGError.C_KZG_BADARGS, exception.getError());
+    assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
         String.format(
             "Invalid blobs size. Expected %d bytes but got 42.", CKZG4844JNI.getBytesPerBlob() * 2),
@@ -386,7 +386,9 @@ public class CKZG4844JNITest {
   public void shouldThrowExceptionOnIncorrectTrustedSetupParameters() {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
-    final CKZGException ckzgException =
+
+    // wrong g1Count
+    CKZGException exception =
         assertThrows(
             CKZGException.class,
             () ->
@@ -395,17 +397,31 @@ public class CKZG4844JNITest {
                     parameters.getG1Count() + 1,
                     parameters.getG2(),
                     parameters.getG2Count()));
-    assertTrue(ckzgException.getMessage().contains("C_KZG_BADARGS"));
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertTrue(exception.getErrorMessage().contains("Invalid g1 size."));
+
+    // wrong g2Count
+    exception =
+        assertThrows(
+            CKZGException.class,
+            () ->
+                CKZG4844JNI.loadTrustedSetup(
+                    parameters.getG1(),
+                    parameters.getG1Count(),
+                    parameters.getG2(),
+                    parameters.getG2Count() + 1));
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertTrue(exception.getErrorMessage().contains("Invalid g2 size."));
   }
 
   @Test
   public void shouldThrowExceptionOnIncorrectTrustedSetupFromFile() {
     final Preset incorrectPreset = PRESET == Preset.MAINNET ? Preset.MINIMAL : Preset.MAINNET;
-    final CKZGException ckzgException =
+    final CKZGException exception =
         assertThrows(
             CKZGException.class,
             () -> CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(incorrectPreset)));
-    assertTrue(ckzgException.getMessage().contains("C_KZG_BADARGS"));
+    assertEquals(C_KZG_BADARGS, exception.getError());
   }
 
   private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {

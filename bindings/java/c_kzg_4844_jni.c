@@ -42,7 +42,8 @@ void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size, 
   throw_c_kzg_exception(env, C_KZG_BADARGS, message);
 }
 
-KZGSettings *allocate_settings(JNIEnv *env) {
+KZGSettings *allocate_settings(JNIEnv *env)
+{
   KZGSettings *s = malloc(sizeof(KZGSettings));
   if (s == NULL)
   {
@@ -102,6 +103,24 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
   if (settings)
   {
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
+    return;
+  }
+
+  size_t g1_bytes = (size_t)(*env)->GetArrayLength(env, g1);
+  size_t g1_expected_bytes = (size_t)g1Count * 48;
+
+  if (g1_bytes != g1_expected_bytes)
+  {
+    throw_invalid_size_exception(env, "Invalid g1 size.", g1_bytes, g1_expected_bytes);
+    return;
+  }
+
+  size_t g2_bytes = (size_t)(*env)->GetArrayLength(env, g2);
+  size_t g2_expected_bytes = (size_t)g2Count * 96;
+
+  if (g2_bytes != g2_expected_bytes)
+  {
+    throw_invalid_size_exception(env, "Invalid g2 size.", g2_bytes, g2_expected_bytes);
     return;
   }
 
