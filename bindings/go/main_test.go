@@ -2,6 +2,7 @@ package cgokzg4844
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -170,122 +171,193 @@ var (
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob Blob `json:"blob"`
+		}
+		Output struct {
+			Commitment Bytes48 `json:"commitment"`
+		}
+	}
+
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		commitment, ret := BlobToKZGCommitment(blob)
+		commitment, ret := BlobToKZGCommitment(test.Input.Blob)
 		if ret == C_KZG_OK {
-			expectedCommitment := KZGCommitment(getBytes48(filepath.Join(test, "commitment.txt")))
-			require.Equal(t, commitment, expectedCommitment, test)
+			require.Equal(t, test.Output.Commitment[:], commitment[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "commitment.txt"))
+			require.Equal(t, test.Output.Commitment[:], nil)
 		}
 	}
 }
 
 func TestComputeKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob       Blob    `json:"blob"`
+			InputPoint Bytes32 `json:"input_point"`
+		}
+		Output struct {
+			Proof Bytes48 `json:"proof"`
+		}
+	}
+
 	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
-		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		proof, ret := ComputeKZGProof(blob, inputPoint)
+		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.InputPoint)
 		if ret == C_KZG_OK {
-			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
-			require.Equal(t, proof, expectedProof, test)
+			require.Equal(t, test.Output.Proof[:], proof[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
+			require.Equal(t, test.Output.Proof[:], nil)
 		}
 	}
 }
 
 func TestComputeBlobKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob Blob `json:"blob"`
+		}
+		Output struct {
+			Proof Bytes48 `json:"proof"`
+		}
+	}
+
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		proof, ret := ComputeBlobKZGProof(blob)
+		proof, ret := ComputeBlobKZGProof(test.Input.Blob)
 		if ret == C_KZG_OK {
-			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
-			require.Equal(t, proof, expectedProof, test)
+			require.Equal(t, test.Output.Proof[:], proof[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
+			require.Equal(t, test.Output.Proof[:], nil)
 		}
 	}
 }
 
 func TestVerifyKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitment   Bytes48 `json:"commitment"`
+			InputPoint   Bytes32 `json:"input_point"`
+			ClaimedValue Bytes32 `json:"claimed_value"`
+			Proof        Bytes48 `json:"proof"`
+		}
+		Output struct {
+			Valid bool `json:"valid"`
+		}
+	}
+
 	tests, err := filepath.Glob(verifyKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
-		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
-		claimedValue := getBytes32(filepath.Join(test, "claimed_value.txt"))
-		proof := getBytes48(filepath.Join(test, "proof.txt"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		ok, ret := VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
+		valid, ret := VerifyKZGProof(
+			test.Input.Commitment,
+			test.Input.InputPoint,
+			test.Input.ClaimedValue,
+			test.Input.Proof)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.Equal(t, test.Output.Valid, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Equal(t, test.Output.Valid, nil)
 		}
 	}
 }
 
 func TestVerifyBlobKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob       Blob    `json:"blob"`
+			Commitment Bytes48 `json:"commitment"`
+			Proof      Bytes48 `json:"proof"`
+		}
+		Output struct {
+			Valid bool `json:"valid"`
+		}
+	}
+
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
-		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
-		proof := getBytes48(filepath.Join(test, "proof.txt"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		ok, ret := VerifyBlobKZGProof(blob, commitment, proof)
+		valid, ret := VerifyBlobKZGProof(
+			test.Input.Blob,
+			test.Input.Commitment,
+			test.Input.Proof)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.Equal(t, test.Output.Valid, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Equal(t, test.Output.Valid, nil)
 		}
 	}
 }
 
 func TestVerifyBlobKZGProofBatch(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blobs       []Blob    `json:"blobs"`
+			Commitments []Bytes48 `json:"commitments"`
+			Proofs      []Bytes48 `json:"proofs"`
+		}
+		Output struct {
+			Valid bool `json:"valid"`
+		}
+	}
+
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blobFiles, err := filepath.Glob(filepath.Join(test, "blobs/*"))
+	for _, testPath := range tests {
+		testFile, err := os.Open(testPath)
 		require.NoError(t, err)
-		blobs := make([]Blob, len(blobFiles))
-		for i, blobFile := range blobFiles {
-			blobs[i] = getBlob(blobFile)
-		}
-		commitmentFiles, err := filepath.Glob(filepath.Join(test, "commitments/*"))
+		test := Test{}
+		err = json.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
-		commitments := make([]Bytes48, len(commitmentFiles))
-		for i, commitmentFile := range commitmentFiles {
-			commitments[i] = getBytes48(commitmentFile)
-		}
-		proofFiles, err := filepath.Glob(filepath.Join(test, "proofs/*"))
-		require.NoError(t, err)
-		proofs := make([]Bytes48, len(proofFiles))
-		for i, proofFile := range proofFiles {
-			proofs[i] = getBytes48(proofFile)
-		}
-		require.Len(t, commitments, len(blobs))
-		require.Len(t, proofs, len(blobs))
 
-		ok, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+		valid, ret := VerifyBlobKZGProofBatch(
+			test.Input.Blobs,
+			test.Input.Commitments,
+			test.Input.Proofs)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.Equal(t, test.Output.Valid, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Equal(t, test.Output.Valid, nil)
 		}
 	}
 }
