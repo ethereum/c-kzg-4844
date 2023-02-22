@@ -768,6 +768,9 @@ static void test_bit_reversal_permutation__specific_items(void) {
     ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
+    // Test the first 8 elements of the bit reversal permutation
+    // This tests the ordering of the values, not the values themselves,
+    // so is independent of the randomness used to initialize original[]
     ASSERT_EQUALS(reversed[0], original[0]);
     ASSERT_EQUALS(reversed[1], original[64]);
     ASSERT_EQUALS(reversed[2], original[32]);
