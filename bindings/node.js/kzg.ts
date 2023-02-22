@@ -33,23 +33,27 @@ type KZG = {
     setupHandle: SetupHandle,
   ) => KZGProof;
 
-  computeAggregateKzgProof: (
-    blobs: Blob[],
-    setupHandle: SetupHandle,
-  ) => KZGProof;
-
-  verifyAggregateKzgProof: (
-    blobs: Blob[],
-    commitmentsBytes: Bytes48[],
-    aggregatedProofBytes: Bytes48,
-    setupHandle: SetupHandle,
-  ) => boolean;
+  computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
 
   verifyKzgProof: (
     commitmentBytes: Bytes48,
     zBytes: Bytes32,
     yBytes: Bytes32,
     proofBytes: Bytes48,
+    setupHandle: SetupHandle,
+  ) => boolean;
+
+  verifyBlobKzgProof: (
+    blob: Blob,
+    commitmentBytes: Bytes48,
+    proofBytes: Bytes48,
+    setupHandle: SetupHandle,
+  ) => boolean;
+
+  verifyBlobKzgProofBatch: (
+    blobs: Blob[],
+    commitmentsBytes: Bytes48[],
+    proofsBytes: Bytes48[],
     setupHandle: SetupHandle,
   ) => boolean;
 };
@@ -78,10 +82,11 @@ function requireSetupHandle(): SetupHandle {
 }
 
 function checkBlob(blob: Blob) {
+  if (!(blob instanceof Uint8Array)) {
+    throw new Error("Expected blob to be a UInt8Array.");
+  }
   if (blob.length != BYTES_PER_BLOB) {
-    throw new Error(
-      `Expected blob to be UInt8Array of ${BYTES_PER_BLOB} bytes.`,
-    );
+    throw new Error(`Expected blob to be ${BYTES_PER_BLOB} bytes.`);
   }
 }
 
@@ -92,10 +97,11 @@ function checkBlobs(blobs: Blob[]) {
 }
 
 function checkCommitment(commitment: KZGCommitment) {
+  if (!(commitment instanceof Uint8Array)) {
+    throw new Error("Expected commitment to be a UInt8Array.");
+  }
   if (commitment.length != BYTES_PER_COMMITMENT) {
-    throw new Error(
-      `Expected commitment to be UInt8Array of ${BYTES_PER_COMMITMENT} bytes.`,
-    );
+    throw new Error(`Expected commitment to be ${BYTES_PER_COMMITMENT} bytes.`);
   }
 }
 
@@ -106,17 +112,27 @@ function checkCommitments(commitments: KZGCommitment[]) {
 }
 
 function checkProof(proof: KZGProof) {
+  if (!(proof instanceof Uint8Array)) {
+    throw new Error("Expected proof to be a UInt8Array.");
+  }
   if (proof.length != BYTES_PER_PROOF) {
-    throw new Error(
-      `Expected proof to be UInt8Array of ${BYTES_PER_PROOF} bytes.`,
-    );
+    throw new Error(`Expected proof to be ${BYTES_PER_PROOF} bytes.`);
+  }
+}
+
+function checkProofs(proofs: KZGProof[]) {
+  for (let proof of proofs) {
+    checkProof(proof);
   }
 }
 
 function checkFieldElement(field: Bytes32) {
+  if (!(field instanceof Uint8Array)) {
+    throw new Error("Expected field element to be a UInt8Array.");
+  }
   if (field.length != BYTES_PER_FIELD_ELEMENT) {
     throw new Error(
-      `Expected field element to be UInt8Array of ${BYTES_PER_FIELD_ELEMENT} bytes.`,
+      `Expected field element to be ${BYTES_PER_FIELD_ELEMENT} bytes.`,
     );
   }
 }
@@ -173,9 +189,9 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
-export function computeAggregateKzgProof(blobs: Blob[]): KZGProof {
-  checkBlobs(blobs);
-  return kzg.computeAggregateKzgProof(blobs, requireSetupHandle());
+export function computeBlobKzgProof(blob: Blob): KZGProof {
+  checkBlob(blob);
+  return kzg.computeBlobKzgProof(blob, requireSetupHandle());
 }
 
 export function verifyKzgProof(
@@ -197,18 +213,34 @@ export function verifyKzgProof(
   );
 }
 
-export function verifyAggregateKzgProof(
+export function verifyBlobKzgProof(
+  blob: Blob,
+  commitmentBytes: Bytes48,
+  proofBytes: Bytes48,
+): boolean {
+  checkBlob(blob);
+  checkCommitment(commitmentBytes);
+  checkProof(proofBytes);
+  return kzg.verifyBlobKzgProof(
+    blob,
+    commitmentBytes,
+    proofBytes,
+    requireSetupHandle(),
+  );
+}
+
+export function verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
-  proofBytes: Bytes48,
+  proofsBytes: Bytes48[],
 ): boolean {
   checkBlobs(blobs);
   checkCommitments(commitmentsBytes);
-  checkProof(proofBytes);
-  return kzg.verifyAggregateKzgProof(
+  checkProofs(proofsBytes);
+  return kzg.verifyBlobKzgProofBatch(
     blobs,
     commitmentsBytes,
-    proofBytes,
+    proofsBytes,
     requireSetupHandle(),
   );
 }
