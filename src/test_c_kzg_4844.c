@@ -1249,10 +1249,9 @@ static void test_verify_kzg_proof__fails_proof_not_in_g1(void) {
     Bytes32 y, z;
     bool ok;
 
+    get_rand_g1_bytes(&c);
     get_rand_field_element(&z);
     get_rand_field_element(&y);
-
-    get_rand_g1_bytes(&c);
     bytes48_from_hex(
         &proof,
         "8123456789abcdef0123456789abcdef0123456789abcdef"
@@ -1270,15 +1269,14 @@ static void test_verify_kzg_proof__fails_commitment_not_in_g1(void) {
     Bytes32 y, z;
     bool ok;
 
-    get_rand_field_element(&z);
-    get_rand_field_element(&y);
-
-    get_rand_g1_bytes(&proof);
     bytes48_from_hex(
         &c,
         "8123456789abcdef0123456789abcdef0123456789abcdef"
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
+    get_rand_field_element(&z);
+    get_rand_field_element(&y);
+    get_rand_g1_bytes(&proof);
 
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
@@ -1291,12 +1289,11 @@ static void test_verify_kzg_proof__fails_z_not_field_element(void) {
     Bytes32 y, z;
     bool ok;
 
+    get_rand_g1_bytes(&c);
     bytes32_from_hex(
         &z, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     get_rand_field_element(&y);
-
-    get_rand_g1_bytes(&c);
     get_rand_g1_bytes(&proof);
 
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
@@ -1310,12 +1307,11 @@ static void test_verify_kzg_proof__fails_y_not_field_element(void) {
     Bytes32 y, z;
     bool ok;
 
+    get_rand_g1_bytes(&c);
+    get_rand_field_element(&z);
     bytes32_from_hex(
         &y, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
-    get_rand_field_element(&z);
-
-    get_rand_g1_bytes(&c);
     get_rand_g1_bytes(&proof);
 
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
