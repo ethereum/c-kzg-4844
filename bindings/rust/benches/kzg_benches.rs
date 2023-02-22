@@ -25,7 +25,7 @@ fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
 
 fn generate_random_commitment(rng: &mut ThreadRng, s: &KZGSettings) -> Bytes48 {
     let blob = generate_random_blob(rng);
-    KZGProof::compute_blob_kzg_proof(blob, s)
+    KZGCommitment::blob_to_kzg_commitment(blob, s)
         .unwrap()
         .to_bytes()
 }
