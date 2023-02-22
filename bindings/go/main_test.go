@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -103,57 +102,6 @@ func HumanBytes(b int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%v%cB", float64(b)/float64(div), "KMGTPE"[exp])
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Test Helper Functions
-///////////////////////////////////////////////////////////////////////////////
-
-func getBlob(path string) Blob {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var blob Blob
-	err = blob.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return blob
-}
-
-func getBytes32(path string) Bytes32 {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var bytes32 Bytes32
-	err = bytes32.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return bytes32
-}
-
-func getBytes48(path string) Bytes48 {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var bytes48 Bytes48
-	err = bytes48.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return bytes48
-}
-
-func getBoolean(path string) bool {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return strings.Contains(string(inputBytes), "true")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
