@@ -1338,6 +1338,103 @@ static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
     ASSERT_EQUALS(ok, true);
 }
 
+static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
+) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    g1_t proof_g1;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute the proof */
+    ret = compute_blob_kzg_proof(&proof, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Change the proof so it should not verify */
+    ret = bytes_to_kzg_commitment(&proof_g1, &proof);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    blst_p1_add(&proof_g1, &proof_g1, &G1_GENERATOR);
+    bytes_from_g1(&proof, &proof_g1);
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof(&ok, &blob, &c, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok, false);
+}
+
+static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
+) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+    get_rand_g1_bytes(&c);
+    bytes48_from_hex(
+        &proof,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof(&ok, &blob, &c, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1(
+    void
+) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+    bytes48_from_hex(
+        &c,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+    get_rand_g1_bytes(&proof);
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof(&ok, &blob, &c, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    Bytes32 field_element;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    bytes32_from_hex(
+        &field_element,
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+    );
+    memset(&blob, 0, sizeof(blob));
+    memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+    get_rand_g1_bytes(&c);
+    get_rand_g1_bytes(&proof);
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof(&ok, &blob, &c, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for verify_kzg_proof_batch
 ///////////////////////////////////////////////////////////////////////////////
@@ -1395,6 +1492,97 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT_EQUALS(ok, false);
+}
+
+static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
+    C_KZG_RET ret;
+    const int n_samples = 2;
+    Bytes48 proofs[n_samples];
+    KZGCommitment commitments[n_samples];
+    Blob blobs[n_samples];
+    bool ok;
+
+    /* Some preparation */
+    for (int i = 0; i < n_samples; i++) {
+        get_rand_blob(&blobs[i]);
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Overwrite proof with one not in G1 */
+    bytes48_from_hex(
+        &proofs[1],
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    ret = verify_blob_kzg_proof_batch(
+        &ok, blobs, commitments, proofs, n_samples, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
+    C_KZG_RET ret;
+    const int n_samples = 2;
+    Bytes48 proofs[n_samples];
+    KZGCommitment commitments[n_samples];
+    Blob blobs[n_samples];
+    bool ok;
+
+    /* Some preparation */
+    for (int i = 0; i < n_samples; i++) {
+        get_rand_blob(&blobs[i]);
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Overwrite proof with one not in G1 */
+    bytes48_from_hex(
+        &commitments[1],
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    ret = verify_blob_kzg_proof_batch(
+        &ok, blobs, commitments, proofs, n_samples, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
+    C_KZG_RET ret;
+    const int n_samples = 2;
+    Bytes48 proofs[n_samples];
+    KZGCommitment commitments[n_samples];
+    Blob blobs[n_samples];
+    Bytes32 field_element;
+    bool ok;
+
+    /* Some preparation */
+    for (int i = 0; i < n_samples; i++) {
+        get_rand_blob(&blobs[i]);
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Overwrite one field element in the blob with modulus */
+    bytes32_from_hex(
+        &field_element,
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
+    );
+    memcpy(blobs[1].bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
+
+    ret = verify_blob_kzg_proof_batch(
+        &ok, blobs, commitments, proofs, n_samples, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1650,8 +1838,15 @@ int main(void) {
     RUN(test_verify_kzg_proof__fails_z_not_field_element);
     RUN(test_verify_kzg_proof__fails_y_not_field_element);
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_invalid_blob);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_with_incorrect_proof);
+    RUN(test_verify_kzg_proof_batch__fails_proof_not_in_g1);
+    RUN(test_verify_kzg_proof_batch__fails_commitment_not_in_g1);
+    RUN(test_verify_kzg_proof_batch__fails_invalid_blob);
     RUN(test_fft_g1__succeeds_round_trip);
     RUN(test_fft_g1__n_not_power_of_two);
     RUN(test_fft_g1__n_too_large);
