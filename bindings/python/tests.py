@@ -105,9 +105,9 @@ def test_verify_blob_kzg_proof_batch(ts):
         with open(test_file, "r") as f:
             test = json.load(f)
 
-        blobs = b"".join([bytes.fromhex(b) for b in test["input"]["blobs"]])
-        commitments = b"".join([bytes.fromhex(b) for b in test["input"]["commitments"]])
-        proofs = b"".join([bytes.fromhex(b) for b in test["input"]["proofs"]])
+        blobs = b"".join(map(bytes.fromhex, test["input"]["blobs"]))
+        commitments = b"".join(map(bytes.fromhex, test["input"]["commitments"]))
+        proofs = b"".join(map(bytes.fromhex, test["input"]["proofs"]))
 
         try:
             valid = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
