@@ -441,27 +441,27 @@ mod tests {
         test_simple(trusted_setup_file);
     }
 
-    fn getBlob(path: PathBuf) -> Blob {
-        let inputStr = fs::read_to_string(path).unwrap();
-        let inputBytes = hex::decode(inputStr.as_bytes()).unwrap();
-        Blob::from_bytes(inputBytes.as_slice()).unwrap()
+    fn get_blob(path: PathBuf) -> Blob {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Blob::from_bytes(input_bytes.as_slice()).unwrap()
     }
 
-    fn getBytes32(path: PathBuf) -> Bytes32 {
-        let inputStr = fs::read_to_string(path).unwrap();
-        let inputBytes = hex::decode(inputStr.as_bytes()).unwrap();
-        Bytes32::from_bytes(inputBytes.as_slice()).unwrap()
+    fn get_bytes32(path: PathBuf) -> Bytes32 {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Bytes32::from_bytes(input_bytes.as_slice()).unwrap()
     }
 
-    fn getBytes48(path: PathBuf) -> Bytes48 {
-        let inputStr = fs::read_to_string(path).unwrap();
-        let inputBytes = hex::decode(inputStr.as_bytes()).unwrap();
-        Bytes48::from_bytes(inputBytes.as_slice()).unwrap()
+    fn get_bytes48(path: PathBuf) -> Bytes48 {
+        let input_str = fs::read_to_string(path).unwrap();
+        let input_bytes = hex::decode(input_str.as_bytes()).unwrap();
+        Bytes48::from_bytes(input_bytes.as_slice()).unwrap()
     }
 
-    fn getBoolean(path: PathBuf) -> bool {
-        let inputStr = fs::read_to_string(path).unwrap();
-        inputStr.contains("true")
+    fn get_boolean(path: PathBuf) -> bool {
+        let input_str = fs::read_to_string(path).unwrap();
+        input_str.contains("true")
     }
 
     const blob_to_kzg_commitment_tests: &str = "../../tests/blob_to_kzg_commitment/";
@@ -482,11 +482,11 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
-            let blob = getBlob(test.join("blob.txt"));
+            let blob = get_blob(test.join("blob.txt"));
             let res = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
 
             if res.is_ok() {
-                let expectedCommitment = getBytes48(test.join("commitment.txt"));
+                let expectedCommitment = get_bytes48(test.join("commitment.txt"));
                 assert_eq!(res.unwrap().bytes, expectedCommitment.bytes)
             } else {
                 assert!(!test.join("commitment.txt").exists());
@@ -505,13 +505,13 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
-            let blob = getBlob(test.join("blob.txt"));
-            let input_point = getBytes32(test.join("input_point.txt"));
+            let blob = get_blob(test.join("blob.txt"));
+            let input_point = get_bytes32(test.join("input_point.txt"));
             let res = KZGProof::compute_kzg_proof(blob, input_point, &kzg_settings);
 
             if res.is_ok() {
-                let expectedProof = getBytes48(test.join("proof.txt"));
-                assert_eq!(res.unwrap().bytes, expectedProof.bytes)
+                let expected_proof = get_bytes48(test.join("proof.txt"));
+                assert_eq!(res.unwrap().bytes, expected_proof.bytes)
             } else {
                 assert!(!test.join("proof.txt").exists());
             }
@@ -529,12 +529,12 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
-            let blob = getBlob(test.join("blob.txt"));
+            let blob = get_blob(test.join("blob.txt"));
             let res = KZGProof::compute_blob_kzg_proof(blob, &kzg_settings);
 
             if res.is_ok() {
-                let expectedProof = getBytes48(test.join("proof.txt"));
-                assert_eq!(res.unwrap().bytes, expectedProof.bytes)
+                let expected_proof = get_bytes48(test.join("proof.txt"));
+                assert_eq!(res.unwrap().bytes, expected_proof.bytes)
             } else {
                 assert!(!test.join("proof.txt").exists());
             }
@@ -552,10 +552,10 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
-            let commitment = getBytes48(test.join("commitment.txt"));
-            let input_point = getBytes32(test.join("input_point.txt"));
-            let claimed_value = getBytes32(test.join("claimed_value.txt"));
-            let proof = getBytes48(test.join("proof.txt"));
+            let commitment = get_bytes48(test.join("commitment.txt"));
+            let input_point = get_bytes32(test.join("input_point.txt"));
+            let claimed_value = get_bytes32(test.join("claimed_value.txt"));
+            let proof = get_bytes48(test.join("proof.txt"));
             let res = KZGProof::verify_kzg_proof(
                 commitment,
                 input_point,
@@ -565,8 +565,8 @@ mod tests {
             );
 
             if res.is_ok() {
-                let expectedOk = getBoolean(test.join("ok.txt"));
-                assert_eq!(res.unwrap(), expectedOk)
+                let expected_ok = get_boolean(test.join("ok.txt"));
+                assert_eq!(res.unwrap(), expected_ok)
             } else {
                 assert!(!test.join("ok.txt").exists());
             }
@@ -584,14 +584,14 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
-            let blob = getBlob(test.join("blob.txt"));
-            let commitment = getBytes48(test.join("commitment.txt"));
-            let proof = getBytes48(test.join("proof.txt"));
+            let blob = get_blob(test.join("blob.txt"));
+            let commitment = get_bytes48(test.join("commitment.txt"));
+            let proof = get_bytes48(test.join("proof.txt"));
             let res = KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings);
 
             if res.is_ok() {
-                let expectedOk = getBoolean(test.join("ok.txt"));
-                assert_eq!(res.unwrap(), expectedOk)
+                let expected_ok = get_boolean(test.join("ok.txt"));
+                assert_eq!(res.unwrap(), expected_ok)
             } else {
                 assert!(!test.join("ok.txt").exists());
             }
@@ -616,7 +616,7 @@ mod tests {
             blobFiles.sort_by_key(|dir| dir.path());
             let blobs = blobFiles
                 .iter()
-                .map(|blobFile| getBlob(blobFile.path()))
+                .map(|blobFile| get_blob(blobFile.path()))
                 .collect::<Vec<Blob>>();
 
             let mut commitmentFiles = fs::read_dir(test.join("commitments"))
@@ -626,17 +626,17 @@ mod tests {
             commitmentFiles.sort_by_key(|dir| dir.path());
             let commitments = commitmentFiles
                 .iter()
-                .map(|commitmentFile| getBytes48(commitmentFile.path()))
+                .map(|commitmentFile| get_bytes48(commitmentFile.path()))
                 .collect::<Vec<Bytes48>>();
 
-            let mut proofFiles = fs::read_dir(test.join("proofs"))
+            let mut proof_files = fs::read_dir(test.join("proofs"))
                 .unwrap()
                 .map(|entry| entry.unwrap())
                 .collect::<Vec<_>>();
-            proofFiles.sort_by_key(|dir| dir.path());
-            let proofs = proofFiles
+            proof_files.sort_by_key(|dir| dir.path());
+            let proofs = proof_files
                 .iter()
-                .map(|proofFile| getBytes48(proofFile.path()))
+                .map(|proof_file| get_bytes48(proof_file.path()))
                 .collect::<Vec<Bytes48>>();
 
             let res = KZGProof::verify_blob_kzg_proof_batch(
@@ -647,7 +647,7 @@ mod tests {
             );
 
             if res.is_ok() {
-                let expectedOk = getBoolean(test.join("ok.txt"));
+                let expectedOk = get_boolean(test.join("ok.txt"));
                 assert_eq!(res.unwrap(), expectedOk)
             } else {
                 assert!(!test.join("ok.txt").exists());
