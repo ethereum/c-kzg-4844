@@ -1,12 +1,17 @@
-# C-KZG-4844: A minimal library for EIP-4844 Polynomial Commitments
+# C-KZG-4844
 
-This is a copy of [C-KZG](https://github.com/benjaminion/c-kzg) stripped-down to support the
-[Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md) API:
+This is a minimal library for EIP-4844 that implements the [Polynomial
+Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md)
+API. It was originally a stripped-down copy of
+[C-KZG](https://github.com/benjaminion/c-kzg), but it has been heavily modified
+since then.
+
+We provide functions for KZG operations:
 
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
-- `verify_kzg_proof`
 - `compute_blob_kzg_proof`
+- `verify_kzg_proof`
 - `verify_blob_kzg_proof`
 - `verify_blob_kzg_proof_batch`
 
@@ -24,16 +29,29 @@ Initialize the blst submodule:
 git submodule update --init
 ```
 
-Build blst:
+Build the blst library:
 
 ```
 cd src
 make blst
 ```
 
-Build the C-KZG code:
+Build/test the C-KZG-4844 library:
 
 ```
 cd src
 make
 ```
+
+## Bindings
+
+We provide bindings for the following languages:
+
+| Language | Docs                                 |
+|----------|--------------------------------------|
+| C#       | [README](bindings/csharp/README.md)  |
+| Go       | [README](bindings/go/README.md)      |
+| Java     | [README](bindings/java/README.md)    |
+| Node.js  | [README](bindings/node.js/README.md) |
+| Python   | [README](bindings/python/README.md)  |
+| Rust     | [README](bindings/rust/README.md)    |
