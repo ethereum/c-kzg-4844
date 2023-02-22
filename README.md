@@ -57,5 +57,3 @@ Build/test the C-KZG-4844 library:
 cd src
 make
 ```
-
-
