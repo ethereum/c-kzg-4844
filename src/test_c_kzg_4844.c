@@ -1456,8 +1456,6 @@ static void test_expand_root_of_unity__succeeds_with_root(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
 
-    printf("1\n");
-
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[8]);
 
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
@@ -1468,8 +1466,6 @@ static void test_expand_root_of_unity__fails_not_root_of_unity(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
 
-    printf("2\n");
-
     fr_from_uint64(&root_of_unity, 3);
 
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
@@ -1479,8 +1475,6 @@ static void test_expand_root_of_unity__fails_not_root_of_unity(void) {
 static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
-
-    printf("3\n");
 
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[7]);
 
