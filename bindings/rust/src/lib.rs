@@ -464,12 +464,12 @@ mod tests {
         input_str.contains("true")
     }
 
-    const blob_to_kzg_commitment_tests: &str = "../../tests/blob_to_kzg_commitment/";
-    const compute_kzg_proof_tests: &str = "../../tests/compute_kzg_proof/";
-    const compute_blob_kzg_proof_tests: &str = "../../tests/compute_blob_kzg_proof/";
-    const verify_kzg_proof_tests: &str = "../../tests/verify_kzg_proof/";
-    const verify_blob_kzg_proof_tests: &str = "../../tests/verify_blob_kzg_proof/";
-    const verify_blob_kzg_proof_batch_tests: &str = "../../tests/verify_blob_kzg_proof_batch/";
+    const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "../../tests/blob_to_kzg_commitment/";
+    const COMPUTE_KZG_PROOF_TESTS: &str = "../../tests/compute_kzg_proof/";
+    const COMPUTE_BLOB_KZG_PROOF_TESTS: &str = "../../tests/compute_blob_kzg_proof/";
+    const VERIFY_KZG_PROOF_TESTS: &str = "../../tests/verify_kzg_proof/";
+    const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/";
+    const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/";
 
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
@@ -478,7 +478,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(blob_to_kzg_commitment_tests)
+        let tests = fs::read_dir(BLOB_TO_KZG_COMMITMENT_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
@@ -501,7 +501,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(compute_kzg_proof_tests)
+        let tests = fs::read_dir(COMPUTE_KZG_PROOF_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
@@ -525,7 +525,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(compute_blob_kzg_proof_tests)
+        let tests = fs::read_dir(COMPUTE_BLOB_KZG_PROOF_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
@@ -548,7 +548,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(verify_kzg_proof_tests)
+        let tests = fs::read_dir(VERIFY_KZG_PROOF_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
@@ -580,7 +580,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(verify_blob_kzg_proof_tests)
+        let tests = fs::read_dir(VERIFY_BLOB_KZG_PROOF_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
@@ -605,7 +605,7 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = fs::read_dir(verify_blob_kzg_proof_batch_tests)
+        let tests = fs::read_dir(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
             .unwrap()
             .map(|t| t.unwrap().path());
         for test in tests {
