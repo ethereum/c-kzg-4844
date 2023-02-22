@@ -205,14 +205,14 @@ describe("C-KZG", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
       expect(() => blobToKzgCommitment("wrong type")).toThrowError(
-        "Expected blob to be UInt8Array of 131072 bytes",
+        "Expected blob to be a UInt8Array",
       );
     });
 
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
         blobToKzgCommitment(randomBytes(BYTES_PER_BLOB - 1)),
-      ).toThrowError("Expected blob to be UInt8Array of 131072 bytes");
+      ).toThrowError("Expected blob to be 131072 bytes");
     });
   });
 
@@ -281,6 +281,13 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyBlobKzgProofBatch", () => {
+    it("should reject non-bytearray blob", () => {
+      expect(() =>
+        // @ts-expect-error
+        verifyBlobKzgProofBatch(["foo", "bar"], [], []),
+      ).toThrowError("Expected blob to be a UInt8Array");
+    });
+
     it("zero blobs/commitments/proofs should verify as true", () => {
       expect(verifyBlobKzgProofBatch([], [], [])).toBe(true);
     });

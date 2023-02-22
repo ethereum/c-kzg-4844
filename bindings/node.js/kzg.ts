@@ -82,10 +82,11 @@ function requireSetupHandle(): SetupHandle {
 }
 
 function checkBlob(blob: Blob) {
+  if (!(blob instanceof Uint8Array)) {
+    throw new Error("Expected blob to be a UInt8Array.");
+  }
   if (blob.length != BYTES_PER_BLOB) {
-    throw new Error(
-      `Expected blob to be UInt8Array of ${BYTES_PER_BLOB} bytes.`,
-    );
+    throw new Error(`Expected blob to be ${BYTES_PER_BLOB} bytes.`);
   }
 }
 
@@ -96,10 +97,11 @@ function checkBlobs(blobs: Blob[]) {
 }
 
 function checkCommitment(commitment: KZGCommitment) {
+  if (!(commitment instanceof Uint8Array)) {
+    throw new Error("Expected commitment to be a UInt8Array.");
+  }
   if (commitment.length != BYTES_PER_COMMITMENT) {
-    throw new Error(
-      `Expected commitment to be UInt8Array of ${BYTES_PER_COMMITMENT} bytes.`,
-    );
+    throw new Error(`Expected commitment to be ${BYTES_PER_COMMITMENT} bytes.`);
   }
 }
 
@@ -110,10 +112,11 @@ function checkCommitments(commitments: KZGCommitment[]) {
 }
 
 function checkProof(proof: KZGProof) {
+  if (!(proof instanceof Uint8Array)) {
+    throw new Error("Expected proof to be a UInt8Array.");
+  }
   if (proof.length != BYTES_PER_PROOF) {
-    throw new Error(
-      `Expected proof to be UInt8Array of ${BYTES_PER_PROOF} bytes.`,
-    );
+    throw new Error(`Expected proof to be ${BYTES_PER_PROOF} bytes.`);
   }
 }
 
@@ -124,9 +127,12 @@ function checkProofs(proofs: KZGProof[]) {
 }
 
 function checkFieldElement(field: Bytes32) {
+  if (!(field instanceof Uint8Array)) {
+    throw new Error("Expected field element to be a UInt8Array.");
+  }
   if (field.length != BYTES_PER_FIELD_ELEMENT) {
     throw new Error(
-      `Expected field element to be UInt8Array of ${BYTES_PER_FIELD_ELEMENT} bytes.`,
+      `Expected field element to be ${BYTES_PER_FIELD_ELEMENT} bytes.`,
     );
   }
 }
