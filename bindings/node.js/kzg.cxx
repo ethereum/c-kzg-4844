@@ -166,6 +166,10 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   auto z_bytes = extract_byte_array_from_param(info, 1, "zBytes");
   auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
 
+  if (env.IsExceptionPending()) {
+    return env.Null();
+  }
+
   KZGProof proof;
   C_KZG_RET ret = compute_kzg_proof(
     &proof,
@@ -195,6 +199,10 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 
   auto blob = extract_byte_array_from_param(info, 0, "blob");
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
+
+  if (env.IsExceptionPending()) {
+    return env.Null();
+  }
 
   KZGProof proof;
   C_KZG_RET ret = compute_blob_kzg_proof(
