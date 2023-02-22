@@ -1,6 +1,5 @@
 import glob
-from os.path import join
-from os.path import isfile
+import json
 
 import ckzg
 
@@ -15,101 +14,108 @@ verify_kzg_proof_tests = "../../tests/verify_kzg_proof/*"
 verify_blob_kzg_proof_tests = "../../tests/verify_blob_kzg_proof/*"
 verify_blob_kzg_proof_batch_tests = "../../tests/verify_blob_kzg_proof_batch/*"
 
-###############################################################################
-# Helper Functions
-###############################################################################
-
-def get_blob(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_bytes32(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_bytes48(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_boolean(path):
-    with open(path, "r") as f:
-        return "true" in f.read()
 
 ###############################################################################
 # Tests
 ###############################################################################
 
 def test_blob_to_kzg_commitment(ts):
-    for test in glob.glob(blob_to_kzg_commitment_tests):
-        blob = get_blob(join(test, "blob.txt"))
+    for test_file in glob.glob(blob_to_kzg_commitment_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        blob = bytes.fromhex(test["input"]["blob"])
+
         try:
             commitment = ckzg.blob_to_kzg_commitment(blob, ts)
-            expected_commitment = get_bytes48(join(test, "commitment.txt"))
+            expected_commitment = bytes.fromhex(test["output"]["commitment"])
             assert commitment == expected_commitment
         except:
-            assert not isfile(join(test, "commitment.txt"))
+            assert test["output"]["commitment"] is None
+
 
 def test_compute_kzg_proof(ts):
-    for test in glob.glob(compute_kzg_proof_tests):
-        blob = get_blob(join(test, "blob.txt"))
-        input_point = get_bytes32(join(test, "input_point.txt"))
+    for test_file in glob.glob(compute_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        blob = bytes.fromhex(test["input"]["blob"])
+        input_point = bytes.fromhex(test["input"]["input_point"])
+
         try:
             proof = ckzg.compute_kzg_proof(blob, input_point, ts)
-            expected_proof = get_bytes48(join(test, "proof.txt"))
+            expected_proof = bytes.fromhex(test["output"]["proof"])
             assert proof == expected_proof
         except:
-            assert not isfile(join(test, "proof.txt"))
+            assert test["output"]["proof"] is None
+
 
 def test_compute_blob_kzg_proof(ts):
-    for test in glob.glob(compute_blob_kzg_proof_tests):
-        blob = get_blob(join(test, "blob.txt"))
+    for test_file in glob.glob(compute_blob_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        blob = bytes.fromhex(test["input"]["blob"])
+
         try:
             proof = ckzg.compute_blob_kzg_proof(blob, ts)
-            expected_proof = get_bytes48(join(test, "proof.txt"))
+            expected_proof = bytes.fromhex(test["output"]["proof"])
             assert proof == expected_proof
         except:
-            assert not isfile(join(test, "proof.txt"))
+            assert test["output"]["proof"] is None
+
 
 def test_verify_kzg_proof(ts):
-    for test in glob.glob(verify_kzg_proof_tests):
-        commitment = get_bytes48(join(test, "commitment.txt"))
-        input_point = get_bytes32(join(test, "input_point.txt"))
-        claimed_value = get_bytes32(join(test, "claimed_value.txt"))
-        proof = get_bytes48(join(test, "proof.txt"))
+    for test_file in glob.glob(verify_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        commitment = bytes.fromhex(test["input"]["commitment"])
+        input_point = bytes.fromhex(test["input"]["input_point"])
+        claimed_value = bytes.fromhex(test["input"]["claimed_value"])
+        proof = bytes.fromhex(test["input"]["proof"])
+
         try:
-            ok = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
+            expected_valid = test["output"]["valid"]
+            assert valid == expected_valid
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"]["valid"] is None
+
 
 def test_verify_blob_kzg_proof(ts):
-    for test in glob.glob(verify_blob_kzg_proof_tests):
-        blob = get_bytes32(join(test, "blob.txt"))
-        commitment = get_bytes48(join(test, "commitment.txt"))
-        proof = get_bytes48(join(test, "proof.txt"))
+    for test_file in glob.glob(verify_blob_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        blob = bytes.fromhex(test["input"]["blob"])
+        commitment = bytes.fromhex(test["input"]["commitment"])
+        proof = bytes.fromhex(test["input"]["proof"])
+
         try:
-            ok = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
+            expected_valid = test["output"]["valid"]
+            assert valid == expected_valid
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"]["valid"] is None
+
 
 def test_verify_blob_kzg_proof_batch(ts):
-    for test in glob.glob(verify_blob_kzg_proof_batch_tests):
-        blob_files = sorted(glob.glob(join(test, "blobs/*")))
-        blobs = b"".join([get_blob(b) for b in blob_files])
-        commitment_files = sorted(glob.glob(join(test, "commitments/*")))
-        commitments = b"".join([get_bytes48(c) for c in commitment_files])
-        proof_files = sorted(glob.glob(join(test, "proofs/*")))
-        proofs = b"".join([get_bytes48(p) for p in proof_files])
+    for test_file in glob.glob(verify_blob_kzg_proof_batch_tests):
+        with open(test_file, "r") as f:
+            test = json.load(f)
+
+        blobs = b"".join([bytes.fromhex(b) for b in test["input"]["blobs"]])
+        commitments = b"".join([bytes.fromhex(b) for b in test["input"]["commitments"]])
+        proofs = b"".join([bytes.fromhex(b) for b in test["input"]["proofs"]])
 
         try:
-            ok = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
+            expected_valid = test["output"]["valid"]
+            assert valid == expected_valid
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"]["valid"] is None
+
 
 ###############################################################################
 # Main Logic
