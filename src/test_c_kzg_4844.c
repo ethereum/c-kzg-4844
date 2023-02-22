@@ -48,15 +48,6 @@ static void get_rand_fr(fr_t *out) {
     hash_to_bls_field(out, &tmp_bytes);
 }
 
-/*static void get_rand_scalar(blst_scalar *out) {
-    Bytes32 tmp_bytes;
-    fr_t tmp_fr;
-
-    get_rand_bytes32(&tmp_bytes);
-    hash_to_bls_field(&tmp_fr, &tmp_bytes);
-    blst_scalar_from_fr(out, &tmp_fr);
-}*/
-
 static void get_rand_blob(Blob *out) {
     for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
