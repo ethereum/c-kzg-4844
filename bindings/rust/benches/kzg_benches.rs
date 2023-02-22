@@ -87,8 +87,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
-    let mut count: usize = 1;
-    while count <= max_count {
+    for count in [1, 2, 4, 8, 16, 32, 64] {
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
             b.iter(|| {
                 KZGProof::verify_blob_kzg_proof_batch(
@@ -107,8 +106,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 ).unwrap();
             })
         });
-
-        count *= 2;
     }
     group.finish();
 }
