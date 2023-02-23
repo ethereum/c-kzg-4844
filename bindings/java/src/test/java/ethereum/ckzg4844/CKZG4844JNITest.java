@@ -4,12 +4,11 @@ import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -59,144 +58,98 @@ public class CKZG4844JNITest {
     CKZG4844JNI.loadNativeLibrary(PRESET);
   }
 
-  @Test
-  public void blobToKzgCommitmentTests() {
+  @ParameterizedTest
+  @MethodSource("getBlobToKzgCommitmentTests")
+  public void blobToKzgCommitmentTests(final BlobToKzgCommitmentTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(BLOB_TO_KZG_COMMITMENT_TESTS)) {
-      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
-      try {
-        byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-        byte[] expectedCommitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
-        assertArrayEquals(commitment, expectedCommitment);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "commitment.txt")));
-      }
+    try {
+      byte[] commitment = CKZG4844JNI.blobToKzgCommitment(test.getInput().getBlob());
+      assertArrayEquals(commitment, test.getOutput().getCommitment());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getCommitment());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void computeKzgProofTests() {
+  @ParameterizedTest
+  @MethodSource("getComputeKzgProofTests")
+  public void computeKzgProofTests(final ComputeKzgProofTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(COMPUTE_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
-      byte[] inputPoint = TestUtils.getBytes(Paths.get(test, "input_point.txt"));
-      try {
-        byte[] proof = CKZG4844JNI.computeKzgProof(blob, inputPoint);
-        byte[] expectedProof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
-        assertArrayEquals(proof, expectedProof);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "proof.txt")));
-      }
+    try {
+      byte[] proof =
+          CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getInputPoint());
+      assertArrayEquals(proof, test.getOutput().getProof());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getProof());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void computeBlobKzgProofTests() {
+  @ParameterizedTest
+  @MethodSource("getComputeBlobKzgProofTests")
+  public void computeBlobKzgProofTests(final ComputeBlobKzgProofTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(COMPUTE_BLOB_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
-      try {
-        byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob);
-        byte[] expectedProof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
-        assertArrayEquals(proof, expectedProof);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "proof.txt")));
-      }
+    try {
+      byte[] proof = CKZG4844JNI.computeBlobKzgProof(test.getInput().getBlob());
+      assertArrayEquals(proof, test.getOutput().getProof());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getProof());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void verifyKzgProofTests() {
+  @ParameterizedTest
+  @MethodSource("getVerifyKzgProofTests")
+  public void verifyKzgProofTests(final VerifyKzgProofTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(VERIFY_KZG_PROOF_TESTS)) {
-      byte[] commitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
-      byte[] inputPoint = TestUtils.getBytes(Paths.get(test, "input_point.txt"));
-      byte[] claimedValue = TestUtils.getBytes(Paths.get(test, "claimed_value.txt"));
-      byte[] proof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
-      try {
-        boolean ok = CKZG4844JNI.verifyKzgProof(commitment, inputPoint, claimedValue, proof);
-        boolean expectedOk = TestUtils.getBoolean(Paths.get(test, "ok.txt"));
-        assertEquals(ok, expectedOk);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "ok.txt")));
-      }
+    try {
+      boolean valid =
+          CKZG4844JNI.verifyKzgProof(
+              test.getInput().getCommitment(),
+              test.getInput().getInputPoint(),
+              test.getInput().getClaimedValue(),
+              test.getInput().getProof());
+      assertEquals(valid, test.getOutput().getValid());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getValid());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void verifyBlobKzgProofTests() {
+  @ParameterizedTest
+  @MethodSource("getVerifyBlobKzgProofTests")
+  public void verifyBlobKzgProofTests(final VerifyBlobKzgProofTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(VERIFY_BLOB_KZG_PROOF_TESTS)) {
-      byte[] blob = TestUtils.getBytes(Paths.get(test, "blob.txt"));
-      byte[] commitment = TestUtils.getBytes(Paths.get(test, "commitment.txt"));
-      byte[] proof = TestUtils.getBytes(Paths.get(test, "proof.txt"));
-      try {
-        boolean ok = CKZG4844JNI.verifyBlobKzgProof(blob, commitment, proof);
-        boolean expectedOk = TestUtils.getBoolean(Paths.get(test, "ok.txt"));
-        assertEquals(ok, expectedOk);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "ok.txt")));
-      }
+    try {
+      boolean valid =
+          CKZG4844JNI.verifyBlobKzgProof(
+              test.getInput().getBlob(),
+              test.getInput().getCommitment(),
+              test.getInput().getProof());
+      assertEquals(valid, test.getOutput().getValid());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getValid());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void verifyBlobKzgProofBatchTests() {
+  @ParameterizedTest
+  @MethodSource("getVerifyBlobKzgProofBatchTests")
+  public void verifyBlobKzgProofBatchTests(final VerifyBlobKzgProofBatchTest test) {
     if (PRESET != Preset.MAINNET) return;
-    loadTrustedSetup();
 
-    for (String test : TestUtils.getFiles(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)) {
-      byte[] blobs =
-          TestUtils.flatten(
-              TestUtils.getFiles(Paths.get(test, "blobs").toString()).stream()
-                  .map(Paths::get)
-                  .map(TestUtils::getBytes)
-                  .toArray(byte[][]::new));
-      byte[] commitments =
-          TestUtils.flatten(
-              TestUtils.getFiles(Paths.get(test, "commitments").toString()).stream()
-                  .map(Paths::get)
-                  .map(TestUtils::getBytes)
-                  .toArray(byte[][]::new));
-      byte[] proofs =
-          TestUtils.flatten(
-              TestUtils.getFiles(Paths.get(test, "proofs").toString()).stream()
-                  .map(Paths::get)
-                  .map(TestUtils::getBytes)
-                  .toArray(byte[][]::new));
-
-      try {
-        boolean ok =
-            CKZG4844JNI.verifyBlobKzgProofBatch(
-                blobs, commitments, proofs, blobs.length / CKZG4844JNI.getBytesPerBlob());
-        boolean expectedOk = TestUtils.getBoolean(Paths.get(test, "ok.txt"));
-        assertEquals(ok, expectedOk);
-      } catch (CKZGException ex) {
-        assertFalse(Files.exists(Paths.get(test, "ok.txt")));
-      }
+    try {
+      int count = test.getInput().getBlobs().length / CKZG4844JNI.getBytesPerBlob();
+      boolean valid =
+          CKZG4844JNI.verifyBlobKzgProofBatch(
+              test.getInput().getBlobs(),
+              test.getInput().getCommitments(),
+              test.getInput().getProofs(),
+              count);
+      assertEquals(valid, test.getOutput().getValid());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput().getValid());
     }
-
-    CKZG4844JNI.freeTrustedSetup();
   }
 
   @Test
@@ -205,17 +158,6 @@ public class CKZG4844JNITest {
     assertEquals(
         PRESET.fieldElementsPerBlob * CKZG4844JNI.BYTES_PER_FIELD_ELEMENT,
         CKZG4844JNI.getBytesPerBlob());
-  }
-
-  @ParameterizedTest(name = "{index}")
-  @MethodSource("getVerifyKzgProofTestVectors")
-  public void testVerifyKzgProof(final VerifyKzgProofParameters parameters) {
-    assertTrue(
-        CKZG4844JNI.verifyKzgProof(
-            parameters.getCommitment(),
-            parameters.getZ(),
-            parameters.getY(),
-            parameters.getProof()));
   }
 
   @ParameterizedTest
@@ -458,8 +400,34 @@ public class CKZG4844JNITest {
         TRUSTED_SETUP_RESOURCE_BY_PRESET.get(PRESET), CKZG4844JNITest.class);
   }
 
-  private static Stream<VerifyKzgProofParameters> getVerifyKzgProofTestVectors() {
+  private static Stream<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
     loadTrustedSetup();
-    return TestUtils.getVerifyKzgProofTestVectors().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+    return TestUtils.getBlobToKzgCommitmentTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeKzgProofTest> getComputeKzgProofTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeBlobKzgProofTest> getComputeBlobKzgProofTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeBlobKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyKzgProofTest> getVerifyKzgProofTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyBlobKzgProofTest> getVerifyBlobKzgProofTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyBlobKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyBlobKzgProofBatchTest> getVerifyBlobKzgProofBatchTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyBlobKzgProofBatchTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
   }
 }
