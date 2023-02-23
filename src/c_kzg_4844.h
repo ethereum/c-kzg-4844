@@ -93,10 +93,11 @@ typedef Bytes48 KZGProof;
  * The common return type for all routines in which something can go wrong.
  */
 typedef enum {
-    C_KZG_OK = 0,  /**< Success! */
-    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
-    C_KZG_ERROR,   /**< Internal error - this should never occur. */
-    C_KZG_MALLOC,  /**< Could not allocate memory. */
+    C_KZG_OK = 0,     /**< Success! */
+    C_KZG_BADARGS,    /**< The supplied data is invalid in some way. */
+    C_KZG_ERROR,      /**< Internal error - this should never occur. */
+    C_KZG_MALLOC,     /**< Could not allocate memory. */
+    C_KZG_BAD_VERIFY, /**< KZG proof verification failed. */
 } C_KZG_RET;
 
 /**
@@ -160,7 +161,6 @@ C_KZG_RET compute_blob_kzg_proof(
 );
 
 C_KZG_RET verify_kzg_proof(
-    bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
     const Bytes32 *y_bytes,
@@ -169,7 +169,6 @@ C_KZG_RET verify_kzg_proof(
 );
 
 C_KZG_RET verify_blob_kzg_proof(
-    bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
@@ -177,7 +176,6 @@ C_KZG_RET verify_blob_kzg_proof(
 );
 
 C_KZG_RET verify_blob_kzg_proof_batch(
-    bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,

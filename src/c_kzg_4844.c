@@ -426,10 +426,10 @@ static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
  * @param[in] b1 A G1 group point for the second pairing
  * @param[in] b2 A G2 group point for the second pairing
  *
- * @retval true  The pairings were equal
- * @retval false The pairings were not equal
+ * @retval C_KZG_OK             The pairings were equal
+ * @retval C_KZG_BAD_VERIFY     The pairings were not equal
  */
-static bool pairings_verify(
+static C_KZG_RET pairings_verify(
     const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2
 ) {
     blst_fp12 loop0, loop1, gt_point;
@@ -452,7 +452,8 @@ static bool pairings_verify(
     blst_fp12_mul(&gt_point, &loop0, &loop1);
     blst_final_exp(&gt_point, &gt_point);
 
-    return blst_fp12_is_one(&gt_point);
+    bool verify_ok = blst_fp12_is_one(&gt_point);
+    return verify_ok ? C_KZG_OK : C_KZG_BAD_VERIFY;
 }
 
 /**
@@ -940,7 +941,6 @@ C_KZG_RET blob_to_kzg_commitment(
 
 /* Forward function declaration */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -951,7 +951,6 @@ static C_KZG_RET verify_kzg_proof_impl(
 /**
  * Verify a KZG proof claiming that `p(z) == y`.
  *
- * @param[out] out        `true` if the proof is valid, `false` if not
  * @param[in]  commitment The KZG commitment corresponding to polynomial
  *                        p(x)
  * @param[in]  z          The evaluation point
@@ -959,9 +958,12 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  kzg_proof  The KZG proof
  * @param[in]  s          The settings struct containing the commitment
  *                        verification key (i.e. trusted setup)
+ *
+ * @retval C_KZG_OK           The proof is valid
+ * @retval C_KZG_BAD_VERIFY   The proof failed to verify
+ * @retval C_KZG_BADARGS      The inputs are not canonical
  */
 C_KZG_RET verify_kzg_proof(
-    bool *out,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
     const Bytes32 *y_bytes,
@@ -981,9 +983,7 @@ C_KZG_RET verify_kzg_proof(
     ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
-    return verify_kzg_proof_impl(
-        out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
-    );
+    return verify_kzg_proof_impl(&commitment_g1, &z_fr, &y_fr, &proof_g1, s);
 }
 
 /**
@@ -992,7 +992,6 @@ C_KZG_RET verify_kzg_proof(
  * Given a @p commitment to a polynomial, a @p proof for @p z, and the
  * claimed value @p y at @p z, verify the claim.
  *
- * @param[out] out        `true` if the proof is valid, `false` if not
  * @param[in]  commitment The commitment to a polynomial
  * @param[in]  z          The point at which the proof is to be checked
  *                        (opened)
@@ -1001,9 +1000,11 @@ C_KZG_RET verify_kzg_proof(
  *                        point @p x
  * @param[in]  ks         The settings containing the secrets, previously
  *                        initialised with #new_kzg_settings
+ *
+ * @retval C_KZG_OK           The proof is valid
+ * @retval C_KZG_BAD_VERIFY   The proof failed to verify
  */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1017,11 +1018,9 @@ static C_KZG_RET verify_kzg_proof_impl(
     g1_mul(&y_g1, &G1_GENERATOR, y);
     g1_sub(&commitment_minus_y, commitment, &y_g1);
 
-    *out = pairings_verify(
+    return pairings_verify(
         &commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x
     );
-
-    return C_KZG_OK;
 }
 
 /* Forward function declaration */
@@ -1187,15 +1186,17 @@ out:
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
  *
- * @param[out] ok               `true` if the proof is valid, `false` if not
  * @param[in]  blob              Blob to verify
  * @param[in]  commitment_bytes  Commitment to verify
  * @param[in]  proof_bytes       Proof used for verification
  * @param[in]  s                 The settings struct containing the commitment
  *                               verification key (i.e. the trusted setup)
+ *
+ * @retval C_KZG_OK           The proof is valid
+ * @retval C_KZG_BAD_VERIFY   The proof failed to verify
+ * @retval C_KZG_BADARGS      The inputs are not canonical
  */
 C_KZG_RET verify_blob_kzg_proof(
-    bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
@@ -1223,7 +1224,7 @@ C_KZG_RET verify_blob_kzg_proof(
     if (ret != C_KZG_OK) return ret;
 
     return verify_kzg_proof_impl(
-        ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
+        &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
     );
 }
 
@@ -1306,8 +1307,6 @@ out:
  *
  * @remark This function only works for `n > 0`.
  *
- * @param[out] ok                          `true` if the proofs are valid,
- *                                         `false` if not
  * @param[in]  commitments_g1              Array of commitments to verify
  * @param[in]  evaluation_challenges_fr    Array of evaluation of points for the
  *                                         KZG proofs
@@ -1320,9 +1319,12 @@ out:
  * @param[in]  s                           The settings struct containing the
  *                                         commitment verification key (i.e. the
  *                                         trusted setup)
+ *
+ * @retval C_KZG_OK           The proofs are valid
+ * @retval C_KZG_BAD_VERIFY   The proofs failed to verify
+ * @retval C_KZG_MALLOC       We are out of memory
  */
 static C_KZG_RET verify_kzg_proof_batch(
-    bool *ok,
     const g1_t *commitments_g1,
     const fr_t *evaluation_challenges_fr,
     const fr_t *ys_fr,
@@ -1378,11 +1380,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
     /* Do the pairing check! */
-    *ok = pairings_verify(
+    ret = pairings_verify(
         &proof_lincomb, &s->g2_values[1], &rhs_g1, &G2_GENERATOR
     );
-
-    ret = C_KZG_OK;
 
 out:
     free(r_powers);
@@ -1402,7 +1402,6 @@ out:
  *
  * @remark This function accepts if called with `n==0`.
  *
- * @param[out] ok               `true` if the proofs are valid, `false` if not
  * @param[in]  blobs             Array of blobs to verify
  * @param[in]  commitments_bytes Array of commitments to verify
  * @param[in]  proofs_bytes      Array of proofs used for verification
@@ -1410,9 +1409,13 @@ out:
  *                               arrays
  * @param[in]  s                 The settings struct containing the commitment
  * verification key (i.e. the trusted setup)
+ *
+ * @retval C_KZG_OK           The proofs are valid
+ * @retval C_KZG_BAD_VERIFY   The proofs failed to verify
+ * @retval C_KZG_MALLOC       We are out of memory
+ * @retval C_KZG_BADARGS      The inputs are not canonical
  */
 C_KZG_RET verify_blob_kzg_proof_batch(
-    bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
@@ -1428,7 +1431,6 @@ C_KZG_RET verify_blob_kzg_proof_batch(
 
     /* Exit early if we are given zero blobs */
     if (n == 0) {
-        *ok = true;
         return C_KZG_OK;
     }
 
@@ -1467,7 +1469,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     }
 
     ret = verify_kzg_proof_batch(
-        ok, commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1, n, s
+        commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1, n, s
     );
 
 out:
