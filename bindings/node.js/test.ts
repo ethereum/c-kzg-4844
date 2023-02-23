@@ -1,7 +1,6 @@
 import { randomBytes } from "crypto";
-import { existsSync } from "fs";
-import path = require("path");
-import fs = require("fs");
+import { existsSync, readdirSync, readFileSync } from "fs";
+import { join } from "path";
 
 import {
   loadTrustedSetup,
@@ -28,34 +27,15 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
 const MAX_TOP_BYTE = 114;
 
 const TEST_DIR = "../../tests";
-const BLOB_TO_KZG_COMMITMENT_TESTS = path.join(
-  TEST_DIR,
-  "blob_to_kzg_commitment",
-);
-const COMPUTE_KZG_PROOF_TESTS = path.join(TEST_DIR, "compute_kzg_proof");
-const COMPUTE_BLOB_KZG_PROOF_TESTS = path.join(
-  TEST_DIR,
-  "compute_blob_kzg_proof",
-);
-const VERIFY_KZG_PROOF_TESTS = path.join(TEST_DIR, "verify_kzg_proof");
-const VERIFY_BLOB_KZG_PROOF_TESTS = path.join(
-  TEST_DIR,
-  "verify_blob_kzg_proof",
-);
-const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = path.join(
+const BLOB_TO_KZG_COMMITMENT_TESTS = join(TEST_DIR, "blob_to_kzg_commitment");
+const COMPUTE_KZG_PROOF_TESTS = join(TEST_DIR, "compute_kzg_proof");
+const COMPUTE_BLOB_KZG_PROOF_TESTS = join(TEST_DIR, "compute_blob_kzg_proof");
+const VERIFY_KZG_PROOF_TESTS = join(TEST_DIR, "verify_kzg_proof");
+const VERIFY_BLOB_KZG_PROOF_TESTS = join(TEST_DIR, "verify_blob_kzg_proof");
+const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = join(
   TEST_DIR,
   "verify_blob_kzg_proof_batch",
 );
-
-function getBytes(file: String): Uint8Array {
-  const data = require("fs").readFileSync(file, "ascii");
-  return Buffer.from(data, "hex");
-}
-
-function getBoolean(file: String): boolean {
-  const data = require("fs").readFileSync(file, "ascii");
-  return data.includes("true");
-}
 
 const generateRandomBlob = () => {
   return new Uint8Array(
@@ -81,11 +61,11 @@ describe("C-KZG", () => {
 
   describe("reference tests should pass", () => {
     it("reference tests for blobToKzgCommitment should pass", () => {
-      let tests = fs.readdirSync(BLOB_TO_KZG_COMMITMENT_TESTS);
+      let tests = readdirSync(BLOB_TO_KZG_COMMITMENT_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
           require("fs").readFileSync(
-            path.join(BLOB_TO_KZG_COMMITMENT_TESTS, testFile),
+            join(BLOB_TO_KZG_COMMITMENT_TESTS, testFile),
             "ascii",
           ),
         );
@@ -103,13 +83,10 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for computeKzgProof should pass", () => {
-      let tests = fs.readdirSync(COMPUTE_KZG_PROOF_TESTS);
+      let tests = readdirSync(COMPUTE_KZG_PROOF_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
-          require("fs").readFileSync(
-            path.join(COMPUTE_KZG_PROOF_TESTS, testFile),
-            "ascii",
-          ),
+          readFileSync(join(COMPUTE_KZG_PROOF_TESTS, testFile), "ascii"),
         );
 
         let blob = Buffer.from(test.input.blob, "hex");
@@ -126,13 +103,10 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for computeBlobKzgProof should pass", () => {
-      let tests = fs.readdirSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
+      let tests = readdirSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
-          require("fs").readFileSync(
-            path.join(COMPUTE_BLOB_KZG_PROOF_TESTS, testFile),
-            "ascii",
-          ),
+          readFileSync(join(COMPUTE_BLOB_KZG_PROOF_TESTS, testFile), "ascii"),
         );
 
         let blob = Buffer.from(test.input.blob, "hex");
@@ -148,13 +122,10 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for verifyKzgProof should pass", () => {
-      let tests = fs.readdirSync(VERIFY_KZG_PROOF_TESTS);
+      let tests = readdirSync(VERIFY_KZG_PROOF_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
-          require("fs").readFileSync(
-            path.join(VERIFY_KZG_PROOF_TESTS, testFile),
-            "ascii",
-          ),
+          readFileSync(join(VERIFY_KZG_PROOF_TESTS, testFile), "ascii"),
         );
 
         let commitment = Buffer.from(test.input.commitment, "hex");
@@ -177,13 +148,10 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for verifyBlobKzgProof should pass", () => {
-      let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_TESTS);
+      let tests = readdirSync(VERIFY_BLOB_KZG_PROOF_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
-          require("fs").readFileSync(
-            path.join(VERIFY_BLOB_KZG_PROOF_TESTS, testFile),
-            "ascii",
-          ),
+          readFileSync(join(VERIFY_BLOB_KZG_PROOF_TESTS, testFile), "ascii"),
         );
 
         let blob = Buffer.from(test.input.blob, "hex");
@@ -200,11 +168,11 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for verifyBlobKzgProofBatch should pass", () => {
-      let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+      let tests = readdirSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       tests.forEach((testFile) => {
         const test = JSON.parse(
-          require("fs").readFileSync(
-            path.join(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS, testFile),
+          readFileSync(
+            join(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS, testFile),
             "ascii",
           ),
         );
