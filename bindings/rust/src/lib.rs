@@ -574,7 +574,6 @@ mod tests {
         for test_file in tests {
             let json_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_json::from_str(&json_data).unwrap();
-
             let res = KZGProof::verify_blob_kzg_proof(
                 test.input.get_blob(),
                 test.input.get_commitment(),
