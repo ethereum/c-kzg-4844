@@ -37,17 +37,9 @@ public class CKZG4844JNITest {
   private static final Map<Preset, String> TRUSTED_SETUP_RESOURCE_BY_PRESET =
       Map.of(
           Preset.MAINNET,
-          "/test-vectors/trusted_setup.txt",
+          "/trusted-setups/trusted_setup.txt",
           Preset.MINIMAL,
-          "/test-vectors/trusted_setup_4.txt");
-
-  private static final String BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/";
-  private static final String COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/";
-  private static final String COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/";
-  private static final String VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/";
-  private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
-  private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
-      "../../tests/verify_blob_kzg_proof_batch/";
+          "/trusted-setups/trusted_setup_4.txt");
 
   static {
     PRESET =
