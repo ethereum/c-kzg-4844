@@ -1,0 +1,11 @@
+{
+	"input": {
+		"commitment": "a97456b8097baed6e90ce381d2b21c970a3f9ad4f6c92b1bb26337f919bd639dd43bd470839153db09115e2862051f33",
+		"input_point": "0020000000000000000000000000000000000000000000000000000000000000",
+		"claimed_value": "5cf0915a508d1d174d41618271bb8244b3abad27844cf8f121de6a99f527ae6c",
+		"proof": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+	},
+	"output": {
+		"valid": null
+	}
+}

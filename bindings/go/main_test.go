@@ -124,7 +124,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 			Blob Blob `json:"blob"`
 		}
 		Output struct {
-			Commitment Bytes48 `json:"commitment"`
+			Commitment *Bytes48 `json:"commitment"`
 		}
 	}
 
@@ -140,9 +140,10 @@ func TestBlobToKZGCommitment(t *testing.T) {
 
 		commitment, ret := BlobToKZGCommitment(test.Input.Blob)
 		if ret == C_KZG_OK {
+			require.NotNil(t, test.Output.Commitment)
 			require.Equal(t, test.Output.Commitment[:], commitment[:])
 		} else {
-			require.Equal(t, test.Output.Commitment[:], nil)
+			require.Nil(t, test.Output.Commitment)
 		}
 	}
 }
@@ -154,7 +155,7 @@ func TestComputeKZGProof(t *testing.T) {
 			InputPoint Bytes32 `json:"input_point"`
 		}
 		Output struct {
-			Proof Bytes48 `json:"proof"`
+			Proof *Bytes48 `json:"proof"`
 		}
 	}
 
@@ -170,9 +171,10 @@ func TestComputeKZGProof(t *testing.T) {
 
 		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.InputPoint)
 		if ret == C_KZG_OK {
+			require.NotNil(t, test.Output.Proof)
 			require.Equal(t, test.Output.Proof[:], proof[:])
 		} else {
-			require.Equal(t, test.Output.Proof[:], nil)
+			require.Nil(t, test.Output.Proof)
 		}
 	}
 }
@@ -183,7 +185,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 			Blob Blob `json:"blob"`
 		}
 		Output struct {
-			Proof Bytes48 `json:"proof"`
+			Proof *Bytes48 `json:"proof"`
 		}
 	}
 
@@ -199,9 +201,10 @@ func TestComputeBlobKZGProof(t *testing.T) {
 
 		proof, ret := ComputeBlobKZGProof(test.Input.Blob)
 		if ret == C_KZG_OK {
+			require.NotNil(t, test.Output.Proof)
 			require.Equal(t, test.Output.Proof[:], proof[:])
 		} else {
-			require.Equal(t, test.Output.Proof[:], nil)
+			require.Nil(t, test.Output.Proof)
 		}
 	}
 }
@@ -215,7 +218,7 @@ func TestVerifyKZGProof(t *testing.T) {
 			Proof        Bytes48 `json:"proof"`
 		}
 		Output struct {
-			Valid bool `json:"valid"`
+			Valid *bool `json:"valid"`
 		}
 	}
 
@@ -235,9 +238,10 @@ func TestVerifyKZGProof(t *testing.T) {
 			test.Input.ClaimedValue,
 			test.Input.Proof)
 		if ret == C_KZG_OK {
-			require.Equal(t, test.Output.Valid, valid)
+			require.NotNil(t, test.Output.Valid)
+			require.Equal(t, *test.Output.Valid, valid)
 		} else {
-			require.Equal(t, test.Output.Valid, nil)
+			require.Nil(t, test.Output.Valid)
 		}
 	}
 }
@@ -250,7 +254,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 			Proof      Bytes48 `json:"proof"`
 		}
 		Output struct {
-			Valid bool `json:"valid"`
+			Valid *bool `json:"valid"`
 		}
 	}
 
@@ -269,9 +273,10 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 			test.Input.Commitment,
 			test.Input.Proof)
 		if ret == C_KZG_OK {
-			require.Equal(t, test.Output.Valid, valid)
+			require.NotNil(t, test.Output.Valid)
+			require.Equal(t, *test.Output.Valid, valid)
 		} else {
-			require.Equal(t, test.Output.Valid, nil)
+			require.Nil(t, test.Output.Valid)
 		}
 	}
 }
@@ -284,7 +289,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			Proofs      []Bytes48 `json:"proofs"`
 		}
 		Output struct {
-			Valid bool `json:"valid"`
+			Valid *bool `json:"valid"`
 		}
 	}
 
@@ -303,9 +308,10 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			test.Input.Commitments,
 			test.Input.Proofs)
 		if ret == C_KZG_OK {
-			require.Equal(t, test.Output.Valid, valid)
+			require.NotNil(t, test.Output.Valid)
+			require.Equal(t, *test.Output.Valid, valid)
 		} else {
-			require.Equal(t, test.Output.Valid, nil)
+			require.Nil(t, test.Output.Valid)
 		}
 	}
 }
