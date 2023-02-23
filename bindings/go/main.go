@@ -141,10 +141,10 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKzgRet) {
 ComputeKZGProof is the binding for:
 
 	C_KZG_RET compute_kzg_proof(
-			KZGProof *out,
-			const Blob *blob,
-			const Bytes32 *z_bytes,
-			const KZGSettings *s);
+	    KZGProof *out,
+	    const Blob *blob,
+	    const Bytes32 *z_bytes,
+	    const KZGSettings *s);
 */
 func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, CKzgRet) {
 	if !loaded {
@@ -163,9 +163,9 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, CKzgRet) {
 ComputeBlobKZGProof is the binding for:
 
 	C_KZG_RET compute_blob_kzg_proof(
-			KZGProof *out,
-			const Blob *blob,
-			const KZGSettings *s);
+	    KZGProof *out,
+	    const Blob *blob,
+	    const KZGSettings *s);
 */
 func ComputeBlobKZGProof(blob Blob) (KZGProof, CKzgRet) {
 	if !loaded {
@@ -266,9 +266,9 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 sha256 is the binding for:
 
 	void blst_sha256(
-		byte out[32],
-		const byte *msg,
-		size_t msg_len);
+	    byte out[32],
+	    const byte *msg,
+	    size_t msg_len);
 */
 func sha256(msg []byte) Bytes32 {
 	var out Bytes32
