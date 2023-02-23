@@ -1585,6 +1585,51 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
+/** verify_kzg_proof_batch() should work properly even if one of the inputs is
+ * the zero blob/commitment/proof.  This is an edge-case blst's pippenger does
+ * not handle zero inputs well */
+static void test_verify_kzg_proof_batch__fails_zero_proof(void) {
+    C_KZG_RET ret;
+    bool ok;
+
+    const int n_blobs = 15;
+    Bytes48 proofs[n_blobs];
+    KZGCommitment commitments[n_blobs];
+    Blob blobs[n_blobs];
+
+    /* Initialize all blobs/commitments/proofs */
+    for (int i = 0; i < n_blobs; i++) {
+        get_rand_blob(&blobs[i]);
+
+        ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* Compute the proof */
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+    }
+
+    /* Wipe out a blob/commitment/proof tuple */
+    const int wiped_index = 9;
+    memset(blobs[wiped_index].bytes, 0, BYTES_PER_BLOB);
+    Bytes48 zero_proof;
+    bytes_from_g1(&zero_proof, &G1_IDENTITY);
+    proofs[wiped_index] = zero_proof;
+    commitments[wiped_index] = zero_proof;
+
+    /* Mix up two commitments: verification should fail */
+    commitments[4] = commitments[6];
+
+    /* Finally verify the proof */
+    ret = verify_blob_kzg_proof_batch(
+        &ok, blobs, commitments, proofs, n_blobs, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The proof must not verify! */
+    ASSERT_EQUALS(ok, 0);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for fft_g1
 ///////////////////////////////////////////////////////////////////////////////
@@ -1847,6 +1892,7 @@ int main(void) {
     RUN(test_verify_kzg_proof_batch__fails_proof_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_commitment_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_invalid_blob);
+    RUN(test_verify_kzg_proof_batch__fails_zero_proof);
     RUN(test_fft_g1__succeeds_round_trip);
     RUN(test_fft_g1__n_not_power_of_two);
     RUN(test_fft_g1__n_too_large);
