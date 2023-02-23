@@ -45,6 +45,7 @@ dependencies = [
  "hex",
  "libc",
  "rand",
+ "serde",
  "serde_json",
 ]
 

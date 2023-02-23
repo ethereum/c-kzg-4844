@@ -2,6 +2,10 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
+extern crate core;
+
+mod test_formats;
+
 include!("bindings.rs");
 
 use libc::fopen;
@@ -368,6 +372,11 @@ mod tests {
     use rand::{rngs::ThreadRng, Rng};
     use std::fs;
 
+    use crate::test_formats::{
+        blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_kzg_proof,
+        verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+    };
+
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
         let mut arr = [0u8; BYTES_PER_BLOB];
         rng.fill(&mut arr[..]);
@@ -458,21 +467,17 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let blob =
-                Blob::from_bytes(&hex::decode(test["input"]["blob"].as_str().unwrap()).unwrap())
-                    .unwrap();
-            let res = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: blob_to_kzg_commitment_test::Test = serde_json::from_str(&json_data).unwrap();
+            let res = KZGCommitment::blob_to_kzg_commitment(test.input.get_blob(), &kzg_settings);
 
             if res.is_ok() {
-                let commitment = Bytes48::from_bytes(
-                    &hex::decode(test["output"]["commitment"].as_str().unwrap()).unwrap(),
+                assert_eq!(
+                    res.unwrap().bytes,
+                    test.output.get_commitment().unwrap().bytes
                 )
-                .unwrap();
-                assert_eq!(res.unwrap().bytes, commitment.bytes)
             } else {
-                assert_eq!(test["output"]["commitment"], serde_json::Value::Null)
+                assert!(test.output.get_commitment().is_none())
             }
         }
     }
@@ -488,25 +493,18 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let blob =
-                Blob::from_bytes(&hex::decode(test["input"]["blob"].as_str().unwrap()).unwrap())
-                    .unwrap();
-            let input_point = Bytes32::from_bytes(
-                &hex::decode(test["input"]["input_point"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let res = KZGProof::compute_kzg_proof(blob, input_point, &kzg_settings);
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: compute_kzg_proof::Test = serde_json::from_str(&json_data).unwrap();
+            let res = KZGProof::compute_kzg_proof(
+                test.input.get_blob(),
+                test.input.get_input_point(),
+                &kzg_settings,
+            );
 
             if res.is_ok() {
-                let commitment = Bytes48::from_bytes(
-                    &hex::decode(test["output"]["proof"].as_str().unwrap()).unwrap(),
-                )
-                .unwrap();
-                assert_eq!(res.unwrap().bytes, commitment.bytes)
+                assert_eq!(res.unwrap().bytes, test.output.get_proof().unwrap().bytes)
             } else {
-                assert_eq!(test["output"]["proof"], serde_json::Value::Null)
+                assert!(test.output.get_proof().is_none())
             }
         }
     }
@@ -522,21 +520,14 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let blob =
-                Blob::from_bytes(&hex::decode(test["input"]["blob"].as_str().unwrap()).unwrap())
-                    .unwrap();
-            let res = KZGProof::compute_blob_kzg_proof(blob, &kzg_settings);
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: compute_blob_kzg_proof::Test = serde_json::from_str(&json_data).unwrap();
+            let res = KZGProof::compute_blob_kzg_proof(test.input.get_blob(), &kzg_settings);
 
             if res.is_ok() {
-                let commitment = Bytes48::from_bytes(
-                    &hex::decode(test["output"]["proof"].as_str().unwrap()).unwrap(),
-                )
-                .unwrap();
-                assert_eq!(res.unwrap().bytes, commitment.bytes)
+                assert_eq!(res.unwrap().bytes, test.output.get_proof().unwrap().bytes)
             } else {
-                assert_eq!(test["output"]["proof"], serde_json::Value::Null)
+                assert!(test.output.get_proof().is_none())
             }
         }
     }
@@ -552,36 +543,20 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let commitment = Bytes48::from_bytes(
-                &hex::decode(test["input"]["commitment"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let input_point = Bytes32::from_bytes(
-                &hex::decode(test["input"]["input_point"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let claimed_value = Bytes32::from_bytes(
-                &hex::decode(test["input"]["claimed_value"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let proof = Bytes48::from_bytes(
-                &hex::decode(test["input"]["proof"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: verify_kzg_proof::Test = serde_json::from_str(&json_data).unwrap();
             let res = KZGProof::verify_kzg_proof(
-                commitment,
-                input_point,
-                claimed_value,
-                proof,
+                test.input.get_commitment(),
+                test.input.get_input_point(),
+                test.input.get_claimed_value(),
+                test.input.get_proof(),
                 &kzg_settings,
             );
 
             if res.is_ok() {
-                assert_eq!(res.unwrap(), test["output"]["valid"].as_bool().unwrap())
+                assert_eq!(res.unwrap(), test.output.get_valid().unwrap())
             } else {
-                assert_eq!(test["output"]["valid"], serde_json::Value::Null)
+                assert!(test.output.get_valid().is_none())
             }
         }
     }
@@ -597,25 +572,20 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let blob =
-                Blob::from_bytes(&hex::decode(test["input"]["blob"].as_str().unwrap()).unwrap())
-                    .unwrap();
-            let commitment = Bytes48::from_bytes(
-                &hex::decode(test["input"]["commitment"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let proof = Bytes48::from_bytes(
-                &hex::decode(test["input"]["proof"].as_str().unwrap()).unwrap(),
-            )
-            .unwrap();
-            let res = KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings);
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: verify_blob_kzg_proof::Test = serde_json::from_str(&json_data).unwrap();
+
+            let res = KZGProof::verify_blob_kzg_proof(
+                test.input.get_blob(),
+                test.input.get_commitment(),
+                test.input.get_proof(),
+                &kzg_settings,
+            );
 
             if res.is_ok() {
-                assert_eq!(res.unwrap(), test["output"]["valid"].as_bool().unwrap())
+                assert_eq!(res.unwrap(), test.output.get_valid().unwrap())
             } else {
-                assert_eq!(test["output"]["valid"], serde_json::Value::Null)
+                assert!(test.output.get_valid().is_none())
             }
         }
     }
@@ -631,40 +601,19 @@ mod tests {
             .unwrap()
             .map(|t| t.unwrap().path());
         for test_file in tests {
-            let test: serde_json::Value =
-                serde_json::from_reader(std::fs::File::open(test_file).unwrap()).unwrap();
-            let blobs = test["input"]["blobs"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|f| hex::decode(f.as_str().unwrap()).unwrap())
-                .map(|bytes| Blob::from_bytes(bytes.as_slice()).unwrap())
-                .collect::<Vec<Blob>>();
-            let commitments = test["input"]["commitments"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|f| hex::decode(f.as_str().unwrap()).unwrap())
-                .map(|bytes| Bytes48::from_bytes(bytes.as_slice()).unwrap())
-                .collect::<Vec<Bytes48>>();
-            let proofs = test["input"]["proofs"]
-                .as_array()
-                .unwrap()
-                .iter()
-                .map(|f| hex::decode(f.as_str().unwrap()).unwrap())
-                .map(|bytes| Bytes48::from_bytes(bytes.as_slice()).unwrap())
-                .collect::<Vec<Bytes48>>();
+            let json_data = fs::read_to_string(test_file).unwrap();
+            let test: verify_blob_kzg_proof_batch::Test = serde_json::from_str(&json_data).unwrap();
             let res = KZGProof::verify_blob_kzg_proof_batch(
-                blobs.as_slice(),
-                commitments.as_slice(),
-                proofs.as_slice(),
+                test.input.get_blobs().as_slice(),
+                test.input.get_commitments().as_slice(),
+                test.input.get_proofs().as_slice(),
                 &kzg_settings,
             );
 
             if res.is_ok() {
-                assert_eq!(res.unwrap(), test["output"]["valid"].as_bool().unwrap())
+                assert_eq!(res.unwrap(), test.output.get_valid().unwrap())
             } else {
-                assert_eq!(test["output"]["valid"], serde_json::Value::Null)
+                assert!(test.output.get_valid().is_none())
             }
         }
     }
