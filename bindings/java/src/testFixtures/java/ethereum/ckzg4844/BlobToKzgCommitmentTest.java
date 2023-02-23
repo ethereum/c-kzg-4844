@@ -4,26 +4,29 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class BlobToKzgCommitmentTest {
   public class Input {
-    private byte[] blob;
+    private String blob;
 
     public byte[] getBlob() {
-      return blob;
+      return Bytes.fromHexString(blob).toArray();
     }
 
     public void setBlob(String blob) {
-      this.blob = Bytes.fromHexString(blob).toArray();
+      this.blob = blob;
     }
   }
 
   public class Output {
-    private byte[] commitment;
+    private String commitment;
 
     public byte[] getCommitment() {
-      return commitment;
+      if (commitment == null) {
+        return null;
+      }
+      return Bytes.fromHexString(commitment).toArray();
     }
 
     public void setCommitment(String commitment) {
-      this.commitment = Bytes.fromHexString(commitment).toArray();
+      this.commitment = commitment;
     }
   }
 

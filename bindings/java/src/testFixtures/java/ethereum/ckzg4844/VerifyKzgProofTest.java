@@ -5,46 +5,46 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class VerifyKzgProofTest {
   public class Input {
-    private byte[] commitment;
+    private String commitment;
 
     @JsonProperty("input_point")
-    private byte[] inputPoint;
+    private String inputPoint;
 
     @JsonProperty("claimed_value")
-    private byte[] claimedValue;
+    private String claimedValue;
 
-    private byte[] proof;
+    private String proof;
 
     public byte[] getCommitment() {
-      return commitment;
+      return Bytes.fromHexString(commitment).toArray();
     }
 
     public void setCommitment(String commitment) {
-      this.commitment = Bytes.fromHexString(commitment).toArray();
+      this.commitment = commitment;
     }
 
     public byte[] getInputPoint() {
-      return inputPoint;
+      return Bytes.fromHexString(inputPoint).toArray();
     }
 
     public void setInputPoint(String inputPoint) {
-      this.inputPoint = Bytes.fromHexString(inputPoint).toArray();
+      this.inputPoint = inputPoint;
     }
 
     public byte[] getClaimedValue() {
-      return claimedValue;
+      return Bytes.fromHexString(claimedValue).toArray();
     }
 
     public void setClaimedValue(String claimedValue) {
-      this.claimedValue = Bytes.fromHexString(claimedValue).toArray();
+      this.claimedValue = claimedValue;
     }
 
     public byte[] getProof() {
-      return proof;
+      return Bytes.fromHexString(proof).toArray();
     }
 
     public void setProof(String proof) {
-      this.proof = Bytes.fromHexString(proof).toArray();
+      this.proof = proof;
     }
   }
 

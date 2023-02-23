@@ -5,37 +5,40 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class ComputeKzgProofTest {
   public class Input {
-    private byte[] blob;
+    private String blob;
 
     @JsonProperty("input_point")
-    private byte[] inputPoint;
+    private String inputPoint;
 
     public byte[] getBlob() {
-      return blob;
+      return Bytes.fromHexString(blob).toArray();
     }
 
     public void setBlob(String blob) {
-      this.blob = Bytes.fromHexString(blob).toArray();
+      this.blob = blob;
     }
 
     public byte[] getInputPoint() {
-      return inputPoint;
+      return Bytes.fromHexString(inputPoint).toArray();
     }
 
     public void setInputPoint(String inputPoint) {
-      this.inputPoint = Bytes.fromHexString(inputPoint).toArray();
+      this.inputPoint = inputPoint;
     }
   }
 
   public class Output {
-    private byte[] proof;
+    private String proof;
 
     public byte[] getProof() {
-      return proof;
+      if (proof == null) {
+        return null;
+      }
+      return Bytes.fromHexString(proof).toArray();
     }
 
     public void setProof(String proof) {
-      this.proof = Bytes.fromHexString(proof).toArray();
+      this.proof = proof;
     }
   }
 

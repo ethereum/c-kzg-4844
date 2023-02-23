@@ -6,50 +6,50 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class VerifyBlobKzgProofBatchTest {
   public class Input {
-    private byte[] blobs;
-    private byte[] commitments;
-    private byte[] proofs;
+    private List<String> blobs;
+    private List<String> commitments;
+    private List<String> proofs;
 
     public byte[] getBlobs() {
-      return blobs;
-    }
-
-    public void setBlobs(List<String> blobs) {
       byte[][] bytes =
           blobs.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
               .toArray(byte[][]::new);
-      this.blobs = TestUtils.flatten(bytes);
+      return TestUtils.flatten(bytes);
+    }
+
+    public void setBlobs(List<String> blobs) {
+      this.blobs = blobs;
     }
 
     public byte[] getCommitments() {
-      return commitments;
-    }
-
-    public void setCommitments(List<String> commitments) {
       byte[][] bytes =
           commitments.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
               .toArray(byte[][]::new);
-      this.commitments = TestUtils.flatten(bytes);
+      return TestUtils.flatten(bytes);
+    }
+
+    public void setCommitments(List<String> commitments) {
+      this.commitments = commitments;
     }
 
     public byte[] getProofs() {
-      return proofs;
-    }
-
-    public void setProofs(List<String> proofs) {
       byte[][] bytes =
           proofs.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
               .toArray(byte[][]::new);
-      this.proofs = TestUtils.flatten(bytes);
+      return TestUtils.flatten(bytes);
+    }
+
+    public void setProofs(List<String> proofs) {
+      this.proofs = proofs;
     }
   }
 

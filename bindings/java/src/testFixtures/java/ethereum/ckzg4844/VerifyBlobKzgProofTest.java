@@ -4,32 +4,32 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class VerifyBlobKzgProofTest {
   public class Input {
-    private byte[] blob;
-    private byte[] commitment;
-    private byte[] proof;
+    private String blob;
+    private String commitment;
+    private String proof;
 
     public byte[] getBlob() {
-      return blob;
+      return Bytes.fromHexString(blob).toArray();
     }
 
     public void setBlob(String blob) {
-      this.blob = Bytes.fromHexString(blob).toArray();
+      this.blob = blob;
     }
 
     public byte[] getCommitment() {
-      return commitment;
+      return Bytes.fromHexString(commitment).toArray();
     }
 
     public void setCommitment(String commitment) {
-      this.commitment = Bytes.fromHexString(commitment).toArray();
+      this.commitment = commitment;
     }
 
     public byte[] getProof() {
-      return proof;
+      return Bytes.fromHexString(proof).toArray();
     }
 
     public void setProof(String proof) {
-      this.proof = Bytes.fromHexString(proof).toArray();
+      this.proof = proof;
     }
   }
 
