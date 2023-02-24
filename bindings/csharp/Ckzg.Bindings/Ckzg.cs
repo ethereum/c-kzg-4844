@@ -85,7 +85,7 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     /// <returns></returns>
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyKzgProof(bool* result, byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
+    public unsafe static extern Ret VerifyKzgProof(byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
 
     /// <summary>
     /// Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
@@ -97,7 +97,7 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     /// <returns></returns>
     [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyBlobKzgProof(bool* result, byte* blob, byte* commitment_bytes, byte* proof_bytes, IntPtr ts);
+    public unsafe static extern Ret VerifyBlobKzgProof(byte* blob, byte* commitment_bytes, byte* proof_bytes, IntPtr ts);
 
     /// <summary>
     /// Given a list of blobs and blob KZG proofs, verify that they correspond to the provided commitments.
@@ -110,6 +110,6 @@ public class Ckzg
     /// <param name="ts">Trusted setup settings</param>
     /// <returns></returns>
     [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyBlobKzgProofBatch(bool* result, byte* blobs, byte* commitments_bytes, byte* proofs_bytes, int count, IntPtr ts);
+    public unsafe static extern Ret VerifyBlobKzgProofBatch(byte* blobs, byte* commitments_bytes, byte* proofs_bytes, int count, IntPtr ts);
 }
 

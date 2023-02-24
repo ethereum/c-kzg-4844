@@ -19,8 +19,8 @@ DLLEXPORT C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Byt
 
 DLLEXPORT C_KZG_RET compute_blob_kzg_proof(KZGProof *out, const Blob *blob, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET verify_kzg_proof(bool *result, const Bytes48 *commitments_bytes, const Bytes32 *z_bytes, const Bytes32 *y_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
+DLLEXPORT C_KZG_RET verify_kzg_proof(const Bytes48 *commitments_bytes, const Bytes32 *z_bytes, const Bytes32 *y_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET verify_blob_kzg_proof(bool *result, const Blob *blob, const Bytes48 *commitment_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
+DLLEXPORT C_KZG_RET verify_blob_kzg_proof(const Blob *blob, const Bytes48 *commitment_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET verify_blob_kzg_proof_batch(bool *result, const Blob *blobs, const Bytes48 *commitments_bytes, const Bytes48 *proofs_bytes, size_t count, const KZGSettings *s);
+DLLEXPORT C_KZG_RET verify_blob_kzg_proof_batch(const Blob *blobs, const Bytes48 *commitments_bytes, const Bytes48 *proofs_bytes, size_t count, const KZGSettings *s);

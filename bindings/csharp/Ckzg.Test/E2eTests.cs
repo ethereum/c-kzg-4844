@@ -144,18 +144,17 @@ public class BasicKzgTests
     {
         foreach (String test in Directory.GetDirectories(VerifyKzgProofTests))
         {
-            bool ok = false;
             byte[] commitment = GetBytes(Path.Join(test, "commitment.txt"));
             byte[] inputPoint = GetBytes(Path.Join(test, "input_point.txt"));
             byte[] claimedValue = GetBytes(Path.Join(test, "claimed_value.txt"));
             byte[] proof = GetBytes(Path.Join(test, "proof.txt"));
             fixed (byte *pCommitment = commitment, pInputPoint = inputPoint, pClaimedValue = claimedValue, pProof = proof)
             {
-                Ckzg.Ret ret = Ckzg.VerifyKzgProof(&ok, pCommitment, pInputPoint, pClaimedValue, pProof, ts);
+                Ckzg.Ret ret = Ckzg.VerifyKzgProof(pCommitment, pInputPoint, pClaimedValue, pProof, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
                     bool expectedOk = GetBoolean(Path.Join(test, "ok.txt"));
-                    Assert.That(ok, Is.EqualTo(expectedOk));
+                    Assert.True(expectedOk);
                 }
                 else
                 {
@@ -170,17 +169,16 @@ public class BasicKzgTests
     {
         foreach (String test in Directory.GetDirectories(VerifyBlobKzgProofTests))
         {
-            bool ok = false;
             byte[] blob = GetBytes(Path.Join(test, "blob.txt"));
             byte[] commitment = GetBytes(Path.Join(test, "commitment.txt"));
             byte[] proof = GetBytes(Path.Join(test, "proof.txt"));
             fixed (byte *pBlob = blob, pCommitment = commitment, pProof = proof)
             {
-                Ckzg.Ret ret = Ckzg.VerifyBlobKzgProof(&ok, pBlob, pCommitment, pProof, ts);
+                Ckzg.Ret ret = Ckzg.VerifyBlobKzgProof(pBlob, pCommitment, pProof, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
                     bool expectedOk = GetBoolean(Path.Join(test, "ok.txt"));
-                    Assert.That(ok, Is.EqualTo(expectedOk));
+                    Assert.True(expectedOk);
                 }
                 else
                 {
@@ -195,18 +193,17 @@ public class BasicKzgTests
     {
         foreach (String test in Directory.GetDirectories(VerifyBlobKzgProofBatchTests))
         {
-            bool ok = false;
             byte[] blobs = GetFlatBytes(Path.Join(test, "blobs"));
             byte[] commitments = GetFlatBytes(Path.Join(test, "commitments"));
             byte[] proofs = GetFlatBytes(Path.Join(test, "proofs"));
             int count = blobs.Length / Ckzg.BytesPerBlob;
             fixed (byte *pBlobs = blobs, pCommitments = commitments, pProofs = proofs)
             {
-                Ckzg.Ret ret = Ckzg.VerifyBlobKzgProofBatch(&ok, pBlobs, pCommitments, pProofs, count, ts);
+                Ckzg.Ret ret = Ckzg.VerifyBlobKzgProofBatch(pBlobs, pCommitments, pProofs, count, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
                     bool expectedOk = GetBoolean(Path.Join(test, "ok.txt"));
-                    Assert.That(ok, Is.EqualTo(expectedOk));
+                    Assert.True(expectedOk);
                 }
                 else
                 {
