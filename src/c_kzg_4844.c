@@ -926,7 +926,7 @@ out:
 static C_KZG_RET poly_to_kzg_commitment(
     g1_t *out, const Polynomial *p, const KZGSettings *s
 ) {
-    return g1_lincomb(
+    return g1_lincomb_fast(
         out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB
     );
 }
@@ -1155,7 +1155,7 @@ static C_KZG_RET compute_kzg_proof_impl(
     }
 
     g1_t out_g1;
-    ret = g1_lincomb(
+    ret = g1_lincomb_fast(
         &out_g1, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB
     );
     if (ret != C_KZG_OK) goto out;
@@ -1369,8 +1369,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute \sum r^i * Proof_i */
-    ret = g1_lincomb(&proof_lincomb, proofs_g1, r_powers, n);
-    if (ret != C_KZG_OK) goto out;
+    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
@@ -1384,11 +1383,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     }
 
     /* Get \sum r^i z_i Proof_i */
-    ret = g1_lincomb(&proof_z_lincomb, proofs_g1, r_times_z, n);
-    if (ret != C_KZG_OK) goto out;
+    g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
     /* Get \sum r^i (C_i - [y_i]) */
-    ret = g1_lincomb(&C_minus_y_lincomb, C_minus_y, r_powers, n);
-    if (ret != C_KZG_OK) goto out;
+    g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
 
     /* Get C_minus_y_lincomb + proof_z_lincomb */
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
