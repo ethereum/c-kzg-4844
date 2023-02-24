@@ -1,6 +1,7 @@
 package ethereum.ckzg4844;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -34,6 +35,12 @@ public class TestUtils {
   private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_blob_kzg_proof_batch/";
+
+  static {
+    SimpleModule module = new SimpleModule();
+    module.addDeserializer(byte[].class, new BytesDeserializer());
+    OBJECT_MAPPER.registerModule(module);
+  }
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();

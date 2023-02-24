@@ -56,10 +56,10 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      byte[] commitment = CKZG4844JNI.blobToKzgCommitment(test.getInput().getBlob());
-      assertArrayEquals(commitment, test.getOutput().getCommitment());
+      byte[] commitment = CKZG4844JNI.blobToKzgCommitment(test.input.blob);
+      assertArrayEquals(commitment, test.output.commitment);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getCommitment());
+      assertNull(test.output.commitment);
     }
   }
 
@@ -69,11 +69,10 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      byte[] proof =
-          CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getInputPoint());
-      assertArrayEquals(proof, test.getOutput().getProof());
+      byte[] proof = CKZG4844JNI.computeKzgProof(test.input.blob, test.input.inputPoint);
+      assertArrayEquals(proof, test.output.proof);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getProof());
+      assertNull(test.output.proof);
     }
   }
 
@@ -83,10 +82,10 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      byte[] proof = CKZG4844JNI.computeBlobKzgProof(test.getInput().getBlob());
-      assertArrayEquals(proof, test.getOutput().getProof());
+      byte[] proof = CKZG4844JNI.computeBlobKzgProof(test.input.blob);
+      assertArrayEquals(proof, test.output.proof);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getProof());
+      assertNull(test.output.proof);
     }
   }
 
@@ -98,13 +97,13 @@ public class CKZG4844JNITest {
     try {
       boolean valid =
           CKZG4844JNI.verifyKzgProof(
-              test.getInput().getCommitment(),
-              test.getInput().getInputPoint(),
-              test.getInput().getClaimedValue(),
-              test.getInput().getProof());
-      assertEquals(valid, test.getOutput().getValid());
+              test.input.commitment,
+              test.input.inputPoint,
+              test.input.claimedValue,
+              test.input.proof);
+      assertEquals(valid, test.output.valid);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getValid());
+      assertNull(test.output.valid);
     }
   }
 
@@ -115,13 +114,10 @@ public class CKZG4844JNITest {
 
     try {
       boolean valid =
-          CKZG4844JNI.verifyBlobKzgProof(
-              test.getInput().getBlob(),
-              test.getInput().getCommitment(),
-              test.getInput().getProof());
-      assertEquals(valid, test.getOutput().getValid());
+          CKZG4844JNI.verifyBlobKzgProof(test.input.blob, test.input.commitment, test.input.proof);
+      assertEquals(valid, test.output.valid);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getValid());
+      assertNull(test.output.valid);
     }
   }
 
@@ -131,16 +127,13 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      int count = test.getInput().getBlobs().length / CKZG4844JNI.getBytesPerBlob();
+      int count = test.input.blobs.length / CKZG4844JNI.getBytesPerBlob();
       boolean valid =
           CKZG4844JNI.verifyBlobKzgProofBatch(
-              test.getInput().getBlobs(),
-              test.getInput().getCommitments(),
-              test.getInput().getProofs(),
-              count);
-      assertEquals(valid, test.getOutput().getValid());
+              test.input.blobs, test.input.commitments, test.input.proofs, count);
+      assertEquals(valid, test.output.valid);
     } catch (CKZGException ex) {
-      assertNull(test.getOutput().getValid());
+      assertNull(test.output.valid);
     }
   }
 
