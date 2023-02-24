@@ -210,22 +210,21 @@ impl KZGProof {
         y_bytes: Bytes32,
         proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_kzg_proof(
-                verified.as_mut_ptr(),
-                &commitment_bytes,
-                &z_bytes,
-                &y_bytes,
-                &proof_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
+    ) -> Result<(), Error> {
+        let res: C_KZG_RET  =
+            unsafe {
+                verify_kzg_proof(
+                    &commitment_bytes,
+                    &z_bytes,
+                    &y_bytes,
+                    &proof_bytes,
+                    kzg_settings,
+                )
+        };
+        if res == C_KZG_RET::C_KZG_OK {
+            Ok(())
+        } else {
+            Err(Error::CError(res))
         }
     }
 
@@ -234,21 +233,20 @@ impl KZGProof {
         commitment_bytes: Bytes48,
         proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof(
-                verified.as_mut_ptr(),
-                &blob,
-                &commitment_bytes,
-                &proof_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
+    ) -> Result<(), Error> {
+        let res: C_KZG_RET  =
+            unsafe {
+                verify_blob_kzg_proof(
+                    &blob,
+                    &commitment_bytes,
+                    &proof_bytes,
+                    kzg_settings,
+                )
+            };
+        if res == C_KZG_RET::C_KZG_OK {
+            Ok(())
+        } else {
+            Err(Error::CError(res))
         }
     }
 
@@ -257,7 +255,7 @@ impl KZGProof {
         commitments_bytes: &[Bytes48],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
+    ) -> Result<(), Error> {
         if blobs.len() != commitments_bytes.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} blobs and {} commitments",
@@ -272,21 +270,20 @@ impl KZGProof {
                 proofs_bytes.len()
             )));
         }
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof_batch(
-                verified.as_mut_ptr(),
-                blobs.as_ptr(),
-                commitments_bytes.as_ptr(),
-                proofs_bytes.as_ptr(),
-                blobs.len(),
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
+        let res: C_KZG_RET =
+            unsafe {
+                verify_blob_kzg_proof_batch(
+                    blobs.as_ptr(),
+                    commitments_bytes.as_ptr(),
+                    proofs_bytes.as_ptr(),
+                    blobs.len(),
+                    kzg_settings,
+                )
+            };
+        if res == C_KZG_RET::C_KZG_OK {
+            Ok(())
+        } else {
+            Err(Error::CError(res))
         }
     }
 }
@@ -409,7 +406,7 @@ mod tests {
             &proofs,
             &kzg_settings
         )
-        .unwrap());
+        .is_ok());
 
         blobs.pop();
 
@@ -427,7 +424,7 @@ mod tests {
             &proofs,
             &kzg_settings
         )
-        .unwrap());
+        .is_ok());
     }
 
     #[test]
@@ -565,7 +562,7 @@ mod tests {
 
             if res.is_ok() {
                 let expected_ok = get_boolean(test.join("ok.txt"));
-                assert_eq!(res.unwrap(), expected_ok)
+                assert!(expected_ok)
             } else {
                 assert!(!test.join("ok.txt").exists());
             }
@@ -590,7 +587,7 @@ mod tests {
 
             if res.is_ok() {
                 let expected_ok = get_boolean(test.join("ok.txt"));
-                assert_eq!(res.unwrap(), expected_ok)
+                assert!(expected_ok);
             } else {
                 assert!(!test.join("ok.txt").exists());
             }
@@ -646,8 +643,8 @@ mod tests {
             );
 
             if res.is_ok() {
-                let expectedOk = get_boolean(test.join("ok.txt"));
-                assert_eq!(res.unwrap(), expectedOk)
+                let expected_ok = get_boolean(test.join("ok.txt"));
+                assert!(expected_ok);
             } else {
                 assert!(!test.join("ok.txt").exists());
             }

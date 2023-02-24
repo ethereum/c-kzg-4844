@@ -162,10 +162,11 @@ pub enum C_KZG_RET {
     C_KZG_OK = 0,
     #[doc = "< The supplied data is invalid in some way."]
     C_KZG_BADARGS = 1,
-    #[doc = "< Internal error - this should never occur and may indicate a bug in the library."]
-    C_KZG_ERROR = 2,
     #[doc = "< Could not allocate memory."]
     C_KZG_MALLOC = 3,
+    #[doc = "< KZG proof verification failed."]
+    C_KZG_BAD_VERIFY = 4,
+
 }
 #[doc = " Stores the setup and parameters needed for performing FFTs."]
 #[repr(C)]
@@ -233,7 +234,6 @@ extern "C" {
     ) -> C_KZG_RET;
 
     pub fn verify_kzg_proof(
-        out: *mut bool,
         commitment_bytes: *const Bytes48,
         z_bytes: *const Bytes32,
         y_bytes: *const Bytes32,
@@ -242,7 +242,6 @@ extern "C" {
     ) -> C_KZG_RET;
 
     pub fn verify_blob_kzg_proof(
-        out: *mut bool,
         blob: *const Blob,
         commitment_bytes: *const Bytes48,
         proof_bytes: *const Bytes48,
@@ -250,7 +249,6 @@ extern "C" {
     ) -> C_KZG_RET;
 
     pub fn verify_blob_kzg_proof_batch(
-        out: *mut bool,
         blobs: *const Blob,
         commitments_bytes: *const Bytes48,
         proofs_bytes: *const Bytes48,
