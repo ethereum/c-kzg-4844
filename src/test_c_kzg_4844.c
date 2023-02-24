@@ -898,23 +898,21 @@ static void test_compute_powers__succeeds_expected_powers(void) {
 
 static void test_g1_lincomb__verify_consistent(void) {
     C_KZG_RET ret;
-    g1_t points[128], out, check, tmp;
+    g1_t points[128], out, check;
     fr_t scalars[128];
 
     check = G1_IDENTITY;
     for (size_t i = 0; i < 128; i++) {
         get_rand_fr(&scalars[i]);
         get_rand_g1(&points[i]);
-        g1_mul(&tmp, &points[i], &scalars[i]);
-        blst_p1_add(&check, &check, &tmp);
     }
 
-    ret = g1_lincomb(&out, points, scalars, 128);
+    g1_lincomb_naive(&check, points, scalars, 128);
+
+    ret = g1_lincomb_fast(&out, points, scalars, 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    ASSERT(
-        "lincomb matches direct multiplication", blst_p1_is_equal(&out, &check)
-    );
+    ASSERT("pippenger matches naive MSM", blst_p1_is_equal(&out, &check));
 }
 
 ///////////////////////////////////////////////////////////////////////////////
