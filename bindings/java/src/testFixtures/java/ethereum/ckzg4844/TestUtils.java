@@ -224,22 +224,6 @@ public class TestUtils {
     return Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
   }
 
-  public static byte[] getBytes(Path path) {
-    try {
-      return Bytes.fromHexString(Files.readString(path)).toArray();
-    } catch (final IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-  }
-
-  public static boolean getBoolean(Path path) {
-    try {
-      return Files.readString(path).contains("true");
-    } catch (final IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-  }
-
   public static List<String> getFiles(String path) {
     try {
       try (Stream<Path> stream = Files.list(Paths.get(path))) {
