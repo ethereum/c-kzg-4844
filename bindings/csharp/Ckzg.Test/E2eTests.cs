@@ -93,16 +93,17 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             BlobToKzgCommitmentTest? test = JsonSerializer.Deserialize<BlobToKzgCommitmentTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] commitment = new byte[48];
-            byte[] blob = GetBytes(test!.input!.blob);
+            byte[] blob = GetBytes(test.input.blob);
 
             fixed (byte *pCommitment = commitment, pBlob = blob)
             {
                 Ckzg.Ret ret = Ckzg.BlobToKzgCommitment(pCommitment, pBlob, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
-                    string? commitmentStr = test!.output!.commitment;
+                    string? commitmentStr = test.output.commitment;
                     Assert.That(commitmentStr, Is.Not.EqualTo(null));
                     byte[] expectedCommitment = GetBytes(commitmentStr);
                     Assert.That(commitment, Is.EqualTo(expectedCommitment));
@@ -143,17 +144,18 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             ComputeKzgProofTest? test = JsonSerializer.Deserialize<ComputeKzgProofTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] proof = new byte[48];
-            byte[] blob = GetBytes(test!.input!.blob);
-            byte[] inputPoint = GetBytes(test!.input!.input_point);
+            byte[] blob = GetBytes(test.input.blob);
+            byte[] inputPoint = GetBytes(test.input.input_point);
 
             fixed (byte *pProof = proof, pBlob = blob, pInputPoint = inputPoint)
             {
                 Ckzg.Ret ret = Ckzg.ComputeKzgProof(pProof, pBlob, pInputPoint, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
-                    string? proofStr = test!.output!.proof;
+                    string? proofStr = test.output.proof;
                     Assert.That(proofStr, Is.Not.EqualTo(null));
                     byte[] expectedProof = GetBytes(proofStr);
                     Assert.That(proof, Is.EqualTo(expectedProof));
@@ -193,16 +195,17 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             ComputeBlobKzgProofTest? test = JsonSerializer.Deserialize<ComputeBlobKzgProofTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] proof = new byte[48];
-            byte[] blob = GetBytes(test!.input!.blob);
+            byte[] blob = GetBytes(test.input.blob);
 
             fixed (byte *pProof = proof, pBlob = blob)
             {
                 Ckzg.Ret ret = Ckzg.ComputeBlobKzgProof(pProof, pBlob, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
-                    string? proofStr = test!.output!.proof;
+                    string? proofStr = test.output.proof;
                     Assert.That(proofStr, Is.Not.EqualTo(null));
                     byte[] expectedProof = GetBytes(proofStr);
                     Assert.That(proof, Is.EqualTo(expectedProof));
@@ -245,12 +248,13 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             VerifyKzgProofTest? test = JsonSerializer.Deserialize<VerifyKzgProofTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             bool valid = false;
-            byte[] commitment = GetBytes(test!.input!.commitment);
-            byte[] inputPoint = GetBytes(test!.input!.input_point);
-            byte[] claimedValue = GetBytes(test!.input!.claimed_value);
-            byte[] proof = GetBytes(test!.input!.proof);
+            byte[] commitment = GetBytes(test.input.commitment);
+            byte[] inputPoint = GetBytes(test.input.input_point);
+            byte[] claimedValue = GetBytes(test.input.claimed_value);
+            byte[] proof = GetBytes(test.input.proof);
 
             fixed (byte *pCommitment = commitment, pInputPoint = inputPoint, pClaimedValue = claimedValue, pProof = proof)
             {
@@ -296,11 +300,12 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             VerifyBlobKzgProofTest? test = JsonSerializer.Deserialize<VerifyBlobKzgProofTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             bool valid = false;
-            byte[] blob = GetBytes(test!.input!.blob);
-            byte[] commitment = GetBytes(test!.input!.commitment);
-            byte[] proof = GetBytes(test!.input!.proof);
+            byte[] blob = GetBytes(test.input.blob);
+            byte[] commitment = GetBytes(test.input.commitment);
+            byte[] proof = GetBytes(test.input.proof);
 
             fixed (byte *pBlob = blob, pCommitment = commitment, pProof = proof)
             {
@@ -346,11 +351,12 @@ public class BasicKzgTests
         {
             String? json = File.ReadAllText(testFile);
             VerifyBlobKzgProofBatchTest? test = JsonSerializer.Deserialize<VerifyBlobKzgProofBatchTest>(json);
+            Assert.That(test, Is.Not.EqualTo(null));
 
             bool valid = false;
-            byte[] blobs = GetFlatBytes(test!.input!.blobs);
-            byte[] commitments = GetFlatBytes(test!.input!.commitments);
-            byte[] proofs = GetFlatBytes(test!.input!.proofs);
+            byte[] blobs = GetFlatBytes(test.input.blobs);
+            byte[] commitments = GetFlatBytes(test.input.commitments);
+            byte[] proofs = GetFlatBytes(test.input.proofs);
             int count = blobs.Length / Ckzg.BytesPerBlob;
 
             fixed (byte *pBlobs = blobs, pCommitments = commitments, pProofs = proofs)
@@ -358,7 +364,7 @@ public class BasicKzgTests
                 Ckzg.Ret ret = Ckzg.VerifyBlobKzgProofBatch(&valid, pBlobs, pCommitments, pProofs, count, ts);
                 if (ret == Ckzg.Ret.Ok)
                 {
-                    Assert.That(valid, Is.EqualTo(test!.output!.valid));
+                    Assert.That(valid, Is.EqualTo(test.output.valid));
                 }
                 else
                 {
