@@ -61,6 +61,22 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
+  public static class VerifyKzgProofState {
+    private byte[] commitment;
+    private byte[] z;
+    private byte[] y;
+    private byte[] proof;
+
+    @Setup(Level.Iteration)
+    public void setUp() {
+      commitment = TestUtils.createRandomCommitments(1);
+      z = TestUtils.randomBLSFieldElementBytes();
+      y = TestUtils.randomBLSFieldElementBytes();
+      proof = TestUtils.createRandomProofs(1);
+    }
+  }
+
+  @State(Scope.Benchmark)
   public static class VerifyBlobKzgProofState {
     private byte[] blob;
     private byte[] commitment;
@@ -88,23 +104,6 @@ public class CKZG4844JNIBenchmark {
       blobs = TestUtils.createRandomBlobs(count);
       commitments = TestUtils.createRandomCommitments(count);
       proofs = TestUtils.createRandomProofs(count);
-    }
-  }
-
-  @State(Scope.Benchmark)
-  public static class VerifyKzgProofState {
-    private byte[] commitment;
-    private byte[] z;
-    private byte[] y;
-    private byte[] proof;
-
-    @Setup
-    public void setUp() {
-      final VerifyKzgProofParameters parameters = TestUtils.getVerifyKzgProofTestVectors().get(2);
-      commitment = parameters.getCommitment();
-      z = parameters.getZ();
-      y = parameters.getY();
-      proof = parameters.getProof();
     }
   }
 
