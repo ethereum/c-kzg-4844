@@ -3,6 +3,7 @@
 
 #include "napi.h"
 #include "blst.hpp"
+#include "functions.h"
 
 class KzgBindings;
 
@@ -19,7 +20,7 @@ public:
     size_t _bytes_per_proof;
     size_t _field_elements_per_blob;
 
-    static std::shared_ptr<GlobalState> GetInstance(KzgBindings *addon);
+    static std::shared_ptr<GlobalState> GetInstance();
 
     GlobalState();
     GlobalState(GlobalState &&source) = delete;
@@ -36,7 +37,7 @@ private:
 class KzgBindings : public Napi::Addon<KzgBindings>
 {
 public:
-    std::shared_ptr<GlobalState> _global_state = GlobalState::GetInstance(this);
+    std::shared_ptr<GlobalState> _global_state = GlobalState::GetInstance();
     Napi::Object _js_constants;
 
     KzgBindings(Napi::Env env, Napi::Object exports);

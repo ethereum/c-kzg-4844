@@ -18,7 +18,7 @@ GlobalState::GlobalState()
       _bytes_per_proof{96},
       _field_elements_per_blob{96} {}
 
-std::shared_ptr<GlobalState> GlobalState::GetInstance(KzgBindings *addon)
+std::shared_ptr<GlobalState> GlobalState::GetInstance()
 {
     static std::weak_ptr<GlobalState> shared;
     const std::lock_guard<std::mutex> guard(_lock);
@@ -53,6 +53,12 @@ void GlobalState::BuildJsConstants(Napi::Env &env, Napi::Object exports)
 KzgBindings::KzgBindings(Napi::Env env, Napi::Object exports)
 {
     _global_state->BuildJsConstants(env, exports);
+    exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment);
+    exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof);
+    exports["computeBlobKzgProof"] = Napi::Function::New(env, ComputeBlobKzgProof);
+    exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
+    exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof);
+    exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch);
     env.SetInstanceData(this);
 };
 

@@ -3,7 +3,8 @@
     {
       "target_name": "kzg_bindings",
       "sources": [
-        "src/bindings.cc"
+        "src/bindings.cc",
+        "src/functions.cc",
       ],
       "libraries": [
         "<(module_root_dir)/deps/lib/c_kzg_4844.o",
