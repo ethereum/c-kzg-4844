@@ -1,9 +1,26 @@
 {
+  "include": ["lib", "test"],
+  "files": ["index.d.ts"],
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "dist/dts",
+    "outDir": "dist",
     "target": "esnext",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true
+    "module": "commonjs",
+    "pretty": true,
+    "lib": ["esnext.bigint"],
+
+    "strict": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+
+    "declaration": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "esModuleInterop": true
   }
 }

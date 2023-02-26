@@ -1,5 +1,5 @@
+.vscode
 build
 dist
-*.node
+deprecated
 node_modules
-testing_trusted_setups.txt

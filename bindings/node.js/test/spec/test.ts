@@ -1,5 +1,3 @@
-import { randomBytes } from "crypto";
-import { existsSync } from "fs";
 import path = require("path");
 import fs = require("fs");
 
@@ -17,57 +15,9 @@ import {
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   transformTrustedSetupJSON,
-} from "./kzg";
+} from "../../lib";
 
-const setupFileName = "testing_trusted_setups.json";
 
-const SETUP_FILE_PATH = existsSync(setupFileName)
-  ? setupFileName
-  : `../../src/${setupFileName}`;
-
-const MAX_TOP_BYTE = 114;
-
-const TEST_DIR = "../../tests";
-const BLOB_TO_KZG_COMMITMENT_TESTS = path.join(
-  TEST_DIR,
-  "blob_to_kzg_commitment",
-);
-const COMPUTE_KZG_PROOF_TESTS = path.join(TEST_DIR, "compute_kzg_proof");
-const COMPUTE_BLOB_KZG_PROOF_TESTS = path.join(
-  TEST_DIR,
-  "compute_blob_kzg_proof",
-);
-const VERIFY_KZG_PROOF_TESTS = path.join(TEST_DIR, "verify_kzg_proof");
-const VERIFY_BLOB_KZG_PROOF_TESTS = path.join(
-  TEST_DIR,
-  "verify_blob_kzg_proof",
-);
-const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = path.join(
-  TEST_DIR,
-  "verify_blob_kzg_proof_batch",
-);
-
-function getBytes(file: String): Uint8Array {
-  const data = require("fs").readFileSync(file, "ascii");
-  return Buffer.from(data, "hex");
-}
-
-function getBoolean(file: String): boolean {
-  const data = require("fs").readFileSync(file, "ascii");
-  return data.includes("true");
-}
-
-const generateRandomBlob = () => {
-  return new Uint8Array(
-    randomBytes(BYTES_PER_BLOB).map((x, i) => {
-      // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
-      if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 31) {
-        return Math.floor(Math.random() * MAX_TOP_BYTE);
-      }
-      return x;
-    }),
-  );
-};
 
 describe("C-KZG", () => {
   beforeAll(async () => {
