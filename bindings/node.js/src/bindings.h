@@ -1,8 +1,13 @@
 #ifndef C_KZG_ADDON_H__
 #define C_KZG_ADDON_H__
 
+#include <iostream>
+
+#include <memory>
+#include <mutex>
 #include "napi.h"
 #include "blst.hpp"
+#include "c_kzg_4844.h"
 #include "functions.h"
 
 class KzgBindings;
@@ -37,12 +42,14 @@ private:
 class KzgBindings : public Napi::Addon<KzgBindings>
 {
 public:
-    std::shared_ptr<GlobalState> _global_state = GlobalState::GetInstance();
-    Napi::Object _js_constants;
+    std::shared_ptr<GlobalState> _global_state;
+    std::unique_ptr<KZGSettings> _settings;
+    bool _is_setup;
 
     KzgBindings(Napi::Env env, Napi::Object exports);
     KzgBindings(KzgBindings &&source) = delete;
     KzgBindings(const KzgBindings &source) = delete;
+    ~KzgBindings();
     KzgBindings &operator=(KzgBindings &&source) = delete;
     KzgBindings &operator=(const KzgBindings &source) = delete;
 

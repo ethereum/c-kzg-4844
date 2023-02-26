@@ -144,6 +144,13 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.3.tgz#472eaab5f15c1ffdd7f8628bd4c4f753995ec79e"
   integrity sha512-yOlFc+7UtL/89t2ZhjPvvB/DeAr3r+Dq58IgzsFkOAvVC6NMJXmCGjbptdXdR9qsX7pKcTL+s87FtYREi2dEEQ==
 
+"@types/bindings@^1.5.1":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@types/bindings/-/bindings-1.5.1.tgz#bc9c00f188fc0af4b0a18d065aaa145e32498784"
+  integrity sha512-8HzueDeoxGXdsJ0Ep7TOXHGN+woRTWa1bAds30r5we7PCC3P5zrSTRknePLn/KYAubgQv5t/1zkonnStHLCWOg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/chai@^4.2.13":
   version "4.3.4"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.3.4.tgz#e913e8175db8307d78b4e8fa690408ba6b65dee4"
@@ -163,6 +170,11 @@
   version "8.2.3"
   resolved "https://registry.yarnpkg.com/@types/mocha/-/mocha-8.2.3.tgz#bbeb55fbc73f28ea6de601fbfa4613f58d785323"
   integrity sha512-ekGvFhFgrc2zYQoX4JeZPmVzZxw6Dtllga7iGHzfbYIYkAMUx/sAFP2GdFpLff+vdHXu5fl7WX9AT+TtqYcsyw==
+
+"@types/node@*":
+  version "18.14.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.14.1.tgz#90dad8476f1e42797c49d6f8b69aaf9f876fc69f"
+  integrity sha512-QH+37Qds3E0eDlReeboBxfHbX9omAcBCXEzswCu6jySP642jiM3cYSIkU/REqwhCUqXdonHFuBfJDiAJxMNhaQ==
 
 "@types/node@^16.11.7":
   version "16.18.12"

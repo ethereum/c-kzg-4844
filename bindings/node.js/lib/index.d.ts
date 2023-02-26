@@ -13,21 +13,18 @@ export interface TrustedSetupJson {
   setup_G1_lagrange: string[];
   roots_of_unity: string[];
 }
-
-export const BYTES_PER_BLOB: number;
-export const BYTES_PER_COMMITMENT: number;
-export const BYTES_PER_FIELD_ELEMENT: number;
-export const BYTES_PER_PROOF: number;
-export const FIELD_ELEMENTS_PER_BLOB: number;
-
-export function blobToKzgCommitment(blob: Blob): KZGCommitment;
-export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof;
-export function computeBlobKzgProof(blob: Blob): KZGProof;
-export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
-export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
-export function verifyKzgProof(
-  commitmentBytes: Bytes48,
-  zBytes: Bytes32,
-  yBytes: Bytes32,
-  proofBytes: Bytes48
-): boolean;
+export interface KzgBindings {
+  BYTES_PER_BLOB: number;
+  BYTES_PER_COMMITMENT: number;
+  BYTES_PER_FIELD_ELEMENT: number;
+  BYTES_PER_PROOF: number;
+  FIELD_ELEMENTS_PER_BLOB: number;
+  blobToKzgCommitment(blob: Blob): KZGCommitment;
+  computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof;
+  computeBlobKzgProof(blob: Blob): KZGProof;
+  verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
+  verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
+  verifyKzgProof(commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48): boolean;
+}
+declare const setup: (filePath: string) => KzgBindings;
+export default setup;

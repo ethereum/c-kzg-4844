@@ -1,5 +1,8 @@
 import {expect} from "chai";
-import {computeBlobKzgProof} from "../../lib";
+import bindings from "../../lib";
+import {TRUSTED_SETUP_JSON} from "../constants";
+
+const {computeBlobKzgProof} = bindings(TRUSTED_SETUP_JSON);
 
 describe("computeBlobKzgProof", () => {
   it("should exist", () => {

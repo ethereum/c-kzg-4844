@@ -18,6 +18,7 @@
     "node-addon-api": "^5.0.0"
   },
   "devDependencies": {
+    "@types/bindings": "^1.5.1",
     "@types/chai": "^4.2.13",
     "@types/mocha": "^8.0.3",
     "@types/node": "^16.11.7",
