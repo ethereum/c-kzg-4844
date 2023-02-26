@@ -36,6 +36,7 @@ std::shared_ptr<GlobalState> GlobalState::GetInstance()
 
 void GlobalState::BuildJsConstants(Napi::Env &env, Napi::Object exports)
 {
+    const std::lock_guard<std::mutex> guard(_lock);
     exports["BYTES_PER_BLOB"] = Napi::Number::New(env, _bytes_per_blob);
     exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, _bytes_per_commitment);
     exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, _bytes_per_field_element);
