@@ -3,6 +3,8 @@
 
 #include <iostream>
 
+#include <sstream>
+#include <string_view>
 #include "napi.h"
 #include "bindings.h"
 #include "c_kzg_4844.h"

@@ -22,9 +22,9 @@ export interface KzgBindings {
   blobToKzgCommitment(blob: Blob): KZGCommitment;
   computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof;
   computeBlobKzgProof(blob: Blob): KZGProof;
-  verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
-  verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
-  verifyKzgProof(commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48): boolean;
+  verifyKzgProof(commitment: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proof: Bytes48): boolean;
+  verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes48): boolean;
+  verifyBlobKzgProofBatch(blobs: Blob[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
 }
 declare const setup: (filePath: string) => KzgBindings;
 export default setup;
