@@ -19,13 +19,10 @@ describe("verifyKzgProof", () => {
       const inputPoint = getBytes(path.join(testPath, "input_point.txt"));
       const claimedValue = getBytes(path.join(testPath, "claimed_value.txt"));
       const proof = getBytes(path.join(testPath, "proof.txt"));
-      try {
-        const ok = verifyKzgProof(commitment, inputPoint, claimedValue, proof);
-        const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-        expect(ok).to.equal(expectedOk);
-      } catch (err) {
-        expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.false;
-      }
+      expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.true;
+      const ok = verifyKzgProof(commitment, inputPoint, claimedValue, proof);
+      const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
+      expect(ok).to.equal(expectedOk);
     });
   });
 

@@ -18,13 +18,10 @@ describe("verifyBlobKzgProof", () => {
       const blob = getBytes(path.join(testPath, "blob.txt"));
       const commitment = getBytes(path.join(testPath, "commitment.txt"));
       const proof = getBytes(path.join(testPath, "proof.txt"));
-      try {
-        const ok = verifyBlobKzgProof(blob, commitment, proof);
-        const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-        expect(ok).to.equal(expectedOk);
-      } catch (err) {
-        expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.false;
-      }
+      expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.true;
+      const ok = verifyBlobKzgProof(blob, commitment, proof);
+      const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
+      expect(ok).to.equal(expectedOk);
     });
   });
 

@@ -16,14 +16,10 @@ describe("computeBlobKzgProof", () => {
     tests.forEach((test) => {
       const testPath = path.join(COMPUTE_BLOB_KZG_PROOF_TESTS, test);
       const blob = getBytes(path.join(testPath, "blob.txt"));
-      try {
-        const proof = computeBlobKzgProof(blob);
-        const expectedProof = getBytes(path.join(testPath, "proof.txt"));
-        expect(proof.buffer).to.equal(expectedProof.buffer);
-      } catch (err) {
-        // TODO: this test fails
-        // expect(fs.existsSync(path.join(testPath, "proof.txt"))).to.be.false;
-      }
+      expect(fs.existsSync(path.join(testPath, "proof.txt"))).to.be.true;
+      const proof = computeBlobKzgProof(blob);
+      const expectedProof = getBytes(path.join(testPath, "proof.txt"));
+      expect(proof.toString("hex")).to.equal(Buffer.from(expectedProof).toString("hex"));
     });
   });
 

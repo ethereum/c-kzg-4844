@@ -17,14 +17,10 @@ describe("blobToKzgCommitment", () => {
     tests.forEach((test) => {
       const testPath = path.join(BLOB_TO_KZG_COMMITMENT_TESTS, test);
       const blob = getBytes(path.join(testPath, "blob.txt"));
-      try {
-        const commitment = blobToKzgCommitment(blob);
-        const expectedCommitment = getBytes(path.join(testPath, "commitment.txt"));
-        expect(commitment.buffer).to.equal(expectedCommitment.buffer);
-      } catch (err) {
-        // TODO: this is failing
-        // expect(fs.existsSync(path.join(testPath, "commitment.txt"))).to.be.false;
-      }
+      expect(fs.existsSync(path.join(testPath, "commitment.txt"))).to.be.true;
+      const commitment = blobToKzgCommitment(blob);
+      const expectedCommitment = getBytes(path.join(testPath, "commitment.txt"));
+      expect(commitment.toString("hex")).to.equal(Buffer.from(expectedCommitment).toString("hex"));
     });
   });
   describe("edge cases for blobToKzgCommitment", () => {

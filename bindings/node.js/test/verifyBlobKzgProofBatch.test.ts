@@ -42,14 +42,10 @@ describe("verifyBlobKzgProofBatch", () => {
           return path.join(testPath, "proofs", filename);
         })
         .map(getBytes);
-      try {
-        const ok = verifyBlobKzgProofBatch(blobs, commitments, proofs);
-        const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-        expect(ok).to.equal(expectedOk);
-      } catch (err) {
-        // TODO: this fails
-        // expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.false;
-      }
+      expect(fs.existsSync(path.join(testPath, "ok.txt"))).to.be.true;
+      const ok = verifyBlobKzgProofBatch(blobs, commitments, proofs);
+      const expectedOk = getBoolean(path.join(testPath, "ok.txt"));
+      expect(ok).to.equal(expectedOk);
     });
   });
   describe("edge cases for verifyBlobKzgProofBatch", () => {
