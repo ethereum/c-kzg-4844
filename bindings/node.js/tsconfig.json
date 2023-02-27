@@ -1,5 +1,5 @@
 {
-  "include": ["lib", "test"],
+  "include": ["lib", "test", "tools"],
   "files": ["index.d.ts"],
   "compilerOptions": {
     "outDir": "dist",

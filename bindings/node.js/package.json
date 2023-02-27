@@ -9,7 +9,10 @@
     "clean": "node-gyp clean && node-gyp configure",
     "build": "node-gyp build",
     "build:clean": "npm run clean && npm run build",
-    "build:debug": "node-gyp build --debug"
+    "build:debug": "node-gyp build --debug",
+    "build:deps": "ts-node tools/buildDeps",
+    "prepack": "npm run build:deps",
+    "prepublish": "npm run build:deps"
   },
   "dependencies": {
     "bindings": "^1.5.0",

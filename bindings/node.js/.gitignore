@@ -1,6 +1,7 @@
 .vscode
 build
-dist
+deps
+deps_old
 deprecated
 node_modules
 testing_trusted_setups.txt
