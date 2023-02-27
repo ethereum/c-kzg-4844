@@ -46,7 +46,7 @@ describe("verifyBlobKzgProofBatch", () => {
       }
     });
   });
-  describe.skip("edge cases for verifyBlobKzgProofBatch", () => {
+  describe("edge cases for verifyBlobKzgProofBatch", () => {
     it("should reject non-bytearray blob", () => {
       expect(() =>
         verifyBlobKzgProofBatch(
@@ -75,13 +75,13 @@ describe("verifyBlobKzgProofBatch", () => {
 
       expect(verifyBlobKzgProofBatch(blobs, commitments, proofs)).to.be.true;
       expect(() => verifyBlobKzgProofBatch(blobs.slice(0, 1), commitments, proofs)).to.throw(
-        "requires equal number of blobs/commitments/proofs"
+        "blobs, commitments, and proofs arrays must be the same length"
       );
       expect(() => verifyBlobKzgProofBatch(blobs, commitments.slice(0, 1), proofs)).to.throw(
-        "requires equal number of blobs/commitments/proofs"
+        "blobs, commitments, and proofs arrays must be the same length"
       );
       expect(() => verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1))).to.throw(
-        "requires equal number of blobs/commitments/proofs"
+        "blobs, commitments, and proofs arrays must be the same length"
       );
     });
   });

@@ -187,7 +187,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info)
     Napi::Array commitments_array = info[1].As<Napi::Array>();
     Napi::Array proofs_array = info[2].As<Napi::Array>();
     uint32_t count = blobs_array.Length();
-    if (!(count == commitments_array.Length() == proofs_array.Length()))
+    if (count != commitments_array.Length() || count != proofs_array.Length())
     {
         Napi::Error::New(env, "blobs, commitments, and proofs arrays must be the same length").ThrowAsJavaScriptException();
         return env.Undefined();
