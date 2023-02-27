@@ -26,5 +26,12 @@ export interface KzgBindings {
   verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes48): boolean;
   verifyBlobKzgProofBatch(blobs: Blob[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
 }
+
+export const BYTES_PER_BLOB: number;
+export const BYTES_PER_COMMITMENT: number;
+export const BYTES_PER_FIELD_ELEMENT: number;
+export const BYTES_PER_PROOF: number;
+export const FIELD_ELEMENTS_PER_BLOB: number;
+
 declare const setup: (filePath: string) => KzgBindings;
 export default setup;

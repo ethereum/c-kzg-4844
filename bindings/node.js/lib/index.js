@@ -29,7 +29,13 @@ function transformTrustedSetupJson(filePath) {
   return outputPath;
 }
 
-module.exports = exports = (filePath) => {
+/**
+ * Factory function that passes trusted setup to the bindings
+ * @param {string} filePath
+ * @typedef {import('./index').KzgBindings} KzgBindings
+ * @returns {KzgBindings}
+ */
+const setup = (filePath) => {
   if (!(filePath && typeof filePath === "string")) {
     throw new TypeError("must initialize kzg with the filePath to a txt/json trusted setup");
   }
@@ -42,3 +48,17 @@ module.exports = exports = (filePath) => {
   bindings.setup(filePath);
   return bindings;
 };
+
+/**
+ * Add bindings constants to function object as a helper.  don't have to run trusted
+ * setup to get to them;
+ */
+const {BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, BYTES_PER_PROOF, FIELD_ELEMENTS_PER_BLOB} =
+  bindings;
+setup.BYTES_PER_BLOB = BYTES_PER_BLOB;
+setup.BYTES_PER_COMMITMENT = BYTES_PER_COMMITMENT;
+setup.BYTES_PER_FIELD_ELEMENT = BYTES_PER_FIELD_ELEMENT;
+setup.BYTES_PER_PROOF = BYTES_PER_PROOF;
+setup.FIELD_ELEMENTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB;
+
+module.exports = exports = setup;
