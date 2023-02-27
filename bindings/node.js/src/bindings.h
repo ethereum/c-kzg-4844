@@ -44,7 +44,6 @@ class KzgBindings : public Napi::Addon<KzgBindings>
 public:
     std::shared_ptr<GlobalState> _global_state;
     std::unique_ptr<KZGSettings> _settings;
-    bool _is_setup;
 
     KzgBindings(Napi::Env env, Napi::Object exports);
     KzgBindings(KzgBindings &&source) = delete;
@@ -55,6 +54,11 @@ public:
 
     Napi::Value TestSync(const Napi::CallbackInfo &info);
     Napi::Value TestAsync(const Napi::CallbackInfo &info);
+    bool IsSetup() { return _is_setup; }
+
+private:
+    friend Napi::Value Setup(const Napi::CallbackInfo &info);
+    bool _is_setup;
 };
 
 #endif /* C_KZG_ADDON_H__ */

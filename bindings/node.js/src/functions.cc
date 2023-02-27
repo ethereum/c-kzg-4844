@@ -56,6 +56,11 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     uint8_t *blob = get_bytes(env, bindings, info[0], bindings->_global_state->_bytes_per_blob, "blob");
     if (blob == nullptr || env.IsExceptionPending())
     {
@@ -75,6 +80,11 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     uint8_t *blob = get_bytes(env, bindings, info[0], bindings->_global_state->_bytes_per_blob, "blob");
     if (blob == nullptr || env.IsExceptionPending())
     {
@@ -106,6 +116,11 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     uint8_t *blob = get_bytes(env, bindings, info[0], bindings->_global_state->_bytes_per_blob, "blob");
     if (blob == nullptr || env.IsExceptionPending())
     {
@@ -131,7 +146,11 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
-
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     uint8_t *commitment_bytes = get_bytes(env, bindings, info[0], bindings->_global_state->_bytes_per_commitment, "commitmentBytes");
     uint8_t *z_bytes = get_bytes(env, bindings, info[1], 32, "zBytes");
     uint8_t *y_bytes = get_bytes(env, bindings, info[2], 32, "yBytes");
@@ -156,6 +175,11 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     uint8_t *blob_bytes = get_bytes(env, bindings, info[0], bindings->_global_state->_bytes_per_blob, "blob");
     uint8_t *commitment_bytes = get_bytes(env, bindings, info[1], bindings->_global_state->_bytes_per_commitment, "commitmentBytes");
     uint8_t *proof_bytes = get_bytes(env, bindings, info[2], bindings->_global_state->_bytes_per_proof, "proofBytes");
@@ -178,6 +202,11 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
     KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+    if (!bindings->IsSetup())
+    {
+        Napi::Error::New(env, "Must run kzg setup.\nDefault export of 'c-kzg' is a function that takes the path to a trusted setup txt/json").ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
     if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray()))
     {
         Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
