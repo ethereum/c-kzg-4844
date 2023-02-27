@@ -4,13 +4,12 @@ import {watchWithCallback} from "./watch";
 import {exec} from "./exec";
 
 const DEBOUNCE_TIME = 500;
-const testCommand = "npm run test:unit";
+const testCommand = "npm run test";
 const buildCommand = "npm run build:debug";
 
 const ROOT_FOLDER = resolve(__dirname, "..");
 const SRC_FOLDER = resolve(ROOT_FOLDER, "src");
 const TESTS_FOLDER = resolve(ROOT_FOLDER, "test");
-const UNIT_TESTS_FOLDER = resolve(TESTS_FOLDER, "unit");
 
 /**
  * Builds addon and then starts watch.
@@ -29,7 +28,7 @@ void watchWithCallback({
 });
 
 void watchWithCallback({
-  path: UNIT_TESTS_FOLDER,
+  path: TESTS_FOLDER,
   debounceTime: DEBOUNCE_TIME,
   cb: () => exec(testCommand, false).then(console.log).catch(console.error),
 });

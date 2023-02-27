@@ -53,7 +53,7 @@ void GlobalState::BuildJsConstants(Napi::Env &env, Napi::Object exports)
  */
 KzgBindings::KzgBindings(Napi::Env env, Napi::Object exports)
     : _global_state{GlobalState::GetInstance()},
-      _settings{(KZGSettings *)malloc(sizeof(KZGSettings))},
+      _settings{std::make_unique<KZGSettings>()},
       _is_setup{false}
 {
     _global_state->BuildJsConstants(env, exports);

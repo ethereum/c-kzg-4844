@@ -17,6 +17,7 @@ function transformTrustedSetupJson(filePath) {
   const data = fs.readFileSync(filePath, "utf8");
   const trustedSetup = JSON.parse(data);
   // QUESTION: is this safe to write to an os temp directory?
+  // const outputPath = path.resolve(os.tmpdir(), path.parse(filePath).name + ".txt");
   const outputPath = path.resolve(__dirname, path.parse(filePath).name + ".txt");
   const setupText =
     bindings.FIELD_ELEMENTS_PER_BLOB +

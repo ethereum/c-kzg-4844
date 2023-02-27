@@ -1,10 +1,7 @@
 #ifndef C_KZG_FUNCTIONS_H__
 #define C_KZG_FUNCTIONS_H__
 
-#include <iostream>
-
 #include <sstream>
-#include <string_view>
 #include "napi.h"
 #include "bindings.h"
 #include "c_kzg_4844.h"

@@ -1,11 +1,11 @@
 #include "functions.h"
 
-uint8_t *get_bytes(
+inline uint8_t *get_bytes(
     const Napi::Env &env,
     const KzgBindings *bindings,
     Napi::Value val,
     size_t length,
-    std::string_view name)
+    std::string &&name)
 {
     if (!(val.IsTypedArray() && val.As<Napi::TypedArray>().TypedArrayType() == napi_uint8_array))
     {
