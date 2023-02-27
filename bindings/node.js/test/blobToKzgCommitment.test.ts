@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
 import {expect} from "chai";
+import {BYTES_PER_BLOB} from "../lib";
 import {BLOB_TO_KZG_COMMITMENT_TESTS} from "./constants";
 import {getBindings, getBytes} from "./utils";
 import {randomBytes} from "crypto";
 
-const {blobToKzgCommitment, BYTES_PER_BLOB} = getBindings();
+const {blobToKzgCommitment} = getBindings();
 const tests = fs.readdirSync(BLOB_TO_KZG_COMMITMENT_TESTS);
 
 describe("blobToKzgCommitment", () => {

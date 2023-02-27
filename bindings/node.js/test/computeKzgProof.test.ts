@@ -1,10 +1,11 @@
 import fs from "fs";
 import path from "path";
 import {expect} from "chai";
+import {BYTES_PER_FIELD_ELEMENT} from "../lib";
 import {COMPUTE_KZG_PROOF_TESTS} from "./constants";
 import {generateRandomBlob, getBindings, getBytes} from "./utils";
 
-const {computeKzgProof, BYTES_PER_FIELD_ELEMENT} = getBindings();
+const {computeKzgProof} = getBindings();
 
 describe("computeKzgProof", () => {
   it("should exist", () => {

@@ -1,11 +1,17 @@
 import fs from "fs";
 import path from "path";
 import {expect} from "chai";
-import bindings from "../lib";
-import {TRUSTED_SETUP_JSON, VERIFY_BLOB_KZG_PROOF_BATCH_TESTS} from "./constants";
-import {generateRandomBlob, generateRandomCommitment, generateRandomProof, getBoolean, getBytes} from "./utils";
+import {
+  generateRandomBlob,
+  generateRandomCommitment,
+  generateRandomProof,
+  getBindings,
+  getBoolean,
+  getBytes,
+} from "./utils";
+import {VERIFY_BLOB_KZG_PROOF_BATCH_TESTS} from "./constants";
 
-const {verifyBlobKzgProofBatch, blobToKzgCommitment, computeBlobKzgProof} = bindings(TRUSTED_SETUP_JSON);
+const {verifyBlobKzgProofBatch, blobToKzgCommitment, computeBlobKzgProof} = getBindings();
 
 describe("verifyBlobKzgProofBatch", () => {
   it("should exist", () => {
