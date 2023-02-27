@@ -226,6 +226,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info)
     Bytes48 proofs[count];
     for (uint32_t index = 0; index < count; index++)
     {
+        Napi::HandleScope scope{env};
         uint8_t *blob = get_bytes(
             env,
             bindings,
