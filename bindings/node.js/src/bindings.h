@@ -7,7 +7,6 @@
 #include <mutex>
 #include "napi.h"
 #include "blst.h"
-#include "blst.hpp"
 #include "c_kzg_4844.h"
 #include "functions.h"
 
