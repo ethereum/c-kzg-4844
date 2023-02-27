@@ -49,6 +49,8 @@
         ],
         [ 'OS=="linux"', {
             'ldflags': [ '-Wl,-Bsymbolic' ],
+            'cflags!': [ '-fPIC' ],
+            'cflags_cc!': [ '-fPIC' ],
           }
         ],
         ['OS=="mac"', {
