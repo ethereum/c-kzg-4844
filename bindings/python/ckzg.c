@@ -103,6 +103,7 @@ static PyObject* compute_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
   return out;
 }
 
+/* Verify a KZG proof and throw an exception if it's invalid */
 static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
   PyObject *c, *z, *y, *p, *s;
 
@@ -129,16 +130,19 @@ static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
   const Bytes32 *y_bytes = (Bytes32 *)PyBytes_AsString(y);
   const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
 
-  bool ok;
-  if (verify_kzg_proof(&ok,
-        commitment_bytes, z_bytes, y_bytes, proof_bytes,
-        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed");
+  C_KZG_RET ret = verify_kzg_proof(
+                                   commitment_bytes, z_bytes, y_bytes, proof_bytes,
+                                   PyCapsule_GetPointer(s, "KZGSettings"));
+  if (ret != C_KZG_OK) {
+    return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed: %d", (int) ret);
   }
 
-  if (ok) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+  /* Boilerplate to return "None" */
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
+/* Verify a KZG proof and throw an exception if it's invalid */
 static PyObject* verify_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
   PyObject *b, *c, *p, *s;
 
@@ -161,16 +165,19 @@ static PyObject* verify_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
   const Bytes48 *commitment_bytes = (Bytes48 *)PyBytes_AsString(c);
   const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
 
-  bool ok;
-  if (verify_blob_kzg_proof(&ok,
+  C_KZG_RET ret = verify_blob_kzg_proof(
         blob_bytes, commitment_bytes, proof_bytes,
-        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof failed");
+        PyCapsule_GetPointer(s, "KZGSettings"));
+  if (ret != C_KZG_OK) {
+    return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof failed: %d", (int) ret);
   }
 
-  if (ok) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+  /* Boilerplate to return "None" */
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
+/* Verify a bunch of KZG proofs and throw an exception if any of them is invalid */
 static PyObject* verify_blob_kzg_proof_batch_wrap(PyObject *self, PyObject *args) {
   PyObject *b, *c, *p, *s;
 
@@ -205,14 +212,16 @@ static PyObject* verify_blob_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   const Bytes48 *commitments_bytes = (Bytes48 *)PyBytes_AsString(c);
   const Bytes48 *proofs_bytes = (Bytes48 *)PyBytes_AsString(p);
 
-  bool ok;
-  if (verify_blob_kzg_proof_batch(&ok,
+  C_KZG_RET ret = verify_blob_kzg_proof_batch(
         blobs_bytes, commitments_bytes, proofs_bytes, blobs_count,
-        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof_batch failed");
+        PyCapsule_GetPointer(s, "KZGSettings"));
+  if (ret != C_KZG_OK) {
+    return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof_batch failed: %d", (int) ret);
   }
 
-  if (ok) Py_RETURN_TRUE; else Py_RETURN_FALSE;
+  /* Boilerplate to return "None" */
+  Py_INCREF(Py_None);
+  return Py_None;
 }
 
 static PyMethodDef ckzgmethods[] = {

@@ -77,9 +77,8 @@ def test_verify_kzg_proof(ts):
         claimed_value = get_bytes32(join(test, "claimed_value.txt"))
         proof = get_bytes48(join(test, "proof.txt"))
         try:
-            ok = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
+            assert get_boolean(join(test, "ok.txt"))
         except:
             assert not isfile(join(test, "ok.txt"))
 
@@ -89,9 +88,8 @@ def test_verify_blob_kzg_proof(ts):
         commitment = get_bytes48(join(test, "commitment.txt"))
         proof = get_bytes48(join(test, "proof.txt"))
         try:
-            ok = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
+            assert get_boolean(join(test, "ok.txt"))
         except:
             assert not isfile(join(test, "ok.txt"))
 
@@ -105,9 +103,8 @@ def test_verify_blob_kzg_proof_batch(ts):
         proofs = b"".join([get_bytes48(p) for p in proof_files])
 
         try:
-            ok = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
+            assert get_boolean(join(test, "ok.txt"))
         except:
             assert not isfile(join(test, "ok.txt"))
 
