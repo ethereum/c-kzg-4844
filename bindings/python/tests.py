@@ -1,6 +1,5 @@
 import glob
-from os.path import join
-from os.path import isfile
+import yaml
 
 import ckzg
 
@@ -8,108 +7,121 @@ import ckzg
 # Constants
 ###############################################################################
 
-blob_to_kzg_commitment_tests = "../../tests/blob_to_kzg_commitment/*"
-compute_kzg_proof_tests = "../../tests/compute_kzg_proof/*"
-compute_blob_kzg_proof_tests = "../../tests/compute_blob_kzg_proof/*"
-verify_kzg_proof_tests = "../../tests/verify_kzg_proof/*"
-verify_blob_kzg_proof_tests = "../../tests/verify_blob_kzg_proof/*"
-verify_blob_kzg_proof_batch_tests = "../../tests/verify_blob_kzg_proof_batch/*"
+blob_to_kzg_commitment_tests = "../../tests/blob_to_kzg_commitment/*/*/*"
+compute_kzg_proof_tests = "../../tests/compute_kzg_proof/*/*/*"
+compute_blob_kzg_proof_tests = "../../tests/compute_blob_kzg_proof/*/*/*"
+verify_kzg_proof_tests = "../../tests/verify_kzg_proof/*/*/*"
+verify_blob_kzg_proof_tests = "../../tests/verify_blob_kzg_proof/*/*/*"
+verify_blob_kzg_proof_batch_tests = "../../tests/verify_blob_kzg_proof_batch/*/*/*"
 
 ###############################################################################
 # Helper Functions
 ###############################################################################
 
-def get_blob(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_bytes32(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_bytes48(path):
-    with open(path, "r") as f:
-        return bytes.fromhex(f.read())
-
-def get_boolean(path):
-    with open(path, "r") as f:
-        return "true" in f.read()
+def bytes_from_hex(hexstring):
+    return bytes.fromhex(hexstring.replace("0x", ""))
 
 ###############################################################################
 # Tests
 ###############################################################################
 
 def test_blob_to_kzg_commitment(ts):
-    for test in glob.glob(blob_to_kzg_commitment_tests):
-        blob = get_blob(join(test, "blob.txt"))
+    for test_file in glob.glob(blob_to_kzg_commitment_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+
         try:
             commitment = ckzg.blob_to_kzg_commitment(blob, ts)
-            expected_commitment = get_bytes48(join(test, "commitment.txt"))
+            expected_commitment = bytes_from_hex(test["output"])
             assert commitment == expected_commitment
         except:
-            assert not isfile(join(test, "commitment.txt"))
+            assert test["output"] is None
+
 
 def test_compute_kzg_proof(ts):
-    for test in glob.glob(compute_kzg_proof_tests):
-        blob = get_blob(join(test, "blob.txt"))
-        input_point = get_bytes32(join(test, "input_point.txt"))
+    for test_file in glob.glob(compute_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+        input_point = bytes_from_hex(test["input"]["z"])
+
         try:
             proof = ckzg.compute_kzg_proof(blob, input_point, ts)
-            expected_proof = get_bytes48(join(test, "proof.txt"))
-            assert proof == expected_proof
+            expected_proof = bytes_from_hex(test["output"])
+            assert proof == expected_proof, f"\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
-            assert not isfile(join(test, "proof.txt"))
+            assert test["output"] is None
+
 
 def test_compute_blob_kzg_proof(ts):
-    for test in glob.glob(compute_blob_kzg_proof_tests):
-        blob = get_blob(join(test, "blob.txt"))
+    for test_file in glob.glob(compute_blob_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+
         try:
             proof = ckzg.compute_blob_kzg_proof(blob, ts)
-            expected_proof = get_bytes48(join(test, "proof.txt"))
-            assert proof == expected_proof
+            expected_proof = bytes_from_hex(test["output"])
+            assert proof == expected_proof, f"\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
-            assert not isfile(join(test, "proof.txt"))
+            assert test["output"] is None
+
 
 def test_verify_kzg_proof(ts):
-    for test in glob.glob(verify_kzg_proof_tests):
-        commitment = get_bytes48(join(test, "commitment.txt"))
-        input_point = get_bytes32(join(test, "input_point.txt"))
-        claimed_value = get_bytes32(join(test, "claimed_value.txt"))
-        proof = get_bytes48(join(test, "proof.txt"))
+    for test_file in glob.glob(verify_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        commitment = bytes_from_hex(test["input"]["commitment"])
+        input_point = bytes_from_hex(test["input"]["z"])
+        claimed_value = bytes_from_hex(test["input"]["y"])
+        proof = bytes_from_hex(test["input"]["proof"])
+
         try:
-            ok = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
+            expected_valid = test["output"]
+            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"] is None
+
 
 def test_verify_blob_kzg_proof(ts):
-    for test in glob.glob(verify_blob_kzg_proof_tests):
-        blob = get_bytes32(join(test, "blob.txt"))
-        commitment = get_bytes48(join(test, "commitment.txt"))
-        proof = get_bytes48(join(test, "proof.txt"))
+    for test_file in glob.glob(verify_blob_kzg_proof_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+        commitment = bytes_from_hex(test["input"]["commitment"])
+        proof = bytes_from_hex(test["input"]["proof"])
+
         try:
-            ok = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
+            expected_valid = test["output"]
+            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"] is None
+
 
 def test_verify_blob_kzg_proof_batch(ts):
-    for test in glob.glob(verify_blob_kzg_proof_batch_tests):
-        blob_files = sorted(glob.glob(join(test, "blobs/*")))
-        blobs = b"".join([get_blob(b) for b in blob_files])
-        commitment_files = sorted(glob.glob(join(test, "commitments/*")))
-        commitments = b"".join([get_bytes48(c) for c in commitment_files])
-        proof_files = sorted(glob.glob(join(test, "proofs/*")))
-        proofs = b"".join([get_bytes48(p) for p in proof_files])
+    for test_file in glob.glob(verify_blob_kzg_proof_batch_tests):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blobs = b"".join(map(bytes_from_hex, test["input"]["blobs"]))
+        commitments = b"".join(map(bytes_from_hex, test["input"]["commitments"]))
+        proofs = b"".join(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            ok = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
-            expected_ok = get_boolean(join(test, "ok.txt"))
-            assert ok == expected_ok
+            valid = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
+            expected_valid = test["output"]
+            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
         except:
-            assert not isfile(join(test, "ok.txt"))
+            assert test["output"] is None
+
 
 ###############################################################################
 # Main Logic
