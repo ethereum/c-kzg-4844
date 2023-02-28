@@ -260,21 +260,21 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
   Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
   Bytes32 *y_native = (Bytes32 *)(*env)->GetByteArrayElements(env, y_bytes, NULL);
 
-  bool out;
-  C_KZG_RET ret = verify_kzg_proof(&out, commitment_native, z_native, y_native, proof_native, settings);
+  C_KZG_RET ret = verify_kzg_proof(commitment_native, z_native, y_native, proof_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, z_bytes, (jbyte *)z_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, y_bytes, (jbyte *)y_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
 
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
-    return 0;
+  if (ret != C_KZG_OK) {
+    if (ret != C_KZG_BAD_VERIFY) {
+      throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+    }
+    return JNI_FALSE;
   }
 
-  return (jboolean)out;
+  return JNI_TRUE;
 }
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes, jbyteArray proof_bytes)
@@ -310,20 +310,20 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
   Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
 
-  bool out;
-  C_KZG_RET ret = verify_blob_kzg_proof(&out, blob_native, commitment_native, proof_native, settings);
+  C_KZG_RET ret = verify_blob_kzg_proof(blob_native, commitment_native, proof_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, JNI_ABORT);
 
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProof.");
-    return 0;
+  if (ret != C_KZG_OK) {
+    if (ret != C_KZG_BAD_VERIFY) {
+      throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+    }
+    return JNI_FALSE;
   }
 
-  return (jboolean)out;
+  return JNI_TRUE;
 }
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes, jbyteArray proofs_bytes, jlong count)
@@ -360,18 +360,19 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
   Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
 
-  bool out;
-  C_KZG_RET ret = verify_blob_kzg_proof_batch(&out, blobs_native, commitments_native, proofs_native, count_native, settings);
+  C_KZG_RET ret = verify_blob_kzg_proof_batch(blobs_native, commitments_native, proofs_native, count_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blobs, (jbyte *)blobs_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);
 
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProofBatch.");
-    return 0;
+
+  if (ret != C_KZG_OK) {
+    if (ret != C_KZG_BAD_VERIFY) {
+      throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+    }
+    return JNI_FALSE;
   }
 
-  return (jboolean)out;
+  return JNI_TRUE;
 }
