@@ -21,12 +21,10 @@ public class BasicKzgTests
     // Helper Functions
     ///////////////////////////////////////////////////////////////////////////
 
-    public static byte[] GetBytes(string hex)
+    private static byte[] GetBytes(string path)
     {
-        return Enumerable.Range(2, hex.Length - 2)
-                         .Where(x => x % 2 == 0)
-                         .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
-                         .ToArray();
+        var hex = File.ReadAllText(path);
+        return Convert.FromHexString(hex);
     }
 
     public static byte[] GetFlatBytes(List<string> strings)
@@ -52,18 +50,18 @@ public class BasicKzgTests
     // Testing Setup/Teardown
     ///////////////////////////////////////////////////////////////////////////
 
-    [SetUp]
+    [OneTimeSetUp]
     public void Setup()
     {
         ts = Ckzg.LoadTrustedSetup("trusted_setup.txt");
-        Assert.That(ts, Is.Not.EqualTo(IntPtr.Zero));
     }
 
-    [TearDown]
+    [OneTimeTearDown]
     public void Teardown()
     {
         Ckzg.FreeTrustedSetup(ts);
     }
+
 
     ///////////////////////////////////////////////////////////////////////////
     // BlobToKzgCommitment
@@ -78,6 +76,12 @@ public class BasicKzgTests
     {
         public BlobToKzgCommitmentInput input { get; set; } = null!;
         public string? output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestSetupLoaded()
+    {
+        Assert.That(ts, Is.Not.EqualTo(IntPtr.Zero));
     }
 
     [TestCase]
