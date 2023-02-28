@@ -227,10 +227,10 @@ func TestVerifyKZGProof(t *testing.T) {
 		claimedValue := getBytes32(filepath.Join(test, "claimed_value.txt"))
 		proof := getBytes48(filepath.Join(test, "proof.txt"))
 
-		ok, ret := VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
+		ret := VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
 		if ret == C_KZG_OK {
 			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.True(t, expectedOk, test)
 		} else {
 			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
 		}
@@ -245,10 +245,10 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
 		proof := getBytes48(filepath.Join(test, "proof.txt"))
 
-		ok, ret := VerifyBlobKZGProof(blob, commitment, proof)
+		ret := VerifyBlobKZGProof(blob, commitment, proof)
 		if ret == C_KZG_OK {
 			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.True(t, expectedOk, test)
 		} else {
 			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
 		}
@@ -280,10 +280,10 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 		require.Len(t, commitments, len(blobs))
 		require.Len(t, proofs, len(blobs))
 
-		ok, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+		ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 		if ret == C_KZG_OK {
 			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.True(t, expectedOk, test)
 		} else {
 			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
 		}
