@@ -46,10 +46,10 @@ def test_compute_kzg_proof(ts):
             test = yaml.safe_load(f)
 
         blob = bytes_from_hex(test["input"]["blob"])
-        input_point = bytes_from_hex(test["input"]["z"])
+        z = bytes_from_hex(test["input"]["z"])
 
         try:
-            proof = ckzg.compute_kzg_proof(blob, input_point, ts)
+            proof = ckzg.compute_kzg_proof(blob, z, ts)
             expected_proof = bytes_from_hex(test["output"])
             assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
@@ -77,12 +77,12 @@ def test_verify_kzg_proof(ts):
             test = yaml.safe_load(f)
 
         commitment = bytes_from_hex(test["input"]["commitment"])
-        input_point = bytes_from_hex(test["input"]["z"])
-        claimed_value = bytes_from_hex(test["input"]["y"])
+        z = bytes_from_hex(test["input"]["z"])
+        y = bytes_from_hex(test["input"]["y"])
         proof = bytes_from_hex(test["input"]["proof"])
 
         try:
-            valid = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
+            valid = ckzg.verify_kzg_proof(commitment, z, y, proof, ts)
             expected_valid = test["output"]
             assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
