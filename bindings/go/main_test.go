@@ -150,8 +150,8 @@ func TestBlobToKZGCommitment(t *testing.T) {
 func TestComputeKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blob       Blob    `yaml:"blob"`
-			InputPoint Bytes32 `yaml:"input_point"`
+			Blob Blob    `yaml:"blob"`
+			Z    Bytes32 `yaml:"z"`
 		}
 		Output *Bytes48 `yaml:"output"`
 	}
@@ -167,7 +167,7 @@ func TestComputeKZGProof(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.InputPoint)
+		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.Z)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
 			require.Equal(t, test.Output[:], proof[:])
@@ -209,10 +209,10 @@ func TestComputeBlobKZGProof(t *testing.T) {
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Commitment   Bytes48 `yaml:"commitment"`
-			InputPoint   Bytes32 `yaml:"input_point"`
-			ClaimedValue Bytes32 `yaml:"claimed_value"`
-			Proof        Bytes48 `yaml:"proof"`
+			Commitment Bytes48 `yaml:"commitment"`
+			Z          Bytes32 `yaml:"z"`
+			Y          Bytes32 `yaml:"y"`
+			Proof      Bytes48 `yaml:"proof"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -230,8 +230,8 @@ func TestVerifyKZGProof(t *testing.T) {
 
 		valid, ret := VerifyKZGProof(
 			test.Input.Commitment,
-			test.Input.InputPoint,
-			test.Input.ClaimedValue,
+			test.Input.Z,
+			test.Input.Y,
 			test.Input.Proof)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
