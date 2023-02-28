@@ -9,12 +9,29 @@ on:
 
 jobs:
   test-nodejs-bindings:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        node: [12, 14, 16, 17, 18]
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Setup
-        run: cd src && make blst
-      - name: Test
-        run: cd bindings/node.js && make build test
+      - name: Setup Node.js ${{matrix.node}}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{matrix.node}}
+      - name: Install
+        run: cd bindings/node.js && yarn install:ci
+      - name: Build Bindings
+        run: cd bindings/node.js && yarn build:clean
+      - name: Test Bindings
+        run: cd bindings/node.js && yarn test

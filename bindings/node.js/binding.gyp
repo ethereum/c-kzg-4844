@@ -49,8 +49,6 @@
         ],
         [ 'OS=="linux"', {
             'ldflags': [ '-Wl,-Bsymbolic' ],
-            'cflags!': [ '-fPIC' ],
-            'cflags_cc!': [ '-fPIC' ],
           }
         ],
         ['OS=="mac"', {
@@ -83,6 +81,7 @@
             "-DFIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})",
             "-O2",
             "-c",
+            "-fPIC",
             "<(module_root_dir)/deps/c-kzg/c_kzg_4844.c"
           ]
         }
