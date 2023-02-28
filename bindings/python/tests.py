@@ -7,12 +7,12 @@ import ckzg
 # Constants
 ###############################################################################
 
-blob_to_kzg_commitment_tests = "../../tests/blob_to_kzg_commitment/*/*/*"
-compute_kzg_proof_tests = "../../tests/compute_kzg_proof/*/*/*"
-compute_blob_kzg_proof_tests = "../../tests/compute_blob_kzg_proof/*/*/*"
-verify_kzg_proof_tests = "../../tests/verify_kzg_proof/*/*/*"
-verify_blob_kzg_proof_tests = "../../tests/verify_blob_kzg_proof/*/*/*"
-verify_blob_kzg_proof_batch_tests = "../../tests/verify_blob_kzg_proof_batch/*/*/*"
+BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/*/*/*"
+COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/*/*/*"
+COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/*/*/*"
+VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/*"
+VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/*"
+VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/*"
 
 ###############################################################################
 # Helper Functions
@@ -26,7 +26,7 @@ def bytes_from_hex(hexstring):
 ###############################################################################
 
 def test_blob_to_kzg_commitment(ts):
-    for test_file in glob.glob(blob_to_kzg_commitment_tests):
+    for test_file in glob.glob(BLOB_TO_KZG_COMMITMENT_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -41,7 +41,7 @@ def test_blob_to_kzg_commitment(ts):
 
 
 def test_compute_kzg_proof(ts):
-    for test_file in glob.glob(compute_kzg_proof_tests):
+    for test_file in glob.glob(COMPUTE_KZG_PROOF_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -57,7 +57,7 @@ def test_compute_kzg_proof(ts):
 
 
 def test_compute_blob_kzg_proof(ts):
-    for test_file in glob.glob(compute_blob_kzg_proof_tests):
+    for test_file in glob.glob(COMPUTE_BLOB_KZG_PROOF_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -72,7 +72,7 @@ def test_compute_blob_kzg_proof(ts):
 
 
 def test_verify_kzg_proof(ts):
-    for test_file in glob.glob(verify_kzg_proof_tests):
+    for test_file in glob.glob(VERIFY_KZG_PROOF_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -90,7 +90,7 @@ def test_verify_kzg_proof(ts):
 
 
 def test_verify_blob_kzg_proof(ts):
-    for test_file in glob.glob(verify_blob_kzg_proof_tests):
+    for test_file in glob.glob(VERIFY_BLOB_KZG_PROOF_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -107,7 +107,7 @@ def test_verify_blob_kzg_proof(ts):
 
 
 def test_verify_blob_kzg_proof_batch(ts):
-    for test_file in glob.glob(verify_blob_kzg_proof_batch_tests):
+    for test_file in glob.glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
