@@ -35,7 +35,7 @@ def test_blob_to_kzg_commitment(ts):
         try:
             commitment = ckzg.blob_to_kzg_commitment(blob, ts)
             expected_commitment = bytes_from_hex(test["output"])
-            assert commitment == expected_commitment
+            assert commitment == expected_commitment, f"{test_file}\n{commitment.hex()=}\n{expected_commitment.hex()=}"
         except:
             assert test["output"] is None
 
@@ -51,7 +51,7 @@ def test_compute_kzg_proof(ts):
         try:
             proof = ckzg.compute_kzg_proof(blob, input_point, ts)
             expected_proof = bytes_from_hex(test["output"])
-            assert proof == expected_proof, f"\n{proof.hex()=}\n{expected_proof.hex()=}"
+            assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
             assert test["output"] is None
 
@@ -66,7 +66,7 @@ def test_compute_blob_kzg_proof(ts):
         try:
             proof = ckzg.compute_blob_kzg_proof(blob, ts)
             expected_proof = bytes_from_hex(test["output"])
-            assert proof == expected_proof, f"\n{proof.hex()=}\n{expected_proof.hex()=}"
+            assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
             assert test["output"] is None
 
@@ -84,7 +84,7 @@ def test_verify_kzg_proof(ts):
         try:
             valid = ckzg.verify_kzg_proof(commitment, input_point, claimed_value, proof, ts)
             expected_valid = test["output"]
-            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
+            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
 
@@ -101,7 +101,7 @@ def test_verify_blob_kzg_proof(ts):
         try:
             valid = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
             expected_valid = test["output"]
-            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
+            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
 
@@ -118,7 +118,7 @@ def test_verify_blob_kzg_proof_batch(ts):
         try:
             valid = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
             expected_valid = test["output"]
-            assert valid == expected_valid, f"\n{valid=}\n{expected_valid=}"
+            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
 
