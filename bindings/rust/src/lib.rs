@@ -456,7 +456,7 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/*/*/*";
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_blob_to_kzg_commitment() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -479,7 +479,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -506,7 +506,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_blob_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -529,7 +529,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -558,7 +558,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -586,7 +586,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
