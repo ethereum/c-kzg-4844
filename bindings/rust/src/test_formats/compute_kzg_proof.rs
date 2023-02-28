@@ -8,8 +8,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Input<'a> {
     blob: &'a str,
-    #[serde(rename(deserialize = "z"))]
-    input_point: &'a str,
+    z: &'a str,
 }
 
 impl Input<'_> {
@@ -17,8 +16,8 @@ impl Input<'_> {
         Blob::from_bytes(&hex::decode(self.blob.replace("0x", "")).unwrap()).unwrap()
     }
 
-    pub fn get_input_point(&self) -> Bytes32 {
-        Bytes32::from_bytes(&hex::decode(self.input_point.replace("0x", "")).unwrap()).unwrap()
+    pub fn get_z(&self) -> Bytes32 {
+        Bytes32::from_bytes(&hex::decode(self.z.replace("0x", "")).unwrap()).unwrap()
     }
 }
 

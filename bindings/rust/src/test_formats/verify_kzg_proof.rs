@@ -7,10 +7,8 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Input<'a> {
     commitment: &'a str,
-    #[serde(rename(deserialize = "z"))]
-    input_point: &'a str,
-    #[serde(rename(deserialize = "y"))]
-    claimed_value: &'a str,
+    z: &'a str,
+    y: &'a str,
     proof: &'a str,
 }
 
@@ -19,12 +17,12 @@ impl Input<'_> {
         Bytes48::from_bytes(&hex::decode(self.commitment.replace("0x", "")).unwrap()).unwrap()
     }
 
-    pub fn get_input_point(&self) -> Bytes32 {
-        Bytes32::from_bytes(&hex::decode(self.input_point.replace("0x", "")).unwrap()).unwrap()
+    pub fn get_z(&self) -> Bytes32 {
+        Bytes32::from_bytes(&hex::decode(self.z.replace("0x", "")).unwrap()).unwrap()
     }
 
-    pub fn get_claimed_value(&self) -> Bytes32 {
-        Bytes32::from_bytes(&hex::decode(self.claimed_value.replace("0x", "")).unwrap()).unwrap()
+    pub fn get_y(&self) -> Bytes32 {
+        Bytes32::from_bytes(&hex::decode(self.y.replace("0x", "")).unwrap()).unwrap()
     }
 
     pub fn get_proof(&self) -> Bytes48 {

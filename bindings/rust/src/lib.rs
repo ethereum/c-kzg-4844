@@ -492,7 +492,7 @@ mod tests {
             let test: compute_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let res = KZGProof::compute_kzg_proof(
                 test.input.get_blob(),
-                test.input.get_input_point(),
+                test.input.get_z(),
                 &kzg_settings,
             );
 
@@ -542,8 +542,8 @@ mod tests {
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let res = KZGProof::verify_kzg_proof(
                 test.input.get_commitment(),
-                test.input.get_input_point(),
-                test.input.get_claimed_value(),
+                test.input.get_z(),
+                test.input.get_y(),
                 test.input.get_proof(),
                 &kzg_settings,
             );
