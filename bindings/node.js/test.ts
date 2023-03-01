@@ -29,7 +29,7 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../tests";
+const TEST_DIR = "../../newtests";
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
   "blob_to_kzg_commitment/*/*/data.yaml",
@@ -84,15 +84,18 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let commitment = new Uint8Array();
         let blob = bytesFromHex(test.input.blob);
 
         try {
-          let commitment = blobToKzgCommitment(blob);
-          let expectedCommitment = bytesFromHex(test.output);
-          expect(commitment.buffer).toEqual(expectedCommitment.buffer);
+          commitment = blobToKzgCommitment(blob);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedCommitment = bytesFromHex(test.output);
+        expect(commitment.buffer).toEqual(expectedCommitment.buffer);
       });
     });
 
@@ -101,16 +104,19 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let proof = new Uint8Array();
         let blob = bytesFromHex(test.input.blob);
         let z = bytesFromHex(test.input.z);
 
         try {
-          let proof = computeKzgProof(blob, z);
-          let expectedProof = bytesFromHex(test.output);
-          expect(proof.buffer).toEqual(expectedProof.buffer);
+          proof = computeKzgProof(blob, z);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedProof = bytesFromHex(test.output);
+        expect(proof.buffer).toEqual(expectedProof.buffer);
       });
     });
 
@@ -119,15 +125,18 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let proof = new Uint8Array();
         let blob = bytesFromHex(test.input.blob);
 
         try {
-          let proof = computeBlobKzgProof(blob);
-          let expectedProof = bytesFromHex(test.output);
-          expect(proof.buffer).toEqual(expectedProof.buffer);
+          proof = computeBlobKzgProof(blob);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedProof = bytesFromHex(test.output);
+        expect(proof.buffer).toEqual(expectedProof.buffer);
       });
     });
 
@@ -136,17 +145,19 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let valid;
         let commitment = bytesFromHex(test.input.commitment);
         let z = bytesFromHex(test.input.z);
         let y = bytesFromHex(test.input.y);
         let proof = bytesFromHex(test.input.proof);
 
         try {
-          let valid = verifyKzgProof(commitment, z, y, proof);
-          expect(valid).toEqual(test.output);
+          valid = verifyKzgProof(commitment, z, y, proof);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
 
@@ -155,16 +166,18 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let valid;
         let blob = bytesFromHex(test.input.blob);
         let commitment = bytesFromHex(test.input.commitment);
         let proof = bytesFromHex(test.input.proof);
 
         try {
-          let valid = verifyBlobKzgProof(blob, commitment, proof);
-          expect(valid).toEqual(test.output);
+          valid = verifyBlobKzgProof(blob, commitment, proof);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
 
@@ -173,16 +186,18 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
+        let valid;
         let blobs = test.input.blobs.map(bytesFromHex);
         let commitments = test.input.commitments.map(bytesFromHex);
         let proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          let valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
-          expect(valid).toEqual(test.output);
+          valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
   });
