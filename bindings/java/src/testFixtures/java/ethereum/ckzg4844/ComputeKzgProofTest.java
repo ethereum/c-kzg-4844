@@ -16,8 +16,6 @@ public class ComputeKzgProofTest {
     }
   }
 
-  public static class Output {}
-
   private Input input;
   private String output;
 

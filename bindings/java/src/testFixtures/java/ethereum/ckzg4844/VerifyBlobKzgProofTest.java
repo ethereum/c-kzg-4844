@@ -4,9 +4,9 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class VerifyBlobKzgProofTest {
   public static class Input {
-    public String blob;
-    public String commitment;
-    public String proof;
+    private String blob;
+    private String commitment;
+    private String proof;
 
     public byte[] getBlob() {
       return Bytes.fromHexString(blob).toArray();
@@ -21,8 +21,8 @@ public class VerifyBlobKzgProofTest {
     }
   }
 
-  public Input input;
-  public Boolean output;
+  private Input input;
+  private Boolean output;
 
   public Input getInput() {
     return input;
