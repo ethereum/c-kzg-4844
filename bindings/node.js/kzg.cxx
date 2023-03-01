@@ -240,9 +240,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  bool out;
   C_KZG_RET ret = verify_kzg_proof(
-    &out,
     (Bytes48 *)commitment_bytes,
     (Bytes32 *)z_bytes,
     (Bytes32 *)y_bytes,
@@ -250,12 +248,16 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     kzg_settings
   );
 
+  if (ret == C_KZG_BAD_VERIFY) {
+    return Napi::Boolean::New(env, false);
+  }
+
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Failed to verify KZG proof").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  return Napi::Boolean::New(env, out);
+  return Napi::Boolean::New(env, true);
 }
 
 // verifyBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
@@ -277,21 +279,23 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  bool out;
   C_KZG_RET ret = verify_blob_kzg_proof(
-    &out,
     (Blob *)blob_bytes,
     (Bytes48 *)commitment_bytes,
     (Bytes48 *)proof_bytes,
     kzg_settings
   );
 
+  if (ret == C_KZG_BAD_VERIFY) {
+    return Napi::Boolean::New(env, false);
+  }
+
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Error in verifyBlobKzgProof").ThrowAsJavaScriptException();
     return env.Null();
   }
 
-  return Napi::Boolean::New(env, out);
+  return Napi::Boolean::New(env, true);
 }
 
 // verifyBlobKzgProofBatch: (blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[], setupHandle: SetupHandle) => boolean;
@@ -365,9 +369,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     memcpy(&proofs[index], proof_bytes, BYTES_PER_PROOF);
   }
 
-  bool out;
   ret = verify_blob_kzg_proof_batch(
-    &out,
     blobs,
     commitments,
     proofs,
@@ -375,13 +377,17 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     kzg_settings
   );
 
+  if (ret == C_KZG_BAD_VERIFY) {
+    return Napi::Boolean::New(env, false);
+  }
+
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Error in verifyBlobKzgProofBatch").ThrowAsJavaScriptException();
     result = env.Null();
     goto out;
   }
 
-  result = Napi::Boolean::New(env, out);
+  result = Napi::Boolean::New(env, true);
 
 out:
   free(blobs);
