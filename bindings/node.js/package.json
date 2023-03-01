@@ -22,7 +22,6 @@
     "js-yaml": "^4.1.0"
   },
   "dependencies": {
-    "c-kzg": "^2.0.0",
     "node-addon-api": "^5.0.0"
   }
 }
