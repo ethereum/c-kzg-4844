@@ -7,12 +7,12 @@ import ckzg
 # Constants
 ###############################################################################
 
-BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/*/*/*"
-COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/*/*/*"
-COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/*/*/*"
-VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/*"
-VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/*"
-VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/*"
+BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/*/*/data.yaml"
+COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/*/*/data.yaml"
+COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/*/*/data.yaml"
+VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml"
+VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml"
+VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml"
 
 ###############################################################################
 # Helper Functions
@@ -34,10 +34,12 @@ def test_blob_to_kzg_commitment(ts):
 
         try:
             commitment = ckzg.blob_to_kzg_commitment(blob, ts)
-            expected_commitment = bytes_from_hex(test["output"])
-            assert commitment == expected_commitment, f"{test_file}\n{commitment.hex()=}\n{expected_commitment.hex()=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_commitment = bytes_from_hex(test["output"])
+        assert commitment == expected_commitment, f"{test_file}\n{commitment.hex()=}\n{expected_commitment.hex()=}"
 
 
 def test_compute_kzg_proof(ts):
@@ -50,10 +52,12 @@ def test_compute_kzg_proof(ts):
 
         try:
             proof = ckzg.compute_kzg_proof(blob, z, ts)
-            expected_proof = bytes_from_hex(test["output"])
-            assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_proof = bytes_from_hex(test["output"])
+        assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
 
 
 def test_compute_blob_kzg_proof(ts):
@@ -65,10 +69,12 @@ def test_compute_blob_kzg_proof(ts):
 
         try:
             proof = ckzg.compute_blob_kzg_proof(blob, ts)
-            expected_proof = bytes_from_hex(test["output"])
-            assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_proof = bytes_from_hex(test["output"])
+        assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
 
 
 def test_verify_kzg_proof(ts):
@@ -83,10 +89,12 @@ def test_verify_kzg_proof(ts):
 
         try:
             valid = ckzg.verify_kzg_proof(commitment, z, y, proof, ts)
-            expected_valid = test["output"]
-            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
 def test_verify_blob_kzg_proof(ts):
@@ -100,10 +108,12 @@ def test_verify_blob_kzg_proof(ts):
 
         try:
             valid = ckzg.verify_blob_kzg_proof(blob, commitment, proof, ts)
-            expected_valid = test["output"]
-            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
 def test_verify_blob_kzg_proof_batch(ts):
@@ -117,10 +127,12 @@ def test_verify_blob_kzg_proof_batch(ts):
 
         try:
             valid = ckzg.verify_blob_kzg_proof_batch(blobs, commitments, proofs, ts)
-            expected_valid = test["output"]
-            assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
         except:
             assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
 ###############################################################################
@@ -137,4 +149,4 @@ if __name__ == "__main__":
     test_verify_blob_kzg_proof(ts)
     test_verify_blob_kzg_proof_batch(ts)
 
-    print('tests passed')
+    print("tests passed")
