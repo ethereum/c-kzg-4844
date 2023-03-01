@@ -29,7 +29,7 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../newtests";
+const TEST_DIR = "../../tests";
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
   "blob_to_kzg_commitment/*/*/data.yaml",
