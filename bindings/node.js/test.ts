@@ -91,6 +91,7 @@ describe("C-KZG", () => {
           commitment = blobToKzgCommitment(blob);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(test.output).not.toBeNull();
@@ -112,6 +113,7 @@ describe("C-KZG", () => {
           proof = computeKzgProof(blob, z);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(test.output).not.toBeNull();
@@ -132,6 +134,7 @@ describe("C-KZG", () => {
           proof = computeBlobKzgProof(blob);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(test.output).not.toBeNull();
@@ -155,6 +158,7 @@ describe("C-KZG", () => {
           valid = verifyKzgProof(commitment, z, y, proof);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(valid).toEqual(test.output);
@@ -175,6 +179,7 @@ describe("C-KZG", () => {
           valid = verifyBlobKzgProof(blob, commitment, proof);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(valid).toEqual(test.output);
@@ -195,6 +200,7 @@ describe("C-KZG", () => {
           valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
+          return;
         }
 
         expect(valid).toEqual(test.output);
