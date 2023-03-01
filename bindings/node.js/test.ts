@@ -64,8 +64,8 @@ const generateRandomBlob = () => {
   );
 };
 
-function bytesFromHex(hexstring: string): Buffer {
-  return Buffer.from(hexstring.slice(2), "hex");
+function bytesFromHex(hexstring: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(hexstring.slice(2), "hex"));
 }
 
 describe("C-KZG", () => {
@@ -96,7 +96,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         let expectedCommitment = bytesFromHex(test.output);
-        expect(commitment.buffer).toEqual(expectedCommitment.buffer);
+        expect(commitment).toEqual(expectedCommitment);
       });
     });
 
@@ -118,7 +118,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         let expectedProof = bytesFromHex(test.output);
-        expect(proof.buffer).toEqual(expectedProof.buffer);
+        expect(proof).toEqual(expectedProof);
       });
     });
 
@@ -139,7 +139,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         let expectedProof = bytesFromHex(test.output);
-        expect(proof.buffer).toEqual(expectedProof.buffer);
+        expect(proof).toEqual(expectedProof);
       });
     });
 
