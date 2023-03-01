@@ -1,7 +1,7 @@
 package ethereum.ckzg4844;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
@@ -20,12 +20,8 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.constructor.Constructor;
 
 public class TestUtils {
 
@@ -33,23 +29,13 @@ public class TestUtils {
 
   private static final Random RANDOM = new Random();
 
-  private static final String BLOB_TO_KZG_COMMITMENT_TESTS =
-      "../../newtests/blob_to_kzg_commitment/";
-  private static final String COMPUTE_KZG_PROOF_TESTS = "../../newtests/compute_kzg_proof/";
-  private static final String COMPUTE_BLOB_KZG_PROOF_TESTS =
-      "../../newtests/compute_blob_kzg_proof/";
-  private static final String VERIFY_KZG_PROOF_TESTS = "../../newtests/verify_kzg_proof/";
-  private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../newtests/verify_blob_kzg_proof/";
+  private static final String BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/";
+  private static final String COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/";
+  private static final String COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/";
+  private static final String VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/";
+  private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
-      "../../newtests/verify_blob_kzg_proof_batch/";
-
-  /*
-  static {
-    SimpleModule module = new SimpleModule();
-    module.addDeserializer(byte[].class, new BytesDeserializer());
-    OBJECT_MAPPER.registerModule(module);
-  }
-  */
+      "../../tests/verify_blob_kzg_proof_batch/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
@@ -108,8 +94,7 @@ public class TestUtils {
     try {
       for (String testFile : getTestFiles(BLOB_TO_KZG_COMMITMENT_TESTS)) {
         String data = Files.readString(Path.of(testFile));
-        BlobToKzgCommitmentTest test =
-                OBJECT_MAPPER.readValue(data, BlobToKzgCommitmentTest.class);
+        BlobToKzgCommitmentTest test = OBJECT_MAPPER.readValue(data, BlobToKzgCommitmentTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -254,9 +239,7 @@ public class TestUtils {
     List<String> testFiles = new ArrayList<>();
     for (final String suite : getFiles(path)) {
       for (final String test : getFiles(suite)) {
-        for (final String data : getFiles(test)) {
-          testFiles.add(data);
-        }
+        testFiles.addAll(getFiles(test));
       }
     }
     return testFiles;
