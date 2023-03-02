@@ -724,7 +724,7 @@ static void compute_challenge(
     offset += 16;
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
     offset += 8;
-    /* leave the rest 8 bytes as zeroes since little endian */
+    /* Set the other bytes of the 16-byte (little-endian) polynomial degree to zero */
     bytes_from_uint64(offset, 0);
     offset += 8;
 
