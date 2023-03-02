@@ -318,7 +318,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
 
   if (ret != C_KZG_OK) {
     if (ret != C_KZG_BAD_VERIFY) {
-      throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+      throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProof.");
     }
     return JNI_FALSE;
   }
@@ -369,7 +369,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
 
   if (ret != C_KZG_OK) {
     if (ret != C_KZG_BAD_VERIFY) {
-      throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+      throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProofBatch.");
     }
     return JNI_FALSE;
   }
