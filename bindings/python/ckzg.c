@@ -131,8 +131,8 @@ static PyObject* verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
   const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
 
   C_KZG_RET ret = verify_kzg_proof(
-                                   commitment_bytes, z_bytes, y_bytes, proof_bytes,
-                                   PyCapsule_GetPointer(s, "KZGSettings"));
+        commitment_bytes, z_bytes, y_bytes, proof_bytes,
+        PyCapsule_GetPointer(s, "KZGSettings"));
   if (ret != C_KZG_OK) {
     return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed: %d", (int) ret);
   }
