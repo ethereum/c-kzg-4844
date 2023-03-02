@@ -77,7 +77,6 @@ public class Ckzg
     /// <summary>
     ///
     /// </summary>
-    /// <param name="result">True if the proof is valid</param>
     /// <param name="commitment_bytes"></param>
     /// <param name="z_bytes"></param>
     /// <param name="y_bytes"></param>
@@ -90,7 +89,6 @@ public class Ckzg
     /// <summary>
     /// Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
     /// </summary>
-    /// <param name="result">True if the proof is valid</param>
     /// <param name="blob"></param>
     /// <param name="commitment"></param>
     /// <param name="proof"></param>
@@ -102,7 +100,6 @@ public class Ckzg
     /// <summary>
     /// Given a list of blobs and blob KZG proofs, verify that they correspond to the provided commitments.
     /// </summary>
-    /// <param name="result">True if the proofs are valid</param>
     /// <param name="blobs">Blobs as a flattened byte array</param>
     /// <param name="commitments">Commitments as a flattened byte array</param>
     /// <param name="proofs">Proofs as a flattened byte array</param>
