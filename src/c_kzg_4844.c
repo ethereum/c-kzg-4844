@@ -722,11 +722,10 @@ static void compute_challenge(
     /* Copy domain separator */
     memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
     offset += 16;
-    bytes_from_uint64(
-        offset, 0
-    ); /* need to fill 16 bytes with the degree in little-endian */
-    offset += 8;
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    offset += 8;
+    /* Set all other bytes of this 16-byte (little-endian) field to zero */
+    bytes_from_uint64(offset, 0);
     offset += 8;
 
     /* Copy blob */
