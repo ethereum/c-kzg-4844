@@ -38,7 +38,7 @@ inline uint8_t *get_bytes(
     size_t length,
     std::string &&name)
 {
-  if (!(val.IsTypedArray() && val.As<Napi::TypedArray>().TypedArrayType() == napi_uint8_array)) {
+  if (!val.IsTypedArray() || val.As<Napi::TypedArray>().TypedArrayType() != napi_uint8_array) {
     std::ostringstream msg;
     msg << "Expected " << name << " to be a Uint8Array";
     Napi::TypeError::New(env, msg.str()).ThrowAsJavaScriptException();
