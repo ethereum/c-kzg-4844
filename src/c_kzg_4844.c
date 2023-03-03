@@ -646,14 +646,13 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     /* Convert the bytes to a p1 point */
     blst_p1_affine p1_affine;
+    /* The uncompress routine also checks that the point is on the curve */
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
     /* The point at infinity is accepted! */
     if (blst_p1_is_inf(out)) return C_KZG_OK;
-    /* The point must be on the curve */
-    if (!blst_p1_on_curve(out)) return C_KZG_BADARGS;
     /* The point must be on the right subgroup */
     if (!blst_p1_in_g1(out)) return C_KZG_BADARGS;
 
@@ -723,11 +722,10 @@ static void compute_challenge(
     /* Copy domain separator */
     memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
     offset += 16;
-    bytes_from_uint64(
-        offset, 0
-    ); /* need to fill 16 bytes with the degree in little-endian */
-    offset += 8;
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    offset += 8;
+    /* Set all other bytes of this 16-byte (little-endian) field to zero */
+    bytes_from_uint64(offset, 0);
     offset += 8;
 
     /* Copy blob */
