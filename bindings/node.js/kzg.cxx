@@ -4,6 +4,7 @@
 #include <sstream>  // std::ostringstream
 #include <algorithm> // std::copy
 #include <iterator> // std::ostream_iterator
+#include <string_view>
 #include <napi.h>
 #include "c_kzg_4844.h"
 #include "blst.h"
@@ -36,7 +37,7 @@ inline uint8_t *get_bytes(
     const Napi::Env &env,
     const Napi::Value &val,
     size_t length,
-    std::string &&name)
+    std::string_view name)
 {
   if (!val.IsTypedArray() || val.As<Napi::TypedArray>().TypedArrayType() != napi_uint8_array) {
     std::ostringstream msg;
@@ -62,8 +63,8 @@ inline KZGCommitment *get_commitment(const Napi::Env &env, const Napi::Value &va
 inline KZGProof *get_proof(const Napi::Env &env, const Napi::Value &val) {
   return reinterpret_cast<KZGProof *>(get_bytes(env, val, BYTES_PER_PROOF, "proof"));
 }
-inline Bytes32 *get_bytes_32(const Napi::Env &env, const Napi::Value &val, std::string &&name) {
-  return reinterpret_cast<Bytes32 *>(get_bytes(env, val, BYTES_PER_FIELD_ELEMENT, std::move(name)));
+inline Bytes32 *get_bytes_32(const Napi::Env &env, const Napi::Value &val, std::string_view name) {
+  return reinterpret_cast<Bytes32 *>(get_bytes(env, val, BYTES_PER_FIELD_ELEMENT, name));
 }
 
 // loadTrustedSetup: (filePath: string) => SetupHandle;
