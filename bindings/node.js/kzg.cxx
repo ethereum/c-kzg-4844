@@ -34,7 +34,7 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
 
 inline uint8_t *get_bytes(
     const Napi::Env &env,
-    Napi::Value val,
+    const Napi::Value &val,
     size_t length,
     std::string &&name)
 {
@@ -52,6 +52,18 @@ inline uint8_t *get_bytes(
     return nullptr;
   }
   return array.Data();
+}
+inline Blob *get_blob(const Napi::Env &env, const Napi::Value &val) {
+  return reinterpret_cast<Blob *>(get_bytes(env, val, BYTES_PER_BLOB, "blob"));
+}
+inline KZGCommitment *get_commitment(const Napi::Env &env, const Napi::Value &val) {
+  return reinterpret_cast<KZGCommitment *>(get_bytes(env, val, BYTES_PER_COMMITMENT, "commitment"));
+}
+inline KZGProof *get_proof(const Napi::Env &env, const Napi::Value &val) {
+  return reinterpret_cast<KZGProof *>(get_bytes(env, val, BYTES_PER_PROOF, "proof"));
+}
+inline Bytes32 *get_bytes_32(const Napi::Env &env, const Napi::Value &val, std::string &&name) {
+  return reinterpret_cast<Bytes32 *>(get_bytes(env, val, BYTES_PER_FIELD_ELEMENT, std::move(name)));
 }
 
 // loadTrustedSetup: (filePath: string) => SetupHandle;
@@ -113,7 +125,7 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
 // blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Undefined();
   }
@@ -133,11 +145,11 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 // computeKzgProof: (blob: Blob, zBytes: Bytes32, setupHandle: SetupHandle) => KZGProof;
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Undefined();
   }
-  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], BYTES_PER_FIELD_ELEMENT, "zBytes"));
+  Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
     return env.Undefined();
   }
@@ -167,7 +179,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
 // computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Undefined();
   }
@@ -196,19 +208,19 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 // verifyKzgProof: (commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Bytes48 *commitment_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[0], BYTES_PER_COMMITMENT, "commitment"));
+  KZGCommitment *commitment_bytes = get_commitment(env, info[0]);
   if (commitment_bytes == nullptr) {
     return env.Undefined();
   }
-  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], BYTES_PER_FIELD_ELEMENT, "zBytes"));
+  Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
     return env.Undefined();
   }
-  Bytes32 *y_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[2], BYTES_PER_FIELD_ELEMENT, "yBytes"));
+  Bytes32 *y_bytes = get_bytes_32(env, info[2], "yBytes");
   if (y_bytes == nullptr) {
     return env.Undefined();
   }
-  Bytes48 *proof_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[3], BYTES_PER_PROOF, "proof"));
+  KZGProof *proof_bytes = get_proof(env, info[3]);
   if (proof_bytes == nullptr) {
     return env.Undefined();
   }
@@ -238,15 +250,15 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 // verifyBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  Blob *blob_bytes = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  Blob *blob_bytes = get_blob(env, info[0]);
   if (blob_bytes == nullptr) {
     return env.Undefined();
   }
-  Bytes48 *commitment_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[1], BYTES_PER_COMMITMENT, "commitment"));
+  Bytes48 *commitment_bytes = get_commitment(env, info[1]);
   if (commitment_bytes == nullptr) {
     return env.Undefined();
   }
-  Bytes48 *proof_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[2], BYTES_PER_PROOF, "proof"));
+  Bytes48 *proof_bytes = get_proof(env, info[2]);
   if (proof_bytes == nullptr) {
     return env.Undefined();
   }
@@ -311,17 +323,17 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     // add HandleScope here to release reference to temp values
     // after each iteration since data is being memcpy
     Napi::HandleScope scope{env};
-    uint8_t *blob = get_bytes(env, blobs_param[index], BYTES_PER_BLOB, "blob");
+    Blob *blob = get_blob(env, blobs_param[index]);
     if (blob == nullptr) {
       goto out;
     }
     memcpy(&blobs[index], blob, BYTES_PER_BLOB);
-    uint8_t *commitment = get_bytes(env, commitments_param[index], BYTES_PER_COMMITMENT, "commitment");
+    KZGCommitment *commitment = get_commitment(env, commitments_param[index]);
     if (commitment == nullptr) {
       goto out;
     }
     memcpy(&commitments[index], commitment, BYTES_PER_COMMITMENT);
-    uint8_t *proof = get_bytes(env, proofs_param[index], BYTES_PER_PROOF, "proof");
+    KZGProof *proof = get_proof(env, proofs_param[index]);
     if (proof == nullptr) {
       goto out;
     }
