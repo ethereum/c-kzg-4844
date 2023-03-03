@@ -137,7 +137,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   if (blob == nullptr || env.IsExceptionPending()) {
     return env.Undefined();
   }
-  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], 32, "zBytes"));
+  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], BYTES_PER_FIELD_ELEMENT, "zBytes"));
   if (blob == nullptr || env.IsExceptionPending()) {
     return env.Undefined();
   }
@@ -197,8 +197,8 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Bytes48 *commitment_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[0], BYTES_PER_COMMITMENT, "commitmentBytes"));
-  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], 32, "zBytes"));
-  Bytes32 *y_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[2], 32, "yBytes"));
+  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], BYTES_PER_FIELD_ELEMENT, "zBytes"));
+  Bytes32 *y_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[2], BYTES_PER_FIELD_ELEMENT, "yBytes"));
   Bytes48 *proof_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[3], BYTES_PER_PROOF, "proofBytes"));
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
 
