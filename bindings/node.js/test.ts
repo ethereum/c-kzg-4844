@@ -233,12 +233,12 @@ describe("C-KZG", () => {
       computeKzgProof(blob, zBytes);
     });
     it("throws as expected when given an argument of invalid length", () => {
-      expect(() => computeKzgProof(blobBadLength, fieldElementValidLength)).toThrowError(
-        "Expected blob to be 131072 bytes",
-      );
-      expect(() => computeKzgProof(blobValidLength, fieldElementBadLength)).toThrowError(
-        "Expected zBytes to be 32 bytes",
-      );
+      expect(() =>
+        computeKzgProof(blobBadLength, fieldElementValidLength),
+      ).toThrowError("Expected blob to be 131072 bytes");
+      expect(() =>
+        computeKzgProof(blobValidLength, fieldElementBadLength),
+      ).toThrowError("Expected zBytes to be 32 bytes");
     });
   });
 
@@ -279,16 +279,36 @@ describe("C-KZG", () => {
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        verifyKzgProof(commitmentBadLength, fieldElementValidLength, fieldElementValidLength, proofValidLength),
+        verifyKzgProof(
+          commitmentBadLength,
+          fieldElementValidLength,
+          fieldElementValidLength,
+          proofValidLength,
+        ),
       ).toThrowError("Expected commitment to be 48 bytes");
       expect(() =>
-        verifyKzgProof(commitmentValidLength, fieldElementBadLength, fieldElementValidLength, proofValidLength),
+        verifyKzgProof(
+          commitmentValidLength,
+          fieldElementBadLength,
+          fieldElementValidLength,
+          proofValidLength,
+        ),
       ).toThrowError("Expected zBytes to be 32 bytes");
       expect(() =>
-        verifyKzgProof(commitmentValidLength, fieldElementValidLength, fieldElementBadLength, proofValidLength),
+        verifyKzgProof(
+          commitmentValidLength,
+          fieldElementValidLength,
+          fieldElementBadLength,
+          proofValidLength,
+        ),
       ).toThrowError("Expected yBytes to be 32 bytes");
       expect(() =>
-        verifyKzgProof(commitmentValidLength, fieldElementValidLength, fieldElementValidLength, proofBadLength),
+        verifyKzgProof(
+          commitmentValidLength,
+          fieldElementValidLength,
+          fieldElementValidLength,
+          proofBadLength,
+        ),
       ).toThrowError("Expected proof to be 48 bytes");
     });
   });
@@ -316,13 +336,25 @@ describe("C-KZG", () => {
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        verifyBlobKzgProof(blobBadLength, commitmentValidLength, proofValidLength),
+        verifyBlobKzgProof(
+          blobBadLength,
+          commitmentValidLength,
+          proofValidLength,
+        ),
       ).toThrowError("Expected blob to be 131072 bytes");
       expect(() =>
-        verifyBlobKzgProof(blobValidLength, commitmentBadLength, proofValidLength),
+        verifyBlobKzgProof(
+          blobValidLength,
+          commitmentBadLength,
+          proofValidLength,
+        ),
       ).toThrowError("Expected commitment to be 48 bytes");
       expect(() =>
-        verifyBlobKzgProof(blobValidLength, commitmentValidLength, proofBadLength),
+        verifyBlobKzgProof(
+          blobValidLength,
+          commitmentValidLength,
+          proofBadLength,
+        ),
       ).toThrowError("Expected proof to be 48 bytes");
     });
   });
