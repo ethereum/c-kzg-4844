@@ -8,28 +8,26 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-Napi::Value throw_invalid_arguments_count(
-  const unsigned int expected,
-  const unsigned int actual,
-  const Napi::Env env
-) {
-  Napi::RangeError::New(
-    env,
-    "Wrong number of arguments. Expected: "
-    + std::to_string(expected)
-    + ", received " + std::to_string(actual)
-  ).ThrowAsJavaScriptException();
-
-  return env.Null();
-}
-
-Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
-  Napi::TypeError::New(
-    env,
-    "Invalid argument type: " + name + ". Expected " + expectedType
-  ).ThrowAsJavaScriptException();
-
-  return env.Null();
+inline uint8_t *get_bytes(
+    const Napi::Env &env,
+    Napi::Value val,
+    size_t length,
+    std::string &&name)
+{
+  if (!(val.IsTypedArray() && val.As<Napi::TypedArray>().TypedArrayType() == napi_uint8_array)) {
+    std::ostringstream msg;
+    msg << "Expected " << name << " to be a Uint8Array";
+    Napi::TypeError::New(env, msg.str()).ThrowAsJavaScriptException();
+    return nullptr;
+  }
+  Napi::Uint8Array array = val.As<Napi::Uint8Array>();
+  if (array.ByteLength() != length) {
+    std::ostringstream msg;
+    msg << "Expected " << name << " to be " << length << " bytes";
+    Napi::TypeError::New(env, msg.str()).ThrowAsJavaScriptException();
+    return nullptr;
+  }
+  return array.Data();
 }
 
 Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t length, Napi::Env env) {
@@ -58,15 +56,6 @@ Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t l
 
   return Napi::Uint8Array::New(env, length, buffer, 0);
 }
-
-const uint8_t * extract_byte_array_from_param(const Napi::CallbackInfo& info, const int index, const std::string name) {
-  auto param = info[index].As<Napi::TypedArray>();
-  if (!param.IsTypedArray() || param.TypedArrayType() != napi_uint8_array) {
-    throw_invalid_argument_type(info.Env(), name, "UInt8Array");
-  }
-  return param.As<Napi::Uint8Array>().Data();
-}
-
 
 // loadTrustedSetup: (filePath: string) => SetupHandle;
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
@@ -126,19 +115,11 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
 
 // blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 2;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  Napi::Env env = info.Env();
+  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  if (blob == nullptr || env.IsExceptionPending()) {
+    return env.Undefined();
   }
-
-  Blob *blob = (Blob *)extract_byte_array_from_param(info, 0, "blob");
-  if (env.IsExceptionPending()) {
-    return env.Null();
-  }
-
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   KZGCommitment commitment;
@@ -154,16 +135,15 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 
 // computeKzgProof: (blob: Blob, zBytes: Bytes32, setupHandle: SetupHandle) => KZGProof;
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 3;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  Napi::Env env = info.Env();
+  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  if (blob == nullptr || env.IsExceptionPending()) {
+    return env.Undefined();
   }
-
-  auto blob = extract_byte_array_from_param(info, 0, "blob");
-  auto z_bytes = extract_byte_array_from_param(info, 1, "zBytes");
+  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], 32, "zBytes"));
+  if (blob == nullptr || env.IsExceptionPending()) {
+    return env.Undefined();
+  }
   auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
@@ -173,8 +153,8 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   KZGProof proof;
   C_KZG_RET ret = compute_kzg_proof(
     &proof,
-    (Blob *)blob,
-    (Bytes32 *)z_bytes,
+    blob,
+    z_bytes,
     kzg_settings
   );
 
@@ -189,15 +169,11 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
 
 // computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 2;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  Napi::Env env = info.Env();
+  Blob *blob = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  if (blob == nullptr || env.IsExceptionPending()) {
+    return env.Undefined();
   }
-
-  auto blob = extract_byte_array_from_param(info, 0, "blob");
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
@@ -207,7 +183,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   KZGProof proof;
   C_KZG_RET ret = compute_blob_kzg_proof(
     &proof,
-    (Blob *)blob,
+    blob,
     kzg_settings
   );
 
@@ -222,18 +198,11 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 
 // verifyKzgProof: (commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 5;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
-
-  auto commitment_bytes = extract_byte_array_from_param(info, 0, "commitmentBytes");
-  auto z_bytes = extract_byte_array_from_param(info, 1, "zBytes");
-  auto y_bytes = extract_byte_array_from_param(info, 2, "yBytes");
-  auto proof_bytes = extract_byte_array_from_param(info, 3, "proofBytes");
+  Napi::Env env = info.Env();
+  Bytes48 *commitment_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[0], BYTES_PER_COMMITMENT, "commitmentBytes"));
+  Bytes32 *z_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[1], 32, "zBytes"));
+  Bytes32 *y_bytes = reinterpret_cast<Bytes32 *>(get_bytes(env, info[2], 32, "yBytes"));
+  Bytes48 *proof_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[3], BYTES_PER_PROOF, "proofBytes"));
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
@@ -243,10 +212,10 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   bool out;
   C_KZG_RET ret = verify_kzg_proof(
     &out,
-    (Bytes48 *)commitment_bytes,
-    (Bytes32 *)z_bytes,
-    (Bytes32 *)y_bytes,
-    (Bytes48 *)proof_bytes,
+    commitment_bytes,
+    z_bytes,
+    y_bytes,
+    proof_bytes,
     kzg_settings
   );
 
@@ -260,17 +229,10 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
 // verifyBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 4;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
-
-  auto blob_bytes = extract_byte_array_from_param(info, 0, "blob");
-  auto commitment_bytes = extract_byte_array_from_param(info, 1, "commitmentBytes");
-  auto proof_bytes = extract_byte_array_from_param(info, 2, "proofBytes");
+  Napi::Env env = info.Env();
+  Blob *blob_bytes = reinterpret_cast<Blob *>(get_bytes(env, info[0], BYTES_PER_BLOB, "blob"));
+  Bytes48 *commitment_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[1], BYTES_PER_COMMITMENT, "commitmentBytes"));
+  Bytes48 *proof_bytes = reinterpret_cast<Bytes48 *>(get_bytes(env, info[2], BYTES_PER_PROOF, "proofBytes"));
   auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
@@ -280,11 +242,10 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   bool out;
   C_KZG_RET ret = verify_blob_kzg_proof(
     &out,
-    (Blob *)blob_bytes,
-    (Bytes48 *)commitment_bytes,
-    (Bytes48 *)proof_bytes,
-    kzg_settings
-  );
+    blob_bytes,
+    commitment_bytes,
+    proof_bytes,
+    kzg_settings);
 
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Error in verifyBlobKzgProof").ThrowAsJavaScriptException();
@@ -296,73 +257,72 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
 
 // verifyBlobKzgProofBatch: (blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[], setupHandle: SetupHandle) => boolean;
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
+  Napi::Env env = info.Env();
   C_KZG_RET ret;
-  Blob *blobs = NULL;
-  Bytes48 *commitments = NULL;
-  Bytes48 *proofs = NULL;
-  Napi::Value result = env.Null();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 4;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  Napi::Value result = env.Undefined();
+  if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
+    Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
+    return result;
   }
-
-  auto blobs_param = info[0].As<Napi::Array>();
-  auto commitments_param = info[1].As<Napi::Array>();
-  auto proofs_param = info[2].As<Napi::Array>();
+  Napi::Array blobs_param = info[0].As<Napi::Array>();
+  Napi::Array commitments_param = info[1].As<Napi::Array>();
+  Napi::Array proofs_param = info[2].As<Napi::Array>();
   auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
-
-  auto blobs_count = blobs_param.Length();
-  auto commitments_count = commitments_param.Length();
-  auto proofs_count = proofs_param.Length();
-
-  if (blobs_count != commitments_count || blobs_count != proofs_count) {
-    Napi::Error::New(env, "verifyBlobKzgProofBatch requires equal number of blobs/commitments/proofs")
-      .ThrowAsJavaScriptException();
-    result = env.Null();
-    goto out;
+  uint32_t count = blobs_param.Length();
+  if (count != commitments_param.Length() || count != proofs_param.Length()) {
+    Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
+    return result;
   }
+  Blob *blobs = (Blob *)calloc(count, sizeof(Blob));
+  Bytes48 *commitments = (Bytes48 *)calloc(count, sizeof(Bytes48));
+  Bytes48 *proofs = (Bytes48 *)calloc(count, sizeof(Bytes48));
+  if (blobs == nullptr) {
+    Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
+    goto out;
+  };
+  if (commitments == nullptr) {
+    Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
+    goto out;
+  };
+  if (proofs == nullptr) {
+    Napi::Error::New(env, "Error while allocating memory for proofs").ThrowAsJavaScriptException();
+    goto out;
+  };
 
-  blobs = (Blob *)calloc(blobs_count, sizeof(Blob));
-   if (blobs == NULL) {
-     Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
-     result = env.Null();
-     goto out;
-   };
-
-   commitments = (Bytes48 *)calloc(commitments_count, sizeof(Bytes48));
-   if (commitments == NULL) {
-     free(blobs);
-     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
-     result = env.Null();
-     goto out;
-   };
-
-   proofs = (Bytes48 *)calloc(proofs_count, sizeof(Bytes48));
-   if (proofs == NULL) {
-     Napi::Error::New(env, "Error while allocating memory for proofs").ThrowAsJavaScriptException();
-     result = env.Null();
-     goto out;
-   };
-
-  for (uint32_t index = 0; index < blobs_count; index++) {
-    // Extract blob bytes from parameter
-    Napi::Value blob = blobs_param[index];
-    auto blob_bytes = blob.As<Napi::Uint8Array>().Data();
-    memcpy(blobs[index].bytes, blob_bytes, BYTES_PER_BLOB);
-
-    // Extract commitment from parameter
-    Napi::Value commitment = commitments_param[index];
-    auto commitment_bytes = commitment.As<Napi::Uint8Array>().Data();
-    memcpy(&commitments[index], commitment_bytes, BYTES_PER_COMMITMENT);
-
-    // Extract proof from parameter
-    Napi::Value proof = proofs_param[index];
-    auto proof_bytes = proof.As<Napi::Uint8Array>().Data();
-    memcpy(&proofs[index], proof_bytes, BYTES_PER_PROOF);
+  for (uint32_t index = 0; index < count; index++) {
+    // add HandleScope here to remove temp values after each iteration
+    // since data is being memcpy
+    Napi::HandleScope scope{env};
+    uint8_t *blob = get_bytes(
+      env,
+      blobs_param[index],
+      BYTES_PER_BLOB,
+      "blob");
+    if (blob == nullptr || env.IsExceptionPending())
+    {
+      goto out;
+    }
+    memcpy(&blobs[index], blob, BYTES_PER_BLOB);
+    uint8_t *commitment = get_bytes(
+      env,
+      commitments_param[index],
+      BYTES_PER_COMMITMENT,
+      "commitment");
+    if (commitment == nullptr || env.IsExceptionPending())
+    {
+      goto out;
+    }
+    memcpy(&commitments[index], commitment, BYTES_PER_COMMITMENT);
+    uint8_t *proof = get_bytes(
+      env,
+      proofs_param[index],
+      BYTES_PER_PROOF,
+      "proof");
+    if (proof == nullptr || env.IsExceptionPending())
+    {
+      goto out;
+    }
+    memcpy(&proofs[index], proof, BYTES_PER_PROOF);
   }
 
   bool out;
@@ -371,13 +331,12 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     blobs,
     commitments,
     proofs,
-    blobs_count,
+    count,
     kzg_settings
   );
 
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Error in verifyBlobKzgProofBatch").ThrowAsJavaScriptException();
-    result = env.Null();
     goto out;
   }
 

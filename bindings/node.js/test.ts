@@ -205,7 +205,7 @@ describe("C-KZG", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
       expect(() => blobToKzgCommitment("wrong type")).toThrowError(
-        "Expected blob to be a UInt8Array",
+        "Expected blob to be a Uint8Array",
       );
     });
 
@@ -282,10 +282,10 @@ describe("C-KZG", () => {
 
   describe("edge cases for verifyBlobKzgProofBatch", () => {
     it("should reject non-bytearray blob", () => {
-      expect(() =>
-        // @ts-expect-error
-        verifyBlobKzgProofBatch(["foo", "bar"], [], []),
-      ).toThrowError("Expected blob to be a UInt8Array");
+      const arr = ["foo", "bar"] as unknown as Uint8Array[];
+      expect(() => verifyBlobKzgProofBatch(arr, arr, arr)).toThrowError(
+        "Expected blob to be a Uint8Array",
+      );
     });
 
     it("zero blobs/commitments/proofs should verify as true", () => {

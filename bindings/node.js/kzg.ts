@@ -81,62 +81,6 @@ function requireSetupHandle(): SetupHandle {
   return setupHandle;
 }
 
-function checkBlob(blob: Blob) {
-  if (!(blob instanceof Uint8Array)) {
-    throw new Error("Expected blob to be a UInt8Array.");
-  }
-  if (blob.length != BYTES_PER_BLOB) {
-    throw new Error(`Expected blob to be ${BYTES_PER_BLOB} bytes.`);
-  }
-}
-
-function checkBlobs(blobs: Blob[]) {
-  for (let blob of blobs) {
-    checkBlob(blob);
-  }
-}
-
-function checkCommitment(commitment: KZGCommitment) {
-  if (!(commitment instanceof Uint8Array)) {
-    throw new Error("Expected commitment to be a UInt8Array.");
-  }
-  if (commitment.length != BYTES_PER_COMMITMENT) {
-    throw new Error(`Expected commitment to be ${BYTES_PER_COMMITMENT} bytes.`);
-  }
-}
-
-function checkCommitments(commitments: KZGCommitment[]) {
-  for (let commitment of commitments) {
-    checkCommitment(commitment);
-  }
-}
-
-function checkProof(proof: KZGProof) {
-  if (!(proof instanceof Uint8Array)) {
-    throw new Error("Expected proof to be a UInt8Array.");
-  }
-  if (proof.length != BYTES_PER_PROOF) {
-    throw new Error(`Expected proof to be ${BYTES_PER_PROOF} bytes.`);
-  }
-}
-
-function checkProofs(proofs: KZGProof[]) {
-  for (let proof of proofs) {
-    checkProof(proof);
-  }
-}
-
-function checkFieldElement(field: Bytes32) {
-  if (!(field instanceof Uint8Array)) {
-    throw new Error("Expected field element to be a UInt8Array.");
-  }
-  if (field.length != BYTES_PER_FIELD_ELEMENT) {
-    throw new Error(
-      `Expected field element to be ${BYTES_PER_FIELD_ELEMENT} bytes.`,
-    );
-  }
-}
-
 export async function transformTrustedSetupJSON(
   filePath: string,
 ): Promise<string> {
@@ -179,18 +123,14 @@ export function freeTrustedSetup(): void {
 }
 
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
-  checkBlob(blob);
   return kzg.blobToKzgCommitment(blob, requireSetupHandle());
 }
 
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
-  checkBlob(blob);
-  checkFieldElement(zBytes);
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
 export function computeBlobKzgProof(blob: Blob): KZGProof {
-  checkBlob(blob);
   return kzg.computeBlobKzgProof(blob, requireSetupHandle());
 }
 
@@ -200,10 +140,6 @@ export function verifyKzgProof(
   yBytes: Bytes32,
   proofBytes: Bytes48,
 ): boolean {
-  checkCommitment(commitmentBytes);
-  checkFieldElement(zBytes);
-  checkFieldElement(yBytes);
-  checkProof(proofBytes);
   return kzg.verifyKzgProof(
     commitmentBytes,
     zBytes,
@@ -218,9 +154,6 @@ export function verifyBlobKzgProof(
   commitmentBytes: Bytes48,
   proofBytes: Bytes48,
 ): boolean {
-  checkBlob(blob);
-  checkCommitment(commitmentBytes);
-  checkProof(proofBytes);
   return kzg.verifyBlobKzgProof(
     blob,
     commitmentBytes,
@@ -234,9 +167,6 @@ export function verifyBlobKzgProofBatch(
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
 ): boolean {
-  checkBlobs(blobs);
-  checkCommitments(commitmentsBytes);
-  checkProofs(proofsBytes);
   return kzg.verifyBlobKzgProofBatch(
     blobs,
     commitmentsBytes,
