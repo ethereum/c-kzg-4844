@@ -30,33 +30,6 @@ inline uint8_t *get_bytes(
   return array.Data();
 }
 
-Napi::TypedArrayOf<uint8_t> napi_typed_array_from_bytes(uint8_t* array, size_t length, Napi::Env env) {
-  // Create std::vector<uint8_t> out of array.
-  // We allocate it on the heap to allow wrapping it up into ArrayBuffer.
-  std::unique_ptr<std::vector<uint8_t>> vector =
-      std::make_unique<std::vector<uint8_t>>(length, 0);
-
-  for (size_t i = 0; i < length; ++i) {
-    (*vector)[i] = array[i];
-  }
-
-  // Wrap up the std::vector into the ArrayBuffer.
-  Napi::ArrayBuffer buffer = Napi::ArrayBuffer::New(
-      env,
-      vector->data(),
-      length /* size in bytes */,
-      [](Napi::Env /*env*/, void* /*data*/, std::vector<uint8_t>* hint) {
-        std::unique_ptr<std::vector<uint8_t>> vectorPtrToDelete(hint);
-      },
-      vector.get());
-
-  // The finalizer is responsible for deleting the vector: release the
-  // unique_ptr ownership.
-  vector.release();
-
-  return Napi::Uint8Array::New(env, length, buffer, 0);
-}
-
 // loadTrustedSetup: (filePath: string) => SetupHandle;
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   auto env = info.Env();
@@ -130,7 +103,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
     return env.Undefined();
   };
 
-  return napi_typed_array_from_bytes((uint8_t *)(&commitment), BYTES_PER_COMMITMENT, env);
+  return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&commitment), BYTES_PER_COMMITMENT);
 }
 
 // computeKzgProof: (blob: Blob, zBytes: Bytes32, setupHandle: SetupHandle) => KZGProof;
@@ -164,7 +137,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
     return env.Undefined();
   };
 
-  return napi_typed_array_from_bytes((uint8_t *)(&proof), BYTES_PER_PROOF, env);
+  return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
 
 // computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
@@ -193,7 +166,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
     return env.Undefined();
   };
 
-  return napi_typed_array_from_bytes((uint8_t *)(&proof), BYTES_PER_PROOF, env);
+  return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
 
 // verifyKzgProof: (commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
