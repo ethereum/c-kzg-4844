@@ -33,6 +33,33 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
   return env.Undefined();
 }
 
+/**
+ * Checks for:
+ * - arg is Uint8Array or Buffer (inherits from Uint8Array)
+ * - underlying ArrayBuffer length is correct
+ * 
+ * Internal function for argument validation. Prefer to use
+ * the helpers below that already have the reinterpreted casts:
+ * - get_blob
+ * - get_commitment
+ * - get_proof
+ * - get_bytes_32
+ * 
+ * Built to pass in a raw Napi::Value so it can be used like
+ * `get_bytes(env, info[0])` or can also be used to pull props from
+ * arrays like `get_bytes(env, passed_napi_array[2])`
+ * 
+ * Designed to raise the correct javascript exception and return a
+ * valid pointer to the calling context to avoid native stack-frame
+ * unwinds.  Calling context can check for `nullptr` to see if an
+ * exception was raised or a valid pointer was returned from V8
+ * 
+ * @return - native pointer to first byte in ArrayBuffer
+ * @property env - napi_env passed from calling context
+ * @property val - napi_value
+ * @property length - size_t to validate ArrayBuffer against
+ * @property name - name of prop being validated for error reporting
+ */
 inline uint8_t *get_bytes(
     const Napi::Env &env,
     const Napi::Value &val,
