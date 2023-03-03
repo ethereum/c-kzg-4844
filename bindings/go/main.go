@@ -244,7 +244,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		panic("trusted setup isn't loaded")
 	}
 	if len(blobs) != len(commitmentsBytes) || len(blobs) != len(proofsBytes) {
-		panic("the number of blobs/commitments/proofs should be equal")
+		return false, C_KZG_BADARGS
 	}
 
 	var result C.bool
