@@ -290,6 +290,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
     return result;
   }
+  // allocate all three at once. if any fails goto out; will call free on all three so all must exist
   Blob *blobs = (Blob *)calloc(count, sizeof(Blob));
   Bytes48 *commitments = (Bytes48 *)calloc(count, sizeof(Bytes48));
   Bytes48 *proofs = (Bytes48 *)calloc(count, sizeof(Bytes48));
@@ -307,32 +308,20 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   };
 
   for (uint32_t index = 0; index < count; index++) {
-    // add HandleScope here to remove temp values after each iteration
-    // since data is being memcpy
+    // add HandleScope here to release reference to temp values
+    // after each iteration since data is being memcpy
     Napi::HandleScope scope{env};
-    uint8_t *blob = get_bytes(
-      env,
-      blobs_param[index],
-      BYTES_PER_BLOB,
-      "blob");
+    uint8_t *blob = get_bytes(env, blobs_param[index], BYTES_PER_BLOB, "blob");
     if (blob == nullptr) {
       goto out;
     }
     memcpy(&blobs[index], blob, BYTES_PER_BLOB);
-    uint8_t *commitment = get_bytes(
-      env,
-      commitments_param[index],
-      BYTES_PER_COMMITMENT,
-      "commitment");
+    uint8_t *commitment = get_bytes(env, commitments_param[index], BYTES_PER_COMMITMENT, "commitment");
     if (commitment == nullptr) {
       goto out;
     }
     memcpy(&commitments[index], commitment, BYTES_PER_COMMITMENT);
-    uint8_t *proof = get_bytes(
-      env,
-      proofs_param[index],
-      BYTES_PER_PROOF,
-      "proof");
+    uint8_t *proof = get_bytes(env, proofs_param[index], BYTES_PER_PROOF, "proof");
     if (proof == nullptr) {
       goto out;
     }
