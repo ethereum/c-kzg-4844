@@ -8,6 +8,30 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
+Napi::Value throw_invalid_arguments_count(
+  const unsigned int expected,
+  const unsigned int actual,
+  const Napi::Env env
+) {
+  Napi::RangeError::New(
+    env,
+    "Wrong number of arguments. Expected: "
+    + std::to_string(expected)
+    + ", received " + std::to_string(actual)
+  ).ThrowAsJavaScriptException();
+
+  return env.Null();
+}
+
+Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
+  Napi::TypeError::New(
+    env,
+    "Invalid argument type: " + name + ". Expected " + expectedType
+  ).ThrowAsJavaScriptException();
+
+  return env.Null();
+}
+
 inline uint8_t *get_bytes(
     const Napi::Env &env,
     Napi::Value val,
