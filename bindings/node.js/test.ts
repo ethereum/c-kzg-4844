@@ -412,11 +412,11 @@ describe("C-KZG", () => {
       let commitments = new Array(count);
       let proofs = new Array(count);
 
-      for (let [i] of blobs.entries()) {
+      blobs.forEach((_, i) => {
         blobs[i] = generateRandomBlob();
         commitments[i] = blobToKzgCommitment(blobs[i]);
         proofs[i] = computeBlobKzgProof(blobs[i]);
-      }
+      });
 
       expect(verifyBlobKzgProofBatch(blobs, commitments, proofs)).toBe(true);
       expect(() =>
