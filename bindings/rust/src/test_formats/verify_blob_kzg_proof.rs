@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
-use crate::Bytes48;
-use crate::{Blob, Error};
+use crate::{Blob, Bytes48, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
