@@ -634,7 +634,6 @@ mod tests {
             };
 
             let res = KZGProof::verify_blob_kzg_proof_batch(
-                //blobs.into_iter().map(|b| *b).collect::<Vec<Blob>>().as_slice(),
                 blobs.into_iter().map(|b| *b).collect::<Vec<Blob>>().as_slice(),
                 commitments.as_slice(),
                 proofs.as_slice(),
