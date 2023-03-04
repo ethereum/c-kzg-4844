@@ -542,7 +542,12 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (test.input.get_commitment(), test.input.get_z(), test.input.get_y(), test.input.get_proof()) else {
+            let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (
+                test.input.get_commitment(),
+                test.input.get_z(),
+                test.input.get_y(),
+                test.input.get_proof()
+            ) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
@@ -567,7 +572,11 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(blob), Ok(commitment), Ok(proof)) = (test.input.get_blob(), test.input.get_commitment(), test.input.get_proof()) else {
+            let (Ok(blob), Ok(commitment), Ok(proof)) = (
+                test.input.get_blob(),
+                test.input.get_commitment(),
+                test.input.get_proof()
+            ) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
@@ -592,8 +601,11 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
-            let (Ok(blobs), Ok(commitments), Ok(proofs)) = (test.input.get_blobs(), test.input.get_commitments(), test.input.get_proofs()) else {
+            let (Ok(blobs), Ok(commitments), Ok(proofs)) = (
+                test.input.get_blobs(),
+                test.input.get_commitments(),
+                test.input.get_proofs()
+            ) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
