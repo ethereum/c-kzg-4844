@@ -2,8 +2,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-extern crate core;
-
 mod test_formats;
 
 include!("bindings.rs");
@@ -469,18 +467,14 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: blob_to_kzg_commitment_test::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            let res = KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings);
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
-            } else {
-                assert!(test.get_output().is_none())
+            match KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings) {
+                Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
@@ -498,18 +492,14 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
             let (Ok(blob), Ok(z)) = (test.input.get_blob(), test.input.get_z()) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            let res = KZGProof::compute_kzg_proof(*blob, z, &kzg_settings);
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
-            } else {
-                assert!(test.get_output().is_none())
+            match KZGProof::compute_kzg_proof(*blob, z, &kzg_settings) {
+                Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
@@ -527,18 +517,14 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            let res = KZGProof::compute_blob_kzg_proof(*blob, &kzg_settings);
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
-            } else {
-                assert!(test.get_output().is_none())
+            match KZGProof::compute_blob_kzg_proof(*blob, &kzg_settings) {
+                Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
@@ -556,18 +542,14 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
             let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (test.input.get_commitment(), test.input.get_z(), test.input.get_y(), test.input.get_proof()) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            let res = KZGProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings);
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap(), test.get_output().unwrap())
-            } else {
-                assert!(test.get_output().is_none())
+            match KZGProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings) {
+                Ok(res) => assert_eq!(res, test.get_output().unwrap()),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
@@ -585,18 +567,14 @@ mod tests {
         for test_file in tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-
             let (Ok(blob), Ok(commitment), Ok(proof)) = (test.input.get_blob(), test.input.get_commitment(), test.input.get_proof()) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            let res = KZGProof::verify_blob_kzg_proof(*blob, commitment, proof, &kzg_settings);
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap(), test.get_output().unwrap())
-            } else {
-                assert!(test.get_output().is_none())
+            match KZGProof::verify_blob_kzg_proof(*blob, commitment, proof, &kzg_settings) {
+                Ok(res) => assert_eq!(res, test.get_output().unwrap()),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
@@ -620,7 +598,7 @@ mod tests {
                 continue;
             };
 
-            let res = KZGProof::verify_blob_kzg_proof_batch(
+            match KZGProof::verify_blob_kzg_proof_batch(
                 blobs
                     .into_iter()
                     .map(|b| *b)
@@ -629,12 +607,9 @@ mod tests {
                 commitments.as_slice(),
                 proofs.as_slice(),
                 &kzg_settings,
-            );
-
-            if res.is_ok() {
-                assert_eq!(res.unwrap(), test.get_output().unwrap())
-            } else {
-                assert!(test.get_output().is_none())
+            ) {
+                Ok(res) => assert_eq!(res, test.get_output().unwrap()),
+                _ => assert!(test.get_output().is_none()),
             }
         }
     }
