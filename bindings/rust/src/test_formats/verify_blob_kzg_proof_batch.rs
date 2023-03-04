@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
-use crate::Blob;
 use crate::Bytes48;
+use crate::{Blob, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,28 +12,35 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn get_blobs(&self) -> Vec<Blob> {
-        self.blobs
-            .iter()
-            .map(|f| hex::decode(f.replace("0x", "")).unwrap())
-            .map(|bytes| Blob::from_bytes(bytes.as_slice()).unwrap())
-            .collect::<Vec<Blob>>()
+    pub fn get_blobs(&self) -> Result<Vec<Box<Blob>>, Error> {
+        let mut ret: Vec<Result<Box<Blob>, Error>>  = Vec::new();
+        for blob in &self.blobs {
+            let hex_str = &blob.replace("0x", "");
+            let bytes = &hex::decode(hex_str).unwrap();
+            ret.push(Blob::from_bytes_boxed(&bytes));
+        }
+
+        //let new: Result<Vec<T>, E> = v.into_iter().collect()
+        ret.into_iter().collect::<Result<Vec<Box<Blob>>, Error>>()
+        //ret.iter().transpose()
     }
 
-    pub fn get_commitments(&self) -> Vec<Bytes48> {
+    pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
         self.commitments
             .iter()
-            .map(|f| hex::decode(f.replace("0x", "")).unwrap())
-            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()).unwrap())
-            .collect::<Vec<Bytes48>>()
+            .map(|s| s.replace("0x", ""))
+            .map(|hex_str| hex::decode(hex_str).unwrap())
+            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()))
+            .collect::<Result<Vec<Bytes48>, Error>>()
     }
 
-    pub fn get_proofs(&self) -> Vec<Bytes48> {
+    pub fn get_proofs(&self) -> Result<Vec<Bytes48>, Error> {
         self.proofs
             .iter()
-            .map(|f| hex::decode(f.replace("0x", "")).unwrap())
-            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()).unwrap())
-            .collect::<Vec<Bytes48>>()
+            .map(|s| s.replace("0x", ""))
+            .map(|hex_str| hex::decode(hex_str).unwrap())
+            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()))
+            .collect::<Result<Vec<Bytes48>, Error>>()
     }
 }
 
