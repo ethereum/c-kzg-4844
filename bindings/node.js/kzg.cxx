@@ -316,6 +316,9 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   C_KZG_RET ret;
+  Blob *blobs = NULL;
+  KZGCommitment *commitments = NULL;
+  KZGProof *proofs = NULL;
   Napi::Value result = env.Undefined();
   if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
     Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
@@ -330,18 +333,17 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
     return result;
   }
-  // allocate all three at once. if any fails goto out; will call free on all three so all must exist
-  Blob *blobs = (Blob *)calloc(count, sizeof(Blob));
-  Bytes48 *commitments = (Bytes48 *)calloc(count, sizeof(Bytes48));
-  Bytes48 *proofs = (Bytes48 *)calloc(count, sizeof(Bytes48));
+  blobs = (Blob *)calloc(count, sizeof(Blob));
   if (blobs == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
     goto out;
   };
+  commitments = (KZGCommitment *)calloc(count, sizeof(KZGCommitment));
   if (commitments == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
     goto out;
   };
+  proofs = (KZGProof *)calloc(count, sizeof(KZGProof));
   if (proofs == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for proofs").ThrowAsJavaScriptException();
     goto out;
