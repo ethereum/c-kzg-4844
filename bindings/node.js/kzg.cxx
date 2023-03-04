@@ -21,7 +21,7 @@ Napi::Value throw_invalid_arguments_count(
     + ", received " + std::to_string(actual)
   ).ThrowAsJavaScriptException();
 
-  return env.Undefined();
+  return env.Null();
 }
 
 Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
@@ -30,7 +30,7 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
     "Invalid argument type: " + name + ". Expected " + expectedType
   ).ThrowAsJavaScriptException();
 
-  return env.Undefined();
+  return env.Null();
 }
 
 /**
@@ -114,7 +114,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
 
   if (kzg_settings == NULL) {
     Napi::Error::New(env, "Error while allocating memory for KZG settings").ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   };
 
   FILE* f = fopen(file_path.c_str(), "r");
@@ -122,13 +122,13 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   if (f == NULL) {
     free(kzg_settings);
     Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   }
 
   if (load_trusted_setup_file(kzg_settings, f) != C_KZG_OK) {
     free(kzg_settings);
     Napi::Error::New(env, "Error loading trusted setup file").ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   }
 
   return Napi::External<KZGSettings>::New(info.Env(), kzg_settings);
@@ -184,7 +184,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
-    return env.Undefined();
+    return env.Null();
   }
 
   KZGProof proof;
@@ -214,7 +214,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
-    return env.Undefined();
+    return env.Null();
   }
 
   KZGProof proof;
@@ -254,7 +254,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   }
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
   if (env.IsExceptionPending()) {
-    return env.Undefined();
+    return env.Null();
   }
 
   bool out;
@@ -269,7 +269,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Failed to verify KZG proof").ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   }
 
   return Napi::Boolean::New(env, out);
@@ -293,7 +293,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
 
   if (env.IsExceptionPending()) {
-    return env.Undefined();
+    return env.Null();
   }
 
   bool out;
@@ -306,7 +306,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     Napi::TypeError::New(env, "Error in verifyBlobKzgProof").ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   }
 
   return Napi::Boolean::New(env, out);
