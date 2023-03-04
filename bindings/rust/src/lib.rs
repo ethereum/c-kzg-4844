@@ -112,20 +112,7 @@ impl Drop for KZGSettings {
 }
 
 impl Blob {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
-        if bytes.len() != BYTES_PER_BLOB {
-            return Err(Error::InvalidBytesLength(format!(
-                "Invalid byte length. Expected {} got {}",
-                BYTES_PER_BLOB,
-                bytes.len(),
-            )));
-        }
-        let mut new_bytes = [0; BYTES_PER_BLOB];
-        new_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: new_bytes })
-    }
-
-    pub fn from_bytes_boxed(bytes: &[u8]) -> Result<Box<Self>, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Box<Self>, Error> {
         if bytes.len() != BYTES_PER_BLOB {
             return Err(Error::InvalidBytesLength(format!(
                 "Invalid byte length. Expected {} got {}",
@@ -469,7 +456,7 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/*/*/*";
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_blob_to_kzg_commitment() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -488,7 +475,7 @@ mod tests {
                 continue;
             };
 
-            let res = KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings);
+            let res = KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings);
 
             if res.is_ok() {
                 assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
@@ -498,7 +485,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -517,7 +504,7 @@ mod tests {
                 continue;
             };
 
-            let res = KZGProof::compute_kzg_proof(blob, z, &kzg_settings);
+            let res = KZGProof::compute_kzg_proof(*blob, z, &kzg_settings);
 
             if res.is_ok() {
                 assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
@@ -527,7 +514,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_blob_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -546,7 +533,7 @@ mod tests {
                 continue;
             };
 
-            let res = KZGProof::compute_blob_kzg_proof(blob, &kzg_settings);
+            let res = KZGProof::compute_blob_kzg_proof(*blob, &kzg_settings);
 
             if res.is_ok() {
                 assert_eq!(res.unwrap().bytes, test.get_output().unwrap().bytes)
@@ -556,7 +543,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -585,7 +572,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -604,7 +591,7 @@ mod tests {
                 continue;
             };
 
-            let res = KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings);
+            let res = KZGProof::verify_blob_kzg_proof(*blob, commitment, proof, &kzg_settings);
 
             if res.is_ok() {
                 assert_eq!(res.unwrap(), test.get_output().unwrap())
@@ -614,7 +601,7 @@ mod tests {
         }
     }
 
-    //#[cfg(not(feature = "minimal-spec"))]
+    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
         let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
@@ -634,7 +621,11 @@ mod tests {
             };
 
             let res = KZGProof::verify_blob_kzg_proof_batch(
-                blobs.into_iter().map(|b| *b).collect::<Vec<Blob>>().as_slice(),
+                blobs
+                    .into_iter()
+                    .map(|b| *b)
+                    .collect::<Vec<Blob>>()
+                    .as_slice(),
                 commitments.as_slice(),
                 proofs.as_slice(),
                 &kzg_settings,

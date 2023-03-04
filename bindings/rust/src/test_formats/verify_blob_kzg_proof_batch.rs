@@ -17,7 +17,7 @@ impl Input {
             .iter()
             .map(|s| s.replace("0x", ""))
             .map(|hex_str| hex::decode(hex_str).unwrap())
-            .map(|bytes| Blob::from_bytes_boxed(bytes.as_slice()))
+            .map(|bytes| Blob::from_bytes(bytes.as_slice()))
             .collect::<Result<Vec<Box<Blob>>, Error>>()
     }
 
