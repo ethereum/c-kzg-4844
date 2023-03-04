@@ -155,7 +155,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
@@ -164,7 +164,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Failed to convert blob to commitment")
       .ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   };
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&commitment), BYTES_PER_COMMITMENT);
@@ -175,11 +175,11 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
 
@@ -198,7 +198,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Failed to compute proof")
       .ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   };
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
@@ -209,7 +209,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
@@ -227,7 +227,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   if (ret != C_KZG_OK) {
      Napi::Error::New(env, "Error in computeBlobKzgProof")
       .ThrowAsJavaScriptException();
-    return env.Undefined();
+    return env.Null();
   };
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
@@ -238,19 +238,19 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   KZGCommitment *commitment_bytes = get_commitment(env, info[0]);
   if (commitment_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   Bytes32 *y_bytes = get_bytes_32(env, info[2], "yBytes");
   if (y_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   KZGProof *proof_bytes = get_proof(env, info[3]);
   if (proof_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
   if (env.IsExceptionPending()) {
@@ -280,15 +280,15 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob_bytes = get_blob(env, info[0]);
   if (blob_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   Bytes48 *commitment_bytes = get_commitment(env, info[1]);
   if (commitment_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   Bytes48 *proof_bytes = get_proof(env, info[2]);
   if (proof_bytes == nullptr) {
-    return env.Undefined();
+    return env.Null();
   }
   auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
 
@@ -319,7 +319,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Blob *blobs = NULL;
   KZGCommitment *commitments = NULL;
   KZGProof *proofs = NULL;
-  Napi::Value result = env.Undefined();
+  Napi::Value result = env.Null();
   if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
     Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
     return result;
