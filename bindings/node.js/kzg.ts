@@ -140,11 +140,11 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment {
  *
  * @param {Blob} blob - The blob (polynomial) to generate a proof for
  * @param {Bytes32} zBytes - The generator z-value for the evaluation points
- * 
+ *
  * @returns {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
-*/
+ */
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
@@ -152,9 +152,9 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
 /**
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
- * 
+ *
  * @param {Blob} blob - The blob (polynomial) to generate a proof for
- * 
+ *
  * @returns {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
