@@ -461,11 +461,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: blob_to_kzg_commitment_test::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
@@ -486,11 +483,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(COMPUTE_KZG_PROOF_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(COMPUTE_KZG_PROOF_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: compute_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(z)) = (test.input.get_blob(), test.input.get_z()) else {
                 assert!(test.get_output().is_none());
@@ -511,11 +505,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
@@ -536,11 +527,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(VERIFY_KZG_PROOF_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(VERIFY_KZG_PROOF_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (
                 test.input.get_commitment(),
@@ -566,11 +554,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(commitment), Ok(proof)) = (
                 test.input.get_blob(),
@@ -595,11 +580,8 @@ mod tests {
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
-        let tests = glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
-            .unwrap()
-            .map(|t| t.unwrap());
-        for test_file in tests {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
+        for test_file in glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS).unwrap() {
+            let yaml_data = fs::read_to_string(test_file.unwrap()).unwrap();
             let test: verify_blob_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blobs), Ok(commitments), Ok(proofs)) = (
                 test.input.get_blobs(),
