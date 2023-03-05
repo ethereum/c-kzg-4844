@@ -85,10 +85,10 @@ inline Blob *get_blob(const Napi::Env &env, const Napi::Value &val) {
   return reinterpret_cast<Blob *>(get_bytes(env, val, BYTES_PER_BLOB, "blob"));
 }
 inline KZGCommitment *get_commitment(const Napi::Env &env, const Napi::Value &val) {
-  return reinterpret_cast<KZGCommitment *>(get_bytes(env, val, BYTES_PER_COMMITMENT, "commitment"));
+  return reinterpret_cast<KZGCommitment *>(get_bytes(env, val, BYTES_PER_COMMITMENT, "commitmentBytes"));
 }
 inline KZGProof *get_proof(const Napi::Env &env, const Napi::Value &val) {
-  return reinterpret_cast<KZGProof *>(get_bytes(env, val, BYTES_PER_PROOF, "proof"));
+  return reinterpret_cast<KZGProof *>(get_bytes(env, val, BYTES_PER_PROOF, "proofBytes"));
 }
 inline Bytes32 *get_bytes_32(const Napi::Env &env, const Napi::Value &val, std::string_view name) {
   return reinterpret_cast<Bytes32 *>(get_bytes(env, val, BYTES_PER_FIELD_ELEMENT, name));

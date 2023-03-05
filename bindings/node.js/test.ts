@@ -285,7 +285,7 @@ describe("C-KZG", () => {
           fieldElementValidLength,
           proofValidLength,
         ),
-      ).toThrowError("Expected commitment to be 48 bytes");
+      ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
         verifyKzgProof(
           commitmentValidLength,
@@ -309,7 +309,7 @@ describe("C-KZG", () => {
           fieldElementValidLength,
           proofBadLength,
         ),
-      ).toThrowError("Expected proof to be 48 bytes");
+      ).toThrowError("Expected proofBytes to be 48 bytes");
     });
   });
 
@@ -348,14 +348,14 @@ describe("C-KZG", () => {
           commitmentBadLength,
           proofValidLength,
         ),
-      ).toThrowError("Expected commitment to be 48 bytes");
+      ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
         verifyBlobKzgProof(
           blobValidLength,
           commitmentValidLength,
           proofBadLength,
         ),
-      ).toThrowError("Expected proof to be 48 bytes");
+      ).toThrowError("Expected proofBytes to be 48 bytes");
     });
   });
 
@@ -392,14 +392,14 @@ describe("C-KZG", () => {
           [commitmentBadLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
         ),
-      ).toThrowError("Expected commitment to be 48 bytes");
+      ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
         verifyBlobKzgProofBatch(
           [blobValidLength, blobValidLength],
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofBadLength],
         ),
-      ).toThrowError("Expected proof to be 48 bytes");
+      ).toThrowError("Expected proofBytes to be 48 bytes");
     });
 
     it("zero blobs/commitments/proofs should verify as true", () => {
