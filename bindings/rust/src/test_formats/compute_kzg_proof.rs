@@ -33,12 +33,9 @@ pub struct Test<'a> {
 
 impl Test<'_> {
     pub fn get_output(&self) -> Option<Bytes48> {
-        if self.output.is_some() {
-            let hex_str = self.output.unwrap().replace("0x", "");
-            let bytes = hex::decode(hex_str).unwrap();
-            Some(Bytes48::from_bytes(&bytes).unwrap())
-        } else {
-            None
-        }
+        self.output
+            .map(|s| s.replace("0x", ""))
+            .map(|hex_str| hex::decode(hex_str).unwrap())
+            .map(|bytes| Bytes48::from_bytes(&bytes).unwrap())
     }
 }
