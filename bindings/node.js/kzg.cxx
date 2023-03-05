@@ -54,11 +54,12 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
  * unwinds.  Calling context can check for `nullptr` to see if an
  * exception was raised or a valid pointer was returned from V8
  * 
+ * @param[in] env - napi_env passed from calling context
+ * @param[in] val - napi_value
+ * @param[in] length - size_t to validate ArrayBuffer against
+ * @param[in] name - name of prop being validated for error reporting
+ * 
  * @return - native pointer to first byte in ArrayBuffer
- * @property env - napi_env passed from calling context
- * @property val - napi_value
- * @property length - size_t to validate ArrayBuffer against
- * @property name - name of prop being validated for error reporting
  */
 inline uint8_t *get_bytes(
     const Napi::Env &env,
@@ -150,7 +151,15 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
   return env.Undefined();
 }
 
-// blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
+/**
+ * Convert a blob to a KZG commitment.
+ *
+ * @param {Blob} blob - The blob representing the polynomial to be committed to
+ *
+ * @returns {KZGCommitment} -  The resulting commitment
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
@@ -170,7 +179,16 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&commitment), BYTES_PER_COMMITMENT);
 }
 
-// computeKzgProof: (blob: Blob, zBytes: Bytes32, setupHandle: SetupHandle) => KZGProof;
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position z.
+ *
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes32} zBytes - The generator z-value for the evaluation points
+ * 
+ * @returns {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
@@ -204,7 +222,17 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
 
-// computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
+
+/**
+ * Given a blob, return the KZG proof that is used to verify it against the
+ * commitment.
+ * 
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * 
+ * @returns {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
@@ -233,7 +261,18 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
 
-// verifyKzgProof: (commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
+/**
+ * Verify a KZG poof claiming that `p(z) == y`
+ * 
+ * @param[in] {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
+ * @param[in] {Bytes32} zBytes - The serialized evaluation point 
+ * @param[in] {Bytes32} yBytes - The serialized claimed evaluation result
+ * @param[in] {Bytes48} proofBytes - The serialized KZG proof
+ * 
+ * @return {boolean} - true/false depending on proof validity
+ * 
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   KZGCommitment *commitment_bytes = get_commitment(env, info[0]);
@@ -275,7 +314,18 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, out);
 }
 
-// verifyBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48, setupHandle: SetupHandle) => boolean;
+/**
+ * Given a blob and its proof, verify that it corresponds to the provided
+ * commitment.
+ * 
+ * @param[in] {Blob}    blob - The serialized blob to verify
+ * @param[in] {Bytes48} commitmentBytes - The serialized commitment to verify
+ * @param[in] {Bytes48} proofBytes - The serialized KZG proof for verification
+ * 
+ * @return {boolean} - true/false depending on proof validity
+ * 
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob_bytes = get_blob(env, info[0]);
@@ -312,7 +362,20 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   return Napi::Boolean::New(env, out);
 }
 
-// verifyBlobKzgProofBatch: (blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[], setupHandle: SetupHandle) => boolean;
+/**
+ * Given an array of blobs and their proofs, verify that they corresponds to their
+ * provided commitment.
+ * 
+ * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
+ * 
+ * @param[in] {Blob}    blobs - An array of serialized blobs to verify
+ * @param[in] {Bytes48} commitmentBytes - An array of serialized commitments to verify
+ * @param[in] {Bytes48} proofBytes - An array of serialized KZG proofs for verification
+ * 
+ * @return {boolean} - true/false depending on batch validity
+ * 
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   C_KZG_RET ret;

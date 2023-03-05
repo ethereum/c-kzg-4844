@@ -122,18 +122,59 @@ export function freeTrustedSetup(): void {
   setupHandle = undefined;
 }
 
+/**
+ * Convert a blob to a KZG commitment.
+ *
+ * @param {Blob} blob - The blob representing the polynomial to be committed to
+ *
+ * @returns {KZGCommitment} -  The resulting commitment
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
   return kzg.blobToKzgCommitment(blob, requireSetupHandle());
 }
 
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position z.
+ *
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes32} zBytes - The generator z-value for the evaluation points
+ * 
+ * @returns {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+*/
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
+/**
+ * Given a blob, return the KZG proof that is used to verify it against the
+ * commitment.
+ * 
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * 
+ * @returns {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 export function computeBlobKzgProof(blob: Blob): KZGProof {
   return kzg.computeBlobKzgProof(blob, requireSetupHandle());
 }
 
+/**
+ * Verify a KZG poof claiming that `p(z) == y`
+ *
+ * @param {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
+ * @param {Bytes32} zBytes - The serialized evaluation point
+ * @param {Bytes32} yBytes - The serialized claimed evaluation result
+ * @param {Bytes48} proofBytes - The serialized KZG proof
+ *
+ * @return {boolean} - true/false depending on proof validity
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 export function verifyKzgProof(
   commitmentBytes: Bytes48,
   zBytes: Bytes32,
@@ -149,6 +190,18 @@ export function verifyKzgProof(
   );
 }
 
+/**
+ * Given a blob and its proof, verify that it corresponds to the provided
+ * commitment.
+ *
+ * @param {Blob}    blob - The serialized blob to verify
+ * @param {Bytes48} commitmentBytes - The serialized commitment to verify
+ * @param {Bytes48} proofBytes - The serialized KZG proof for verification
+ *
+ * @return {boolean} - true/false depending on proof validity
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 export function verifyBlobKzgProof(
   blob: Blob,
   commitmentBytes: Bytes48,
@@ -162,6 +215,20 @@ export function verifyBlobKzgProof(
   );
 }
 
+/**
+ * Given an array of blobs and their proofs, verify that they corresponds to their
+ * provided commitment.
+ *
+ * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
+ *
+ * @param {Blob}    blobs - An array of serialized blobs to verify
+ * @param {Bytes48} commitmentBytes - An array of serialized commitments to verify
+ * @param {Bytes48} proofBytes - An array of serialized KZG proofs for verification
+ *
+ * @return {boolean} - true/false depending on batch validity
+ *
+ * @throws {TypeError} - for invalid arguments or failure of the native library
+ */
 export function verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
