@@ -47,17 +47,17 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
  * 
  * Built to pass in a raw Napi::Value so it can be used like
  * `get_bytes(env, info[0])` or can also be used to pull props from
- * arrays like `get_bytes(env, passed_napi_array[2])`
+ * arrays like `get_bytes(env, passed_napi_array[2])`.
  * 
  * Designed to raise the correct javascript exception and return a
  * valid pointer to the calling context to avoid native stack-frame
  * unwinds.  Calling context can check for `nullptr` to see if an
- * exception was raised or a valid pointer was returned from V8
+ * exception was raised or a valid pointer was returned from V8.
  * 
- * @param[in] env - napi_env passed from calling context
- * @param[in] val - napi_value
- * @param[in] length - size_t to validate ArrayBuffer against
- * @param[in] name - name of prop being validated for error reporting
+ * @param[in] env    Passed from calling context
+ * @param[in] val    Napi::Value to validate and get pointer from
+ * @param[in] length Byte length to validate Uint8Array data against
+ * @param[in] name   Name of prop being validated for error reporting
  * 
  * @return - native pointer to first byte in ArrayBuffer
  */
@@ -116,7 +116,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   if (kzg_settings == NULL) {
     Napi::Error::New(env, "Error while allocating memory for KZG settings").ThrowAsJavaScriptException();
     return env.Null();
-  };
+  }
 
   FILE* f = fopen(file_path.c_str(), "r");
 
@@ -154,11 +154,11 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
 /**
  * Convert a blob to a KZG commitment.
  *
- * @param {Blob} blob - The blob representing the polynomial to be committed to
+ * @param[in] {Blob} blob - The blob representing the polynomial to be committed to
  *
- * @returns {KZGCommitment} -  The resulting commitment
+ * @return {KZGCommitment} - The resulting commitment
  *
- * @throws {TypeError} - for invalid arguments or failure of the native library
+ * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
@@ -182,7 +182,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
      Napi::Error::New(env, "Failed to convert blob to commitment")
       .ThrowAsJavaScriptException();
     return env.Null();
-  };
+  }
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&commitment), BYTES_PER_COMMITMENT);
 }
@@ -190,10 +190,10 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
 /**
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
- * @param {Blob} blob - The blob (polynomial) to generate a proof for
- * @param {Bytes32} zBytes - The generator z-value for the evaluation points
+ * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param[in] {Bytes32} zBytes - The generator z-value for the evaluation points
  * 
- * @returns {KZGProof} - The resulting proof
+ * @return {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
@@ -233,7 +233,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
      Napi::Error::New(env, "Failed to compute proof")
       .ThrowAsJavaScriptException();
     return env.Null();
-  };
+  }
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
@@ -243,9 +243,9 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
  * 
- * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * @param[in] {Blob} blob - The blob (polynomial) to generate a proof for
  * 
- * @returns {KZGProof} - The resulting proof
+ * @return {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
@@ -280,13 +280,13 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
      Napi::Error::New(env, "Error in computeBlobKzgProof")
       .ThrowAsJavaScriptException();
     return env.Null();
-  };
+  }
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
 }
 
 /**
- * Verify a KZG poof claiming that `p(z) == y`
+ * Verify a KZG poof claiming that `p(z) == y`.
  * 
  * @param[in] {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
  * @param[in] {Bytes32} zBytes - The serialized evaluation point 
@@ -406,7 +406,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
  * Given an array of blobs and their proofs, verify that they corresponds to their
  * provided commitment.
  * 
- * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
+ * @remark blobs[0] relates to commitmentBytes[0] and proofBytes[0]
  * 
  * @param[in] {Blob}    blobs - An array of serialized blobs to verify
  * @param[in] {Bytes48} commitmentBytes - An array of serialized commitments to verify
@@ -448,17 +448,17 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   if (blobs == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
     goto out;
-  };
+  }
   commitments = (KZGCommitment *)calloc(count, sizeof(KZGCommitment));
   if (commitments == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
     goto out;
-  };
+  }
   proofs = (KZGProof *)calloc(count, sizeof(KZGProof));
   if (proofs == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for proofs").ThrowAsJavaScriptException();
     goto out;
-  };
+  }
 
   for (uint32_t index = 0; index < count; index++) {
     // add HandleScope here to release reference to temp values
