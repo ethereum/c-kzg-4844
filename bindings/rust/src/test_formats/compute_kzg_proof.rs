@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
-use crate::Blob;
-use crate::Bytes32;
-use crate::Bytes48;
+use crate::{Blob, Bytes32, Bytes48, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,12 +10,16 @@ pub struct Input<'a> {
 }
 
 impl Input<'_> {
-    pub fn get_blob(&self) -> Blob {
-        Blob::from_bytes(&hex::decode(self.blob.replace("0x", "")).unwrap()).unwrap()
+    pub fn get_blob(&self) -> Result<Box<Blob>, Error> {
+        let hex_str = self.blob.replace("0x", "");
+        let bytes = hex::decode(hex_str).unwrap();
+        Blob::from_bytes(&bytes)
     }
 
-    pub fn get_z(&self) -> Bytes32 {
-        Bytes32::from_bytes(&hex::decode(self.z.replace("0x", "")).unwrap()).unwrap()
+    pub fn get_z(&self) -> Result<Bytes32, Error> {
+        let hex_str = self.z.replace("0x", "");
+        let bytes = hex::decode(hex_str).unwrap();
+        Bytes32::from_bytes(&bytes)
     }
 }
 
@@ -31,13 +33,9 @@ pub struct Test<'a> {
 
 impl Test<'_> {
     pub fn get_output(&self) -> Option<Bytes48> {
-        if self.output.is_some() {
-            Some(
-                Bytes48::from_bytes(&hex::decode(self.output.unwrap().replace("0x", "")).unwrap())
-                    .unwrap(),
-            )
-        } else {
-            None
-        }
+        self.output
+            .map(|s| s.replace("0x", ""))
+            .map(|hex_str| hex::decode(hex_str).unwrap())
+            .map(|bytes| Bytes48::from_bytes(&bytes).unwrap())
     }
 }
