@@ -7,10 +7,10 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestMain(m *testing.M) {
@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (f *Bytes32) UnmarshalText(input []byte) error {
-	bytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
@@ -40,7 +40,7 @@ func (f *Bytes32) UnmarshalText(input []byte) error {
 }
 
 func (f *Bytes48) UnmarshalText(input []byte) error {
-	bytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
@@ -52,7 +52,7 @@ func (f *Bytes48) UnmarshalText(input []byte) error {
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
-	blobBytes, err := hex.DecodeString(string(input))
+	blobBytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
@@ -105,187 +105,207 @@ func HumanBytes(b int64) string {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Test Helper Functions
-///////////////////////////////////////////////////////////////////////////////
-
-func getBlob(path string) Blob {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var blob Blob
-	err = blob.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return blob
-}
-
-func getBytes32(path string) Bytes32 {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var bytes32 Bytes32
-	err = bytes32.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return bytes32
-}
-
-func getBytes48(path string) Bytes48 {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	var bytes48 Bytes48
-	err = bytes48.UnmarshalText(inputBytes)
-	if err != nil {
-		panic(err)
-	}
-	return bytes48
-}
-
-func getBoolean(path string) bool {
-	inputBytes, err := os.ReadFile(path)
-	if err != nil {
-		panic(err)
-	}
-	return strings.Contains(string(inputBytes), "true")
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Tests
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
 	testDir                      = "../../tests"
-	blobToKZGCommitmentTests     = filepath.Join(testDir, "blob_to_kzg_commitment/*")
-	computeKZGProofTests         = filepath.Join(testDir, "compute_kzg_proof/*")
-	computeBlobKZGProofTests     = filepath.Join(testDir, "compute_blob_kzg_proof/*")
-	verifyKZGProofTests          = filepath.Join(testDir, "verify_kzg_proof/*")
-	verifyBlobKZGProofTests      = filepath.Join(testDir, "verify_blob_kzg_proof/*")
-	verifyBlobKZGProofBatchTests = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*")
+	blobToKZGCommitmentTests     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
+	computeKZGProofTests         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
+	computeBlobKZGProofTests     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
+	verifyKZGProofTests          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
+	verifyBlobKZGProofTests      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
+	verifyBlobKZGProofBatchTests = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob Blob `yaml:"blob"`
+		}
+		Output *Bytes48 `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		commitment, ret := BlobToKZGCommitment(blob)
+		commitment, ret := BlobToKZGCommitment(test.Input.Blob)
 		if ret == C_KZG_OK {
-			expectedCommitment := KZGCommitment(getBytes48(filepath.Join(test, "commitment.txt")))
-			require.Equal(t, commitment, expectedCommitment, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, test.Output[:], commitment[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "commitment.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }
 
 func TestComputeKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob Blob    `yaml:"blob"`
+			Z    Bytes32 `yaml:"z"`
+		}
+		Output *Bytes48 `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
-		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		proof, ret := ComputeKZGProof(blob, inputPoint)
+		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.Z)
 		if ret == C_KZG_OK {
-			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
-			require.Equal(t, proof, expectedProof, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, test.Output[:], proof[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }
 
 func TestComputeBlobKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob Blob `yaml:"blob"`
+		}
+		Output *Bytes48 `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		proof, ret := ComputeBlobKZGProof(blob)
+		proof, ret := ComputeBlobKZGProof(test.Input.Blob)
 		if ret == C_KZG_OK {
-			expectedProof := KZGProof(getBytes48(filepath.Join(test, "proof.txt")))
-			require.Equal(t, proof, expectedProof, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, test.Output[:], proof[:])
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "proof.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }
 
 func TestVerifyKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitment Bytes48 `yaml:"commitment"`
+			Z          Bytes32 `yaml:"z"`
+			Y          Bytes32 `yaml:"y"`
+			Proof      Bytes48 `yaml:"proof"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(verifyKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
-		inputPoint := getBytes32(filepath.Join(test, "input_point.txt"))
-		claimedValue := getBytes32(filepath.Join(test, "claimed_value.txt"))
-		proof := getBytes48(filepath.Join(test, "proof.txt"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		ok, ret := VerifyKZGProof(commitment, inputPoint, claimedValue, proof)
+		valid, ret := VerifyKZGProof(
+			test.Input.Commitment,
+			test.Input.Z,
+			test.Input.Y,
+			test.Input.Proof)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, *test.Output, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }
 
 func TestVerifyBlobKZGProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob       Blob    `yaml:"blob"`
+			Commitment Bytes48 `yaml:"commitment"`
+			Proof      Bytes48 `yaml:"proof"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blob := getBlob(filepath.Join(test, "blob.txt"))
-		commitment := getBytes48(filepath.Join(test, "commitment.txt"))
-		proof := getBytes48(filepath.Join(test, "proof.txt"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
+		require.NoError(t, err)
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
+		require.NoError(t, err)
 
-		ok, ret := VerifyBlobKZGProof(blob, commitment, proof)
+		valid, ret := VerifyBlobKZGProof(
+			test.Input.Blob,
+			test.Input.Commitment,
+			test.Input.Proof)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, *test.Output, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }
 
 func TestVerifyBlobKZGProofBatch(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blobs       []Blob    `yaml:"blobs"`
+			Commitments []Bytes48 `yaml:"commitments"`
+			Proofs      []Bytes48 `yaml:"proofs"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
 	require.NoError(t, err)
-	for _, test := range tests {
-		blobFiles, err := filepath.Glob(filepath.Join(test, "blobs/*"))
+	for _, testPath := range tests {
+		t.Log(testPath)
+		testFile, err := os.Open(testPath)
 		require.NoError(t, err)
-		blobs := make([]Blob, len(blobFiles))
-		for i, blobFile := range blobFiles {
-			blobs[i] = getBlob(blobFile)
-		}
-		commitmentFiles, err := filepath.Glob(filepath.Join(test, "commitments/*"))
+		test := Test{}
+		err = yaml.NewDecoder(testFile).Decode(&test)
+		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
-		commitments := make([]Bytes48, len(commitmentFiles))
-		for i, commitmentFile := range commitmentFiles {
-			commitments[i] = getBytes48(commitmentFile)
-		}
-		proofFiles, err := filepath.Glob(filepath.Join(test, "proofs/*"))
-		require.NoError(t, err)
-		proofs := make([]Bytes48, len(proofFiles))
-		for i, proofFile := range proofFiles {
-			proofs[i] = getBytes48(proofFile)
-		}
-		require.Len(t, commitments, len(blobs))
-		require.Len(t, proofs, len(blobs))
 
-		ok, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+		valid, ret := VerifyBlobKZGProofBatch(
+			test.Input.Blobs,
+			test.Input.Commitments,
+			test.Input.Proofs)
 		if ret == C_KZG_OK {
-			expectedOk := getBoolean(filepath.Join(test, "ok.txt"))
-			require.Equal(t, ok, expectedOk, test)
+			require.NotNil(t, test.Output)
+			require.Equal(t, *test.Output, valid)
 		} else {
-			require.NoFileExists(t, filepath.Join(test, "ok.txt"))
+			require.Nil(t, test.Output)
 		}
 	}
 }

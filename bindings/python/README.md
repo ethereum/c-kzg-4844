@@ -8,6 +8,7 @@ These bindings require `python3` and `py-ecc`.
 ```
 sudo apt install python3 python3-pip
 python3 -m pip install py-ecc
+python3 -m pip install PyYAML
 ```
 
 ## Build & test
