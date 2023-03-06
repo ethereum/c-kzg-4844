@@ -51,13 +51,16 @@ def test_compute_kzg_proof(ts):
         z = bytes_from_hex(test["input"]["z"])
 
         try:
-            proof = ckzg.compute_kzg_proof(blob, z, ts)
+            proof, y = ckzg.compute_kzg_proof(blob, z, ts)
         except:
             assert test["output"] is None
             continue
 
-        expected_proof = bytes_from_hex(test["output"])
+        expected_proof = bytes_from_hex(test["output"][0])
         assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
+
+        expected_y = bytes_from_hex(test["output"][1])
+        assert y == expected_y, f"{test_file}\n{y.hex()=}\n{expected_y.hex()=}"
 
 
 def test_compute_blob_kzg_proof(ts):
