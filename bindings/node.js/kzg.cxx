@@ -41,9 +41,8 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
  * Internal function for argument validation. Prefer to use
  * the helpers below that already have the reinterpreted casts:
  * - get_blob
- * - get_commitment
- * - get_proof
- * - get_bytes_32
+ * - get_bytes32
+ * - get_bytes48
  * 
  * Built to pass in a raw Napi::Value so it can be used like
  * `get_bytes(env, info[0])` or can also be used to pull props from
@@ -85,14 +84,11 @@ inline uint8_t *get_bytes(
 inline Blob *get_blob(const Napi::Env &env, const Napi::Value &val) {
   return reinterpret_cast<Blob *>(get_bytes(env, val, BYTES_PER_BLOB, "blob"));
 }
-inline KZGCommitment *get_commitment(const Napi::Env &env, const Napi::Value &val) {
-  return reinterpret_cast<KZGCommitment *>(get_bytes(env, val, BYTES_PER_COMMITMENT, "commitmentBytes"));
-}
-inline KZGProof *get_proof(const Napi::Env &env, const Napi::Value &val) {
-  return reinterpret_cast<KZGProof *>(get_bytes(env, val, BYTES_PER_PROOF, "proofBytes"));
-}
-inline Bytes32 *get_bytes_32(const Napi::Env &env, const Napi::Value &val, std::string_view name) {
+inline Bytes32 *get_bytes32(const Napi::Env &env, const Napi::Value &val, std::string_view name) {
   return reinterpret_cast<Bytes32 *>(get_bytes(env, val, BYTES_PER_FIELD_ELEMENT, name));
+}
+inline Bytes48 *get_bytes48(const Napi::Env &env, const Napi::Value &val, std::string_view name) {
+  return reinterpret_cast<Bytes48 *>(get_bytes(env, val, BYTES_PER_COMMITMENT, name));
 }
 
 // loadTrustedSetup: (filePath: string) => SetupHandle;
@@ -208,7 +204,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   if (blob == nullptr) {
     return env.Null();
   }
-  Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
+  Bytes32 *z_bytes = get_bytes32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
     return env.Null();
   }
@@ -304,19 +300,19 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   if (argument_count != expected_argument_count) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
-  KZGCommitment *commitment_bytes = get_commitment(env, info[0]);
+  Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
   if (commitment_bytes == nullptr) {
     return env.Null();
   }
-  Bytes32 *z_bytes = get_bytes_32(env, info[1], "zBytes");
+  Bytes32 *z_bytes = get_bytes32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
     return env.Null();
   }
-  Bytes32 *y_bytes = get_bytes_32(env, info[2], "yBytes");
+  Bytes32 *y_bytes = get_bytes32(env, info[2], "yBytes");
   if (y_bytes == nullptr) {
     return env.Null();
   }
-  KZGProof *proof_bytes = get_proof(env, info[3]);
+  Bytes48 *proof_bytes = get_bytes48(env, info[3], "proofBytes");
   if (proof_bytes == nullptr) {
     return env.Null();
   }
@@ -369,11 +365,11 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   if (blob_bytes == nullptr) {
     return env.Null();
   }
-  Bytes48 *commitment_bytes = get_commitment(env, info[1]);
+  Bytes48 *commitment_bytes = get_bytes48(env, info[1], "commitmentBytes");
   if (commitment_bytes == nullptr) {
     return env.Null();
   }
-  Bytes48 *proof_bytes = get_proof(env, info[2]);
+  Bytes48 *proof_bytes = get_bytes48(env, info[2], "proofBytes");
   if (proof_bytes == nullptr) {
     return env.Null();
   }
@@ -425,8 +421,8 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   }
   C_KZG_RET ret;
   Blob *blobs = NULL;
-  KZGCommitment *commitments = NULL;
-  KZGProof *proofs = NULL;
+  Bytes48 *commitments = NULL;
+  Bytes48 *proofs = NULL;
   Napi::Value result = env.Null();
   if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
     Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
@@ -449,12 +445,12 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
     Napi::Error::New(env, "Error while allocating memory for blobs").ThrowAsJavaScriptException();
     goto out;
   }
-  commitments = (KZGCommitment *)calloc(count, sizeof(KZGCommitment));
+  commitments = (Bytes48 *)calloc(count, sizeof(Bytes48));
   if (commitments == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for commitments").ThrowAsJavaScriptException();
     goto out;
   }
-  proofs = (KZGProof *)calloc(count, sizeof(KZGProof));
+  proofs = (Bytes48 *)calloc(count, sizeof(Bytes48));
   if (proofs == nullptr) {
     Napi::Error::New(env, "Error while allocating memory for proofs").ThrowAsJavaScriptException();
     goto out;
@@ -469,12 +465,12 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
       goto out;
     }
     memcpy(&blobs[index], blob, BYTES_PER_BLOB);
-    KZGCommitment *commitment = get_commitment(env, commitments_param[index]);
+    Bytes48 *commitment = get_bytes48(env, commitments_param[index], "commitmentBytes");
     if (commitment == nullptr) {
       goto out;
     }
     memcpy(&commitments[index], commitment, BYTES_PER_COMMITMENT);
-    KZGProof *proof = get_proof(env, proofs_param[index]);
+    Bytes48 *proof = get_bytes48(env, proofs_param[index], "proofBytes");
     if (proof == nullptr) {
       goto out;
     }
