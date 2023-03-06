@@ -1,7 +1,9 @@
 import { randomBytes } from "crypto";
-import { existsSync } from "fs";
-import path = require("path");
-import fs = require("fs");
+import { existsSync, readFileSync } from "fs";
+import { join } from "path";
+import { globSync } from "glob";
+
+const yaml = require("js-yaml");
 
 import {
   loadTrustedSetup,
@@ -28,34 +30,27 @@ const SETUP_FILE_PATH = existsSync(setupFileName)
 const MAX_TOP_BYTE = 114;
 
 const TEST_DIR = "../../tests";
-const BLOB_TO_KZG_COMMITMENT_TESTS = path.join(
+const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
-  "blob_to_kzg_commitment",
+  "blob_to_kzg_commitment/*/*/data.yaml",
 );
-const COMPUTE_KZG_PROOF_TESTS = path.join(TEST_DIR, "compute_kzg_proof");
-const COMPUTE_BLOB_KZG_PROOF_TESTS = path.join(
+const COMPUTE_KZG_PROOF_TESTS = join(
   TEST_DIR,
-  "compute_blob_kzg_proof",
+  "compute_kzg_proof/*/*/data.yaml",
 );
-const VERIFY_KZG_PROOF_TESTS = path.join(TEST_DIR, "verify_kzg_proof");
-const VERIFY_BLOB_KZG_PROOF_TESTS = path.join(
+const COMPUTE_BLOB_KZG_PROOF_TESTS = join(
   TEST_DIR,
-  "verify_blob_kzg_proof",
+  "compute_blob_kzg_proof/*/*/data.yaml",
 );
-const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = path.join(
+const VERIFY_KZG_PROOF_TESTS = join(TEST_DIR, "verify_kzg_proof/*/*/data.yaml");
+const VERIFY_BLOB_KZG_PROOF_TESTS = join(
   TEST_DIR,
-  "verify_blob_kzg_proof_batch",
+  "verify_blob_kzg_proof/*/*/data.yaml",
 );
-
-function getBytes(file: String): Uint8Array {
-  const data = require("fs").readFileSync(file, "ascii");
-  return Buffer.from(data, "hex");
-}
-
-function getBoolean(file: String): boolean {
-  const data = require("fs").readFileSync(file, "ascii");
-  return data.includes("true");
-}
+const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = join(
+  TEST_DIR,
+  "verify_blob_kzg_proof_batch/*/*/data.yaml",
+);
 
 const generateRandomBlob = () => {
   return new Uint8Array(
@@ -69,6 +64,10 @@ const generateRandomBlob = () => {
   );
 };
 
+function bytesFromHex(hexstring: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(hexstring.slice(2), "hex"));
+}
+
 describe("C-KZG", () => {
   beforeAll(async () => {
     const file = await transformTrustedSetupJSON(SETUP_FILE_PATH);
@@ -81,122 +80,130 @@ describe("C-KZG", () => {
 
   describe("reference tests should pass", () => {
     it("reference tests for blobToKzgCommitment should pass", () => {
-      let tests = fs.readdirSync(BLOB_TO_KZG_COMMITMENT_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(BLOB_TO_KZG_COMMITMENT_TESTS, test);
-        let blob = getBytes(path.join(testPath, "blob.txt"));
+      let tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let commitment = new Uint8Array();
+        let blob = bytesFromHex(test.input.blob);
+
         try {
-          let commitment = blobToKzgCommitment(blob);
-          let expectedCommitment = getBytes(
-            path.join(testPath, "commitment.txt"),
-          );
-          expect(commitment.buffer).toEqual(expectedCommitment.buffer);
+          commitment = blobToKzgCommitment(blob);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "commitment.txt"))).toBe(
-            false,
-          );
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedCommitment = bytesFromHex(test.output);
+        expect(commitment).toEqual(expectedCommitment);
       });
     });
 
     it("reference tests for computeKzgProof should pass", () => {
-      let tests = fs.readdirSync(COMPUTE_KZG_PROOF_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(COMPUTE_KZG_PROOF_TESTS, test);
-        let blob = getBytes(path.join(testPath, "blob.txt"));
-        let inputPoint = getBytes(path.join(testPath, "input_point.txt"));
+      let tests = globSync(COMPUTE_KZG_PROOF_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let proof = new Uint8Array();
+        let blob = bytesFromHex(test.input.blob);
+        let z = bytesFromHex(test.input.z);
+
         try {
-          let proof = computeKzgProof(blob, inputPoint);
-          let expectedProof = getBytes(path.join(testPath, "proof.txt"));
-          expect(proof.buffer).toEqual(expectedProof.buffer);
+          proof = computeKzgProof(blob, z);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "proof.txt"))).toBe(false);
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedProof = bytesFromHex(test.output);
+        expect(proof).toEqual(expectedProof);
       });
     });
 
     it("reference tests for computeBlobKzgProof should pass", () => {
-      let tests = fs.readdirSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(COMPUTE_BLOB_KZG_PROOF_TESTS, test);
-        let blob = getBytes(path.join(testPath, "blob.txt"));
+      let tests = globSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let proof = new Uint8Array();
+        let blob = bytesFromHex(test.input.blob);
+
         try {
-          let proof = computeBlobKzgProof(blob);
-          let expectedProof = getBytes(path.join(testPath, "proof.txt"));
-          expect(proof.buffer).toEqual(expectedProof.buffer);
+          proof = computeBlobKzgProof(blob);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "proof.txt"))).toBe(false);
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(test.output).not.toBeNull();
+        let expectedProof = bytesFromHex(test.output);
+        expect(proof).toEqual(expectedProof);
       });
     });
 
     it("reference tests for verifyKzgProof should pass", () => {
-      let tests = fs.readdirSync(VERIFY_KZG_PROOF_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(VERIFY_KZG_PROOF_TESTS, test);
-        let commitment = getBytes(path.join(testPath, "commitment.txt"));
-        let inputPoint = getBytes(path.join(testPath, "input_point.txt"));
-        let claimedValue = getBytes(path.join(testPath, "claimed_value.txt"));
-        let proof = getBytes(path.join(testPath, "proof.txt"));
+      let tests = globSync(VERIFY_KZG_PROOF_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        let commitment = bytesFromHex(test.input.commitment);
+        let z = bytesFromHex(test.input.z);
+        let y = bytesFromHex(test.input.y);
+        let proof = bytesFromHex(test.input.proof);
+
         try {
-          let ok = verifyKzgProof(commitment, inputPoint, claimedValue, proof);
-          let expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-          expect(ok).toEqual(expectedOk);
+          valid = verifyKzgProof(commitment, z, y, proof);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "ok.txt"))).toBe(false);
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
 
     it("reference tests for verifyBlobKzgProof should pass", () => {
-      let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(VERIFY_BLOB_KZG_PROOF_TESTS, test);
-        let blob = getBytes(path.join(testPath, "blob.txt"));
-        let commitment = getBytes(path.join(testPath, "commitment.txt"));
-        let proof = getBytes(path.join(testPath, "proof.txt"));
+      let tests = globSync(VERIFY_BLOB_KZG_PROOF_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        let blob = bytesFromHex(test.input.blob);
+        let commitment = bytesFromHex(test.input.commitment);
+        let proof = bytesFromHex(test.input.proof);
+
         try {
-          let ok = verifyBlobKzgProof(blob, commitment, proof);
-          let expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-          expect(ok).toEqual(expectedOk);
+          valid = verifyBlobKzgProof(blob, commitment, proof);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "ok.txt"))).toBe(false);
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
 
     it("reference tests for verifyBlobKzgProofBatch should pass", () => {
-      let tests = fs.readdirSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
-      tests.forEach((test) => {
-        let testPath = path.join(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS, test);
-        let blobs = fs
-          .readdirSync(path.join(testPath, "blobs"))
-          .sort()
-          .map((filename) => {
-            return path.join(testPath, "blobs", filename);
-          })
-          .map(getBytes);
-        let commitments = fs
-          .readdirSync(path.join(testPath, "commitments"))
-          .sort()
-          .map((filename) => {
-            return path.join(testPath, "commitments", filename);
-          })
-          .map(getBytes);
-        let proofs = fs
-          .readdirSync(path.join(testPath, "proofs"))
-          .sort()
-          .map((filename) => {
-            return path.join(testPath, "proofs", filename);
-          })
-          .map(getBytes);
+      let tests = globSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+      tests.forEach((testFile: string) => {
+        const test = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        let blobs = test.input.blobs.map(bytesFromHex);
+        let commitments = test.input.commitments.map(bytesFromHex);
+        let proofs = test.input.proofs.map(bytesFromHex);
+
         try {
-          let ok = verifyBlobKzgProofBatch(blobs, commitments, proofs);
-          let expectedOk = getBoolean(path.join(testPath, "ok.txt"));
-          expect(ok).toEqual(expectedOk);
+          valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
         } catch (err) {
-          expect(fs.existsSync(path.join(testPath, "ok.txt"))).toBe(false);
+          expect(test.output).toBeNull();
+          return;
         }
+
+        expect(valid).toEqual(test.output);
       });
     });
   });
