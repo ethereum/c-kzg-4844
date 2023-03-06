@@ -54,7 +54,7 @@ jobs:
       if: ${{ matrix.target.reqs }}
       run: ${{ matrix.target.reqs }}
     - name: Build native library for ${{ matrix.target.location }} using native capabilities
-      run: make ckzg -C bindings/csharp EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
+      run: make ckzg -C bindings/csharp CC=clang EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
