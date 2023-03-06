@@ -1407,8 +1407,29 @@ static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1(
-    void
+static void
+test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void
+) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Blob blob;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+    bytes48_from_hex(
+        &c,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    /* Finally compute the proof */
+    ret = compute_blob_kzg_proof(&proof, &blob, &c, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void
+test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1(void
 ) {
     C_KZG_RET ret;
     Bytes48 proof;
@@ -1857,7 +1878,10 @@ int main(void) {
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1);
-    RUN(test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1
+    );
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1
+    );
     RUN(test_compute_and_verify_blob_kzg_proof__fails_invalid_blob);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_with_incorrect_proof);
