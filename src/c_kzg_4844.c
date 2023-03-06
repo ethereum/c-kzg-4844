@@ -1101,11 +1101,10 @@ static C_KZG_RET compute_kzg_proof_impl(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *y = y_out;
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
 
-    ret = evaluate_polynomial_in_evaluation_form(y, polynomial, z, s);
+    ret = evaluate_polynomial_in_evaluation_form(y_out, polynomial, z, s);
     if (ret != C_KZG_OK) goto out;
 
     fr_t tmp;
@@ -1126,7 +1125,7 @@ static C_KZG_RET compute_kzg_proof_impl(
             continue;
         }
         // (p_i - y) / (ω_i - z)
-        blst_fr_sub(&q.evals[i], &polynomial->evals[i], y);
+        blst_fr_sub(&q.evals[i], &polynomial->evals[i], y_out);
         blst_fr_sub(&inverses_in[i], &roots_of_unity[i], z);
     }
 
@@ -1152,7 +1151,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             /* Build numerator: ω_i * (p_i - y) */
-            blst_fr_sub(&tmp, &polynomial->evals[i], y);
+            blst_fr_sub(&tmp, &polynomial->evals[i], y_out);
             blst_fr_mul(&tmp, &tmp, &roots_of_unity[i]);
             /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
             blst_fr_mul(&tmp, &tmp, &inverses[i]);
