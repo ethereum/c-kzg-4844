@@ -1051,7 +1051,8 @@ static C_KZG_RET compute_kzg_proof_impl(
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
  * @param[out] proof_out The combined proof as a single G1 element
- * @param[out] y_out     The evaluation of the polynomial at the evaluation point z
+ * @param[out] y_out     The evaluation of the polynomial at the evaluation
+ *                       point z
  * @param[in]  blob      The blob (polynomial) to generate a proof for
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The settings containing the secrets, previously
@@ -1085,7 +1086,8 @@ out:
  * compute_blob_kzg_proof().
  *
  * @param[out] proof_out  The combined proof as a single G1 element
- * @param[out] y_out      The evaluation of the polynomial at the evaluation point z
+ * @param[out] y_out      The evaluation of the polynomial at the evaluation
+ *                        point z
  * @param[in]  polynomial The polynomial in Lagrange form
  * @param[in]  z          The evaluation point
  * @param[in]  s          The settings containing the secrets, previously
@@ -1183,7 +1185,10 @@ out:
  * @param[in]  s                The trusted setup
  */
 C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out, const Blob *blob, const Bytes48 *commitment_bytes, const KZGSettings *s
+    KZGProof *out,
+    const Blob *blob,
+    const Bytes48 *commitment_bytes,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1199,7 +1204,9 @@ C_KZG_RET compute_blob_kzg_proof(
 
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
-    ret = compute_kzg_proof_impl(out, &y, &polynomial, &evaluation_challenge_fr, s);
+    ret = compute_kzg_proof_impl(
+        out, &y, &polynomial, &evaluation_challenge_fr, s
+    );
     if (ret != C_KZG_OK) goto out;
 
 out:

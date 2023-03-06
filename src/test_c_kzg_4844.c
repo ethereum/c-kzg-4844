@@ -1096,7 +1096,9 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     );
 
     /* Compare the computed y to the expected y */
-    diff = memcmp(output_value.bytes, expected_output_value.bytes, sizeof(Bytes32));
+    diff = memcmp(
+        output_value.bytes, expected_output_value.bytes, sizeof(Bytes32)
+    );
     ASSERT_EQUALS(diff, 0);
 }
 
@@ -1490,7 +1492,9 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1518,7 +1522,9 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1545,7 +1551,9 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1575,7 +1583,9 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1606,7 +1616,9 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
