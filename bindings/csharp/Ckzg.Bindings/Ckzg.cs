@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace Ckzg;
 
 public static partial class Ckzg
@@ -10,8 +8,6 @@ public static partial class Ckzg
     public const int BytesPerCommitment = 48;
     public const int BytesPerProof = 48;
 
-    private static readonly ThreadLocal<SHA256> _sha256 = new(SHA256.Create);
-    
     /// <summary>
     ///     Loads trusted setup settings from file.
     /// </summary>
@@ -28,7 +24,7 @@ public static partial class Ckzg
         if (ckzgSetup == IntPtr.Zero) throw new InvalidOperationException("Unable to load trusted setup");
         return ckzgSetup;
     }
-    
+
     /// <summary>
     ///     Frees memory allocated for trusted setup settings.
     /// </summary>
@@ -37,10 +33,10 @@ public static partial class Ckzg
 
     public static void FreeTrustedSetup(IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         InternalFreeTrustedSetup(ckzgSetup);
     }
-    
+
     /// <summary>
     ///     Calculates commitment for the blob.
     /// </summary>
@@ -52,7 +48,7 @@ public static partial class Ckzg
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     public static unsafe void BlobToKzgCommitment(Span<byte> commitment, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
         ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
 
@@ -62,7 +58,7 @@ public static partial class Ckzg
             ThrowOnError(result);
         }
     }
-    
+
     /// <summary>
     ///     Compute KZG proof at point `z` for the polynomial represented by `blob`.
     /// </summary>
@@ -76,7 +72,7 @@ public static partial class Ckzg
     public static unsafe void ComputeKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, ReadOnlySpan<byte> z,
         IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
         ThrowOnInvalidLength(z, nameof(z), BytesPerFieldElement);
@@ -89,7 +85,7 @@ public static partial class Ckzg
             ThrowOnError(result);
         }
     }
-    
+
     /// <summary>
     ///     Given a blob, return the KZG proof that is used to verify it against the commitment.
     /// </summary>
@@ -101,7 +97,7 @@ public static partial class Ckzg
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     public static unsafe void ComputeBlobKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
 
@@ -126,13 +122,13 @@ public static partial class Ckzg
     public static unsafe bool VerifyKzgProof(ReadOnlySpan<byte> commitment, ReadOnlySpan<byte> z, ReadOnlySpan<byte> y,
         ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
-     
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
         ThrowOnInvalidLength(z, nameof(z), BytesPerFieldElement);
         ThrowOnInvalidLength(y, nameof(y), BytesPerFieldElement);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
-        
+
         fixed (byte* commitmentPtr = commitment, zPtr = z, yPtr = y, proofPtr = proof)
         {
             KzgResult kzgResult = VerifyKzgProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
@@ -155,7 +151,7 @@ public static partial class Ckzg
     public static unsafe bool VerifyBlobKzgProof(ReadOnlySpan<byte> blob, ReadOnlySpan<byte> commitment,
         ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
         ThrowOnInvalidLength(commitment, nameof(proof), BytesPerCommitment);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
@@ -183,7 +179,7 @@ public static partial class Ckzg
     public static unsafe bool VerifyBlobKzgProofBatch(ReadOnlySpan<byte> blobs, ReadOnlySpan<byte> commitments,
         ReadOnlySpan<byte> proofs, int count, IntPtr ckzgSetup)
     {
-        ThrowOnUnitializedTrustedSetup(ckzgSetup);
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(blobs, nameof(blobs), BytesPerBlob * count);
         ThrowOnInvalidLength(commitments, nameof(proofs), BytesPerCommitment * count);
         ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * count);
@@ -210,13 +206,13 @@ public static partial class Ckzg
                 throw new ApplicationException("KZG returned unexpected result");
         }
     }
-    
-    private static void ThrowOnUnitializedTrustedSetup(IntPtr ckzgSetup)
+
+    private static void ThrowOnUninitializedTrustedSetup(IntPtr ckzgSetup)
     {
         if (ckzgSetup == IntPtr.Zero)
             throw new ArgumentException("Trusted setup is not initialized", nameof(ckzgSetup));
     }
-    
+
     private static void ThrowOnInvalidLength(ReadOnlySpan<byte> data, string fieldName, int expectedLength)
     {
         if (data.Length != expectedLength)
