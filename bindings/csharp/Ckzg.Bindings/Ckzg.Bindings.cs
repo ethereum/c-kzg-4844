@@ -50,9 +50,13 @@ public static partial class Ckzg
 
     private enum KzgResult
     {
+        // Success!
         Ok,
+        // The supplied data is invalid in some way.
         BadArgs,
+        // Internal error - this should never occur.
         Error,
+        // Could not allocate memory.
         Malloc
     }
 }
