@@ -1,9 +1,9 @@
 ifeq ($(OS),Windows_NT)
     BLST_BUILDSCRIPT = ./build.bat
     BLST_OBJ = blst.lib
-    CSHARP_PLATFORM ?= win-x64
+    LOCATION ?= win-x64
     CLANG_EXECUTABLE = clang
-    CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(CSHARP_PLATFORM)\native\ckzg.dll
+    CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg.dll
 else
     BLST_BUILDSCRIPT = ./build.sh
     BLST_OBJ = libblst.a
@@ -13,20 +13,20 @@ else
     UNAME_M := $(shell uname -m)
     ifeq ($(UNAME_S),Linux)
         ifeq ($(UNAME_M),x86_64)
-            CSHARP_PLATFORM ?= linux-x64
+            LOCATION ?= linux-x64
         else
-            CSHARP_PLATFORM ?= linux-arm64
+            LOCATION ?= linux-arm64
         endif
     endif
     ifeq ($(UNAME_S),Darwin)
         ifeq ($(UNAME_M),arm64)
-            CSHARP_PLATFORM ?= osx-arm64
+            LOCATION ?= osx-arm64
         else
-            CSHARP_PLATFORM ?= osx-x64
+            LOCATION ?= osx-x64
         endif
     endif
 
-    CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(CSHARP_PLATFORM)/native/ckzg.so
+    CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg.so
 endif
 
 FIELD_ELEMENTS_PER_BLOB ?= 4096
@@ -36,13 +36,17 @@ TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 CFLAGS += -O2 -Wall -Wextra -shared
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
+ifdef ARCH
+	CFLAGS += --target=$(ARCH)
+	BLST_BUILDSCRIPT_FLAGS += --target=$(ARCH)
+endif
 
 .PHONY: all
 all: blst ckzg ckzg-dotnet
 
 .PHONY: blst
 blst:
-	cd ../../blst && $(BLST_BUILDSCRIPT)
+	cd ../../blst && $(BLST_BUILDSCRIPT) $(BLST_BUILDSCRIPT_FLAGS)
 
 .PHONY: ckzg
 ckzg: blst

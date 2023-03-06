@@ -1,115 +1,222 @@
-using System.Runtime.InteropServices;
-using System.Runtime.Loader;
-
 namespace Ckzg;
 
-public class Ckzg
+public static partial class Ckzg
 {
     public const int BytesPerFieldElement = 32;
-    public const int BytesPerBlob = BytesPerFieldElement * 4096;
+    public const int FieldElementsPerBlob = 4096;
+    public const int BytesPerBlob = BytesPerFieldElement * FieldElementsPerBlob;
     public const int BytesPerCommitment = 48;
     public const int BytesPerProof = 48;
 
-    public enum Ret
-    {
-        Ok,
-        BadArgs,
-        Error,
-        Malloc
-    }
-
-    static Ckzg() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, path) => NativeLibrary.Load($"runtimes/{(
-            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
-            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "")}-{RuntimeInformation.ProcessArchitecture switch
-            {
-                Architecture.X64 => "x64",
-                Architecture.Arm64 => "arm64",
-                _ => ""
-            }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}");
-
     /// <summary>
-    /// Load trusted setup settings from file
+    ///     Loads trusted setup settings from file.
     /// </summary>
     /// <param name="filename">Settings file path</param>
-    /// <returns>Trusted setup settings as a pointer or <c>0</c> in case of failure</returns>
-    [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")]
-    public static extern IntPtr LoadTrustedSetup(string filename);
+    /// <exception cref="ArgumentException">Thrown when the file path is not correct </exception>
+    /// <exception cref="InvalidOperationException">Thrown when unable to load the setup</exception>
+    /// <returns>Trusted setup settings as a pointer</returns>
+    public static IntPtr LoadTrustedSetup(string filepath)
+    {
+        if (!File.Exists(filepath)) throw new ArgumentException("Trusted setup file does not exist", nameof(filepath));
+
+        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath);
+
+        if (ckzgSetup == IntPtr.Zero) throw new InvalidOperationException("Unable to load trusted setup");
+        return ckzgSetup;
+    }
 
     /// <summary>
-    /// Frees memory allocated for trusted setup settings
+    ///     Frees memory allocated for trusted setup settings.
     /// </summary>
-    /// <param name="ts">Trusted setup settings</param>
-    [DllImport("ckzg", EntryPoint = "free_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void FreeTrustedSetup(IntPtr ts);
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when settings are not correct</exception>
+
+    public static void FreeTrustedSetup(IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        InternalFreeTrustedSetup(ckzgSetup);
+    }
 
     /// <summary>
-    /// Calculates commitment for the blob
+    ///     Calculates commitment for the blob.
     /// </summary>
-    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength"/> bytes to receive the commitment</param>
+    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength" /> bytes to receive the commitment</param>
     /// <param name="blob">Flatten array of blob elements</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    public static unsafe void BlobToKzgCommitment(Span<byte> commitment, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+        ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
+
+        fixed (byte* commitmentPtr = commitment, blobPtr = blob)
+        {
+            KzgResult result = BlobToKzgCommitment(commitmentPtr, blobPtr, ckzgSetup);
+            ThrowOnError(result);
+        }
+    }
 
     /// <summary>
-    /// Compute KZG proof at point `z` for the polynomial represented by `blob`.
+    ///     Compute KZG proof at point `z` for the polynomial represented by `blob`.
     /// </summary>
-    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
-    /// <param name="blob">Blob byte array</param>
-    /// <param name="z_bytes"></param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "compute_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret ComputeKzgProof(byte* proof, byte* blob, byte* z_bytes, IntPtr ts);
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength" /> bytes to receive the proof</param>
+    /// <param name="blob">Blob bytes</param>
+    /// <param name="z">Z point</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    public static unsafe void ComputeKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, ReadOnlySpan<byte> z,
+        IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+        ThrowOnInvalidLength(z, nameof(z), BytesPerFieldElement);
+
+        if (z.Length != BytesPerFieldElement) throw new ArgumentException("Invalid z size", nameof(z));
+
+        fixed (byte* proofPtr = proof, blobPtr = blob, zPtr = z)
+        {
+            KzgResult result = ComputeKzgProof(proofPtr, blobPtr, zPtr, ckzgSetup);
+            ThrowOnError(result);
+        }
+    }
 
     /// <summary>
-    /// Given a blob, return the KZG proof that is used to verify it against the commitment.
+    ///     Given a blob, return the KZG proof that is used to verify it against the commitment.
     /// </summary>
-    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength"/> bytes to receive the proof</param>
-    /// <param name="blob">Blob byte array</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns>Returns error code or <c>0</c> if successful</returns>
-    [DllImport("ckzg", EntryPoint = "compute_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret ComputeBlobKzgProof(byte* proof, byte* blob, IntPtr ts);
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength" /> bytes to receive the proof</param>
+    /// <param name="blob">Blob bytes</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    public static unsafe void ComputeBlobKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+
+        fixed (byte* proofPtr = proof, blobPtr = blob)
+        {
+            KzgResult result = ComputeBlobKzgProof(proofPtr, blobPtr, ckzgSetup);
+            ThrowOnError(result);
+        }
+    }
 
     /// <summary>
-    ///
+    ///     Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
     /// </summary>
-    /// <param name="result">True if the proof is valid</param>
-    /// <param name="commitment_bytes"></param>
-    /// <param name="z_bytes"></param>
-    /// <param name="y_bytes"></param>
-    /// <param name="proof_bytes"></param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns></returns>
-    [DllImport("ckzg", EntryPoint = "verify_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyKzgProof(bool* result, byte* commitment_bytes, byte* z_bytes, byte* y_bytes, byte* proof_bytes, IntPtr ts);
-
-    /// <summary>
-    /// Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
-    /// </summary>
-    /// <param name="result">True if the proof is valid</param>
     /// <param name="blob"></param>
     /// <param name="commitment"></param>
     /// <param name="proof"></param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns></returns>
-    [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyBlobKzgProof(bool* result, byte* blob, byte* commitment_bytes, byte* proof_bytes, IntPtr ts);
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    /// <returns>Verification result</returns>
+    public static unsafe bool VerifyKzgProof(ReadOnlySpan<byte> commitment, ReadOnlySpan<byte> z, ReadOnlySpan<byte> y,
+        ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
+    {
+
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
+        ThrowOnInvalidLength(z, nameof(z), BytesPerFieldElement);
+        ThrowOnInvalidLength(y, nameof(y), BytesPerFieldElement);
+        ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+
+        fixed (byte* commitmentPtr = commitment, zPtr = z, yPtr = y, proofPtr = proof)
+        {
+            KzgResult kzgResult = VerifyKzgProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
+            ThrowOnError(kzgResult);
+            return result;
+        }
+    }
 
     /// <summary>
-    /// Given a list of blobs and blob KZG proofs, verify that they correspond to the provided commitments.
+    ///     Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
     /// </summary>
-    /// <param name="result">True if the proofs are valid</param>
+    /// <param name="blob">Blob bytes</param>
+    /// <param name="commitment">Commitment bytes</param>
+    /// <param name="proof">Proof bytes</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    /// <returns>Verification result</returns>
+    public static unsafe bool VerifyBlobKzgProof(ReadOnlySpan<byte> blob, ReadOnlySpan<byte> commitment,
+        ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+        ThrowOnInvalidLength(commitment, nameof(proof), BytesPerCommitment);
+        ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+
+        fixed (byte* blobPtr = blob, commitmentPtr = commitment, proofPtr = proof)
+        {
+            KzgResult kzgResult = VerifyBlobKzgProof(out var result, blobPtr, commitmentPtr, proofPtr, ckzgSetup);
+            ThrowOnError(kzgResult);
+            return result;
+        }
+    }
+
+    /// <summary>
+    ///     Given a list of blobs and blob KZG proofs, verify that they correspond to the provided commitments.
+    /// </summary>
     /// <param name="blobs">Blobs as a flattened byte array</param>
     /// <param name="commitments">Commitments as a flattened byte array</param>
     /// <param name="proofs">Proofs as a flattened byte array</param>
     /// <param name="count">The number of blobs/commitments/proofs</param>
-    /// <param name="ts">Trusted setup settings</param>
-    /// <returns></returns>
-    [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    public unsafe static extern Ret VerifyBlobKzgProofBatch(bool* result, byte* blobs, byte* commitments_bytes, byte* proofs_bytes, int count, IntPtr ts);
-}
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    /// <returns>Verification result</returns>
+    public static unsafe bool VerifyBlobKzgProofBatch(ReadOnlySpan<byte> blobs, ReadOnlySpan<byte> commitments,
+        ReadOnlySpan<byte> proofs, int count, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(blobs, nameof(blobs), BytesPerBlob * count);
+        ThrowOnInvalidLength(commitments, nameof(proofs), BytesPerCommitment * count);
+        ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * count);
 
+        fixed (byte* blobsPtr = blobs, commitmentsPtr = commitments, proofsPtr = proofs)
+        {
+            KzgResult kzgResult =
+                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, count, ckzgSetup);
+            ThrowOnError(kzgResult);
+            return result;
+        }
+    }
+
+    #region Argument verification helpers
+    private static void ThrowOnError(KzgResult result)
+    {
+        switch (result)
+        {
+            case KzgResult.BadArgs: throw new ArgumentException();
+            case KzgResult.Malloc: throw new InsufficientMemoryException();
+            case KzgResult.Ok:
+                return;
+            default:
+                throw new ApplicationException("KZG returned unexpected result");
+        }
+    }
+
+    private static void ThrowOnUninitializedTrustedSetup(IntPtr ckzgSetup)
+    {
+        if (ckzgSetup == IntPtr.Zero)
+            throw new ArgumentException("Trusted setup is not initialized", nameof(ckzgSetup));
+    }
+
+    private static void ThrowOnInvalidLength(ReadOnlySpan<byte> data, string fieldName, int expectedLength)
+    {
+        if (data.Length != expectedLength)
+            throw new ArgumentException("Invalid data size", fieldName);
+    }
+    #endregion
+}
