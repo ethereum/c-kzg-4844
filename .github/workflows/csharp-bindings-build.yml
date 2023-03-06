@@ -23,7 +23,7 @@ jobs:
             location: linux-x64
             host: ubuntu-22.04
             ext: .so
-            reqs: 
+            reqs:
           - arch: aarch64-linux-gnu
             location: linux-arm64
             host: ubuntu-22.04
@@ -53,14 +53,14 @@ jobs:
     - name: Install requirements
       if: ${{ matrix.target.reqs }}
       run: ${{ matrix.target.reqs }}
-    - name: Build native library for ${{ matrix.target.location }} using native capabilties
-      run: make ckzg -C bindings/csharp EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}} 
+    - name: Build native library for ${{ matrix.target.location }} using native capabilities
+      run: make ckzg -C bindings/csharp EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
       with:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
-  
+
   build-ckzg-dotnet:
     runs-on: ubuntu-latest
     needs: build-ckzg

@@ -38,6 +38,7 @@ CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
 ifdef ARCH
 	CFLAGS += --target=$(ARCH)
+	BLST_CFLAGS += --target=$(ARCH)
 endif
 
 .PHONY: all
@@ -45,7 +46,7 @@ all: blst ckzg ckzg-dotnet
 
 .PHONY: blst
 blst:
-	cd ../../blst && $(BLST_BUILDSCRIPT)
+	cd ../../blst && $(BLST_BUILDSCRIPT) $(BLST_CFLAGS)
 
 .PHONY: ckzg
 ckzg: blst
