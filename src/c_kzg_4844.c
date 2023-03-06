@@ -1173,15 +1173,17 @@ out:
 }
 
 /**
- * Given a blob, return the KZG proof that is used to verify it against the
- * commitment.
+ * Given a blob and a commitment, return the KZG proof that is used to verify
+ * it against the commitment. This function does not verify that the commitment
+ * is correct with respect to the blob.
  *
- * @param[out] out        The resulting proof
- * @param[in]  blob       A blob
- * @param[in]  s          The trusted setup
+ * @param[out] out              The resulting proof
+ * @param[in]  blob             A blob
+ * @param[in]  commitment_bytes Commitment to verify
+ * @param[in]  s                The trusted setup
  */
 C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out, const Blob *blob, const KZGSettings *s
+    KZGProof *out, const Blob *blob, const Bytes48 *commitment_bytes, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1189,10 +1191,10 @@ C_KZG_RET compute_blob_kzg_proof(
     fr_t evaluation_challenge_fr;
     fr_t y;
 
-    ret = blob_to_polynomial(&polynomial, blob);
+    ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
 
-    ret = poly_to_kzg_commitment(&commitment_g1, &polynomial, s);
+    ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) goto out;
 
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
