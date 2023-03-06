@@ -57,7 +57,7 @@ public class CKZG4844JNITest {
 
     try {
       byte[] commitment = CKZG4844JNI.blobToKzgCommitment(test.getInput().getBlob());
-      assertArrayEquals(commitment, test.getOutput());
+      assertArrayEquals(test.getOutput(), commitment);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -70,7 +70,7 @@ public class CKZG4844JNITest {
 
     try {
       byte[] proof = CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
-      assertArrayEquals(proof, test.getOutput());
+      assertArrayEquals(test.getOutput(), proof);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -83,7 +83,7 @@ public class CKZG4844JNITest {
 
     try {
       byte[] proof = CKZG4844JNI.computeBlobKzgProof(test.getInput().getBlob());
-      assertArrayEquals(proof, test.getOutput());
+      assertArrayEquals(test.getOutput(), proof);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -101,7 +101,7 @@ public class CKZG4844JNITest {
               test.getInput().getZ(),
               test.getInput().getY(),
               test.getInput().getProof());
-      assertEquals(valid, test.getOutput());
+      assertEquals(test.getOutput(), valid);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -118,7 +118,7 @@ public class CKZG4844JNITest {
               test.getInput().getBlob(),
               test.getInput().getCommitment(),
               test.getInput().getProof());
-      assertEquals(valid, test.getOutput());
+      assertEquals(test.getOutput(), valid);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -137,7 +137,7 @@ public class CKZG4844JNITest {
               test.getInput().getCommitments(),
               test.getInput().getProofs(),
               count);
-      assertEquals(valid, test.getOutput());
+      assertEquals(test.getOutput(), valid);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
