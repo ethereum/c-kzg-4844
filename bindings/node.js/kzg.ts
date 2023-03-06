@@ -7,8 +7,8 @@ const fs = require("fs");
 
 export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
-export type KZGProof = Uint8Array; // 48 bytes
-export type KZGCommitment = Uint8Array; // 48 bytes
+export type KZGProof = Buffer; // 48 bytes
+export type KZGCommitment = Buffer; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
 
 type SetupHandle = Object;

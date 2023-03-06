@@ -73,8 +73,8 @@ const proofBadLength = randomBytes(BYTES_PER_PROOF - 1);
 const fieldElementValidLength = randomBytes(BYTES_PER_FIELD_ELEMENT);
 const fieldElementBadLength = randomBytes(BYTES_PER_FIELD_ELEMENT - 1);
 
-function bytesFromHex(hexstring: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(hexstring.slice(2), "hex"));
+function bytesFromHex(hexString: string): Buffer {
+  return Buffer.from(hexString.slice(2), "hex");
 }
 
 describe("C-KZG", () => {
@@ -93,7 +93,7 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
-        let commitment = new Uint8Array();
+        let commitment: Buffer;
         let blob = bytesFromHex(test.input.blob);
 
         try {
@@ -114,7 +114,7 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
-        let proof = new Uint8Array();
+        let proof: Buffer;
         let blob = bytesFromHex(test.input.blob);
         let z = bytesFromHex(test.input.z);
 
@@ -136,7 +136,7 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test = yaml.load(readFileSync(testFile, "ascii"));
 
-        let proof = new Uint8Array();
+        let proof: Buffer;
         let blob = bytesFromHex(test.input.blob);
 
         try {
