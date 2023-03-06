@@ -234,11 +234,11 @@ public class ReferenceTests
             try
             {
                 bool isCorrect = Ckzg.VerifyKzgProof(commitment, z, y, proof, _ts);
-                Assert.That(isCorrect, Is.EqualTo(test.Output ?? false));
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
             {
-                Assert.That(false, Is.EqualTo(test.Output ?? false));
+                Assert.That(test.Output, Is.EqualTo(null));
             }
         }
     }
@@ -278,11 +278,11 @@ public class ReferenceTests
             try
             {
                 bool isCorrect = Ckzg.VerifyBlobKzgProof(blob, commitment, proof, _ts);
-                Assert.That(isCorrect, Is.EqualTo(test.Output ?? false));
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
             {
-                Assert.That(false, Is.EqualTo(test.Output ?? false));
+                Assert.That(test.Output, Is.EqualTo(null));
             }
         }
     }
@@ -324,11 +324,11 @@ public class ReferenceTests
             try
             {
                 bool isCorrect = Ckzg.VerifyBlobKzgProofBatch(blobs, commitments, proofs, count, _ts);
-                Assert.That(isCorrect, Is.EqualTo(test.Output ?? false));
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
             {
-                Assert.That(false, Is.EqualTo(test.Output ?? false));
+                Assert.That(test.Output, Is.EqualTo(null));
             }
         }
     }
