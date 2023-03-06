@@ -1059,6 +1059,8 @@ static void test_is_power_of_two__fails_not_powers_of_two(void) {
 static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     C_KZG_RET ret;
     Blob blob;
+    Polynomial poly;
+    fr_t y_fr, z_fr;
     Bytes32 input_value, output_value, field_element, expected_output_value;
     Bytes48 proof, expected_proof;
     int diff;
@@ -1090,10 +1092,17 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     diff = memcmp(proof.bytes, expected_proof.bytes, sizeof(Bytes48));
     ASSERT_EQUALS(diff, 0);
 
-    bytes32_from_hex(
-        &expected_output_value,
-        "8cfb128b24f837438c85588256eaf18ed43e618c9a0ca7a2a4f6dfbd0154883f"
-    );
+    /* Get the expected y by evaluating the polynomial at input_value */
+    ret = blob_to_polynomial(&poly, &blob);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = bytes_to_bls_field(&z_fr, &input_value);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = evaluate_polynomial_in_evaluation_form(&y_fr, &poly, &z_fr, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    bytes_from_bls_field(&expected_output_value, &y_fr);
 
     /* Compare the computed y to the expected y */
     diff = memcmp(
