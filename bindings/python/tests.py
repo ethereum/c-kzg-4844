@@ -69,9 +69,10 @@ def test_compute_blob_kzg_proof(ts):
             test = yaml.safe_load(f)
 
         blob = bytes_from_hex(test["input"]["blob"])
+        commitment = bytes_from_hex(test["input"]["commitment"])
 
         try:
-            proof = ckzg.compute_blob_kzg_proof(blob, ts)
+            proof = ckzg.compute_blob_kzg_proof(blob, commitment, ts)
         except:
             assert test["output"] is None
             continue
