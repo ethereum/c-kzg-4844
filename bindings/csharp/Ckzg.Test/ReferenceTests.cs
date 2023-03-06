@@ -12,7 +12,7 @@ public class ReferenceTests
     public void Setup()
     {
         _ts = Ckzg.LoadTrustedSetup("trusted_setup.txt");
-        _deserializer = new DeserializerBuilder().WithNamingConvention(new CamelCaseNamingConvention()).Build();
+        _deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
     }
 
     [OneTimeTearDown]
