@@ -193,6 +193,20 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
     return NULL;
   }
 
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return NULL;
+  }
+
+  size_t z_bytes_size = (size_t)(*env)->GetArrayLength(env, z_bytes);
+  if (z_bytes_size != BYTES_PER_FIELD_ELEMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid z size.", z_bytes_size, BYTES_PER_FIELD_ELEMENT);
+    return NULL;
+  }
+
   Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
   Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
 
@@ -255,6 +269,34 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
     return 0;
   }
 
+  size_t commitment_bytes_size = (size_t)(*env)->GetArrayLength(env, commitment_bytes);
+  if (commitment_bytes_size != BYTES_PER_COMMITMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid commitment size.", commitment_bytes_size, BYTES_PER_COMMITMENT);
+    return 0;
+  }
+
+  size_t z_bytes_size = (size_t)(*env)->GetArrayLength(env, z_bytes);
+  if (z_bytes_size != BYTES_PER_FIELD_ELEMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid z size.", z_bytes_size, BYTES_PER_FIELD_ELEMENT);
+    return 0;
+  }
+
+  size_t y_bytes_size = (size_t)(*env)->GetArrayLength(env, y_bytes);
+  if (y_bytes_size != BYTES_PER_FIELD_ELEMENT)
+  {
+    throw_invalid_size_exception(env, "Invalid y size.", y_bytes_size, BYTES_PER_FIELD_ELEMENT);
+    return 0;
+  }
+
+  size_t proof_bytes_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
+  if (proof_bytes_size != BYTES_PER_PROOF)
+  {
+    throw_invalid_size_exception(env, "Invalid proof size.", proof_bytes_size, BYTES_PER_PROOF);
+    return 0;
+  }
+
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
   Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
   Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
@@ -300,7 +342,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   }
 
   size_t proof_bytes_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
-  if (proof_bytes_size != BYTES_PER_COMMITMENT)
+  if (proof_bytes_size != BYTES_PER_PROOF)
   {
     throw_invalid_size_exception(env, "Invalid proof size.", proof_bytes_size, BYTES_PER_PROOF);
     return 0;
