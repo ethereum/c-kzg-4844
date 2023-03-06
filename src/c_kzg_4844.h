@@ -149,7 +149,8 @@ C_KZG_RET blob_to_kzg_commitment(
 );
 
 C_KZG_RET compute_kzg_proof(
-    KZGProof *out,
+    KZGProof *proof_out,
+    Bytes32 *y_out,
     const Blob *blob,
     const Bytes32 *z_bytes,
     const KZGSettings *s
