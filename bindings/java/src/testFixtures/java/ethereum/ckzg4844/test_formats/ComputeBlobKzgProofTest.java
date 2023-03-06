@@ -1,8 +1,8 @@
-package ethereum.ckzg4844;
+package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class BlobToKzgCommitmentTest {
+public class ComputeBlobKzgProofTest {
   public static class Input {
     private String blob;
 

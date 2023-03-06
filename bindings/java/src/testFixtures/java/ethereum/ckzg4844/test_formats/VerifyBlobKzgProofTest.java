@@ -1,4 +1,4 @@
-package ethereum.ckzg4844;
+package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 

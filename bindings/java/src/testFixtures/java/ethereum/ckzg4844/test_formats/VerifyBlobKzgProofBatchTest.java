@@ -1,5 +1,6 @@
-package ethereum.ckzg4844;
+package ethereum.ckzg4844.test_formats;
 
+import ethereum.ckzg4844.TestUtils;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;

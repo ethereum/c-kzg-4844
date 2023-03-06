@@ -1,13 +1,18 @@
-package ethereum.ckzg4844;
+package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class ComputeBlobKzgProofTest {
+public class ComputeKzgProofTest {
   public static class Input {
     private String blob;
+    private String z;
 
     public byte[] getBlob() {
       return Bytes.fromHexString(blob).toArray();
+    }
+
+    public byte[] getZ() {
+      return Bytes.fromHexString(z).toArray();
     }
   }
 
