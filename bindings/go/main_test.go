@@ -123,7 +123,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 		Input struct {
 			Blob string `yaml:"blob"`
 		}
-		Output *string `yaml:"output"`
+		Output *Bytes48 `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
@@ -147,9 +147,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 		commitment, ret := BlobToKZGCommitment(blob)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			var output Bytes48
-			err = output.UnmarshalText([]byte(*test.Output))
-			require.Equal(t, output[:], commitment[:])
+			require.Equal(t, test.Output[:], commitment[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
@@ -162,7 +160,7 @@ func TestComputeKZGProof(t *testing.T) {
 			Blob string `yaml:"blob"`
 			Z    string `yaml:"z"`
 		}
-		Output *string `yaml:"output"`
+		Output *Bytes48 `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeKZGProofTests)
@@ -193,9 +191,7 @@ func TestComputeKZGProof(t *testing.T) {
 		proof, ret := ComputeKZGProof(blob, z)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			var output Bytes48
-			err = output.UnmarshalText([]byte(*test.Output))
-			require.Equal(t, output[:], proof[:])
+			require.Equal(t, test.Output[:], proof[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
@@ -207,7 +203,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 		Input struct {
 			Blob string `yaml:"blob"`
 		}
-		Output *string `yaml:"output"`
+		Output *Bytes48 `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
@@ -231,9 +227,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 		proof, ret := ComputeBlobKZGProof(blob)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			var output Bytes48
-			err = output.UnmarshalText([]byte(*test.Output))
-			require.Equal(t, output[:], proof[:])
+			require.Equal(t, test.Output[:], proof[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
