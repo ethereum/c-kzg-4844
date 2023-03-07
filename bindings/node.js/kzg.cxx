@@ -33,6 +33,14 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
   return env.Null();
 }
 
+KZGSettings *get_kzg_settings(const Napi::Env &env, const Napi::Value &val) {
+  if (!val.IsExternal()) {
+     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
+     return nullptr;
+  }
+  return val.As<Napi::External<KZGSettings>>().Data();
+}
+
 /**
  * Checks for:
  * - arg is Uint8Array or Buffer (inherits from Uint8Array)
@@ -140,8 +148,11 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
   if (argument_count != expected_argument_count) {
     return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
   }
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[0]);
+  if (kzg_settings == nullptr) {
+    return env.Null();
+  }
 
-  auto kzg_settings = info[0].As<Napi::External<KZGSettings>>().Data();
   free_trusted_setup(kzg_settings);
   free(kzg_settings);
   return env.Undefined();
@@ -167,10 +178,10 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   if (blob == nullptr) {
     return env.Null();
   }
-  if (!info[1].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[1]);
+  if (kzg_settings == nullptr) {
+    return env.Null();
   }
-  auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
 
   KZGCommitment commitment;
   C_KZG_RET ret = blob_to_kzg_commitment(&commitment, blob, kzg_settings);
@@ -208,12 +219,8 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   if (z_bytes == nullptr) {
     return env.Null();
   }
-  if (!info[2].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
-  }
-  auto kzg_settings = info[2].As<Napi::External<KZGSettings>>().Data();
-
-  if (env.IsExceptionPending()) {
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[2]);
+  if (kzg_settings == nullptr) {
     return env.Null();
   }
 
@@ -256,12 +263,8 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   if (blob == nullptr) {
     return env.Null();
   }
-  if (!info[1].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
-  }
-  auto kzg_settings = info[1].As<Napi::External<KZGSettings>>().Data();
-
-  if (env.IsExceptionPending()) {
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[1]);
+  if (kzg_settings == nullptr) {
     return env.Null();
   }
 
@@ -316,11 +319,8 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   if (proof_bytes == nullptr) {
     return env.Null();
   }
-  if (!info[4].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
-  }
-  auto kzg_settings = info[4].As<Napi::External<KZGSettings>>().Data();
-  if (env.IsExceptionPending()) {
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[4]);
+  if (kzg_settings == nullptr) {
     return env.Null();
   }
 
@@ -373,15 +373,11 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   if (proof_bytes == nullptr) {
     return env.Null();
   }
-  if (!info[3].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
-  }
-  auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
-
-  if (env.IsExceptionPending()) {
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[3]);
+  if (kzg_settings == nullptr) {
     return env.Null();
   }
-
+  
   bool out;
   C_KZG_RET ret = verify_blob_kzg_proof(
     &out,
@@ -431,10 +427,10 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Array blobs_param = info[0].As<Napi::Array>();
   Napi::Array commitments_param = info[1].As<Napi::Array>();
   Napi::Array proofs_param = info[2].As<Napi::Array>();
-  if (!info[3].IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
+  KZGSettings *kzg_settings = get_kzg_settings(env, info[3]);
+  if (kzg_settings == nullptr) {
+    return env.Null();
   }
-  auto kzg_settings = info[3].As<Napi::External<KZGSettings>>().Data();
   uint32_t count = blobs_param.Length();
   if (count != commitments_param.Length() || count != proofs_param.Length()) {
     Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
