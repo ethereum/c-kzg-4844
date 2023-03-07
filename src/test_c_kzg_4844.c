@@ -993,33 +993,6 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for log_2_byte
-///////////////////////////////////////////////////////////////////////////////
-
-static void test_log_2_byte__succeeds_expected_values(void) {
-    byte i = 0;
-    while (true) {
-        /*
-         * Corresponds to the index of the highest bit set in the byte.
-         * Adapted from
-         * https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog.
-         */
-        byte b = i;
-        int r, shift;
-        r = (b > 0xF) << 2;
-        b >>= r;
-        shift = (b > 0x3) << 1;
-        b >>= (shift + 1);
-        r |= shift | b;
-
-        ASSERT_EQUALS(r, log_2_byte(i));
-
-        if (i == 255) break;
-        i += 1;
-    }
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Tests for log2_pow2
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1823,7 +1796,6 @@ int main(void) {
     RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range
     );
     RUN(test_evaluate_polynomial_in_evaluation_form__random_polynomial);
-    RUN(test_log_2_byte__succeeds_expected_values);
     RUN(test_log2_pow2__succeeds_expected_values);
     RUN(test_is_power_of_two__succeeds_powers_of_two);
     RUN(test_is_power_of_two__fails_not_powers_of_two);

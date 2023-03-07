@@ -216,24 +216,6 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Fast log base 2 of a byte.
- *
- * @param[in] b A non-zero byte
- *
- * @return The index of the highest set bit
- */
-static int log_2_byte(byte b) {
-    if (b < 2) return 0;
-    if (b < 4) return 1;
-    if (b < 8) return 2;
-    if (b < 16) return 3;
-    if (b < 32) return 4;
-    if (b < 64) return 5;
-    if (b < 128) return 6;
-    return 7;
-}
-
-/**
  * Test whether the operand is one in the finite field.
  *
  * @param[in] p The field element to be checked
@@ -352,9 +334,6 @@ out:
 /**
  * Multiply a G1 group element by a field element.
  *
- * This "undoes" the Blst constant-timedness. FFTs do a lot of multiplication by
- * one, so constant time is rather slow.
- *
  * @param[out] out [@p b]@p a
  * @param[in]  a   The G1 group element
  * @param[in]  b   The multiplier
@@ -362,19 +341,7 @@ out:
 static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
-
-    // Count the number of bytes to be multiplied.
-    int i = sizeof(blst_scalar);
-    while (i && !s.b[i - 1])
-        --i;
-    if (i == 0) {
-        *out = G1_IDENTITY;
-    } else if (i == 1 && s.b[0] == 1) {
-        *out = *a;
-    } else {
-        // Count the number of bits to be multiplied.
-        blst_p1_mult(out, a, s.b, 8 * i - 7 + log_2_byte(s.b[i - 1]));
-    }
+    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
 /**
@@ -1533,7 +1500,12 @@ static void fft_g1_fast(
         );
         for (uint64_t i = 0; i < half; i++) {
             g1_t y_times_root;
-            g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            if (fr_is_one(&roots[i * roots_stride])) {
+                /* Don't do the scalar multiplication if the scalar is one */
+                y_times_root = out[i + half];
+            } else {
+                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            }
             g1_sub(&out[i + half], &out[i], &y_times_root);
             blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
