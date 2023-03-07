@@ -249,14 +249,6 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
     return NULL;
   }
 
-  /*
-  jobject tuple = env->AllocObject(tupleClass);
-  jfieldID nameField = env->GetFieldID(tuple, "name", "[B");
-  jfieldID balanceField = env->GetFieldID(userDataClass, "balance", "[B");
-  env->SetObjectField(newUserData, nameField, name);
-  env->SetDoubleField(newUserData, balanceField, balance);
-  */
-
   return tuple;
 }
 
