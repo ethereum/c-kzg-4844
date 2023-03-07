@@ -121,9 +121,9 @@ var (
 func TestBlobToKZGCommitment(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blob Blob `yaml:"blob"`
+			Blob string `yaml:"blob"`
 		}
-		Output *Bytes48 `yaml:"output"`
+		Output *string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
@@ -137,10 +137,19 @@ func TestBlobToKZGCommitment(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		commitment, ret := BlobToKZGCommitment(test.Input.Blob)
+		var blob Blob
+		err = blob.UnmarshalText([]byte(test.Input.Blob))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		commitment, ret := BlobToKZGCommitment(blob)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], commitment[:])
+			var output Bytes48
+			err = output.UnmarshalText([]byte(*test.Output))
+			require.Equal(t, output[:], commitment[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
@@ -150,10 +159,10 @@ func TestBlobToKZGCommitment(t *testing.T) {
 func TestComputeKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blob Blob    `yaml:"blob"`
-			Z    Bytes32 `yaml:"z"`
+			Blob string `yaml:"blob"`
+			Z    string `yaml:"z"`
 		}
-		Output *Bytes48 `yaml:"output"`
+		Output *string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeKZGProofTests)
@@ -167,10 +176,26 @@ func TestComputeKZGProof(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.Z)
+		var blob Blob
+		err = blob.UnmarshalText([]byte(test.Input.Blob))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var z Bytes32
+		err = z.UnmarshalText([]byte(test.Input.Z))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		proof, ret := ComputeKZGProof(blob, z)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], proof[:])
+			var output Bytes48
+			err = output.UnmarshalText([]byte(*test.Output))
+			require.Equal(t, output[:], proof[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
@@ -180,9 +205,9 @@ func TestComputeKZGProof(t *testing.T) {
 func TestComputeBlobKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blob Blob `yaml:"blob"`
+			Blob string `yaml:"blob"`
 		}
-		Output *Bytes48 `yaml:"output"`
+		Output *string `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
@@ -196,10 +221,19 @@ func TestComputeBlobKZGProof(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		proof, ret := ComputeBlobKZGProof(test.Input.Blob)
+		var blob Blob
+		err = blob.UnmarshalText([]byte(test.Input.Blob))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		proof, ret := ComputeBlobKZGProof(blob)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], proof[:])
+			var output Bytes48
+			err = output.UnmarshalText([]byte(*test.Output))
+			require.Equal(t, output[:], proof[:])
 		} else {
 			require.Nil(t, test.Output)
 		}
@@ -209,10 +243,10 @@ func TestComputeBlobKZGProof(t *testing.T) {
 func TestVerifyKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Commitment Bytes48 `yaml:"commitment"`
-			Z          Bytes32 `yaml:"z"`
-			Y          Bytes32 `yaml:"y"`
-			Proof      Bytes48 `yaml:"proof"`
+			Commitment string `yaml:"commitment"`
+			Z          string `yaml:"z"`
+			Y          string `yaml:"y"`
+			Proof      string `yaml:"proof"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -228,11 +262,35 @@ func TestVerifyKZGProof(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		valid, ret := VerifyKZGProof(
-			test.Input.Commitment,
-			test.Input.Z,
-			test.Input.Y,
-			test.Input.Proof)
+		var commitment Bytes48
+		err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var z Bytes32
+		err = z.UnmarshalText([]byte(test.Input.Z))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var y Bytes32
+		err = y.UnmarshalText([]byte(test.Input.Y))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var proof Bytes48
+		err = proof.UnmarshalText([]byte(test.Input.Proof))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		valid, ret := VerifyKZGProof(commitment, z, y, proof)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
 			require.Equal(t, *test.Output, valid)
@@ -245,9 +303,9 @@ func TestVerifyKZGProof(t *testing.T) {
 func TestVerifyBlobKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blob       Blob    `yaml:"blob"`
-			Commitment Bytes48 `yaml:"commitment"`
-			Proof      Bytes48 `yaml:"proof"`
+			Blob       string `yaml:"blob"`
+			Commitment string `yaml:"commitment"`
+			Proof      string `yaml:"proof"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -263,10 +321,28 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		valid, ret := VerifyBlobKZGProof(
-			test.Input.Blob,
-			test.Input.Commitment,
-			test.Input.Proof)
+		var blob Blob
+		err = blob.UnmarshalText([]byte(test.Input.Blob))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var commitment Bytes48
+		err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		var proof Bytes48
+		err = proof.UnmarshalText([]byte(test.Input.Proof))
+		if err != nil {
+			require.Nil(t, test.Output)
+			continue
+		}
+
+		valid, ret := VerifyBlobKZGProof(blob, commitment, proof)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
 			require.Equal(t, *test.Output, valid)
@@ -279,9 +355,9 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
-			Blobs       []Blob    `yaml:"blobs"`
-			Commitments []Bytes48 `yaml:"commitments"`
-			Proofs      []Bytes48 `yaml:"proofs"`
+			Blobs       []string `yaml:"blobs"`
+			Commitments []string `yaml:"commitments"`
+			Proofs      []string `yaml:"proofs"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -297,10 +373,40 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 		require.NoError(t, testFile.Close())
 		require.NoError(t, err)
 
-		valid, ret := VerifyBlobKZGProofBatch(
-			test.Input.Blobs,
-			test.Input.Commitments,
-			test.Input.Proofs)
+		var blobs []Blob
+		for _, b := range test.Input.Blobs {
+			var blob Blob
+			err = blob.UnmarshalText([]byte(b))
+			if err != nil {
+				require.Nil(t, test.Output)
+				continue
+			}
+			blobs = append(blobs, blob)
+		}
+
+		var commitments []Bytes48
+		for _, c := range test.Input.Commitments {
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(c))
+			if err != nil {
+				require.Nil(t, test.Output)
+				continue
+			}
+			commitments = append(commitments, commitment)
+		}
+
+		var proofs []Bytes48
+		for _, p := range test.Input.Proofs {
+			var proof Bytes48
+			err = proof.UnmarshalText([]byte(p))
+			if err != nil {
+				require.Nil(t, test.Output)
+				continue
+			}
+			proofs = append(proofs, proof)
+		}
+
+		valid, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 		if ret == C_KZG_OK {
 			require.NotNil(t, test.Output)
 			require.Equal(t, *test.Output, valid)
