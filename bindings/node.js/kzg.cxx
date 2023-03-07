@@ -49,7 +49,6 @@ public:
     exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof, "verifyKzgProof", this);
     exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof, "verifyBlobKzgProof", this);
     exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch", this);
-    env.SetInstanceData(this);
   }
 
   ~KzgBindings() {
