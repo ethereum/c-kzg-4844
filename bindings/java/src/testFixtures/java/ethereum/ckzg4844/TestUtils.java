@@ -61,7 +61,7 @@ public class TestUtils {
   }
 
   public static byte[] createRandomProof() {
-    return CKZG4844JNI.computeBlobKzgProof(createRandomBlob());
+    return CKZG4844JNI.computeBlobKzgProof(createRandomBlob(), createRandomCommitment());
   }
 
   public static byte[] createRandomProofs(final int count) {

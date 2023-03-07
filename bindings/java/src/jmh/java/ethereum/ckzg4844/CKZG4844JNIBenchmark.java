@@ -53,10 +53,12 @@ public class CKZG4844JNIBenchmark {
   @State(Scope.Benchmark)
   public static class ComputeBlobKzgProofState {
     private byte[] blob;
+    private byte[] commitment;
 
     @Setup(Level.Iteration)
     public void setUp() {
       blob = TestUtils.createRandomBlob();
+      commitment = TestUtils.createRandomCommitment();
     }
   }
 
@@ -123,13 +125,13 @@ public class CKZG4844JNIBenchmark {
   }
 
   @Benchmark
-  public byte[] computeKzgProof(final ComputeKzgProofState state) {
+  public Tuple computeKzgProof(final ComputeKzgProofState state) {
     return CKZG4844JNI.computeKzgProof(state.blob, state.z);
   }
 
   @Benchmark
   public byte[] computeBlobKzgProof(final ComputeBlobKzgProofState state) {
-    return CKZG4844JNI.computeBlobKzgProof(state.blob);
+    return CKZG4844JNI.computeBlobKzgProof(state.blob, state.commitment);
   }
 
   @Benchmark

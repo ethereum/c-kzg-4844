@@ -156,19 +156,20 @@ public class CKZG4844JNI {
    *
    * @param blob blob bytes
    * @param z_bytes a point
-   * @return the proof
+   * @return A tuple of proof and y
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeKzgProof(byte[] blob, byte[] z_bytes);
+  public static native Tuple computeKzgProof(byte[] blob, byte[] z_bytes);
 
   /**
    * Given a blob, return the KZG proof that is used to verify it against the commitment
    *
    * @param blob blob bytes
+   * @param commitment_bytes commitment bytes
    * @return the aggregated proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeBlobKzgProof(byte[] blob);
+  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitment_bytes);
 
   /**
    * Verify the proof by point evaluation for the given commitment
