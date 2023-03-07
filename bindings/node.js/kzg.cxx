@@ -72,7 +72,7 @@ private:
 };
 
 /**
- * Get kzg_settings from a bindings instance data
+ * Get kzg_settings from bindings instance data
  * 
  * Checks for:
  * - loadTrustedSetup has been run
