@@ -129,21 +129,22 @@ func TestBlobToKZGCommitment(t *testing.T) {
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		commitment, ret := BlobToKZGCommitment(test.Input.Blob)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], commitment[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+			commitment, ret := BlobToKZGCommitment(test.Input.Blob)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, test.Output[:], commitment[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -159,21 +160,22 @@ func TestComputeKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.Z)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], proof[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+			proof, ret := ComputeKZGProof(test.Input.Blob, test.Input.Z)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, test.Output[:], proof[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -188,21 +190,22 @@ func TestComputeBlobKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		proof, ret := ComputeBlobKZGProof(test.Input.Blob)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], proof[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+			proof, ret := ComputeBlobKZGProof(test.Input.Blob)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, test.Output[:], proof[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -220,25 +223,26 @@ func TestVerifyKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(verifyKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		valid, ret := VerifyKZGProof(
-			test.Input.Commitment,
-			test.Input.Z,
-			test.Input.Y,
-			test.Input.Proof)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyKZGProof(
+				test.Input.Commitment,
+				test.Input.Z,
+				test.Input.Y,
+				test.Input.Proof)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -255,24 +259,25 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		valid, ret := VerifyBlobKZGProof(
-			test.Input.Blob,
-			test.Input.Commitment,
-			test.Input.Proof)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyBlobKZGProof(
+				test.Input.Blob,
+				test.Input.Commitment,
+				test.Input.Proof)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -289,24 +294,25 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		valid, ret := VerifyBlobKZGProofBatch(
-			test.Input.Blobs,
-			test.Input.Commitments,
-			test.Input.Proofs)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyBlobKZGProofBatch(
+				test.Input.Blobs,
+				test.Input.Commitments,
+				test.Input.Proofs)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
