@@ -74,7 +74,6 @@ public class CKZG4844JNITest {
       assertArrayEquals(test.getOutput().getFirst(), tuple.getFirst());
       assertArrayEquals(test.getOutput().getSecond(), tuple.getSecond());
     } catch (CKZGException ex) {
-      System.out.println(ex);
       assertNull(test.getOutput());
     }
   }
