@@ -33,6 +33,25 @@ Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, s
   return env.Null();
 }
 
+/**
+ * Get kzg_settings from a Napi::External
+ * 
+ * Checks for:
+ * - arg IsExternal
+ * 
+ * Built to pass in a raw Napi::Value so it can be used like
+ * `get_kzg_settings(env, info[0])`.
+ * 
+ * Designed to raise the correct javascript exception and return a
+ * valid pointer to the calling context to avoid native stack-frame
+ * unwinds.  Calling context can check for `nullptr` to see if an
+ * exception was raised or a valid pointer was returned from V8.
+ * 
+ * @param[in] env    Passed from calling context
+ * @param[in] val    Napi::Value to validate and get pointer from
+ * 
+ * @return - Pointer to the KZGSettings
+ */
 KZGSettings *get_kzg_settings(const Napi::Env &env, const Napi::Value &val) {
   if (!val.IsExternal()) {
      Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
