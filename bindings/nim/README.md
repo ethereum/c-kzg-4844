@@ -20,7 +20,7 @@ Dependencies:
 
 ```
 nimble install unittest2
-nimble intall yaml
+nimble install yaml
 ```
 
 Run the tests from folder `bindings\nim`:
