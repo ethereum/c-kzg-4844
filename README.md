@@ -35,6 +35,7 @@ There are bindings for the following languages:
 | Node.js  | [README](bindings/node.js/README.md) |
 | Python   | [README](bindings/python/README.md)  |
 | Rust     | [README](bindings/rust/README.md)    |
+| Nim      | [README](bindings/nim/README.md)     |
 
 ## Installation
 
