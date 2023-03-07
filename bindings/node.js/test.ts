@@ -7,7 +7,6 @@ const yaml = require("js-yaml");
 
 import {
   loadTrustedSetup,
-  freeTrustedSetup,
   blobToKzgCommitment,
   computeKzgProof,
   computeBlobKzgProof,
@@ -18,7 +17,6 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  transformTrustedSetupJSON,
 } from "./kzg";
 
 const setupFileName = "testing_trusted_setups.json";
@@ -79,12 +77,7 @@ function bytesFromHex(hexString: string): Buffer {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    const file = await transformTrustedSetupJSON(SETUP_FILE_PATH);
-    loadTrustedSetup(file);
-  });
-
-  afterAll(() => {
-    freeTrustedSetup();
+    loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe("reference tests should pass", () => {

@@ -9,55 +9,91 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-Napi::Value throw_invalid_arguments_count(
-  const unsigned int expected,
-  const unsigned int actual,
-  const Napi::Env env
-) {
-  Napi::RangeError::New(
-    env,
-    "Wrong number of arguments. Expected: "
-    + std::to_string(expected)
-    + ", received " + std::to_string(actual)
-  ).ThrowAsJavaScriptException();
+Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info);
+Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info);
+Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info);
+Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info);
+Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info);
+Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info);
+Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info);
 
-  return env.Null();
-}
+class KzgBindings : public Napi::Addon<KzgBindings>
+{
+public:
+  size_t _bytes_per_blob;
+  size_t _bytes_per_commitment;
+  size_t _bytes_per_field_element;
+  size_t _bytes_per_proof;
+  size_t _field_elements_per_blob;
+  std::unique_ptr<KZGSettings> _settings;
 
-Napi::Value throw_invalid_argument_type(const Napi::Env env, std::string name, std::string expectedType) {
-  Napi::TypeError::New(
-    env,
-    "Invalid argument type: " + name + ". Expected " + expectedType
-  ).ThrowAsJavaScriptException();
+  KzgBindings(Napi::Env env, Napi::Object exports) :
+    _bytes_per_blob{BYTES_PER_BLOB},
+    _bytes_per_commitment{BYTES_PER_COMMITMENT},
+    _bytes_per_field_element{BYTES_PER_FIELD_ELEMENT},
+    _bytes_per_proof{BYTES_PER_PROOF},
+    _field_elements_per_blob{FIELD_ELEMENTS_PER_BLOB},
+    _settings{std::make_unique<KZGSettings>()},
+    _is_setup{false} {
+    DefineAddon(exports, {
+      InstanceValue("BYTES_PER_BLOB", Napi::Number::New(env, _bytes_per_blob), napi_enumerable),
+      InstanceValue("BYTES_PER_COMMITMENT", Napi::Number::New(env, _bytes_per_commitment), napi_enumerable),
+      InstanceValue("BYTES_PER_FIELD_ELEMENT", Napi::Number::New(env, _bytes_per_field_element), napi_enumerable),
+      InstanceValue("BYTES_PER_PROOF", Napi::Number::New(env, _bytes_per_proof), napi_enumerable),
+      InstanceValue("FIELD_ELEMENTS_PER_BLOB", Napi::Number::New(env, _field_elements_per_blob), napi_enumerable)
+    });
+    exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup, "setup", this);
+    exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment, "blobToKzgCommitment", this);
+    exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof, "computeKzgProof", this);
+    exports["computeBlobKzgProof"] = Napi::Function::New(env, ComputeBlobKzgProof, "computeBlobKzgProof", this);
+    exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof, "verifyKzgProof", this);
+    exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof, "verifyBlobKzgProof", this);
+    exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch", this);
+    env.SetInstanceData(this);
+  }
 
-  return env.Null();
-}
+  ~KzgBindings() {
+    if (_is_setup) {
+      free_trusted_setup(_settings.get());
+      _is_setup = false;
+    }
+  }
+
+  KzgBindings(KzgBindings &&source) = delete;
+  KzgBindings(const KzgBindings &source) = delete;
+  KzgBindings &operator=(KzgBindings &&source) = delete;
+  KzgBindings &operator=(const KzgBindings &source) = delete;
+
+  bool IsSetup() { return _is_setup; };
+
+private:
+  friend Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info);
+  bool _is_setup;
+};
 
 /**
- * Get kzg_settings from a Napi::External
+ * Get kzg_settings from a bindings instance data
  * 
  * Checks for:
- * - arg IsExternal
- * 
- * Built to pass in a raw Napi::Value so it can be used like
- * `get_kzg_settings(env, info[0])`.
+ * - loadTrustedSetup has been run
  * 
  * Designed to raise the correct javascript exception and return a
  * valid pointer to the calling context to avoid native stack-frame
  * unwinds.  Calling context can check for `nullptr` to see if an
- * exception was raised or a valid pointer was returned from V8.
+ * exception was raised or a valid KZGSettings was returned.
  * 
  * @param[in] env    Passed from calling context
  * @param[in] val    Napi::Value to validate and get pointer from
  * 
  * @return - Pointer to the KZGSettings
  */
-KZGSettings *get_kzg_settings(const Napi::Env &env, const Napi::Value &val) {
-  if (!val.IsExternal()) {
-     Napi::TypeError::New(env, "Must pass setupHandle as the last function argument").ThrowAsJavaScriptException();
-     return nullptr;
+KZGSettings *get_kzg_settings(const Napi::Env &env, const Napi::CallbackInfo &info) {
+  KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+  if (!bindings->IsSetup()) {
+      Napi::Error::New(env, "Must run loadTrustedSetup before running any other c-kzg functions").ThrowAsJavaScriptException();
+      return nullptr;
   }
-  return val.As<Napi::External<KZGSettings>>().Data();
+  return bindings->_settings.get();
 }
 
 /**
@@ -118,62 +154,26 @@ inline Bytes48 *get_bytes48(const Napi::Env &env, const Napi::Value &val, std::s
   return reinterpret_cast<Bytes48 *>(get_bytes(env, val, BYTES_PER_COMMITMENT, name));
 }
 
-// loadTrustedSetup: (filePath: string) => SetupHandle;
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 1;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
+  Napi::Env env = info.Env();
+  KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
+  if (bindings->IsSetup()) {
+      // QUESTION: Should this throw for re-setup or just ignore like it is?
+      // Napi::Error::New(env, "kzg bindings are already setup").ThrowAsJavaScriptException();
+      return env.Undefined();
   }
-
-  if (!info[0].IsString()) {
-    return throw_invalid_argument_type(env, "filePath", "string");
+  // the validation checks for this happen in JS
+  const std::string file_path = info[0].As<Napi::String>().Utf8Value();
+  FILE *file_handle = fopen(file_path.c_str(), "r");
+  if (file_handle == NULL) {
+      Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
+      return env.Undefined();
   }
-
-  const std::string file_path = info[0].ToString().Utf8Value();
-
-  KZGSettings* kzg_settings = (KZGSettings*)malloc(sizeof(KZGSettings));
-
-  if (kzg_settings == NULL) {
-    Napi::Error::New(env, "Error while allocating memory for KZG settings").ThrowAsJavaScriptException();
-    return env.Null();
+  if (load_trusted_setup_file(bindings->_settings.get(), file_handle) != C_KZG_OK) {
+      Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
+      return env.Undefined();
   }
-
-  FILE* f = fopen(file_path.c_str(), "r");
-
-  if (f == NULL) {
-    free(kzg_settings);
-    Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
-    return env.Null();
-  }
-
-  if (load_trusted_setup_file(kzg_settings, f) != C_KZG_OK) {
-    free(kzg_settings);
-    Napi::Error::New(env, "Error loading trusted setup file").ThrowAsJavaScriptException();
-    return env.Null();
-  }
-
-  return Napi::External<KZGSettings>::New(info.Env(), kzg_settings);
-}
-
-// freeTrustedSetup: (setupHandle: SetupHandle) => void;
-Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
-  auto env = info.Env();
-
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 1;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[0]);
-  if (kzg_settings == nullptr) {
-    return env.Null();
-  }
-
-  free_trusted_setup(kzg_settings);
-  free(kzg_settings);
+  bindings->_is_setup = true;
   return env.Undefined();
 }
 
@@ -188,16 +188,11 @@ Napi::Value FreeTrustedSetup(const Napi::CallbackInfo& info) {
  */
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 2;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Null();
   }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[1]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -225,11 +220,6 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
  */
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 3;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Null();
@@ -238,7 +228,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   if (z_bytes == nullptr) {
     return env.Null();
   }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[2]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -273,16 +263,11 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
  */
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 2;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
     return env.Null();
   }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[1]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -317,11 +302,6 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
  */
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 5;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
   if (commitment_bytes == nullptr) {
     return env.Null();
@@ -338,7 +318,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   if (proof_bytes == nullptr) {
     return env.Null();
   }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[4]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -375,11 +355,6 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
  */
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 4;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   Blob *blob_bytes = get_blob(env, info[0]);
   if (blob_bytes == nullptr) {
     return env.Null();
@@ -392,7 +367,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   if (proof_bytes == nullptr) {
     return env.Null();
   }
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[3]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -429,11 +404,6 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
  */
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  size_t argument_count = info.Length();
-  size_t expected_argument_count = 4;
-  if (argument_count != expected_argument_count) {
-    return throw_invalid_arguments_count(expected_argument_count, argument_count, env);
-  }
   C_KZG_RET ret;
   Blob *blobs = NULL;
   Bytes48 *commitments = NULL;
@@ -446,7 +416,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Array blobs_param = info[0].As<Napi::Array>();
   Napi::Array commitments_param = info[1].As<Napi::Array>();
   Napi::Array proofs_param = info[2].As<Napi::Array>();
-  KZGSettings *kzg_settings = get_kzg_settings(env, info[3]);
+  KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
   }
@@ -516,25 +486,4 @@ out:
   return result;
 }
 
-Napi::Object Init(Napi::Env env, Napi::Object exports) {
-  // Functions
-  exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup);
-  exports["freeTrustedSetup"] = Napi::Function::New(env, FreeTrustedSetup);
-  exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment);
-  exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof);
-  exports["computeBlobKzgProof"] = Napi::Function::New(env, ComputeBlobKzgProof);
-  exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof);
-  exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof);
-  exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch);
-
-  // Constants
-  exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
-  exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, BYTES_PER_COMMITMENT);
-  exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
-  exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
-  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
-
-  return exports;
-}
-
-NODE_API_MODULE(addon, Init)
+NODE_API_ADDON(KzgBindings)
