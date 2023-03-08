@@ -13,6 +13,7 @@ export type Blob = Uint8Array; // 4096 * 32 bytes
 
 type SetupHandle = Object;
 
+export type ComputationProof = [KZGProof, Bytes32];
 // The C++ native addon interface
 type KZG = {
   BYTES_PER_BLOB: number;
@@ -31,9 +32,13 @@ type KZG = {
     blob: Blob,
     zBytes: Bytes32,
     setupHandle: SetupHandle,
-  ) => KZGProof;
+  ) => ComputationProof;
 
-  computeBlobKzgProof: (blob: Blob, setupHandle: SetupHandle) => KZGProof;
+  computeBlobKzgProof: (
+    blob: Blob,
+    commitmentBytes: Bytes48,
+    setupHandle: SetupHandle,
+  ) => KZGProof;
 
   verifyKzgProof: (
     commitmentBytes: Bytes48,
@@ -141,11 +146,12 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment {
  * @param {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param {Bytes32} zBytes - The generator z-value for the evaluation points
  *
- * @return {KZGProof} - The resulting proof
+ * @return {ComputationProof} - Tuple containing the resulting proof and evaluation
+ *                              of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
+export function computeKzgProof(blob: Blob, zBytes: Bytes32): ComputationProof {
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
@@ -153,14 +159,18 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
  *
- * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ * @param {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes48} commitmentBytes - Commitment to verify
  *
  * @return {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeBlobKzgProof(blob: Blob): KZGProof {
-  return kzg.computeBlobKzgProof(blob, requireSetupHandle());
+export function computeBlobKzgProof(
+  blob: Blob,
+  commitmentBytes: Bytes48,
+): KZGProof {
+  return kzg.computeBlobKzgProof(blob, commitmentBytes, requireSetupHandle());
 }
 
 /**
