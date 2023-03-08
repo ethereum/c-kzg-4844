@@ -233,21 +233,21 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
   jclass tupleClass = (*env)->FindClass(env, "ethereum/ckzg4844/Tuple");
   if (tupleClass == NULL)
   {
-    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to find Tuple class.");
+    throw_exception(env, "Failed to find Tuple class.");
     return NULL;
   }
 
   jmethodID tupleConstructor = (*env)->GetMethodID(env, tupleClass, "<init>", "([B[B)V");
   if (tupleConstructor == NULL)
   {
-    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to find Tuple constructor.");
+    throw_exception(env, "Failed to find Tuple constructor.");
     return NULL;
   }
 
   jobject tuple = (*env)->NewObject(env, tupleClass, tupleConstructor, proof, y);
   if (tuple == NULL)
   {
-    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to instantiate new Tuple.");
+    throw_exception(env, "Failed to instantiate new Tuple.");
     return NULL;
   }
 
