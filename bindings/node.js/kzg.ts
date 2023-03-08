@@ -7,8 +7,8 @@ const fs = require("fs");
 
 export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
-export type KZGProof = Uint8Array; // 48 bytes
-export type KZGCommitment = Uint8Array; // 48 bytes
+export type KZGProof = Buffer; // 48 bytes
+export type KZGCommitment = Buffer; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
 
 type SetupHandle = Object;
@@ -81,62 +81,6 @@ function requireSetupHandle(): SetupHandle {
   return setupHandle;
 }
 
-function checkBlob(blob: Blob) {
-  if (!(blob instanceof Uint8Array)) {
-    throw new Error("Expected blob to be a UInt8Array.");
-  }
-  if (blob.length != BYTES_PER_BLOB) {
-    throw new Error(`Expected blob to be ${BYTES_PER_BLOB} bytes.`);
-  }
-}
-
-function checkBlobs(blobs: Blob[]) {
-  for (let blob of blobs) {
-    checkBlob(blob);
-  }
-}
-
-function checkCommitment(commitment: KZGCommitment) {
-  if (!(commitment instanceof Uint8Array)) {
-    throw new Error("Expected commitment to be a UInt8Array.");
-  }
-  if (commitment.length != BYTES_PER_COMMITMENT) {
-    throw new Error(`Expected commitment to be ${BYTES_PER_COMMITMENT} bytes.`);
-  }
-}
-
-function checkCommitments(commitments: KZGCommitment[]) {
-  for (let commitment of commitments) {
-    checkCommitment(commitment);
-  }
-}
-
-function checkProof(proof: KZGProof) {
-  if (!(proof instanceof Uint8Array)) {
-    throw new Error("Expected proof to be a UInt8Array.");
-  }
-  if (proof.length != BYTES_PER_PROOF) {
-    throw new Error(`Expected proof to be ${BYTES_PER_PROOF} bytes.`);
-  }
-}
-
-function checkProofs(proofs: KZGProof[]) {
-  for (let proof of proofs) {
-    checkProof(proof);
-  }
-}
-
-function checkFieldElement(field: Bytes32) {
-  if (!(field instanceof Uint8Array)) {
-    throw new Error("Expected field element to be a UInt8Array.");
-  }
-  if (field.length != BYTES_PER_FIELD_ELEMENT) {
-    throw new Error(
-      `Expected field element to be ${BYTES_PER_FIELD_ELEMENT} bytes.`,
-    );
-  }
-}
-
 export async function transformTrustedSetupJSON(
   filePath: string,
 ): Promise<string> {
@@ -178,32 +122,65 @@ export function freeTrustedSetup(): void {
   setupHandle = undefined;
 }
 
+/**
+ * Convert a blob to a KZG commitment.
+ *
+ * @param {Blob} blob - The blob representing the polynomial to be committed to
+ *
+ * @return {KZGCommitment} - The resulting commitment
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
-  checkBlob(blob);
   return kzg.blobToKzgCommitment(blob, requireSetupHandle());
 }
 
+/**
+ * Compute KZG proof for polynomial in Lagrange form at position z.
+ *
+ * @param {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes32} zBytes - The generator z-value for the evaluation points
+ *
+ * @return {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): KZGProof {
-  checkBlob(blob);
-  checkFieldElement(zBytes);
   return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
 }
 
+/**
+ * Given a blob, return the KZG proof that is used to verify it against the
+ * commitment.
+ *
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
+ *
+ * @return {KZGProof} - The resulting proof
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function computeBlobKzgProof(blob: Blob): KZGProof {
-  checkBlob(blob);
   return kzg.computeBlobKzgProof(blob, requireSetupHandle());
 }
 
+/**
+ * Verify a KZG poof claiming that `p(z) == y`.
+ *
+ * @param {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
+ * @param {Bytes32} zBytes - The serialized evaluation point
+ * @param {Bytes32} yBytes - The serialized claimed evaluation result
+ * @param {Bytes48} proofBytes - The serialized KZG proof
+ *
+ * @return {boolean} - true/false depending on proof validity
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function verifyKzgProof(
   commitmentBytes: Bytes48,
   zBytes: Bytes32,
   yBytes: Bytes32,
   proofBytes: Bytes48,
 ): boolean {
-  checkCommitment(commitmentBytes);
-  checkFieldElement(zBytes);
-  checkFieldElement(yBytes);
-  checkProof(proofBytes);
   return kzg.verifyKzgProof(
     commitmentBytes,
     zBytes,
@@ -213,14 +190,23 @@ export function verifyKzgProof(
   );
 }
 
+/**
+ * Given a blob and its proof, verify that it corresponds to the provided
+ * commitment.
+ *
+ * @param {Blob}    blob - The serialized blob to verify
+ * @param {Bytes48} commitmentBytes - The serialized commitment to verify
+ * @param {Bytes48} proofBytes - The serialized KZG proof for verification
+ *
+ * @return {boolean} - true/false depending on proof validity
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function verifyBlobKzgProof(
   blob: Blob,
   commitmentBytes: Bytes48,
   proofBytes: Bytes48,
 ): boolean {
-  checkBlob(blob);
-  checkCommitment(commitmentBytes);
-  checkProof(proofBytes);
   return kzg.verifyBlobKzgProof(
     blob,
     commitmentBytes,
@@ -229,14 +215,25 @@ export function verifyBlobKzgProof(
   );
 }
 
+/**
+ * Given an array of blobs and their proofs, verify that they corresponds to their
+ * provided commitment.
+ *
+ * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
+ *
+ * @param {Blob}    blobs - An array of serialized blobs to verify
+ * @param {Bytes48} commitmentBytes - An array of serialized commitments to verify
+ * @param {Bytes48} proofBytes - An array of serialized KZG proofs for verification
+ *
+ * @return {boolean} - true/false depending on batch validity
+ *
+ * @throws {TypeError} - For invalid arguments or failure of the native library
+ */
 export function verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
 ): boolean {
-  checkBlobs(blobs);
-  checkCommitments(commitmentsBytes);
-  checkProofs(proofsBytes);
   return kzg.verifyBlobKzgProofBatch(
     blobs,
     commitmentsBytes,
