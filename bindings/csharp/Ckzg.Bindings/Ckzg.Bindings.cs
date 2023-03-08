@@ -31,10 +31,10 @@ public static partial class Ckzg
     private static extern unsafe KzgResult BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeKzgProof(byte* proof, byte* blob, byte* z, IntPtr ts);
+    private static extern unsafe KzgResult ComputeKzgProof(byte* proof_out, byte* y_out, byte* blob, byte* z, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeBlobKzgProof(byte* proof, byte* blob, IntPtr ts);
+    private static extern unsafe KzgResult ComputeBlobKzgProof(byte* proof, byte* blob, byte* commitment, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult VerifyKzgProof(out bool result, byte* commitment, byte* z,
