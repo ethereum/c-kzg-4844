@@ -11,13 +11,17 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn get_blobs(&self) -> Result<Vec<Box<Blob>>, Error> {
-        self.blobs
-            .iter()
-            .map(|s| s.replace("0x", ""))
-            .map(|hex_str| hex::decode(hex_str).unwrap())
-            .map(|bytes| Blob::from_bytes(bytes.as_slice()))
-            .collect::<Result<Vec<Box<Blob>>, Error>>()
+    pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
+        let mut v: Vec<Blob> = Vec::new();
+
+        for blob in &self.blobs {
+            let blob_hex = blob.replace("0x", "");
+            let blob_bytes = hex::decode(blob_hex).unwrap();
+            let b = Blob::from_bytes(blob_bytes.as_slice())?;
+            v.push(b);
+        }
+
+        return Ok(v);
     }
 
     pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {

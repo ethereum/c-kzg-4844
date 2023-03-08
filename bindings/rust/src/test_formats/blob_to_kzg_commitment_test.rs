@@ -9,7 +9,7 @@ pub struct Input<'a> {
 }
 
 impl Input<'_> {
-    pub fn get_blob(&self) -> Result<Box<Blob>, Error> {
+    pub fn get_blob(&self) -> Result<Blob, Error> {
         let hex_str = self.blob.replace("0x", "");
         let bytes = hex::decode(hex_str).unwrap();
         Blob::from_bytes(&bytes)
