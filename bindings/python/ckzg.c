@@ -65,13 +65,19 @@ static PyObject* compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
   if (PyBytes_Size(z) != BYTES_PER_FIELD_ELEMENT)
     return PyErr_Format(PyExc_ValueError, "expected blobs to be BYTES_PER_FIELD_ELEMENT bytes");
 
-  PyObject *out = PyBytes_FromStringAndSize(NULL, BYTES_PER_PROOF);
+  PyObject *py_y = PyBytes_FromStringAndSize(NULL, BYTES_PER_FIELD_ELEMENT);
+  if (py_y == NULL) return PyErr_NoMemory();
+  PyObject *py_proof = PyBytes_FromStringAndSize(NULL, BYTES_PER_PROOF);
+  if (py_proof == NULL) return PyErr_NoMemory();
+
+  PyObject *out = PyTuple_Pack(2, py_proof, py_y);
   if (out == NULL) return PyErr_NoMemory();
 
   Blob *blob = (Blob *)PyBytes_AsString(b);
   Bytes32 *z_bytes = (Bytes32 *)PyBytes_AsString(z);
-  KZGProof *proof = (KZGProof *)PyBytes_AsString(out);
-  if (compute_kzg_proof(proof, blob, z_bytes, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+  KZGProof *proof = (KZGProof *)PyBytes_AsString(py_proof);
+  Bytes32 *y_bytes = (Bytes32 *)PyBytes_AsString(py_y);
+  if (compute_kzg_proof(proof, y_bytes, blob, z_bytes, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     Py_DECREF(out);
     return PyErr_Format(PyExc_RuntimeError, "compute_kzg_proof failed");
   }
@@ -80,22 +86,26 @@ static PyObject* compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
 }
 
 static PyObject* compute_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
-  PyObject *b, *s;
+  PyObject *b, *c, *s;
 
-  if (!PyArg_UnpackTuple(args, "compute_kzg_proof_wrap", 2, 2, &b, &s) ||
+  if (!PyArg_UnpackTuple(args, "compute_blob_kzg_proof_wrap", 3, 3, &b, &c, &s) ||
       !PyBytes_Check(b) ||
+      !PyBytes_Check(c) ||
       !PyCapsule_IsValid(s, "KZGSettings"))
-    return PyErr_Format(PyExc_ValueError, "expected bytes, trusted setup");
+    return PyErr_Format(PyExc_ValueError, "expected bytes, bytes, trusted setup");
 
   if (PyBytes_Size(b) != BYTES_PER_BLOB)
     return PyErr_Format(PyExc_ValueError, "expected blobs to be BYTES_PER_BLOB bytes");
+  if (PyBytes_Size(c) != BYTES_PER_COMMITMENT)
+    return PyErr_Format(PyExc_ValueError, "expected commitment to be BYTES_PER_COMMITMENT bytes");
 
   PyObject *out = PyBytes_FromStringAndSize(NULL, BYTES_PER_PROOF);
   if (out == NULL) return PyErr_NoMemory();
 
   Blob *blob = (Blob *)PyBytes_AsString(b);
+  Bytes48 *commitment_bytes = (Bytes48 *)PyBytes_AsString(c);
   KZGProof *proof = (KZGProof *)PyBytes_AsString(out);
-  if (compute_blob_kzg_proof(proof, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+  if (compute_blob_kzg_proof(proof, blob, commitment_bytes, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     Py_DECREF(out);
     return PyErr_Format(PyExc_RuntimeError, "compute_blob_kzg_proof failed");
   }
