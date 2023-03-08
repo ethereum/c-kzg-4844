@@ -273,6 +273,18 @@ public class CKZG4844JNITest {
         assertThrows(
             CKZGException.class,
             () ->
+                CKZG4844JNI.computeBlobKzgProof(
+                    new byte[CKZG4844JNI.getBytesPerBlob()], new byte[49]));
+
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertEquals(
+        String.format("Invalid commitment size. Expected 48 bytes but got 49."),
+        exception.getErrorMessage());
+
+    exception =
+        assertThrows(
+            CKZGException.class,
+            () ->
                 CKZG4844JNI.verifyBlobKzgProofBatch(
                     new byte[42],
                     TestUtils.createRandomCommitments(2),
