@@ -614,7 +614,6 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
-            println!("new");
 
             match KZGProof::verify_blob_kzg_proof_batch(
                 &blobs,
