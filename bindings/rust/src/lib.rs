@@ -186,7 +186,13 @@ impl KZGProof {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         let mut y_out = MaybeUninit::<Bytes32>::uninit();
         unsafe {
-            let res = compute_kzg_proof(kzg_proof.as_mut_ptr(), y_out.as_mut_ptr(), &blob, &z_bytes, kzg_settings);
+            let res = compute_kzg_proof(
+                kzg_proof.as_mut_ptr(),
+                y_out.as_mut_ptr(),
+                &blob,
+                &z_bytes,
+                kzg_settings,
+            );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok((kzg_proof.assume_init(), y_out.assume_init()))
             } else {
@@ -195,10 +201,19 @@ impl KZGProof {
         }
     }
 
-    pub fn compute_blob_kzg_proof(blob: Blob, commitment_bytes: Bytes48, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn compute_blob_kzg_proof(
+        blob: Blob,
+        commitment_bytes: Bytes48,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
-            let res = compute_blob_kzg_proof(kzg_proof.as_mut_ptr(), &blob, &commitment_bytes, kzg_settings);
+            let res = compute_blob_kzg_proof(
+                kzg_proof.as_mut_ptr(),
+                &blob,
+                &commitment_bytes,
+                kzg_settings,
+            );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_proof.assume_init())
             } else {
@@ -406,7 +421,9 @@ mod tests {
         let proofs: Vec<Bytes48> = blobs
             .iter()
             .zip(commitments.clone())
-            .map(|(blob, commitment)| KZGProof::compute_blob_kzg_proof(*blob, commitment, &kzg_settings).unwrap())
+            .map(|(blob, commitment)| {
+                KZGProof::compute_blob_kzg_proof(*blob, commitment, &kzg_settings).unwrap()
+            })
             .map(|proof| proof.to_bytes())
             .collect();
 

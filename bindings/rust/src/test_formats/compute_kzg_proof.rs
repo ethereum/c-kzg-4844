@@ -37,13 +37,11 @@ impl Test<'_> {
             return None;
         }
 
-        let proof_hex = self.output.as_ref().unwrap().0
-            .replace("0x", "");
+        let proof_hex = self.output.as_ref().unwrap().0.replace("0x", "");
         let proof_bytes = hex::decode(proof_hex).unwrap();
         let proof = Bytes48::from_bytes(&proof_bytes).unwrap();
 
-        let z_hex = self.output.as_ref().unwrap().1
-            .replace("0x", "");
+        let z_hex = self.output.as_ref().unwrap().1.replace("0x", "");
         let z_bytes = hex::decode(z_hex).unwrap();
         let z = Bytes32::from_bytes(&z_bytes).unwrap();
 
