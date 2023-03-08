@@ -1,5 +1,7 @@
 package ethereum.ckzg4844.test_formats;
 
+import ethereum.ckzg4844.Tuple;
+import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 
 public class ComputeKzgProofTest {
@@ -17,16 +19,18 @@ public class ComputeKzgProofTest {
   }
 
   private Input input;
-  private String output;
+  private List<String> output;
 
   public Input getInput() {
     return input;
   }
 
-  public byte[] getOutput() {
+  public Tuple getOutput() {
     if (output == null) {
       return null;
     }
-    return Bytes.fromHexString(output).toArray();
+    byte[] proof = Bytes.fromHexString(output.get(0)).toArray();
+    byte[] y = Bytes.fromHexString(output.get(1)).toArray();
+    return Tuple.of(proof, y);
   }
 }
