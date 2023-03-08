@@ -6,6 +6,9 @@ proc test(args, path: string) =
     " --outdir:build -r -f --hints:off --warnings:off --skipParentCfg " & path
 
 task test, "Run all tests":
+  echo ">>>>>>>>>>>>>>>> Run tests in DEBUG mode <<<<<<<<<<<<<<<<"
   test "-d:debug", "tests/test_all"
+  echo ">>>>>>>>>>>>>>>> Run tests in RELEASE mode <<<<<<<<<<<<<<<<"
   test "-d:release", "tests/test_all"
+  echo ">>>>>>>>>>>>>>>> Run tests in RELEASE and THREADS ON mode <<<<<<<<<<<<<<<<"
   test "--threads:on -d:release", "tests/test_all"

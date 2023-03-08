@@ -82,7 +82,6 @@ suite "verify proof (abi)":
     check res == KZG_OK
     check ok
 
-
   test "verify batch proof failure":
     var kb = kzgs.createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]
@@ -105,7 +104,6 @@ suite "verify proof (abi)":
                          kzgs)
     check res == KZG_OK
     check ok == false
-
 
   test "verify blob proof":
     var kp: KzgProof
@@ -131,4 +129,3 @@ suite "verify proof (abi)":
     check ok
 
   free_trusted_setup(settings)
-
