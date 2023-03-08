@@ -156,7 +156,7 @@ public class CKZG4844JNI {
    *
    * @param blob blob bytes
    * @param z_bytes a point
-   * @return A tuple of proof and y
+   * @return a tuple of the proof and the value y = f(z)
    * @throws CKZGException if there is a crypto error
    */
   public static native Tuple computeKzgProof(byte[] blob, byte[] z_bytes);
@@ -166,7 +166,7 @@ public class CKZG4844JNI {
    *
    * @param blob blob bytes
    * @param commitment_bytes commitment bytes
-   * @return the aggregated proof
+   * @return the proof
    * @throws CKZGException if there is a crypto error
    */
   public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitment_bytes);
