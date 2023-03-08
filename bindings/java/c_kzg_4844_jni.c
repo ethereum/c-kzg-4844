@@ -207,20 +207,22 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
     return NULL;
   }
 
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
-  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
-
+  /* The output variables, will be combined in a tuple */
   jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
   jbyteArray y = (*env)->NewByteArray(env, BYTES_PER_FIELD_ELEMENT);
 
+  /* The native variables */
   KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
   Bytes32 *y_native = (Bytes32 *)(uint8_t *)(*env)->GetByteArrayElements(env, y, NULL);
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
 
   C_KZG_RET ret = compute_kzg_proof(proof_native, y_native, blob_native, z_native, settings);
 
-  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
   (*env)->ReleaseByteArrayElements(env, y, (jbyte *)y_native, 0);
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, z_bytes, (jbyte *)z_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -231,21 +233,21 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
   jclass tupleClass = (*env)->FindClass(env, "ethereum/ckzg4844/Tuple");
   if (tupleClass == NULL)
   {
-    throw_c_kzg_exception(env, ret, "Failed to find Tuple class.");
+    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to find Tuple class.");
     return NULL;
   }
 
   jmethodID tupleConstructor = (*env)->GetMethodID(env, tupleClass, "<init>", "([B[B)V");
   if (tupleConstructor == NULL)
   {
-    throw_c_kzg_exception(env, ret, "Failed to find Tuple constructor.");
+    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to find Tuple constructor.");
     return NULL;
   }
 
   jobject tuple = (*env)->NewObject(env, tupleClass, tupleConstructor, proof, y);
   if (tuple == NULL)
   {
-    throw_c_kzg_exception(env, ret, "Failed to instantiate new Tuple.");
+    throw_c_kzg_exception(env, C_KZG_ERROR, "Failed to instantiate new Tuple.");
     return NULL;
   }
 
