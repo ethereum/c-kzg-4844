@@ -932,7 +932,7 @@ static C_KZG_RET verify_kzg_proof_impl(
 /**
  * Verify a KZG proof claiming that `p(z) == y`.
  *
- * @param[out] out        `true` if the proof is valid, `false` if not
+ * @param[out] ok         `true` if the proof is valid, `false` if not
  * @param[in]  commitment The KZG commitment corresponding to polynomial
  *                        p(x)
  * @param[in]  z          The evaluation point
@@ -942,7 +942,7 @@ static C_KZG_RET verify_kzg_proof_impl(
  *                        verification key (i.e. trusted setup)
  */
 C_KZG_RET verify_kzg_proof(
-    bool *out,
+    bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
     const Bytes32 *y_bytes,
@@ -952,6 +952,8 @@ C_KZG_RET verify_kzg_proof(
     C_KZG_RET ret;
     fr_t z_fr, y_fr;
     g1_t commitment_g1, proof_g1;
+
+    *ok = false;
 
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
@@ -963,7 +965,7 @@ C_KZG_RET verify_kzg_proof(
     if (ret != C_KZG_OK) return ret;
 
     return verify_kzg_proof_impl(
-        out, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
+        ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
     );
 }
 
@@ -1202,6 +1204,8 @@ C_KZG_RET verify_blob_kzg_proof(
     fr_t evaluation_challenge_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
+    *ok = false;
+
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
 
@@ -1333,6 +1337,8 @@ static C_KZG_RET verify_kzg_proof_batch(
     fr_t *r_times_z = NULL;
 
     assert(n > 0);
+
+    *ok = false;
 
     /* First let's allocate our arrays */
     ret = new_fr_array(&r_powers, n);
