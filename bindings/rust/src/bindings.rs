@@ -220,7 +220,8 @@ extern "C" {
     ) -> C_KZG_RET;
 
     pub fn compute_kzg_proof(
-        out: *mut KZGProof,
+        proof_out: *mut KZGProof,
+        y_out: *mut Bytes32,
         blob: *const Blob,
         z_bytes: *const Bytes32,
         s: *const KZGSettings,
@@ -229,6 +230,7 @@ extern "C" {
     pub fn compute_blob_kzg_proof(
         out: *mut KZGProof,
         blob: *const Blob,
+        commitment_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 
