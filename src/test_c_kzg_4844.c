@@ -1032,7 +1032,9 @@ static void test_is_power_of_two__fails_not_powers_of_two(void) {
 static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     C_KZG_RET ret;
     Blob blob;
-    Bytes32 input_value, field_element;
+    Polynomial poly;
+    fr_t y_fr, z_fr;
+    Bytes32 input_value, output_value, field_element, expected_output_value;
     Bytes48 proof, expected_proof;
     int diff;
 
@@ -1050,7 +1052,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
     /* Compute the KZG proof for the given blob & z */
-    ret = compute_kzg_proof(&proof, &blob, &input_value, &s);
+    ret = compute_kzg_proof(&proof, &output_value, &blob, &input_value, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     bytes48_from_hex(
@@ -1062,17 +1064,36 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     /* Compare the computed proof to the expected proof */
     diff = memcmp(proof.bytes, expected_proof.bytes, sizeof(Bytes48));
     ASSERT_EQUALS(diff, 0);
+
+    /* Get the expected y by evaluating the polynomial at input_value */
+    ret = blob_to_polynomial(&poly, &blob);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = bytes_to_bls_field(&z_fr, &input_value);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = evaluate_polynomial_in_evaluation_form(&y_fr, &poly, &z_fr, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    bytes_from_bls_field(&expected_output_value, &y_fr);
+
+    /* Compare the computed y to the expected y */
+    diff = memcmp(
+        output_value.bytes, expected_output_value.bytes, sizeof(Bytes32)
+    );
+    ASSERT_EQUALS(diff, 0);
 }
 
 static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     C_KZG_RET ret;
     Bytes48 proof;
-    Bytes32 z, y;
+    Bytes32 z, y, computed_y;
     KZGCommitment c;
     Blob blob;
     Polynomial poly;
     fr_t y_fr, z_fr;
     bool ok;
+    int diff;
 
     get_rand_field_element(&z);
     get_rand_blob(&blob);
@@ -1082,7 +1103,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Compute the proof */
-    ret = compute_kzg_proof(&proof, &blob, &z, &s);
+    ret = compute_kzg_proof(&proof, &computed_y, &blob, &z, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -1103,6 +1124,10 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     /* Now also get `y` in bytes */
     bytes_from_bls_field(&y, &y_fr);
 
+    /* Compare the recently evaluated y to the computed y */
+    diff = memcmp(y.bytes, computed_y.bytes, sizeof(Bytes32));
+    ASSERT_EQUALS(diff, 0);
+
     /* Finally verify the proof */
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1116,9 +1141,10 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         KZGCommitment c;
         Polynomial poly;
         Bytes48 proof;
-        Bytes32 z, y;
+        Bytes32 z, y, computed_y;
         fr_t y_fr, z_fr;
         bool ok;
+        int diff;
 
         get_rand_blob(&blob);
 
@@ -1134,7 +1160,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         bytes_from_bls_field(&z, &z_fr);
 
         /* Compute the proof */
-        ret = compute_kzg_proof(&proof, &blob, &z, &s);
+        ret = compute_kzg_proof(&proof, &computed_y, &blob, &z, &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         /* Now evaluate the poly at `z` to learn `y` */
@@ -1143,6 +1169,10 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 
         /* Now also get `y` in bytes */
         bytes_from_bls_field(&y, &y_fr);
+
+        /* Compare the recently evaluated y to the computed y */
+        diff = memcmp(y.bytes, computed_y.bytes, sizeof(Bytes32));
+        ASSERT_EQUALS(diff, 0);
 
         /* Finally verify the proof */
         ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
@@ -1155,7 +1185,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     g1_t proof_g1;
-    Bytes32 z, y;
+    Bytes32 z, y, computed_y;
     KZGCommitment c;
     Blob blob;
     Polynomial poly;
@@ -1170,7 +1200,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Compute the proof */
-    ret = compute_kzg_proof(&proof, &blob, &z, &s);
+    ret = compute_kzg_proof(&proof, &computed_y, &blob, &z, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -1300,7 +1330,7 @@ static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Compute the proof */
-    ret = compute_blob_kzg_proof(&proof, &blob, &s);
+    ret = compute_blob_kzg_proof(&proof, &blob, &c, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Finally verify the proof */
@@ -1324,7 +1354,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Compute the proof */
-    ret = compute_blob_kzg_proof(&proof, &blob, &s);
+    ret = compute_blob_kzg_proof(&proof, &blob, &c, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Change the proof so it should not verify */
@@ -1361,8 +1391,29 @@ static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1(
-    void
+static void
+test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void
+) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Blob blob;
+
+    /* Some preparation */
+    get_rand_blob(&blob);
+    bytes48_from_hex(
+        &c,
+        "8123456789abcdef0123456789abcdef0123456789abcdef"
+        "0123456789abcdef0123456789abcdef0123456789abcdef"
+    );
+
+    /* Finally compute the proof */
+    ret = compute_blob_kzg_proof(&proof, &blob, &c, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void
+test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1(void
 ) {
     C_KZG_RET ret;
     Bytes48 proof;
@@ -1423,7 +1474,9 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1451,7 +1504,9 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1478,7 +1533,9 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1508,7 +1565,9 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1539,7 +1598,9 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &s);
+        ret = compute_blob_kzg_proof(
+            &proofs[i], &blobs[i], &commitments[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1688,7 +1749,7 @@ static void profile_verify_aggregate_kzg_proof(void) {
 
 static void profile_compute_kzg_proof(void) {
     Blob blob;
-    Bytes32 z;
+    Bytes32 z, y;
     KZGProof out;
 
     get_rand_blob(&blob);
@@ -1696,7 +1757,7 @@ static void profile_compute_kzg_proof(void) {
 
     ProfilerStart("compute_kzg_proof.prof");
     for (int i = 0; i < 100; i++) {
-        compute_kzg_proof(&out, &blob, &z, &s);
+        compute_kzg_proof(&out, &y, &blob, &z, &s);
     }
     ProfilerStop();
 }
@@ -1810,7 +1871,10 @@ int main(void) {
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1);
-    RUN(test_compute_and_verify_blob_kzg_proof__fails_commitment_not_in_g1);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1
+    );
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1
+    );
     RUN(test_compute_and_verify_blob_kzg_proof__fails_invalid_blob);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_with_incorrect_proof);
