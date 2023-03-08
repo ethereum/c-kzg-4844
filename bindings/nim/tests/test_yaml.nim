@@ -69,15 +69,18 @@ suite "yaml tests":
       if res.isErr:
         check n["output"].content == "null"
       else:
-        let proof = KzgProof.fromHex(n["output"])
-        check proof == res.get
+        let proof = KzgProof.fromHex(n["output"][0])
+        check proof == res.get.proof
+        let y = KzgBytes32.fromHex(n["output"][1])
+        check y == res.get.y
 
   for filename in walkDirRec(COMPUTE_BLOB_KZG_PROOF_TESTS):
     test toTestName(filename):
       let
         n = loadYaml(filename)
         blob = KzgBlob.fromHex(n["input"]["blob"])
-        res = ctx.computeProof(blob)
+        commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+        res = ctx.computeProof(blob, commitment)
 
       if res.isErr:
         check n["output"].content == "null"
