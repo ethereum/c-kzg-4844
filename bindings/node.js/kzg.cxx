@@ -9,66 +9,39 @@
 #include "c_kzg_4844.h"
 #include "blst.h"
 
-Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info);
-Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info);
-Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info);
-Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info);
-Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info);
-Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info);
-Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info);
+/**
+ * Structure containing information needed for the lifetime of the addon
+ * instance. It is not safe to use global static data with worker instances.
+ * Workers share memory and the JS thread will be independent of the main
+ * thread. Is not thread safe and potential for initialization/clean-up
+ * to overwrite and segfault. An instance of this struct will get created
+ * during initialization and it will be and passed around to with the 
+ * environment. It can be retrieved via `napi_get_instance_data` or
+ * `Napi::Env::GetInstanceData`.
+ */
+typedef struct {
+  bool is_setup;
+  KZGSettings settings;
+} KzgAddonData;
 
-class KzgBindings : public Napi::Addon<KzgBindings>
-{
-public:
-  size_t _bytes_per_blob;
-  size_t _bytes_per_commitment;
-  size_t _bytes_per_field_element;
-  size_t _bytes_per_proof;
-  size_t _field_elements_per_blob;
-  std::unique_ptr<KZGSettings> _settings;
-
-  KzgBindings(Napi::Env env, Napi::Object exports) :
-    _bytes_per_blob{BYTES_PER_BLOB},
-    _bytes_per_commitment{BYTES_PER_COMMITMENT},
-    _bytes_per_field_element{BYTES_PER_FIELD_ELEMENT},
-    _bytes_per_proof{BYTES_PER_PROOF},
-    _field_elements_per_blob{FIELD_ELEMENTS_PER_BLOB},
-    _settings{std::make_unique<KZGSettings>()},
-    _is_setup{false} {
-    DefineAddon(exports, {
-      InstanceValue("BYTES_PER_BLOB", Napi::Number::New(env, _bytes_per_blob), napi_enumerable),
-      InstanceValue("BYTES_PER_COMMITMENT", Napi::Number::New(env, _bytes_per_commitment), napi_enumerable),
-      InstanceValue("BYTES_PER_FIELD_ELEMENT", Napi::Number::New(env, _bytes_per_field_element), napi_enumerable),
-      InstanceValue("BYTES_PER_PROOF", Napi::Number::New(env, _bytes_per_proof), napi_enumerable),
-      InstanceValue("FIELD_ELEMENTS_PER_BLOB", Napi::Number::New(env, _field_elements_per_blob), napi_enumerable)
-    });
-    exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup, "setup", this);
-    exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment, "blobToKzgCommitment", this);
-    exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof, "computeKzgProof", this);
-    exports["computeBlobKzgProof"] = Napi::Function::New(env, ComputeBlobKzgProof, "computeBlobKzgProof", this);
-    exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof, "verifyKzgProof", this);
-    exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof, "verifyBlobKzgProof", this);
-    exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch", this);
+/**
+ * This cleanup function follows the `napi_finalize` interface and will be
+ * called by the runtime when the exports object is garbage collected. Is
+ * passed with napi_set_instance_data call when data is set.
+ * 
+ * @remark This function should not be called, only the runtime should do
+ *         the cleanup.
+ * 
+ * @param[in] env  (unused)
+ * @param[in] data Pointer KzgAddonData stored by the runtime
+ * @param[in] hint (unused) 
+ */
+void delete_kzg_addon_data(napi_env /*env*/, void *data, void* /*hint*/) {
+  if (((KzgAddonData*)data)->is_setup) {
+    free_trusted_setup(&((KzgAddonData*)data)->settings);
   }
-
-  ~KzgBindings() {
-    if (_is_setup) {
-      free_trusted_setup(_settings.get());
-      _is_setup = false;
-    }
-  }
-
-  KzgBindings(KzgBindings &&source) = delete;
-  KzgBindings(const KzgBindings &source) = delete;
-  KzgBindings &operator=(KzgBindings &&source) = delete;
-  KzgBindings &operator=(const KzgBindings &source) = delete;
-
-  bool IsSetup() { return _is_setup; };
-
-private:
-  friend Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info);
-  bool _is_setup;
-};
+  free(data);
+}
 
 /**
  * Get kzg_settings from bindings instance data
@@ -86,13 +59,13 @@ private:
  * 
  * @return - Pointer to the KZGSettings
  */
-KZGSettings *get_kzg_settings(const Napi::Env &env, const Napi::CallbackInfo &info) {
-  KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
-  if (!bindings->IsSetup()) {
+KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
+  KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
+  if (!data->is_setup) {
       Napi::Error::New(env, "Must run loadTrustedSetup before running any other c-kzg functions").ThrowAsJavaScriptException();
       return nullptr;
   }
-  return bindings->_settings.get();
+  return &(data->settings);
 }
 
 /**
@@ -155,10 +128,9 @@ inline Bytes48 *get_bytes48(const Napi::Env &env, const Napi::Value &val, std::s
 
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
-  KzgBindings *bindings = static_cast<KzgBindings *>(info.Data());
-  if (bindings->IsSetup()) {
-      // QUESTION: Should this throw for re-setup or just ignore like it is?
-      // Napi::Error::New(env, "kzg bindings are already setup").ThrowAsJavaScriptException();
+  KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
+  if (data->is_setup) {
+      Napi::Error::New(env, "kzg bindings are already setup").ThrowAsJavaScriptException();
       return env.Undefined();
   }
   // the validation checks for this happen in JS
@@ -168,11 +140,11 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
       Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
       return env.Undefined();
   }
-  if (load_trusted_setup_file(bindings->_settings.get(), file_handle) != C_KZG_OK) {
+  if (load_trusted_setup_file(&(data->settings), file_handle) != C_KZG_OK) {
       Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
       return env.Undefined();
   }
-  bindings->_is_setup = true;
+  data->is_setup = true;
   return env.Undefined();
 }
 
@@ -485,4 +457,32 @@ out:
   return result;
 }
 
-NODE_API_ADDON(KzgBindings)
+
+Napi::Object Init(Napi::Env env, Napi::Object exports)  {
+  KzgAddonData* data = (KzgAddonData*)malloc(sizeof(KzgAddonData));
+  if (data == nullptr) {
+    Napi::Error::New(env, "error allocating memory for kzg setup handle").ThrowAsJavaScriptException();
+    return exports;
+  }
+  data->is_setup = false;
+  napi_status status = napi_set_instance_data(env, data, delete_kzg_addon_data, NULL);
+  if (status != napi_ok) {
+    Napi::Error::New(env, "error setting kzg bindings instance data").ThrowAsJavaScriptException();
+    return exports;
+  }   
+  exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
+  exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, BYTES_PER_COMMITMENT);
+  exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
+  exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
+  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
+  exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup, "setup");
+  exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment, "blobToKzgCommitment");
+  exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof, "computeKzgProof");
+  exports["computeBlobKzgProof"] = Napi::Function::New(env, ComputeBlobKzgProof, "computeBlobKzgProof");
+  exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof, "verifyKzgProof");
+  exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof, "verifyBlobKzgProof");
+  exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch");
+  return exports;
+}
+
+NODE_API_MODULE(addon, Init)
