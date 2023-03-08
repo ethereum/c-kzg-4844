@@ -32,7 +32,7 @@ suite "verify proof (high-level)":
     let kb = ctx.createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = ctx.computeProof(kb.blobs[i])
+      let pres = ctx.computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
@@ -44,14 +44,14 @@ suite "verify proof (high-level)":
     let kb = ctx.createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = ctx.computeProof(kb.blobs[i])
+      let pres = ctx.computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
     let other = ctx.createKateBlobs(nblobs)
     var badProofs: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = ctx.computeProof(other.blobs[i])
+      let pres = ctx.computeProof(other.blobs[i], other.kates[i])
       check pres.isOk
       badProofs[i] = pres.get
 
@@ -60,7 +60,7 @@ suite "verify proof (high-level)":
     check res.get == false
 
   test "verify blob proof":
-    let kp = ctx.computeProof(blob)
+    let kp = ctx.computeProof(blob, commitment)
     check kp.isOk
 
     let res = ctx.verifyProof(blob, commitment, kp.get)
@@ -69,7 +69,8 @@ suite "verify proof (high-level)":
   test "verify proof":
     let kp = ctx.computeProof(blob, inputPoint)
     check kp.isOk
-    check kp.get == proof
+    check kp.get.proof == proof
+    check kp.get.y == claimedValue
 
-    let res = ctx.verifyProof(commitment, inputPoint, claimedValue, kp.get)
+    let res = ctx.verifyProof(commitment, inputPoint, claimedValue, kp.get.proof)
     check res.isOk

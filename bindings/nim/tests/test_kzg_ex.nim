@@ -29,7 +29,7 @@ suite "verify proof (extended version)":
     let kb = createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = computeProof(kb.blobs[i])
+      let pres = computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
@@ -41,14 +41,14 @@ suite "verify proof (extended version)":
     let kb = createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = computeProof(kb.blobs[i])
+      let pres = computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
     let other = createKateBlobs(nblobs)
     var badProofs: array[nblobs, KzgProof]
     for i in 0..<nblobs:
-      let pres = computeProof(other.blobs[i])
+      let pres = computeProof(other.blobs[i], other.kates[i])
       check pres.isOk
       badProofs[i] = pres.get
 
@@ -57,7 +57,7 @@ suite "verify proof (extended version)":
     check res.get == false
 
   test "verify blob proof":
-    let kp = computeProof(blob)
+    let kp = computeProof(blob, commitment)
     check kp.isOk
 
     let res = verifyProof(blob, commitment, kp.get)
@@ -66,7 +66,8 @@ suite "verify proof (extended version)":
   test "verify proof":
     let kp = computeProof(blob, inputPoint)
     check kp.isOk
-    check kp.get == proof
+    check kp.get.proof == proof
+    check kp.get.y == claimedValue
 
-    let res = verifyProof(commitment, inputPoint, claimedValue, kp.get)
+    let res = verifyProof(commitment, inputPoint, claimedValue, kp.get.proof)
     check res.isOk

@@ -71,31 +71,32 @@ proc toCommitment*(blob: KzgBlob):
     gCtx.toCommitment(blob)
 
 proc computeProof*(blob: KzgBlob,
-                   z: KzgBytes32): Result[KzgProof, string] {.gcsafe.} =
+                   z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
   verifyCtx:
     gCtx.computeProof(blob, z)
 
-proc computeProof*(blob: KzgBlob):
+proc computeProof*(blob: KzgBlob,
+                   commitmentBytes: KzgBytes48):
                      Result[KzgProof, string] {.gcsafe.} =
   verifyCtx:
-    gCtx.computeProof(blob)
+    gCtx.computeProof(blob, commitmentBytes)
 
-proc verifyProof*(commitment: KzgCommitment,
+proc verifyProof*(commitment: KzgBytes48,
                   z: KzgBytes32, # Input Point
                   y: KzgBytes32, # Claimed Value
-                  proof: KzgProof): Result[bool, string] {.gcsafe.} =
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProof(commitment, z, y, proof)
 
 proc verifyProof*(blob: KzgBlob,
-                  commitment: KzgCommitment,
-                  proof: KzgProof): Result[bool, string] {.gcsafe.} =
+                  commitment: KzgBytes48,
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProof(blob, commitment, proof)
 
 proc verifyProofs*(blobs: openArray[KzgBlob],
-                  commitments: openArray[KzgCommitment],
-                  proofs: openArray[KzgProof]): Result[bool, string] {.gcsafe.} =
+                  commitments: openArray[KzgBytes48],
+                  proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
 

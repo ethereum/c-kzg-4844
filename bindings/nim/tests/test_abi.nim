@@ -69,7 +69,7 @@ suite "verify proof (abi)":
     var kp: array[nblobs, KzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kb.kates[i], kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -88,12 +88,12 @@ suite "verify proof (abi)":
     var kp: array[nblobs, KzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kb.kates[i], kzgs)
       check res == KZG_OK
 
     var other = kzgs.createKateBlobs(nblobs)
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], other.blobs[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i], other.blobs[i], other.kates[i], kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -109,7 +109,7 @@ suite "verify proof (abi)":
 
   test "verify blob proof":
     var kp: KzgProof
-    var res = compute_blob_kzg_proof(kp, blob, kzgs)
+    var res = compute_blob_kzg_proof(kp, blob, commitment, kzgs)
     check res == KZG_OK
 
     var ok: bool
@@ -119,9 +119,11 @@ suite "verify proof (abi)":
 
   test "verify proof":
     var kp: KzgProof
-    var res = compute_kzg_proof(kp, blob, inputPoint, kzgs)
+    var ky: KzgBytes32
+    var res = compute_kzg_proof(kp, ky, blob, inputPoint, kzgs)
     check res == KZG_OK
     check kp == proof
+    check ky == claimedValue
 
     var ok: bool
     res = verify_kzg_proof(ok, commitment, inputPoint, claimedValue, kp, kzgs)

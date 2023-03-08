@@ -15,6 +15,10 @@ type
   KzgCtx* = ref object
     val: KzgSettings
 
+  KzgProofAndY* = object
+    proof*: KzgProof
+    y*: KzgBytes32
+
   G1Data* = array[48, byte]
   G2Data* = array[96, byte]
 
@@ -129,31 +133,34 @@ proc toCommitment*(ctx: KzgCtx,
 
 proc computeProof*(ctx: KzgCtx,
                    blob: KzgBlob,
-                   z: KzgBytes32): Result[KzgProof, string] {.gcsafe.} =
-  var proof: KzgProof
+                   z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
+  var x: KzgProofAndY
   let res = compute_kzg_proof(
-    proof,
+    x.proof,
+    x.y,
     blob,
     z,
     ctx.val)
   verify(res)
-  ok(proof)
+  ok(x)
 
 proc computeProof*(ctx: KzgCtx,
-                   blob: KzgBlob): Result[KzgProof, string] {.gcsafe.} =
+                   blob: KzgBlob,
+                   commitmentBytes: KzgBytes48): Result[KzgProof, string] {.gcsafe.} =
   var proof: KzgProof
   let res = compute_blob_kzg_proof(
     proof,
     blob,
+    commitmentBytes,
     ctx.val)
   verify(res)
   ok(proof)
 
 proc verifyProof*(ctx: KzgCtx,
-                  commitment: KzgCommitment,
+                  commitment: KzgBytes48,
                   z: KzgBytes32, # Input Point
                   y: KzgBytes32, # Claimed Value
-                  proof: KzgProof): Result[bool, string] {.gcsafe.} =
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   var valid: bool
   let res = verify_kzg_proof(
     valid,
@@ -167,8 +174,8 @@ proc verifyProof*(ctx: KzgCtx,
 
 proc verifyProof*(ctx: KzgCtx,
                   blob: KzgBlob,
-                  commitment: KzgCommitment,
-                  proof: KzgProof): Result[bool, string] {.gcsafe.} =
+                  commitment: KzgBytes48,
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   var valid: bool
   let res = verify_blob_kzg_proof(
     valid,
@@ -181,8 +188,8 @@ proc verifyProof*(ctx: KzgCtx,
 
 proc verifyProofs*(ctx: KzgCtx,
                   blobs: openArray[KzgBlob],
-                  commitments: openArray[KzgCommitment],
-                  proofs: openArray[KzgProof]): Result[bool, string] {.gcsafe.} =
+                  commitments: openArray[KzgBytes48],
+                  proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   if blobs.len != commitments.len:
     return err($KZG_BADARGS)
 
