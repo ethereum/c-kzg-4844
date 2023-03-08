@@ -100,4 +100,37 @@ proc verifyProofs*(blobs: openArray[KzgBlob],
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
 
+##############################################################
+# Zero overhead aliases that match the spec
+##############################################################
+
+template loadTrustedSetupFile*(T: type Kzg, input: File | string): untyped =
+  loadTrustedSetup(T, input)
+
+template blobToKzgCommitment*(blob: KzgBlob): untyped =
+  toCommitment(blob)
+
+template computeKzgProof*(blob: KzgBlob, z: KzgBytes32): untyped =
+  computeProof(blob, z)
+
+template computeBlobKzgProof*(blob: KzgBlob,
+                   commitmentBytes: KzgBytes48): untyped =
+  computeProof(blob, commitmentBytes)
+
+template verifyKzgProof*(commitment: KzgBytes48,
+                   z: KzgBytes32, # Input Point
+                   y: KzgBytes32, # Claimed Value
+                   proof: KzgBytes48): untyped =
+  verifyProof(commitment, z, y, proof)
+
+template verifyBlobKzgProof*(blob: KzgBlob,
+                   commitment: KzgBytes48,
+                   proof: KzgBytes48): untyped =
+  verifyProof(blob, commitment, proof)
+
+template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
+                   commitments: openArray[KzgBytes48],
+                   proofs: openArray[KzgBytes48]): untyped =
+  verifyProofs(blobs, commitments, proofs)
+
 {. pop .}

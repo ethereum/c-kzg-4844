@@ -74,3 +74,20 @@ suite "verify proof (high-level)":
 
     let res = ctx.verifyProof(commitment, inputPoint, claimedValue, kp.get.proof)
     check res.isOk
+
+  test "template aliases":
+    # no need to check return value
+    # only test if those templates can be compiled succesfully
+    let res = loadTrustedSetupFile(trustedSetupFile)
+    check res.isOk
+    ctx = res.get
+    
+    discard ctx.blobToKzgCommitment(blob)
+    let kp = ctx.computeKzgProof(blob, inputPoint)
+    discard ctx.computeBlobKzgProof(blob, commitment)
+    discard ctx.verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
+    discard ctx.verifyBlobKzgProof(blob, commitment, proof)
+    
+    let kb = ctx.createKateBlobs(1)
+    discard ctx.verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+    

@@ -210,4 +210,43 @@ proc verifyProofs*(ctx: KzgCtx,
   verify(res)
   ok(valid)
 
+##############################################################
+# Zero overhead aliases that match the spec
+##############################################################
+
+template loadTrustedSetupFile*(input: File | string): untyped =
+  loadTrustedSetup(input)
+
+template blobToKzgCommitment*(ctx: KzgCtx,
+                   blob: KzgBlob): untyped =
+  toCommitment(ctx, blob)
+
+template computeKzgProof*(ctx: KzgCtx,
+                   blob: KzgBlob, z: KzgBytes32): untyped =
+  computeProof(ctx, blob, z)
+
+template computeBlobKzgProof*(ctx: KzgCtx,
+                   blob: KzgBlob,
+                   commitmentBytes: KzgBytes48): untyped =
+  computeProof(ctx, blob, commitmentBytes)
+
+template verifyKzgProof*(ctx: KzgCtx,
+                   commitment: KzgBytes48,
+                   z: KzgBytes32, # Input Point
+                   y: KzgBytes32, # Claimed Value
+                   proof: KzgBytes48): untyped =
+  verifyProof(ctx, commitment, z, y, proof)
+
+template verifyBlobKzgProof*(ctx: KzgCtx,
+                   blob: KzgBlob,
+                   commitment: KzgBytes48,
+                   proof: KzgBytes48): untyped =
+  verifyProof(ctx, blob, commitment, proof)
+
+template verifyBlobKzgProofBatch*(ctx: KzgCtx,
+                   blobs: openArray[KzgBlob],
+                   commitments: openArray[KzgBytes48],
+                   proofs: openArray[KzgBytes48]): untyped =
+  verifyProofs(ctx, blobs, commitments, proofs)
+
 {. pop .}

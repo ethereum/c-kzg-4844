@@ -71,3 +71,15 @@ suite "verify proof (extended version)":
 
     let res = verifyProof(commitment, inputPoint, claimedValue, kp.get.proof)
     check res.isOk
+
+  test "template aliases":
+    # no need to check return value
+    # only test if those templates can be compiled succesfully
+    discard Kzg.loadTrustedSetupFile(trustedSetupFile)
+    discard blobToKzgCommitment(blob)
+    let kp = computeKzgProof(blob, inputPoint)
+    discard computeBlobKzgProof(blob, commitment)
+    discard verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
+    discard verifyBlobKzgProof(blob, commitment, proof)
+    let kb = createKateBlobs(1)
+    discard verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
