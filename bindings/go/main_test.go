@@ -129,28 +129,29 @@ func TestBlobToKZGCommitment(t *testing.T) {
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		var blob Blob
-		err = blob.UnmarshalText([]byte(test.Input.Blob))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		commitment, ret := BlobToKZGCommitment(blob)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], commitment[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+			commitment, ret := BlobToKZGCommitment(blob)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, test.Output[:], commitment[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -166,42 +167,43 @@ func TestComputeKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
-
-		var blob Blob
-		err = blob.UnmarshalText([]byte(test.Input.Blob))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
-
-		var z Bytes32
-		err = z.UnmarshalText([]byte(test.Input.Z))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
-
-		proof, y, ret := ComputeKZGProof(blob, z)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			var expectedProof Bytes48
-			err = expectedProof.UnmarshalText([]byte((*test.Output)[0]))
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
 			require.NoError(t, err)
-			require.Equal(t, expectedProof[:], proof[:])
-			var expectedY Bytes32
-			err = expectedY.UnmarshalText([]byte((*test.Output)[1]))
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
-			require.Equal(t, expectedY[:], y[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			var z Bytes32
+			err = z.UnmarshalText([]byte(test.Input.Z))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			proof, y, ret := ComputeKZGProof(blob, z)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				var expectedProof Bytes48
+				err = expectedProof.UnmarshalText([]byte((*test.Output)[0]))
+				require.NoError(t, err)
+				require.Equal(t, expectedProof[:], proof[:])
+				var expectedY Bytes32
+				err = expectedY.UnmarshalText([]byte((*test.Output)[1]))
+				require.NoError(t, err)
+				require.Equal(t, expectedY[:], y[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -217,35 +219,36 @@ func TestComputeBlobKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		var blob Blob
-		err = blob.UnmarshalText([]byte(test.Input.Blob))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
-    
-    var commitment Bytes48
-		err = commitment.UnmarshalText([]byte(test.Input.Commitment))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		proof, ret := ComputeBlobKZGProof(blob, commitment)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, test.Output[:], proof[:])
-		} else {
-			require.Nil(t, test.Output)
-		}
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			proof, ret := ComputeBlobKZGProof(blob, commitment)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, test.Output[:], proof[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -263,49 +266,50 @@ func TestVerifyKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(verifyKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		var commitment Bytes48
-		err = commitment.UnmarshalText([]byte(test.Input.Commitment))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		var z Bytes32
-		err = z.UnmarshalText([]byte(test.Input.Z))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var z Bytes32
+			err = z.UnmarshalText([]byte(test.Input.Z))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		var y Bytes32
-		err = y.UnmarshalText([]byte(test.Input.Y))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var y Bytes32
+			err = y.UnmarshalText([]byte(test.Input.Y))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		var proof Bytes48
-		err = proof.UnmarshalText([]byte(test.Input.Proof))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var proof Bytes48
+			err = proof.UnmarshalText([]byte(test.Input.Proof))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		valid, ret := VerifyKZGProof(commitment, z, y, proof)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyKZGProof(commitment, z, y, proof)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -322,42 +326,43 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		var blob Blob
-		err = blob.UnmarshalText([]byte(test.Input.Blob))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		var commitment Bytes48
-		err = commitment.UnmarshalText([]byte(test.Input.Commitment))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		var proof Bytes48
-		err = proof.UnmarshalText([]byte(test.Input.Proof))
-		if err != nil {
-			require.Nil(t, test.Output)
-			continue
-		}
+			var proof Bytes48
+			err = proof.UnmarshalText([]byte(test.Input.Proof))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-		valid, ret := VerifyBlobKZGProof(blob, commitment, proof)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyBlobKZGProof(blob, commitment, proof)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
@@ -374,54 +379,55 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
 	require.NoError(t, err)
 	for _, testPath := range tests {
-		t.Log(testPath)
-		testFile, err := os.Open(testPath)
-		require.NoError(t, err)
-		test := Test{}
-		err = yaml.NewDecoder(testFile).Decode(&test)
-		require.NoError(t, testFile.Close())
-		require.NoError(t, err)
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-		var blobs []Blob
-		for _, b := range test.Input.Blobs {
-			var blob Blob
-			err = blob.UnmarshalText([]byte(b))
-			if err != nil {
-				require.Nil(t, test.Output)
-				continue
+			var blobs []Blob
+			for _, b := range test.Input.Blobs {
+				var blob Blob
+				err = blob.UnmarshalText([]byte(b))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				blobs = append(blobs, blob)
 			}
-			blobs = append(blobs, blob)
-		}
 
-		var commitments []Bytes48
-		for _, c := range test.Input.Commitments {
-			var commitment Bytes48
-			err = commitment.UnmarshalText([]byte(c))
-			if err != nil {
-				require.Nil(t, test.Output)
-				continue
+			var commitments []Bytes48
+			for _, c := range test.Input.Commitments {
+				var commitment Bytes48
+				err = commitment.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				commitments = append(commitments, commitment)
 			}
-			commitments = append(commitments, commitment)
-		}
 
-		var proofs []Bytes48
-		for _, p := range test.Input.Proofs {
-			var proof Bytes48
-			err = proof.UnmarshalText([]byte(p))
-			if err != nil {
-				require.Nil(t, test.Output)
-				continue
+			var proofs []Bytes48
+			for _, p := range test.Input.Proofs {
+				var proof Bytes48
+				err = proof.UnmarshalText([]byte(p))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				proofs = append(proofs, proof)
 			}
-			proofs = append(proofs, proof)
-		}
 
-		valid, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
-		if ret == C_KZG_OK {
-			require.NotNil(t, test.Output)
-			require.Equal(t, *test.Output, valid)
-		} else {
-			require.Nil(t, test.Output)
-		}
+			valid, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+			if ret == C_KZG_OK {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
