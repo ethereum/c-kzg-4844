@@ -70,8 +70,9 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      byte[] proof = CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
-      assertArrayEquals(test.getOutput(), proof);
+      Tuple tuple = CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
+      assertArrayEquals(test.getOutput().getFirst(), tuple.getFirst());
+      assertArrayEquals(test.getOutput().getSecond(), tuple.getSecond());
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -83,7 +84,9 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      byte[] proof = CKZG4844JNI.computeBlobKzgProof(test.getInput().getBlob());
+      byte[] proof =
+          CKZG4844JNI.computeBlobKzgProof(
+              test.getInput().getBlob(), test.getInput().getCommitment());
       assertArrayEquals(test.getOutput(), proof);
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
@@ -165,7 +168,7 @@ public class CKZG4844JNITest {
             i -> {
               blobsArray[i] = TestUtils.createRandomBlob();
               commitmentsArray[i] = CKZG4844JNI.blobToKzgCommitment(blobsArray[i]);
-              proofsArray[i] = CKZG4844JNI.computeBlobKzgProof(blobsArray[i]);
+              proofsArray[i] = CKZG4844JNI.computeBlobKzgProof(blobsArray[i], commitmentsArray[i]);
             });
     final byte[] blobs = TestUtils.flatten(blobsArray);
     final byte[] commitments = TestUtils.flatten(commitmentsArray);
@@ -188,8 +191,9 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
-    final byte[] proof = CKZG4844JNI.computeKzgProof(blob, z_bytes);
-    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proof.length);
+    final Tuple tuple = CKZG4844JNI.computeKzgProof(blob, z_bytes);
+    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, tuple.getFirst().length);
+    assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, tuple.getSecond().length);
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -197,7 +201,8 @@ public class CKZG4844JNITest {
   public void checkComputeBlobKzgProof() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob);
+    final byte[] commitment = TestUtils.createRandomCommitment();
+    final byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob, commitment);
     assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proof.length);
     CKZG4844JNI.freeTrustedSetup();
   }
@@ -254,12 +259,26 @@ public class CKZG4844JNITest {
         exception.getErrorMessage());
 
     exception =
-        assertThrows(CKZGException.class, () -> CKZG4844JNI.computeBlobKzgProof(new byte[123]));
+        assertThrows(
+            CKZGException.class,
+            () -> CKZG4844JNI.computeBlobKzgProof(new byte[123], new byte[32]));
 
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
         String.format(
             "Invalid blob size. Expected %d bytes but got 123.", CKZG4844JNI.getBytesPerBlob()),
+        exception.getErrorMessage());
+
+    exception =
+        assertThrows(
+            CKZGException.class,
+            () ->
+                CKZG4844JNI.computeBlobKzgProof(
+                    new byte[CKZG4844JNI.getBytesPerBlob()], new byte[49]));
+
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertEquals(
+        String.format("Invalid commitment size. Expected 48 bytes but got 49."),
         exception.getErrorMessage());
 
     exception =

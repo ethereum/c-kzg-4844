@@ -5,9 +5,14 @@ import org.apache.tuweni.bytes.Bytes;
 public class ComputeBlobKzgProofTest {
   public static class Input {
     private String blob;
+    private String commitment;
 
     public byte[] getBlob() {
       return Bytes.fromHexString(blob).toArray();
+    }
+
+    public byte[] getCommitment() {
+      return Bytes.fromHexString(commitment).toArray();
     }
   }
 
