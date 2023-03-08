@@ -492,9 +492,9 @@ mod tests {
             };
 
             match KZGProof::compute_kzg_proof(blob, z, &kzg_settings) {
-                Ok(res) => {
-                    assert_eq!(res.0.bytes, test.get_output().unwrap().0.bytes);
-                    assert_eq!(res.1.bytes, test.get_output().unwrap().1.bytes);
+                Ok((proof, y)) => {
+                    assert_eq!(proof.bytes, test.get_output().unwrap().0.bytes);
+                    assert_eq!(y.bytes, test.get_output().unwrap().1.bytes);
                 }
                 _ => assert!(test.get_output().is_none()),
             }
