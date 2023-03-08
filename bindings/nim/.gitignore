@@ -1,0 +1,4 @@
+/build
+nimble.develop
+nimble.paths
+*.exe
