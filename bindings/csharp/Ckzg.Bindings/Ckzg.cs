@@ -12,7 +12,7 @@ public static partial class Ckzg
     ///     Loads trusted setup settings from file.
     /// </summary>
     /// <param name="filename">Settings file path</param>
-    /// <exception cref="ArgumentException">Thrown when the file path is not correct </exception>
+    /// <exception cref="ArgumentException">Thrown when the file path is not correct</exception>
     /// <exception cref="InvalidOperationException">Thrown when unable to load the setup</exception>
     /// <returns>Trusted setup settings as a pointer</returns>
     public static IntPtr LoadTrustedSetup(string filepath)
@@ -40,7 +40,7 @@ public static partial class Ckzg
     /// <summary>
     ///     Calculates commitment for the blob.
     /// </summary>
-    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="CommitmentLength" /> bytes to receive the commitment</param>
+    /// <param name="commitment">Preallocated buffer of <inheritdoc cref="BytesPerCommitment"/> bytes to receive the commitment</param>
     /// <param name="blob">Flatten array of blob elements</param>
     /// <param name="ckzgSetup">Trusted setup settings</param>
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
@@ -62,26 +62,26 @@ public static partial class Ckzg
     /// <summary>
     ///     Compute KZG proof at point `z` for the polynomial represented by `blob`.
     /// </summary>
-    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength" /> bytes to receive the proof</param>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="BytesPerProof"/> bytes to receive the proof</param>
+    /// <param name="y">Preallocated buffer of <inheritdoc cref="BytesPerFieldElement"/> bytes to receive y</param>
     /// <param name="blob">Blob bytes</param>
     /// <param name="z">Z point</param>
     /// <param name="ckzgSetup">Trusted setup settings</param>
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void ComputeKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, ReadOnlySpan<byte> z,
-        IntPtr ckzgSetup)
+    public static unsafe void ComputeKzgProof(Span<byte> proof, Span<byte> y, ReadOnlySpan<byte> blob,
+        ReadOnlySpan<byte> z, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+        ThrowOnInvalidLength(y, nameof(y), BytesPerFieldElement);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
         ThrowOnInvalidLength(z, nameof(z), BytesPerFieldElement);
 
-        if (z.Length != BytesPerFieldElement) throw new ArgumentException("Invalid z size", nameof(z));
-
-        fixed (byte* proofPtr = proof, blobPtr = blob, zPtr = z)
+        fixed (byte* proofPtr = proof, yPtr = y, blobPtr = blob, zPtr = z)
         {
-            KzgResult result = ComputeKzgProof(proofPtr, blobPtr, zPtr, ckzgSetup);
+            KzgResult result = ComputeKzgProof(proofPtr, yPtr, blobPtr, zPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -89,21 +89,23 @@ public static partial class Ckzg
     /// <summary>
     ///     Given a blob, return the KZG proof that is used to verify it against the commitment.
     /// </summary>
-    /// <param name="proof">Preallocated buffer of <inheritdoc cref="ProofLength" /> bytes to receive the proof</param>
+    /// <param name="proof">Preallocated buffer of <inheritdoc cref="BytesPerProof"/> bytes to receive the proof</param>
     /// <param name="blob">Blob bytes</param>
+    /// <param name="commitment">Commitment bytes</param>
     /// <param name="ckzgSetup">Trusted setup settings</param>
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void ComputeBlobKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    public static unsafe void ComputeBlobKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob,
+        ReadOnlySpan<byte> commitment, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
 
-        fixed (byte* proofPtr = proof, blobPtr = blob)
+        fixed (byte* proofPtr = proof, blobPtr = blob, commitmentPtr = commitment)
         {
-            KzgResult result = ComputeBlobKzgProof(proofPtr, blobPtr, ckzgSetup);
+            KzgResult result = ComputeBlobKzgProof(proofPtr, blobPtr, commitmentPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -111,9 +113,10 @@ public static partial class Ckzg
     /// <summary>
     ///     Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
     /// </summary>
-    /// <param name="blob"></param>
-    /// <param name="commitment"></param>
-    /// <param name="proof"></param>
+    /// <param name="commitment">Commitment bytes</param>
+    /// <param name="z">Z bytes</param>
+    /// <param name="y">Y bytes</param>
+    /// <param name="proof">Proof bytes</param>
     /// <param name="ckzgSetup">Trusted setup settings</param>
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
