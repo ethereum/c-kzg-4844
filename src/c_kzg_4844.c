@@ -932,7 +932,7 @@ static C_KZG_RET verify_kzg_proof_impl(
 /**
  * Verify a KZG proof claiming that `p(z) == y`.
  *
- * @param[out] ok        `true` if the proof is valid, `false` if not
+ * @param[out] ok         `true` if the proof is valid, `false` if not
  * @param[in]  commitment The KZG commitment corresponding to polynomial
  *                        p(x)
  * @param[in]  z          The evaluation point
