@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "fs";
+import { join, resolve } from "path";
 import { globSync } from "glob";
 
 const yaml = require("js-yaml");
@@ -21,11 +21,11 @@ import {
   transformTrustedSetupJSON,
 } from "../lib/kzg";
 
-const setupFileName = "testing_trusted_setups.json";
-
-const SETUP_FILE_PATH = existsSync(setupFileName)
-  ? setupFileName
-  : `../../../src/${setupFileName}`;
+const SETUP_FILE_PATH = resolve(
+  __dirname,
+  "__fixtures__",
+  "testing_trusted_setups.json",
+);
 
 const MAX_TOP_BYTE = 114;
 
