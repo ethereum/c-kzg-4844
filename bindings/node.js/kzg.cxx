@@ -10,14 +10,18 @@
 #include "blst.h"
 
 /**
- * Structure containing information needed for the lifetime of the addon
+ * Structure containing information needed for the lifetime of the bindings
  * instance. It is not safe to use global static data with worker instances.
- * Workers share memory and the JS thread will be independent of the main
- * thread. Is not thread safe and potential for initialization/clean-up
- * to overwrite and segfault. An instance of this struct will get created
- * during initialization and it will be and passed around to with the 
- * environment. It can be retrieved via `napi_get_instance_data` or
- * `Napi::Env::GetInstanceData`.
+ * Native node addons are loaded as a dll's once no matter how many node
+ * instances are using the library.  Each node instance will initialize an
+ * instance of the bindings and workers share memory space.  In addition
+ * the worker JS thread will be independent of the main JS thread. Global
+ * statics are not thread safe and have the potential for initialization and
+ * clean-up overwrites which results in segfault or undefined behavior.
+ * 
+ * An instance of this struct will get created during initialization and it
+ * will be available from the runtime. It can be retrieved via
+ * `napi_get_instance_data` or `Napi::Env::GetInstanceData`.
  */
 typedef struct {
   bool is_setup;
