@@ -23,20 +23,6 @@ fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
     arr.into()
 }
 
-fn generate_random_commitment(rng: &mut ThreadRng, s: &KZGSettings) -> Bytes48 {
-    let blob = generate_random_blob(rng);
-    KZGCommitment::blob_to_kzg_commitment(blob, s)
-        .unwrap()
-        .to_bytes()
-}
-
-fn generate_random_proof(rng: &mut ThreadRng, s: &KZGSettings) -> Bytes48 {
-    let blob = generate_random_blob(rng);
-    KZGProof::compute_blob_kzg_proof(blob, s)
-        .unwrap()
-        .to_bytes()
-}
-
 pub fn criterion_benchmark(c: &mut Criterion) {
     let max_count: usize = 64;
     let mut rng = rand::thread_rng();
@@ -47,11 +33,22 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let blobs: Vec<Blob> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng))
         .collect();
-    let commitments: Vec<Bytes48> = (0..max_count)
-        .map(|_| generate_random_commitment(&mut rng, &kzg_settings))
+    let commitments: Vec<Bytes48> = blobs
+        .iter()
+        .map(|blob| {
+            KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings)
+                .unwrap()
+                .to_bytes()
+        })
         .collect();
-    let proofs: Vec<Bytes48> = (0..max_count)
-        .map(|_| generate_random_proof(&mut rng, &kzg_settings))
+    let proofs: Vec<Bytes48> = blobs
+        .iter()
+        .zip(commitments.iter())
+        .map(|(blob, commitment)| {
+            KZGProof::compute_blob_kzg_proof(*blob, *commitment, &kzg_settings)
+                .unwrap()
+                .to_bytes()
+        })
         .collect();
     let fields: Vec<Bytes32> = (0..max_count)
         .map(|_| generate_random_field_element(&mut rng))
@@ -72,7 +69,13 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
 
     c.bench_function("compute_blob_kzg_proof", |b| {
-        b.iter(|| KZGProof::compute_blob_kzg_proof(*blobs.first().unwrap(), &kzg_settings))
+        b.iter(|| {
+            KZGProof::compute_blob_kzg_proof(
+                *blobs.first().unwrap(),
+                *commitments.first().unwrap(),
+                &kzg_settings,
+            )
+        })
     });
 
     c.bench_function("verify_blob_kzg_proof", |b| {
