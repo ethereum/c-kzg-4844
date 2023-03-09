@@ -15,9 +15,9 @@ DLLEXPORT void free_trusted_setup_wrap(KZGSettings *s);
 
 DLLEXPORT C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET compute_kzg_proof(KZGProof *out, const Blob *blob, const Bytes32 *z_bytes, const KZGSettings *s);
+DLLEXPORT C_KZG_RET compute_kzg_proof(KZGProof *proof_out, Bytes32 *y_out, const Blob *blob, const Bytes32 *z_bytes, const KZGSettings *s);
 
-DLLEXPORT C_KZG_RET compute_blob_kzg_proof(KZGProof *out, const Blob *blob, const KZGSettings *s);
+DLLEXPORT C_KZG_RET compute_blob_kzg_proof(KZGProof *out, const Blob *blob, const Bytes48 *commitment, const KZGSettings *s);
 
 DLLEXPORT C_KZG_RET verify_kzg_proof(bool *result, const Bytes48 *commitments_bytes, const Bytes32 *z_bytes, const Bytes32 *y_bytes, const Bytes48 *proof_bytes, const KZGSettings *s);
 
