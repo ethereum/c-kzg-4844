@@ -1710,6 +1710,36 @@ static void profile_blob_to_kzg_commitment(void) {
     ProfilerStop();
 }
 
+static void profile_compute_kzg_proof(void) {
+    Blob blob;
+    Bytes32 z, y_out;
+    KZGProof proof_out;
+
+    get_rand_blob(&blob);
+    get_rand_field_element(&z);
+
+    ProfilerStart("compute_kzg_proof.prof");
+    for (int i = 0; i < 100; i++) {
+        compute_kzg_proof(&proof_out, &y_out, &blob, &z, &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_compute_blob_kzg_proof(void) {
+    Blob blob;
+    Bytes48 commitment;
+    KZGProof out;
+
+    get_rand_blob(&blob);
+    get_rand_g1_bytes(&commitment);
+
+    ProfilerStart("compute_blob_kzg_proof.prof");
+    for (int i = 0; i < 10; i++) {
+        compute_blob_kzg_proof(&out, &blob, &commitment, &s);
+    }
+    ProfilerStop();
+}
+
 static void profile_verify_kzg_proof(void) {
     Bytes32 z, y;
     Bytes48 commitment, proof;
@@ -1727,53 +1757,38 @@ static void profile_verify_kzg_proof(void) {
     ProfilerStop();
 }
 
-static void profile_verify_aggregate_kzg_proof(void) {
+static void profile_verify_blob_kzg_proof(void) {
+    Blob blob;
+    Bytes48 commitment, proof;
+    bool out;
+
+    get_rand_blob(&blob);
+    get_rand_g1_bytes(&commitment);
+    get_rand_g1_bytes(&proof);
+
+    ProfilerStart("verify_blob_kzg_proof.prof");
+    for (int i = 0; i < 5000; i++) {
+        verify_blob_kzg_proof(&out, &blob, &commitment, &proof, &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_blob_kzg_proof_batch(void) {
     const int n = 16;
     Blob blobs[n];
     Bytes48 commitments[n];
-    Bytes48 proof;
+    Bytes48 proofs[n];
     bool out;
 
     for (int i = 0; i < n; i++) {
+        get_rand_blob(&blobs[i]);
         get_rand_g1_bytes(&commitments[i]);
-        get_rand_blob(&blobs[i]);
+        get_rand_g1_bytes(&proofs[i]);
     }
-    get_rand_g1_bytes(&proof);
 
-    ProfilerStart("verify_aggregate_kzg_proof.prof");
+    ProfilerStart("verify_blob_kzg_proof_batch.prof");
     for (int i = 0; i < 1000; i++) {
-        verify_aggregate_kzg_proof(&out, blobs, commitments, n, &proof, &s);
-    }
-    ProfilerStop();
-}
-
-static void profile_compute_kzg_proof(void) {
-    Blob blob;
-    Bytes32 z, y;
-    KZGProof out;
-
-    get_rand_blob(&blob);
-    get_rand_field_element(&z);
-
-    ProfilerStart("compute_kzg_proof.prof");
-    for (int i = 0; i < 100; i++) {
-        compute_kzg_proof(&out, &y, &blob, &z, &s);
-    }
-    ProfilerStop();
-}
-
-static void profile_compute_aggregate_kzg_proof(void) {
-    const int n = 16;
-    Blob blobs[n];
-    KZGProof out;
-
-    for (int i = 0; i < n; i++) {
-        get_rand_blob(&blobs[i]);
-    }
-
-    ProfilerStart("compute_aggregate_kzg_proof.prof");
-    for (int i = 0; i < 10; i++) {
-        compute_aggregate_kzg_proof(&out, blobs, n, &s);
+        verify_blob_kzg_proof_batch(&out, blobs, commitments, proofs, n, &s);
     }
     ProfilerStop();
 }
@@ -1896,10 +1911,11 @@ int main(void) {
      */
 #ifdef PROFILE
     profile_blob_to_kzg_commitment();
-    profile_verify_kzg_proof();
-    profile_verify_aggregate_kzg_proof();
     profile_compute_kzg_proof();
-    profile_compute_aggregate_kzg_proof();
+    profile_compute_blob_kzg_proof();
+    profile_verify_kzg_proof();
+    profile_verify_blob_kzg_proof();
+    profile_verify_blob_kzg_proof_batch();
 #endif
     teardown();
 
