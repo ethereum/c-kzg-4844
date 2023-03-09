@@ -420,9 +420,9 @@ mod tests {
 
         let proofs: Vec<Bytes48> = blobs
             .iter()
-            .zip(commitments.clone())
+            .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(*blob, commitment, &kzg_settings).unwrap()
+                KZGProof::compute_blob_kzg_proof(*blob, *commitment, &kzg_settings).unwrap()
             })
             .map(|proof| proof.to_bytes())
             .collect();
