@@ -189,7 +189,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
  * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param[in] {Bytes32} zBytes - The generator z-value for the evaluation points
  * 
- * @return {ComputationProof} - Tuple containing the resulting proof and evaluation
+ * @return {ProofResult} - Tuple containing the resulting proof and evaluation
  *                              of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library

@@ -25,7 +25,7 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  ComputationProof,
+  ProofResult,
 } from "./kzg";
 
 const setupFileName = "testing_trusted_setups.json";
@@ -138,7 +138,7 @@ describe("C-KZG", () => {
           readFileSync(testFile, "ascii"),
         );
 
-        let proof: ComputationProof;
+        let proof: ProofResult;
         let blob = bytesFromHex(test.input.blob);
         let z = bytesFromHex(test.input.z);
 

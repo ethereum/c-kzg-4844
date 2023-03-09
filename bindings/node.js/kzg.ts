@@ -11,7 +11,7 @@ export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Buffer; // 48 bytes
 export type KZGCommitment = Buffer; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
-export type ComputationProof = [KZGProof, Bytes32];
+export type ProofResult = [KZGProof, Bytes32];
 
 export interface TrustedSetupJson {
   setup_G1: string[];
@@ -32,7 +32,7 @@ interface KZG {
 
   blobToKzgCommitment: (blob: Blob) => KZGCommitment;
 
-  computeKzgProof: (blob: Blob, zBytes: Bytes32) => ComputationProof;
+  computeKzgProof: (blob: Blob, zBytes: Bytes32) => ProofResult;
 
   computeBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48) => KZGProof;
 
@@ -135,12 +135,12 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment {
  * @param {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param {Bytes32} zBytes - The generator z-value for the evaluation points
  *
- * @return {ComputationProof} - Tuple containing the resulting proof and evaluation
- *                              of the polynomial at the evaluation point z
+ * @return {ProofResult} - Tuple containing the resulting proof and evaluation
+ *                         of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeKzgProof(blob: Blob, zBytes: Bytes32): ComputationProof {
+export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult {
   return kzg.computeKzgProof(blob, zBytes);
 }
 
