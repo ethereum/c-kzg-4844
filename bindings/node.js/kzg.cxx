@@ -473,12 +473,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)  {
   if (status != napi_ok) {
     Napi::Error::New(env, "error setting kzg bindings instance data").ThrowAsJavaScriptException();
     return exports;
-  }   
-  exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
-  exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, BYTES_PER_COMMITMENT);
-  exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
-  exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
-  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
+  }
+
+  // Functions
   exports["loadTrustedSetup"] = Napi::Function::New(env, LoadTrustedSetup, "setup");
   exports["blobToKzgCommitment"] = Napi::Function::New(env, BlobToKzgCommitment, "blobToKzgCommitment");
   exports["computeKzgProof"] = Napi::Function::New(env, ComputeKzgProof, "computeKzgProof");
@@ -486,6 +483,13 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)  {
   exports["verifyKzgProof"] = Napi::Function::New(env, VerifyKzgProof, "verifyKzgProof");
   exports["verifyBlobKzgProof"] = Napi::Function::New(env, VerifyBlobKzgProof, "verifyBlobKzgProof");
   exports["verifyBlobKzgProofBatch"] = Napi::Function::New(env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch");
+
+  // Constants
+  exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
+  exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(env, BYTES_PER_COMMITMENT);
+  exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(env, BYTES_PER_FIELD_ELEMENT);
+  exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
+  exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(env, FIELD_ELEMENTS_PER_BLOB);
   return exports;
 }
 
