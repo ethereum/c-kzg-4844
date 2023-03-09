@@ -189,7 +189,8 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
  * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param[in] {Bytes32} zBytes - The generator z-value for the evaluation points
  * 
- * @return {KZGProof} - The resulting proof
+ * @return {ProofResult} - Tuple containing the resulting proof and evaluation
+ *                              of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
@@ -209,8 +210,10 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   }
 
   KZGProof proof;
+  Bytes32 y_out;
   C_KZG_RET ret = compute_kzg_proof(
     &proof,
+    &y_out,
     blob,
     z_bytes,
     kzg_settings
@@ -222,7 +225,10 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
     return env.Null();
   }
 
-  return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
+  Napi::Array tuple = Napi::Array::New(env, 2);
+  tuple[(uint32_t)0] = Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
+  tuple[(uint32_t)1] = Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&y_out), BYTES_PER_FIELD_ELEMENT);
+  return tuple;
 }
 
 
@@ -230,7 +236,8 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
  * 
- * @param[in] {Blob} blob - The blob (polynomial) to generate a proof for
+ * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param[in] {Bytes48} commitmentBytes - Commitment to verify
  * 
  * @return {KZGProof} - The resulting proof
  *
@@ -242,6 +249,10 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   if (blob == nullptr) {
     return env.Null();
   }
+  Bytes48 *commitment_bytes = get_bytes48(env, info[1], "commitmentBytes");
+  if (commitment_bytes == nullptr) {
+    return env.Null();
+  }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
     return env.Null();
@@ -251,6 +262,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   C_KZG_RET ret = compute_blob_kzg_proof(
     &proof,
     blob,
+    commitment_bytes,
     kzg_settings
   );
 
