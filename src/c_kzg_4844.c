@@ -301,6 +301,9 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
 /**
  * Montgomery batch inversion in finite field.
  *
+ * @remark This function does not support in-place computation (i.e. `a` MUST
+ * NOT point to the same place as `out`)
+ *
  * @param[out] out The inverses of @p a, length @p len
  * @param[in]  a   A vector of field elements, length @p len
  * @param[in]  len The number of field elements
@@ -310,6 +313,8 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     fr_t *prod = NULL;
     fr_t inv;
     size_t i;
+
+    assert(a != out);
 
     ret = new_fr_array(&prod, len);
     if (ret != C_KZG_OK) goto out;
