@@ -92,9 +92,8 @@ public class ReferenceTests
             try
             {
                 Ckzg.BlobToKzgCommitment(commitment, blob, _ts);
-                string? commitmentStr = test.Output;
-                Assert.That(commitmentStr, Is.Not.EqualTo(null));
-                byte[] expectedCommitment = GetBytes(commitmentStr);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedCommitment = GetBytes(test.Output);
                 Assert.That(commitment, Is.EqualTo(expectedCommitment));
             }
             catch
@@ -117,7 +116,7 @@ public class ReferenceTests
     private class ComputeKzgProofTest
     {
         public ComputeKzgProofInput Input { get; set; } = null!;
-        public string? Output { get; set; } = null!;
+        public List<string>? Output { get; set; } = null!;
     }
 
     [TestCase]
@@ -133,16 +132,18 @@ public class ReferenceTests
             Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] proof = new byte[48];
+            byte[] y = new byte[32];
             byte[] blob = GetBytes(test.Input.Blob);
             byte[] z = GetBytes(test.Input.Z);
 
             try
             {
-                Ckzg.ComputeKzgProof(proof, blob, z, _ts);
-                string? proofStr = test.Output;
-                Assert.That(proofStr, Is.Not.EqualTo(null));
-                byte[] expectedProof = GetBytes(proofStr);
+                Ckzg.ComputeKzgProof(proof, y, blob, z, _ts);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedProof = GetBytes(test.Output.ElementAt(0));
                 Assert.That(proof, Is.EqualTo(expectedProof));
+                byte[] expectedY = GetBytes(test.Output.ElementAt(1));
+                Assert.That(y, Is.EqualTo(expectedY));
             }
             catch
             {
@@ -158,6 +159,7 @@ public class ReferenceTests
     private class ComputeBlobKzgProofInput
     {
         public string Blob { get; set; } = null!;
+        public string Commitment { get; set; } = null!;
     }
 
     private class ComputeBlobKzgProofTest
@@ -180,13 +182,13 @@ public class ReferenceTests
 
             byte[] proof = new byte[48];
             byte[] blob = GetBytes(test.Input.Blob);
+            byte[] commitment = GetBytes(test.Input.Commitment);
 
             try
             {
-                Ckzg.ComputeBlobKzgProof(proof, blob, _ts);
-                string? proofStr = test.Output;
-                Assert.That(proofStr, Is.Not.EqualTo(null));
-                byte[] expectedProof = GetBytes(proofStr);
+                Ckzg.ComputeBlobKzgProof(proof, blob, commitment, _ts);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedProof = GetBytes(test.Output);
                 Assert.That(proof, Is.EqualTo(expectedProof));
             }
             catch

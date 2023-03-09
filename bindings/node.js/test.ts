@@ -15,7 +15,6 @@ interface TestMeta<
 
 import {
   loadTrustedSetup,
-  freeTrustedSetup,
   blobToKzgCommitment,
   computeKzgProof,
   computeBlobKzgProof,
@@ -26,7 +25,6 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  transformTrustedSetupJSON,
   ComputationProof,
 } from "./kzg";
 
@@ -106,12 +104,7 @@ function bytesFromHex(hexString: string): Buffer {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    const file = await transformTrustedSetupJSON(SETUP_FILE_PATH);
-    loadTrustedSetup(file);
-  });
-
-  afterAll(() => {
-    freeTrustedSetup();
+    loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe("reference tests should pass", () => {

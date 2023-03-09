@@ -3,72 +3,58 @@
  * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
  */
 const kzg: KZG = require("./kzg.node");
-const fs = require("fs");
+import * as fs from "fs";
+import * as path from "path";
 
 export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Buffer; // 48 bytes
 export type KZGCommitment = Buffer; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
-
-type SetupHandle = Object;
-
 export type ComputationProof = [KZGProof, Bytes32];
+
+export interface TrustedSetupJson {
+  setup_G1: string[];
+  setup_G2: string[];
+  setup_G1_lagrange: string[];
+  roots_of_unity: string[];
+}
+
 // The C++ native addon interface
-type KZG = {
+interface KZG {
   BYTES_PER_BLOB: number;
   BYTES_PER_COMMITMENT: number;
   BYTES_PER_FIELD_ELEMENT: number;
   BYTES_PER_PROOF: number;
   FIELD_ELEMENTS_PER_BLOB: number;
 
-  loadTrustedSetup: (filePath: string) => SetupHandle;
+  loadTrustedSetup: (filePath: string) => void;
 
-  freeTrustedSetup: (setupHandle: SetupHandle) => void;
+  blobToKzgCommitment: (blob: Blob) => KZGCommitment;
 
-  blobToKzgCommitment: (blob: Blob, setupHandle: SetupHandle) => KZGCommitment;
+  computeKzgProof: (blob: Blob, zBytes: Bytes32) => ComputationProof;
 
-  computeKzgProof: (
-    blob: Blob,
-    zBytes: Bytes32,
-    setupHandle: SetupHandle,
-  ) => ComputationProof;
-
-  computeBlobKzgProof: (
-    blob: Blob,
-    commitmentBytes: Bytes48,
-    setupHandle: SetupHandle,
-  ) => KZGProof;
+  computeBlobKzgProof: (blob: Blob, commitmentBytes: Bytes48) => KZGProof;
 
   verifyKzgProof: (
     commitmentBytes: Bytes48,
     zBytes: Bytes32,
     yBytes: Bytes32,
     proofBytes: Bytes48,
-    setupHandle: SetupHandle,
   ) => boolean;
 
   verifyBlobKzgProof: (
     blob: Blob,
     commitmentBytes: Bytes48,
     proofBytes: Bytes48,
-    setupHandle: SetupHandle,
   ) => boolean;
 
   verifyBlobKzgProofBatch: (
     blobs: Blob[],
     commitmentsBytes: Bytes48[],
     proofsBytes: Bytes48[],
-    setupHandle: SetupHandle,
   ) => boolean;
-};
-
-type TrustedSetupJSON = {
-  setup_G1: string[];
-  setup_G2: string[];
-  setup_G1_lagrange: string[];
-  roots_of_unity: string[];
-};
+}
 
 export const BYTES_PER_BLOB = kzg.BYTES_PER_BLOB;
 export const BYTES_PER_COMMITMENT = kzg.BYTES_PER_COMMITMENT;
@@ -76,55 +62,58 @@ export const BYTES_PER_FIELD_ELEMENT = kzg.BYTES_PER_FIELD_ELEMENT;
 export const BYTES_PER_PROOF = kzg.BYTES_PER_PROOF;
 export const FIELD_ELEMENTS_PER_BLOB = kzg.FIELD_ELEMENTS_PER_BLOB;
 
-// Stored as internal state
-let setupHandle: SetupHandle | undefined;
-
-function requireSetupHandle(): SetupHandle {
-  if (!setupHandle) {
-    throw new Error("You must call loadTrustedSetup to initialize KZG.");
-  }
-  return setupHandle;
-}
-
-export async function transformTrustedSetupJSON(
-  filePath: string,
-): Promise<string> {
-  const data: TrustedSetupJSON = JSON.parse(fs.readFileSync(filePath));
-
-  const textFilePath = filePath.replace(".json", "") + ".txt";
-
-  try {
-    fs.unlinkSync(textFilePath);
-  } catch {}
-
-  const file = fs.createWriteStream(textFilePath);
-  file.write(`${FIELD_ELEMENTS_PER_BLOB}\n65\n`);
-  file.write(data.setup_G1.map((p) => p.replace("0x", "")).join("\n"));
-  file.write("\n");
-  file.write(data.setup_G2.map((p) => p.replace("0x", "")).join("\n"));
-  file.end();
-
-  const p = new Promise((resolve) => {
-    file.close(resolve);
-  });
-
-  await p;
+/**
+ * Converts JSON formatted trusted setup into the native format that
+ * the native library requires.  Returns the absolute file path to the
+ * the formatted file.  The path will be the same as the origin
+ * file but with a ".txt" extension.
+ *
+ * @param {string} filePath - The absolute path of JSON formatted trusted setup
+ *
+ * @return {string} - The absolute path of the re-formatted trusted setup
+ *
+ * @throws {Error} - For invalid file operations
+ */
+function transformTrustedSetupJson(filePath: string): string {
+  const data: TrustedSetupJson = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  const textFilePath = filePath.replace(".json", ".txt");
+  const setupText =
+    kzg.FIELD_ELEMENTS_PER_BLOB +
+    "\n65\n" +
+    data.setup_G1.map((p) => p.substring(2)).join("\n") +
+    "\n" +
+    data.setup_G2.map((p) => p.substring(2)).join("\n");
+  fs.writeFileSync(textFilePath, setupText);
   return textFilePath;
 }
 
+/**
+ * Sets up the c-kzg library. Pass in a properly formatted trusted setup file
+ * to configure the library.  File must be in json format, see or {@link TrustedSetupJson}
+ * interface for more details, or as a properly formatted utf-8 encoded file.
+ *
+ * @remark This function must be run before any other functions in this
+ *         library can be run.
+ *
+ * @param {string} filePath - The absolute path of the trusted setup
+ *
+ * @return {void}
+ *
+ * @throws {Error} - For invalid file operations
+ */
 export function loadTrustedSetup(filePath: string): void {
-  if (setupHandle) {
-    throw new Error(
-      "Call freeTrustedSetup before loading a new trusted setup.",
+  if (!(filePath && typeof filePath === "string")) {
+    throw new TypeError(
+      "must initialize kzg with the filePath to a txt/json trusted setup",
     );
   }
-
-  setupHandle = kzg.loadTrustedSetup(filePath);
-}
-
-export function freeTrustedSetup(): void {
-  kzg.freeTrustedSetup(requireSetupHandle());
-  setupHandle = undefined;
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`no trusted setup found: ${filePath}`);
+  }
+  if (path.parse(filePath).ext === ".json") {
+    filePath = transformTrustedSetupJson(filePath);
+  }
+  return kzg.loadTrustedSetup(filePath);
 }
 
 /**
@@ -137,7 +126,7 @@ export function freeTrustedSetup(): void {
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 export function blobToKzgCommitment(blob: Blob): KZGCommitment {
-  return kzg.blobToKzgCommitment(blob, requireSetupHandle());
+  return kzg.blobToKzgCommitment(blob);
 }
 
 /**
@@ -152,7 +141,7 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment {
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 export function computeKzgProof(blob: Blob, zBytes: Bytes32): ComputationProof {
-  return kzg.computeKzgProof(blob, zBytes, requireSetupHandle());
+  return kzg.computeKzgProof(blob, zBytes);
 }
 
 /**
@@ -170,7 +159,7 @@ export function computeBlobKzgProof(
   blob: Blob,
   commitmentBytes: Bytes48,
 ): KZGProof {
-  return kzg.computeBlobKzgProof(blob, commitmentBytes, requireSetupHandle());
+  return kzg.computeBlobKzgProof(blob, commitmentBytes);
 }
 
 /**
@@ -191,13 +180,7 @@ export function verifyKzgProof(
   yBytes: Bytes32,
   proofBytes: Bytes48,
 ): boolean {
-  return kzg.verifyKzgProof(
-    commitmentBytes,
-    zBytes,
-    yBytes,
-    proofBytes,
-    requireSetupHandle(),
-  );
+  return kzg.verifyKzgProof(commitmentBytes, zBytes, yBytes, proofBytes);
 }
 
 /**
@@ -217,12 +200,7 @@ export function verifyBlobKzgProof(
   commitmentBytes: Bytes48,
   proofBytes: Bytes48,
 ): boolean {
-  return kzg.verifyBlobKzgProof(
-    blob,
-    commitmentBytes,
-    proofBytes,
-    requireSetupHandle(),
-  );
+  return kzg.verifyBlobKzgProof(blob, commitmentBytes, proofBytes);
 }
 
 /**
@@ -244,10 +222,5 @@ export function verifyBlobKzgProofBatch(
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
 ): boolean {
-  return kzg.verifyBlobKzgProofBatch(
-    blobs,
-    commitmentsBytes,
-    proofsBytes,
-    requireSetupHandle(),
-  );
+  return kzg.verifyBlobKzgProofBatch(blobs, commitmentsBytes, proofsBytes);
 }
