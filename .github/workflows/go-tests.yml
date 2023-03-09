@@ -1,4 +1,4 @@
-name: Go tests
+name: Go
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  go-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Go

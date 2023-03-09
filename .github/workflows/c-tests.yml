@@ -1,4 +1,4 @@
-name: C tests
+name: C
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  c-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

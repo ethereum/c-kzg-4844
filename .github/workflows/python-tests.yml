@@ -1,4 +1,4 @@
-name: Python tests
+name: Python
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  python-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

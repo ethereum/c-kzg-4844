@@ -1,4 +1,4 @@
-name: Rust tests
+name: Rust
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  rust-tests:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
