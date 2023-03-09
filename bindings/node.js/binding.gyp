@@ -12,7 +12,7 @@
         "NAPI_DISABLE_CPP_EXCEPTIONS",
         "FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"
       ],
-      "sources": ["kzg.cxx"],
+      "sources": ["src/kzg.cxx"],
       "include_dirs": [
         "../../inc",
         "../../src",

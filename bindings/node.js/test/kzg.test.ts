@@ -19,17 +19,17 @@ import {
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   transformTrustedSetupJSON,
-} from "./kzg";
+} from "../lib/kzg";
 
 const setupFileName = "testing_trusted_setups.json";
 
 const SETUP_FILE_PATH = existsSync(setupFileName)
   ? setupFileName
-  : `../../src/${setupFileName}`;
+  : `../../../src/${setupFileName}`;
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../tests";
+const TEST_DIR = "../../../tests";
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
   "blob_to_kzg_commitment/*/*/data.yaml",
