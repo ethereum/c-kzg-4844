@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test-ckzg:
+  c-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

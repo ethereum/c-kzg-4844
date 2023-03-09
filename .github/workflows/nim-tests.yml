@@ -1,4 +1,4 @@
-name: Nim bindings tests
+name: Nim tests
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test:
+  nim-tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

@@ -1,4 +1,4 @@
-name: Rust bindings tests
+name: Rust tests
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test-rust-bindings:
+  rust-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

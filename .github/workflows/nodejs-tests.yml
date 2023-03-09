@@ -1,4 +1,4 @@
-name: NodeJS bindings tests
+name: NodeJS tests
 on:
   push:
     branches:
@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test-nodejs-bindings:
+  nodejs-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
