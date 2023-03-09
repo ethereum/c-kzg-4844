@@ -6,6 +6,7 @@
     "Dan Coffman",
     "Matthew Keil"
   ],
+  "license": "MIT",
   "dependencies": {
     "node-addon-api": "^5.0.0",
     "bindings": "^1.5.0"
@@ -20,8 +21,7 @@
     "glob": "^9.1.0",
     "js-yaml": "^4.1.0"
   },
-  "license": "MIT",
-  "gypfile": true,
+  "main": "lib/kzg.js",
   "types": "lib/kzg.d.ts",
-  "main": "lib/kzg.js"
+  "gypfile": true
 }
