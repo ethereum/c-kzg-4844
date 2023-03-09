@@ -40,6 +40,32 @@ proc fromHexList(T: type, xList: YamlNode): seq[T] =
   for x in xList:
     result.add(T.fromHex(x.content))
 
+template runTests(folder: string, body: untyped) =
+  for filename in walkDirRec(folder):
+    test toTestName(filename):
+      # nim template is hygienic, {.inject.} will allow body to
+      # access injected symbol in current scope
+      let n {.inject.} = loadYaml(filename)
+      try:
+        body
+      except ValueError:
+        check n["output"].content == "null"
+
+template checkRes(res, body: untyped) =
+  if res.isErr:
+    check n["output"].content == "null"
+  else:
+    body
+
+template checkBool(res: untyped) =
+  checkRes(res):
+    check n["output"].content == $res.get
+
+template checkBytes48(res: untyped) =
+  checkRes(res):
+    let bytes = KzgBytes48.fromHex(n["output"])
+    check bytes == res.get
+
 suite "yaml tests":
   var ctx: KzgCtx
 
@@ -48,106 +74,52 @@ suite "yaml tests":
     check res.isOk
     ctx = res.get
 
-  for filename in walkDirRec(BLOB_TO_KZG_COMMITMENT_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          blob = KzgBlob.fromHex(n["input"]["blob"])
-          res = ctx.toCommitment(blob)
+  runTests(BLOB_TO_KZG_COMMITMENT_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      res = ctx.toCommitment(blob)
+    checkBytes48(res)
 
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          let kate = KzgCommitment.fromHex(n["output"])
-          check kate == res.get
-      except ValueError:
-        check n["output"].content == "null"
+  runTests(COMPUTE_KZG_PROOF_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      zBytes = KzgBytes32.fromHex(n["input"]["z"])
+      res = ctx.computeProof(blob, zBytes)
 
-  for filename in walkDirRec(COMPUTE_KZG_PROOF_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          blob = KzgBlob.fromHex(n["input"]["blob"])
-          zBytes = KzgBytes32.fromHex(n["input"]["z"])
-          res = ctx.computeProof(blob, zBytes)
+    checkRes(res):
+      let proof = KzgProof.fromHex(n["output"][0])
+      check proof == res.get.proof
+      let y = KzgBytes32.fromHex(n["output"][1])
+      check y == res.get.y
 
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          let proof = KzgProof.fromHex(n["output"][0])
-          check proof == res.get.proof
-          let y = KzgBytes32.fromHex(n["output"][1])
-          check y == res.get.y
-      except ValueError:
-        check n["output"].content == "null"
+  runTests(COMPUTE_BLOB_KZG_PROOF_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+      res = ctx.computeProof(blob, commitment)
+    checkBytes48(res)
 
-  for filename in walkDirRec(COMPUTE_BLOB_KZG_PROOF_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          blob = KzgBlob.fromHex(n["input"]["blob"])
-          commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-          res = ctx.computeProof(blob, commitment)
+  runTests(VERIFY_KZG_PROOF_TESTS):
+    let
+      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+      z = KzgBytes32.fromHex(n["input"]["z"])
+      y = KzgBytes32.fromHex(n["input"]["y"])
+      proof = KzgProof.fromHex(n["input"]["proof"])
+      res = ctx.verifyProof(commitment, z, y, proof)
+    checkBool(res)
 
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          let proof = KzgProof.fromHex(n["output"])
-          check proof == res.get
-      except ValueError:
-        check n["output"].content == "null"
+  runTests(VERIFY_BLOB_KZG_PROOF_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+      proof = KzgProof.fromHex(n["input"]["proof"])
+      res = ctx.verifyProof(blob, commitment, proof)
+    checkBool(res)
 
-  for filename in walkDirRec(VERIFY_KZG_PROOF_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-          z = KzgBytes32.fromHex(n["input"]["z"])
-          y = KzgBytes32.fromHex(n["input"]["y"])
-          proof = KzgProof.fromHex(n["input"]["proof"])
-          res = ctx.verifyProof(commitment, z, y, proof)
-
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          check n["output"].content == $res.get
-      except ValueError:
-        check n["output"].content == "null"
-
-  for filename in walkDirRec(VERIFY_BLOB_KZG_PROOF_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          blob = KzgBlob.fromHex(n["input"]["blob"])
-          commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-          proof = KzgProof.fromHex(n["input"]["proof"])
-          res = ctx.verifyProof(blob, commitment, proof)
-
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          check n["output"].content == $res.get
-      except ValueError:
-        check n["output"].content == "null"
-
-  for filename in walkDirRec(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS):
-    test toTestName(filename):
-      let n = loadYaml(filename)
-      try:
-        let
-          blobs = KzgBlob.fromHexList(n["input"]["blobs"])
-          commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
-          proofs = KzgProof.fromHexList(n["input"]["proofs"])
-          res = ctx.verifyProofs(blobs, commitments, proofs)
-
-        if res.isErr:
-          check n["output"].content == "null"
-        else:
-          check n["output"].content == $res.get
-      except ValueError:
-        check n["output"].content == "null"
+  runTests(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS):
+    let
+      blobs = KzgBlob.fromHexList(n["input"]["blobs"])
+      commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
+      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      res = ctx.verifyProofs(blobs, commitments, proofs)
+    checkBool(res)
