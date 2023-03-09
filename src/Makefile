@@ -27,9 +27,6 @@ PROFILE = -DPROFILE
 PROFILER = -lprofiler
 PROFILER_OPTS = CPUPROFILE_FREQUENCY=1000000000
 
-# Compiler flags for clang sanitizers.
-SANITIZE = -fsanitize=address -fsanitize=undefined
-
 # Platform specific options.
 ifneq ($(OS),Windows_NT)
     CFLAGS += -fPIC
@@ -38,11 +35,6 @@ ifneq ($(OS),Windows_NT)
         XCRUN = xcrun
         PROFILE += -L$(shell brew --prefix gperftools)/lib
         PROFILE += -I$(shell brew --prefix gperftools)/include
-    else
-		SANITIZE += -fsanitize=memory
-		SANITIZE += -fsanitize=leak
-		SANITIZE += -fsanitize=cfi
-		SANITIZE += -fsanitize=safe-stack
     endif
 endif
 
@@ -63,9 +55,6 @@ test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
 
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
 	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
-
-test_c_kzg_4844_san: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(SANITIZE) $(NO_OPTIMIZE) -o $@ $< $(BLST)
 
 .PHONY: blst
 blst:
@@ -105,9 +94,29 @@ profile: \
 	profile_compute_kzg_proof \
 	profile_compute_aggregate_kzg_proof
 
+.PHONY: sanitize_%
+sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
+	@echo Running sanitize=$*...
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(BLST)
+	@ASAN_OPTIONS=allocator_may_return_null=1 \
+         LSAN_OPTIONS=allocator_may_return_null=1 \
+	 ./$@; rm $@
+
+ifneq ($(OS),Windows_NT)
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
 .PHONY: sanitize
-sanitize: test_c_kzg_4844_san
-	@ASAN_OPTIONS=allocator_may_return_null=1 ./test_c_kzg_4844_san
+sanitize: \
+        sanitize_address \
+        sanitize_undefined
+else
+sanitize: \
+        sanitize_address \
+        sanitize_leak \
+        sanitize_safe-stack \
+        sanitize_undefined
+endif
+endif
 
 .PHONY: analyze
 analyze: c_kzg_4844.c
