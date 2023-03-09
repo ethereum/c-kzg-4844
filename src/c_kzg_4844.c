@@ -75,6 +75,7 @@ static const g2_t G2_GENERATOR = {
 
 /**
  * The first 32 roots of unity in the finite field F_r.
+ * SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of unity.
  *
  * For element `{A, B, C, D}`, the field element value is
  * `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be converted to
@@ -91,9 +92,10 @@ static const g2_t G2_GENERATOR = {
  * `k < q-1` where q is the modulus. So powers of r generate the field. This is
  * also known as being a "primitive element".
  *
- * This is easy to check for: we just require that r^((q-1)/2) != 1. Instead of
- * 5, we could use 7, 10, 13, 14, 15, 20... to create the roots of unity below.
- * There are a lot of primitive roots:
+ * In the formula above, the restriction can be slightly relaxed to `r` being a non-square.
+ * This is easy to check: We just require that r^((q-1)/2) == -1. Instead of
+ * 5, we could use 7, 10, 13, 14, 15, 20... to create the 2^i'th roots of unity below.
+ * Generally, there are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
 static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
