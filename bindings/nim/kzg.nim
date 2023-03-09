@@ -45,9 +45,10 @@ template getPtr(x: untyped): auto =
   else:
     addr(x)
 
-template verify(res: KZG_RET) =
+template verify(res: KZG_RET, ret: untyped): untyped =
   if res != KZG_OK:
     return err($res)
+  ok(ret)
 
 ##############################################################
 # Public functions
@@ -57,9 +58,7 @@ proc loadTrustedSetup*(input: File): Result[KzgCtx, string] =
   let
     ctx = newKzgCtx()
     res = load_trusted_setup_file(ctx.val, input)
-
-  verify(res)
-  ok(ctx)
+  verify(res, ctx)
 
 proc loadTrustedSetup*(fileName: string): Result[KzgCtx, string] =
   try:
@@ -82,9 +81,7 @@ proc loadTrustedSetup*(g1: openArray[G1Data],
       g1.len.csize_t,
       g2[0][0].getPtr,
       g2.len.csize_t)
-
-  verify(res)
-  ok(ctx)
+  verify(res, ctx)
 
 proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
   const
@@ -126,23 +123,21 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
 proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):
                      Result[KzgCommitment, string] {.gcsafe.} =
-  var kate: KzgCommitment
-  let res = blob_to_kzg_commitment(kate, blob, ctx.val)
-  verify(res)
-  ok(kate)
+  var ret: KzgCommitment
+  let res = blob_to_kzg_commitment(ret, blob, ctx.val)
+  verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
                    blob: KzgBlob,
                    z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
-  var x: KzgProofAndY
+  var ret: KzgProofAndY
   let res = compute_kzg_proof(
-    x.proof,
-    x.y,
+    ret.proof,
+    ret.y,
     blob,
     z,
     ctx.val)
-  verify(res)
-  ok(x)
+  verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
                    blob: KzgBlob,
@@ -153,8 +148,7 @@ proc computeProof*(ctx: KzgCtx,
     blob,
     commitmentBytes,
     ctx.val)
-  verify(res)
-  ok(proof)
+  verify(res, proof)
 
 proc verifyProof*(ctx: KzgCtx,
                   commitment: KzgBytes48,
@@ -169,8 +163,7 @@ proc verifyProof*(ctx: KzgCtx,
     y,
     proof,
     ctx.val)
-  verify(res)
-  ok(valid)
+  verify(res, valid)
 
 proc verifyProof*(ctx: KzgCtx,
                   blob: KzgBlob,
@@ -183,8 +176,7 @@ proc verifyProof*(ctx: KzgCtx,
     commitment,
     proof,
     ctx.val)
-  verify(res)
-  ok(valid)
+  verify(res, valid)
 
 proc verifyProofs*(ctx: KzgCtx,
                   blobs: openArray[KzgBlob],
@@ -207,8 +199,7 @@ proc verifyProofs*(ctx: KzgCtx,
     proofs[0].getPtr,
     blobs.len.csize_t,
     ctx.val)
-  verify(res)
-  ok(valid)
+  verify(res, valid)
 
 ##############################################################
 # Zero overhead aliases that match the spec
