@@ -3,8 +3,8 @@
   "version": "1.1.2",
   "description": "NodeJS bindings for C-KZG",
   "contributors": [
-    "Dan Coffman",
-    "Matthew Keil"
+    "Dan Coffman <dgcoffman@gmail.com>",
+    "Matthew Keil <me@matthewkeil.com>"
   ],
   "license": "MIT",
   "dependencies": {
