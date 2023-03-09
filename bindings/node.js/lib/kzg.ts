@@ -2,7 +2,7 @@
  * The public interface of this module exposes the functions as specified by
  * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
  */
-const kzg: KZG = require("./kzg.node");
+const kzg: KZG = require("bindings")("kzg");
 const fs = require("fs");
 
 export type Bytes32 = Uint8Array; // 32 bytes
