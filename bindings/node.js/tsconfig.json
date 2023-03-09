@@ -1,9 +1,21 @@
 {
   "compilerOptions": {
-    "declaration": true,
-    "declarationDir": "dist/dts",
     "target": "esnext",
-    "forceConsistentCasingInFileNames": true,
-    "strict": true
+    "module": "commonjs",
+    "noEmit": true,
+    "pretty": true,
+    "strict": true,
+    "alwaysStrict": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "declaration": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "esModuleInterop": true
   }
 }

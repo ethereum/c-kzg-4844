@@ -12,10 +12,10 @@
         "NAPI_DISABLE_CPP_EXCEPTIONS",
         "FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"
       ],
-      "sources": ["kzg.cxx"],
+      "sources": ["src/kzg.cxx"],
       "include_dirs": [
-        "<(module_root_dir)/dist/deps/blst/bindings",
-        "<(module_root_dir)/dist/deps/c-kzg",
+        "<(module_root_dir)/deps/blst/bindings",
+        "<(module_root_dir)/deps/c-kzg",
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
       "libraries": [
@@ -26,40 +26,25 @@
       "actions": [
         {
           "action_name": "build_blst",
-          "inputs": ["<(module_root_dir)/dist/deps/blst/build.sh"],
+          "inputs": ["<(module_root_dir)/deps/blst/build.sh"],
           "outputs": ["<(module_root_dir)/libblst.a"],
-          "action": ["<(module_root_dir)/dist/deps/blst/build.sh"]
+          "action": ["<(module_root_dir)/deps/blst/build.sh"]
         },
         {
           "action_name": "build_ckzg",
           "inputs": [
-            "<(module_root_dir)/dist/deps/c-kzg/c_kzg_4844.c",
+            "<(module_root_dir)/deps/c-kzg/c_kzg_4844.c",
             "<(module_root_dir)/libblst.a"
           ],
           "outputs": ["<(module_root_dir)/c_kzg_4844.o"],
           "action": [
             "cc",
-            "-I<(module_root_dir)/dist/deps/blst/bindings",
+            "-I<(module_root_dir)/deps/blst/bindings",
             "-DFIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})",
             "-O2",
             "-c",
-            "<(module_root_dir)/dist/deps/c-kzg/c_kzg_4844.c"
+            "<(module_root_dir)/deps/c-kzg/c_kzg_4844.c"
           ]
-        }
-      ]
-    },
-    {
-      "target_name": "action_after_build",
-      "type": "none",
-      "dependencies": ["kzg"],
-      "copies": [
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "./dist"
-        },
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "./"
         }
       ]
     }

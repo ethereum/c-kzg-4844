@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
+import { readFileSync } from "fs";
+import { join, resolve } from "path";
 import { globSync } from "glob";
 
 const yaml = require("js-yaml");
@@ -26,17 +26,17 @@ import {
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   ProofResult,
-} from "./kzg";
+} from "../lib/kzg";
 
-const setupFileName = "testing_trusted_setups.json";
-
-const SETUP_FILE_PATH = existsSync(setupFileName)
-  ? setupFileName
-  : `../../src/${setupFileName}`;
+const SETUP_FILE_PATH = resolve(
+  __dirname,
+  "__fixtures__",
+  "testing_trusted_setups.json",
+);
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../tests";
+const TEST_DIR = "../../../tests";
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,

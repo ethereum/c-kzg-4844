@@ -12,7 +12,7 @@
         "NAPI_DISABLE_CPP_EXCEPTIONS",
         "FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"
       ],
-      "sources": ["kzg.cxx"],
+      "sources": ["src/kzg.cxx"],
       "include_dirs": [
         "../../inc",
         "../../src",
@@ -23,17 +23,6 @@
         "<(module_root_dir)/../../lib/libblst.a"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"]
-    },
-    {
-      "target_name": "action_after_build",
-      "type": "none",
-      "dependencies": ["kzg"],
-      "copies": [
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "."
-        }
-      ]
     }
   ]
 }
