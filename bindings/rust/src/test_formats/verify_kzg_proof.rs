@@ -13,27 +13,19 @@ pub struct Input<'a> {
 
 impl Input<'_> {
     pub fn get_commitment(&self) -> Result<Bytes48, Error> {
-        let hex_str = self.commitment.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Bytes48::from_bytes(&bytes)
+        Bytes48::from_hex(self.commitment)
     }
 
     pub fn get_z(&self) -> Result<Bytes32, Error> {
-        let hex_str = self.z.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Bytes32::from_bytes(&bytes)
+        Bytes32::from_hex(self.z)
     }
 
     pub fn get_y(&self) -> Result<Bytes32, Error> {
-        let hex_str = self.y.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Bytes32::from_bytes(&bytes)
+        Bytes32::from_hex(self.y)
     }
 
     pub fn get_proof(&self) -> Result<Bytes48, Error> {
-        let hex_str = self.proof.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Bytes48::from_bytes(&bytes)
+        Bytes48::from_hex(self.proof)
     }
 }
 
