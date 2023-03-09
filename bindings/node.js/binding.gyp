@@ -23,17 +23,6 @@
         "<(module_root_dir)/../../lib/libblst.a"
       ],
       "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"]
-    },
-    {
-      "target_name": "action_after_build",
-      "type": "none",
-      "dependencies": ["kzg"],
-      "copies": [
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "."
-        }
-      ]
     }
   ]
 }

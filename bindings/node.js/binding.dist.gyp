@@ -47,21 +47,6 @@
           ]
         }
       ]
-    },
-    {
-      "target_name": "action_after_build",
-      "type": "none",
-      "dependencies": ["kzg"],
-      "copies": [
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "./dist"
-        },
-        {
-          "files": ["./build/Release/kzg.node"],
-          "destination": "./"
-        }
-      ]
     }
   ]
 }
