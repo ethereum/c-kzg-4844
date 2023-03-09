@@ -5,6 +5,14 @@ import { globSync } from "glob";
 
 const yaml = require("js-yaml");
 
+interface TestMeta<
+  I extends Record<string, any>,
+  O extends boolean | string | string[] | Record<string, any>,
+> {
+  input: I;
+  output: O;
+}
+
 import {
   loadTrustedSetup,
   blobToKzgCommitment,
@@ -17,6 +25,7 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
+  ProofResult,
 } from "../lib/kzg";
 
 const SETUP_FILE_PATH = resolve(
@@ -28,23 +37,41 @@ const SETUP_FILE_PATH = resolve(
 const MAX_TOP_BYTE = 114;
 
 const TEST_DIR = "../../../tests";
+type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
   "blob_to_kzg_commitment/*/*/data.yaml",
 );
+type ComputeKzgProofTest = TestMeta<{ blob: string; z: string }, string[]>;
 const COMPUTE_KZG_PROOF_TESTS = join(
   TEST_DIR,
   "compute_kzg_proof/*/*/data.yaml",
 );
+type ComputeBlobKzgProofTest = TestMeta<
+  { blob: string; commitment: string },
+  string
+>;
 const COMPUTE_BLOB_KZG_PROOF_TESTS = join(
   TEST_DIR,
   "compute_blob_kzg_proof/*/*/data.yaml",
 );
+type VerifyKzgProofTest = TestMeta<
+  { commitment: string; y: string; z: string; proof: string },
+  boolean
+>;
 const VERIFY_KZG_PROOF_TESTS = join(TEST_DIR, "verify_kzg_proof/*/*/data.yaml");
+type VerifyBlobKzgProofTest = TestMeta<
+  { blob: string; commitment: string; proof: string },
+  boolean
+>;
 const VERIFY_BLOB_KZG_PROOF_TESTS = join(
   TEST_DIR,
   "verify_blob_kzg_proof/*/*/data.yaml",
 );
+type VerifyBatchKzgProofTest = TestMeta<
+  { blobs: string[]; commitments: string[]; proofs: string[] },
+  boolean
+>;
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = join(
   TEST_DIR,
   "verify_blob_kzg_proof_batch/*/*/data.yaml",
@@ -84,7 +111,9 @@ describe("C-KZG", () => {
     it("reference tests for blobToKzgCommitment should pass", () => {
       let tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: BlobToKzgCommitmentTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
         let commitment: Buffer;
         let blob = bytesFromHex(test.input.blob);
@@ -105,9 +134,11 @@ describe("C-KZG", () => {
     it("reference tests for computeKzgProof should pass", () => {
       let tests = globSync(COMPUTE_KZG_PROOF_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: ComputeKzgProofTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
-        let proof: Buffer;
+        let proof: ProofResult;
         let blob = bytesFromHex(test.input.blob);
         let z = bytesFromHex(test.input.z);
 
@@ -119,21 +150,23 @@ describe("C-KZG", () => {
         }
 
         expect(test.output).not.toBeNull();
-        let expectedProof = bytesFromHex(test.output);
-        expect(proof).toEqual(expectedProof);
+        expect(proof).toEqual(test.output.map((hex) => bytesFromHex(hex)));
       });
     });
 
     it("reference tests for computeBlobKzgProof should pass", () => {
       let tests = globSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: ComputeBlobKzgProofTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
         let proof: Buffer;
         let blob = bytesFromHex(test.input.blob);
+        let commitment = bytesFromHex(test.input.commitment);
 
         try {
-          proof = computeBlobKzgProof(blob);
+          proof = computeBlobKzgProof(blob, commitment);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -148,7 +181,9 @@ describe("C-KZG", () => {
     it("reference tests for verifyKzgProof should pass", () => {
       let tests = globSync(VERIFY_KZG_PROOF_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: VerifyKzgProofTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
         let valid;
         let commitment = bytesFromHex(test.input.commitment);
@@ -170,7 +205,9 @@ describe("C-KZG", () => {
     it("reference tests for verifyBlobKzgProof should pass", () => {
       let tests = globSync(VERIFY_BLOB_KZG_PROOF_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: VerifyBlobKzgProofTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
         let valid;
         let blob = bytesFromHex(test.input.blob);
@@ -191,7 +228,9 @@ describe("C-KZG", () => {
     it("reference tests for verifyBlobKzgProofBatch should pass", () => {
       let tests = globSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       tests.forEach((testFile: string) => {
-        const test = yaml.load(readFileSync(testFile, "ascii"));
+        const test: VerifyBatchKzgProofTest = yaml.load(
+          readFileSync(testFile, "ascii"),
+        );
 
         let valid;
         let blobs = test.input.blobs.map(bytesFromHex);
@@ -246,12 +285,16 @@ describe("C-KZG", () => {
   describe("edge cases for computeBlobKzgProof", () => {
     it("computes a proof from blob", () => {
       let blob = generateRandomBlob();
-      computeBlobKzgProof(blob);
+      let commitment = blobToKzgCommitment(blob);
+      computeBlobKzgProof(blob, commitment);
     });
     it("throws as expected when given an argument of invalid length", () => {
-      expect(() => computeBlobKzgProof(blobBadLength)).toThrowError(
-        "Expected blob to be 131072 bytes",
-      );
+      expect(() =>
+        computeBlobKzgProof(
+          blobBadLength,
+          blobToKzgCommitment(generateRandomBlob()),
+        ),
+      ).toThrowError("Expected blob to be 131072 bytes");
     });
   });
 
@@ -317,21 +360,23 @@ describe("C-KZG", () => {
     it("correct blob/commitment/proof should verify as true", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(blob);
-      let proof = computeBlobKzgProof(blob);
+      let proof = computeBlobKzgProof(blob, commitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(true);
     });
 
     it("incorrect commitment should verify as false", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(generateRandomBlob());
-      let proof = computeBlobKzgProof(blob);
+      let proof = computeBlobKzgProof(blob, commitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
 
     it("incorrect proof should verify as false", () => {
       let blob = generateRandomBlob();
       let commitment = blobToKzgCommitment(blob);
-      let proof = computeBlobKzgProof(generateRandomBlob());
+      let randomBlob = generateRandomBlob();
+      let randomCommitment = blobToKzgCommitment(randomBlob);
+      let proof = computeBlobKzgProof(randomBlob, randomCommitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
     it("throws as expected when given an argument of invalid length", () => {
@@ -415,7 +460,7 @@ describe("C-KZG", () => {
       for (let [i] of blobs.entries()) {
         blobs[i] = generateRandomBlob();
         commitments[i] = blobToKzgCommitment(blobs[i]);
-        proofs[i] = computeBlobKzgProof(blobs[i]);
+        proofs[i] = computeBlobKzgProof(blobs[i], commitments[i]);
       }
 
       expect(verifyBlobKzgProofBatch(blobs, commitments, proofs)).toBe(true);
