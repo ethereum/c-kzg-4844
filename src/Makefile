@@ -99,7 +99,7 @@ sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(BLST)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
-         LSAN_OPTIONS=allocator_may_return_null=1 \
+	 LSAN_OPTIONS=allocator_may_return_null=1 \
 	 ./$@; rm $@
 
 ifneq ($(OS),Windows_NT)
@@ -107,14 +107,14 @@ UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
 .PHONY: sanitize
 sanitize: \
-        sanitize_address \
-        sanitize_undefined
+	sanitize_address \
+	sanitize_undefined
 else
 sanitize: \
-        sanitize_address \
-        sanitize_leak \
-        sanitize_safe-stack \
-        sanitize_undefined
+	sanitize_address \
+	sanitize_leak \
+	sanitize_safe-stack \
+	sanitize_undefined
 endif
 endif
 
