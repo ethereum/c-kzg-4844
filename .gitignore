@@ -10,8 +10,6 @@ analysis-report/
 *.s
 *.a
 *.out
-inc/blst.h*
-inc/blst_aux.h*
 .vscode/
 .idea/
 *bindings/*/*.so
