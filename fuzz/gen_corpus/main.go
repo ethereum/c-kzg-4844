@@ -76,7 +76,7 @@ func GenerateCorpusVerifyKZGProof(seed int64) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func main() {
-	ret := ckzg.LoadTrustedSetupFile("../src/trusted_setup.txt")
+	ret := ckzg.LoadTrustedSetupFile("../../src/trusted_setup.txt")
 	if ret != ckzg.C_KZG_OK {
 		panic("failed to load trusted setup")
 	}
