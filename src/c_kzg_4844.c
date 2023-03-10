@@ -267,6 +267,8 @@ static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
  *
  * @remark A 64-bit exponent is sufficient for our needs here.
  *
+ * @remark This function does support in-place computation, i.e. @p a == @p out works.
+ *
  * @param[out] out @p a raised to the power of @p n
  * @param[in]  a   The field element to be exponentiated
  * @param[in]  n   The exponent
