@@ -44,10 +44,14 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
         initialized = true;
     }
 
+    int offset = 0;
     size_t count = size / INPUT_SIZE;
-    const Blob *blobs_bytes = (Blob *)(data);
-    const Bytes48 *commitments_bytes = (Bytes48 *)(data + (count * BYTES_PER_BLOB));
-    const Bytes48 *proofs_bytes = (Bytes48 *)(data + (count * BYTES_PER_BLOB) + (count * BYTES_PER_COMMITMENT));
+    const Blob *blobs_bytes = (Blob *)(data + offset);
+    offset += count * BYTES_PER_BLOB;
+    const Bytes48 *commitments_bytes = (Bytes48 *)(data + offset);
+    offset += count * BYTES_PER_COMMITMENT;
+    const Bytes48 *proofs_bytes = (Bytes48 *)(data + offset);
+    offset += count * BYTES_PER_PROOF;
 
     bool ok;
     verify_blob_kzg_proof_batch(

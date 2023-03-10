@@ -33,7 +33,11 @@ static void setup(void) {
 // Fuzzing functions
 ///////////////////////////////////////////////////////////////////////////////
 
-#define INPUT_SIZE (48 + 32 + 32 + 48)
+#define INPUT_SIZE (          \
+    BYTES_PER_COMMITMENT +    \
+    BYTES_PER_FIELD_ELEMENT + \
+    BYTES_PER_FIELD_ELEMENT + \
+    BYTES_PER_PROOF)
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     if (!initialized) {
@@ -42,10 +46,15 @@ int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     }
 
     if (size == INPUT_SIZE) {
-        const Bytes48 *commitment_bytes = (Bytes48 *)(data);
-        const Bytes32 *z_bytes = (Bytes32 *)(data + 48);
-        const Bytes32 *y_bytes = (Bytes32 *)(data + 48 + 32);
-        const Bytes48 *proof_bytes = (Bytes48 *)(data + 48 + 32 + 32);
+        int offset = 0;
+        const Bytes48 *commitment_bytes = (Bytes48 *)(data + offset);
+        offset += BYTES_PER_COMMITMENT;
+        const Bytes32 *z_bytes = (Bytes32 *)(data + offset);
+        offset += BYTES_PER_FIELD_ELEMENT;
+        const Bytes32 *y_bytes = (Bytes32 *)(data + offset);
+        offset += BYTES_PER_FIELD_ELEMENT;
+        const Bytes48 *proof_bytes = (Bytes48 *)(data + offset);
+        offset += BYTES_PER_PROOF;
 
         bool ok;
         verify_kzg_proof(
