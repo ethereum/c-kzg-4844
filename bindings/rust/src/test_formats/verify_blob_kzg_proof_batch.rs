@@ -13,32 +13,23 @@ pub struct Input {
 impl Input {
     pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
         let mut v: Vec<Blob> = Vec::new();
-
         for blob in &self.blobs {
-            let blob_hex = blob.replace("0x", "");
-            let blob_bytes = hex::decode(blob_hex).unwrap();
-            let b = Blob::from_bytes(blob_bytes.as_slice())?;
-            v.push(b);
+            v.push(Blob::from_hex(blob)?);
         }
-
         return Ok(v);
     }
 
     pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
         self.commitments
             .iter()
-            .map(|s| s.replace("0x", ""))
-            .map(|hex_str| hex::decode(hex_str).unwrap())
-            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()))
+            .map(|s| Bytes48::from_hex(s))
             .collect::<Result<Vec<Bytes48>, Error>>()
     }
 
     pub fn get_proofs(&self) -> Result<Vec<Bytes48>, Error> {
         self.proofs
             .iter()
-            .map(|s| s.replace("0x", ""))
-            .map(|hex_str| hex::decode(hex_str).unwrap())
-            .map(|bytes| Bytes48::from_bytes(bytes.as_slice()))
+            .map(|s| Bytes48::from_hex(s))
             .collect::<Result<Vec<Bytes48>, Error>>()
     }
 }

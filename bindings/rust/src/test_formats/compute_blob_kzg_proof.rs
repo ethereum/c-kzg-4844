@@ -11,15 +11,11 @@ pub struct Input<'a> {
 
 impl Input<'_> {
     pub fn get_blob(&self) -> Result<Blob, Error> {
-        let hex_str = self.blob.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Blob::from_bytes(&bytes)
+        Blob::from_hex(self.blob)
     }
 
     pub fn get_commitment(&self) -> Result<Bytes48, Error> {
-        let hex_str = self.commitment.replace("0x", "");
-        let bytes = hex::decode(hex_str).unwrap();
-        Bytes48::from_bytes(&bytes)
+        Bytes48::from_hex(self.commitment)
     }
 }
 
@@ -33,9 +29,6 @@ pub struct Test<'a> {
 
 impl Test<'_> {
     pub fn get_output(&self) -> Option<Bytes48> {
-        self.output
-            .map(|s| s.replace("0x", ""))
-            .map(|hex_str| hex::decode(hex_str).unwrap())
-            .map(|bytes| Bytes48::from_bytes(&bytes).unwrap())
+        self.output.map(|s| Bytes48::from_hex(s).unwrap())
     }
 }

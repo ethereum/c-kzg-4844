@@ -122,6 +122,10 @@ impl Blob {
         new_bytes.copy_from_slice(bytes);
         Ok(Self { bytes: new_bytes })
     }
+
+    pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
+        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
+    }
 }
 
 impl Bytes32 {
@@ -137,6 +141,10 @@ impl Bytes32 {
         new_bytes.copy_from_slice(bytes);
         Ok(Self { bytes: new_bytes })
     }
+
+    pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
+        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
+    }
 }
 
 impl Bytes48 {
@@ -151,6 +159,10 @@ impl Bytes48 {
         let mut new_bytes = [0; 48];
         new_bytes.copy_from_slice(bytes);
         Ok(Self { bytes: new_bytes })
+    }
+
+    pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
+        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
     }
 }
 
