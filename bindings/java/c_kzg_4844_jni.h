@@ -5,8 +5,7 @@
 #ifndef _Included_ethereum_ckzg4844_CKZG4844JNI
 #define _Included_ethereum_ckzg4844_CKZG4844JNI
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_COMMITMENT
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_COMMITMENT 48L
@@ -14,68 +13,85 @@ extern "C"
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_PROOF 48L
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_FIELD_ELEMENT
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_FIELD_ELEMENT 32L
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    getFieldElementsPerBlob
-   * Signature: ()I
-   */
-  JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *, jclass);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    getFieldElementsPerBlob
+ * Signature: ()I
+ */
+JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob
+  (JNIEnv *, jclass);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    loadTrustedSetup
-   * Signature: (Ljava/lang/String;)V
-   */
-  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *, jclass, jstring);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    loadTrustedSetup
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2
+  (JNIEnv *, jclass, jstring);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    loadTrustedSetup
-   * Signature: ([BJ[BJ)V
-   */
-  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jlong);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    loadTrustedSetup
+ * Signature: ([BJ[BJ)V
+ */
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ
+  (JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jlong);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    freeTrustedSetup
-   * Signature: ()V
-   */
-  JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEnv *, jclass);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    freeTrustedSetup
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup
+  (JNIEnv *, jclass);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    computeKzgProof
-   * Signature: ([B[B)[B
-   */
-  JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *, jclass, jbyteArray, jbyteArray);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    blobToKzgCommitment
+ * Signature: ([B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment
+  (JNIEnv *, jclass, jbyteArray);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    computeAggregateKzgProof
-   * Signature: ([BJ)[B
-   */
-  JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeAggregateKzgProof(JNIEnv *, jclass, jbyteArray, jlong);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    computeKzgProof
+ * Signature: ([B[B)Lethereum/ckzg4844/Tuple;
+ */
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof
+  (JNIEnv *, jclass, jbyteArray, jbyteArray);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    verifyAggregateKzgProof
-   * Signature: ([B[BJ[B)Z
-   */
-  JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyAggregateKzgProof(JNIEnv *, jclass, jbyteArray, jbyteArray, jlong, jbyteArray);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    computeBlobKzgProof
+ * Signature: ([B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof
+  (JNIEnv *, jclass, jbyteArray, jbyteArray);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    blobToKzgCommitment
-   * Signature: ([B)[B
-   */
-  JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *, jclass, jbyteArray);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    verifyKzgProof
+ * Signature: ([B[B[B[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jbyteArray);
 
-  /*
-   * Class:     ethereum_ckzg4844_CKZG4844JNI
-   * Method:    verifyKzgProof
-   * Signature: ([B[B[B[B)Z
-   */
-  JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jbyteArray);
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    verifyBlobKzgProof
+ * Signature: ([B[B[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ethereum_ckzg4844_CKZG4844JNI
+ * Method:    verifyBlobKzgProofBatch
+ * Signature: ([B[B[BJ)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jlong);
 
 #ifdef __cplusplus
 }
