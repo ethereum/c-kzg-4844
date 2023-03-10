@@ -35,6 +35,7 @@ endif
 .PHONY: all
 all:
 	@echo Available targets:
+	@echo " - fuzz_blob_to_kzg_commitment"
 	@echo " - fuzz_compute_kzg_proof"
 	@echo " - fuzz_compute_blob_kzg_proof"
 	@echo " - fuzz_verify_kzg_proof"
