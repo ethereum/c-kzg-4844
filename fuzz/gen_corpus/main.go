@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"math/rand"
 	"os"
+	"path"
 
 	ckzg "github.com/ethereum/c-kzg-4844/bindings/go"
 )
@@ -58,16 +58,72 @@ func GetRandBlob(seed int64) ckzg.Blob {
 // Generators
 ///////////////////////////////////////////////////////////////////////////////
 
-func GenerateCorpusVerifyKZGProof(seed int64) {
-	commitment := GetRandCommitment(seed + 0)
-	z := GetRandFieldElement(seed + 1)
-	y := GetRandFieldElement(seed + 2)
-	proof := GetRandProof(seed + 3)
+func GenerateCorpusVerifyKZGProof() {
+	commitment := GetRandCommitment(0)
+	z := GetRandFieldElement(1)
+	y := GetRandFieldElement(2)
+	proof := GetRandProof(3)
+
+	dir := "../verify_kzg_proof/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
 
 	data := bytes.Join([][]byte{commitment[:], z[:], y[:], proof[:]}, []byte{})
-	err := os.WriteFile("../verify_kzg_proof/corpus/init", data, 0644)
+	err = os.WriteFile(path.Join(dir, "init"), data, 0644)
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
+	}
+}
+
+func GenerateCorpusVerifyBlobKZGProof() {
+	blob := GetRandBlob(0)
+	commitment := GetRandCommitment(1)
+	proof := GetRandProof(2)
+
+	dir := "../verify_blob_kzg_proof/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	data := bytes.Join([][]byte{blob[:], commitment[:], proof[:]}, []byte{})
+	err = os.WriteFile(path.Join(dir, "init"), data, 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GenerateCorpusVerifyBlobKZGProofBatch() {
+	const n = 3
+	var blobs [n][]byte
+	var commitments [n][]byte
+	var proofs [n][]byte
+
+	for i := range blobs {
+		blob := GetRandBlob(int64(i) + 0)
+		commitment := GetRandCommitment(int64(i) + 1)
+		proof := GetRandProof(int64(i) + 2)
+
+		blobs[i] = blob[:]
+		commitments[i] = commitment[:]
+		proofs[i] = proof[:]
+	}
+
+	dir := "../verify_blob_kzg_proof_batch/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	blobsBytes := bytes.Join(blobs[:], []byte{})
+	commitmentsBytes := bytes.Join(commitments[:], []byte{})
+	proofsBytes := bytes.Join(proofs[:], []byte{})
+	data := bytes.Join([][]byte{blobsBytes, commitmentsBytes, proofsBytes}, []byte{})
+	err = os.WriteFile(path.Join(dir, "init"), data, 0644)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -82,5 +138,7 @@ func main() {
 	}
 	defer ckzg.FreeTrustedSetup()
 
-	GenerateCorpusVerifyKZGProof(1)
+	GenerateCorpusVerifyKZGProof()
+	GenerateCorpusVerifyBlobKZGProof()
+	GenerateCorpusVerifyBlobKZGProofBatch()
 }

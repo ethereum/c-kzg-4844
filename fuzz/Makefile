@@ -29,8 +29,17 @@ endif
 endif
 
 ###############################################################################
-# Makefile Rules
+# Helper targets
 ###############################################################################
+
+.PHONY: all
+all:
+	@echo Available targets:
+	@echo " - fuzz_compute_kzg_proof"
+	@echo " - fuzz_compute_blob_kzg_proof"
+	@echo " - fuzz_verify_kzg_proof"
+	@echo " - fuzz_verify_blob_kzg_proof"
+	@echo " - fuzz_verify_blob_kzg_proof_batch"
 
 $(LIBBLST):
 	@echo [+] Building blst
@@ -39,7 +48,6 @@ $(LIBBLST):
 .PRECIOUS: %/corpus
 %/corpus:
 	@echo [+] Generating corpus
-	@mkdir -p $@
 	@cd gen_corpus && go run .
 
 .PRECIOUS: %/fuzz
@@ -47,11 +55,28 @@ $(LIBBLST):
 	@echo [+] Compiling $* fuzzer
 	@$(ENV_OPTS) $(CC) $(CFLAGS) -o $@ $< $(BLST)
 
-.PHONY: fuzz_%
-fuzz_%: %/fuzz
+.PHONY: _fuzz_%
+run_fuzz_%: %/fuzz
 	@echo [+] Starting $* fuzzer
 	@-./$< \
 		-artifact_prefix=./$*/ \
 		-workers=$(THREADS) \
 		-jobs=$(THREADS) \
+		-max_len=$(LEN) \
 		./$*/corpus
+
+###############################################################################
+# Fuzzing targets
+###############################################################################
+
+# Length is 48 + 32 + 32 + 48.
+fuzz_verify_kzg_proof: LEN=160
+fuzz_verify_kzg_proof: run_fuzz_verify_kzg_proof
+
+# Length is (4096 * 32) + 48 + 48.
+fuzz_verify_blob_kzg_proof: LEN=131168
+fuzz_verify_blob_kzg_proof: run_fuzz_verify_blob_kzg_proof
+
+# Length is (3 * 4096 * 32) + (3 * 48) + (3 * 48).
+fuzz_verify_blob_kzg_proof_batch: LEN=393504
+fuzz_verify_blob_kzg_proof_batch: run_fuzz_verify_blob_kzg_proof_batch
