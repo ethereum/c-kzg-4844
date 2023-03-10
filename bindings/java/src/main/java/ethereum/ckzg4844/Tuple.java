@@ -1,8 +1,8 @@
 package ethereum.ckzg4844;
 
 public class Tuple {
-  private byte[] first;
-  private byte[] second;
+  private final byte[] first;
+  private final byte[] second;
 
   public Tuple(byte[] first, byte[] second) {
     this.first = first;
