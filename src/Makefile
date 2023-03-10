@@ -89,10 +89,11 @@ profile_%: run_profiler
 .PHONY: profile
 profile: \
 	profile_blob_to_kzg_commitment \
-	profile_verify_kzg_proof \
-	profile_verify_aggregate_kzg_proof \
 	profile_compute_kzg_proof \
-	profile_compute_aggregate_kzg_proof
+	profile_compute_blob_kzg_proof \
+	profile_verify_kzg_proof \
+	profile_verify_blob_kzg_proof \
+	profile_verify_blob_kzg_proof_batch
 
 .PHONY: analyze
 analyze: c_kzg_4844.c
