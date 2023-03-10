@@ -224,7 +224,7 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
  * @retval false The element is not one
  */
 static bool fr_is_one(const fr_t *p) {
-    uint64_t a[4];
+    uint64_t a[4] = {0, 0, 0, 0};
     blst_uint64_from_fr(a, p);
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
