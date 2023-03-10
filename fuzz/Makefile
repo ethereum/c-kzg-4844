@@ -69,6 +69,18 @@ run_fuzz_%: %/fuzz
 # Fuzzing targets
 ###############################################################################
 
+# Length is (4096 * 32).
+fuzz_blob_to_kzg_commitment: LEN=131072
+fuzz_blob_to_kzg_commitment: run_fuzz_blob_to_kzg_commitment
+
+# Length is (4096 * 32) + 32.
+fuzz_compute_kzg_proof: LEN=131104
+fuzz_compute_kzg_proof: run_fuzz_compute_kzg_proof
+
+# Length is (4096 * 32) + 48.
+fuzz_compute_blob_kzg_proof: LEN=131120
+fuzz_compute_blob_kzg_proof: run_fuzz_compute_blob_kzg_proof
+
 # Length is 48 + 32 + 32 + 48.
 fuzz_verify_kzg_proof: LEN=160
 fuzz_verify_kzg_proof: run_fuzz_verify_kzg_proof

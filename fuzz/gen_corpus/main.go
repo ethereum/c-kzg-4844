@@ -58,7 +58,56 @@ func GetRandBlob(seed int64) ckzg.Blob {
 // Generators
 ///////////////////////////////////////////////////////////////////////////////
 
-func GenerateCorpusVerifyKZGProof() {
+func GenerateCorpus_BlobToKZGCommitment() {
+	blob := GetRandBlob(0)
+
+	dir := "../blob_to_kzg_commitment/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	err = os.WriteFile(path.Join(dir, "init"), blob[:], 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GenerateCorpus_ComputeKZGProof() {
+	blob := GetRandBlob(0)
+	z := GetRandFieldElement(1)
+
+	dir := "../compute_kzg_proof/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	data := bytes.Join([][]byte{blob[:], z[:]}, []byte{})
+	err = os.WriteFile(path.Join(dir, "init"), data, 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GenerateCorpus_ComputeBlobKZGProof() {
+	blob := GetRandBlob(0)
+	commitment := GetRandCommitment(1)
+
+	dir := "../compute_blob_kzg_proof/corpus"
+	err := os.MkdirAll(dir, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+
+	data := bytes.Join([][]byte{blob[:], commitment[:]}, []byte{})
+	err = os.WriteFile(path.Join(dir, "init"), data, 0644)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func GenerateCorpus_VerifyKZGProof() {
 	commitment := GetRandCommitment(0)
 	z := GetRandFieldElement(1)
 	y := GetRandFieldElement(2)
@@ -77,7 +126,7 @@ func GenerateCorpusVerifyKZGProof() {
 	}
 }
 
-func GenerateCorpusVerifyBlobKZGProof() {
+func GenerateCorpus_VerifyBlobKZGProof() {
 	blob := GetRandBlob(0)
 	commitment := GetRandCommitment(1)
 	proof := GetRandProof(2)
@@ -95,7 +144,7 @@ func GenerateCorpusVerifyBlobKZGProof() {
 	}
 }
 
-func GenerateCorpusVerifyBlobKZGProofBatch() {
+func GenerateCorpus_VerifyBlobKZGProofBatch() {
 	const n = 3
 	var blobs [n][]byte
 	var commitments [n][]byte
@@ -138,7 +187,10 @@ func main() {
 	}
 	defer ckzg.FreeTrustedSetup()
 
-	GenerateCorpusVerifyKZGProof()
-	GenerateCorpusVerifyBlobKZGProof()
-	GenerateCorpusVerifyBlobKZGProofBatch()
+	GenerateCorpus_BlobToKZGCommitment()
+	GenerateCorpus_ComputeKZGProof()
+	GenerateCorpus_ComputeBlobKZGProof()
+	GenerateCorpus_VerifyKZGProof()
+	GenerateCorpus_VerifyBlobKZGProof()
+	GenerateCorpus_VerifyBlobKZGProofBatch()
 }
