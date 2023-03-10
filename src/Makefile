@@ -104,8 +104,8 @@ sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 
 ifneq ($(OS),Windows_NT)
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
 .PHONY: sanitize
+ifeq ($(UNAME_S),Darwin)
 sanitize: \
 	sanitize_address \
 	sanitize_undefined
