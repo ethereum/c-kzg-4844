@@ -14,7 +14,7 @@ CFLAGS += -g -fsanitize=fuzzer
 BLST = -L../lib -lblst
 LIBBLST = ../lib/libblst.a
 
-# Default to 1 thread, to use all cores specify -1.
+# Default to no threads, to use all cores specify -1.
 THREADS ?= 0
 ifeq ($(THREADS), -1)
 override THREADS = $(shell nproc --all)
@@ -56,7 +56,7 @@ $(LIBBLST):
 	@echo [+] Compiling $* fuzzer
 	@$(ENV_OPTS) $(CC) $(CFLAGS) -o $@ $< $(BLST)
 
-.PHONY: _fuzz_%
+.PHONY: run_fuzz_%
 run_fuzz_%: %/fuzz
 	@echo [+] Starting $* fuzzer
 	@-./$< \

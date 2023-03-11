@@ -11,7 +11,8 @@ means it should be pretty easy.
 ## Dependencies
 
 This is expected to run on Linux/macOS, it is not expected to work on Windows.
-In additional `build-essentials` and `clang`, this requires `llvm` be installed:
+In additional to `build-essentials` and `clang`, this requires `llvm` be
+installed:
 
 ### Linux
 
@@ -71,7 +72,7 @@ There are a few steps:
 
 * Build the blst library.
 * Generate initial corpora files.
-* Compiler the fuzzer.
+* Compile the fuzzer.
 * Start the fuzzer.
 
 Reference [this page](https://llvm.org/docs/LibFuzzer.html#output) for a guide on reading the output.
@@ -88,7 +89,7 @@ make: [run_fuzz_verify_kzg_proof] Error 72 (ignored)
 
 If your system has multiple cores, it's easy to run fuzzers on multiple threads.
 Append `THREADS=<n>` where `n` is the number of threads you would like there to
-be. If you wish to use all available cores, specify `-1` as the count.
+be. If you wish to use all available CPU cores, specify `-1` as the count.
 
 ```
 $ make fuzz_verify_kzg_proof THREADS=4
@@ -104,9 +105,9 @@ your console sequentially. You will most likely need to scroll up to see their
 outputs.
 
 When operating in parallel (threads) the fuzzers use a shared corpus and are
-intelligent enough to learn from other threads that have progress further. When
-you see a line that starts with "RELOAD" that fuzzer process is updating its
-corpus with findings from other threads.
+intelligent enough to learn from other threads that have progressed further.
+When you see a line that starts with "RELOAD" that fuzzer process is updating
+its corpus with findings from other threads.
 
 ### Findings
 
