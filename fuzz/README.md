@@ -33,11 +33,11 @@ Currently, only the public KZG interface functions are fuzzable:
 $ make
 Available targets:
  - fuzz_blob_to_kzg_commitment
- - fuzz_compute_kzg_proof
  - fuzz_compute_blob_kzg_proof
- - fuzz_verify_kzg_proof
+ - fuzz_compute_kzg_proof
  - fuzz_verify_blob_kzg_proof
  - fuzz_verify_blob_kzg_proof_batch
+ - fuzz_verify_kzg_proof
 ```
 
 To run a fuzzer, run `make fuzz_<func>` like:

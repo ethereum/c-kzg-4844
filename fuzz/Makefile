@@ -32,15 +32,11 @@ endif
 # Helper targets
 ###############################################################################
 
-.PHONY: all
-all:
+.PHONY: targets
+targets:
 	@echo Available targets:
-	@echo " - fuzz_blob_to_kzg_commitment"
-	@echo " - fuzz_compute_kzg_proof"
-	@echo " - fuzz_compute_blob_kzg_proof"
-	@echo " - fuzz_verify_kzg_proof"
-	@echo " - fuzz_verify_blob_kzg_proof"
-	@echo " - fuzz_verify_blob_kzg_proof_batch"
+	@# List targets | filter fuzz targets | remove deps | add prefix
+	@$(MAKE) -qp | grep "^fuzz_" | sed 's/:.*//' | sed 's/^/ - /' | sort
 
 $(LIBBLST):
 	@echo [+] Building blst
