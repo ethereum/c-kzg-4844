@@ -1,58 +1,19 @@
-/*
- * This file contains fuzzing tests for C-KZG-4844.
- */
-#include "../../src/c_kzg_4844.c"
+#include "../base_fuzz.h"
 
-///////////////////////////////////////////////////////////////////////////////
-// Globals
-///////////////////////////////////////////////////////////////////////////////
-
-KZGSettings s;
-bool initialized = false;
-
-///////////////////////////////////////////////////////////////////////////////
-// Trusted setup configuration
-///////////////////////////////////////////////////////////////////////////////
-
-static void setup(void) {
-    FILE *fp;
-    C_KZG_RET ret;
-
-    /* Open the mainnet trusted setup file */
-    fp = fopen("../src/trusted_setup.txt", "r");
-    assert(fp != NULL);
-
-    /* Load that trusted setup file */
-    ret = load_trusted_setup_file(&s, fp);
-    assert(ret == C_KZG_OK);
-
-    fclose(fp);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Fuzzing functions
-///////////////////////////////////////////////////////////////////////////////
-
-#define INPUT_SIZE (BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
+static const size_t BLOB_OFFSET = 0;
+static const size_t COMMITMENT_OFFSET = BYTES_PER_BLOB;
+static const size_t INPUT_SIZE = COMMITMENT_OFFSET + BYTES_PER_COMMITMENT;
 
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
-    if (!initialized) {
-        setup();
-        initialized = true;
-    }
-
+    initialize();
     if (size == INPUT_SIZE) {
-        const Blob *blob_bytes = (Blob *)(data);
-        const Bytes48 *commitment_bytes = (Bytes48 *)(data + BYTES_PER_BLOB);
-
         KZGProof proof;
         compute_blob_kzg_proof(
             &proof,
-            blob_bytes,
-            commitment_bytes,
+            (const Blob *)(data + BLOB_OFFSET),
+            (const Bytes48 *)(data + COMMITMENT_OFFSET),
             &s
         );
     }
-
     return 0;
 }
