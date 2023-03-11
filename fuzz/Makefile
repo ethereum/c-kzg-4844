@@ -36,7 +36,7 @@ endif
 targets:
 	@echo Available targets:
 	@# List targets | filter fuzz targets | remove deps | add prefix
-	@$(MAKE) -qp | grep "^fuzz_" | sed 's/:.*//' | sed 's/^/ - /' | sort
+	@make -qp | grep "^fuzz_" | sed 's/:.*//' | sed 's/^/ - /' | sort
 
 $(LIBBLST):
 	@echo [+] Building blst
