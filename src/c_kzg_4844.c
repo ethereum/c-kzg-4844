@@ -255,6 +255,20 @@ static bool fr_is_one(const fr_t *p) {
 }
 
 /**
+ * Test whether the operand is zero in the finite field.
+ *
+ * @param[in] p The field element to be checked
+ *
+ * @retval true  The element is zero
+ * @retval false The element is not zero
+ */
+static bool fr_is_zero(const fr_t *p) {
+    uint64_t a[4];
+    blst_uint64_from_fr(a, p);
+    return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+/**
  * Test whether two field elements are equal.
  *
  * @param[in] aa The first element
@@ -335,39 +349,43 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
  * @remark This function does not support in-place computation (i.e. `a` MUST
  * NOT point to the same place as `out`)
  *
+ * @remark This function only supports len > 0.
+ *
  * @param[out] out The inverses of @p a, length @p len
  * @param[in]  a   A vector of field elements, length @p len
  * @param[in]  len The number of field elements
  */
-static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
-    C_KZG_RET ret;
-    fr_t *prod = NULL;
-    fr_t inv;
-    size_t i;
+static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
+    int i;
+    bool zeroes[FIELD_ELEMENTS_PER_BLOB] = {false};
 
     assert(len > 0);
     assert(a != out);
 
-    ret = new_fr_array(&prod, len);
-    if (ret != C_KZG_OK) goto out;
+    fr_t accumulator = FR_ONE;
 
-    prod[0] = a[0];
+    for (i = 0; i < (int)len; i++) {
+        if (fr_is_zero(&a[i])) {
+            out[i] = FR_ZERO;
+            zeroes[i] = true;
+            continue;
+        }
 
-    for (i = 1; i < len; i++) {
-        blst_fr_mul(&prod[i], &a[i], &prod[i - 1]);
+        out[i] = accumulator;
+        blst_fr_mul(&accumulator, &accumulator, &a[i]);
     }
 
-    blst_fr_eucl_inverse(&inv, &prod[len - 1]);
+    blst_fr_eucl_inverse(&accumulator, &accumulator);
 
-    for (i = len - 1; i > 0; i--) {
-        blst_fr_mul(&out[i], &inv, &prod[i - 1]);
-        blst_fr_mul(&inv, &a[i], &inv);
+    for (i = len - 1; i >= 0; i--) {
+        if (zeroes[i]) {
+          continue;
+        }
+        blst_fr_mul(&out[i], &out[i], &accumulator);
+        blst_fr_mul(&accumulator, &accumulator, &a[i]);
     }
-    out[0] = inv;
 
-out:
-    c_kzg_free(prod);
-    return ret;
+    return C_KZG_OK;
 }
 
 /**
