@@ -102,4 +102,4 @@ jobs:
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
     - name: Publish package
       if: github.ref == 'refs/heads/main'
-      run: dotnet nuget push bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg --api-key {{secrets.CSHARP_NUGET_APIKEY}} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg --api-key ${{ secrets.CSHARP_NUGET_APIKEY }} --source https://api.nuget.org/v3/index.json
