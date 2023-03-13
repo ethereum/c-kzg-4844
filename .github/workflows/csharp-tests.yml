@@ -1,4 +1,4 @@
-name: C# bindings test and build
+name: C#
 on:
   workflow_dispatch:
     inputs:

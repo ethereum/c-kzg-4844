@@ -259,7 +259,7 @@ static void test_fr_pow__test_inverse_on_root_of_unity(void) {
 
     blst_fr_from_uint64(&a, SCALE2_ROOT_OF_UNITY[31]);
 
-    fr_pow(&r, &a, 1 << 31);
+    fr_pow(&r, &a, 1ULL << 31);
 
     bool ok = fr_equal(&r, &FR_ONE);
     ASSERT_EQUALS(ok, true);

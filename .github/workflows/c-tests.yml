@@ -1,4 +1,4 @@
-name: CKZG tests
+name: C
 on:
   push:
     branches:
@@ -8,12 +8,17 @@ on:
       - main
 
 jobs:
-  test-ckzg:
+  tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+      - name: Check formatting
+        run: |
+          cd src
+          make format
+          git diff --exit-code
       - name: Build
         run: |
           cd src
@@ -23,6 +28,10 @@ jobs:
         run: |
           cd src
           make test
+      - name: Clang Sanitizers
+        run: |
+          cd src
+          make sanitize
       - name: Clang Static Analyzer
         run: |
           cd src

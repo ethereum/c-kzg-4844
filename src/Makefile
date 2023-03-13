@@ -95,6 +95,30 @@ profile: \
 	profile_verify_blob_kzg_proof \
 	profile_verify_blob_kzg_proof_batch
 
+.PHONY: sanitize_%
+sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
+	@echo Running sanitize=$*...
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(BLST)
+	@ASAN_OPTIONS=allocator_may_return_null=1 \
+	 LSAN_OPTIONS=allocator_may_return_null=1 \
+	 ./$@; rm $@
+
+ifneq ($(OS),Windows_NT)
+UNAME_S := $(shell uname -s)
+.PHONY: sanitize
+ifeq ($(UNAME_S),Darwin)
+sanitize: \
+	sanitize_address \
+	sanitize_undefined
+else
+sanitize: \
+	sanitize_address \
+	sanitize_leak \
+	sanitize_safe-stack \
+	sanitize_undefined
+endif
+endif
+
 .PHONY: analyze
 analyze: c_kzg_4844.c
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
