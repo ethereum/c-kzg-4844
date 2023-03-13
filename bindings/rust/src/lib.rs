@@ -164,6 +164,10 @@ impl Bytes48 {
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
     }
+
+    pub fn into_inner(self) -> [u8; 48] {
+        self.bytes
+    }
 }
 
 impl KZGProof {
