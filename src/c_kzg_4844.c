@@ -539,12 +539,11 @@ static bool is_power_of_two(uint64_t n) {
 /**
  * Reverse the bit order in a 32 bit integer.
  *
- * @remark This simply wraps the macro to enforce the type check.
- *
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
  */
 static uint32_t reverse_bits(uint32_t a) {
+    // This simply wraps the macro above to enforce the type check.
     return rev_4byte(a);
 }
 
