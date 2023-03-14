@@ -33,8 +33,10 @@
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
-/** Helper macro to release memory allocated on the heap.  Unlike free(),
- * c_kzg_free() macro sets the pointer value to NULL after freeing it. */
+/**
+ * Helper macro to release memory allocated on the heap. Unlike free(),
+ * c_kzg_free() macro sets the pointer value to NULL after freeing it.
+ */
 #define c_kzg_free(p) \
     (void)({ \
         free(p); \
