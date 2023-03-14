@@ -595,8 +595,8 @@ static C_KZG_RET bit_reversal_permutation(
 /**
  * Map bytes to a BLS field element.
  *
- * @param[out] out   The field element to store the result
- * @param[in]  bytes A 32-byte array containing the input
+ * @param[out] out The field element to store the result
+ * @param[in]  b   A 32-byte array containing the input
  */
 static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
@@ -608,8 +608,8 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * Convert untrusted bytes to a trusted and validated BLS scalar field
  * element.
  *
- * @param[out] out   The field element to store the deserialized data
- * @param[in]  bytes A 32-byte array containing the serialized field element
+ * @param[out] out The field element to store the deserialized data
+ * @param[in]  b   A 32-byte array containing the serialized field element
  */
 static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
