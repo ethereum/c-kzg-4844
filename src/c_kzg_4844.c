@@ -550,6 +550,11 @@ static uint32_t reverse_bits(uint32_t a) {
 /**
  * Reorder an array in reverse bit order of its indices.
  *
+ * @remark This means that input[n] == output[n'],
+ *         where input and output denote the input and output array
+ *         and n' is obtained from n by bit-reversing n.
+ *         As opposed to reverse_bits, this bit-reversal operates on log2(@p n)-bit numbers.
+ *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in @p size.
  *
