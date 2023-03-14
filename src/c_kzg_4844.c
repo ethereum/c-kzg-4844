@@ -1767,7 +1767,7 @@ out_error:
     free(out->g2_values);
     out->fs = NULL;
     out->g1_values = NULL;
-    out->g2 = NULL;
+    out->g2_values = NULL;
 out_success:
     free(g1_projective);
     return ret;
