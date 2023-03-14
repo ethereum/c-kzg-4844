@@ -322,13 +322,13 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     fr_t inv;
     size_t i;
 
+    assert(len > 0);
     assert(a != out);
 
     ret = new_fr_array(&prod, len);
     if (ret != C_KZG_OK) goto out;
 
-    prod[0] = a[0]; // NOTE: new_fr_array returns an error if len == 0, so we
-                    // know that len > 0 here.
+    prod[0] = a[0];
 
     for (i = 1; i < len; i++) {
         blst_fr_mul(&prod[i], &a[i], &prod[i - 1]);
@@ -1106,8 +1106,8 @@ static C_KZG_RET compute_kzg_proof_impl(
     Polynomial q;
     const fr_t *roots_of_unity = s->fs->roots_of_unity;
     uint64_t i;
-    uint64_t m = 0; // a value != 0 indicates that the evaluation point z equals
-                    // root_of_unity[m-1]
+    /* m != 0 indicates that the evaluation point z equals root_of_unity[m-1] */
+    uint64_t m = 0;
 
     ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
