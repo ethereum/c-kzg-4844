@@ -36,7 +36,7 @@ const SETUP_FILE_PATH = resolve(
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../../tests";
+const TEST_DIR = "../../tests";
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 const BLOB_TO_KZG_COMMITMENT_TESTS = join(
   TEST_DIR,
@@ -110,6 +110,8 @@ describe("C-KZG", () => {
   describe("reference tests should pass", () => {
     it("reference tests for blobToKzgCommitment should pass", () => {
       let tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: BlobToKzgCommitmentTest = yaml.load(
           readFileSync(testFile, "ascii"),
@@ -133,6 +135,8 @@ describe("C-KZG", () => {
 
     it("reference tests for computeKzgProof should pass", () => {
       let tests = globSync(COMPUTE_KZG_PROOF_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: ComputeKzgProofTest = yaml.load(
           readFileSync(testFile, "ascii"),
@@ -156,6 +160,8 @@ describe("C-KZG", () => {
 
     it("reference tests for computeBlobKzgProof should pass", () => {
       let tests = globSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: ComputeBlobKzgProofTest = yaml.load(
           readFileSync(testFile, "ascii"),
@@ -180,6 +186,8 @@ describe("C-KZG", () => {
 
     it("reference tests for verifyKzgProof should pass", () => {
       let tests = globSync(VERIFY_KZG_PROOF_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: VerifyKzgProofTest = yaml.load(
           readFileSync(testFile, "ascii"),
@@ -204,6 +212,8 @@ describe("C-KZG", () => {
 
     it("reference tests for verifyBlobKzgProof should pass", () => {
       let tests = globSync(VERIFY_BLOB_KZG_PROOF_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: VerifyBlobKzgProofTest = yaml.load(
           readFileSync(testFile, "ascii"),
@@ -227,6 +237,8 @@ describe("C-KZG", () => {
 
     it("reference tests for verifyBlobKzgProofBatch should pass", () => {
       let tests = globSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
       tests.forEach((testFile: string) => {
         const test: VerifyBatchKzgProofTest = yaml.load(
           readFileSync(testFile, "ascii"),

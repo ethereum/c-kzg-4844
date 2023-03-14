@@ -80,7 +80,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_blobToKzgCommitmentTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_blobToKzgCommitmentTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             BlobToKzgCommitmentTest test = _deserializer.Deserialize<BlobToKzgCommitmentTest>(yaml);
@@ -125,7 +128,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_computeKzgProofTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeKzgProofTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             ComputeKzgProofTest test = _deserializer.Deserialize<ComputeKzgProofTest>(yaml);
@@ -174,7 +180,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_computeBlobKzgProofTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeBlobKzgProofTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             ComputeBlobKzgProofTest test = _deserializer.Deserialize<ComputeBlobKzgProofTest>(yaml);
@@ -222,7 +231,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_verifyKzgProofTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyKzgProofTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             VerifyKzgProofTest test = _deserializer.Deserialize<VerifyKzgProofTest>(yaml);
@@ -268,7 +280,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_verifyBlobKzgProofTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyBlobKzgProofTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             VerifyBlobKzgProofTest test = _deserializer.Deserialize<VerifyBlobKzgProofTest>(yaml);
@@ -312,7 +327,10 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        foreach (string testFile in matcher.GetResultsInFullPath(_verifyBlobKzgProofBatchTests))
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyBlobKzgProofBatchTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
             VerifyBlobKzgProofBatchTest test = _deserializer.Deserialize<VerifyBlobKzgProofBatchTest>(yaml);
