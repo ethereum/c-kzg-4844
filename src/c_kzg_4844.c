@@ -694,7 +694,6 @@ static const int CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
  * @param[out] eval_challenge_out The evaluation challenge
  * @param[in]  blob               A blob
  * @param[in]  commitment         A commitment
- * @param[in]  n                  The number of polynomials and commitments
  */
 static void compute_challenge(
     fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
