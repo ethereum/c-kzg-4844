@@ -865,6 +865,9 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        // if the point to evaluate at is one of the evaluation points by which the polynomial is given,
+        // we can just return the result directly.
+        // Note that special-casing this is neccessary, as the formula below would divide by zero otherwise.
         if (fr_equal(x, &roots_of_unity[i])) {
             *out = p->evals[i];
             ret = C_KZG_OK;
@@ -1097,7 +1100,8 @@ static C_KZG_RET compute_kzg_proof_impl(
     fr_t tmp;
     Polynomial q;
     const fr_t *roots_of_unity = s->fs->roots_of_unity;
-    uint64_t i, m = 0;
+    uint64_t i;
+    uint64_t m = 0; // a value != 0 indicates that the evaluation point z equals root_of_unity[m-1]
 
     ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -1123,7 +1127,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
-    if (m) { // ω_m == z
+    if (m != 0) { // ω_{m-1} == z
         q.evals[--m] = FR_ZERO;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
