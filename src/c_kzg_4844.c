@@ -30,6 +30,7 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
+/** Returns C_KZG_BADARGS if the condition is not met. */
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
@@ -52,6 +53,21 @@
 /** The Fiat-Shamir protocol domains. */
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
+
+/** The number of bytes in a protocol domain. */
+static const size_t BYTES_PER_DOMAIN = 16;
+
+/* Input size to the Fiat-Shamir challenge computation. */
+static const size_t CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
+
+/** The number of bytes in a g1 point. */
+static const size_t BYTES_PER_G1 = 48;
+
+/** The number of bytes in a g2 point. */
+static const size_t BYTES_PER_G2 = 96;
+
+/** The number of g2 points in a trusted setup. */
+static const size_t NUM_G2_POINTS = 65;
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
@@ -89,7 +105,7 @@ static const g2_t G2_GENERATOR = {
  *
  * For element `{A, B, C, D}`, the field element value is
  * `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be converted to
- * an `fr_t` type via the #blst_fr_from_uint64 function.
+ * an `fr_t` type via the blst_fr_from_uint64() function.
  *
  * The decimal values may be calculated with the following Python code:
  * @code{.py}
@@ -157,7 +173,7 @@ static const fr_t FR_ONE = {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Wrapped `malloc()` that reports failures to allocate.
+ * Wrapped malloc() that reports failures to allocate.
  *
  * @remark Will return C_KZG_BADARGS if the requested size is zero.
  *
@@ -172,7 +188,7 @@ static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
 }
 
 /**
- * Wrapped `calloc()` that reports failures to allocate.
+ * Wrapped calloc() that reports failures to allocate.
  *
  * @remark Will return C_KZG_BADARGS if the requested size is zero.
  *
@@ -190,7 +206,7 @@ static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
 /**
  * Allocate memory for an array of G1 group elements.
  *
- * @remark Free the space later using `c_kzg_free()`.
+ * @remark Free the space later using c_kzg_free().
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G1 elements to be allocated
@@ -202,7 +218,7 @@ static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
 /**
  * Allocate memory for an array of G2 group elements.
  *
- * @remark Free the space later using `c_kzg_free()`.
+ * @remark Free the space later using c_kzg_free().
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G2 elements to be allocated
@@ -214,7 +230,7 @@ static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
 /**
  * Allocate memory for an array of field elements.
  *
- * @remark Free the space later using `c_kzg_free()`.
+ * @remark Free the space later using c_kzg_free().
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of field elements to be allocated
@@ -360,7 +376,7 @@ out:
 /**
  * Multiply a G1 group element by a field element.
  *
- * @param[out] out [@p b]@p a
+ * @param[out] out @p a * @p b
  * @param[in]  a   The G1 group element
  * @param[in]  b   The multiplier
  */
@@ -368,6 +384,19 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
     blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
+}
+
+/**
+ * Multiply a G2 group element by a field element.
+ *
+ * @param[out] out @p a * @p b
+ * @param[in]  a   The G2 group element
+ * @param[in]  b   The multiplier
+ */
+static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
+    blst_scalar s;
+    blst_scalar_from_fr(&s, b);
+    blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
 /**
@@ -397,19 +426,6 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
 }
 
 /**
- * Multiply a G2 group element by a field element.
- *
- * @param[out] out [@p b]@p a
- * @param[in]  a   The G2 group element
- * @param[in]  b   The multiplier
- */
-static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
-}
-
-/**
  * Perform pairings and test whether the outcomes are equal in G_T.
  *
  * Tests whether `e(a1, a2) == e(b1, b2)`.
@@ -429,8 +445,10 @@ static bool pairings_verify(
     blst_p1_affine aa1, bb1;
     blst_p2_affine aa2, bb2;
 
-    // As an optimisation, we want to invert one of the pairings,
-    // so we negate one of the points.
+    /*
+     * As an optimisation, we want to invert one of the pairings,
+     * so we negate one of the points.
+     */
     g1_t a1neg = *a1;
     blst_p1_cneg(&a1neg, true);
 
@@ -529,45 +547,28 @@ static bool is_power_of_two(uint64_t n) {
 }
 
 /**
- * Reverse the bits in a byte.
- *
- * From
- * https://graphics.stanford.edu/~seander/bithacks.html#ReverseByteWith64BitsDiv
- *
- * @param[in] a A byte
- * @return A byte that is bit-reversed with respect to @p a
- */
-#define rev_byte(a) ((((a)&0xff) * 0x0202020202ULL & 0x010884422010ULL) % 1023)
-
-/**
- * Reverse the bits in a 32 bit word.
- *
- * @param[in] a A 32 bit unsigned integer
- * @return A 32 bit unsigned integer that is bit-reversed with respect to @p a
- */
-#define rev_4byte(a) \
-    (rev_byte(a) << 24 | rev_byte((a) >> 8) << 16 | rev_byte((a) >> 16) << 8 | \
-     rev_byte((a) >> 24) << 0)
-
-/**
  * Reverse the bit order in a 32 bit integer.
  *
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
  */
-static uint32_t reverse_bits(uint32_t a) {
-    // This simply wraps the macro above to enforce the type check.
-    return rev_4byte(a);
+static uint32_t reverse_bits(uint32_t n) {
+    uint32_t result = 0;
+    for (int i = 0; i < 32; ++i) {
+        result <<= 1;
+        result |= (n & 1);
+        n >>= 1;
+    }
+    return result;
 }
 
 /**
  * Reorder an array in reverse bit order of its indices.
  *
- * @remark This means that input[n] == output[n'],
- *         where input and output denote the input and output array
- *         and n' is obtained from n by bit-reversing n.
- *         As opposed to reverse_bits, this bit-reversal operates on log2(@p
- * n)-bit numbers.
+ * @remark This means that input[n] == output[n'], where input and output
+ *         denote the input and output array and n' is obtained from n by
+ *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
+ *         operates on log2(@p n)-bit numbers.
  *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in @p size.
@@ -584,15 +585,13 @@ static C_KZG_RET bit_reversal_permutation(
     CHECK(is_power_of_two(n));
     CHECK(log2_pow2(n) != 0);
 
-    // Pointer arithmetic on `void *` is naughty, so cast to something
-    // definite
     byte *v = values;
     byte tmp[size];
     int unused_bit_len = 32 - log2_pow2(n);
     for (uint32_t i = 0; i < n; i++) {
         uint32_t r = reverse_bits(i) >> unused_bit_len;
         if (r > i) {
-            // Swap the two elements
+            /* Swap the two elements */
             memcpy(tmp, v + (i * size), size);
             memcpy(v + (i * size), v + (r * size), size);
             memcpy(v + (r * size), tmp, size);
@@ -644,9 +643,10 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @param[in]   b   The proof/commitment bytes
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
-    /* Convert the bytes to a p1 point */
     blst_p1_affine p1_affine;
-    /* The uncompress routine also checks that the point is on the curve */
+
+    /* Convert the bytes to a p1 point */
+    /* The uncompress routine checks that the point is on the curve */
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
         return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
@@ -697,9 +697,6 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     return C_KZG_OK;
 }
 
-/* Input size to the Fiat-Shamir challenge computation */
-static const int CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
-
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
  *
@@ -719,13 +716,14 @@ static void compute_challenge(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, 16);
-    offset += 16;
+    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, BYTES_PER_DOMAIN);
+    offset += BYTES_PER_DOMAIN;
+
+    /* Copy polynomial degree (16-bytes, little-endian) */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
-    offset += 8;
-    /* Set all other bytes of this 16-byte (little-endian) field to zero */
+    offset += sizeof(uint64_t);
     bytes_from_uint64(offset, 0);
-    offset += 8;
+    offset += sizeof(uint64_t);
 
     /* Copy blob */
     memcpy(offset, blob->bytes, BYTES_PER_BLOB);
@@ -778,7 +776,7 @@ static void g1_lincomb_naive(
  *
  * For the benefit of future generations (since Blst has no documentation to
  * speak of), there are two ways to pass the arrays of scalars and points
- * into `blst_p1s_mult_pippenger()`.
+ * into blst_p1s_mult_pippenger().
  *
  * 1. Pass `points` as an array of pointers to the points, and pass
  *    `scalars` as an array of pointers to the scalars, each of length @p len.
@@ -795,11 +793,11 @@ static C_KZG_RET g1_lincomb_fast(
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
 
-    // Tunable parameter: must be at least 2 since Blst fails for 0 or 1
+    /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
     if (len < 8) {
         g1_lincomb_naive(out, p, coeffs, len);
     } else {
-        // Blst's implementation of the Pippenger method
+        /* blst's implementation of the Pippenger method */
         size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
         ret = c_kzg_malloc(&scratch, scratch_size);
         if (ret != C_KZG_OK) goto out;
@@ -808,16 +806,16 @@ static C_KZG_RET g1_lincomb_fast(
         ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
         if (ret != C_KZG_OK) goto out;
 
-        // Transform the points to affine representation
+        /* Transform the points to affine representation */
         const blst_p1 *p_arg[2] = {p, NULL};
         blst_p1s_to_affine(p_affine, p_arg, len);
 
-        // Transform the field elements to 256-bit scalars
+        /* Transform the field elements to 256-bit scalars */
         for (uint64_t i = 0; i < len; i++) {
             blst_scalar_from_fr(&scalars[i], &coeffs[i]);
         }
 
-        // Call the Pippenger implementation
+        /* Call the Pippenger implementation */
         const byte *scalars_arg[2] = {(byte *)scalars, NULL};
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(
@@ -879,10 +877,12 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        // if the point to evaluate at is one of the evaluation points by which
-        // the polynomial is given, we can just return the result directly. Note
-        // that special-casing this is neccessary, as the formula below would
-        // divide by zero otherwise.
+        /*
+         * If the point to evaluate at is one of the evaluation points by which
+         * the polynomial is given, we can just return the result directly.
+         * Note that special-casing this is necessary, as the formula below
+         * would divide by zero otherwise.
+         */
         if (fr_equal(x, &roots_of_unity[i])) {
             *out = p->evals[i];
             ret = C_KZG_OK;
@@ -962,20 +962,18 @@ static C_KZG_RET verify_kzg_proof_impl(
     const fr_t *z,
     const fr_t *y,
     const g1_t *proof,
-    const KZGSettings *ks
+    const KZGSettings *s
 );
 
 /**
  * Verify a KZG proof claiming that `p(z) == y`.
  *
- * @param[out] ok         `true` if the proof is valid, `false` if not
- * @param[in]  commitment The KZG commitment corresponding to polynomial
- *                        p(x)
+ * @param[out] ok         True if the proofs are valid, otherwise false
+ * @param[in]  commitment The KZG commitment corresponding to poly p(x)
  * @param[in]  z          The evaluation point
  * @param[in]  y          The claimed evaluation result
  * @param[in]  kzg_proof  The KZG proof
- * @param[in]  s          The settings struct containing the commitment
- *                        verification key (i.e. trusted setup)
+ * @param[in]  s          The trusted setup
  */
 C_KZG_RET verify_kzg_proof(
     bool *ok,
@@ -1018,8 +1016,7 @@ C_KZG_RET verify_kzg_proof(
  * @param[in]  y          The claimed value of the polynomial at @p x
  * @param[in]  proof      A proof of the value of the polynomial at the
  *                        point @p x
- * @param[in]  ks         The settings containing the secrets, previously
- *                        initialised with #new_kzg_settings
+ * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
     bool *out,
@@ -1027,18 +1024,21 @@ static C_KZG_RET verify_kzg_proof_impl(
     const fr_t *z,
     const fr_t *y,
     const g1_t *proof,
-    const KZGSettings *ks
+    const KZGSettings *s
 ) {
-    g2_t x_g2, s_minus_x;
-    g1_t y_g1, commitment_minus_y;
-    g2_mul(&x_g2, &G2_GENERATOR, z);
-    g2_sub(&s_minus_x, &ks->g2_values[1], &x_g2);
-    g1_mul(&y_g1, &G1_GENERATOR, y);
-    g1_sub(&commitment_minus_y, commitment, &y_g1);
+    g2_t x_g2, X_minus_z;
+    g1_t y_g1, P_minus_y;
 
-    *out = pairings_verify(
-        &commitment_minus_y, &G2_GENERATOR, proof, &s_minus_x
-    );
+    /* Calculate: X_minus_z */
+    g2_mul(&x_g2, &G2_GENERATOR, z);
+    g2_sub(&X_minus_z, &s->g2_values[1], &x_g2);
+
+    /* Calculate: P_minus_y */
+    g1_mul(&y_g1, &G1_GENERATOR, y);
+    g1_sub(&P_minus_y, commitment, &y_g1);
+
+    /* Verify: P - y = Q * (X - z) */
+    *out = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
 
     return C_KZG_OK;
 }
@@ -1060,8 +1060,7 @@ static C_KZG_RET compute_kzg_proof_impl(
  *                       point z
  * @param[in]  blob      The blob (polynomial) to generate a proof for
  * @param[in]  z         The generator z-value for the evaluation points
- * @param[in]  s         The settings containing the secrets, previously
- *                       initialised with #new_kzg_settings
+ * @param[in]  s         The trusted setup
  */
 C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
@@ -1095,8 +1094,7 @@ out:
  *                        point z
  * @param[in]  polynomial The polynomial in Lagrange form
  * @param[in]  z          The evaluation point
- * @param[in]  s          The settings containing the secrets, previously
- *                        initialised with #new_kzg_settings
+ * @param[in]  s          The trusted setup
  */
 static C_KZG_RET compute_kzg_proof_impl(
     KZGProof *proof_out,
@@ -1143,7 +1141,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
-    if (m != 0) { // ω_{m-1} == z
+    if (m != 0) { /* ω_{m-1} == z */
         q.evals[--m] = FR_ZERO;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
@@ -1223,12 +1221,11 @@ out:
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
  *
- * @param[out] ok               `true` if the proof is valid, `false` if not
- * @param[in]  blob              Blob to verify
- * @param[in]  commitment_bytes  Commitment to verify
- * @param[in]  proof_bytes       Proof used for verification
- * @param[in]  s                 The settings struct containing the commitment
- *                               verification key (i.e. the trusted setup)
+ * @param[out] ok               True if the proofs are valid, otherwise false
+ * @param[in]  blob             Blob to verify
+ * @param[in]  commitment_bytes Commitment to verify
+ * @param[in]  proof_bytes      Proof used for verification
+ * @param[in]  s                The trusted setup
  */
 C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
@@ -1270,14 +1267,14 @@ C_KZG_RET verify_blob_kzg_proof(
  *
  * @param[out]  r_powers_out
  * @param[in]   commitments_g1
- * @param[in]   evaluation_challenges_fr
+ * @param[in]   zs_fr
  * @param[in]   ys_fr
  * @param[in]   proofs_g1
  */
 static C_KZG_RET compute_r_powers(
     fr_t *r_powers_out,
     const g1_t *commitments_g1,
-    const fr_t *evaluation_challenges_fr,
+    const fr_t *zs_fr,
     const fr_t *ys_fr,
     const g1_t *proofs_g1,
     size_t n
@@ -1287,9 +1284,9 @@ static C_KZG_RET compute_r_powers(
     Bytes32 r_bytes;
     fr_t r;
 
-    size_t input_size = 32 +
-                        n * (BYTES_PER_COMMITMENT +
-                             2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF);
+    size_t input_size = BYTES_PER_DOMAIN + sizeof(uint64_t) + sizeof(uint64_t) +
+                        (n * (BYTES_PER_COMMITMENT +
+                              2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
     ret = c_kzg_malloc((void **)&bytes, input_size);
     if (ret != C_KZG_OK) goto out;
 
@@ -1297,23 +1294,31 @@ static C_KZG_RET compute_r_powers(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(offset, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, 16);
-    offset += 16;
+    memcpy(offset, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, BYTES_PER_DOMAIN);
+    offset += BYTES_PER_DOMAIN;
+
+    /* Copy degree of the polynomial */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
-    offset += 8;
+    offset += sizeof(uint64_t);
+
+    /* Copy number of commitments */
     bytes_from_uint64(offset, n);
-    offset += 8;
+    offset += sizeof(uint64_t);
 
     for (size_t i = 0; i < n; i++) {
+        /* Copy commitment */
         bytes_from_g1((Bytes48 *)offset, &commitments_g1[i]);
         offset += BYTES_PER_COMMITMENT;
 
-        bytes_from_bls_field((Bytes32 *)offset, &evaluation_challenges_fr[i]);
+        /* Copy z */
+        bytes_from_bls_field((Bytes32 *)offset, &zs_fr[i]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
+        /* Copy y */
         bytes_from_bls_field((Bytes32 *)offset, &ys_fr[i]);
         offset += BYTES_PER_FIELD_ELEMENT;
 
+        /* Copy proof */
         bytes_from_g1((Bytes48 *)offset, &proofs_g1[i]);
         offset += BYTES_PER_PROOF;
     }
@@ -1326,8 +1331,6 @@ static C_KZG_RET compute_r_powers(
 
     /* Make sure we wrote the entire buffer */
     assert(offset == bytes + input_size);
-
-    ret = C_KZG_OK;
 
 out:
     c_kzg_free(bytes);
@@ -1344,25 +1347,18 @@ out:
  *
  * @remark This function only works for `n > 0`.
  *
- * @param[out] ok                          `true` if the proofs are valid,
- *                                         `false` if not
- * @param[in]  commitments_g1              Array of commitments to verify
- * @param[in]  evaluation_challenges_fr    Array of evaluation of points for the
- *                                         KZG proofs
- * @param[in]  ys_fr                       Array of evaluation results for the
- *                                         KZG proofs
- * @param[in]  proofs_g1                   Array of proofs used for verification
- * @param[in]  n                           The number of
- *                                         blobs/commitments/proofs in the
- *                                         arrays
- * @param[in]  s                           The settings struct containing the
- *                                         commitment verification key (i.e. the
- *                                         trusted setup)
+ * @param[out] ok             True if the proofs are valid, otherwise false
+ * @param[in]  commitments_g1 Array of commitments to verify
+ * @param[in]  zs_fr          Array of evaluation of points for the KZG proofs
+ * @param[in]  ys_fr          Array of evaluation results for the KZG proofs
+ * @param[in]  proofs_g1      Array of proofs used for verification
+ * @param[in]  n              The number of blobs/commitments/proofs
+ * @param[in]  s              The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_batch(
     bool *ok,
     const g1_t *commitments_g1,
-    const fr_t *evaluation_challenges_fr,
+    const fr_t *zs_fr,
     const fr_t *ys_fr,
     const g1_t *proofs_g1,
     size_t n,
@@ -1370,6 +1366,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 ) {
     C_KZG_RET ret;
     g1_t proof_lincomb, proof_z_lincomb, C_minus_y_lincomb, rhs_g1;
+    g1_t ys_encrypted;
     fr_t *r_powers = NULL;
     g1_t *C_minus_y = NULL;
     fr_t *r_times_z = NULL;
@@ -1388,7 +1385,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     /* Compute the random lincomb challenges */
     ret = compute_r_powers(
-        r_powers, commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1, n
+        r_powers, commitments_g1, zs_fr, ys_fr, proofs_g1, n
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -1396,21 +1393,18 @@ static C_KZG_RET verify_kzg_proof_batch(
     g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
-        g1_t ys_encrypted;
         /* Get [y_i] */
         g1_mul(&ys_encrypted, &G1_GENERATOR, &ys_fr[i]);
         /* Get C_i - [y_i] */
         g1_sub(&C_minus_y[i], &commitments_g1[i], &ys_encrypted);
-
         /* Get r^i * z_i */
-        blst_fr_mul(&r_times_z[i], &r_powers[i], &evaluation_challenges_fr[i]);
+        blst_fr_mul(&r_times_z[i], &r_powers[i], &zs_fr[i]);
     }
 
     /* Get \sum r^i z_i Proof_i */
     g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
     /* Get \sum r^i (C_i - [y_i]) */
     g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
-
     /* Get C_minus_y_lincomb + proof_z_lincomb */
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
@@ -1419,13 +1413,10 @@ static C_KZG_RET verify_kzg_proof_batch(
         &proof_lincomb, &s->g2_values[1], &rhs_g1, &G2_GENERATOR
     );
 
-    ret = C_KZG_OK;
-
 out:
     c_kzg_free(r_powers);
     c_kzg_free(C_minus_y);
     c_kzg_free(r_times_z);
-
     return ret;
 }
 
@@ -1439,14 +1430,12 @@ out:
  *
  * @remark This function accepts if called with `n==0`.
  *
- * @param[out] ok               `true` if the proofs are valid, `false` if not
+ * @param[out] ok                True if the proofs are valid, otherwise false
  * @param[in]  blobs             Array of blobs to verify
  * @param[in]  commitments_bytes Array of commitments to verify
  * @param[in]  proofs_bytes      Array of proofs used for verification
- * @param[in]  n                 The number of blobs/commitments/proofs in the
- *                               arrays
- * @param[in]  s                 The settings struct containing the commitment
- * verification key (i.e. the trusted setup)
+ * @param[in]  n                 The number of blobs/commitments/proofs
+ * @param[in]  s                 The trusted setup
  */
 C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
@@ -1482,11 +1471,13 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < n; i++) {
+        /* Convert each commitment to a g1 point */
         ret = bytes_to_kzg_commitment(
             &commitments_g1[i], &commitments_bytes[i]
         );
         if (ret != C_KZG_OK) goto out;
 
+        /* Convert each blob from bytes to a poly */
         ret = blob_to_polynomial(&polynomials[i], &blobs[i]);
         if (ret != C_KZG_OK) goto out;
 
@@ -1513,7 +1504,6 @@ out:
     c_kzg_free(evaluation_challenges_fr);
     c_kzg_free(ys_fr);
     c_kzg_free(polynomials);
-
     return ret;
 }
 
@@ -1552,7 +1542,7 @@ static void fft_g1_fast(
     uint64_t n
 ) {
     uint64_t half = n / 2;
-    if (half > 0) { // Tunable parameter
+    if (half > 0) { /* Tunable parameter */
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_g1_fast(
             out + half, in + stride, stride * 2, roots, roots_stride * 2, half
@@ -1578,11 +1568,9 @@ static void fft_g1_fast(
  *
  * @param[out] out     The results (array of length @p n)
  * @param[in]  in      The input data (array of length @p n)
- * @param[in]  inverse `false` for forward transform, `true` for inverse
- *                     transform
+ * @param[in]  inverse False for forward transform, true for inverse transform
  * @param[in]  n       Length of the FFT, must be a power of two
- * @param[in]  fs      Pointer to previously initialised FFTSettings
- *                     structure with `max_width` at least @p n
+ * @param[in]  fs      The FFTSettings
  */
 static C_KZG_RET fft_g1(
     g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs
@@ -1643,7 +1631,7 @@ static C_KZG_RET expand_root_of_unity(
  *
  * @remark As with all functions prefixed `new_`, this allocates memory that
  * needs to be reclaimed by calling the corresponding `free_` function. In
- * this case, #free_fft_settings.
+ * this case, free_fft_settings().
  *
  * @remark These settings may be used for FFTs on both field elements and G1
  * group elements.
@@ -1666,7 +1654,7 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     ));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
-    // Allocate space for the roots of unity
+    /* Allocate space for the roots of unity */
     ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1);
@@ -1674,19 +1662,19 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     ret = new_fr_array(&fs->roots_of_unity, fs->max_width);
     if (ret != C_KZG_OK) goto out_error;
 
-    // Populate the roots of unity
+    /* Populate the roots of unity */
     ret = expand_root_of_unity(
         fs->expanded_roots_of_unity, &root_of_unity, fs->max_width
     );
     if (ret != C_KZG_OK) goto out_error;
 
-    // Populate reverse roots of unity
+    /* Populate reverse roots of unity */
     for (uint64_t i = 0; i <= fs->max_width; i++) {
         fs->reverse_roots_of_unity[i] =
             fs->expanded_roots_of_unity[fs->max_width - i];
     }
 
-    // Permute the roots of unity
+    /* Permute the roots of unity */
     memcpy(
         fs->roots_of_unity,
         fs->expanded_roots_of_unity,
@@ -1708,7 +1696,7 @@ out_success:
 }
 
 /**
- * Free the memory that was previously allocated by #new_fft_settings.
+ * Free the memory that was previously allocated by new_fft_settings().
  *
  * @remark It's a NOP if `fs` is NULL.
  *
@@ -1716,7 +1704,6 @@ out_success:
  */
 static void free_fft_settings(FFTSettings *fs) {
     if (fs == NULL) return;
-
     c_kzg_free(fs->expanded_roots_of_unity);
     c_kzg_free(fs->reverse_roots_of_unity);
     c_kzg_free(fs->roots_of_unity);
@@ -1724,24 +1711,23 @@ static void free_fft_settings(FFTSettings *fs) {
 }
 
 /**
- * Free the memory that was previously allocated by #new_kzg_settings.
+ * Free the memory that was previously allocated by new_kzg_settings().
  *
  * @remark It's a NOP if `ks` is NULL.
  *
  * @param[in] ks The settings to be freed
  */
-static void free_kzg_settings(KZGSettings *ks) {
-    if (ks == NULL) return;
-
-    c_kzg_free(ks->fs);
-    c_kzg_free(ks->g1_values);
-    c_kzg_free(ks->g2_values);
+static void free_kzg_settings(KZGSettings *s) {
+    if (s == NULL) return;
+    c_kzg_free(s->fs);
+    c_kzg_free(s->g1_values);
+    c_kzg_free(s->g2_values);
 }
 
 /**
  * Load trusted setup into a KZGSettings.
  *
- * @remark Free after use with #free_trusted_setup.
+ * @remark Free after use with free_trusted_setup().
  *
  * @param[out] out      Pointer to the stored trusted setup data
  * @param[in]  g1_bytes Array of G1 elements
@@ -1773,12 +1759,14 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
 
     for (i = 0; i < n1; i++) {
-        ret = validate_kzg_g1(&g1_projective[i], (Bytes48 *)&g1_bytes[48 * i]);
+        ret = validate_kzg_g1(
+            &g1_projective[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
+        );
         if (ret != C_KZG_OK) goto out_error;
     }
 
     for (i = 0; i < n2; i++) {
-        blst_p2_uncompress(&g2_affine, &g2_bytes[96 * i]);
+        blst_p2_uncompress(&g2_affine, &g2_bytes[BYTES_PER_G2 * i]);
         blst_p2_from_affine(&out->g2_values[i], &g2_affine);
     }
 
@@ -1788,7 +1776,7 @@ C_KZG_RET load_trusted_setup(
 
     ret = c_kzg_malloc((void **)&out->fs, sizeof(FFTSettings));
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_fft_settings((FFTSettings *)out->fs, max_scale);
+    ret = new_fft_settings(out->fs, max_scale);
     if (ret != C_KZG_OK) goto out_error;
     ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
     if (ret != C_KZG_OK) goto out_error;
@@ -1813,37 +1801,42 @@ out_success:
  *     the first two numbers are in decimal and the remainder are hexstrings
  *     and any whitespace can be used as separators.
  *
- * @remark See also #load_trusted_setup.
+ * @remark See also load_trusted_setup().
+ * @remark The input file will not be closed.
  *
  * @param[out] out Pointer to the loaded trusted setup data
- * @param[in]  in  File handle for input - will not be closed
+ * @param[in]  in  File handle for input
  */
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
-    uint64_t i;
     int num_matches;
+    uint64_t i;
+    uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1];
+    uint8_t g2_bytes[NUM_G2_POINTS * BYTES_PER_G2];
 
+    /* Read the number of g1 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
     CHECK(num_matches == 1);
     CHECK(i == FIELD_ELEMENTS_PER_BLOB);
+
+    /* Read the number of g2 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
     CHECK(num_matches == 1);
-    CHECK(i == 65);
+    CHECK(i == NUM_G2_POINTS);
 
-    uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * 48];
-    uint8_t g2_bytes[65 * 96];
-
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * 48; i++) {
+    /* Read all of the g1 points, byte by byte */
+    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_bytes[i]);
         CHECK(num_matches == 1);
     }
 
-    for (i = 0; i < 65 * 96; i++) {
+    /* Read all of the g2 points, byte by byte */
+    for (i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
         num_matches = fscanf(in, "%2hhx", &g2_bytes[i]);
         CHECK(num_matches == 1);
     }
 
     return load_trusted_setup(
-        out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, 65
+        out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, NUM_G2_POINTS
     );
 }
 
@@ -1856,7 +1849,6 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
  */
 void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
-
-    free_fft_settings((FFTSettings *)s->fs);
+    free_fft_settings(s->fs);
     free_kzg_settings(s);
 }
