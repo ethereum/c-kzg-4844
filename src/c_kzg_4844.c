@@ -325,7 +325,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     ret = new_fr_array(&prod, len);
     if (ret != C_KZG_OK) goto out;
 
-    prod[0] = a[0];
+    prod[0] = a[0]; // NOTE: new_fr_array returns an error if len == 0, so we know that len > 0 here.
 
     for (i = 1; i < len; i++) {
         blst_fr_mul(&prod[i], &a[i], &prod[i - 1]);
@@ -484,7 +484,9 @@ static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
 
 /**
  * Serialize a 64-bit unsigned integer into bytes.
-
+ *
+ * @remark The output format is little-endian.
+ *
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
  */
