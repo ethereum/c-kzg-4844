@@ -1715,9 +1715,7 @@ out_success:
  * @param[in] fs The settings to be freed
  */
 static void free_fft_settings(FFTSettings *fs) {
-    if (!fs) {
-        return;
-    }
+    if (fs == NULL) return;
 
     c_kzg_free(fs->expanded_roots_of_unity);
     c_kzg_free(fs->reverse_roots_of_unity);
@@ -1733,9 +1731,7 @@ static void free_fft_settings(FFTSettings *fs) {
  * @param[in] ks The settings to be freed
  */
 static void free_kzg_settings(KZGSettings *ks) {
-    if (!ks) {
-        return;
-    }
+    if (ks == NULL) return;
 
     c_kzg_free(ks->fs);
     c_kzg_free(ks->g1_values);
@@ -1859,9 +1855,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
  * @param[in] s The trusted setup to free
  */
 void free_trusted_setup(KZGSettings *s) {
-    if (!s) {
-        return;
-    }
+    if (s == NULL) return;
 
     free_fft_settings((FFTSettings *)s->fs);
     free_kzg_settings(s);
