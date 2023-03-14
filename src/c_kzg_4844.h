@@ -119,7 +119,7 @@ typedef struct {
  */
 typedef struct {
     /** The corresponding settings for performing FFTs. */
-    const FFTSettings *fs;
+    FFTSettings *fs;
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
     g1_t *g1_values;

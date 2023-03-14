@@ -1715,7 +1715,7 @@ static void free_fft_settings(FFTSettings *fs) {
  * @param[in] ks The settings to be freed
  */
 static void free_kzg_settings(KZGSettings *ks) {
-    free((FFTSettings *)ks->fs);
+    free(ks->fs);
     free(ks->g1_values);
     free(ks->g2_values);
 }
@@ -1780,7 +1780,7 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
-    free((void *)out->fs);
+    free(out->fs);
     free(out->g1_values);
     free(out->g2_values);
 out_success:
