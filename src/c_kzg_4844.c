@@ -1708,9 +1708,15 @@ out_success:
 /**
  * Free the memory that was previously allocated by #new_fft_settings.
  *
+ * @remark It's a NOP if `fs` is NULL.
+ *
  * @param[in] fs The settings to be freed
  */
 static void free_fft_settings(FFTSettings *fs) {
+    if (!fs) {
+        return;
+    }
+
     c_kzg_free(fs->expanded_roots_of_unity);
     c_kzg_free(fs->reverse_roots_of_unity);
     c_kzg_free(fs->roots_of_unity);
@@ -1720,9 +1726,15 @@ static void free_fft_settings(FFTSettings *fs) {
 /**
  * Free the memory that was previously allocated by #new_kzg_settings.
  *
+ * @remark It's a NOP if `ks` is NULL.
+ *
  * @param[in] ks The settings to be freed
  */
 static void free_kzg_settings(KZGSettings *ks) {
+    if (!ks) {
+        return;
+    }
+
     c_kzg_free(ks->fs);
     c_kzg_free(ks->g1_values);
     c_kzg_free(ks->g2_values);
@@ -1840,9 +1852,15 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
 /**
  * Free a trusted setup (KZGSettings).
  *
+ * @remark It's a NOP if `s` is NULL.
+ *
  * @param[in] s The trusted setup to free
  */
 void free_trusted_setup(KZGSettings *s) {
+    if (!s) {
+        return;
+    }
+
     free_fft_settings((FFTSettings *)s->fs);
     free_kzg_settings(s);
 }
