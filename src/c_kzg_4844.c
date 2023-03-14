@@ -250,6 +250,11 @@ static bool fr_equal(const fr_t *aa, const fr_t *bb) {
 /**
  * Divide a field element by another.
  *
+ * @remark The behaviour for @p b == 0 is unspecified.
+ *
+ * @remark This function does support in-place computation, i.e. @p out == @p a
+ * or @p out == @p b work.
+ *
  * @param[out] out @p a divided by @p b in the field
  * @param[in]  a   The dividend
  * @param[in]  b   The divisor
@@ -266,6 +271,9 @@ static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
  * Uses square and multiply for log(@p n) performance.
  *
  * @remark A 64-bit exponent is sufficient for our needs here.
+ *
+ * @remark This function does support in-place computation, i.e. @p a == @p out
+ * works.
  *
  * @param[out] out @p a raised to the power of @p n
  * @param[in]  a   The field element to be exponentiated
@@ -314,6 +322,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     fr_t inv;
     size_t i;
 
+    assert(len > 0);
     assert(a != out);
 
     ret = new_fr_array(&prod, len);
@@ -478,7 +487,9 @@ static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
 
 /**
  * Serialize a 64-bit unsigned integer into bytes.
-
+ *
+ * @remark The output format is little-endian.
+ *
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
  */
@@ -531,17 +542,22 @@ static bool is_power_of_two(uint64_t n) {
 /**
  * Reverse the bit order in a 32 bit integer.
  *
- * @remark This simply wraps the macro to enforce the type check.
- *
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
  */
 static uint32_t reverse_bits(uint32_t a) {
+    // This simply wraps the macro above to enforce the type check.
     return rev_4byte(a);
 }
 
 /**
  * Reorder an array in reverse bit order of its indices.
+ *
+ * @remark This means that input[n] == output[n'],
+ *         where input and output denote the input and output array
+ *         and n' is obtained from n by bit-reversing n.
+ *         As opposed to reverse_bits, this bit-reversal operates on log2(@p
+ * n)-bit numbers.
  *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in @p size.
@@ -583,8 +599,8 @@ static C_KZG_RET bit_reversal_permutation(
 /**
  * Map bytes to a BLS field element.
  *
- * @param[out] out   The field element to store the result
- * @param[in]  bytes A 32-byte array containing the input
+ * @param[out] out The field element to store the result
+ * @param[in]  b   A 32-byte array containing the input
  */
 static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
@@ -596,8 +612,8 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * Convert untrusted bytes to a trusted and validated BLS scalar field
  * element.
  *
- * @param[out] out   The field element to store the deserialized data
- * @param[in]  bytes A 32-byte array containing the serialized field element
+ * @param[out] out The field element to store the deserialized data
+ * @param[in]  b   A 32-byte array containing the serialized field element
  */
 static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
@@ -682,7 +698,6 @@ static const int CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
  * @param[out] eval_challenge_out The evaluation challenge
  * @param[in]  blob               A blob
  * @param[in]  commitment         A commitment
- * @param[in]  n                  The number of polynomials and commitments
  */
 static void compute_challenge(
     fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
@@ -854,6 +869,10 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        // if the point to evaluate at is one of the evaluation points by which
+        // the polynomial is given, we can just return the result directly. Note
+        // that special-casing this is neccessary, as the formula below would
+        // divide by zero otherwise.
         if (fr_equal(x, &roots_of_unity[i])) {
             *out = p->evals[i];
             ret = C_KZG_OK;
@@ -1086,7 +1105,9 @@ static C_KZG_RET compute_kzg_proof_impl(
     fr_t tmp;
     Polynomial q;
     const fr_t *roots_of_unity = s->fs->roots_of_unity;
-    uint64_t i, m = 0;
+    uint64_t i;
+    /* m != 0 indicates that the evaluation point z equals root_of_unity[m-1] */
+    uint64_t m = 0;
 
     ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -1112,7 +1133,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
     }
 
-    if (m) { // ω_m == z
+    if (m != 0) { // ω_{m-1} == z
         q.evals[--m] = FR_ZERO;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
