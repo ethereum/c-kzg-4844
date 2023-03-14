@@ -33,6 +33,16 @@
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
+/**
+ * Helper macro to release memory allocated on the heap. Unlike free(),
+ * c_kzg_free() macro sets the pointer value to NULL after freeing it.
+ */
+#define c_kzg_free(p) \
+    (void)({ \
+        free(p); \
+        (p) = NULL; \
+    })
+
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
@@ -180,7 +190,7 @@ static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
 /**
  * Allocate memory for an array of G1 group elements.
  *
- * @remark Free the space later using `free()`.
+ * @remark Free the space later using `c_kzg_free()`.
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G1 elements to be allocated
@@ -192,7 +202,7 @@ static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
 /**
  * Allocate memory for an array of G2 group elements.
  *
- * @remark Free the space later using `free()`.
+ * @remark Free the space later using `c_kzg_free()`.
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G2 elements to be allocated
@@ -204,7 +214,7 @@ static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
 /**
  * Allocate memory for an array of field elements.
  *
- * @remark Free the space later using `free()`.
+ * @remark Free the space later using `c_kzg_free()`.
  *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of field elements to be allocated
@@ -343,7 +353,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     out[0] = inv;
 
 out:
-    free(prod);
+    c_kzg_free(prod);
     return ret;
 }
 
@@ -818,9 +828,9 @@ static C_KZG_RET g1_lincomb_fast(
     ret = C_KZG_OK;
 
 out:
-    free(scratch);
-    free(p_affine);
-    free(scalars);
+    c_kzg_free(scratch);
+    c_kzg_free(p_affine);
+    c_kzg_free(scalars);
     return ret;
 }
 
@@ -897,8 +907,8 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     blst_fr_mul(out, out, &tmp);
 
 out:
-    free(inverses_in);
-    free(inverses);
+    c_kzg_free(inverses_in);
+    c_kzg_free(inverses);
     return ret;
 }
 
@@ -1165,8 +1175,8 @@ static C_KZG_RET compute_kzg_proof_impl(
     bytes_from_g1(proof_out, &out_g1);
 
 out:
-    free(inverses_in);
-    free(inverses);
+    c_kzg_free(inverses_in);
+    c_kzg_free(inverses);
     return ret;
 }
 
@@ -1320,7 +1330,7 @@ static C_KZG_RET compute_r_powers(
     ret = C_KZG_OK;
 
 out:
-    free(bytes);
+    c_kzg_free(bytes);
     return ret;
 }
 
@@ -1412,9 +1422,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     ret = C_KZG_OK;
 
 out:
-    free(r_powers);
-    free(C_minus_y);
-    free(r_times_z);
+    c_kzg_free(r_powers);
+    c_kzg_free(C_minus_y);
+    c_kzg_free(r_times_z);
 
     return ret;
 }
@@ -1498,11 +1508,11 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     );
 
 out:
-    free(commitments_g1);
-    free(proofs_g1);
-    free(evaluation_challenges_fr);
-    free(ys_fr);
-    free(polynomials);
+    c_kzg_free(commitments_g1);
+    c_kzg_free(proofs_g1);
+    c_kzg_free(evaluation_challenges_fr);
+    c_kzg_free(ys_fr);
+    c_kzg_free(polynomials);
 
     return ret;
 }
@@ -1690,9 +1700,9 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     goto out_success;
 
 out_error:
-    free(fs->expanded_roots_of_unity);
-    free(fs->reverse_roots_of_unity);
-    free(fs->roots_of_unity);
+    c_kzg_free(fs->expanded_roots_of_unity);
+    c_kzg_free(fs->reverse_roots_of_unity);
+    c_kzg_free(fs->roots_of_unity);
 out_success:
     return ret;
 }
@@ -1700,24 +1710,32 @@ out_success:
 /**
  * Free the memory that was previously allocated by #new_fft_settings.
  *
+ * @remark It's a NOP if `fs` is NULL.
+ *
  * @param[in] fs The settings to be freed
  */
 static void free_fft_settings(FFTSettings *fs) {
-    free(fs->expanded_roots_of_unity);
-    free(fs->reverse_roots_of_unity);
-    free(fs->roots_of_unity);
+    if (fs == NULL) return;
+
+    c_kzg_free(fs->expanded_roots_of_unity);
+    c_kzg_free(fs->reverse_roots_of_unity);
+    c_kzg_free(fs->roots_of_unity);
     fs->max_width = 0;
 }
 
 /**
  * Free the memory that was previously allocated by #new_kzg_settings.
  *
+ * @remark It's a NOP if `ks` is NULL.
+ *
  * @param[in] ks The settings to be freed
  */
 static void free_kzg_settings(KZGSettings *ks) {
-    free((FFTSettings *)ks->fs);
-    free(ks->g1_values);
-    free(ks->g2_values);
+    if (ks == NULL) return;
+
+    c_kzg_free(ks->fs);
+    c_kzg_free(ks->g1_values);
+    c_kzg_free(ks->g2_values);
 }
 
 /**
@@ -1780,11 +1798,11 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
-    free((void *)out->fs);
-    free(out->g1_values);
-    free(out->g2_values);
+    c_kzg_free(out->fs);
+    c_kzg_free(out->g1_values);
+    c_kzg_free(out->g2_values);
 out_success:
-    free(g1_projective);
+    c_kzg_free(g1_projective);
     return ret;
 }
 
@@ -1832,9 +1850,13 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
 /**
  * Free a trusted setup (KZGSettings).
  *
+ * @remark It's a NOP if `s` is NULL.
+ *
  * @param[in] s The trusted setup to free
  */
 void free_trusted_setup(KZGSettings *s) {
+    if (s == NULL) return;
+
     free_fft_settings((FFTSettings *)s->fs);
     free_kzg_settings(s);
 }
