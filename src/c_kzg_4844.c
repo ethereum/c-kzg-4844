@@ -1672,6 +1672,9 @@ out_error:
     free(fs->expanded_roots_of_unity);
     free(fs->reverse_roots_of_unity);
     free(fs->roots_of_unity);
+    fs->expanded_roots_of_unity = NULL;
+    fs->reverse_roots_of_unity = NULL;
+    fs->roots_of_unity = NULL;
 out_success:
     return ret;
 }
@@ -1762,6 +1765,9 @@ out_error:
     free((void *)out->fs);
     free(out->g1_values);
     free(out->g2_values);
+    out->fs = NULL;
+    out->g1_values = NULL;
+    out->g2 = NULL;
 out_success:
     free(g1_projective);
     return ret;
@@ -1814,6 +1820,8 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
  * @param[in] s The trusted setup to free
  */
 void free_trusted_setup(KZGSettings *s) {
-    free_fft_settings((FFTSettings *)s->fs);
+    if (s->fs != NULL){
+        free_fft_settings((FFTSettings *)s->fs);
+    }
     free_kzg_settings(s);
 }
