@@ -250,6 +250,10 @@ static bool fr_equal(const fr_t *aa, const fr_t *bb) {
 /**
  * Divide a field element by another.
  *
+ * @remark The behaviour for @p b == 0 is unspecified.
+ *
+ * @remark This function does support in-place computation, i.e. @p out == @p a or @p out == @p b work.
+ *
  * @param[out] out @p a divided by @p b in the field
  * @param[in]  a   The dividend
  * @param[in]  b   The divisor
