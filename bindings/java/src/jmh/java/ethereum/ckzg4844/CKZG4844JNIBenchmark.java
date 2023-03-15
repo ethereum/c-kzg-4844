@@ -125,7 +125,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @Benchmark
-  public Tuple computeKzgProof(final ComputeKzgProofState state) {
+  public ByteArrayTuple computeKzgProof(final ComputeKzgProofState state) {
     return CKZG4844JNI.computeKzgProof(state.blob, state.z);
   }
 

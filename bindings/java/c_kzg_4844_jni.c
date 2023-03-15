@@ -30,8 +30,8 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code, const char *messag
 {
   jclass exception_class = (*env)->FindClass(env, "ethereum/ckzg4844/CKZGException");
   jstring error_message = (*env)->NewStringUTF(env, message);
-  jmethodID exception_init = (*env)->GetMethodID(env, exception_class, "<init>", "(ILjava/lang/String;)V");
-  jobject exception = (*env)->NewObject(env, exception_class, exception_init, error_code, error_message);
+  jmethodID exception_constructor = (*env)->GetMethodID(env, exception_class, "<init>", "(ILjava/lang/String;)V");
+  jobject exception = (*env)->NewObject(env, exception_class, exception_constructor, error_code, error_message);
   (*env)->Throw(env, exception);
 }
 
@@ -230,24 +230,24 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
     return NULL;
   }
 
-  jclass tuple_class = (*env)->FindClass(env, "ethereum/ckzg4844/Tuple");
+  jclass tuple_class = (*env)->FindClass(env, "ethereum/ckzg4844/ByteArrayTuple");
   if (tuple_class == NULL)
   {
-    throw_exception(env, "Failed to find Tuple class.");
+    throw_exception(env, "Failed to find ByteArrayTuple class.");
     return NULL;
   }
 
   jmethodID tuple_constructor = (*env)->GetMethodID(env, tuple_class, "<init>", "([B[B)V");
   if (tuple_constructor == NULL)
   {
-    throw_exception(env, "Failed to find Tuple constructor.");
+    throw_exception(env, "Failed to find ByteArrayTuple constructor.");
     return NULL;
   }
 
   jobject tuple = (*env)->NewObject(env, tuple_class, tuple_constructor, proof, y);
   if (tuple == NULL)
   {
-    throw_exception(env, "Failed to instantiate new Tuple.");
+    throw_exception(env, "Failed to instantiate new ByteArrayTuple.");
     return NULL;
   }
 

@@ -1,10 +1,11 @@
 package ethereum.ckzg4844;
 
-public class Tuple {
+/** A tuple holding 2 byte arrays. */
+public class ByteArrayTuple {
   private final byte[] first;
   private final byte[] second;
 
-  public Tuple(byte[] first, byte[] second) {
+  public ByteArrayTuple(byte[] first, byte[] second) {
     this.first = first;
     this.second = second;
   }
@@ -17,7 +18,7 @@ public class Tuple {
     return second;
   }
 
-  public static Tuple of(byte[] first, byte[] second) {
-    return new Tuple(first, second);
+  public static ByteArrayTuple of(byte[] first, byte[] second) {
+    return new ByteArrayTuple(first, second);
   }
 }

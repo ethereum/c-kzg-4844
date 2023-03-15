@@ -1,8 +1,8 @@
 plugins {
     id "application"
     id "java-test-fixtures"
-    id "me.champeau.jmh" version "0.6.8"
-    id "com.diffplug.spotless" version "6.15.0"
+    id "me.champeau.jmh" version "0.7.0"
+    id "com.diffplug.spotless" version "6.17.0"
 }
 
 repositories {
@@ -25,6 +25,16 @@ dependencies {
     testFixturesImplementation("org.apache.tuweni:tuweni-units:2.3.1")
     testFixturesImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
     testFixturesImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
+}
+
+javadoc {
+    options.addStringOption("Xdoclint:all,-missing", "-quiet")
+}
+
+check {
+    dependsOn {
+        javadoc
+    }
 }
 
 spotless {
