@@ -859,7 +859,7 @@ static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
  * @param[out] out The result of the evaluation
  * @param[in]  p   The polynomial in evaluation form
  * @param[in]  x   The point to evaluate the polynomial at
- * @param[in]  s   The settings struct containing the roots of unity
+ * @param[in]  s   The trusted setup
  */
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
@@ -921,8 +921,7 @@ out:
  *
  * @param[out] out The resulting commitment
  * @param[in]  p   The polynomial to commit to
- * @param[in]  s   The settings struct containing the commitment key
- *                 (i.e. the trusted setup)
+ * @param[in]  s   The trusted setup
  */
 static C_KZG_RET poly_to_kzg_commitment(
     g1_t *out, const Polynomial *p, const KZGSettings *s
@@ -937,8 +936,7 @@ static C_KZG_RET poly_to_kzg_commitment(
  *
  * @param[out] out  The resulting commitment
  * @param[in]  blob The blob representing the polynomial to be committed to
- * @param[in]  s    The settings struct containing the commitment key (i.e.
- *                  the trusted setup)
+ * @param[in]  s    The trusted setup
  */
 C_KZG_RET blob_to_kzg_commitment(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
@@ -1510,15 +1508,6 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 // Trusted Setup Functions
 ///////////////////////////////////////////////////////////////////////////////
-
-/**
- * Discrete fourier transforms over arrays of G1 group elements.
- *
- * Also known as [number theoretic
- * transforms](https://en.wikipedia.org/wiki/Discrete_Fourier_transform_(general)#Number-theoretic_transform).
- *
- * @remark Functions here work only for lengths that are a power of two.
- */
 
 /**
  * Fast Fourier Transform.
