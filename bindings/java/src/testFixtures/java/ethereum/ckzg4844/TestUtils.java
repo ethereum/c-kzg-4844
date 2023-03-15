@@ -91,9 +91,11 @@ public class TestUtils {
 
   public static List<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
     final Stream.Builder<BlobToKzgCommitmentTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(BLOB_TO_KZG_COMMITMENT_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(BLOB_TO_KZG_COMMITMENT_TESTS)) {
+      for (String testFile : testFiles) {
         String data = Files.readString(Path.of(testFile));
         BlobToKzgCommitmentTest test = OBJECT_MAPPER.readValue(data, BlobToKzgCommitmentTest.class);
         tests.add(test);
@@ -107,9 +109,11 @@ public class TestUtils {
 
   public static List<ComputeKzgProofTest> getComputeKzgProofTests() {
     final Stream.Builder<ComputeKzgProofTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(COMPUTE_KZG_PROOF_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(COMPUTE_KZG_PROOF_TESTS)) {
+      for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         ComputeKzgProofTest test = OBJECT_MAPPER.readValue(jsonData, ComputeKzgProofTest.class);
         tests.add(test);
@@ -123,9 +127,11 @@ public class TestUtils {
 
   public static List<ComputeBlobKzgProofTest> getComputeBlobKzgProofTests() {
     final Stream.Builder<ComputeBlobKzgProofTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(COMPUTE_BLOB_KZG_PROOF_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(COMPUTE_BLOB_KZG_PROOF_TESTS)) {
+      for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         ComputeBlobKzgProofTest test =
             OBJECT_MAPPER.readValue(jsonData, ComputeBlobKzgProofTest.class);
@@ -140,9 +146,11 @@ public class TestUtils {
 
   public static List<VerifyKzgProofTest> getVerifyKzgProofTests() {
     final Stream.Builder<VerifyKzgProofTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_KZG_PROOF_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(VERIFY_KZG_PROOF_TESTS)) {
+      for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         VerifyKzgProofTest test = OBJECT_MAPPER.readValue(jsonData, VerifyKzgProofTest.class);
         tests.add(test);
@@ -156,9 +164,11 @@ public class TestUtils {
 
   public static List<VerifyBlobKzgProofTest> getVerifyBlobKzgProofTests() {
     final Stream.Builder<VerifyBlobKzgProofTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_BLOB_KZG_PROOF_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(VERIFY_BLOB_KZG_PROOF_TESTS)) {
+      for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         VerifyBlobKzgProofTest test =
             OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofTest.class);
@@ -173,9 +183,11 @@ public class TestUtils {
 
   public static List<VerifyBlobKzgProofBatchTest> getVerifyBlobKzgProofBatchTests() {
     final Stream.Builder<VerifyBlobKzgProofBatchTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+    assert !testFiles.isEmpty();
 
     try {
-      for (String testFile : getTestFiles(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)) {
+      for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         VerifyBlobKzgProofBatchTest test =
             OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofBatchTest.class);

@@ -128,6 +128,8 @@ func TestBlobToKZGCommitment(t *testing.T) {
 
 	tests, err := filepath.Glob(blobToKZGCommitmentTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)
@@ -166,6 +168,8 @@ func TestComputeKZGProof(t *testing.T) {
 
 	tests, err := filepath.Glob(computeKZGProofTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)
@@ -218,6 +222,8 @@ func TestComputeBlobKZGProof(t *testing.T) {
 
 	tests, err := filepath.Glob(computeBlobKZGProofTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)
@@ -265,6 +271,8 @@ func TestVerifyKZGProof(t *testing.T) {
 
 	tests, err := filepath.Glob(verifyKZGProofTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)
@@ -325,6 +333,8 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 
 	tests, err := filepath.Glob(verifyBlobKZGProofTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)
@@ -378,6 +388,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 
 	tests, err := filepath.Glob(verifyBlobKZGProofBatchTests)
 	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
 	for _, testPath := range tests {
 		t.Run(testPath, func(t *testing.T) {
 			testFile, err := os.Open(testPath)

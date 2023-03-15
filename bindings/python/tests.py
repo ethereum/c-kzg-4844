@@ -14,6 +14,7 @@ VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml"
 VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml"
 VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml"
 
+
 ###############################################################################
 # Helper Functions
 ###############################################################################
@@ -21,12 +22,16 @@ VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*
 def bytes_from_hex(hexstring):
     return bytes.fromhex(hexstring.replace("0x", ""))
 
+
 ###############################################################################
 # Tests
 ###############################################################################
 
 def test_blob_to_kzg_commitment(ts):
-    for test_file in glob.glob(BLOB_TO_KZG_COMMITMENT_TESTS):
+    test_files = glob.glob(BLOB_TO_KZG_COMMITMENT_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -43,7 +48,10 @@ def test_blob_to_kzg_commitment(ts):
 
 
 def test_compute_kzg_proof(ts):
-    for test_file in glob.glob(COMPUTE_KZG_PROOF_TESTS):
+    test_files = glob.glob(COMPUTE_KZG_PROOF_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -64,7 +72,10 @@ def test_compute_kzg_proof(ts):
 
 
 def test_compute_blob_kzg_proof(ts):
-    for test_file in glob.glob(COMPUTE_BLOB_KZG_PROOF_TESTS):
+    test_files = glob.glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -82,7 +93,10 @@ def test_compute_blob_kzg_proof(ts):
 
 
 def test_verify_kzg_proof(ts):
-    for test_file in glob.glob(VERIFY_KZG_PROOF_TESTS):
+    test_files = glob.glob(VERIFY_KZG_PROOF_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -102,7 +116,10 @@ def test_verify_kzg_proof(ts):
 
 
 def test_verify_blob_kzg_proof(ts):
-    for test_file in glob.glob(VERIFY_BLOB_KZG_PROOF_TESTS):
+    test_files = glob.glob(VERIFY_BLOB_KZG_PROOF_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
@@ -121,7 +138,10 @@ def test_verify_blob_kzg_proof(ts):
 
 
 def test_verify_blob_kzg_proof_batch(ts):
-    for test_file in glob.glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS):
+    test_files = glob.glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 

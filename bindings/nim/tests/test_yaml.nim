@@ -1,7 +1,7 @@
 {.used.}
 
 import
-  std/[os, strutils, streams],
+  std/[os, sequtils, strutils, streams],
   unittest2, yaml,
   ../kzg,
   ./types
@@ -41,11 +41,13 @@ proc fromHexList(T: type, xList: YamlNode): seq[T] =
     result.add(T.fromHex(x.content))
 
 template runTests(folder: string, body: untyped) =
-  for filename in walkDirRec(folder):
-    test toTestName(filename):
+  let test_files = walkDirRec(folder).toSeq()
+  check test_files.len > 0
+  for test_file in test_files:
+    test toTestName(test_file):
       # nim template is hygienic, {.inject.} will allow body to
       # access injected symbol in current scope
-      let n {.inject.} = loadYaml(filename)
+      let n {.inject.} = loadYaml(test_file)
       try:
         body
       except ValueError:
