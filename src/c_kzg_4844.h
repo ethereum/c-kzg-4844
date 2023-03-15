@@ -33,13 +33,13 @@ extern "C" {
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-// Macros
+// Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-#define BYTES_PER_COMMITMENT 48
-#define BYTES_PER_PROOF 48
-#define BYTES_PER_FIELD_ELEMENT 32
-#define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
+const size_t BYTES_PER_COMMITMENT = 48;
+const size_t BYTES_PER_PROOF = 48;
+const size_t BYTES_PER_FIELD_ELEMENT = 32;
+const size_t BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
