@@ -30,8 +30,8 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code, const char *messag
 {
   jclass exception_class = (*env)->FindClass(env, "ethereum/ckzg4844/CKZGException");
   jstring error_message = (*env)->NewStringUTF(env, message);
-  jmethodID exception_init = (*env)->GetMethodID(env, exception_class, "<init>", "(ILjava/lang/String;)V");
-  jobject exception = (*env)->NewObject(env, exception_class, exception_init, error_code, error_message);
+  jmethodID exception_constructor = (*env)->GetMethodID(env, exception_class, "<init>", "(ILjava/lang/String;)V");
+  jobject exception = (*env)->NewObject(env, exception_class, exception_constructor, error_code, error_message);
   (*env)->Throw(env, exception);
 }
 

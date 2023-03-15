@@ -63,11 +63,15 @@ public class CKZG4844JNI {
     }
   }
 
+  /** Scalar field modulus of BLS12-381 */
   public static final BigInteger BLS_MODULUS =
       new BigInteger(
           "52435875175126190479447740508185965837690552500527637822603658699938581184513");
+  /** The number of bytes in a KZG commitment */
   public static final int BYTES_PER_COMMITMENT = 48;
+  /** The number of bytes in a KZG proof */
   public static final int BYTES_PER_PROOF = 48;
+  /** Bytes used to encode a BLS scalar field element */
   public static final int BYTES_PER_FIELD_ELEMENT = 32;
 
   private CKZG4844JNI() {}
@@ -117,6 +121,7 @@ public class CKZG4844JNI {
    *
    * @param resource the resource name that contains the trusted setup
    * @param clazz the class to use to get the resource
+   * @param <T> the type of the class
    * @throws CKZGException if there is a crypto error
    * @throws IllegalArgumentException if the resource does not exist
    */
@@ -203,6 +208,7 @@ public class CKZG4844JNI {
    * @param blobs flattened blobs bytes
    * @param commitments_bytes flattened commitments bytes
    * @param proofs_bytes flattened proofs bytes
+   * @param count the number of blobs (should be same as the number of proofs and commitments)
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */

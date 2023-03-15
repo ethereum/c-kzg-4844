@@ -1,5 +1,6 @@
 package ethereum.ckzg4844;
 
+/** A tuple holding 2 byte arrays. */
 public class Tuple {
   private final byte[] first;
   private final byte[] second;
