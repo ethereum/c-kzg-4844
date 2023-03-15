@@ -1354,7 +1354,7 @@ out:
  *
  * @param[out] ok             True if the proofs are valid, otherwise false
  * @param[in]  commitments_g1 Array of commitments to verify
- * @param[in]  zs_fr          Array of evaluation of points for the KZG proofs
+ * @param[in]  zs_fr          Array of evaluation points for the KZG proofs
  * @param[in]  ys_fr          Array of evaluation results for the KZG proofs
  * @param[in]  proofs_g1      Array of proofs used for verification
  * @param[in]  n              The number of blobs/commitments/proofs
