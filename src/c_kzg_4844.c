@@ -48,17 +48,22 @@
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-// clang-format off
-
 /** The Fiat-Shamir protocol domains. */
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 
-/** The number of bytes in a protocol domain. */
-static const size_t BYTES_PER_DOMAIN = 16;
+/** Length of the domain strings above. */
+static const size_t DOMAIN_STR_LENGTH = 16;
+
+/** Length of the "metadata" before the data */
+static const size_t DOMAIN_SEPARATOR_LENGTH = DOMAIN_STR_LENGTH +
+                                              sizeof(uint64_t) +
+                                              sizeof(uint64_t);
 
 /* Input size to the Fiat-Shamir challenge computation. */
-static const size_t CHALLENGE_INPUT_SIZE = 32 + BYTES_PER_BLOB + 48;
+static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_SEPARATOR_LENGTH +
+                                           BYTES_PER_BLOB +
+                                           BYTES_PER_COMMITMENT;
 
 /** The number of bytes in a g1 point. */
 static const size_t BYTES_PER_G1 = 48;
@@ -67,7 +72,9 @@ static const size_t BYTES_PER_G1 = 48;
 static const size_t BYTES_PER_G2 = 96;
 
 /** The number of g2 points in a trusted setup. */
-static const size_t NUM_G2_POINTS = 65;
+static const size_t TRUSTED_SETUP_NUM_G2_POINTS = 65;
+
+// clang-format off
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
@@ -716,8 +723,8 @@ static void compute_challenge(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, BYTES_PER_DOMAIN);
-    offset += BYTES_PER_DOMAIN;
+    memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, DOMAIN_STR_LENGTH);
+    offset += DOMAIN_STR_LENGTH;
 
     /* Copy polynomial degree (16-bytes, little-endian) */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
@@ -1282,7 +1289,7 @@ static C_KZG_RET compute_r_powers(
     Bytes32 r_bytes;
     fr_t r;
 
-    size_t input_size = BYTES_PER_DOMAIN + sizeof(uint64_t) + sizeof(uint64_t) +
+    size_t input_size = DOMAIN_SEPARATOR_LENGTH +
                         (n * (BYTES_PER_COMMITMENT +
                               2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
     ret = c_kzg_malloc((void **)&bytes, input_size);
@@ -1292,8 +1299,8 @@ static C_KZG_RET compute_r_powers(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(offset, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, BYTES_PER_DOMAIN);
-    offset += BYTES_PER_DOMAIN;
+    memcpy(offset, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, DOMAIN_STR_LENGTH);
+    offset += DOMAIN_STR_LENGTH;
 
     /* Copy degree of the polynomial */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
@@ -1364,7 +1371,6 @@ static C_KZG_RET verify_kzg_proof_batch(
 ) {
     C_KZG_RET ret;
     g1_t proof_lincomb, proof_z_lincomb, C_minus_y_lincomb, rhs_g1;
-    g1_t ys_encrypted;
     fr_t *r_powers = NULL;
     g1_t *C_minus_y = NULL;
     fr_t *r_times_z = NULL;
@@ -1391,6 +1397,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
+        g1_t ys_encrypted;
         /* Get [y_i] */
         g1_mul(&ys_encrypted, &G1_GENERATOR, &ys_fr[i]);
         /* Get C_i - [y_i] */
@@ -1800,7 +1807,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     int num_matches;
     uint64_t i;
     uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1];
-    uint8_t g2_bytes[NUM_G2_POINTS * BYTES_PER_G2];
+    uint8_t g2_bytes[TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2];
 
     /* Read the number of g1 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
@@ -1810,7 +1817,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     /* Read the number of g2 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
     CHECK(num_matches == 1);
-    CHECK(i == NUM_G2_POINTS);
+    CHECK(i == TRUSTED_SETUP_NUM_G2_POINTS);
 
     /* Read all of the g1 points, byte by byte */
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1; i++) {
@@ -1819,13 +1826,17 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     }
 
     /* Read all of the g2 points, byte by byte */
-    for (i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
+    for (i = 0; i < TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2; i++) {
         num_matches = fscanf(in, "%2hhx", &g2_bytes[i]);
         CHECK(num_matches == 1);
     }
 
     return load_trusted_setup(
-        out, g1_bytes, FIELD_ELEMENTS_PER_BLOB, g2_bytes, NUM_G2_POINTS
+        out,
+        g1_bytes,
+        FIELD_ELEMENTS_PER_BLOB,
+        g2_bytes,
+        TRUSTED_SETUP_NUM_G2_POINTS
     );
 }
 
