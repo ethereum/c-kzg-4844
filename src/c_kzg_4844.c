@@ -1268,13 +1268,13 @@ C_KZG_RET verify_blob_kzg_proof(
 }
 
 /**
+ * Compute random linear combination challenge scalars for batch verification.
  *
- *
- * @param[out]  r_powers_out
- * @param[in]   commitments_g1
- * @param[in]   zs_fr
- * @param[in]   ys_fr
- * @param[in]   proofs_g1
+ * @param[out]  r_powers_out   The output challenges
+ * @param[in]   commitments_g1 The input commitments
+ * @param[in]   zs_fr          The input evaluation points
+ * @param[in]   ys_fr          The input evaluation results
+ * @param[in]   proofs_g1      The input proofs
  */
 static C_KZG_RET compute_r_powers(
     fr_t *r_powers_out,
