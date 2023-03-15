@@ -278,8 +278,7 @@ public class CKZG4844JNITest {
 
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertEquals(
-        String.format("Invalid commitment size. Expected 48 bytes but got 49."),
-        exception.getErrorMessage());
+        "Invalid commitment size. Expected 48 bytes but got 49.", exception.getErrorMessage());
 
     exception =
         assertThrows(
