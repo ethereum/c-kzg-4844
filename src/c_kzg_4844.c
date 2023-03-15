@@ -60,11 +60,6 @@ static const size_t DOMAIN_SEPARATOR_LENGTH = DOMAIN_STR_LENGTH +
                                               sizeof(uint64_t) +
                                               sizeof(uint64_t);
 
-/* Input size to the Fiat-Shamir challenge computation. */
-static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_SEPARATOR_LENGTH +
-                                           BYTES_PER_BLOB +
-                                           BYTES_PER_COMMITMENT;
-
 /** The number of bytes in a g1 point. */
 static const size_t BYTES_PER_G1 = 48;
 
@@ -705,6 +700,11 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     }
     return C_KZG_OK;
 }
+
+/* Input size to the Fiat-Shamir challenge computation. */
+static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_SEPARATOR_LENGTH +
+                                           BYTES_PER_BLOB +
+                                           BYTES_PER_COMMITMENT;
 
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
