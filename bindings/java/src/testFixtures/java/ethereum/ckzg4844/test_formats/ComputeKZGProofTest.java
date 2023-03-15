@@ -4,7 +4,7 @@ import ethereum.ckzg4844.ByteArrayTuple;
 import java.util.List;
 import org.apache.tuweni.bytes.Bytes;
 
-public class ComputeKzgProofTest {
+public class ComputeKZGProofTest {
   public static class Input {
     private String blob;
     private String z;

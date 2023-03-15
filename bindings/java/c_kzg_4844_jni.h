@@ -47,50 +47,50 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    blobToKzgCommitment
+ * Method:    blobToKZGCommitment
  * Signature: ([B)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKZGCommitment
   (JNIEnv *, jclass, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    computeKzgProof
+ * Method:    computeKZGProof
  * Signature: ([B[B)Lethereum/ckzg4844/Tuple;
  */
-JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKZGProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    computeBlobKzgProof
+ * Method:    computeBlobKZGProof
  * Signature: ([B[B)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKZGProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyKzgProof
+ * Method:    verifyKZGProof
  * Signature: ([B[B[B[B)Z
  */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKZGProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyBlobKzgProof
+ * Method:    verifyBlobKZGProof
  * Signature: ([B[B[B)Z
  */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKZGProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyBlobKzgProofBatch
+ * Method:    verifyBlobKZGProofBatch
  * Signature: ([B[B[BJ)Z
  */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKZGProofBatch
   (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jlong);
 
 #ifdef __cplusplus

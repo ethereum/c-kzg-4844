@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 
-public class VerifyBlobKzgProofBatchTest {
+public class VerifyBlobKZGProofBatchTest {
   public static class Input {
     private List<String> blobs;
     private List<String> commitments;

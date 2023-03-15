@@ -29,7 +29,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class BlobToKzgCommitmentState {
+  public static class BlobToKZGCommitmentState {
     private byte[] blob;
 
     @Setup(Level.Iteration)
@@ -39,7 +39,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class ComputeKzgProofState {
+  public static class ComputeKZGProofState {
     private byte[] blob;
     private byte[] z;
 
@@ -51,7 +51,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class ComputeBlobKzgProofState {
+  public static class ComputeBlobKZGProofState {
     private byte[] blob;
     private byte[] commitment;
 
@@ -63,7 +63,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class VerifyKzgProofState {
+  public static class VerifyKZGProofState {
     private byte[] commitment;
     private byte[] z;
     private byte[] y;
@@ -79,7 +79,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class VerifyBlobKzgProofState {
+  public static class VerifyBlobKZGProofState {
     private byte[] blob;
     private byte[] commitment;
     private byte[] proof;
@@ -93,7 +93,7 @@ public class CKZG4844JNIBenchmark {
   }
 
   @State(Scope.Benchmark)
-  public static class VerifyBlobKzgProofBatchState {
+  public static class VerifyBlobKZGProofBatchState {
     @Param({"1", "4", "8", "16", "32", "64"})
     private int count;
 
@@ -120,33 +120,33 @@ public class CKZG4844JNIBenchmark {
   }
 
   @Benchmark
-  public byte[] blobToKzgCommitment(final BlobToKzgCommitmentState state) {
-    return CKZG4844JNI.blobToKzgCommitment(state.blob);
+  public byte[] blobToKZGCommitment(final BlobToKZGCommitmentState state) {
+    return CKZG4844JNI.blobToKZGCommitment(state.blob);
   }
 
   @Benchmark
-  public ByteArrayTuple computeKzgProof(final ComputeKzgProofState state) {
-    return CKZG4844JNI.computeKzgProof(state.blob, state.z);
+  public ByteArrayTuple computeKZGProof(final ComputeKZGProofState state) {
+    return CKZG4844JNI.computeKZGProof(state.blob, state.z);
   }
 
   @Benchmark
-  public byte[] computeBlobKzgProof(final ComputeBlobKzgProofState state) {
-    return CKZG4844JNI.computeBlobKzgProof(state.blob, state.commitment);
+  public byte[] computeBlobKZGProof(final ComputeBlobKZGProofState state) {
+    return CKZG4844JNI.computeBlobKZGProof(state.blob, state.commitment);
   }
 
   @Benchmark
-  public boolean verifyKzgProof(final VerifyKzgProofState state) {
-    return CKZG4844JNI.verifyKzgProof(state.commitment, state.z, state.y, state.proof);
+  public boolean verifyKZGProof(final VerifyKZGProofState state) {
+    return CKZG4844JNI.verifyKZGProof(state.commitment, state.z, state.y, state.proof);
   }
 
   @Benchmark
-  public boolean verifyBlobKzgProof(final VerifyBlobKzgProofState state) {
-    return CKZG4844JNI.verifyBlobKzgProof(state.blob, state.commitment, state.proof);
+  public boolean verifyBlobKZGProof(final VerifyBlobKZGProofState state) {
+    return CKZG4844JNI.verifyBlobKZGProof(state.blob, state.commitment, state.proof);
   }
 
   @Benchmark
-  public boolean verifyBlobKzgProofBatch(final VerifyBlobKzgProofBatchState state) {
-    return CKZG4844JNI.verifyBlobKzgProofBatch(
+  public boolean verifyBlobKZGProofBatch(final VerifyBlobKZGProofBatchState state) {
+    return CKZG4844JNI.verifyBlobKZGProofBatch(
         state.blobs, state.commitments, state.proofs, state.count);
   }
 }

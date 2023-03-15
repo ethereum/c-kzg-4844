@@ -154,7 +154,7 @@ public class CKZG4844JNI {
    * @return the commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] blobToKzgCommitment(byte[] blob);
+  public static native byte[] blobToKZGCommitment(byte[] blob);
 
   /**
    * Compute proof at point z for the polynomial represented by blob.
@@ -164,7 +164,7 @@ public class CKZG4844JNI {
    * @return an instance of {@link ByteArrayTuple} holding the proof and the value y = f(z)
    * @throws CKZGException if there is a crypto error
    */
-  public static native ByteArrayTuple computeKzgProof(byte[] blob, byte[] z_bytes);
+  public static native ByteArrayTuple computeKZGProof(byte[] blob, byte[] z_bytes);
 
   /**
    * Given a blob, return the KZG proof that is used to verify it against the commitment
@@ -174,7 +174,7 @@ public class CKZG4844JNI {
    * @return the proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitment_bytes);
+  public static native byte[] computeBlobKZGProof(byte[] blob, byte[] commitment_bytes);
 
   /**
    * Verify the proof by point evaluation for the given commitment
@@ -186,7 +186,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyKzgProof(
+  public static native boolean verifyKZGProof(
       byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes, byte[] proof_bytes);
 
   /**
@@ -198,7 +198,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyBlobKzgProof(
+  public static native boolean verifyBlobKZGProof(
       byte[] blob, byte[] commitment_bytes, byte[] proof_bytes);
 
   /**
@@ -212,6 +212,6 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyBlobKzgProofBatch(
+  public static native boolean verifyBlobKZGProofBatch(
       byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
 }

@@ -2,23 +2,18 @@ package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class VerifyKzgProofTest {
+public class VerifyBlobKZGProofTest {
   public static class Input {
+    private String blob;
     private String commitment;
-    private String z;
-    private String y;
     private String proof;
+
+    public byte[] getBlob() {
+      return Bytes.fromHexString(blob).toArray();
+    }
 
     public byte[] getCommitment() {
       return Bytes.fromHexString(commitment).toArray();
-    }
-
-    public byte[] getZ() {
-      return Bytes.fromHexString(z).toArray();
-    }
-
-    public byte[] getY() {
-      return Bytes.fromHexString(y).toArray();
     }
 
     public byte[] getProof() {

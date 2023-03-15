@@ -61,7 +61,7 @@ public class TestUtils {
   }
 
   public static byte[] createRandomProof() {
-    return CKZG4844JNI.computeBlobKzgProof(createRandomBlob(), createRandomCommitment());
+    return CKZG4844JNI.computeBlobKZGProof(createRandomBlob(), createRandomCommitment());
   }
 
   public static byte[] createRandomProofs(final int count) {
@@ -71,7 +71,7 @@ public class TestUtils {
   }
 
   public static byte[] createRandomCommitment() {
-    return CKZG4844JNI.blobToKzgCommitment(createRandomBlob());
+    return CKZG4844JNI.blobToKZGCommitment(createRandomBlob());
   }
 
   public static byte[] createRandomCommitments(final int count) {
@@ -89,15 +89,15 @@ public class TestUtils {
     return flatten(blob);
   }
 
-  public static List<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
-    final Stream.Builder<BlobToKzgCommitmentTest> tests = Stream.builder();
+  public static List<BlobToKZGCommitmentTest> getBlobToKZGCommitmentTests() {
+    final Stream.Builder<BlobToKZGCommitmentTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(BLOB_TO_KZG_COMMITMENT_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String data = Files.readString(Path.of(testFile));
-        BlobToKzgCommitmentTest test = OBJECT_MAPPER.readValue(data, BlobToKzgCommitmentTest.class);
+        BlobToKZGCommitmentTest test = OBJECT_MAPPER.readValue(data, BlobToKZGCommitmentTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -107,15 +107,15 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<ComputeKzgProofTest> getComputeKzgProofTests() {
-    final Stream.Builder<ComputeKzgProofTest> tests = Stream.builder();
+  public static List<ComputeKZGProofTest> getComputeKZGProofTests() {
+    final Stream.Builder<ComputeKZGProofTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(COMPUTE_KZG_PROOF_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
-        ComputeKzgProofTest test = OBJECT_MAPPER.readValue(jsonData, ComputeKzgProofTest.class);
+        ComputeKZGProofTest test = OBJECT_MAPPER.readValue(jsonData, ComputeKZGProofTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -125,16 +125,16 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<ComputeBlobKzgProofTest> getComputeBlobKzgProofTests() {
-    final Stream.Builder<ComputeBlobKzgProofTest> tests = Stream.builder();
+  public static List<ComputeBlobKZGProofTest> getComputeBlobKZGProofTests() {
+    final Stream.Builder<ComputeBlobKZGProofTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(COMPUTE_BLOB_KZG_PROOF_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
-        ComputeBlobKzgProofTest test =
-            OBJECT_MAPPER.readValue(jsonData, ComputeBlobKzgProofTest.class);
+        ComputeBlobKZGProofTest test =
+            OBJECT_MAPPER.readValue(jsonData, ComputeBlobKZGProofTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -144,15 +144,15 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<VerifyKzgProofTest> getVerifyKzgProofTests() {
-    final Stream.Builder<VerifyKzgProofTest> tests = Stream.builder();
+  public static List<VerifyKZGProofTest> getVerifyKZGProofTests() {
+    final Stream.Builder<VerifyKZGProofTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(VERIFY_KZG_PROOF_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
-        VerifyKzgProofTest test = OBJECT_MAPPER.readValue(jsonData, VerifyKzgProofTest.class);
+        VerifyKZGProofTest test = OBJECT_MAPPER.readValue(jsonData, VerifyKZGProofTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -162,16 +162,16 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<VerifyBlobKzgProofTest> getVerifyBlobKzgProofTests() {
-    final Stream.Builder<VerifyBlobKzgProofTest> tests = Stream.builder();
+  public static List<VerifyBlobKZGProofTest> getVerifyBlobKZGProofTests() {
+    final Stream.Builder<VerifyBlobKZGProofTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(VERIFY_BLOB_KZG_PROOF_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
-        VerifyBlobKzgProofTest test =
-            OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofTest.class);
+        VerifyBlobKZGProofTest test =
+            OBJECT_MAPPER.readValue(jsonData, VerifyBlobKZGProofTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
@@ -181,16 +181,16 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<VerifyBlobKzgProofBatchTest> getVerifyBlobKzgProofBatchTests() {
-    final Stream.Builder<VerifyBlobKzgProofBatchTest> tests = Stream.builder();
+  public static List<VerifyBlobKZGProofBatchTest> getVerifyBlobKZGProofBatchTests() {
+    final Stream.Builder<VerifyBlobKZGProofBatchTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
     assert !testFiles.isEmpty();
 
     try {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
-        VerifyBlobKzgProofBatchTest test =
-            OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofBatchTest.class);
+        VerifyBlobKZGProofBatchTest test =
+            OBJECT_MAPPER.readValue(jsonData, VerifyBlobKZGProofBatchTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
