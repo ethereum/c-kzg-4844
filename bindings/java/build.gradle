@@ -28,7 +28,7 @@ dependencies {
 }
 
 javadoc {
-    options.addStringOption('Xdoclint:all,-missing', '-quiet')
+    options.addStringOption("Xdoclint:all,-missing", "-quiet")
 }
 
 check {
