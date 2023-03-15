@@ -70,7 +70,8 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      ByteArrayTuple tuple = CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
+      ByteArrayTuple tuple =
+          CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
       assertArrayEquals(test.getOutput().getFirst(), tuple.getFirst());
       assertArrayEquals(test.getOutput().getSecond(), tuple.getSecond());
     } catch (CKZGException ex) {
