@@ -27,8 +27,7 @@ dependencies {
     testFixturesImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
 }
 
-// don't show warnings, only fail on errors
-tasks.withType(Javadoc).configureEach {
+javadoc {
     options.addStringOption('Xdoclint:all,-missing', '-quiet')
 }
 
