@@ -390,6 +390,7 @@ out:
 static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
+    /* The last argument is the number of bits in the scalar */
     blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
@@ -403,6 +404,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
 static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
+    /* The last argument is the number of bits in the scalar */
     blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
 }
 
