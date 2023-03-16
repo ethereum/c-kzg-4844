@@ -87,14 +87,14 @@ jobs:
         name: ckzg-library-wrapper-linux-arm64
         path: bindings/csharp/Ckzg.Bindings/runtimes/linux-arm64/native
 
-    - name: Setup .NET Core SDK
+    - name: Set up .NET
       uses: actions/setup-dotnet@v3
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
     - name: Test
-      run: cd bindings/csharp && dotnet test --configuration Release --no-restore
+      run: cd bindings/csharp && dotnet test -c release --no-restore
     - name: Build
-      run: cd bindings/csharp && dotnet pack -p:Version=${{ inputs.version || env.binding_build_number_based_version }} --configuration Release --no-restore --output nupkgs
+      run: cd bindings/csharp && dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
@@ -102,4 +102,4 @@ jobs:
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
     - name: Publish package
       if: github.ref == 'refs/heads/main'
-      run: dotnet nuget push bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg --api-key ${{ secrets.CSHARP_NUGET_APIKEY }} --source https://api.nuget.org/v3/index.json
+      run: dotnet nuget push bindings/csharp/nupkgs/*.nupkg -k ${{ secrets.CSHARP_NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json
