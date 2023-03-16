@@ -365,7 +365,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 
     fr_t accumulator = FR_ONE;
 
-    for (i = 0; i < (int)len; i++) {
+    for (i = 0; i < len; i++) {
         out[i] = accumulator;
         blst_fr_mul(&accumulator, &accumulator, &a[i]);
     }
