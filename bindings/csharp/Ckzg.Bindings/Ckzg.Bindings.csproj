@@ -1,17 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Library</OutputType>
-        <TargetFramework>net6.0</TargetFramework>
-        <RootNamespace>Ckzg</RootNamespace>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-        <LangVersion>preview</LangVersion>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <Title>Ckzg.Bindings</Title>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>preview</LangVersion>
+        <Nullable>enable</Nullable>
+        <OutputType>Library</OutputType>
+        <PackageLicenseExpression>Apache 2.0</PackageLicenseExpression>
         <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageProjectUrl>https://github.com/ethereum/c-kzg-4844/tree/main/bindings/csharp</PackageProjectUrl>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageTags>c-kzg eip-4844</PackageTags>
+        <RepositoryType>git</RepositoryType>
+        <RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
+        <RootNamespace>Ckzg</RootNamespace>
+        <TargetFramework>net6.0</TargetFramework>
+        <Title>Ckzg.Bindings</Title>
         <Version>0.1.0.0</Version>
     </PropertyGroup>
 
