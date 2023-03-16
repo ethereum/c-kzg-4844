@@ -55,11 +55,6 @@ static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 /** Length of the domain strings above. */
 static const size_t DOMAIN_STR_LENGTH = 16;
 
-/** Length of the "metadata" before the data */
-static const size_t DOMAIN_SEPARATOR_LENGTH = DOMAIN_STR_LENGTH +
-                                              sizeof(uint64_t) +
-                                              sizeof(uint64_t);
-
 /** The number of bytes in a g1 point. */
 static const size_t BYTES_PER_G1 = 48;
 
@@ -702,7 +697,8 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Input size to the Fiat-Shamir challenge computation. */
-static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_SEPARATOR_LENGTH +
+static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_STR_LENGTH +
+                                           sizeof(uint64_t) + sizeof(uint64_t) +
                                            BYTES_PER_BLOB +
                                            BYTES_PER_COMMITMENT;
 
@@ -1291,7 +1287,8 @@ static C_KZG_RET compute_r_powers(
     Bytes32 r_bytes;
     fr_t r;
 
-    size_t input_size = DOMAIN_SEPARATOR_LENGTH +
+    size_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) +
+                        sizeof(uint64_t) +
                         (n * (BYTES_PER_COMMITMENT +
                               2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
     ret = c_kzg_malloc((void **)&bytes, input_size);
