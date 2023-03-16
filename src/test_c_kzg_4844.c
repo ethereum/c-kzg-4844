@@ -287,6 +287,7 @@ static void test_fr_batch_inv__test_consistent(void) {
     }
 }
 
+/** Make sure that batch inverse doesn't support zeroes */
 static void test_fr_batch_inv__test_zero(void) {
     C_KZG_RET ret;
     fr_t a[32], batch_inverses[32];
@@ -298,12 +299,7 @@ static void test_fr_batch_inv__test_zero(void) {
     a[5] = FR_ZERO;
 
     ret = fr_batch_inv(batch_inverses, a, 32);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    for (size_t i = 0; i < 32; i++) {
-        bool ok = fr_equal(&batch_inverses[i], &FR_ZERO);
-        ASSERT_EQUALS(ok, true);
-    }
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
