@@ -11,7 +11,7 @@ on:
     branches:
       - main
 env:
-  binding_build_number_based_version: 0.1.1.${{ github.run_number }}
+  binding_build_number_based_version: 0.1.2.${{ github.run_number }}
 
 jobs:
   build-ckzg:
@@ -94,9 +94,12 @@ jobs:
     - name: Test
       run: cd bindings/csharp && dotnet test --configuration Release --no-restore
     - name: Build
-      run: cd bindings/csharp && dotnet build -p:Version=${{ inputs.version || env.binding_build_number_based_version }} --configuration Release --no-restore
+      run: cd bindings/csharp && dotnet pack -p:Version=${{ inputs.version || env.binding_build_number_based_version }} --configuration Release --no-restore --output nupkgs
     - name: Upload package
       uses: actions/upload-artifact@v3
       with:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
-        path: bindings/csharp/build/Ckzg.Bindings.*.nupkg
+        path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
+    - name: Publish package
+      if: github.ref == 'refs/heads/main'
+      run: dotnet nuget push bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg --api-key ${{ secrets.CSHARP_NUGET_APIKEY }} --source https://api.nuget.org/v3/index.json
