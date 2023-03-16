@@ -346,6 +346,8 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
 /**
  * Montgomery batch inversion in finite field.
  *
+ * @remark Return C_KZG_BADARGS if a zero is found in the input.
+ *
  * @remark This function does not support in-place computation (i.e. `a` MUST
  * NOT point to the same place as `out`)
  *
@@ -357,7 +359,6 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
  */
 static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
     int i;
-    bool zeroes[FIELD_ELEMENTS_PER_BLOB] = {false};
 
     assert(len > 0);
     assert(a != out);
@@ -365,22 +366,18 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
     fr_t accumulator = FR_ONE;
 
     for (i = 0; i < (int)len; i++) {
-        if (fr_is_zero(&a[i])) {
-            out[i] = FR_ZERO;
-            zeroes[i] = true;
-            continue;
-        }
-
         out[i] = accumulator;
         blst_fr_mul(&accumulator, &accumulator, &a[i]);
+    }
+
+    /* Bail on any zero input */
+    if (fr_is_zero(&accumulator)) {
+        return C_KZG_BADARGS;
     }
 
     blst_fr_eucl_inverse(&accumulator, &accumulator);
 
     for (i = len - 1; i >= 0; i--) {
-        if (zeroes[i]) {
-          continue;
-        }
         blst_fr_mul(&out[i], &out[i], &accumulator);
         blst_fr_mul(&accumulator, &accumulator, &a[i]);
     }
