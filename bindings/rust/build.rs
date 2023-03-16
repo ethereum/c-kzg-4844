@@ -48,7 +48,7 @@ fn main() {
     // Ensure libckzg exists in `OUT_DIR`
     Command::new("make")
         .current_dir(root_dir.join("src"))
-        .arg("all")
+        .arg("c_kzg_4844.o")
         .arg(format!(
             "FIELD_ELEMENTS_PER_BLOB={}",
             field_elements_per_blob
