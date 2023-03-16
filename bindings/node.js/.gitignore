@@ -2,4 +2,4 @@ build
 dist
 *.node
 node_modules
-test/__fixtures__/testing_trusted_setups.txt
+test/__fixtures__/testing_trusted_setups.*
