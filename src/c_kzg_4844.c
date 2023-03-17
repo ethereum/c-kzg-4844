@@ -599,8 +599,16 @@ static C_KZG_RET bit_reversal_permutation(
     CHECK(is_power_of_two(n));
     CHECK(log2_pow2(n) != 0);
 
+    /* copy pointer and convert from void* to byte* */
     byte *v = values;
-    byte tmp[size];
+
+    /* allocate scratch space for swapping an entry of the values array */
+    byte *tmp = NULL;
+    C_KZG_RET ret = c_kzg_malloc((void **)&tmp, size);
+    if (ret != C_KZG_OK) {
+        return ret;
+    }
+
     int unused_bit_len = 32 - log2_pow2(n);
     for (uint32_t i = 0; i < n; i++) {
         uint32_t r = reverse_bits(i) >> unused_bit_len;
@@ -611,6 +619,7 @@ static C_KZG_RET bit_reversal_permutation(
             memcpy(v + (r * size), tmp, size);
         }
     }
+    c_kzg_free(tmp);
 
     return C_KZG_OK;
 }
