@@ -590,7 +590,7 @@ static uint32_t reverse_bits(uint32_t n) {
  * @param[in,out] values The array, which is re-ordered in-place
  * @param[in]     size   The size in bytes of an element of the array
  * @param[in]     n      The length of the array, must be a power of two
- *                       greater than 1 and less than 2^32.
+ *                       strictly greater than 1 and less than 2^32.
  */
 static C_KZG_RET bit_reversal_permutation(
     void *values, size_t size, uint64_t n
