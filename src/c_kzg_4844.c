@@ -595,8 +595,8 @@ static uint32_t reverse_bits(uint32_t n) {
 static C_KZG_RET bit_reversal_permutation(
     void *values, size_t size, uint64_t n
 ) {
-    CHECK(n >> 32 == 0);
     CHECK(n != 0);
+    CHECK(n >> 32 == 0);
     CHECK(is_power_of_two(n));
     CHECK(log2_pow2(n) != 0);
 
