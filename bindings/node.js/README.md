@@ -41,9 +41,14 @@ const commitments = [] as Bytes48[];
 const proofs = [] as Bytes48[];
 
 for (let i = 0; i < BATCH_SIZE; i++) {
-  blobs.push(Buffer.alloc(BYTES_PER_BLOB, "*"));
-  commitments.push(blobToKzgCommitment(blobs[i]));
-  proofs.push(computeBlobKzgProof(blobs[i], commitments[i]));
+  blobs.push(
+    Buffer.alloc(BYTES_PER_BLOB, "*"));
+  commitments.push(
+    blobToKzgCommitment(blobs[i]));
+  proofs.push(
+    computeBlobKzgProof(blobs[i], commitments[i]));
+  // note: blobs[i] relates to commitments[i] and proofs[i]
+  //       when running `verifyBlobKzgProofBatch`
 }
 
 const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);

@@ -15,7 +15,6 @@ Open a terminal and navigate to the root of the `c-kzg-4844` repo and run the fo
 git submodule update --init # Install the blst submodule
 cd src
 make blst # Build blst
-make # Build c_kzg_4844
 cd ../bindings/node.js
 yarn install --ignore-scripts # Install dependencies
 make # Build bindings and verify build worked
