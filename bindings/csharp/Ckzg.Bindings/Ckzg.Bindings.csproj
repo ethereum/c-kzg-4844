@@ -1,35 +1,48 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-        <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <LangVersion>preview</LangVersion>
-        <Nullable>enable</Nullable>
-        <OutputType>Library</OutputType>
-        <PackageLicenseFile>LICENSE</PackageLicenseFile>
-        <PackageProjectUrl>https://github.com/ethereum/c-kzg-4844/tree/main/bindings/csharp</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageTags>c-kzg eip-4844</PackageTags>
-        <RepositoryType>git</RepositoryType>
-        <RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
-        <RootNamespace>Ckzg</RootNamespace>
-        <TargetFramework>net6.0</TargetFramework>
-        <Title>Ckzg.Bindings</Title>
-        <Version>0.1.0.0</Version>
-    </PropertyGroup>
+	<PropertyGroup>
+		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<LangVersion>latest</LangVersion>
+		<Nullable>enable</Nullable>
+		<OutputType>Library</OutputType>
+		<RootNamespace>Ckzg</RootNamespace>
+		<TargetFramework>net6.0</TargetFramework>
+	</PropertyGroup>
 
-    <ItemGroup>
-        <None Include="..\README.md" Pack="true" PackagePath="\"/>
-        <None Include="..\..\..\LICENSE" Pack="true" PackagePath="\"/>
-    </ItemGroup>
+	<PropertyGroup>
+		<Authors>Ethereum Foundation</Authors>
+		<Copyright>Ethereum Foundation</Copyright>
+		<Description>The C# bindings for the Polynomial Commitments API library for EIP-4844</Description>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<PackageId>Ckzg.Bindings</PackageId>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageTags>c-kzg eip-4844</PackageTags>
+		<RepositoryType>git</RepositoryType>
+		<RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<Version>0.1.0.0</Version>
+	</PropertyGroup>
 
-    <ItemGroup>
-        <Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/win-x64/native/ckzg.dll')" Include="runtimes/win-x64/native/ckzg.dll" Pack="true" PackagePath="runtimes/win-x64/native/ckzg.dll"/>
-        <Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-x64/native/ckzg.so')" Include="runtimes/linux-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-x64/native/ckzg.so"/>
-        <Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-arm64/native/ckzg.so')" Include="runtimes/linux-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-arm64/native/ckzg.so"/>
-        <Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-x64/native/ckzg.so')" Include="runtimes/osx-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-x64/native/ckzg.so"/>
-        <Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-arm64/native/ckzg.so')" Include="runtimes/osx-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-arm64/native/ckzg.so"/>
-    </ItemGroup>
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/win-x64/native/ckzg.dll')" Include="runtimes/win-x64/native/ckzg.dll" Pack="true" PackagePath="runtimes/win-x64/native/ckzg.dll" />
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-x64/native/ckzg.so')" Include="runtimes/linux-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-x64/native/ckzg.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-arm64/native/ckzg.so')" Include="runtimes/linux-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-arm64/native/ckzg.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-x64/native/ckzg.so')" Include="runtimes/osx-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-x64/native/ckzg.so" />
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-arm64/native/ckzg.so')" Include="runtimes/osx-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-arm64/native/ckzg.so" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
 
 </Project>
