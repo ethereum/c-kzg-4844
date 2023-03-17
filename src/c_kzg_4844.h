@@ -45,7 +45,7 @@ extern "C" {
  * current implementation limitation. Notably, the size of the FFT setup would
  * overflow uint32_t, which would casues issues.
  */
-#if (FIELD_ELEMENTS_PER_BLOB <= 0) || ((FIELD_ELEMENTS_PER_BLOB) > (1 << 31))
+#if ((FIELD_ELEMENTS_PER_BLOB) <= 0) || ((FIELD_ELEMENTS_PER_BLOB) > (1 << 31))
 #error Invalid value of FIELD_ELEMENTS_PER_BLOB
 #endif // FIELD_ELEMENTS_PER_BLOB
 
