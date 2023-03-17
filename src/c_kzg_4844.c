@@ -1031,9 +1031,9 @@ C_KZG_RET verify_kzg_proof(
  * @param[in]  commitment The commitment to a polynomial
  * @param[in]  z          The point at which the proof is to be checked
  *                        (opened)
- * @param[in]  y          The claimed value of the polynomial at @p x
+ * @param[in]  y          The claimed value of the polynomial at @p z
  * @param[in]  proof      A proof of the value of the polynomial at the
- *                        point @p x
+ *                        point @p z
  * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
