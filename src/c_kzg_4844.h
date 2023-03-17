@@ -105,12 +105,23 @@ typedef enum {
 typedef struct {
     /** The maximum size of FFT these settings support, a power of 2. */
     uint64_t max_width;
-    /** Ascending powers of the root of unity, size `width + 1`. */
+    /**
+     * We fix a given primitive roots of unity w of order `max_width` via
+     * `SCALE2_ROOT_OF_UNITY`. Then `expanded_roots_of_unity[i]` == w^i and
+     * `reverse_roots_of_unity[i]` == w^{-i}. Unusually, both
+     * `expanded_roots_of_unity` and `reverse_roots_of_unity` have length
+     * `max_width + 1`. By the above, `expanded_roots_of_unity[max_width] ==
+     * expanded_roots_of_unity[0] == 1` and similarly for
+     * `reverse_roots_of_unity`. The redundant element is just there to simplify
+     * index calculations in some formulas.
+     */
+
+    /** Ascending powers of the root of unity, length `max_width + 1`. */
     fr_t *expanded_roots_of_unity;
-    /** Descending powers of the root of unity, size `width + 1`. */
+    /** Descending powers of the root of unity, length `max_width + 1`. */
     fr_t *reverse_roots_of_unity;
-    /** Powers of the root of unity in bit-reversal permutation,
-     * size `width`. */
+    /** Powers of the root of unity in bit-reversal permutation order, length
+     * `max_width`. */
     fr_t *roots_of_unity;
 } FFTSettings;
 
