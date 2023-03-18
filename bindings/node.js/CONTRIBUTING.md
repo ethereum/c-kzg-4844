@@ -1,6 +1,6 @@
 # Contribution Guidelines
 
-Thanks for your interest in contributing to the Node.js bindings for c-kzg. It's people like you that push the Ethereum ecosystem forward!!
+Thanks for your interest in contributing to the Node.js bindings for c-kzg-4844.
 
 ## Prerequisites
 
