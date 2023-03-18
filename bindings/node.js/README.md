@@ -47,8 +47,6 @@ for (let i = 0; i < BATCH_SIZE; i++) {
     blobToKzgCommitment(blobs[i]));
   proofs.push(
     computeBlobKzgProof(blobs[i], commitments[i]));
-  // note: blobs[i] relates to commitments[i] and proofs[i]
-  //       when running `verifyBlobKzgProofBatch`
 }
 
 const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
