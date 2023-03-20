@@ -346,7 +346,8 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
 /**
  * Montgomery batch inversion in finite field.
  *
- * @remark Return C_KZG_BADARGS if a zero is found in the input.
+ * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
+ * the `out` output array has already been mutated.
  *
  * @remark This function does not support in-place computation (i.e. `a` MUST
  * NOT point to the same place as `out`)
@@ -798,7 +799,13 @@ static void g1_lincomb_naive(
  * where `n` is `len - 1`.
  *
  * @remark This function MUST NOT be called with the point at infinity in `p`.
-
+ *
+ * @remark While this function is significantly faster than
+ * `g1_lincomb_naive()`, we refrain from using it in security-critical places
+ * (like verification) because the blst Pippenger code has not been
+ * audited. In those critical places, we prefer using `g1_lincomb_naive()` which
+ * is much simpler.
+ *
  * @param[out] out    The resulting sum-product
  * @param[in]  p      Array of G1 group elements, length @p len
  * @param[in]  coeffs Array of field elements, length @p len
