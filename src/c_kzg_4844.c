@@ -878,7 +878,7 @@ out:
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
  */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+static void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
     fr_t current_power = FR_ONE;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
