@@ -18,7 +18,7 @@
  * the worker JS thread will be independent of the main JS thread. Global
  * statics are not thread safe and have the potential for initialization and
  * clean-up overwrites which results in segfault or undefined behavior.
- * 
+ *
  * An instance of this struct will get created during initialization and it
  * will be available from the runtime. It can be retrieved via
  * `napi_get_instance_data` or `Napi::Env::GetInstanceData`.
@@ -32,13 +32,13 @@ typedef struct {
  * This cleanup function follows the `napi_finalize` interface and will be
  * called by the runtime when the exports object is garbage collected. Is
  * passed with napi_set_instance_data call when data is set.
- * 
+ *
  * @remark This function should not be called, only the runtime should do
  *         the cleanup.
- * 
+ *
  * @param[in] env  (unused)
  * @param[in] data Pointer KzgAddonData stored by the runtime
- * @param[in] hint (unused) 
+ * @param[in] hint (unused)
  */
 void delete_kzg_addon_data(napi_env /*env*/, void *data, void* /*hint*/) {
   if (((KzgAddonData*)data)->is_setup) {
@@ -49,18 +49,18 @@ void delete_kzg_addon_data(napi_env /*env*/, void *data, void* /*hint*/) {
 
 /**
  * Get kzg_settings from bindings instance data
- * 
+ *
  * Checks for:
  * - loadTrustedSetup has been run
- * 
+ *
  * Designed to raise the correct javascript exception and return a
  * valid pointer to the calling context to avoid native stack-frame
  * unwinds.  Calling context can check for `nullptr` to see if an
  * exception was raised or a valid KZGSettings was returned.
- * 
+ *
  * @param[in] env    Passed from calling context
  * @param[in] val    Napi::Value to validate and get pointer from
- * 
+ *
  * @return - Pointer to the KZGSettings
  */
 KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
@@ -76,27 +76,27 @@ KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
  * Checks for:
  * - arg is Uint8Array or Buffer (inherits from Uint8Array)
  * - underlying ArrayBuffer length is correct
- * 
+ *
  * Internal function for argument validation. Prefer to use
  * the helpers below that already have the reinterpreted casts:
  * - get_blob
  * - get_bytes32
  * - get_bytes48
- * 
+ *
  * Built to pass in a raw Napi::Value so it can be used like
  * `get_bytes(env, info[0])` or can also be used to pull props from
  * arrays like `get_bytes(env, passed_napi_array[2])`.
- * 
+ *
  * Designed to raise the correct javascript exception and return a
  * valid pointer to the calling context to avoid native stack-frame
  * unwinds.  Calling context can check for `nullptr` to see if an
  * exception was raised or a valid pointer was returned from V8.
- * 
+ *
  * @param[in] env    Passed from calling context
  * @param[in] val    Napi::Value to validate and get pointer from
  * @param[in] length Byte length to validate Uint8Array data against
  * @param[in] name   Name of prop being validated for error reporting
- * 
+ *
  * @return - native pointer to first byte in ArrayBuffer
  */
 inline uint8_t *get_bytes(
@@ -188,7 +188,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
  *
  * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param[in] {Bytes32} zBytes - The generator z-value for the evaluation points
- * 
+ *
  * @return {ProofResult} - Tuple containing the resulting proof and evaluation
  *                              of the polynomial at the evaluation point z
  *
@@ -235,10 +235,10 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
 /**
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
- * 
+ *
  * @param[in] {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param[in] {Bytes48} commitmentBytes - Commitment to verify
- * 
+ *
  * @return {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
@@ -277,14 +277,14 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
- * 
+ *
  * @param[in] {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
- * @param[in] {Bytes32} zBytes - The serialized evaluation point 
+ * @param[in] {Bytes32} zBytes - The serialized evaluation point
  * @param[in] {Bytes32} yBytes - The serialized claimed evaluation result
  * @param[in] {Bytes48} proofBytes - The serialized KZG proof
- * 
+ *
  * @return {boolean} - true/false depending on proof validity
- * 
+ *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
@@ -331,13 +331,13 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 /**
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
- * 
+ *
  * @param[in] {Blob}    blob - The serialized blob to verify
  * @param[in] {Bytes48} commitmentBytes - The serialized commitment to verify
  * @param[in] {Bytes48} proofBytes - The serialized KZG proof for verification
- * 
+ *
  * @return {boolean} - true/false depending on proof validity
- * 
+ *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
@@ -358,7 +358,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   if (kzg_settings == nullptr) {
     return env.Null();
   }
-  
+
   bool out;
   C_KZG_RET ret = verify_blob_kzg_proof(
     &out,
@@ -378,15 +378,15 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
 /**
  * Given an array of blobs and their proofs, verify that they corresponds to their
  * provided commitment.
- * 
+ *
  * @remark blobs[0] relates to commitmentBytes[0] and proofBytes[0]
- * 
+ *
  * @param[in] {Blob}    blobs - An array of serialized blobs to verify
  * @param[in] {Bytes48} commitmentBytes - An array of serialized commitments to verify
  * @param[in] {Bytes48} proofBytes - An array of serialized KZG proofs for verification
- * 
+ *
  * @return {boolean} - true/false depending on batch validity
- * 
+ *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
