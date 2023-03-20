@@ -75,7 +75,8 @@ suite "verify proof (extended version)":
   test "template aliases":
     # no need to check return value
     # only test if those templates can be compiled succesfully
-    discard Kzg.loadTrustedSetupFile(trustedSetupFile)
+    check Kzg.freeTrustedSetup().isOk
+    check Kzg.loadTrustedSetupFile(trustedSetupFile).isOk
     discard blobToKzgCommitment(blob)
     let kp = computeKzgProof(blob, inputPoint)
     discard computeBlobKzgProof(blob, commitment)
@@ -83,3 +84,7 @@ suite "verify proof (extended version)":
     discard verifyBlobKzgProof(blob, commitment, proof)
     let kb = createKateBlobs(1)
     discard verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+
+  test "load trusted setup more than once":
+    let res = Kzg.loadTrustedSetupFromString(trustedSetup)
+    check res.isErr

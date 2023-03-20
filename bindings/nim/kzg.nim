@@ -208,6 +208,9 @@ proc verifyProofs*(ctx: KzgCtx,
 template loadTrustedSetupFile*(input: File | string): untyped =
   loadTrustedSetup(input)
 
+template freeTrustedSetup*(ctx: KzgCtx) =
+  free_trusted_setup(ctx.val)
+  
 template blobToKzgCommitment*(ctx: KzgCtx,
                    blob: KzgBlob): untyped =
   toCommitment(ctx, blob)

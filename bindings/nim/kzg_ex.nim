@@ -22,12 +22,16 @@ else:
 # Private helpers
 ##############################################################
 
-var gCtx: KzgCtx
+var gCtx = KzgCtx(nil)
 
 const
-  GlobalCtxErr = "kzg global context not loaded"
+  TrustedSetupNotLoadedErr = "Trusted setup not loaded."
+  TrustedSetupAlreadyLoadedErr =
+    "Trusted setup is already loaded. Free it before loading a new one."
 
 template setupCtx(body: untyped): untyped =
+  if not gCtx.isNil:
+    return err(TrustedSetupAlreadyLoadedErr)
   let res = body
   if res.isErr:
     return err(res.error)
@@ -37,7 +41,7 @@ template setupCtx(body: untyped): untyped =
 template verifyCtx(body: untyped): untyped =
   {.gcsafe.}:
     if gCtx.isNil:
-      return err(GlobalCtxErr)
+      return err(TrustedSetupNotLoadedErr)
     body
 
 ##############################################################
@@ -64,6 +68,12 @@ proc loadTrustedSetupFromString*(_: type Kzg,
                                  input: string): Result[void, string] =
   setupCtx:
     kzg.loadTrustedSetupFromString(input)
+
+proc freeTrustedSetup*(_: type Kzg): Result[void, string] =
+  verifyCtx:
+    gCtx.freeTrustedSetup()
+    gCtx = nil
+    ok()
 
 proc toCommitment*(blob: KzgBlob):
                     Result[KzgCommitment, string] {.gcsafe.} =
