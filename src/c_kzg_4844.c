@@ -992,7 +992,7 @@ C_KZG_RET blob_to_kzg_commitment(
 
 /* Forward function declaration */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
+    bool *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1054,7 +1054,7 @@ C_KZG_RET verify_kzg_proof(
  * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
+    bool *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1073,7 +1073,7 @@ static C_KZG_RET verify_kzg_proof_impl(
     g1_sub(&P_minus_y, commitment, &y_g1);
 
     /* Verify: P - y = Q * (X - z) */
-    *out = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
+    *ok = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
 
     return C_KZG_OK;
 }
