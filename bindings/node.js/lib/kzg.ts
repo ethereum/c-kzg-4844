@@ -89,7 +89,7 @@ function transformTrustedSetupJson(filePath: string): string {
 
 /**
  * Sets up the c-kzg library. Pass in a properly formatted trusted setup file
- * to configure the library.  File must be in json format, see or {@link TrustedSetupJson}
+ * to configure the library.  File must be in json format, see {@link TrustedSetupJson}
  * interface for more details, or as a properly formatted utf-8 encoded file.
  *
  * @remark This function must be run before any other functions in this
