@@ -22,8 +22,6 @@ yarn install --ignore-scripts # Install dependencies
 make # Build bindings and verify build worked
 ```
 
----
-
 ## Project Commands
 
 * `make clean` - cleans artifacts
@@ -32,8 +30,6 @@ make # Build bindings and verify build worked
 * `make format` - lints code
 * `make bundle` - builds `dist` for publishing
 * `make publish` - runs `npm publish`
-
----
 
 ## `n-api` and `node-addon-api`
 
