@@ -70,10 +70,10 @@ public class CKZG4844JNITest {
     if (PRESET != Preset.MAINNET) return;
 
     try {
-      ByteArrayTuple tuple =
+      ProofAndY proofAndY =
           CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
-      assertArrayEquals(test.getOutput().getFirst(), tuple.getFirst());
-      assertArrayEquals(test.getOutput().getSecond(), tuple.getSecond());
+      assertArrayEquals(test.getOutput().getProof(), proofAndY.getProof());
+      assertArrayEquals(test.getOutput().getY(), proofAndY.getY());
     } catch (CKZGException ex) {
       assertNull(test.getOutput());
     }
@@ -192,9 +192,9 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
-    final ByteArrayTuple tuple = CKZG4844JNI.computeKzgProof(blob, z_bytes);
-    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, tuple.getFirst().length);
-    assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, tuple.getSecond().length);
+    final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
+    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proofAndY.getProof().length);
+    assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
     CKZG4844JNI.freeTrustedSetup();
   }
 
