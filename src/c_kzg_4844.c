@@ -990,14 +990,25 @@ C_KZG_RET blob_to_kzg_commitment(
     return C_KZG_OK;
 }
 
+/**
+ * Struct holding the argument to verify_kzg_proof_impl.
+ * Having a struct holding these allows some code simpliciations
+ *
+ * An instance of this struct models a claim (to be verified) that:
+ * proof_g1 is a proof for p(evaluation_point) == y_fr,
+ * where g1_t is a commitment to the polynomial p.
+ */
+typedef struct {
+    g1_t commitment_g1;    /** Commitment to polynomial p*/
+    g1_t proof_g1;         /** Proof that p(evaluation_point) == y_fr*/
+    fr_t evaluation_point; /** point at which p is checked, typically determined
+                              as a hash output via Fiat-Shamir */
+    fr_t y_fr;             /** supposed value of p at the evaluation point */
+} kzg_evaluation_claim;
+
 /* Forward function declaration */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *ok,
-    const g1_t *commitment,
-    const fr_t *z,
-    const fr_t *y,
-    const g1_t *proof,
-    const KZGSettings *s
+    bool *ok, const kzg_evaluation_claim *claim, const KZGSettings *s
 );
 
 /**
@@ -1019,23 +1030,20 @@ C_KZG_RET verify_kzg_proof(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t z_fr, y_fr;
-    g1_t commitment_g1, proof_g1;
+    kzg_evaluation_claim claim;
 
     *ok = false;
 
-    ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
+    ret = bytes_to_kzg_commitment(&claim.commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&z_fr, z_bytes);
+    ret = bytes_to_bls_field(&claim.evaluation_point, z_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_bls_field(&y_fr, y_bytes);
+    ret = bytes_to_bls_field(&claim.y_fr, y_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
+    ret = bytes_to_kzg_proof(&claim.proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
-    return verify_kzg_proof_impl(
-        ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
-    );
+    return verify_kzg_proof_impl(ok, &claim, s);
 }
 
 /**
@@ -1054,26 +1062,23 @@ C_KZG_RET verify_kzg_proof(
  * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *ok,
-    const g1_t *commitment,
-    const fr_t *z,
-    const fr_t *y,
-    const g1_t *proof,
-    const KZGSettings *s
+    bool *ok, const kzg_evaluation_claim *claim, const KZGSettings *s
 ) {
     g2_t x_g2, X_minus_z;
     g1_t y_g1, P_minus_y;
 
     /* Calculate: X_minus_z */
-    g2_mul(&x_g2, &G2_GENERATOR, z);
+    g2_mul(&x_g2, &G2_GENERATOR, &claim->evaluation_point);
     g2_sub(&X_minus_z, &s->g2_values[1], &x_g2);
 
     /* Calculate: P_minus_y */
-    g1_mul(&y_g1, &G1_GENERATOR, y);
-    g1_sub(&P_minus_y, commitment, &y_g1);
+    g1_mul(&y_g1, &G1_GENERATOR, &claim->y_fr);
+    g1_sub(&P_minus_y, &claim->commitment_g1, &y_g1);
 
     /* Verify: P - y = Q * (X - z) */
-    *ok = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
+    *ok = pairings_verify(
+        &P_minus_y, &G2_GENERATOR, &claim->proof_g1, &X_minus_z
+    );
 
     return C_KZG_OK;
 }
@@ -1253,6 +1258,46 @@ out:
 }
 
 /**
+ * Given a blob and its proof and commitment as bytes, compute a
+ * kzg_evaluation_claim by parsing these into group elements and computing the
+ * Fiat-Shamir challenge for verification. The resulting claim consists of a
+ * commitment to a polynomial p, an evaluation point, a puported evaluation
+ * result p(evaluation_point) and a purported proof for that.
+ *
+ * @param[out] claim            Corresponding claim & proof about a polynomial
+ * identity
+ * @param[in]  blob             Blob to verify
+ * @param[in]  commitment_bytes Commitment to verify
+ * @param[in]  proof_bytes      Proof used for verification
+ * @param[in]  s                The trusted setup
+ */
+C_KZG_RET make_claim_from_blob_kzg_proof(
+    kzg_evaluation_claim *claim,
+    const Blob *blob,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    Polynomial polynomial;
+
+    ret = bytes_to_kzg_commitment(&claim->commitment_g1, commitment_bytes);
+    if (ret != C_KZG_OK) return ret;
+
+    ret = blob_to_polynomial(&polynomial, blob);
+    if (ret != C_KZG_OK) return ret;
+
+    compute_challenge(&claim->evaluation_point, blob, &claim->commitment_g1);
+
+    ret = evaluate_polynomial_in_evaluation_form(
+        &claim->y_fr, &polynomial, &claim->evaluation_point, s
+    );
+    if (ret != C_KZG_OK) return ret;
+
+    return bytes_to_kzg_proof(&claim->proof_g1, proof_bytes);
+}
+
+/**
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
  *
@@ -1270,31 +1315,15 @@ C_KZG_RET verify_blob_kzg_proof(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    Polynomial polynomial;
-    fr_t evaluation_challenge_fr, y_fr;
-    g1_t commitment_g1, proof_g1;
-
     *ok = false;
+    kzg_evaluation_claim claim;
 
-    ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
-    if (ret != C_KZG_OK) return ret;
-
-    ret = blob_to_polynomial(&polynomial, blob);
-    if (ret != C_KZG_OK) return ret;
-
-    compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
-
-    ret = evaluate_polynomial_in_evaluation_form(
-        &y_fr, &polynomial, &evaluation_challenge_fr, s
+    ret = make_claim_from_blob_kzg_proof(
+        &claim, blob, commitment_bytes, proof_bytes, s
     );
     if (ret != C_KZG_OK) return ret;
 
-    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
-    if (ret != C_KZG_OK) return ret;
-
-    return verify_kzg_proof_impl(
-        ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
-    );
+    return verify_kzg_proof_impl(ok, &claim, s);
 }
 
 /**
