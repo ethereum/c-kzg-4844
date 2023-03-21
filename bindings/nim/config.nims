@@ -1,3 +1,9 @@
+import strutils
+from os import DirSep
+
+const
+  testPath = currentSourcePath.rsplit(DirSep, 1)[0] & "/tests"
+
 # Helper functions
 proc test(args, path: string) =
   if not dirExists "build":
@@ -5,10 +11,13 @@ proc test(args, path: string) =
   exec "nim " & getEnv("TEST_LANG", "c") & " " & getEnv("NIMFLAGS") & " " & args &
     " --outdir:build -r -f --hints:off --warnings:off --skipParentCfg " & path
 
-task test, "Run all tests":
+proc runAllTest*() =
   echo ">>>>>>>>>>>>>>>> Run tests in DEBUG mode <<<<<<<<<<<<<<<<"
-  test "-d:debug", "tests/test_all"
+  test "-d:debug", testPath & "/test_all"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE mode <<<<<<<<<<<<<<<<"
-  test "-d:release", "tests/test_all"
+  test "-d:release", testPath & "/test_all"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE and THREADS ON mode <<<<<<<<<<<<<<<<"
-  test "--threads:on -d:release", "tests/test_all"
+  test "--threads:on -d:release", testPath & "/test_all"
+
+task test, "Run all tests":
+  runAllTest()
