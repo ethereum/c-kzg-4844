@@ -1,0 +1,4 @@
+github.com/ethereum/c-kzg-4844 v0.0.0-20230321204456-577d146c0a5a h1:9JrfUHZY75ml0uPjFYVt+vRr/XHrNMvIpXnRDbVNyVE=
+github.com/ethereum/c-kzg-4844 v0.0.0-20230321204456-577d146c0a5a/go.mod h1:ECrzdyCNp8d5bLD8Id8Y0mZ8+HDZ0LIdshCrDDTO944=
+github.com/supranational/blst v0.3.11-0.20230124161941-ca03e11a3ff2 h1:wh1wzwAhZBNiZO37uWS/nDaKiIwHz4mDo4pnA+fqTO0=
+github.com/supranational/blst v0.3.11-0.20230124161941-ca03e11a3ff2/go.mod h1:jZJtfjgudtNl4en1tzwPIV3KjUnQUvG3/j+w+fVonLw=

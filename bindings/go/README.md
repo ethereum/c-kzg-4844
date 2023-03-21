@@ -6,7 +6,7 @@ exported functions in [C-KZG-4844](https://github.com/ethereum/c-kzg-4844).
 ## Installation
 
 ```
-go get github.com/ethereum/c-kzg-4844/bindings/go
+go get github.com/ethereum/c-kzg-4844
 ```
 
 ## Go version
@@ -17,38 +17,15 @@ functions.
 
 ## Example
 
-For example, a module with this source file:
-```go
-package main
+For reference, see the `example` module in this directory. You can test it out with `go run`:
 
-import "fmt"
-import "encoding/hex"
-import ckzg "github.com/ethereum/c-kzg-4844/bindings/go"
-
-func main() {
-	ret := ckzg.LoadTrustedSetupFile("trusted_setup.txt")
-	if ret != ckzg.C_KZG_OK {
-		panic("failed to load trusted setup")
-	}
-	defer ckzg.FreeTrustedSetup()
-
-	blob := ckzg.Blob{1, 2, 3}
-	commitment, ret := ckzg.BlobToKZGCommitment(blob)
-	if ret != ckzg.C_KZG_OK {
-		panic("failed to get commitment for blob")
-	}
-	fmt.Println(hex.EncodeToString(commitment[:]))
-}
 ```
-
-Will produce this output:
-```
-$ go run .
+user@system ~/c-kzg-4844/bindings/go/example $ go clean -modcache
+user@system ~/c-kzg-4844/bindings/go/example $ go run .
+go: downloading github.com/ethereum/c-kzg-4844 v0.0.0-20230321204456-577d146c0a5a
+go: downloading github.com/supranational/blst v0.3.11-0.20230124161941-ca03e11a3ff2
 88f1aea383b825371cb98acfbae6c81cce601a2e3129461c3c2b816409af8f3e5080db165fd327db687b3ed632153a62
 ```
-
-The trusted setup file in the example can be downloaded here:
-* https://github.com/ethereum/c-kzg-4844/raw/main/src/trusted_setup.txt
 
 ## Tests
 
