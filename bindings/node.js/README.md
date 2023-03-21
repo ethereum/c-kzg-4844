@@ -4,7 +4,8 @@ This is a TypeScript library for EIP-4844 that implements the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
 [C-KZG](https://github.com/benjaminion/c-kzg), but has been heavily modified
-since then. This package wraps that native `c-kzg` C code in C/C++ NAPI bindings for use in node.js applications.
+since then. This package wraps that native `c-kzg` C code in C/C++ NAPI bindings
+for use in node.js applications.
 
 Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md
 
@@ -115,7 +116,8 @@ computeBlobKzgProof(
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
  *
- * @param {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
+ * @param {Bytes48} commitmentBytes - The serialized commitment corresponding to
+ *                                    polynomial p(x)
  * @param {Bytes32} zBytes - The serialized evaluation point
  * @param {Bytes32} yBytes - The serialized claimed evaluation result
  * @param {Bytes48} proofBytes - The serialized KZG proof
@@ -150,14 +152,16 @@ verifyBlobKzgProof(
 
 ```ts
 /**
- * Given an array of blobs and their proofs, verify that they corresponds to their
- * provided commitment.
+ * Given an array of blobs and their proofs, verify that they corresponds to
+ * their provided commitment.
  *
  * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
  *
  * @param {Blob}    blobs - An array of serialized blobs to verify
- * @param {Bytes48} commitmentBytes - An array of serialized commitments to verify
- * @param {Bytes48} proofBytes - An array of serialized KZG proofs for verification
+ * @param {Bytes48} commitmentBytes - An array of serialized commitments to
+ *                                    verify
+ * @param {Bytes48} proofBytes - An array of serialized KZG proofs for
+ *                               verification
  */
 verifyBlobKzgProofBatch(
   blobs: Blob[],
