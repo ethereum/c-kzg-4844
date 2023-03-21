@@ -346,7 +346,8 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
 /**
  * Montgomery batch inversion in finite field.
  *
- * @remark Return C_KZG_BADARGS if a zero is found in the input.
+ * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
+ * the `out` output array has already been mutated.
  *
  * @remark This function does not support in-place computation (i.e. `a` MUST
  * NOT point to the same place as `out`)
@@ -798,7 +799,13 @@ static void g1_lincomb_naive(
  * where `n` is `len - 1`.
  *
  * @remark This function MUST NOT be called with the point at infinity in `p`.
-
+ *
+ * @remark While this function is significantly faster than
+ * `g1_lincomb_naive()`, we refrain from using it in security-critical places
+ * (like verification) because the blst Pippenger code has not been
+ * audited. In those critical places, we prefer using `g1_lincomb_naive()` which
+ * is much simpler.
+ *
  * @param[out] out    The resulting sum-product
  * @param[in]  p      Array of G1 group elements, length @p len
  * @param[in]  coeffs Array of field elements, length @p len
@@ -871,7 +878,7 @@ out:
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
  */
-static void compute_powers(fr_t *out, fr_t *x, uint64_t n) {
+static void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
     fr_t current_power = FR_ONE;
     for (uint64_t i = 0; i < n; i++) {
         out[i] = current_power;
@@ -985,7 +992,7 @@ C_KZG_RET blob_to_kzg_commitment(
 
 /* Forward function declaration */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
+    bool *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1047,7 +1054,7 @@ C_KZG_RET verify_kzg_proof(
  * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *out,
+    bool *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1066,7 +1073,7 @@ static C_KZG_RET verify_kzg_proof_impl(
     g1_sub(&P_minus_y, commitment, &y_g1);
 
     /* Verify: P - y = Q * (X - z) */
-    *out = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
+    *ok = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
 
     return C_KZG_OK;
 }
