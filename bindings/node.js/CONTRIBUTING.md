@@ -24,17 +24,12 @@ make # Build bindings and verify build worked
 
 ## Project Commands
 
-`make clean` - cleans artifacts
-
-`make build` - prepares assets and builds bindings
-
-`make test` - runs unit tests
-
-`make format` - lints code
-
-`make bundle` - builds `dist` for publishing
-
-`make publish` - runs `npm publish`
+* `make clean` - cleans artifacts
+* `make build` - prepares assets and builds bindings
+* `make test` - runs unit tests
+* `make format` - lints code
+* `make bundle` - builds `dist` for publishing
+* `make publish` - runs `npm publish`
 
 ---
 
