@@ -1494,6 +1494,13 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         return C_KZG_OK;
     }
 
+    /* For a single blob, just do a regular single verification */
+    if (n == 1) {
+        return verify_blob_kzg_proof(
+            ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s
+        );
+    }
+
     /* We will need a bunch of arrays to store our objects... */
     ret = new_g1_array(&commitments_g1, n);
     if (ret != C_KZG_OK) goto out;
