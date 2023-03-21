@@ -1520,7 +1520,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
 
     for (size_t i = 0; i < n; i++) {
 
-        /* Convert each commitment to a g1 point */
+        /* Create something to check for each individual input */
         ret = make_claim_from_blob_kzg_proof(
             &claims[i], &blobs[i], &commitments_bytes[i], &proofs_bytes[i], s
         );
