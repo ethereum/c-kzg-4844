@@ -1330,18 +1330,12 @@ C_KZG_RET verify_blob_kzg_proof(
  * Compute random linear combination challenge scalars for batch verification.
  *
  * @param[out]  r_powers_out   The output challenges
- * @param[in]   commitments_g1 The input commitments
- * @param[in]   zs_fr          The input evaluation points
- * @param[in]   ys_fr          The input evaluation results
- * @param[in]   proofs_g1      The input proofs
+ * @param[in]   claims         The input commitments, points, results and
+ * proofs.
+ * @param[in]   n              The length of the claims vector
  */
 static C_KZG_RET compute_r_powers(
-    fr_t *r_powers_out,
-    const g1_t *commitments_g1,
-    const fr_t *zs_fr,
-    const fr_t *ys_fr,
-    const g1_t *proofs_g1,
-    size_t n
+    fr_t *r_powers_out, const kzg_evaluation_claim *claims, size_t n
 ) {
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
@@ -1372,19 +1366,19 @@ static C_KZG_RET compute_r_powers(
 
     for (size_t i = 0; i < n; i++) {
         /* Copy commitment */
-        bytes_from_g1((Bytes48 *)offset, &commitments_g1[i]);
+        bytes_from_g1((Bytes48 *)offset, &claims[i].commitment_g1);
         offset += BYTES_PER_COMMITMENT;
 
         /* Copy z */
-        bytes_from_bls_field((Bytes32 *)offset, &zs_fr[i]);
+        bytes_from_bls_field((Bytes32 *)offset, &claims[i].evaluation_point);
         offset += BYTES_PER_FIELD_ELEMENT;
 
         /* Copy y */
-        bytes_from_bls_field((Bytes32 *)offset, &ys_fr[i]);
+        bytes_from_bls_field((Bytes32 *)offset, &claims[i].y_fr);
         offset += BYTES_PER_FIELD_ELEMENT;
 
         /* Copy proof */
-        bytes_from_g1((Bytes48 *)offset, &proofs_g1[i]);
+        bytes_from_g1((Bytes48 *)offset, &claims[i].proof_g1);
         offset += BYTES_PER_PROOF;
     }
 
@@ -1406,34 +1400,27 @@ out:
  * Helper function for verify_blob_kzg_proof_batch(): actually perform the
  * verification.
  *
- * @remark This function assumes that `n` is trusted and that all input arrays
- *     contain `n` elements. `n` should be the actual size of the arrays and not
+ * @remark This function assumes that `n` is trusted and that the input array
+ *     contains `n` elements. `n` should be the actual size of the array and not
  *     read off a length field in the protocol.
  *
  * @remark This function only works for `n > 0`.
  *
  * @param[out] ok             True if the proofs are valid, otherwise false
- * @param[in]  commitments_g1 Array of commitments to verify
- * @param[in]  zs_fr          Array of evaluation points for the KZG proofs
- * @param[in]  ys_fr          Array of evaluation results for the KZG proofs
- * @param[in]  proofs_g1      Array of proofs used for verification
+ * @param[in]  claims         Array of claims, each consisting a a commitment, a
+ * KZG proof, and a evaluation point and result.
  * @param[in]  n              The number of blobs/commitments/proofs
  * @param[in]  s              The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_batch(
-    bool *ok,
-    const g1_t *commitments_g1,
-    const fr_t *zs_fr,
-    const fr_t *ys_fr,
-    const g1_t *proofs_g1,
-    size_t n,
-    const KZGSettings *s
+    bool *ok, const kzg_evaluation_claim *claims, size_t n, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     g1_t proof_lincomb, proof_z_lincomb, C_minus_y_lincomb, rhs_g1;
     fr_t *r_powers = NULL;
     g1_t *C_minus_y = NULL;
     fr_t *r_times_z = NULL;
+    g1_t *proofs_g1 = NULL;
 
     assert(n > 0);
 
@@ -1446,12 +1433,18 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_times_z, n);
     if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&proofs_g1, n);
+    if (ret != C_KZG_OK) goto out;
 
     /* Compute the random lincomb challenges */
-    ret = compute_r_powers(
-        r_powers, commitments_g1, zs_fr, ys_fr, proofs_g1, n
-    );
+    ret = compute_r_powers(r_powers, claims, n);
     if (ret != C_KZG_OK) goto out;
+
+    /* copy the proofs into a single array, because g1_lincomb_naive requires
+     * it. This could be optimized away if needed */
+    for (size_t i = 0; i < n; i++) {
+        proofs_g1[i] = claims[i].proof_g1;
+    }
 
     /* Compute \sum r^i * Proof_i */
     g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
@@ -1459,11 +1452,11 @@ static C_KZG_RET verify_kzg_proof_batch(
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
         /* Get [y_i] */
-        g1_mul(&ys_encrypted, &G1_GENERATOR, &ys_fr[i]);
+        g1_mul(&ys_encrypted, &G1_GENERATOR, &claims[i].y_fr);
         /* Get C_i - [y_i] */
-        g1_sub(&C_minus_y[i], &commitments_g1[i], &ys_encrypted);
+        g1_sub(&C_minus_y[i], &claims[i].commitment_g1, &ys_encrypted);
         /* Get r^i * z_i */
-        blst_fr_mul(&r_times_z[i], &r_powers[i], &zs_fr[i]);
+        blst_fr_mul(&r_times_z[i], &r_powers[i], &claims[i].evaluation_point);
     }
 
     /* Get \sum r^i z_i Proof_i */
@@ -1482,6 +1475,7 @@ out:
     c_kzg_free(r_powers);
     c_kzg_free(C_minus_y);
     c_kzg_free(r_times_z);
+    c_kzg_free(proofs_g1);
     return ret;
 }
 
@@ -1511,10 +1505,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    g1_t *commitments_g1 = NULL;
-    g1_t *proofs_g1 = NULL;
-    fr_t *evaluation_challenges_fr = NULL;
-    fr_t *ys_fr = NULL;
+    kzg_evaluation_claim *claims = NULL;
 
     /* Exit early if we are given zero blobs */
     if (n == 0) {
@@ -1522,51 +1513,23 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         return C_KZG_OK;
     }
 
-    /* We will need a bunch of arrays to store our objects... */
-    ret = new_g1_array(&commitments_g1, n);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, n);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&evaluation_challenges_fr, n);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&ys_fr, n);
-    if (ret != C_KZG_OK) goto out;
+    /* We will make a claim about a polynomial evaluation for each element of
+     * the batch */
+    ret = c_kzg_calloc((void **)&claims, n, sizeof(kzg_evaluation_claim));
 
     for (size_t i = 0; i < n; i++) {
-        Polynomial polynomial;
 
         /* Convert each commitment to a g1 point */
-        ret = bytes_to_kzg_commitment(
-            &commitments_g1[i], &commitments_bytes[i]
+        ret = make_claim_from_blob_kzg_proof(
+            &claims[i], &blobs[i], &commitments_bytes[i], &proofs_bytes[i], s
         );
-        if (ret != C_KZG_OK) goto out;
-
-        /* Convert each blob from bytes to a poly */
-        ret = blob_to_polynomial(&polynomial, &blobs[i]);
-        if (ret != C_KZG_OK) goto out;
-
-        compute_challenge(
-            &evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]
-        );
-
-        ret = evaluate_polynomial_in_evaluation_form(
-            &ys_fr[i], &polynomial, &evaluation_challenges_fr[i], s
-        );
-        if (ret != C_KZG_OK) goto out;
-
-        ret = bytes_to_kzg_proof(&proofs_g1[i], &proofs_bytes[i]);
         if (ret != C_KZG_OK) goto out;
     }
 
-    ret = verify_kzg_proof_batch(
-        ok, commitments_g1, evaluation_challenges_fr, ys_fr, proofs_g1, n, s
-    );
+    ret = verify_kzg_proof_batch(ok, claims, n, s);
 
 out:
-    c_kzg_free(commitments_g1);
-    c_kzg_free(proofs_g1);
-    c_kzg_free(evaluation_challenges_fr);
-    c_kzg_free(ys_fr);
+    c_kzg_free(claims);
     return ret;
 }
 
