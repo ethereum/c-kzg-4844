@@ -1516,7 +1516,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     /* We will make a claim about a polynomial evaluation for each element of
      * the batch */
     ret = c_kzg_calloc((void **)&claims, n, sizeof(kzg_evaluation_claim));
-    if (ret != C_KZG_OUT) return ret;
+    if (ret != C_KZG_OK) return ret;
 
     for (size_t i = 0; i < n; i++) {
 
