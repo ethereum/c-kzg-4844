@@ -1504,13 +1504,13 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < n; i++) {
+        Polynomial polynomial;
+
         /* Convert each commitment to a g1 point */
         ret = bytes_to_kzg_commitment(
             &commitments_g1[i], &commitments_bytes[i]
         );
         if (ret != C_KZG_OK) goto out;
-
-        Polynomial polynomial;
 
         /* Convert each blob from bytes to a poly */
         ret = blob_to_polynomial(&polynomial, &blobs[i]);
