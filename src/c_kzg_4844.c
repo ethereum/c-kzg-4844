@@ -1487,7 +1487,6 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     fr_t *evaluation_challenges_fr = NULL;
     fr_t *ys_fr = NULL;
 
-
     /* Exit early if we are given zero blobs */
     if (n == 0) {
         *ok = true;
