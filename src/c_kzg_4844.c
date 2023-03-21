@@ -1486,7 +1486,6 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     g1_t *proofs_g1 = NULL;
     fr_t *evaluation_challenges_fr = NULL;
     fr_t *ys_fr = NULL;
-    Polynomial *polynomials = NULL;
 
     /* Exit early if we are given zero blobs */
     if (n == 0) {
@@ -1503,10 +1502,10 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&ys_fr, n);
     if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc((void **)&polynomials, n, sizeof(Polynomial));
-    if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < n; i++) {
+        Polynomial polynomial;
+
         /* Convert each commitment to a g1 point */
         ret = bytes_to_kzg_commitment(
             &commitments_g1[i], &commitments_bytes[i]
@@ -1514,7 +1513,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         if (ret != C_KZG_OK) goto out;
 
         /* Convert each blob from bytes to a poly */
-        ret = blob_to_polynomial(&polynomials[i], &blobs[i]);
+        ret = blob_to_polynomial(&polynomial, &blobs[i]);
         if (ret != C_KZG_OK) goto out;
 
         compute_challenge(
@@ -1522,7 +1521,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         );
 
         ret = evaluate_polynomial_in_evaluation_form(
-            &ys_fr[i], &polynomials[i], &evaluation_challenges_fr[i], s
+            &ys_fr[i], &polynomial, &evaluation_challenges_fr[i], s
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -1539,7 +1538,6 @@ out:
     c_kzg_free(proofs_g1);
     c_kzg_free(evaluation_challenges_fr);
     c_kzg_free(ys_fr);
-    c_kzg_free(polynomials);
     return ret;
 }
 
