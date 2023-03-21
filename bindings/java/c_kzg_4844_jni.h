@@ -56,7 +56,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    computeKzgProof
- * Signature: ([B[B)Lethereum/ckzg4844/Tuple;
+ * Signature: ([B[B)Lethereum/ckzg4844/ProofAndY;
  */
 JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof
   (JNIEnv *, jclass, jbyteArray, jbyteArray);

@@ -207,7 +207,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
     return NULL;
   }
 
-  /* The output variables, will be combined in a tuple */
+  /* The output variables, will be combined in a ProofAndY object */
   jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
   jbyteArray y = (*env)->NewByteArray(env, BYTES_PER_FIELD_ELEMENT);
 
@@ -230,28 +230,28 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
     return NULL;
   }
 
-  jclass tuple_class = (*env)->FindClass(env, "ethereum/ckzg4844/ByteArrayTuple");
-  if (tuple_class == NULL)
+  jclass proof_and_y_class = (*env)->FindClass(env, "ethereum/ckzg4844/ProofAndY");
+  if (proof_and_y_class == NULL)
   {
-    throw_exception(env, "Failed to find ByteArrayTuple class.");
+    throw_exception(env, "Failed to find ProofAndY class.");
     return NULL;
   }
 
-  jmethodID tuple_constructor = (*env)->GetMethodID(env, tuple_class, "<init>", "([B[B)V");
-  if (tuple_constructor == NULL)
+  jmethodID proof_and_y_constructor = (*env)->GetMethodID(env, proof_and_y_class, "<init>", "([B[B)V");
+  if (proof_and_y_constructor == NULL)
   {
-    throw_exception(env, "Failed to find ByteArrayTuple constructor.");
+    throw_exception(env, "Failed to find ProofAndY constructor.");
     return NULL;
   }
 
-  jobject tuple = (*env)->NewObject(env, tuple_class, tuple_constructor, proof, y);
-  if (tuple == NULL)
+  jobject proof_and_y = (*env)->NewObject(env, proof_and_y_class, proof_and_y_constructor, proof, y);
+  if (proof_and_y == NULL)
   {
-    throw_exception(env, "Failed to instantiate new ByteArrayTuple.");
+    throw_exception(env, "Failed to instantiate new ProofAndY.");
     return NULL;
   }
 
-  return tuple;
+  return proof_and_y;
 }
 
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes)
