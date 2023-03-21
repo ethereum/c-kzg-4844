@@ -41,18 +41,17 @@ const commitments = [] as Bytes48[];
 const proofs = [] as Bytes48[];
 
 for (let i = 0; i < BATCH_SIZE; i++) {
-  blobs.push(
-    Buffer.alloc(BYTES_PER_BLOB, "*"));
-  commitments.push(
-    blobToKzgCommitment(blobs[i]));
-  proofs.push(
-    computeBlobKzgProof(blobs[i], commitments[i]));
+  blobs.push(Buffer.alloc(BYTES_PER_BLOB, "*"));
+  commitments.push(blobToKzgCommitment(blobs[i]));
+  proofs.push(computeBlobKzgProof(blobs[i], commitments[i]));
 }
 
 const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
 ```
 
 ## API
+
+### `loadTrustedSetup`
 
 ```ts
 /**
@@ -65,15 +64,23 @@ const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
  *
  * @param {string} filePath - The absolute path of the trusted setup
  */
-export function loadTrustedSetup(filePath: string): void;
+loadTrustedSetup(filePath: string): void;
+```
 
+### `blobToKzgCommitment`
+
+```ts
 /**
  * Convert a blob to a KZG commitment.
  *
  * @param {Blob} blob - The blob representing the polynomial to be committed to
  */
-export function blobToKzgCommitment(blob: Blob): KZGCommitment;
+blobToKzgCommitment(blob: Blob): KZGCommitment;
+```
 
+### `computeKzgProof`
+
+```ts
 /**
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
@@ -83,8 +90,12 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment;
  * @return {ProofResult} - Tuple containing the resulting proof and evaluation
  *                         of the polynomial at the evaluation point z
  */
-export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
+computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
+```
 
+### `computeBlobKzgProof`
+
+```ts
 /**
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
@@ -92,11 +103,15 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  * @param {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param {Bytes48} commitmentBytes - Commitment to verify
  */
-export function computeBlobKzgProof(
+computeBlobKzgProof(
   blob: Blob,
   commitmentBytes: Bytes48,
 ): KZGProof;
+```
 
+### `verifyKzgProof`
+
+```ts
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
  *
@@ -105,13 +120,17 @@ export function computeBlobKzgProof(
  * @param {Bytes32} yBytes - The serialized claimed evaluation result
  * @param {Bytes48} proofBytes - The serialized KZG proof
  */
-export function verifyKzgProof(
+verifyKzgProof(
   commitmentBytes: Bytes48,
   zBytes: Bytes32,
   yBytes: Bytes32,
   proofBytes: Bytes48,
 ): boolean;
+```
 
+### `verifyBlobKzgProof`
+
+```ts
 /**
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
@@ -120,12 +139,16 @@ export function verifyKzgProof(
  * @param {Bytes48} commitmentBytes - The serialized commitment to verify
  * @param {Bytes48} proofBytes - The serialized KZG proof for verification
  */
-export function verifyBlobKzgProof(
+verifyBlobKzgProof(
   blob: Blob,
   commitmentBytes: Bytes48,
   proofBytes: Bytes48,
 ): boolean;
+```
 
+### `verifyBlobKzgProofBatch`
+
+```ts
 /**
  * Given an array of blobs and their proofs, verify that they corresponds to their
  * provided commitment.
@@ -136,7 +159,7 @@ export function verifyBlobKzgProof(
  * @param {Bytes48} commitmentBytes - An array of serialized commitments to verify
  * @param {Bytes48} proofBytes - An array of serialized KZG proofs for verification
  */
-export function verifyBlobKzgProofBatch(
+verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
