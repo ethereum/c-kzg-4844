@@ -20,7 +20,6 @@ functions.
 For reference, see the `example` module in this directory. You can test it out with `go run`:
 
 ```
-user@system ~/c-kzg-4844/bindings/go/example $ go clean -modcache
 user@system ~/c-kzg-4844/bindings/go/example $ go run .
 go: downloading github.com/ethereum/c-kzg-4844 v0.0.0-20230321204456-577d146c0a5a
 go: downloading github.com/supranational/blst v0.3.11-0.20230124161941-ca03e11a3ff2
