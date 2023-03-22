@@ -15,7 +15,7 @@ nimble install stew
 ## Tests
 
 Currently reference tests only support Nim compiler version 1.4, and 1.6 because of yaml library limitations.
-But other tests that is not using yaml can be run by Nim 1.2 - devel.
+But other tests that are not using yaml can be run by Nim 1.2 - devel.
 
 Dependencies:
 
