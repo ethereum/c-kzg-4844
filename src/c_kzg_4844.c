@@ -996,7 +996,7 @@ C_KZG_RET blob_to_kzg_commitment(
  *
  * An instance of this struct models a claim (to be verified) that:
  * proof_g1 is a proof for p(evaluation_point) == y_fr,
- * where g1_t is a commitment to the polynomial p.
+ * where commitment_g1 is a commitment to the polynomial p.
  */
 typedef struct {
     g1_t commitment_g1;    /** Commitment to polynomial p*/
@@ -1272,7 +1272,7 @@ out:
  * @param[in]  s                The trusted setup
  */
 C_KZG_RET make_claim_from_blob_kzg_proof(
-    kzg_evaluation_claim *claim,
+    kzg_evaluation_claim *claim_out,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
@@ -1281,20 +1281,22 @@ C_KZG_RET make_claim_from_blob_kzg_proof(
     C_KZG_RET ret;
     Polynomial polynomial;
 
-    ret = bytes_to_kzg_commitment(&claim->commitment_g1, commitment_bytes);
+    ret = bytes_to_kzg_commitment(&claim_out->commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
 
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) return ret;
 
-    compute_challenge(&claim->evaluation_point, blob, &claim->commitment_g1);
+    compute_challenge(
+        &claim_out->evaluation_point, blob, &claim_out->commitment_g1
+    );
 
     ret = evaluate_polynomial_in_evaluation_form(
-        &claim->y_fr, &polynomial, &claim->evaluation_point, s
+        &claim_out->y_fr, &polynomial, &claim_out->evaluation_point, s
     );
     if (ret != C_KZG_OK) return ret;
 
-    return bytes_to_kzg_proof(&claim->proof_g1, proof_bytes);
+    return bytes_to_kzg_proof(&claim_out->proof_g1, proof_bytes);
 }
 
 /**
@@ -1407,8 +1409,8 @@ out:
  * @remark This function only works for `n > 0`.
  *
  * @param[out] ok             True if the proofs are valid, otherwise false
- * @param[in]  claims         Array of claims, each consisting a a commitment, a
- * KZG proof, and a evaluation point and result.
+ * @param[in]  claims         Array of claims, each consisting of a commitment,
+ * a KZG proof, an evaluation point and a result.
  * @param[in]  n              The number of blobs/commitments/proofs
  * @param[in]  s              The trusted setup
  */
