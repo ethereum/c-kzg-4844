@@ -22,7 +22,7 @@ const (
 )
 
 type (
-	CKzgRet       int
+	CKZGRet       uint
 	Bytes32       [32]byte
 	Bytes48       [48]byte
 	KZGCommitment Bytes48
@@ -31,10 +31,10 @@ type (
 )
 
 const (
-	C_KZG_OK      CKzgRet = C.C_KZG_OK
-	C_KZG_BADARGS CKzgRet = C.C_KZG_BADARGS
-	C_KZG_ERROR   CKzgRet = C.C_KZG_ERROR
-	C_KZG_MALLOC  CKzgRet = C.C_KZG_MALLOC
+	C_KZG_OK      CKZGRet = C.C_KZG_OK
+	C_KZG_BADARGS CKZGRet = C.C_KZG_BADARGS
+	C_KZG_ERROR   CKZGRet = C.C_KZG_ERROR
+	C_KZG_MALLOC  CKZGRet = C.C_KZG_MALLOC
 )
 
 var (
@@ -56,7 +56,7 @@ LoadTrustedSetup is the binding for:
 	    const uint8_t *g2_bytes,
 	    size_t n2);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte) CKzgRet {
+func LoadTrustedSetup(g1Bytes, g2Bytes []byte) CKZGRet {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -74,10 +74,10 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) CKzgRet {
 		(C.size_t)(numG1Elements),
 		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
 		(C.size_t)(numG2Elements))
-	if CKzgRet(ret) == C_KZG_OK {
+	if CKZGRet(ret) == C_KZG_OK {
 		loaded = true
 	}
-	return CKzgRet(ret)
+	return CKZGRet(ret)
 }
 
 /*
@@ -87,7 +87,7 @@ LoadTrustedSetupFile is the binding for:
 	    KZGSettings *out,
 	    FILE *in);
 */
-func LoadTrustedSetupFile(trustedSetupFile string) CKzgRet {
+func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -97,10 +97,10 @@ func LoadTrustedSetupFile(trustedSetupFile string) CKzgRet {
 	}
 	ret := C.load_trusted_setup_file(&settings, fp)
 	C.fclose(fp)
-	if CKzgRet(ret) == C_KZG_OK {
+	if CKZGRet(ret) == C_KZG_OK {
 		loaded = true
 	}
-	return CKzgRet(ret)
+	return CKZGRet(ret)
 }
 
 /*
@@ -125,7 +125,7 @@ BlobToKZGCommitment is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKzgRet) {
+func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -134,7 +134,7 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKzgRet) {
 		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		&settings)
-	return commitment, CKzgRet(ret)
+	return commitment, CKZGRet(ret)
 }
 
 /*
@@ -147,7 +147,7 @@ ComputeKZGProof is the binding for:
 			const Bytes32 *z_bytes,
 			const KZGSettings *s);
 */
-func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, CKzgRet) {
+func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -159,7 +159,7 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, CKzgRet) {
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes32)(unsafe.Pointer(&zBytes)),
 		&settings)
-	return proof, y, CKzgRet(ret)
+	return proof, y, CKZGRet(ret)
 }
 
 /*
@@ -171,7 +171,7 @@ ComputeBlobKZGProof is the binding for:
 			const Bytes48 *commitment_bytes,
 			const KZGSettings *s);
 */
-func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, CKzgRet) {
+func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -181,7 +181,7 @@ func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, CKzgRet)
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		&settings)
-	return proof, CKzgRet(ret)
+	return proof, CKZGRet(ret)
 }
 
 /*
@@ -195,7 +195,7 @@ VerifyKZGProof is the binding for:
 	    const Bytes48 *proof_bytes,
 	    const KZGSettings *s);
 */
-func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes Bytes48) (bool, CKzgRet) {
+func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes Bytes48) (bool, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -207,7 +207,7 @@ func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes 
 		(*C.Bytes32)(unsafe.Pointer(&yBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), CKzgRet(ret)
+	return bool(result), CKZGRet(ret)
 }
 
 /*
@@ -220,7 +220,7 @@ VerifyBlobKZGProof is the binding for:
 	    const Bytes48 *proof_bytes,
 	    const KZGSettings *s);
 */
-func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, CKzgRet) {
+func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -231,7 +231,7 @@ func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, C
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), CKzgRet(ret)
+	return bool(result), CKZGRet(ret)
 }
 
 /*
@@ -244,7 +244,7 @@ VerifyBlobKZGProofBatch is the binding for:
 	    const Bytes48 *proofs_bytes,
 	    const KZGSettings *s);
 */
-func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes48) (bool, CKzgRet) {
+func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes48) (bool, CKZGRet) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -260,7 +260,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),
 		&settings)
-	return bool(result), CKzgRet(ret)
+	return bool(result), CKZGRet(ret)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
