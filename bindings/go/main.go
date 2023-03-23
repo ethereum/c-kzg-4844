@@ -96,10 +96,10 @@ func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
 	cMode := C.CString("r")
 	defer C.free(unsafe.Pointer(cMode))
 	fp := C.fopen(cTrustedSetupFile, cMode)
-	defer C.fclose(fp)
 	if fp == nil {
 		panic("error reading trusted setup")
 	}
+	C.fclose(fp)
 	ret := C.load_trusted_setup_file(&settings, fp)
 	if CKZGRet(ret) == C_KZG_OK {
 		loaded = true
