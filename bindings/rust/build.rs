@@ -73,7 +73,7 @@ fn main() {
     println!("cargo:rustc-link-lib=static=blst");
 
     // Write the compile time variable to a consts.rs file to be imported to the bindings module.
-    let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/consts.rs");
+    let const_file = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/bindings/consts.rs");
     std::fs::write(
         const_file,
         format!(

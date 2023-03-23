@@ -4,7 +4,7 @@
 
 mod test_formats;
 
-include!("bindings.rs");
+include!("generated.rs");
 
 use libc::fopen;
 use std::ffi::CString;
@@ -402,7 +402,7 @@ mod tests {
     use rand::{rngs::ThreadRng, Rng};
     use std::fs;
 
-    use crate::test_formats::{
+    use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_kzg_proof,
         verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
     };

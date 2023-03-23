@@ -1,2 +1,2 @@
-src/consts.rs
+src/bindings/consts.rs
 target/
