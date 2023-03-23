@@ -396,6 +396,49 @@ impl From<[u8; 48]> for Bytes48 {
     }
 }
 
+use std::ops::{Deref, DerefMut};
+
+impl Deref for Bytes32 {
+    type Target = [u8; 32];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+impl Deref for Bytes48 {
+    type Target = [u8; 48];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+impl Deref for Blob {
+    type Target = [u8; BYTES_PER_BLOB];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+impl DerefMut for Blob {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.bytes
+    }
+}
+
+impl Deref for KZGProof {
+    type Target = [u8; BYTES_PER_PROOF];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
+impl Deref for KZGCommitment {
+    type Target = [u8; BYTES_PER_COMMITMENT];
+    fn deref(&self) -> &Self::Target {
+        &self.bytes
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

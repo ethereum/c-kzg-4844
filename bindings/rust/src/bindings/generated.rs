@@ -2,8 +2,6 @@
 
 include!("./consts.rs");
 
-use std::ops::{Deref, DerefMut};
-
 use libc::FILE;
 
 pub const BYTES_PER_COMMITMENT: usize = 48;
@@ -85,24 +83,10 @@ pub struct Bytes32 {
     bytes: [u8; 32],
 }
 
-impl Deref for Bytes32 {
-    type Target = [u8; 32];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Bytes48 {
     bytes: [u8; 48],
-}
-
-impl Deref for Bytes48 {
-    type Target = [u8; 48];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
 }
 
 #[repr(C)]
@@ -111,30 +95,10 @@ pub struct Blob {
     bytes: [u8; BYTES_PER_BLOB],
 }
 
-impl Deref for Blob {
-    type Target = [u8; BYTES_PER_BLOB];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
-}
-
-impl DerefMut for Blob {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.bytes
-    }
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
-}
-
-impl Deref for KZGProof {
-    type Target = [u8; BYTES_PER_PROOF];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
 }
 
 type g1_t = blst_p1;
@@ -144,13 +108,6 @@ type fr_t = blst_fr;
 #[derive(Debug, Copy, Clone)]
 pub struct KZGCommitment {
     bytes: [u8; BYTES_PER_COMMITMENT],
-}
-
-impl Deref for KZGCommitment {
-    type Target = [u8; BYTES_PER_COMMITMENT];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
 }
 
 #[must_use]
