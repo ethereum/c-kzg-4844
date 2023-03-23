@@ -8,15 +8,7 @@ pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_BLOB: usize = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
-
-type byte = u8;
 type limb_t = u64;
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct blst_scalar {
-    b: [byte; 32usize],
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_fr {
@@ -34,19 +26,6 @@ struct blst_fp {
 struct blst_fp2 {
     fp: [blst_fp; 2usize],
 }
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct blst_fp6 {
-    fp2: [blst_fp2; 3usize],
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct blst_fp12 {
-    fp6: [blst_fp6; 2usize],
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_p1 {
@@ -54,27 +33,12 @@ struct blst_p1 {
     y: blst_fp,
     z: blst_fp,
 }
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct blst_p1_affine {
-    x: blst_fp,
-    y: blst_fp,
-}
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_p2 {
     x: blst_fp2,
     y: blst_fp2,
     z: blst_fp2,
-}
-
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-struct blst_p2_affine {
-    x: blst_fp2,
-    y: blst_fp2,
 }
 
 #[repr(C)]
