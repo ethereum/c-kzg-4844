@@ -38,6 +38,9 @@ struct blst_p2 {
     y: blst_fp2,
     z: blst_fp2,
 }
+type g1_t = blst_p1;
+type g2_t = blst_p2;
+type fr_t = blst_fr;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Bytes32 {
@@ -55,16 +58,13 @@ pub struct Blob {
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
-pub struct KZGProof {
-    bytes: [u8; BYTES_PER_PROOF],
-}
-type g1_t = blst_p1;
-type g2_t = blst_p2;
-type fr_t = blst_fr;
-#[repr(C)]
-#[derive(Debug, Copy, Clone)]
 pub struct KZGCommitment {
     bytes: [u8; BYTES_PER_COMMITMENT],
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+pub struct KZGProof {
+    bytes: [u8; BYTES_PER_PROOF],
 }
 #[must_use]
 #[repr(u32)]
