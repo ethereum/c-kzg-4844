@@ -14,13 +14,11 @@ type limb_t = u64;
 struct blst_fr {
     l: [limb_t; 4usize],
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_fp {
     l: [limb_t; 6usize],
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct blst_fp2 {
@@ -40,31 +38,26 @@ struct blst_p2 {
     y: blst_fp2,
     z: blst_fp2,
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Bytes32 {
     bytes: [u8; 32],
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Bytes48 {
     bytes: [u8; 48],
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct Blob {
     bytes: [u8; BYTES_PER_BLOB],
 }
-
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]
 pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }
-
 type g1_t = blst_p1;
 type g2_t = blst_p2;
 type fr_t = blst_fr;
@@ -73,7 +66,6 @@ type fr_t = blst_fr;
 pub struct KZGCommitment {
     bytes: [u8; BYTES_PER_COMMITMENT],
 }
-
 #[must_use]
 #[repr(u32)]
 #[doc = " The common return type for all routines in which something can go wrong."]
@@ -101,7 +93,6 @@ pub struct FFTSettings {
     #[doc = "< Powers of the root of unity in bit-reversal permutation, size `width`."]
     roots_of_unity: *const fr_t,
 }
-
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -129,17 +120,13 @@ extern "C" {
         g2_bytes: *const u8, /* n2 * 96 bytes */
         n2: usize,
     ) -> C_KZG_RET;
-
     pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
-
     pub fn free_trusted_setup(s: *mut KZGSettings);
-
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-
     pub fn compute_kzg_proof(
         proof_out: *mut KZGProof,
         y_out: *mut Bytes32,
@@ -147,14 +134,12 @@ extern "C" {
         z_bytes: *const Bytes32,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-
     pub fn compute_blob_kzg_proof(
         out: *mut KZGProof,
         blob: *const Blob,
         commitment_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-
     pub fn verify_kzg_proof(
         out: *mut bool,
         commitment_bytes: *const Bytes48,
@@ -163,7 +148,6 @@ extern "C" {
         proof_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-
     pub fn verify_blob_kzg_proof(
         out: *mut bool,
         blob: *const Blob,
@@ -171,7 +155,6 @@ extern "C" {
         proof_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-
     pub fn verify_blob_kzg_proof_batch(
         out: *mut bool,
         blobs: *const Blob,
