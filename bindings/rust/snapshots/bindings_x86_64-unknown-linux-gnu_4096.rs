@@ -40,12 +40,6 @@ pub struct blst_p2 {
 pub type g1_t = blst_p1;
 pub type g2_t = blst_p2;
 pub type fr_t = blst_fr;
-#[doc = " Internal representation of a polynomial."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub struct Polynomial {
-    evals: [fr_t; 4096usize],
-}
 #[doc = " An array of 32 bytes. Represents an untrusted\n (potentially invalid) field element."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
