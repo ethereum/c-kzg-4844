@@ -63,13 +63,6 @@ typedef blst_p2 g2_t; /**< Internal G2 group element type. */
 typedef blst_fr fr_t; /**< Internal Fr field element type. */
 
 /**
- * Internal representation of a polynomial.
- */
-typedef struct {
-    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
-} Polynomial;
-
-/**
  * An array of 32 bytes. Represents an untrusted
  * (potentially invalid) field element.
  */
