@@ -91,7 +91,11 @@ func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
-	fp := C.fopen(C.CString(trustedSetupFile), C.CString("rb"))
+	cTrustedSetupFile := C.CString(trustedSetupFile)
+	defer C.free(unsafe.Pointer(cTrustedSetupFile))
+	cMode := C.CString("r")
+	defer C.free(unsafe.Pointer(cMode))
+	fp := C.fopen(cTrustedSetupFile, cMode)
 	if fp == nil {
 		panic("error reading trusted setup")
 	}
