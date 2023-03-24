@@ -19,6 +19,20 @@ pub const BYTES_PER_G2_POINT: usize = 96;
 /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
 const NUM_G2_POINTS: usize = 65;
 
+/// A trusted (valid) KZG commitment.
+// NOTE: this is a type alias to the struct Bytes48, same as [`KZGProof`]. To facilitate type safety:
+//       proofs and commitments should not be interchangeable, we use a custom implementation.
+pub struct KzgCommitment {
+    bytes: [u8; BYTES_PER_COMMITMENT],
+}
+
+/// A trusted (valid) KZG proof.
+// NOTE: this is a type alias to the struct Bytes48, same as [`KZGCommitment`]. To facilitate type safety:
+//       proofs and commitments should not be interchangeable, we use a custom implementation.
+pub struct KzgProof {
+    bytes: [u8; BYTES_PER_PROOF],
+}
+
 #[derive(Debug)]
 pub enum Error {
     /// Wrong number of bytes.
@@ -170,7 +184,7 @@ impl Bytes48 {
     }
 }
 
-impl KZGProof {
+impl KzgProof {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_PROOF {
             return Err(Error::InvalidKzgProof(format!(
@@ -184,10 +198,17 @@ impl KZGProof {
         Ok(Self { bytes: proof_bytes })
     }
 
-    pub fn to_bytes(&self) -> Bytes48 {
-        let mut bytes = [0; 48];
-        bytes.copy_from_slice(&self.bytes);
-        Bytes48 { bytes }
+    pub fn to_binding_bytes(&self) -> Bytes48 {
+        Bytes48 { bytes: self.bytes }
+    }
+
+    // NOTE: this function is not public to avoid easy conversions between KzgCommitment and
+    //       KzgProof that go via the [`Bytes48`] type. For the same reason, there is no `From`
+    //       implementation between the types.
+    fn from_binding_bytes(binding_bytes: Bytes48) -> Self {
+        Self {
+            bytes: binding_bytes.bytes,
+        }
     }
 
     pub fn as_hex_string(&self) -> String {
@@ -210,7 +231,8 @@ impl KZGProof {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok((kzg_proof.assume_init(), y_out.assume_init()))
+                let kzg_proof = KzgProof::from_binding_bytes(kzg_proof.assume_init());
+                Ok((kzg_proof, y_out.assume_init()))
             } else {
                 Err(Error::CError(res))
             }
@@ -231,7 +253,8 @@ impl KZGProof {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_proof.assume_init())
+                let kzg_proof = KzgProof::from_binding_bytes(kzg_proof.assume_init());
+                Ok(kzg_proof)
             } else {
                 Err(Error::CError(res))
             }
@@ -325,7 +348,7 @@ impl KZGProof {
     }
 }
 
-impl KZGCommitment {
+impl KzgCommitment {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_COMMITMENT {
             return Err(Error::InvalidKzgCommitment(format!(
@@ -339,10 +362,17 @@ impl KZGCommitment {
         Ok(Self { bytes: commitment })
     }
 
-    pub fn to_bytes(&self) -> Bytes48 {
-        let mut bytes = [0; 48];
-        bytes.copy_from_slice(&self.bytes);
-        Bytes48 { bytes }
+    pub fn to_binding_bytes(&self) -> Bytes48 {
+        Bytes48 { bytes: self.bytes }
+    }
+
+    // NOTE: this function is not public to avoid easy conversions between KzgCommitment and
+    //       KzgProof that go via the [`Bytes48`] type. For the same reason, there is no `From`
+    //       implementation between the types.
+    fn from_binding_bytes(binding_bytes: Bytes48) -> Self {
+        Self {
+            bytes: binding_bytes.bytes,
+        }
     }
 
     pub fn as_hex_string(&self) -> String {
@@ -358,7 +388,9 @@ impl KZGCommitment {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_commitment.assume_init())
+                let kzg_commitment =
+                    KzgCommitment::from_binding_bytes(kzg_commitment.assume_init());
+                Ok(kzg_commitment)
             } else {
                 Err(Error::CError(res))
             }
@@ -366,13 +398,13 @@ impl KZGCommitment {
     }
 }
 
-impl From<[u8; BYTES_PER_COMMITMENT]> for KZGCommitment {
+impl From<[u8; BYTES_PER_COMMITMENT]> for KzgCommitment {
     fn from(value: [u8; BYTES_PER_COMMITMENT]) -> Self {
         Self { bytes: value }
     }
 }
 
-impl From<[u8; BYTES_PER_PROOF]> for KZGProof {
+impl From<[u8; BYTES_PER_PROOF]> for KzgProof {
     fn from(value: [u8; BYTES_PER_PROOF]) -> Self {
         Self { bytes: value }
     }
@@ -425,14 +457,20 @@ impl DerefMut for Blob {
     }
 }
 
-impl Deref for KZGProof {
+impl Clone for Blob {
+    fn clone(&self) -> Self {
+        Blob { bytes: self.bytes }
+    }
+}
+
+impl Deref for KzgProof {
     type Target = [u8; BYTES_PER_PROOF];
     fn deref(&self) -> &Self::Target {
         &self.bytes
     }
 }
 
-impl Deref for KZGCommitment {
+impl Deref for KzgCommitment {
     type Target = [u8; BYTES_PER_COMMITMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
@@ -480,20 +518,20 @@ mod tests {
 
         let commitments: Vec<Bytes48> = blobs
             .iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings).unwrap())
-            .map(|commitment| commitment.to_bytes())
+            .map(|blob| KzgCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap())
+            .map(|commitment| commitment.to_binding_bytes())
             .collect();
 
         let proofs: Vec<Bytes48> = blobs
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(*blob, *commitment, &kzg_settings).unwrap()
+                KzgProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings).unwrap()
             })
-            .map(|proof| proof.to_bytes())
+            .map(|proof| proof.to_binding_bytes())
             .collect();
 
-        assert!(KZGProof::verify_blob_kzg_proof_batch(
+        assert!(KzgProof::verify_blob_kzg_proof_batch(
             &blobs,
             &commitments,
             &proofs,
@@ -504,14 +542,14 @@ mod tests {
         blobs.pop();
 
         let error =
-            KZGProof::verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &kzg_settings)
+            KzgProof::verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &kzg_settings)
                 .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
         let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
-        assert!(!KZGProof::verify_blob_kzg_proof_batch(
+        assert!(!KzgProof::verify_blob_kzg_proof_batch(
             &blobs,
             &commitments,
             &proofs,
@@ -557,7 +595,7 @@ mod tests {
                 continue;
             };
 
-            match KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings) {
+            match KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -584,7 +622,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_kzg_proof(blob, z, &kzg_settings) {
+            match KzgProof::compute_kzg_proof(blob, z, &kzg_settings) {
                 Ok((proof, y)) => {
                     assert_eq!(proof.bytes, test.get_output().unwrap().0.bytes);
                     assert_eq!(y.bytes, test.get_output().unwrap().1.bytes);
@@ -617,7 +655,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings) {
+            match KzgProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -649,7 +687,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings) {
+            match KzgProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -680,7 +718,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings) {
+            match KzgProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -711,7 +749,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof_batch(
+            match KzgProof::verify_blob_kzg_proof_batch(
                 &blobs,
                 &commitments,
                 &proofs,
