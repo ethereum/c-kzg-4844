@@ -138,7 +138,7 @@ fn make_bindings<P>(
         )
         .header(header_file)
         .clang_args([format!("-I{inc_dir}")])
-        // Since this is not part of the header file, needs to be allowed explicitely.
+        // Since this is not part of the header file, needs to be allowed explicitly.
         .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
         // Get bindings only for the header file.
         .allowlist_file(".*/c_kzg_4844.h")
