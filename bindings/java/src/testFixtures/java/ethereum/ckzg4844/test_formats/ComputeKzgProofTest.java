@@ -10,7 +10,7 @@ public class ComputeKzgProofTest {
     private String z;
 
     public byte[] getBlob() {
-      return Bytes.fromHexString(blob).toArray();
+      return Bytes.fromHexString(blob).toArrayUnsafe();
     }
 
     public byte[] getZ() {

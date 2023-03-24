@@ -6,7 +6,6 @@ import ethereum.ckzg4844.test_formats.*;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
@@ -232,10 +231,6 @@ public class TestUtils {
 
   public static byte[] randomBLSFieldElementBytes() {
     return randomBLSFieldElement().toArray(ByteOrder.LITTLE_ENDIAN);
-  }
-
-  private static InputStream readResource(final String resource) {
-    return Thread.currentThread().getContextClassLoader().getResourceAsStream(resource);
   }
 
   public static List<String> getFiles(String path) {
