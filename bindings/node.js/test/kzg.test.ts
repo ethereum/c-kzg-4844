@@ -13,19 +13,13 @@ interface TestMeta<
   output: O;
 }
 
-import {
-  loadTrustedSetup,
-  blobToKzgCommitment,
-  computeKzgProof,
-  computeBlobKzgProof,
-  verifyKzgProof,
-  verifyBlobKzgProof,
-  verifyBlobKzgProofBatch,
+import loadTrustedSetup, {
   BYTES_PER_BLOB,
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
   ProofResult,
+  KzgBindings,
 } from "../lib/kzg";
 
 const SETUP_FILE_PATH = resolve(
@@ -102,9 +96,10 @@ function bytesFromHex(hexString: string): Buffer {
   return Buffer.from(hexString.slice(2), "hex");
 }
 
+let kzg: KzgBindings;
 describe("C-KZG", () => {
   beforeAll(async () => {
-    loadTrustedSetup(SETUP_FILE_PATH);
+    kzg = loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe("reference tests should pass", () => {
@@ -121,7 +116,7 @@ describe("C-KZG", () => {
         let blob = bytesFromHex(test.input.blob);
 
         try {
-          commitment = blobToKzgCommitment(blob);
+          commitment = kzg.blobToKzgCommitment(blob);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -147,7 +142,7 @@ describe("C-KZG", () => {
         let z = bytesFromHex(test.input.z);
 
         try {
-          proof = computeKzgProof(blob, z);
+          proof = kzg.computeKzgProof(blob, z);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -172,7 +167,7 @@ describe("C-KZG", () => {
         let commitment = bytesFromHex(test.input.commitment);
 
         try {
-          proof = computeBlobKzgProof(blob, commitment);
+          proof = kzg.computeBlobKzgProof(blob, commitment);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -200,7 +195,7 @@ describe("C-KZG", () => {
         let proof = bytesFromHex(test.input.proof);
 
         try {
-          valid = verifyKzgProof(commitment, z, y, proof);
+          valid = kzg.verifyKzgProof(commitment, z, y, proof);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -225,7 +220,7 @@ describe("C-KZG", () => {
         let proof = bytesFromHex(test.input.proof);
 
         try {
-          valid = verifyBlobKzgProof(blob, commitment, proof);
+          valid = kzg.verifyBlobKzgProof(blob, commitment, proof);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -250,7 +245,7 @@ describe("C-KZG", () => {
         let proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
+          valid = kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -264,13 +259,13 @@ describe("C-KZG", () => {
   describe("edge cases for blobToKzgCommitment", () => {
     it("throws as expected when given an argument of invalid type", () => {
       // @ts-expect-error
-      expect(() => blobToKzgCommitment("wrong type")).toThrowError(
+      expect(() => kzg.blobToKzgCommitment("wrong type")).toThrowError(
         "Expected blob to be a Uint8Array",
       );
     });
 
     it("throws as expected when given an argument of invalid length", () => {
-      expect(() => blobToKzgCommitment(blobBadLength)).toThrowError(
+      expect(() => kzg.blobToKzgCommitment(blobBadLength)).toThrowError(
         "Expected blob to be 131072 bytes",
       );
     });
@@ -281,14 +276,14 @@ describe("C-KZG", () => {
     it("computes a proof from blob/field element", () => {
       let blob = generateRandomBlob();
       const zBytes = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
-      computeKzgProof(blob, zBytes);
+      kzg.computeKzgProof(blob, zBytes);
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        computeKzgProof(blobBadLength, fieldElementValidLength),
+        kzg.computeKzgProof(blobBadLength, fieldElementValidLength),
       ).toThrowError("Expected blob to be 131072 bytes");
       expect(() =>
-        computeKzgProof(blobValidLength, fieldElementBadLength),
+        kzg.computeKzgProof(blobValidLength, fieldElementBadLength),
       ).toThrowError("Expected zBytes to be 32 bytes");
     });
   });
@@ -297,14 +292,14 @@ describe("C-KZG", () => {
   describe("edge cases for computeBlobKzgProof", () => {
     it("computes a proof from blob", () => {
       let blob = generateRandomBlob();
-      let commitment = blobToKzgCommitment(blob);
-      computeBlobKzgProof(blob, commitment);
+      let commitment = kzg.blobToKzgCommitment(blob);
+      kzg.computeBlobKzgProof(blob, commitment);
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        computeBlobKzgProof(
+        kzg.computeBlobKzgProof(
           blobBadLength,
-          blobToKzgCommitment(generateRandomBlob()),
+          kzg.blobToKzgCommitment(generateRandomBlob()),
         ),
       ).toThrowError("Expected blob to be 131072 bytes");
     });
@@ -319,7 +314,7 @@ describe("C-KZG", () => {
       const proof = new Uint8Array(BYTES_PER_PROOF).fill(0);
       proof[0] = 0xc0;
 
-      expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
+      expect(kzg.verifyKzgProof(commitment, z, y, proof)).toBe(true);
     });
 
     it("invalid proof should result in false", () => {
@@ -330,11 +325,11 @@ describe("C-KZG", () => {
       const proof = new Uint8Array(BYTES_PER_PROOF).fill(0);
       proof[0] = 0xc0;
 
-      expect(verifyKzgProof(commitment, z, y, proof)).toBe(false);
+      expect(kzg.verifyKzgProof(commitment, z, y, proof)).toBe(false);
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        verifyKzgProof(
+        kzg.verifyKzgProof(
           commitmentBadLength,
           fieldElementValidLength,
           fieldElementValidLength,
@@ -342,7 +337,7 @@ describe("C-KZG", () => {
         ),
       ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
-        verifyKzgProof(
+        kzg.verifyKzgProof(
           commitmentValidLength,
           fieldElementBadLength,
           fieldElementValidLength,
@@ -350,7 +345,7 @@ describe("C-KZG", () => {
         ),
       ).toThrowError("Expected zBytes to be 32 bytes");
       expect(() =>
-        verifyKzgProof(
+        kzg.verifyKzgProof(
           commitmentValidLength,
           fieldElementValidLength,
           fieldElementBadLength,
@@ -358,7 +353,7 @@ describe("C-KZG", () => {
         ),
       ).toThrowError("Expected yBytes to be 32 bytes");
       expect(() =>
-        verifyKzgProof(
+        kzg.verifyKzgProof(
           commitmentValidLength,
           fieldElementValidLength,
           fieldElementValidLength,
@@ -371,43 +366,43 @@ describe("C-KZG", () => {
   describe("edge cases for verifyBlobKzgProof", () => {
     it("correct blob/commitment/proof should verify as true", () => {
       let blob = generateRandomBlob();
-      let commitment = blobToKzgCommitment(blob);
-      let proof = computeBlobKzgProof(blob, commitment);
-      expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(true);
+      let commitment = kzg.blobToKzgCommitment(blob);
+      let proof = kzg.computeBlobKzgProof(blob, commitment);
+      expect(kzg.verifyBlobKzgProof(blob, commitment, proof)).toBe(true);
     });
 
     it("incorrect commitment should verify as false", () => {
       let blob = generateRandomBlob();
-      let commitment = blobToKzgCommitment(generateRandomBlob());
-      let proof = computeBlobKzgProof(blob, commitment);
-      expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
+      let commitment = kzg.blobToKzgCommitment(generateRandomBlob());
+      let proof = kzg.computeBlobKzgProof(blob, commitment);
+      expect(kzg.verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
 
     it("incorrect proof should verify as false", () => {
       let blob = generateRandomBlob();
-      let commitment = blobToKzgCommitment(blob);
+      let commitment = kzg.blobToKzgCommitment(blob);
       let randomBlob = generateRandomBlob();
-      let randomCommitment = blobToKzgCommitment(randomBlob);
-      let proof = computeBlobKzgProof(randomBlob, randomCommitment);
-      expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
+      let randomCommitment = kzg.blobToKzgCommitment(randomBlob);
+      let proof = kzg.computeBlobKzgProof(randomBlob, randomCommitment);
+      expect(kzg.verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        verifyBlobKzgProof(
+        kzg.verifyBlobKzgProof(
           blobBadLength,
           commitmentValidLength,
           proofValidLength,
         ),
       ).toThrowError("Expected blob to be 131072 bytes");
       expect(() =>
-        verifyBlobKzgProof(
+        kzg.verifyBlobKzgProof(
           blobValidLength,
           commitmentBadLength,
           proofValidLength,
         ),
       ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
-        verifyBlobKzgProof(
+        kzg.verifyBlobKzgProof(
           blobValidLength,
           commitmentValidLength,
           proofBadLength,
@@ -419,7 +414,7 @@ describe("C-KZG", () => {
   describe("edge cases for verifyBlobKzgProofBatch", () => {
     it("should reject non-array args", () => {
       expect(() =>
-        verifyBlobKzgProofBatch(
+        kzg.verifyBlobKzgProofBatch(
           2 as unknown as Uint8Array[],
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
@@ -428,7 +423,7 @@ describe("C-KZG", () => {
     });
     it("should reject non-bytearray blob", () => {
       expect(() =>
-        verifyBlobKzgProofBatch(
+        kzg.verifyBlobKzgProofBatch(
           ["foo", "bar"] as unknown as Uint8Array[],
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
@@ -437,21 +432,21 @@ describe("C-KZG", () => {
     });
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
-        verifyBlobKzgProofBatch(
+        kzg.verifyBlobKzgProofBatch(
           [blobBadLength, blobValidLength],
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
         ),
       ).toThrowError("Expected blob to be 131072 bytes");
       expect(() =>
-        verifyBlobKzgProofBatch(
+        kzg.verifyBlobKzgProofBatch(
           [blobValidLength, blobValidLength],
           [commitmentBadLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
         ),
       ).toThrowError("Expected commitmentBytes to be 48 bytes");
       expect(() =>
-        verifyBlobKzgProofBatch(
+        kzg.verifyBlobKzgProofBatch(
           [blobValidLength, blobValidLength],
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofBadLength],
@@ -460,7 +455,7 @@ describe("C-KZG", () => {
     });
 
     it("zero blobs/commitments/proofs should verify as true", () => {
-      expect(verifyBlobKzgProofBatch([], [], [])).toBe(true);
+      expect(kzg.verifyBlobKzgProofBatch([], [], [])).toBe(true);
     });
 
     it("mismatching blobs/commitments/proofs should throw error", () => {
@@ -471,19 +466,21 @@ describe("C-KZG", () => {
 
       for (let [i] of blobs.entries()) {
         blobs[i] = generateRandomBlob();
-        commitments[i] = blobToKzgCommitment(blobs[i]);
-        proofs[i] = computeBlobKzgProof(blobs[i], commitments[i]);
+        commitments[i] = kzg.blobToKzgCommitment(blobs[i]);
+        proofs[i] = kzg.computeBlobKzgProof(blobs[i], commitments[i]);
       }
 
-      expect(verifyBlobKzgProofBatch(blobs, commitments, proofs)).toBe(true);
+      expect(kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs)).toBe(
+        true,
+      );
       expect(() =>
-        verifyBlobKzgProofBatch(blobs.slice(0, 1), commitments, proofs),
+        kzg.verifyBlobKzgProofBatch(blobs.slice(0, 1), commitments, proofs),
       ).toThrowError("requires equal number of blobs/commitments/proofs");
       expect(() =>
-        verifyBlobKzgProofBatch(blobs, commitments.slice(0, 1), proofs),
+        kzg.verifyBlobKzgProofBatch(blobs, commitments.slice(0, 1), proofs),
       ).toThrowError("requires equal number of blobs/commitments/proofs");
       expect(() =>
-        verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1)),
+        kzg.verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1)),
       ).toThrowError("requires equal number of blobs/commitments/proofs");
     });
   });

@@ -1,4 +1,4 @@
-all: clean build format test bundle
+all: clean build format test
 
 clean:
 	rm -rf build
@@ -6,9 +6,8 @@ clean:
 	rm -f *.node
 	rm -f *.a
 	rm -f *.o
-	rm -rf node_modules
 
-build: src/kzg.cxx lib/kzg.ts package.json binding.gyp Makefile
+build: src/kzg.cxx package.json binding.gyp Makefile
 	cd ../../src && make c_kzg_4844.o && cp c_kzg_4844.o ../bindings/node.js
 	yarn install
 	yarn node-gyp rebuild
@@ -24,7 +23,7 @@ bundle: clean
 	cp README.md dist/README.md
 	cp package.json dist/package.json
 	cp binding.dist.gyp dist/binding.gyp
-	node_modules/.bin/tsc -p tsconfig.build.json
+	cp -r lib dist/lib
 	cp -r src dist/src
 	mkdir -p dist/deps/c-kzg
 	cp -r ../../blst dist/deps
