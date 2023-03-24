@@ -39,10 +39,10 @@
  * c_kzg_free() macro sets the pointer value to NULL after freeing it.
  */
 #define c_kzg_free(p) \
-    (void)({ \
+    do { \
         free(p); \
         (p) = NULL; \
-    })
+    } while (0)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
