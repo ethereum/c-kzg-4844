@@ -9,7 +9,7 @@ public class VerifyBlobKzgProofTest {
     private String proof;
 
     public byte[] getBlob() {
-      return Bytes.fromHexString(blob).toArray();
+      return Bytes.fromHexString(blob).toArrayUnsafe();
     }
 
     public byte[] getCommitment() {

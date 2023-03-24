@@ -15,7 +15,7 @@ public class VerifyBlobKzgProofBatchTest {
       return TestUtils.flatten(
           blobs.stream()
               .map(Bytes::fromHexString)
-              .map(Bytes::toArray)
+              .map(Bytes::toArrayUnsafe)
               .collect(Collectors.toList())
               .toArray(byte[][]::new));
     }

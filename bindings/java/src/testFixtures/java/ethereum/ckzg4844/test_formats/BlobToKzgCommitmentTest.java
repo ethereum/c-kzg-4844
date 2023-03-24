@@ -7,7 +7,7 @@ public class BlobToKzgCommitmentTest {
     private String blob;
 
     public byte[] getBlob() {
-      return Bytes.fromHexString(blob).toArray();
+      return Bytes.fromHexString(blob).toArrayUnsafe();
     }
   }
 

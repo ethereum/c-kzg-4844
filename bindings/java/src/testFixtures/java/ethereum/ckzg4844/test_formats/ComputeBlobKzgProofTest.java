@@ -8,7 +8,7 @@ public class ComputeBlobKzgProofTest {
     private String commitment;
 
     public byte[] getBlob() {
-      return Bytes.fromHexString(blob).toArray();
+      return Bytes.fromHexString(blob).toArrayUnsafe();
     }
 
     public byte[] getCommitment() {
