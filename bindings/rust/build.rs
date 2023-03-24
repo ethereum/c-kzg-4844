@@ -14,7 +14,8 @@ fn move_file(src: &Path, dst: &Path) -> Result<(), String> {
 }
 
 fn main() {
-    let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("../../");
+    let cargo_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    let root_dir = cargo_dir.join("../../");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     // Ensure libblst exists in `OUT_DIR`
@@ -72,9 +73,17 @@ fn main() {
     println!("cargo:rustc-link-lib=static=ckzg");
     println!("cargo:rustc-link-lib=static=blst");
 
-    let bindings_out_path =
-        PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()).join("src/bindings/generated.rs");
-    make_bindings(field_elements_per_blob, &root_dir, bindings_out_path);
+    let bindings_out_path = cargo_dir.join("src/bindings/generated.rs");
+    let build_target = env::var("TARGET").unwrap();
+    let snapshot_path = cargo_dir.join("snapshots").join(format!(
+        "bindings_{build_target}_{field_elements_per_blob}.rs"
+    ));
+    make_bindings(
+        field_elements_per_blob,
+        &root_dir,
+        bindings_out_path,
+        snapshot_path,
+    );
 
     // Cleanup
     let obj_file = root_dir.join("src/c_kzg_4844.o");
@@ -83,8 +92,12 @@ fn main() {
     }
 }
 
-fn make_bindings<P>(field_elements_per_blob: usize, root_dir: &Path, binding_out_path: P)
-where
+fn make_bindings<P>(
+    field_elements_per_blob: usize,
+    root_dir: &Path,
+    bindings_out_path: P,
+    snapshot_path: P,
+) where
     P: AsRef<std::path::Path>,
 {
     use bindgen::Builder;
@@ -165,5 +178,10 @@ where
         .generate()
         .unwrap();
 
-    bindings.write_to_file(binding_out_path).unwrap()
+    bindings
+        .write_to_file(bindings_out_path)
+        .expect("Failed to write bindings");
+    bindings
+        .write_to_file(snapshot_path)
+        .expect("Failed to write snapshot");
 }
