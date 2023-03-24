@@ -14,7 +14,8 @@ nimble install stew
 
 ## Tests
 
-Currently tests only support Nim compiler version 1.4, and 1.6 because of yaml library limitations.
+Currently reference tests only support Nim compiler version 1.4, and 1.6 because of yaml library limitations.
+But other tests that are not using yaml can be run by Nim 1.2 - devel.
 
 Dependencies:
 
@@ -29,13 +30,18 @@ Run the tests from folder `bindings\nim`:
 nim test
 ```
 
+Or from c-kzg-4844 root folder:
+
+```
+nimble test
+```
+
 ## How to use this bindings in your project
 
-Because the structure of folders is not a normal Nim library, we suggest you to
-clone this repository in your project sub folder or submodule it.
+Install via nimble:
 
-Then you can import one of the binding file into your project.
+```
+nimble install https://github.com/ethereum/c-kzg-4844
+```
 
-## Library
-
-The library which uses this binding is [nim-kzg4844](https://github.com/status-im/nim-kzg4844).
+Then import one of `kzg4844/kzg`, `kzg4844/kzg_abi`, or `kzg4844/kzg_ex` into your project.
