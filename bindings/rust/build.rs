@@ -171,6 +171,12 @@ fn make_bindings<P>(
         // Do not make fields public. If we want to modify them we can create setters/mutable
         // getters when necessary.
         .default_visibility(bindgen::FieldVisibilityKind::Private)
+        // Blocklist this type alias to use a custom implementation. Is this stops being a type
+        // alias this line needs to be removed.
+        .blocklist_type("KZGCommitment")
+        // Blocklist this type alias to use a custom implementation. Is this stops being a type
+        // alias this line needs to be removed.
+        .blocklist_type("KZGProof")
         /*
          * Re-build instructions
          */

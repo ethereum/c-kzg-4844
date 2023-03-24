@@ -58,10 +58,6 @@ pub struct Bytes48 {
 pub struct Blob {
     bytes: [u8; 131072usize],
 }
-#[doc = " A trusted (valid) KZG commitment."]
-pub type KZGCommitment = Bytes48;
-#[doc = " A trusted (valid) KZG proof."]
-pub type KZGProof = Bytes48;
 #[repr(u32)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
