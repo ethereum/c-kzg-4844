@@ -202,7 +202,7 @@ impl KZGProof {
         Ok(Self { bytes: proof_bytes })
     }
 
-    pub fn to_binding_bytes(&self) -> Bytes48 {
+    pub fn to_bytes(&self) -> Bytes48 {
         Bytes48 { bytes: self.bytes }
     }
 
@@ -355,7 +355,7 @@ impl KZGCommitment {
         Ok(Self { bytes: commitment })
     }
 
-    pub fn to_binding_bytes(&self) -> Bytes48 {
+    pub fn to_bytes(&self) -> Bytes48 {
         Bytes48 { bytes: self.bytes }
     }
 
@@ -501,7 +501,7 @@ mod tests {
         let commitments: Vec<Bytes48> = blobs
             .iter()
             .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap())
-            .map(|commitment| commitment.to_binding_bytes())
+            .map(|commitment| commitment.to_bytes())
             .collect();
 
         let proofs: Vec<Bytes48> = blobs
@@ -510,7 +510,7 @@ mod tests {
             .map(|(blob, commitment)| {
                 KZGProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings).unwrap()
             })
-            .map(|proof| proof.to_binding_bytes())
+            .map(|proof| proof.to_bytes())
             .collect();
 
         assert!(KZGProof::verify_blob_kzg_proof_batch(
