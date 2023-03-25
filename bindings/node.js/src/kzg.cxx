@@ -149,6 +149,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
       return env.Undefined();
   }
   data->is_setup = true;
+  fclose(file_handle);
   return env.Undefined();
 }
 
