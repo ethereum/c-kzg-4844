@@ -46,7 +46,9 @@ extern "C" {
  * overflow uint32_t, which would cause issues.
  */
 #if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1ULL << 31))
-#error Invalid value of FIELD_ELEMENTS_PER_BLOB
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+#error "Invalid value of FIELD_ELEMENTS_PER_BLOB: '" TOSTRING(FIELD_ELEMENTS_PER_BLOB) "'"
 #endif // FIELD_ELEMENTS_PER_BLOB
 
 #define BYTES_PER_COMMITMENT 48
