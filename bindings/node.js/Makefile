@@ -1,5 +1,5 @@
 .PHONY: all
-all: clean format install build test bundle
+all: format build test bundle
 
 # Cleans native dependency, bindings and typescript artifacts
 .PHONY: clean
@@ -24,7 +24,7 @@ install: clean-install
 
 # Cleans and rebuilds native dependencies, bindings and typescript wrapper
 .PHONY: build
-build: clean install
+build: install clean
 	# Prepare the dependencies directory
 	@mkdir -p deps/c-kzg
 	@cp -r ../../blst deps
@@ -50,12 +50,12 @@ bundle: build
 
 # Run unit tests and ref-tests
 .PHONY: test
-test:
+test: install
 	@yarn jest
 
 # Lint js/ts code
 .PHONY: format
-format:
+format: install
 	@yarn prettier --loglevel=warn --write .
 
 # Publish package to npm (requires an auth token)
