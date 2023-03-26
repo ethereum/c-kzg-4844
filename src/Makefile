@@ -36,8 +36,6 @@ ifneq ($(OS),Windows_NT)
         PROFILE += -L$(shell brew --prefix gperftools)/lib
         PROFILE += -I$(shell brew --prefix gperftools)/include
     endif
-else
-    CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 endif
 
 ###############################################################################
