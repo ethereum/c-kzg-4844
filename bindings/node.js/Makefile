@@ -1,3 +1,6 @@
+# For a less verbose yarn.
+YARN = yarn --silent
+
 .PHONY: all
 all: format build test bundle
 
@@ -19,25 +22,25 @@ clean-install:
 
 # Installs typescript dependencies
 .PHONY: install
-install: clean-install
-	@yarn install --ignore-scripts
+install:
+	@$(YARN) install --ignore-scripts
 
 # Cleans and rebuilds native dependencies, bindings and typescript wrapper
 .PHONY: build
 build: install clean
-	# Prepare the dependencies directory
+	@# Prepare the dependencies directory
 	@mkdir -p deps/c-kzg
 	@cp -r ../../blst deps
 	@cp ../../src/c_kzg_4844.c deps/c-kzg
 	@cp ../../src/c_kzg_4844.h deps/c-kzg
-	# Patch the blst_aux.h to fix a compiler error
+	@# Patch the blst_aux.h to fix a compiler error
 	@awk '{gsub(/typedef struct \{\} blst_uniq;/, "typedef struct { int dummy; } blst_uniq;")}1' \
 		deps/blst/bindings/blst_aux.h > blst_aux_temp.h
 	@mv blst_aux_temp.h deps/blst/bindings/blst_aux.h
-	# Build the bindings
-	@yarn node-gyp configure
-	@yarn node-gyp build
-	@yarn tsc -p tsconfig.build.json
+	@# Build the bindings
+	@$(YARN) node-gyp --loglevel=warn configure
+	@$(YARN) node-gyp --loglevel=warn build
+	@$(YARN) tsc -p tsconfig.build.json
 
 # Bundle the distribution, also helpful for cross compatibility checks
 .PHONY: bundle
@@ -51,12 +54,13 @@ bundle: build
 # Run unit tests and ref-tests
 .PHONY: test
 test: install
-	@yarn jest
+	@echo
+	@$(YARN) jest
 
 # Lint js/ts code
 .PHONY: format
 format: install
-	@yarn prettier --loglevel=warn --write .
+	@$(YARN) prettier --loglevel=warn --write .
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
