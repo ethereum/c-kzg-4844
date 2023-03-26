@@ -4,9 +4,9 @@
       "target_name": "kzg",
       "sources": [
         "src/kzg.cxx",
-        "deps/c-kzg/c_kzg_4844.c",
+        "deps/c-kzg/c_kzg_4844.c"
         "deps/blst/src/server.c",
-        "deps/blst/build/assembly.S"
+        "deps/blst/build/assembly.S",
       ],
       "include_dirs": [
         "<(module_root_dir)/deps/blst/bindings",
