@@ -49,6 +49,18 @@ extern "C" {
 #error Invalid value of FIELD_ELEMENTS_PER_BLOB
 #endif // FIELD_ELEMENTS_PER_BLOB
 
+/**
+ * If FIELD_ELEMENTS_PER_BLOB is not a power 2, the size of the FFT domain
+ * should be chosen as the the next-largest power of two and polynomials
+ * represented by their evaluations at a subset of the 2^i'th roots of unity.
+ * While the code in this library tries to take this into account,
+ * we do not need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2.
+ * As this case is neither maintained nor tested, we prefer to not support it.
+ */
+#if ((FIELD_ELEMENTS_PER_BLOB) & (FIELD_ELEMENTS_PER_BLOB)-1) != 0
+#error This library only supports FIELD_ELEMENTS_PER_BLOB a power of 2.
+#endif
+
 #define BYTES_PER_COMMITMENT 48
 #define BYTES_PER_PROOF 48
 #define BYTES_PER_FIELD_ELEMENT 32
