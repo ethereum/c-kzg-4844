@@ -46,7 +46,7 @@ extern "C" {
  * overflow uint32_t, which would cause issues.
  */
 #if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1UL << 31))
-#error Invalid value of FIELD_ELEMENTS_PER_BLOB
+#error FIELD_ELEMENTS_PER_BLOB must be between 1 and 2^31
 #endif // FIELD_ELEMENTS_PER_BLOB
 
 #define BYTES_PER_COMMITMENT 48
