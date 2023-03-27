@@ -50,7 +50,7 @@ extern "C" {
 #endif // FIELD_ELEMENTS_PER_BLOB
 
 /**
- * If FIELD_ELEMENTS_PER_BLOB is not a power 2, the size of the FFT domain
+ * If FIELD_ELEMENTS_PER_BLOB is not a power of 2, the size of the FFT domain
  * should be chosen as the the next-largest power of two and polynomials
  * represented by their evaluations at a subset of the 2^i'th roots of unity.
  * While the code in this library tries to take this into account,
