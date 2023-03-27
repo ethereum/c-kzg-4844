@@ -58,7 +58,7 @@ extern "C" {
  * As this case is neither maintained nor tested, we prefer to not support it.
  */
 #if ((FIELD_ELEMENTS_PER_BLOB) & (FIELD_ELEMENTS_PER_BLOB)-1) != 0
-#error This library only supports FIELD_ELEMENTS_PER_BLOB a power of 2.
+#error FIELD_ELEMENTS_PER_BLOB is not a power of two
 #endif
 
 #define BYTES_PER_COMMITMENT 48
