@@ -148,11 +148,12 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
       Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
       return env.Undefined();
   }
-  data->is_setup = true;
   int close_err = fclose(file_handle);
   if (close_err != 0) {
       Napi::Error::New(env, "Error closing trusted setup file: " + file_path).ThrowAsJavaScriptException();
+      return env.Undefined();
   }
+  data->is_setup = true;
   return env.Undefined();
 }
 
