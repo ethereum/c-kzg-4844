@@ -1,6 +1,6 @@
 #include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
 #include <sstream>  // std::ostringstream
 #include <algorithm> // std::copy
 #include <iterator> // std::ostream_iterator
@@ -138,23 +138,30 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
       return env.Undefined();
   }
   // the validation checks for this happen in JS
-  const std::string file_path = info[0].As<Napi::String>().Utf8Value();
+  std::string file_path = info[0].As<Napi::String>().Utf8Value();
   FILE *file_handle = fopen(file_path.c_str(), "r");
-  if (file_handle == NULL) {
+  if (file_handle == nullptr) {
       Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
       return env.Undefined();
   }
-  if (load_trusted_setup_file(&(data->settings), file_handle) != C_KZG_OK) {
+  if (C_KZG_OK == load_trusted_setup_file(&(data->settings), file_handle)) {
+      data->is_setup = true;
+  } else {
       Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
-      return env.Undefined();
   }
   int close_err = fclose(file_handle);
   if (close_err != 0) {
-      free_trusted_setup(&(data->settings)); 
-      Napi::Error::New(env, "Error closing trusted setup file: " + file_path).ThrowAsJavaScriptException();
-      return env.Undefined();
+      if (!data->is_setup) {
+          // Failure running load_trusted_setup_file so error is already
+          // queue'd in JS, just log here (will probably show up before the
+          // error) and return
+          std::cout << "Error closing trusted setup file: " << file_path << std::endl;
+      } else {
+          Napi::Error::New(env, "Error closing trusted setup file: " + file_path).ThrowAsJavaScriptException();
+          free_trusted_setup(&(data->settings)); 
+          data->is_setup = false;
+      }
   }
-  data->is_setup = true;
   return env.Undefined();
 }
 
