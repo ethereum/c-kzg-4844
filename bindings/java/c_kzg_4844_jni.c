@@ -9,15 +9,9 @@ KZGSettings *settings;
 
 void reset_trusted_setup()
 {
-  if (settings)
-  {
-    if (settings->fs)
-    {
-      free_trusted_setup(settings);
-    }
-    free(settings);
-    settings = NULL;
-  }
+  free_trusted_setup(settings);
+  free(settings);
+  settings = NULL;
 }
 
 void throw_exception(JNIEnv *env, const char *message)
@@ -86,9 +80,14 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   }
 
   C_KZG_RET ret = load_trusted_setup_file(settings, f);
-
   (*env)->ReleaseStringUTFChars(env, file, file_native);
-  fclose(f);
+
+  if (fclose(f) != 0)
+  {
+    reset_trusted_setup();
+    throw_c_kzg_exception(env, ret, "There was an error while closing the Trusted Setup file.");
+    return;
+  }
 
   if (ret != C_KZG_OK)
   {
