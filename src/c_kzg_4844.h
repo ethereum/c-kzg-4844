@@ -37,16 +37,16 @@ extern "C" {
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef FIELD_ELEMENTS_PER_BLOB
-#error FIELD_ELEMENTS_PER_BLOB is undefined. This value must be externally supplied.
+#error FIELD_ELEMENTS_PER_BLOB must be defined
 #endif // FIELD_ELEMENTS_PER_BLOB
 /**
  * There are only 1<<32 2-adic roots of unity in the field, limiting the
  * possible values of FIELD_ELEMENTS_PER_BLOB. The restriction to 1<<31 is a
  * current implementation limitation. Notably, the size of the FFT setup would
- * overflow uint32_t, which would casues issues.
+ * overflow uint32_t, which would cause issues.
  */
-#if ((FIELD_ELEMENTS_PER_BLOB) <= 0) || ((FIELD_ELEMENTS_PER_BLOB) > (1 << 31))
-#error Invalid value of FIELD_ELEMENTS_PER_BLOB
+#if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1UL << 31))
+#error FIELD_ELEMENTS_PER_BLOB must be between 1 and 2^31
 #endif // FIELD_ELEMENTS_PER_BLOB
 
 /**

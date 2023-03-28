@@ -64,16 +64,16 @@ static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 
 /** Length of the domain strings above. */
-static const size_t DOMAIN_STR_LENGTH = 16;
+#define DOMAIN_STR_LENGTH 16
 
 /** The number of bytes in a g1 point. */
-static const size_t BYTES_PER_G1 = 48;
+#define BYTES_PER_G1 48
 
 /** The number of bytes in a g2 point. */
-static const size_t BYTES_PER_G2 = 96;
+#define BYTES_PER_G2 96
 
 /** The number of g2 points in a trusted setup. */
-static const size_t TRUSTED_SETUP_NUM_G2_POINTS = 65;
+#define TRUSTED_SETUP_NUM_G2_POINTS 65
 
 // clang-format off
 
@@ -734,13 +734,12 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Input size to the Fiat-Shamir challenge computation. */
-static const size_t CHALLENGE_INPUT_SIZE = DOMAIN_STR_LENGTH +
-                                           sizeof(uint64_t) + sizeof(uint64_t) +
-                                           BYTES_PER_BLOB +
-                                           BYTES_PER_COMMITMENT;
+#define CHALLENGE_INPUT_SIZE \
+    (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
 
 /**
- * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
+ * Return the Fiat-Shamir challenge required to verify `blob` and
+ * `commitment`.
  *
  * @remark This function should compute challenges even if `n==0`.
  *

@@ -8,13 +8,28 @@ on:
       - main
 
 jobs:
-  tests:
-    runs-on: ubuntu-latest
+  test:
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        node:
+          - 16
+          - 18
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Setup
-        run: cd src && make blst
-      - name: Test
-        run: cd bindings/node.js && make build test
+      - name: Setup Node.js ${{matrix.node}}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{matrix.node}}
+      - name: Build/test bindings
+        working-directory: bindings/node.js
+        run: make
+      - name: Install distribution
+        working-directory: bindings/node.js/dist
+        run: npm install
