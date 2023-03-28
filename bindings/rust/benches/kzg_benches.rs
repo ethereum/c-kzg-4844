@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use c_kzg::*;
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
 use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
