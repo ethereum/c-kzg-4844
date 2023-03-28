@@ -100,12 +100,12 @@ func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
 		panic("error reading trusted setup")
 	}
 	ret := C.load_trusted_setup_file(&settings, fp)
+	if C.fclose(fp) != 0 {
+		C.free_trusted_setup(&settings)
+		return C_KZG_ERROR
+	}
 	if CKZGRet(ret) == C_KZG_OK {
 		loaded = true
-	}
-	if C.fclose(fp) != 0 {
-		FreeTrustedSetup()
-		return C_KZG_ERROR
 	}
 	return CKZGRet(ret)
 }
