@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use c_kzg::*;
-use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
@@ -105,6 +105,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
     for count in [1, 2, 4, 8, 16, 32, 64] {
+        group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
             b.iter_batched_ref(
                 || {
@@ -131,7 +132,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                     )
                     .unwrap();
                 },
-                BatchSize::NumBatches(count as u64),
+                BatchSize::LargeInput,
             );
         });
     }
