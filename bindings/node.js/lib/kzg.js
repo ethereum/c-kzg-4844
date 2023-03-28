@@ -27,17 +27,13 @@ function transformTrustedSetupJson(filePath) {
     "\n" +
     trustedSetup.setup_G2.map((p) => p.substring(2)).join("\n");
   const outputPath = filePath.replace(".json", ".txt");
-  // QUESTION: is this safe to write to an os temp directory?
-  // const outputPath = path.resolve(
-  //   os.tmpdir(),
-  //   path.parse(filePath).name + ".txt",
-  // );
   fs.writeFileSync(outputPath, setupText);
   return outputPath;
 }
 
+const originalLoadTrustedSetup = bindings.loadTrustedSetup;
 // docstring in ./kzg.d.ts with exported definition
-const loadTrustedSetup = (filePath) => {
+bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
   if (!(filePath && typeof filePath === "string")) {
     throw new TypeError(
       "must initialize kzg with the filePath to a txt/json trusted setup",
@@ -49,18 +45,7 @@ const loadTrustedSetup = (filePath) => {
   if (path.parse(filePath).ext === ".json") {
     filePath = transformTrustedSetupJson(filePath);
   }
-  bindings.loadTrustedSetup(filePath);
-  return bindings;
+  originalLoadTrustedSetup(filePath);
 };
 
-/**
- * Add bindings constants to function object as a helper.  don't have to run trusted
- * setup to get to them;
- */
-loadTrustedSetup.BYTES_PER_BLOB = bindings.BYTES_PER_BLOB;
-loadTrustedSetup.BYTES_PER_COMMITMENT = bindings.BYTES_PER_COMMITMENT;
-loadTrustedSetup.BYTES_PER_FIELD_ELEMENT = bindings.BYTES_PER_FIELD_ELEMENT;
-loadTrustedSetup.BYTES_PER_PROOF = bindings.BYTES_PER_PROOF;
-loadTrustedSetup.FIELD_ELEMENTS_PER_BLOB = bindings.FIELD_ELEMENTS_PER_BLOB;
-
-module.exports = exports = loadTrustedSetup;
+module.exports = exports = bindings;
