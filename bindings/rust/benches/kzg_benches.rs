@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use c_kzg::*;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
@@ -106,23 +106,33 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
     for count in [1, 2, 4, 8, 16, 32, 64] {
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
-            b.iter(|| {
-                KzgProof::verify_blob_kzg_proof_batch(
-                    &blobs.clone().into_iter().take(count).collect::<Vec<Blob>>(),
-                    &commitments
+            b.iter_batched_ref(
+                || {
+                    let blobs_subset = blobs.clone().into_iter().take(count).collect::<Vec<Blob>>();
+                    let commitments_subset = commitments
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<Bytes48>>(),
-                    &proofs
+                        .collect::<Vec<Bytes48>>();
+                    let proofs_subset = proofs
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<Bytes48>>(),
-                    &kzg_settings,
-                )
-                .unwrap();
-            })
+                        .collect::<Vec<Bytes48>>();
+
+                    (blobs_subset, commitments_subset, proofs_subset)
+                },
+                |(blobs_subset, commitments_subset, proofs_subset)| {
+                    KzgProof::verify_blob_kzg_proof_batch(
+                        &blobs_subset,
+                        &commitments_subset,
+                        &proofs_subset,
+                        &kzg_settings,
+                    )
+                    .unwrap();
+                },
+                BatchSize::NumBatches(count as u64),
+            );
         });
     }
     group.finish();
