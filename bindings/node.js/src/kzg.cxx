@@ -1,9 +1,6 @@
-#include <inttypes.h>
 #include <stdio.h>
 #include <iostream>
 #include <sstream>  // std::ostringstream
-#include <algorithm> // std::copy
-#include <iterator> // std::ostream_iterator
 #include <string_view>
 #include <napi.h>
 #include "c_kzg_4844.h"
