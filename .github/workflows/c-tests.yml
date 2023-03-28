@@ -15,33 +15,24 @@ jobs:
         with:
           submodules: recursive
       - name: Check formatting
+        working-directory: src
         run: |
-          cd src
           make format
           git diff --exit-code
-      - name: Build
-        run: |
-          cd src
-          make blst
-          make
-      - name: Test
-        run: |
-          cd src
-          make test
+      - name: Build/Test
+        working-directory: src
+        run: make
       - name: Clang Sanitizers
-        run: |
-          cd src
-          make sanitize
+        working-directory: src
+        run: make sanitize
       - name: Clang Static Analyzer
-        run: |
-          cd src
-          make analyze
+        working-directory: src
+        run: make analyze
       - name: Install LLVM
         uses: egor-tensin/setup-clang@v1
       - name: Generate coverage report
-        run: |
-          cd src
-          make coverage
+        working-directory: src
+        run: make coverage
       - name: Save coverage report
         uses: actions/upload-artifact@v3
         with:

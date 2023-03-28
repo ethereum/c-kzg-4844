@@ -39,22 +39,21 @@ There are bindings for the following languages:
 
 ## Installation
 
-Initialize the blst submodule:
+### Prerequisites
+
+The following must be installed:
+
+* `git`
+* `make`
+* `clang`
+
+### Build & test
+
+To build `c_kzg_4844.o`, the object file that the bindings use, run `make` in
+the `src` directory. This will ensure the `blst` submodule has been initialized,
+build `blst`, build `c_kzg_4844`, and run the tests. From the project root, run
+this:
 
 ```
-git submodule update --init
-```
-
-Build the blst library:
-
-```
-cd src
-make blst
-```
-
-Build/test the C-KZG-4844 library:
-
-```
-cd src
-make
+cd src && make
 ```
