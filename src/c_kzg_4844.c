@@ -72,6 +72,9 @@ static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 /** The number of bytes in a g2 point. */
 #define BYTES_PER_G2 96
 
+/** The number of g1 points in a trusted setup. */
+#define TRUSTED_SETUP_NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
+
 /** The number of g2 points in a trusted setup. */
 #define TRUSTED_SETUP_NUM_G2_POINTS 65
 
@@ -1772,10 +1775,10 @@ static void free_kzg_settings(KZGSettings *s) {
  * @remark Free after use with free_trusted_setup().
  *
  * @param[out] out      Pointer to the stored trusted setup data
- * @param[in]  g1_bytes Array of G1 elements
- * @param[in]  n1       Length of `g1`
- * @param[in]  g2_bytes Array of G2 elements
- * @param[in]  n2       Length of `g2`
+ * @param[in]  g1_bytes Array of G1 points
+ * @param[in]  n1       Number of `g1` points in g1_bytes
+ * @param[in]  g2_bytes Array of G2 points
+ * @param[in]  n2       Number of `g2` points in g2_bytes
  */
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
@@ -1792,6 +1795,9 @@ C_KZG_RET load_trusted_setup(
     out->fs = NULL;
     out->g1_values = NULL;
     out->g2_values = NULL;
+
+    CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
+    CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
 
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
@@ -1852,13 +1858,13 @@ out_success:
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     int num_matches;
     uint64_t i;
-    uint8_t g1_bytes[FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1];
+    uint8_t g1_bytes[TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1];
     uint8_t g2_bytes[TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2];
 
     /* Read the number of g1 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
     CHECK(num_matches == 1);
-    CHECK(i == FIELD_ELEMENTS_PER_BLOB);
+    CHECK(i == TRUSTED_SETUP_NUM_G1_POINTS);
 
     /* Read the number of g2 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
@@ -1866,7 +1872,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     CHECK(i == TRUSTED_SETUP_NUM_G2_POINTS);
 
     /* Read all of the g1 points, byte by byte */
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1; i++) {
+    for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_bytes[i]);
         CHECK(num_matches == 1);
     }
@@ -1880,7 +1886,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     return load_trusted_setup(
         out,
         g1_bytes,
-        FIELD_ELEMENTS_PER_BLOB,
+        TRUSTED_SETUP_NUM_G1_POINTS,
         g2_bytes,
         TRUSTED_SETUP_NUM_G2_POINTS
     );
