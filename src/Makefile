@@ -16,7 +16,9 @@ CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 # Disable optimizations. Put after $CFLAGS.
 NO_OPTIMIZE = -O0
 
-# Compiler flags for including blst. Put after source files.
+# Settings for blst.
+BLST_LIBRARY = ../lib/libblst.a
+BLST_BUILDSCRIPT = ../blst/build.sh
 BLST = -L../lib -lblst
 
 # Compiler flags for generating coverage data.
@@ -44,7 +46,19 @@ endif
 
 all: c_kzg_4844.o test
 
-%.o: %.c
+$(BLST_BUILDSCRIPT):
+	@git submodule update --init
+
+$(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
+	@cd $(dir $(BLST_BUILDSCRIPT)) && \
+	./$(notdir $(BLST_BUILDSCRIPT)) && \
+	cp $(notdir $(BLST_LIBRARY)) ../lib && \
+	cp bindings/*.h ../inc
+
+.PHONY: blst
+blst: $(BLST_LIBRARY)
+
+c_kzg_4844.o: c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
@@ -55,13 +69,6 @@ test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
 
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
 	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(BLST) $(PROFILER)
-
-.PHONY: blst
-blst:
-	@cd ../blst && \
-	./build.sh && \
-	cp libblst.a ../lib && \
-	cp bindings/*.h ../inc
 
 .PHONY: test
 test: test_c_kzg_4844

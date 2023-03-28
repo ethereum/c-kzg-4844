@@ -37,17 +37,29 @@ extern "C" {
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef FIELD_ELEMENTS_PER_BLOB
-#error FIELD_ELEMENTS_PER_BLOB is undefined. This value must be externally supplied.
+#error FIELD_ELEMENTS_PER_BLOB must be defined
 #endif // FIELD_ELEMENTS_PER_BLOB
 /**
  * There are only 1<<32 2-adic roots of unity in the field, limiting the
  * possible values of FIELD_ELEMENTS_PER_BLOB. The restriction to 1<<31 is a
  * current implementation limitation. Notably, the size of the FFT setup would
- * overflow uint32_t, which would casues issues.
+ * overflow uint32_t, which would cause issues.
  */
-#if ((FIELD_ELEMENTS_PER_BLOB) <= 0) || ((FIELD_ELEMENTS_PER_BLOB) > (1 << 31))
-#error Invalid value of FIELD_ELEMENTS_PER_BLOB
+#if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1UL << 31))
+#error FIELD_ELEMENTS_PER_BLOB must be between 1 and 2^31
 #endif // FIELD_ELEMENTS_PER_BLOB
+
+/**
+ * If FIELD_ELEMENTS_PER_BLOB is not a power of 2, the size of the FFT domain
+ * should be chosen as the the next-largest power of two and polynomials
+ * represented by their evaluations at a subset of the 2^i'th roots of unity.
+ * While the code in this library tries to take this into account,
+ * we do not need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2.
+ * As this case is neither maintained nor tested, we prefer to not support it.
+ */
+#if ((FIELD_ELEMENTS_PER_BLOB) & (FIELD_ELEMENTS_PER_BLOB)-1) != 0
+#error FIELD_ELEMENTS_PER_BLOB is not a power of two
+#endif
 
 #define BYTES_PER_COMMITMENT 48
 #define BYTES_PER_PROOF 48

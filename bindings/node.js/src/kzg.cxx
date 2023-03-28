@@ -1,9 +1,6 @@
-#include <inttypes.h>
 #include <stdio.h>
-#include <stdlib.h>
+#include <iostream>
 #include <sstream>  // std::ostringstream
-#include <algorithm> // std::copy
-#include <iterator> // std::ostream_iterator
 #include <string_view>
 #include <napi.h>
 #include "c_kzg_4844.h"
@@ -132,22 +129,40 @@ inline Bytes48 *get_bytes48(const Napi::Env &env, const Napi::Value &val, std::s
 
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
+
+  // Check if the trusted setup is already loaded
   KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
   if (data->is_setup) {
-      Napi::Error::New(env, "kzg bindings are already setup").ThrowAsJavaScriptException();
-      return env.Undefined();
+    Napi::Error::New(env, "Error trusted setup is already loaded").ThrowAsJavaScriptException();
+    return env.Undefined();
   }
-  // the validation checks for this happen in JS
-  const std::string file_path = info[0].As<Napi::String>().Utf8Value();
+
+  // Open the trusted setup file
+  std::string file_path = info[0].As<Napi::String>().Utf8Value();
   FILE *file_handle = fopen(file_path.c_str(), "r");
-  if (file_handle == NULL) {
-      Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
-      return env.Undefined();
+  if (file_handle == nullptr) {
+    Napi::Error::New(env, "Error opening trusted setup file: " + file_path).ThrowAsJavaScriptException();
+    return env.Undefined();
   }
-  if (load_trusted_setup_file(&(data->settings), file_handle) != C_KZG_OK) {
-      Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
-      return env.Undefined();
+
+  // Load the trusted setup from that file
+  C_KZG_RET ret = load_trusted_setup_file(&(data->settings), file_handle);
+
+  // Close the trusted setup file
+  if (fclose(file_handle) != 0) {
+    if (ret == C_KZG_OK) {
+      free_trusted_setup(&(data->settings));
+    }
+    Napi::Error::New(env, "Error closing trusted setup file").ThrowAsJavaScriptException();
+    return env.Undefined();
   }
+
+  // Check that it was successful
+  if (ret != C_KZG_OK) {
+    Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
   data->is_setup = true;
   return env.Undefined();
 }

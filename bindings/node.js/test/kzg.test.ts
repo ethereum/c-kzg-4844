@@ -30,46 +30,35 @@ const SETUP_FILE_PATH = resolve(
 
 const MAX_TOP_BYTE = 114;
 
-const TEST_DIR = "../../tests";
+const BLOB_TO_KZG_COMMITMENT_TESTS =
+  "../../tests/blob_to_kzg_commitment/*/*/data.yaml";
+const COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/*/*/data.yaml";
+const COMPUTE_BLOB_KZG_PROOF_TESTS =
+  "../../tests/compute_blob_kzg_proof/*/*/data.yaml";
+const VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml";
+const VERIFY_BLOB_KZG_PROOF_TESTS =
+  "../../tests/verify_blob_kzg_proof/*/*/data.yaml";
+const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
+  "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
+
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
-const BLOB_TO_KZG_COMMITMENT_TESTS = join(
-  TEST_DIR,
-  "blob_to_kzg_commitment/*/*/data.yaml",
-);
 type ComputeKzgProofTest = TestMeta<{ blob: string; z: string }, string[]>;
-const COMPUTE_KZG_PROOF_TESTS = join(
-  TEST_DIR,
-  "compute_kzg_proof/*/*/data.yaml",
-);
 type ComputeBlobKzgProofTest = TestMeta<
   { blob: string; commitment: string },
   string
 >;
-const COMPUTE_BLOB_KZG_PROOF_TESTS = join(
-  TEST_DIR,
-  "compute_blob_kzg_proof/*/*/data.yaml",
-);
 type VerifyKzgProofTest = TestMeta<
   { commitment: string; y: string; z: string; proof: string },
   boolean
 >;
-const VERIFY_KZG_PROOF_TESTS = join(TEST_DIR, "verify_kzg_proof/*/*/data.yaml");
 type VerifyBlobKzgProofTest = TestMeta<
   { blob: string; commitment: string; proof: string },
   boolean
 >;
-const VERIFY_BLOB_KZG_PROOF_TESTS = join(
-  TEST_DIR,
-  "verify_blob_kzg_proof/*/*/data.yaml",
-);
 type VerifyBatchKzgProofTest = TestMeta<
   { blobs: string[]; commitments: string[]; proofs: string[] },
   boolean
 >;
-const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = join(
-  TEST_DIR,
-  "verify_blob_kzg_proof_batch/*/*/data.yaml",
-);
 
 const generateRandomBlob = () => {
   return new Uint8Array(
