@@ -4,19 +4,39 @@
 #include "c_kzg_4844.h"
 #include "ckzg.h"
 
-KZGSettings* load_trusted_setup_wrap(const char* file) {
-  KZGSettings* out = malloc(sizeof(KZGSettings));
+KZGSettings* load_trusted_setup_wrap(const char *file) {
+  C_KZG_RET ret;
+  KZGSettings *s = NULL;
+  FILE *f = NULL;
 
-  if (out == NULL) return NULL;
+  /* Allocate memory for the trusted setup */
+  s = malloc(sizeof(KZGSettings));
+  if (s == NULL) goto out_error;
 
-  FILE* f = fopen(file, "r");
+  /* Open the trusted setup file */
+  f = fopen(file, "r");
+  if (f == NULL) goto out_error;
 
-  if (f == NULL) { free(out); return NULL; }
+  /* Load the trusted setup */
+  ret = load_trusted_setup_file(s, f);
+  if (ret != C_KZG_OK) goto out_error;
 
-  if (load_trusted_setup_file(out, f) != C_KZG_OK) { free(out); fclose(f); return NULL; }
+  goto out_success;
 
-  fclose(f);
-  return out;
+out_error:
+  free_trusted_setup(s);
+  free(s);
+  s = NULL;
+out_success:
+  /* Close the trusted setup file */
+  if (f != NULL) {
+    if (fclose(f) != 0) {
+      free_trusted_setup(s);
+      free(s);
+      s = NULL;
+    }
+  }
+  return s;
 }
 
 void free_trusted_setup_wrap(KZGSettings *s) {
