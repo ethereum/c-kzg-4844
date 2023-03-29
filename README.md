@@ -52,8 +52,11 @@ which tests the specific functionality of internal functions.
 
 ### Parallelization
 
-Interface functions in C-KZG-4844 are single-threaded for simplicity, as
-implementing multi-threading across multiple platforms can be complex.
+The interface functions in C-KZG-4844 are single-threaded for simplicity, as
+implementing multi-threading across multiple platforms can be complex. While
+performance is important, these functions are already quite fast/efficient. For
+instance, `verify_blob_kzg_proof` is expected to finish in under three
+milliseconds on most systems.
 
 ### Batched verification
 
