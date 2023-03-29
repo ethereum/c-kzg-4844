@@ -4,19 +4,19 @@ A minimal implemention of the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API for EIP-4844, written in C.
 
-Bindings for C-KZG-4844 are available for the following languages:
+Bindings are available for the following languages:
 
-| Language | Link                                 |
-|----------|--------------------------------------|
-| C#       | [README](bindings/csharp/README.md)  |
-| Go       | [README](bindings/go/README.md)      |
-| Java     | [README](bindings/java/README.md)    |
-| Nim      | [README](bindings/nim/README.md)     |
-| Node.js  | [README](bindings/node.js/README.md) |
-| Python   | [README](bindings/python/README.md)  |
-| Rust     | [README](bindings/rust/README.md)    |
+| Language | Link                                 | Package                                           |
+|----------|--------------------------------------|---------------------------------------------------|
+| C#       | [README](bindings/csharp/README.md)  | https://www.nuget.org/packages/Ckzg.Bindings      |
+| Go       | [README](bindings/go/README.md)      | https://pkg.go.dev/github.com/ethereum/c-kzg-4844 |
+| Java     | [README](bindings/java/README.md)    | https://github.com/ConsenSys/jc-kzg-4844          |
+| Nim      | [README](bindings/nim/README.md)     |                                                   |
+| Node.js  | [README](bindings/node.js/README.md) | https://www.npmjs.com/package/c-kzg               |
+| Python   | [README](bindings/python/README.md)  |                                                   |
+| Rust     | [README](bindings/rust/README.md)    |                                                   |
 
-## Interface functions
+## Interface functions[README.md](README.md)
 
 C-KZG-4844 provides an implementation of the KZG functions specified as public
 in the Polynomial Commitments specification. The aim is to align these functions
