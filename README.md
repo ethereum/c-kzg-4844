@@ -6,15 +6,15 @@ API for EIP-4844, written in C.
 
 Bindings are available for the following languages:
 
-| Language | Link                                 | Package Reference                                 |
-|----------|--------------------------------------|---------------------------------------------------|
-| C#       | [README](bindings/csharp/README.md)  | https://www.nuget.org/packages/Ckzg.Bindings      |
-| Go       | [README](bindings/go/README.md)      | https://pkg.go.dev/github.com/ethereum/c-kzg-4844 |
-| Java     | [README](bindings/java/README.md)    | https://github.com/ConsenSys/jc-kzg-4844          |
-| Nim      | [README](bindings/nim/README.md)     |                                                   |
-| Node.js  | [README](bindings/node.js/README.md) | https://www.npmjs.com/package/c-kzg               |
-| Python   | [README](bindings/python/README.md)  | (for internal testing only)                       |
-| Rust     | [README](bindings/rust/README.md)    |                                                   |
+| Language | Link                                 |
+|----------|--------------------------------------|
+| C#       | [README](bindings/csharp/README.md)  |
+| Go       | [README](bindings/go/README.md)      |
+| Java     | [README](bindings/java/README.md)    |
+| Nim      | [README](bindings/nim/README.md)     |
+| Node.js  | [README](bindings/node.js/README.md) |
+| Python   | [README](bindings/python/README.md)  |
+| Rust     | [README](bindings/rust/README.md)    |
 
 ## Interface functions
 
