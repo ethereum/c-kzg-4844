@@ -55,7 +55,7 @@ cd src && make
 
 ## Remarks
 
-### Testing
+### Tests
 
 All the bindings are tested against the [KZG reference tests defined in the
 consensus-spec-tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg).
@@ -66,16 +66,30 @@ which tests the specific functionality of internal functions.
 ### Parallelization
 
 Interface functions in C-KZG-4844 are single-threaded for simplicity, as
-implementing multi-threading across multiple platforms can be complex. For
-processing multiple blobs, `verify_blob_kzg_proof_batch` is more efficient than
-calling `verify_blob_kzg_proof` individually. In CI tests, verifying 64 blobs in
-batch is 53% faster per blob than verifying them individually. For a single
-blob, `verify_blob_kzg_proof_batch` calls `verify_blob_kzg_proof`, and the
-overhead is negligible.
+implementing multi-threading across multiple platforms can be complex.
 
-## Benchmarking
+### Batched verification
+
+For processing multiple blobs, `verify_blob_kzg_proof_batch` is more efficient
+than calling `verify_blob_kzg_proof` individually. In CI tests, verifying 64
+blobs in batch is 53% faster per blob than verifying them individually. For a
+single blob, `verify_blob_kzg_proof_batch` calls `verify_blob_kzg_proof`, and
+the overhead is negligible.
+
+### Benchmarks
 
 C-KZG-4844 does not include C benchmarks; however, some bindings (Go, Java, and
 Rust) have their own benchmarks. Including benchmarks in the bindings offers a
 more realistic performance estimate, as C-KZG-4844 is not expected to be used
 outside of the bindings.
+
+### Why C?
+
+The primary reason for choosing C is because
+[blst](https://github.com/supranational/blst), the BLS12-381 signature library
+we wanted to use, is mostly written in C. Creating bindings for all the
+higher-level languages we wanted to support is relatively straightforward and
+well-documented in C. We were concerned that using blst with another language,
+like Rust, and then building bindings on top of it would introduce too much
+overhead. Furthermore, the C toolchain is ubiquitous, and it would be somewhat
+awkward for all the bindings to have a Rust dependency.
