@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use c_kzg::*;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
@@ -28,7 +28,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
     assert!(trusted_setup_file.exists());
-    let kzg_settings = Arc::new(KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
+    let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
     let blobs: Vec<Blob> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng))
@@ -36,7 +36,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let commitments: Vec<Bytes48> = blobs
         .iter()
         .map(|blob| {
-            KZGCommitment::blob_to_kzg_commitment(*blob, &kzg_settings)
+            KzgCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -45,7 +45,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .iter()
         .zip(commitments.iter())
         .map(|(blob, commitment)| {
-            KZGProof::compute_blob_kzg_proof(*blob, *commitment, &kzg_settings)
+            KzgProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -55,13 +55,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .collect();
 
     c.bench_function("blob_to_kzg_commitment", |b| {
-        b.iter(|| KZGCommitment::blob_to_kzg_commitment(*blobs.first().unwrap(), &kzg_settings))
+        b.iter(|| {
+            KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap().clone(), &kzg_settings)
+        })
     });
 
     c.bench_function("compute_kzg_proof", |b| {
         b.iter(|| {
-            KZGProof::compute_kzg_proof(
-                *blobs.first().unwrap(),
+            KzgProof::compute_kzg_proof(
+                blobs.first().unwrap().clone(),
                 *fields.first().unwrap(),
                 &kzg_settings,
             )
@@ -70,9 +72,21 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("compute_blob_kzg_proof", |b| {
         b.iter(|| {
-            KZGProof::compute_blob_kzg_proof(
-                *blobs.first().unwrap(),
+            KzgProof::compute_blob_kzg_proof(
+                blobs.first().unwrap().clone(),
                 *commitments.first().unwrap(),
+                &kzg_settings,
+            )
+        })
+    });
+
+    c.bench_function("verify_kzg_proof", |b| {
+        b.iter(|| {
+            KzgProof::verify_kzg_proof(
+                *commitments.first().unwrap(),
+                *fields.first().unwrap(),
+                *fields.first().unwrap(),
+                *proofs.first().unwrap(),
                 &kzg_settings,
             )
         })
@@ -80,8 +94,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("verify_blob_kzg_proof", |b| {
         b.iter(|| {
-            KZGProof::verify_blob_kzg_proof(
-                *blobs.first().unwrap(),
+            KzgProof::verify_blob_kzg_proof(
+                blobs.first().unwrap().clone(),
                 *commitments.first().unwrap(),
                 *proofs.first().unwrap(),
                 &kzg_settings,
@@ -91,24 +105,35 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
     for count in [1, 2, 4, 8, 16, 32, 64] {
+        group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
-            b.iter(|| {
-                KZGProof::verify_blob_kzg_proof_batch(
-                    &blobs.clone().into_iter().take(count).collect::<Vec<Blob>>(),
-                    &commitments
+            b.iter_batched_ref(
+                || {
+                    let blobs_subset = blobs.clone().into_iter().take(count).collect::<Vec<Blob>>();
+                    let commitments_subset = commitments
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<Bytes48>>(),
-                    &proofs
+                        .collect::<Vec<Bytes48>>();
+                    let proofs_subset = proofs
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<Bytes48>>(),
-                    &kzg_settings,
-                )
-                .unwrap();
-            })
+                        .collect::<Vec<Bytes48>>();
+
+                    (blobs_subset, commitments_subset, proofs_subset)
+                },
+                |(blobs_subset, commitments_subset, proofs_subset)| {
+                    KzgProof::verify_blob_kzg_proof_batch(
+                        &blobs_subset,
+                        &commitments_subset,
+                        &proofs_subset,
+                        &kzg_settings,
+                    )
+                    .unwrap();
+                },
+                BatchSize::LargeInput,
+            );
         });
     }
     group.finish();

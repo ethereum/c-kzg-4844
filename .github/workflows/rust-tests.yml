@@ -15,15 +15,13 @@ jobs:
         with:
           submodules: recursive
       - name: Get latest version of stable rust
-        run: |
-          rustup update stable
-      - name: Build and Test (mainnet preset)
-        run: |
-          cd bindings/rust
-          cargo clean
-          cargo test --all --release --tests
+        run: rustup update stable
       - name: Build and Test (minimal preset)
-        run: |
-          cd bindings/rust
-          cargo clean
-          cargo test --all --release --features="minimal-spec" --tests
+        working-directory: bindings/rust
+        run: cargo test --all --release --features="minimal-spec" --tests
+      - name: Build and Test (mainnet preset)
+        working-directory: bindings/rust
+        run: cargo test --all --release --tests
+      - name: Benchmark
+        working-directory: bindings/rust
+        run: cargo bench
