@@ -77,9 +77,9 @@ outside of the bindings.
 
 The primary reason for choosing C is because
 [blst](https://github.com/supranational/blst), the BLS12-381 signature library
-we wanted to use, is mostly written in C. Creating bindings for all the
-higher-level languages we wanted to support is relatively straightforward and
-well-documented in C. We were concerned that using blst with another language,
-like Rust, and then building bindings on top of it would introduce too much
-overhead. Furthermore, the C toolchain is ubiquitous, and it would be somewhat
-awkward for all the bindings to have a Rust dependency.
+we wanted to use, is mostly written in C. Creating bindings to C functions for
+all the higher-level languages we wanted is relatively straightforward and
+well-documented. We were concerned that using blst with another language, like
+Rust, and then building bindings on top of it would introduce too much overhead.
+Furthermore, the C toolchain is ubiquitous, and it would be somewhat awkward for
+all the bindings to have a Rust dependency.
