@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"unsafe"
 
 	// So its functions are available during compilation.
@@ -36,13 +37,28 @@ var (
 	ErrBadArgs = errors.New("bad arguments")
 	ErrError   = errors.New("unexpected error")
 	ErrMalloc  = errors.New("malloc failed")
-	errMap     = map[C.C_KZG_RET]error{
+	errorMap   = map[C.C_KZG_RET]error{
 		C.C_KZG_OK:      nil,
 		C.C_KZG_BADARGS: ErrBadArgs,
 		C.C_KZG_ERROR:   ErrError,
 		C.C_KZG_MALLOC:  ErrMalloc,
 	}
 )
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////////////////////////
+
+// makeErrorFromRet translates an (integral) return value, as reported
+// by the C library, into a proper Go error. If there is no error, this
+// will return nil.
+func makeErrorFromRet(ret C.C_KZG_RET) error {
+	err, ok := errorMap[ret]
+	if !ok {
+		panic(fmt.Sprintf("unexpected return value: %v", ret))
+	}
+	return err
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
@@ -79,7 +95,7 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 	if ret == C.C_KZG_OK {
 		loaded = true
 	}
-	return errMap[ret]
+	return makeErrorFromRet(ret)
 }
 
 /*
@@ -106,7 +122,7 @@ func LoadTrustedSetupFile(trustedSetupFile string) error {
 	if ret == C.C_KZG_OK {
 		loaded = true
 	}
-	return errMap[ret]
+	return makeErrorFromRet(ret)
 }
 
 /*
@@ -140,7 +156,7 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		&settings)
-	return commitment, errMap[ret]
+	return commitment, makeErrorFromRet(ret)
 }
 
 /*
@@ -165,7 +181,7 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes32)(unsafe.Pointer(&zBytes)),
 		&settings)
-	return proof, y, errMap[ret]
+	return proof, y, makeErrorFromRet(ret)
 }
 
 /*
@@ -187,7 +203,7 @@ func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, error) {
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		&settings)
-	return proof, errMap[ret]
+	return proof, makeErrorFromRet(ret)
 }
 
 /*
@@ -213,7 +229,7 @@ func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes 
 		(*C.Bytes32)(unsafe.Pointer(&yBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), errMap[ret]
+	return bool(result), makeErrorFromRet(ret)
 }
 
 /*
@@ -237,7 +253,7 @@ func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, e
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), errMap[ret]
+	return bool(result), makeErrorFromRet(ret)
 }
 
 /*
@@ -266,7 +282,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),
 		&settings)
-	return bool(result), errMap[ret]
+	return bool(result), makeErrorFromRet(ret)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
