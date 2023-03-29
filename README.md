@@ -58,8 +58,8 @@ cd src && make
 ### Testing
 
 All the bindings are tested against the [KZG reference tests defined in the
-consensus-spec-tests](KZG spec
-tests)[https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg).
+consensus-spec-tests]
+(https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg).
 Additionally, a suite of custom unit tests for the C functions is located
 [here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test_c_kzg_4844.c),
 which tests the specific functionality of internal functions.
