@@ -4,6 +4,18 @@ A minimal implemention of the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API for EIP-4844, written in C.
 
+Bindings for C-KZG-4844 are available for the following languages:
+
+| Language | Link                                 |
+|----------|--------------------------------------|
+| C#       | [README](bindings/csharp/README.md)  |
+| Go       | [README](bindings/go/README.md)      |
+| Java     | [README](bindings/java/README.md)    |
+| Nim      | [README](bindings/nim/README.md)     |
+| Node.js  | [README](bindings/node.js/README.md) |
+| Python   | [README](bindings/python/README.md)  |
+| Rust     | [README](bindings/rust/README.md)    |
+
 ## Interface functions
 
 C-KZG-4844 provides an implementation of the KZG functions specified as public
@@ -27,38 +39,6 @@ considered to be trustworthy.
 - `load_trusted_setup`
 - `load_trusted_setup_file`
 - `free_trusted_setup`
-
-## Bindings
-
-Bindings for C-KZG-4844 are available for the following languages:
-
-| Language | Link                                 |
-|----------|--------------------------------------|
-| C#       | [README](bindings/csharp/README.md)  |
-| Go       | [README](bindings/go/README.md)      |
-| Java     | [README](bindings/java/README.md)    |
-| Nim      | [README](bindings/nim/README.md)     |
-| Node.js  | [README](bindings/node.js/README.md) |
-| Python   | [README](bindings/python/README.md)  |
-| Rust     | [README](bindings/rust/README.md)    |
-
-## Installation
-
-### Prerequisites
-
-Ensure the following software is installed on your system:
-
-* `git`
-* `make`
-* `clang`
-
-### Building
-
-To build and test C-KZG-4844, execute the following command:
-
-```
-cd src && make
-```
 
 ## Remarks
 
