@@ -17,13 +17,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #if FIELD_ELEMENTS_PER_BLOB == 4096
-    #define MAINNET
-    #define TRUSTED_SETUP_FILE "trusted_setup.txt"
-    #define MAX_WIDTH 32
+#define MAINNET
+#define TRUSTED_SETUP_FILE "trusted_setup.txt"
+#define MAX_WIDTH 32
 #elif FIELD_ELEMENTS_PER_BLOB == 4
-    #define MINIMAL
-    #define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
-    #define MAX_WIDTH 4
+#define MINIMAL
+#define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
+#define MAX_WIDTH 4
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
