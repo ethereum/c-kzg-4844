@@ -82,4 +82,4 @@ all the higher-level languages we wanted is relatively straightforward and
 well-documented. We were concerned that using blst with another language, like
 Rust, and then building bindings on top of it would introduce too much overhead.
 Furthermore, the C toolchain is ubiquitous, and it would be somewhat awkward for
-all the bindings to have a Rust dependency.
+all the bindings to depdend on another toolchain, like Rust.
