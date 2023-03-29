@@ -18,9 +18,9 @@ Bindings are available for the following languages:
 
 ## Interface functions
 
-This C-KZG-4844 library provides an implementation of the KZG functions
-specified as public in the Polynomial Commitments specification. The aim is to
-align these functions as closely as possible with the specification.
+The C-KZG-4844 library provides an implementation of the KZG functions specified
+as public in the Polynomial Commitments specification. The aim is to align these
+functions as closely as possible with the specification.
 
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
