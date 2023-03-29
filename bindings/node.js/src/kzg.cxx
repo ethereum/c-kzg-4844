@@ -147,17 +147,10 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
 
   // Load the trusted setup from that file
   C_KZG_RET ret = load_trusted_setup_file(&(data->settings), file_handle);
-
   // Close the trusted setup file
-  if (fclose(file_handle) != 0) {
-    if (ret == C_KZG_OK) {
-      free_trusted_setup(&(data->settings));
-    }
-    Napi::Error::New(env, "Error closing trusted setup file").ThrowAsJavaScriptException();
-    return env.Undefined();
-  }
+  fclose(file_handle);
 
-  // Check that it was successful
+  // Check that loading the trusted setup was successful
   if (ret != C_KZG_OK) {
     Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
     return env.Undefined();
