@@ -18,9 +18,9 @@ Bindings are available for the following languages:
 
 ## Interface functions
 
-C-KZG-4844 provides an implementation of the KZG functions specified as public
-in the Polynomial Commitments specification. The aim is to align these functions
-as closely as possible with the specification.
+This C-KZG-4844 library provides an implementation of the KZG functions
+specified as public in the Polynomial Commitments specification. The aim is to
+align these functions as closely as possible with the specification.
 
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
@@ -29,7 +29,7 @@ as closely as possible with the specification.
 - `verify_blob_kzg_proof`
 - `verify_blob_kzg_proof_batch`
 
-C-KZG-4844 also provides functions for loading and freeing the trusted setup,
+This library also provides functions for loading and freeing the trusted setup,
 which are not specified in the specification. These functions are intended to be
 executed once during the initialization process. As the name suggests, the
 [trusted setup
