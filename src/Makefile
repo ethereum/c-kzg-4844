@@ -34,6 +34,7 @@ LIBS = $(BLST_LIBRARY)
 ifeq ($(PLATFORM),Windows)
 	CC = gcc
     CFLAGS += -D_CRT_SECURE_NO_WARNINGS
+	CFLAGS += -Wl,--stack,8388608
 else
 	CC = clang
     CFLAGS += -fPIC -Werror
