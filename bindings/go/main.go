@@ -7,6 +7,8 @@ package cgokzg4844
 import "C"
 
 import (
+	"errors"
+	"fmt"
 	"unsafe"
 
 	// So its functions are available during compilation.
@@ -22,7 +24,6 @@ const (
 )
 
 type (
-	CKZGRet       uint
 	Bytes32       [32]byte
 	Bytes48       [48]byte
 	KZGCommitment Bytes48
@@ -30,17 +31,34 @@ type (
 	Blob          [BytesPerBlob]byte
 )
 
-const (
-	C_KZG_OK      CKZGRet = C.C_KZG_OK
-	C_KZG_BADARGS CKZGRet = C.C_KZG_BADARGS
-	C_KZG_ERROR   CKZGRet = C.C_KZG_ERROR
-	C_KZG_MALLOC  CKZGRet = C.C_KZG_MALLOC
+var (
+	loaded     = false
+	settings   = C.KZGSettings{}
+	ErrBadArgs = errors.New("bad arguments")
+	ErrError   = errors.New("unexpected error")
+	ErrMalloc  = errors.New("malloc failed")
+	errorMap   = map[C.C_KZG_RET]error{
+		C.C_KZG_OK:      nil,
+		C.C_KZG_BADARGS: ErrBadArgs,
+		C.C_KZG_ERROR:   ErrError,
+		C.C_KZG_MALLOC:  ErrMalloc,
+	}
 )
 
-var (
-	loaded   = false
-	settings = C.KZGSettings{}
-)
+///////////////////////////////////////////////////////////////////////////////
+// Helper functions
+///////////////////////////////////////////////////////////////////////////////
+
+// makeErrorFromRet translates an (integral) return value, as reported
+// by the C library, into a proper Go error. If there is no error, this
+// will return nil.
+func makeErrorFromRet(ret C.C_KZG_RET) error {
+	err, ok := errorMap[ret]
+	if !ok {
+		panic(fmt.Sprintf("unexpected return value: %v", ret))
+	}
+	return err
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Public functions
@@ -56,7 +74,7 @@ LoadTrustedSetup is the binding for:
 	    const uint8_t *g2_bytes,
 	    size_t n2);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte) CKZGRet {
+func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -74,10 +92,10 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) CKZGRet {
 		(C.size_t)(numG1Elements),
 		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
 		(C.size_t)(numG2Elements))
-	if CKZGRet(ret) == C_KZG_OK {
+	if ret == C.C_KZG_OK {
 		loaded = true
 	}
-	return CKZGRet(ret)
+	return makeErrorFromRet(ret)
 }
 
 /*
@@ -87,7 +105,7 @@ LoadTrustedSetupFile is the binding for:
 	    KZGSettings *out,
 	    FILE *in);
 */
-func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
+func LoadTrustedSetupFile(trustedSetupFile string) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -101,10 +119,10 @@ func LoadTrustedSetupFile(trustedSetupFile string) CKZGRet {
 	}
 	ret := C.load_trusted_setup_file(&settings, fp)
 	C.fclose(fp)
-	if CKZGRet(ret) == C_KZG_OK {
+	if ret == C.C_KZG_OK {
 		loaded = true
 	}
-	return CKZGRet(ret)
+	return makeErrorFromRet(ret)
 }
 
 /*
@@ -129,7 +147,7 @@ BlobToKZGCommitment is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKZGRet) {
+func BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -138,7 +156,7 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, CKZGRet) {
 		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		&settings)
-	return commitment, CKZGRet(ret)
+	return commitment, makeErrorFromRet(ret)
 }
 
 /*
@@ -151,7 +169,7 @@ ComputeKZGProof is the binding for:
 			const Bytes32 *z_bytes,
 			const KZGSettings *s);
 */
-func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, CKZGRet) {
+func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -163,7 +181,7 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, CKZGRet) {
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes32)(unsafe.Pointer(&zBytes)),
 		&settings)
-	return proof, y, CKZGRet(ret)
+	return proof, y, makeErrorFromRet(ret)
 }
 
 /*
@@ -175,7 +193,7 @@ ComputeBlobKZGProof is the binding for:
 			const Bytes48 *commitment_bytes,
 			const KZGSettings *s);
 */
-func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, CKZGRet) {
+func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -185,7 +203,7 @@ func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, CKZGRet)
 		(*C.Blob)(unsafe.Pointer(&blob)),
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		&settings)
-	return proof, CKZGRet(ret)
+	return proof, makeErrorFromRet(ret)
 }
 
 /*
@@ -199,7 +217,7 @@ VerifyKZGProof is the binding for:
 	    const Bytes48 *proof_bytes,
 	    const KZGSettings *s);
 */
-func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes Bytes48) (bool, CKZGRet) {
+func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -211,7 +229,7 @@ func VerifyKZGProof(commitmentBytes Bytes48, zBytes, yBytes Bytes32, proofBytes 
 		(*C.Bytes32)(unsafe.Pointer(&yBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), CKZGRet(ret)
+	return bool(result), makeErrorFromRet(ret)
 }
 
 /*
@@ -224,7 +242,7 @@ VerifyBlobKZGProof is the binding for:
 	    const Bytes48 *proof_bytes,
 	    const KZGSettings *s);
 */
-func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, CKZGRet) {
+func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -235,7 +253,7 @@ func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, C
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
-	return bool(result), CKZGRet(ret)
+	return bool(result), makeErrorFromRet(ret)
 }
 
 /*
@@ -248,12 +266,12 @@ VerifyBlobKZGProofBatch is the binding for:
 	    const Bytes48 *proofs_bytes,
 	    const KZGSettings *s);
 */
-func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes48) (bool, CKZGRet) {
+func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	if len(blobs) != len(commitmentsBytes) || len(blobs) != len(proofsBytes) {
-		return false, C_KZG_BADARGS
+		return false, ErrBadArgs
 	}
 
 	var result C.bool
@@ -264,7 +282,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),
 		&settings)
-	return bool(result), CKZGRet(ret)
+	return bool(result), makeErrorFromRet(ret)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

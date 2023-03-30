@@ -14,8 +14,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	ret := LoadTrustedSetupFile("../../src/trusted_setup.txt")
-	if ret != 0 {
+	err := LoadTrustedSetupFile("../../src/trusted_setup.txt")
+	if err != nil {
 		panic("failed to load trusted setup")
 	}
 	defer FreeTrustedSetup()
@@ -146,8 +146,8 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				return
 			}
 
-			commitment, ret := BlobToKZGCommitment(blob)
-			if ret == C_KZG_OK {
+			commitment, err := BlobToKZGCommitment(blob)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], commitment[:])
 			} else {
@@ -193,8 +193,8 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, y, ret := ComputeKZGProof(blob, z)
-			if ret == C_KZG_OK {
+			proof, y, err := ComputeKZGProof(blob, z)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedProof Bytes48
 				err = expectedProof.UnmarshalText([]byte((*test.Output)[0]))
@@ -247,8 +247,8 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, ret := ComputeBlobKZGProof(blob, commitment)
-			if ret == C_KZG_OK {
+			proof, err := ComputeBlobKZGProof(blob, commitment)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], proof[:])
 			} else {
@@ -310,8 +310,8 @@ func TestVerifyKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, ret := VerifyKZGProof(commitment, z, y, proof)
-			if ret == C_KZG_OK {
+			valid, err := VerifyKZGProof(commitment, z, y, proof)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
 			} else {
@@ -365,8 +365,8 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, ret := VerifyBlobKZGProof(blob, commitment, proof)
-			if ret == C_KZG_OK {
+			valid, err := VerifyBlobKZGProof(blob, commitment, proof)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
 			} else {
@@ -432,8 +432,8 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, ret := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
-			if ret == C_KZG_OK {
+			valid, err := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
 			} else {
@@ -455,10 +455,10 @@ func Benchmark(b *testing.B) {
 	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
 		blob := GetRandBlob(int64(i))
-		commitment, ret := BlobToKZGCommitment(blob)
-		require.Equal(b, ret, C_KZG_OK)
-		proof, ret := ComputeBlobKZGProof(blob, Bytes48(commitment))
-		require.Equal(b, ret, C_KZG_OK)
+		commitment, err := BlobToKZGCommitment(blob)
+		require.NoError(b, err)
+		proof, err := ComputeBlobKZGProof(blob, Bytes48(commitment))
+		require.NoError(b, err)
 
 		blobs[i] = blob
 		commitments[i] = Bytes48(commitment)
