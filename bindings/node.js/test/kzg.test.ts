@@ -413,7 +413,7 @@ describe("C-KZG", () => {
           [commitmentValidLength, commitmentValidLength],
           [proofValidLength, proofValidLength],
         ),
-      ).toThrowError("blobs, commitments, and proofs must all be arrays");
+      ).toThrowError("Blobs, commitments, and proofs must all be arrays");
     });
     it("should reject non-bytearray blob", () => {
       expect(() =>
@@ -467,13 +467,13 @@ describe("C-KZG", () => {
       expect(verifyBlobKzgProofBatch(blobs, commitments, proofs)).toBe(true);
       expect(() =>
         verifyBlobKzgProofBatch(blobs.slice(0, 1), commitments, proofs),
-      ).toThrowError("requires equal number of blobs/commitments/proofs");
+      ).toThrowError("Requires equal number of blobs/commitments/proofs");
       expect(() =>
         verifyBlobKzgProofBatch(blobs, commitments.slice(0, 1), proofs),
-      ).toThrowError("requires equal number of blobs/commitments/proofs");
+      ).toThrowError("Requires equal number of blobs/commitments/proofs");
       expect(() =>
         verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1)),
-      ).toThrowError("requires equal number of blobs/commitments/proofs");
+      ).toThrowError("Requires equal number of blobs/commitments/proofs");
     });
   });
 });

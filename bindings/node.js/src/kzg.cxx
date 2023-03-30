@@ -405,7 +405,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Bytes48 *proofs = NULL;
   Napi::Value result = env.Null();
   if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
-    Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
     return result;
   }
   Napi::Array blobs_param = info[0].As<Napi::Array>();
@@ -417,7 +417,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   }
   uint32_t count = blobs_param.Length();
   if (count != commitments_param.Length() || count != proofs_param.Length()) {
-    Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
     return result;
   }
   blobs = (Blob *)calloc(count, sizeof(Blob));
@@ -485,13 +485,13 @@ out:
 Napi::Object Init(Napi::Env env, Napi::Object exports)  {
   KzgAddonData* data = (KzgAddonData*)malloc(sizeof(KzgAddonData));
   if (data == nullptr) {
-    Napi::Error::New(env, "error allocating memory for kzg setup handle").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error allocating memory for kzg setup handle").ThrowAsJavaScriptException();
     return exports;
   }
   data->is_setup = false;
   napi_status status = napi_set_instance_data(env, data, delete_kzg_addon_data, NULL);
   if (status != napi_ok) {
-    Napi::Error::New(env, "error setting kzg bindings instance data").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error setting kzg bindings instance data").ThrowAsJavaScriptException();
     return exports;
   }
 
