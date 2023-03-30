@@ -5,6 +5,10 @@
 # We use clang. Some versions of GCC report missing-braces warnings.
 CC = clang
 
+# Settings for blst.
+BLST_LIBRARY = ../lib/libblst.a
+BLST_BUILDSCRIPT = ../blst/build.sh
+
 # By default, this is set to the mainnet value.
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
@@ -12,13 +16,6 @@ FIELD_ELEMENTS_PER_BLOB ?= 4096
 CFLAGS += -I../inc
 CFLAGS += -Wall -Wextra -Werror -O2
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
-
-# Disable optimizations. Put after $CFLAGS.
-NO_OPTIMIZE = -O0
-
-# Settings for blst.
-BLST_LIBRARY = ../lib/libblst.a
-BLST_BUILDSCRIPT = ../blst/build.sh
 
 # Libraries to include.
 LIBS = $(BLST_LIBRARY)
@@ -28,16 +25,8 @@ ifneq ($(OS),Windows_NT)
     CFLAGS += -fPIC
 else
     CFLAGS += -D_CRT_SECURE_NO_WARNINGS
-	LIBS += -lmingw32
+	CFLAGS += --target=x86_64-w64-mingw32
 endif
-
-# Compiler flags for generating coverage data.
-COVERAGE = -fprofile-instr-generate -fcoverage-mapping
-
-# Settings for performance profiling.
-PROFILE = -DPROFILE
-PROFILER = -lprofiler
-PROFILER_OPTS = CPUPROFILE_FREQUENCY=1000000000
 
 # Extra setup for macOS.
 ifneq ($(OS),Windows_NT)
@@ -70,14 +59,18 @@ blst: $(BLST_LIBRARY)
 c_kzg_4844.o: c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -c $<
 
+test_c_kzg_4844: CFLAGS += -O0
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -o $@ $< $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
+test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(COVERAGE) -o $@ $< $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
+test_c_kzg_4844_prof: LIBS += -lprofiler
+test_c_kzg_4844_prof: CFLAGS += -O0 -DPROFILE
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(LIBS) $(PROFILER)
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
 test: test_c_kzg_4844
@@ -94,7 +87,7 @@ coverage: test_c_kzg_4844_cov
 
 .PHONY: run_profiler
 run_profiler: test_c_kzg_4844_prof
-	@$(PROFILER_OPTS) ./$<
+	@CPUPROFILE_FREQUENCY=1000000000 ./$<
 
 .PHONY: profile_%
 profile_%: run_profiler
@@ -114,7 +107,7 @@ profile: \
 .PHONY: sanitize_%
 sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	@echo Running sanitize=$*...
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(LIBS)
+	@$(CC) $(CFLAGS) -O0 -fsanitize=$* -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	 LSAN_OPTIONS=allocator_may_return_null=1 \
 	 ./$@; rm $@
