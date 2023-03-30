@@ -9,12 +9,19 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
       - name: Check formatting
+        if: matrix.os == 'ubuntu-latest'
         working-directory: src
         run: |
           make format
@@ -23,6 +30,7 @@ jobs:
         working-directory: src
         run: make
       - name: Clang Sanitizers
+        if: matrix.os == 'ubuntu-latest'
         working-directory: src
         run: make sanitize
       - name: Clang Static Analyzer
