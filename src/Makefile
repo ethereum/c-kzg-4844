@@ -14,6 +14,11 @@ else
 	endif
 endif
 
+# Some commands need xcode.
+ifeq ($(PLATFORM),Darwin)
+	XCRUN = xcrun
+endif
+
 # By default, this is set to the mainnet value.
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
@@ -71,10 +76,6 @@ test: test_c_kzg_4844
 ###############################################################################
 # Coverage
 ###############################################################################
-
-ifeq ($(PLATFORM),Darwin)
-	XCRUN = xcrun
-endif
 
 test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
