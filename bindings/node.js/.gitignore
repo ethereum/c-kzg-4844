@@ -1,4 +1,5 @@
 build
+deps
 dist
 *.node
 node_modules

@@ -193,11 +193,11 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
 
   KZGCommitment commitment;
@@ -206,7 +206,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
     std::ostringstream msg;
     msg << "Failed to convert blob to commitment: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-    return env.Null();
+    return env.Undefined();
   }
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&commitment), BYTES_PER_COMMITMENT);
@@ -227,15 +227,15 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes32 *z_bytes = get_bytes32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
 
   KZGProof proof;
@@ -252,7 +252,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
     std::ostringstream msg;
     msg << "Failed to compute proof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-    return env.Null();
+    return env.Undefined();
   }
 
   Napi::Array tuple = Napi::Array::New(env, 2);
@@ -277,15 +277,15 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob = get_blob(env, info[0]);
   if (blob == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes48 *commitment_bytes = get_bytes48(env, info[1], "commitmentBytes");
   if (commitment_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
 
   KZGProof proof;
@@ -300,7 +300,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
     std::ostringstream msg;
     msg << "Error in computeBlobKzgProof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-    return env.Null();
+    return env.Undefined();
   }
 
   return Napi::Buffer<uint8_t>::Copy(env, reinterpret_cast<uint8_t *>(&proof), BYTES_PER_PROOF);
@@ -322,23 +322,23 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
   if (commitment_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes32 *z_bytes = get_bytes32(env, info[1], "zBytes");
   if (z_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes32 *y_bytes = get_bytes32(env, info[2], "yBytes");
   if (y_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes48 *proof_bytes = get_bytes48(env, info[3], "proofBytes");
   if (proof_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
 
   bool out;
@@ -355,7 +355,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
     std::ostringstream msg;
     msg << "Failed to verify KZG proof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-    return env.Null();
+    return env.Undefined();
   }
 
   return Napi::Boolean::New(env, out);
@@ -377,19 +377,19 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
   Napi::Env env = info.Env();
   Blob *blob_bytes = get_blob(env, info[0]);
   if (blob_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes48 *commitment_bytes = get_bytes48(env, info[1], "commitmentBytes");
   if (commitment_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   Bytes48 *proof_bytes = get_bytes48(env, info[2], "proofBytes");
   if (proof_bytes == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
 
   bool out;
@@ -404,7 +404,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
     std::ostringstream msg;
     msg << "Error in verifyBlobKzgProof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-    return env.Null();
+    return env.Undefined();
   }
 
   return Napi::Boolean::New(env, out);
@@ -440,7 +440,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Napi::Array proofs_param = info[2].As<Napi::Array>();
   KZGSettings *kzg_settings = get_kzg_settings(env, info);
   if (kzg_settings == nullptr) {
-    return env.Null();
+    return env.Undefined();
   }
   uint32_t count = blobs_param.Length();
   if (count != commitments_param.Length() || count != proofs_param.Length()) {
