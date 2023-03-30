@@ -1,4 +1,4 @@
-# For a less verbose yarn.
+# For a less verbose yarn
 YARN = yarn --silent
 
 .PHONY: all
@@ -73,7 +73,7 @@ publish: build bundle
 # Run ref-tests in linux environment for cross-compatability check
 .PHONY: linux-test
 linux-test: build
-	# Docker cannot copy from outside this dir
+	@# Docker cannot copy from outside this dir
 	@cp -r ../../tests ref-tests
 	@docker build -t "linux-test" .
 	@docker logs --follow `docker run -d linux-test`
