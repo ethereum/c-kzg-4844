@@ -7,6 +7,27 @@
 #include "blst.h"
 
 /**
+ * Convert C_KZG_RET to a string representation for error messages.
+ */
+std::string from_c_kzg_ret(C_KZG_RET ret) {
+    switch (ret) {
+      case C_KZG_RET::C_KZG_OK:
+        return "C_KZG_OK";
+      case C_KZG_RET::C_KZG_BADARGS:
+        return "C_KZG_BADARGS";
+      case C_KZG_RET::C_KZG_ERROR:
+        return "C_KZG_ERROR";
+      case C_KZG_RET::C_KZG_MALLOC:
+        return "C_KZG_MALLOC";
+      default:
+        std::ostringstream msg;
+        msg << "UNKNOWN (" << ret << ")";
+        return msg.str();
+        
+    }
+}
+
+/**
  * Structure containing information needed for the lifetime of the bindings
  * instance. It is not safe to use global static data with worker instances.
  * Native node addons are loaded as a dll's once no matter how many node
@@ -152,7 +173,9 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
 
   // Check that loading the trusted setup was successful
   if (ret != C_KZG_OK) {
-    Napi::Error::New(env, "Error loading trusted setup file: " + file_path).ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Error loading trusted setup file: " << from_c_kzg_ret(ret);
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -183,8 +206,9 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   KZGCommitment commitment;
   C_KZG_RET ret = blob_to_kzg_commitment(&commitment, blob, kzg_settings);
   if (ret != C_KZG_OK) {
-     Napi::Error::New(env, "Failed to convert blob to commitment")
-      .ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Failed to convert blob to commitment: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -228,8 +252,9 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
   );
 
   if (ret != C_KZG_OK) {
-     Napi::Error::New(env, "Failed to compute proof")
-      .ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Failed to compute proof: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -275,8 +300,9 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
   );
 
   if (ret != C_KZG_OK) {
-     Napi::Error::New(env, "Error in computeBlobKzgProof")
-      .ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Error in computeBlobKzgProof: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -329,7 +355,9 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
   );
 
   if (ret != C_KZG_OK) {
-    Napi::TypeError::New(env, "Failed to verify KZG proof").ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Failed to verify KZG proof: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -376,7 +404,9 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
     kzg_settings);
 
   if (ret != C_KZG_OK) {
-    Napi::TypeError::New(env, "Error in verifyBlobKzgProof").ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Error in verifyBlobKzgProof: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
 
@@ -405,7 +435,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   Bytes48 *proofs = NULL;
   Napi::Value result = env.Null();
   if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
-    Napi::Error::New(env, "blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Blobs, commitments, and proofs must all be arrays").ThrowAsJavaScriptException();
     return result;
   }
   Napi::Array blobs_param = info[0].As<Napi::Array>();
@@ -417,7 +447,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   }
   uint32_t count = blobs_param.Length();
   if (count != commitments_param.Length() || count != proofs_param.Length()) {
-    Napi::Error::New(env, "requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Requires equal number of blobs/commitments/proofs").ThrowAsJavaScriptException();
     return result;
   }
   blobs = (Blob *)calloc(count, sizeof(Blob));
@@ -468,7 +498,9 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
   );
 
   if (ret != C_KZG_OK) {
-    Napi::TypeError::New(env, "Error in verifyBlobKzgProofBatch").ThrowAsJavaScriptException();
+    std::ostringstream msg;
+    msg << "Error in verifyBlobKzgProofBatch: " << from_c_kzg_ret(ret) ;
+    Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     goto out;
   }
 
@@ -485,13 +517,13 @@ out:
 Napi::Object Init(Napi::Env env, Napi::Object exports)  {
   KzgAddonData* data = (KzgAddonData*)malloc(sizeof(KzgAddonData));
   if (data == nullptr) {
-    Napi::Error::New(env, "error allocating memory for kzg setup handle").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error allocating memory for kzg setup handle").ThrowAsJavaScriptException();
     return exports;
   }
   data->is_setup = false;
   napi_status status = napi_set_instance_data(env, data, delete_kzg_addon_data, NULL);
   if (status != napi_ok) {
-    Napi::Error::New(env, "error setting kzg bindings instance data").ThrowAsJavaScriptException();
+    Napi::Error::New(env, "Error setting kzg bindings instance data").ThrowAsJavaScriptException();
     return exports;
   }
 
