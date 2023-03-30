@@ -201,8 +201,8 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
 /**
  * Convert a blob to a KZG commitment.
  *
- * @param[in] {Blob} blob - The blob representing the polynomial to be committed
- * to
+ * @param[in] {Blob} blob - The blob representing the polynomial to be
+ *                          committed to
  *
  * @return {KZGCommitment} - The resulting commitment
  *
@@ -240,7 +240,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
  * @param[in] {Bytes32} zBytes - The generator z-value for the evaluation points
  *
  * @return {ProofResult} - Tuple containing the resulting proof and evaluation
- *                              of the polynomial at the evaluation point z
+ *                         of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
@@ -430,9 +430,9 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
  *
  * @param[in] {Blob}    blobs - An array of serialized blobs to verify
  * @param[in] {Bytes48} commitmentBytes - An array of serialized commitments to
- * verify
+ *                                        verify
  * @param[in] {Bytes48} proofBytes - An array of serialized KZG proofs for
- * verification
+ *                                   verification
  *
  * @return {boolean} - true/false depending on batch validity
  *
