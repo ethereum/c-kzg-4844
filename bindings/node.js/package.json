@@ -21,6 +21,14 @@
     "glob": "^9.1.0",
     "js-yaml": "^4.1.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ethereum/c-kzg-4844.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ethereum/c-kzg-4844/issues"
+  },
+  "homepage": "https://github.com/ethereum/c-kzg-4844",
   "main": "lib/kzg.js",
   "types": "lib/kzg.d.ts",
   "gypfile": true
