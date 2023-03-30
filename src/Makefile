@@ -24,8 +24,8 @@ FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 # The base compiler flags. More can be added on command line.
 CFLAGS += -I../inc
-CFLAGS += -Wall -Wextra -Werror -O2
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
+CFLAGS += -O2 -Wall -Wextra
 
 # Libraries to include.
 LIBS = $(BLST_LIBRARY)
@@ -36,7 +36,7 @@ ifeq ($(PLATFORM),Windows)
     CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 else
 	CC = clang
-    CFLAGS += -fPIC
+    CFLAGS += -fPIC -Werror
 endif
 
 # Extra setup for macOS.
