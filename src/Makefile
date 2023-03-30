@@ -3,15 +3,15 @@
 ###############################################################################
 
 # Platform detection.
-ifneq ($(OS),Windows_NT)
+ifeq ($(OS),Windows_NT)
+	PLATFORM = Windows
+else
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
 		PLATFORM = Darwin
 	else
 		PLATFORM = Linux
     endif
-else
-	PLATFORM = Windows
 endif
 
 
@@ -66,13 +66,13 @@ blst: $(BLST_LIBRARY)
 c_kzg_4844.o: c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -c $<
 
-.PHONY: test_c_kzg_4844
 test_c_kzg_4844: CFLAGS += -O0
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-test_c_kzg_4844_cov: test_c_kzg_4844
+test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 test_c_kzg_4844_prof: LIBS += -lprofiler
 test_c_kzg_4844_prof: CFLAGS += -O0 -DPROFILE
@@ -80,7 +80,8 @@ ifeq ($(PLATFORM),Darwin)
 test_c_kzg_4844_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 test_c_kzg_4844_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-test_c_kzg_4844_prof: test_c_kzg_4844
+test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
 test: test_c_kzg_4844
@@ -88,22 +89,22 @@ test: test_c_kzg_4844
 
 .PHONY: coverage
 coverage: test_c_kzg_4844_cov
-	@LLVM_PROFILE_FILE="ckzg.profraw" ./test_c_kzg_4844
+	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
-	    test_c_kzg_4844 c_kzg_4844.c > coverage.html
+	    $< c_kzg_4844.c > coverage.html
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
-	    --show-functions test_c_kzg_4844 c_kzg_4844.c
+	    --show-functions $< c_kzg_4844.c
 
 .PHONY: run_profiler
 run_profiler: test_c_kzg_4844_prof
-	@CPUPROFILE_FREQUENCY=1000000000 ./test_c_kzg_4844
+	@CPUPROFILE_FREQUENCY=1000000000 ./$<
 
 .PHONY: profile_%
 profile_%: run_profiler
 	@echo Profiling $*...
 	@pprof --pdf --nodefraction=0.00001 --edgefraction=0.00001 \
-	    ./test_c_kzg_4844 $*.prof > $*.pdf
+	    ./test_c_kzg_4844_prof $*.prof > $*.pdf
 
 .PHONY: profile
 profile: \
