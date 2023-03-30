@@ -127,9 +127,10 @@ profile: \
 ###############################################################################
 
 .PHONY: sanitize_%
+sanitize_%: CFLAGS += -O0 -fsanitize=$*
 sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	@echo Running sanitize=$*...
-	@$(CC) $(CFLAGS) -O0 -fsanitize=$* -o $@ $< $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	    LSAN_OPTIONS=allocator_may_return_null=1 \
 	    ./$@; rm $@
