@@ -6,12 +6,12 @@
 ifeq ($(OS),Windows_NT)
 	PLATFORM = Windows
 else
-    UNAME_S := $(shell uname -s)
-    ifeq ($(UNAME_S),Darwin)
+	UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Darwin)
 		PLATFORM = Darwin
 	else
 		PLATFORM = Linux
-    endif
+	endif
 endif
 
 
@@ -33,11 +33,11 @@ LIBS = $(BLST_LIBRARY)
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
 	CC = gcc
-    CFLAGS += -D_CRT_SECURE_NO_WARNINGS
+	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 	CFLAGS += -Wl,--stack,8388608 # 8MB
 else
 	CC = clang
-    CFLAGS += -fPIC -Werror
+	CFLAGS += -fPIC -Werror
 endif
 
 # Extra setup for macOS.
@@ -120,8 +120,8 @@ sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) -O0 -fsanitize=$* -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
-	 LSAN_OPTIONS=allocator_may_return_null=1 \
-	 ./$@; rm $@
+	    LSAN_OPTIONS=allocator_may_return_null=1 \
+	    ./$@; rm $@
 
 ifneq ($(PLATFORM),Windows)
 .PHONY: sanitize
