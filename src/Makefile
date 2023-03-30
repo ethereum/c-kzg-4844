@@ -20,11 +20,15 @@ NO_OPTIMIZE = -O0
 BLST_LIBRARY = ../lib/libblst.a
 BLST_BUILDSCRIPT = ../blst/build.sh
 
+# Libraries to include.
+LIBS = $(BLST_LIBRARY)
+
 # Cross-platform compilation settings.
 ifneq ($(OS),Windows_NT)
     CFLAGS += -fPIC
 else
     CFLAGS += -D_CRT_SECURE_NO_WARNINGS
+	LIBS += -lmingw32
 endif
 
 # Compiler flags for generating coverage data.
@@ -67,13 +71,13 @@ c_kzg_4844.o: c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -o $@ $< $(BLST_LIBRARY)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -o $@ $< $(LIBS)
 
 test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(COVERAGE) -o $@ $< $(BLST_LIBRARY)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(COVERAGE) -o $@ $< $(LIBS)
 
 test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(BLST_LIBRARY) $(PROFILER)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) $(PROFILE) -o $@ $< $(LIBS) $(PROFILER)
 
 .PHONY: test
 test: test_c_kzg_4844
@@ -110,7 +114,7 @@ profile: \
 .PHONY: sanitize_%
 sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	@echo Running sanitize=$*...
-	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(BLST_LIBRARY)
+	@$(CC) $(CFLAGS) $(NO_OPTIMIZE) -fsanitize=$* -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	 LSAN_OPTIONS=allocator_may_return_null=1 \
 	 ./$@; rm $@
