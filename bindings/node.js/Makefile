@@ -61,7 +61,7 @@ test: install
 # Lint js/ts code
 .PHONY: format
 format: install
-	@$(YARN) prettier --loglevel=warn --write .
+	yarn eslint --color --ext .ts lib/ test/
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
