@@ -17,9 +17,18 @@ CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 NO_OPTIMIZE = -O0
 
 # Settings for blst.
-BLST_LIBRARY = ../lib/libblst.a
-BLST_BUILDSCRIPT = ../blst/build.sh
 BLST = -L../lib -lblst
+
+# Cross-platform compilation settings.
+ifneq ($(OS),Windows_NT)
+    CFLAGS += -fPIC
+	BLST_LIBRARY = ../lib/libblst.a
+	BLST_BUILDSCRIPT = ../blst/build.sh
+else
+    CFLAGS += -D_CRT_SECURE_NO_WARNINGS
+	BLST_LIBRARY = ../lib/blst.lib
+	BLST_BUILDSCRIPT = ../blst/build.bat
+endif
 
 # Compiler flags for generating coverage data.
 COVERAGE = -fprofile-instr-generate -fcoverage-mapping
@@ -29,17 +38,14 @@ PROFILE = -DPROFILE
 PROFILER = -lprofiler
 PROFILER_OPTS = CPUPROFILE_FREQUENCY=1000000000
 
-# Platform specific options.
+# Extra setup for macOS.
 ifneq ($(OS),Windows_NT)
-    CFLAGS += -fPIC
     UNAME_S := $(shell uname -s)
     ifeq ($(UNAME_S),Darwin)
         XCRUN = xcrun
         PROFILE += -L$(shell brew --prefix gperftools)/lib
         PROFILE += -I$(shell brew --prefix gperftools)/include
     endif
-else
-    CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 endif
 
 ###############################################################################
