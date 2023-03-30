@@ -15,11 +15,14 @@ std::string from_c_kzg_ret(C_KZG_RET ret) {
         return "C_KZG_OK";
       case C_KZG_RET::C_KZG_BADARGS:
         return "C_KZG_BADARGS";
+      case C_KZG_RET::C_KZG_ERROR:
+        return "C_KZG_ERROR";
       case C_KZG_RET::C_KZG_MALLOC:
         return "C_KZG_MALLOC";
       default:
-      case C_KZG_RET::C_KZG_ERROR:
-        return "C_KZG_ERROR";
+        std::ostringstream msg;
+        msg << "UNKNOWN (" << ret << ")";
+        return msg.str();
         
     }
 }
