@@ -33,7 +33,7 @@ jobs:
         run: make format
       - name: Build/test bindings
         working-directory: bindings/node.js
-        run: make build test
+        run: make build test bundle
       - name: Install distribution
         working-directory: bindings/node.js/dist
         run: npm install
