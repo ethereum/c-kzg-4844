@@ -46,18 +46,17 @@ considered to be trustworthy.
 
 All the bindings are tested against the [KZG reference
 tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg),
-which are defined in the consensus-spec-tests. Additionally, a suite of custom
-unit tests is located
-[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test_c_kzg_4844.c),
-which tests specific functionality of internal C functions.
+which are defined in the consensus-spec-tests. Additionally, a suite of unit
+tests for internal C functions is located
+[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test_c_kzg_4844.c).
 
 ### Parallelization
 
 The interface functions in C-KZG-4844 are single-threaded for simplicity, as
 implementing multi-threading across multiple platforms can be complex. While
 performance is important, these functions are already quite fast and efficient.
-For instance, `verify_blob_kzg_proof` is expected to finish in under three
-milliseconds on most systems.
+For instance, `verify_blob_kzg_proof` is expected to finish in under 3ms on most
+systems.
 
 ### Batched verification
 
