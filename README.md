@@ -18,9 +18,9 @@ Bindings are available for the following languages:
 
 ## Interface functions
 
-The C-KZG-4844 library provides an implementation of the KZG functions specified
-as public in the Polynomial Commitments specification. The aim is to align these
-functions as closely as possible with the specification.
+The C-KZG-4844 library provides implementations of the public KZG functions that
+are defined in the Polynomial Commitments specification. The aim is to align
+these functions as closely as possible with the specification.
 
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
@@ -30,7 +30,7 @@ functions as closely as possible with the specification.
 - `verify_blob_kzg_proof_batch`
 
 This library also provides functions for loading and freeing the trusted setup,
-which are not specified in the specification. These functions are intended to be
+which are not defined in the specification. These functions are intended to be
 executed once during the initialization process. As the name suggests, the
 [trusted setup
 file](https://github.com/ethereum/c-kzg-4844/blob/main/src/trusted_setup.txt) is
@@ -44,23 +44,24 @@ considered to be trustworthy.
 
 ### Tests
 
-All the bindings are tested against the [KZG reference tests defined in the
-consensus-spec-tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg).
-Additionally, a suite of custom unit tests for the C functions is located
+All the bindings are tested against the [KZG reference
+tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg),
+which are defined in the consensus-spec-tests. Additionally, a suite of custom
+unit tests is located
 [here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test_c_kzg_4844.c),
-which tests the specific functionality of internal functions.
+which tests specific functionality of internal C functions.
 
 ### Parallelization
 
 The interface functions in C-KZG-4844 are single-threaded for simplicity, as
 implementing multi-threading across multiple platforms can be complex. While
-performance is important, these functions are already quite fast/efficient. For
-instance, `verify_blob_kzg_proof` is expected to finish in under three
+performance is important, these functions are already quite fast and efficient.
+For instance, `verify_blob_kzg_proof` is expected to finish in under three
 milliseconds on most systems.
 
 ### Batched verification
 
-For processing multiple blobs, `verify_blob_kzg_proof_batch` is more efficient
+When processing multiple blobs, `verify_blob_kzg_proof_batch` is more efficient
 than calling `verify_blob_kzg_proof` individually. In CI tests, verifying 64
 blobs in batch is 53% faster per blob than verifying them individually. For a
 single blob, `verify_blob_kzg_proof_batch` calls `verify_blob_kzg_proof`, and
