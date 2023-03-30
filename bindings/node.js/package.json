@@ -28,7 +28,7 @@
   "bugs": {
     "url": "https://github.com/ethereum/c-kzg-4844/issues"
   },
-  "homepage": "https://github.com/ethereum/c-kzg-4844#readme",
+  "homepage": "https://github.com/ethereum/c-kzg-4844",
   "main": "lib/kzg.js",
   "types": "lib/kzg.d.ts",
   "gypfile": true
