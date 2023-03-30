@@ -1,0 +1,19 @@
+#
+# This file is a copy/paste from the one at the root of this repo.  It was
+# placed here for convenience as not all IDE's will pickup the settings
+# in the root file and there was a fight between the IDE formatting and the
+# official repo settings.  Please keep this file in sync with the root file
+#
+
+BasedOnStyle: llvm
+IndentWidth: 4
+AllowAllParametersOfDeclarationOnNextLine: True
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: OnlyFirstIf
+AlignAfterOpenBracket: BlockIndent
+AlignEscapedNewlines: DontAlign
+AlwaysBreakAfterDefinitionReturnType: None
+BinPackArguments: False
+BinPackParameters: False
+PenaltyReturnTypeOnItsOwnLine: 1000
+PenaltyBreakAssignment: 100
