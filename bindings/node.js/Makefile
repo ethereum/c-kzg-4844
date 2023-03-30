@@ -40,12 +40,13 @@ build: install clean
 	@# Build the bindings
 	@$(YARN) node-gyp --loglevel=warn configure
 	@$(YARN) node-gyp --loglevel=warn build
-	@$(YARN) tsc -p tsconfig.build.json
 
 # Bundle the distribution, also helpful for cross compatibility checks
 .PHONY: bundle
 bundle: build
+	@mkdir dist
 	@mv deps dist
+	@cp -r lib dist/lib
 	@cp -r src dist/src
 	@cp README.md dist/README.md
 	@cp package.json dist/package.json
