@@ -1,6 +1,6 @@
 import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
-import { join, resolve } from "path";
+import { resolve } from "path";
 import { globSync } from "glob";
 
 const yaml = require("js-yaml");
