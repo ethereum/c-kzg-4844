@@ -133,19 +133,17 @@ sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
 	    LSAN_OPTIONS=allocator_may_return_null=1 \
 	    ./$@; rm $@
 
-ifneq ($(PLATFORM),Windows)
 .PHONY: sanitize
 ifeq ($(PLATFORM),Darwin)
 sanitize: \
 	sanitize_address \
 	sanitize_undefined
-else
+else ifeq ($(PLATFORM),Linux)
 sanitize: \
 	sanitize_address \
 	sanitize_leak \
 	sanitize_safe-stack \
 	sanitize_undefined
-endif
 endif
 
 ###############################################################################
