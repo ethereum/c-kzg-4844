@@ -27,12 +27,7 @@ module.exports = {
     //doesnt work, it reports false errors
     "constructor-super": "off",
     "@typescript-eslint/await-thenable": "error",
-    "@typescript-eslint/explicit-function-return-type": [
-      "error",
-      {
-        allowExpressions: true,
-      },
-    ],
+    "@typescript-eslint/explicit-function-return-type": ["off"],
     "@typescript-eslint/func-call-spacing": "error",
     "@typescript-eslint/member-ordering": "error",
     "@typescript-eslint/no-explicit-any": "error",
@@ -50,7 +45,7 @@ module.exports = {
     "@typescript-eslint/no-floating-promises": "error",
     "@typescript-eslint/explicit-member-accessibility": ["error", {accessibility: "no-public"}],
     "@typescript-eslint/no-unsafe-call": "off",
-    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-unsafe-return": "off",
     "import/no-extraneous-dependencies": [
       "error",
       {
@@ -86,6 +81,18 @@ module.exports = {
       rules: {
         "import/no-extraneous-dependencies": "off",
         "@typescript-eslint/no-explicit-any": "off",
+      },
+    },
+    {
+      // enable the rule specifically for TypeScript files
+      files: ["*.ts", "*.mts", "*.cts", "*.tsx"],
+      rules: {
+        "@typescript-eslint/explicit-function-return-type": [
+          "error",
+          {
+            allowExpressions: true,
+          },
+        ],
       },
     },
   ],

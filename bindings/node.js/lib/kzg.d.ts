@@ -68,10 +68,7 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeBlobKzgProof(
-  blob: Blob,
-  commitmentBytes: Bytes48,
-): KZGProof;
+export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
 
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
@@ -85,12 +82,7 @@ export function computeBlobKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyKzgProof(
-  commitment: Bytes48,
-  zBytes: Bytes32,
-  yBytes: Bytes32,
-  proof: Bytes48,
-): boolean;
+export function verifyKzgProof(commitment: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proof: Bytes48): boolean;
 
 /**
  * Given a blob and its proof, verify that it corresponds to the provided
@@ -104,11 +96,7 @@ export function verifyKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProof(
-  blob: Blob,
-  commitment: Bytes48,
-  proof: Bytes48,
-): boolean;
+export function verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes48): boolean;
 
 /**
  * Given an array of blobs and their proofs, verify that they corresponds to their
@@ -124,8 +112,4 @@ export function verifyBlobKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProofBatch(
-  blobs: Blob[],
-  commitments: Bytes48[],
-  proofs: Bytes48[],
-): boolean;
+export function verifyBlobKzgProofBatch(blobs: Blob[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
