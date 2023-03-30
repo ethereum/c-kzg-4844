@@ -26,9 +26,6 @@ jobs:
         run: |
           make format
           git diff --exit-code
-      - name: Install MSVC
-        if: matrix.os == 'windows-latest'
-        uses: ilammy/msvc-dev-cmd@v1
       - name: Build/Test
         working-directory: src
         run: make
