@@ -15,10 +15,12 @@ std::string from_c_kzg_ret(C_KZG_RET ret) {
         return "C_KZG_OK";
       case C_KZG_RET::C_KZG_BADARGS:
         return "C_KZG_BADARGS";
-      case C_KZG_RET::C_KZG_ERROR:
-        return "C_KZG_ERROR";
       case C_KZG_RET::C_KZG_MALLOC:
         return "C_KZG_MALLOC";
+      default:
+      case C_KZG_RET::C_KZG_ERROR:
+        return "C_KZG_ERROR";
+        
     }
 }
 
@@ -169,7 +171,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo& info) {
   // Check that loading the trusted setup was successful
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Error loading trusted setup file: " << file_path;
+    msg << "Error loading trusted setup file: " << from_c_kzg_ret(ret);
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Undefined();
   }
@@ -202,7 +204,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo& info) {
   C_KZG_RET ret = blob_to_kzg_commitment(&commitment, blob, kzg_settings);
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Failed to convert blob to commitment";
+    msg << "Failed to convert blob to commitment: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -248,7 +250,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Failed to compute proof";
+    msg << "Failed to compute proof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -296,7 +298,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Error in computeBlobKzgProof";
+    msg << "Error in computeBlobKzgProof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -351,7 +353,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Failed to verify KZG proof";
+    msg << "Failed to verify KZG proof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -400,7 +402,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Error in verifyBlobKzgProof";
+    msg << "Error in verifyBlobKzgProof: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     return env.Null();
   }
@@ -494,7 +496,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo& info) {
 
   if (ret != C_KZG_OK) {
     std::ostringstream msg;
-    msg << "[C_KZG_RET::" << from_c_kzg_ret(ret) << "] Error in verifyBlobKzgProofBatch";
+    msg << "Error in verifyBlobKzgProofBatch: " << from_c_kzg_ret(ret) ;
     Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
     goto out;
   }
