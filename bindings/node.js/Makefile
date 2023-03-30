@@ -65,7 +65,7 @@ format: install
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
-publish: build
+publish: build bundle
 	@cd dist
 	@npm publish
 
