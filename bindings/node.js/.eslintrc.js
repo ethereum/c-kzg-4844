@@ -24,7 +24,6 @@ module.exports = {
   ],
   rules: {
     "prettier/prettier": ["error", {}],
-    //doesnt work, it reports false errors
     "constructor-super": "off",
     "@typescript-eslint/await-thenable": "error",
     "@typescript-eslint/explicit-function-return-type": ["off"],
@@ -55,7 +54,6 @@ module.exports = {
       },
     ],
     "func-call-spacing": "off",
-    //if --fix is run it messes imports like /lib/presets/minimal & /lib/presets/mainnet
     "import/no-duplicates": "off",
     "node/no-deprecated-api": "error",
     "new-parens": "error",
@@ -84,7 +82,6 @@ module.exports = {
       },
     },
     {
-      // enable the rule specifically for TypeScript files
       files: ["*.ts", "*.mts", "*.cts", "*.tsx"],
       rules: {
         "@typescript-eslint/explicit-function-return-type": [
