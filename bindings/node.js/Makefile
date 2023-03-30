@@ -62,6 +62,7 @@ test: install
 .PHONY: format
 format: install
 	@$(YARN) prettier --loglevel=warn --write .
+	@clang-format -i src/kzg.cxx
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
