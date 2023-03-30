@@ -7,8 +7,8 @@
 #include "blst.h"
 
 /**
- * Convert C_KZG_RET to a string representation for error messages 
-*/
+ * Convert C_KZG_RET to a string representation for error messages.
+ */
 std::string from_c_kzg_ret(C_KZG_RET ret) {
     switch (ret) {
       case C_KZG_RET::C_KZG_OK:
