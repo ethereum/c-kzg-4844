@@ -14,7 +14,6 @@ else
 	endif
 endif
 
-
 # Settings for blst.
 BLST_LIBRARY = ../lib/libblst.a
 BLST_BUILDSCRIPT = ../blst/build.sh
