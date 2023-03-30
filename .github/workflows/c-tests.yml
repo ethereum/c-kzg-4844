@@ -37,6 +37,7 @@ jobs:
         working-directory: src
         run: make analyze
       - name: Install LLVM
+        if: matrix.os != 'macos-latest'
         uses: egor-tensin/setup-clang@v1
       - name: Generate coverage report
         working-directory: src
