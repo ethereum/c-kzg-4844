@@ -1,5 +1,5 @@
 ###############################################################################
-# Configuration Options
+# Configuration
 ###############################################################################
 
 # Platform detection.
@@ -14,10 +14,6 @@ else
 	endif
 endif
 
-# Settings for blst.
-BLST_LIBRARY = ../lib/libblst.a
-BLST_BUILDSCRIPT = ../blst/build.sh
-
 # By default, this is set to the mainnet value.
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
@@ -25,9 +21,6 @@ FIELD_ELEMENTS_PER_BLOB ?= 4096
 CFLAGS += -I../inc
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += -O2 -Wall -Wextra
-
-# Libraries to include.
-LIBS = $(BLST_LIBRARY)
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
@@ -39,13 +32,15 @@ else
 	CFLAGS += -fPIC -Werror
 endif
 
-# Extra setup for macOS.
-ifeq ($(PLATFORM),Darwin)
-	XCRUN = xcrun
-endif
+# Settings for blst.
+BLST_LIBRARY = ../lib/libblst.a
+BLST_BUILDSCRIPT = ../blst/build.sh
+
+# Libraries to build with.
+LIBS = $(BLST_LIBRARY)
 
 ###############################################################################
-# Makefile Rules
+# Core
 ###############################################################################
 
 all: c_kzg_4844.o test
@@ -69,22 +64,21 @@ test_c_kzg_4844: CFLAGS += -O0
 test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
-test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-
-test_c_kzg_4844_prof: LIBS += -lprofiler
-test_c_kzg_4844_prof: CFLAGS += -O0 -DPROFILE
-ifeq ($(PLATFORM),Darwin)
-test_c_kzg_4844_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
-test_c_kzg_4844_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
-endif
-test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
-
 .PHONY: test
 test: test_c_kzg_4844
 	@./test_c_kzg_4844
+
+###############################################################################
+# Coverage
+###############################################################################
+
+ifeq ($(PLATFORM),Darwin)
+	XCRUN = xcrun
+endif
+
+test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
+test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: coverage
 coverage: test_c_kzg_4844_cov
@@ -94,6 +88,19 @@ coverage: test_c_kzg_4844_cov
 	    $< c_kzg_4844.c > coverage.html
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
 	    --show-functions $< c_kzg_4844.c
+
+###############################################################################
+# Profile
+###############################################################################
+
+test_c_kzg_4844_prof: LIBS += -lprofiler
+test_c_kzg_4844_prof: CFLAGS += -O0 -DPROFILE
+ifeq ($(PLATFORM),Darwin)
+test_c_kzg_4844_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
+test_c_kzg_4844_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
+endif
+test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
+	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: run_profiler
 run_profiler: test_c_kzg_4844_prof
@@ -113,6 +120,10 @@ profile: \
 	profile_verify_kzg_proof \
 	profile_verify_blob_kzg_proof \
 	profile_verify_blob_kzg_proof_batch
+
+###############################################################################
+# Sanitize
+###############################################################################
 
 .PHONY: sanitize_%
 sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
@@ -137,18 +148,26 @@ sanitize: \
 endif
 endif
 
+###############################################################################
+# Analyze
+###############################################################################
+
 .PHONY: analyze
 analyze: c_kzg_4844.c
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
 	    -o analysis-report $(CFLAGS) -c $<
 	@[ -d analysis-report ] && exit 1 || exit 0
 
+###############################################################################
+# Cleanup
+###############################################################################
+
+.PHONY: format
+format:
+	@clang-format -i --sort-includes c_kzg_4844.* test_c_kzg_4844.c
+
 .PHONY: clean
 clean:
 	@rm -f *.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
 	    test_c_kzg_4844 test_c_kzg_4844_cov test_c_kzg_4844_prof
 	@rm -rf analysis-report
-
-.PHONY: format
-format:
-	@clang-format -i --sort-includes c_kzg_4844.* test_c_kzg_4844.c
