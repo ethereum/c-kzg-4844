@@ -7,6 +7,11 @@ on:
     branches:
       - main
 
+defaults:
+  run:
+    shell: bash
+    working-directory: src
+
 jobs:
   tests:
     runs-on: ${{matrix.os}}
@@ -22,39 +27,34 @@ jobs:
           submodules: recursive
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
-        working-directory: src
         run: |
           make format
           git diff --exit-code
       - name: Build/Test (minimal)
-        working-directory: src
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4
+          make clean
           make
       - name: Build/Test (mainnet)
-        working-directory: src
         run: |
-          unset FIELD_ELEMENTS_PER_BLOB
+          export FIELD_ELEMENTS_PER_BLOB=4096
           make clean
           make
       - name: Clang Sanitizers
         if: matrix.os != 'windows-latest'
-        working-directory: src
         run: make sanitize
       - name: Clang Static Analyzer
         if: matrix.os != 'windows-latest'
-        working-directory: src
         run: make analyze
       - name: Install LLVM
         if: matrix.os == 'ubuntu-latest'
         uses: egor-tensin/setup-clang@v1
       - name: Generate coverage report
         if: matrix.os != 'windows-latest'
-        working-directory: src
         run: make coverage
       - name: Save coverage report
         if: matrix.os != 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: coverage
-          path: src/coverage.html
+          path: coverage.html
