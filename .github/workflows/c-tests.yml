@@ -22,36 +22,60 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
+      # Checkout repository and blst submodule.
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      # Check formatting.
+      # Only need to check this once.
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
         run: |
           make format
           git diff --exit-code
+
+      # Build and test with minimal preset.
       - name: Build/Test (minimal)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4
           make clean
           make
+
+      # Build and test with mainnet preset.
       - name: Build/Test (mainnet)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4096
           make clean
           make
+
+      # Run sanitizers.
+      # Doesn't work on Windows.
       - name: Clang Sanitizers
         if: matrix.os != 'windows-latest'
         run: make sanitize
+
+      # Run static analyzer.
+      # Doesn't work on Windows.
       - name: Clang Static Analyzer
         if: matrix.os != 'windows-latest'
         run: make analyze
+
+      # Install LLVM for coverage report.
+      # Already installed on macOS.
+      # Doesn't work on Windows.
       - name: Install LLVM
         if: matrix.os == 'ubuntu-latest'
         uses: egor-tensin/setup-clang@v1
+
+      # Generate the coverage report.
+      # Doesn't work on Windows.
       - name: Generate coverage report
         if: matrix.os != 'windows-latest'
         run: make coverage
+
+      # Upload the coverage report.
+      # Didn't generate it for Windows.
       - name: Save coverage report
         if: matrix.os != 'windows-latest'
         uses: actions/upload-artifact@v3
