@@ -47,7 +47,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_mainnet_${{matrix.os}}
-          path: src/test_c_kzg_4844
+          path: ${{ if contains(matrix.os, 'windows') }}src/test_c_kzg_4844.exe${{ else }}src/test_c_kzg_4844${{ endif }}
 
       # Build and test with minimal preset.
       - name: Build/Test (minimal)
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_minimal_${{matrix.os}}
-          path: src/test_c_kzg_4844${{ if matrix.os == 'windows-latest') }}.exe${{ endif }}
+          path: ${{ if contains(matrix.os, 'windows') }}src/test_c_kzg_4844.exe${{ else }}src/test_c_kzg_4844${{ endif }}
 
       # Run sanitizers.
       # Doesn't work on Windows.
