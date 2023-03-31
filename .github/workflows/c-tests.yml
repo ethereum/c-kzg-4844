@@ -38,7 +38,7 @@ jobs:
       # Build and test with minimal preset.
       - name: Build/Test (minimal)
         run: |
-          export FIELD_ELEMENTS_PER_BLOB=4
+          export FIELD_ELEMENTS_PER_BLOB=4096
           make clean
           make
 
