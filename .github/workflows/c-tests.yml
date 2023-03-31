@@ -28,10 +28,15 @@ jobs:
           git diff --exit-code
       - name: Build/Test (minimal)
         working-directory: src
-        run: FIELD_ELEMENTS_PER_BLOB=4 make
+        run: |
+          export FIELD_ELEMENTS_PER_BLOB=4
+          make
       - name: Build/Test (mainnet)
         working-directory: src
-        run: make
+        run: |
+          unset FIELD_ELEMENTS_PER_BLOB
+          make clean
+          make
       - name: Clang Sanitizers
         if: matrix.os != 'windows-latest'
         working-directory: src
