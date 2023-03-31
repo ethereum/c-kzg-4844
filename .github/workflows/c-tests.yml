@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_minimal_${{matrix.os}}
-          path: src/test_c_kzg_4844
+          path: src/test_c_kzg_4844${{ if matrix.os == 'windows-latest') }}.exe${{ endif }}
 
       # Run sanitizers.
       # Doesn't work on Windows.
