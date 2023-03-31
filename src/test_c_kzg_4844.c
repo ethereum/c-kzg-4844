@@ -1840,9 +1840,7 @@ static void teardown(void) {
 }
 
 int main(void) {
-    printf("Doing setup\n");
     setup();
-    printf("Did setup\n");
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);
@@ -1941,9 +1939,7 @@ int main(void) {
     profile_verify_blob_kzg_proof();
     profile_verify_blob_kzg_proof_batch();
 #endif
-    printf("Doing teardown\n");
     teardown();
-    printf("Did teardown\n");
 
     return TEST_REPORT();
 }
