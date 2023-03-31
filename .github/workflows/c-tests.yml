@@ -42,12 +42,12 @@ jobs:
           make clean && make
           unset FIELD_ELEMENTS_PER_BLOB
 
-      # Save build for reference.
-      - name: Save build (mainnet)
+      # Save test binary for reference.
+      - name: Save test binary (mainnet)
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_mainnet_${{matrix.os}}
-          path: c_kzg_4844.o
+          path: src/test_c_kzg_4844
 
       # Build and test with minimal preset.
       - name: Build/Test (minimal)
@@ -56,12 +56,12 @@ jobs:
           make clean && make
           unset FIELD_ELEMENTS_PER_BLOB
 
-      # Save build for reference.
-      - name: Save build (minimal)
+      # Save test binary for reference.
+      - name: Save test binary (minimal)
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_minimal_${{matrix.os}}
-          path: c_kzg_4844.o
+          path: src/test_c_kzg_4844
 
       # Run sanitizers.
       # Doesn't work on Windows.
@@ -95,4 +95,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: coverage
-          path: coverage.html
+          path: src/coverage.html
