@@ -42,12 +42,26 @@ jobs:
           make clean && make
           unset FIELD_ELEMENTS_PER_BLOB
 
+      # Save build for reference.
+      - name: Save build (mainnet)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ckzg_mainnet_${{matrix.os}}
+          path: c_kzg_4844.o
+
       # Build and test with minimal preset.
       - name: Build/Test (minimal)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4
           make clean && make
           unset FIELD_ELEMENTS_PER_BLOB
+
+      # Save build for reference.
+      - name: Save build (minimal)
+        uses: actions/upload-artifact@v3
+        with:
+          name: ckzg_minimal_${{matrix.os}}
+          path: c_kzg_4844.o
 
       # Run sanitizers.
       # Doesn't work on Windows.
