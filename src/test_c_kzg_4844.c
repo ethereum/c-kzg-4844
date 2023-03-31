@@ -24,6 +24,8 @@
 #define MINIMAL
 #define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
 #define MAX_WIDTH 4
+#else
+#error FIELD_ELEMENTS_PER_BLOB must be 4096 or 4
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
