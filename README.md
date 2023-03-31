@@ -77,8 +77,10 @@ outside of the bindings.
 
 The primary reason for choosing C is because
 [blst](https://github.com/supranational/blst), the BLS12-381 signature library
-we wanted to use, is mostly written in C. We were concerned that using blst with
-another language, like Rust, and then building bindings on top of it would
-introduce too much overhead.  Furthermore, the C toolchain is ubiquitous, and it
-would be somewhat awkward for all the bindings to depend on another toolchain,
-like Rust.
+we wanted to use, is mostly written in C. Rust was a viable alternative, but it
+has some disadvantages. The C toolchain is ubiquitous, and it would be somewhat
+awkward for all the bindings to depend on another toolchain, such as Rust.
+Compared to Rust, C offers a lighter memory and binary footprint. Furthermore, C
+serves as the de facto language for
+[FFI](https://en.wikipedia.org/wiki/Foreign_function_interface), so we could not
+have completely avoided using C anyway.
