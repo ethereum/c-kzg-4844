@@ -74,7 +74,9 @@ int tt_current_line = 0;
 void tt_execute(const char* name, void (*test_function)())
 {
   tt_current_test_failed = 0;
+  printf("Running: %s\n", name);
   test_function();
+  printf("Ran: %s\n", name);
   if (tt_current_test_failed) {
     printf("failure: %s:%d: In test %s():\n    %s (%s)\n",
       tt_current_file, tt_current_line, name, tt_current_msg, tt_current_expression);
