@@ -4,7 +4,10 @@ A minimal implemention of the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API for EIP-4844, written in C.
 
-Bindings are available for the following languages:
+While the core implementation is in C, bindings are available for various
+high-level languages, providing convenient wrappers around C functions. These
+bindings are intended to be used by Ethereum clients, to avoid re-implemention
+of crucial cryptographic functions.
 
 | Language | Link                                 |
 |----------|--------------------------------------|
