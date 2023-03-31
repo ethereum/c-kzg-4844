@@ -31,7 +31,6 @@ CFLAGS += -O2 -Wall -Wextra
 ifeq ($(PLATFORM),Windows)
 	CC = gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
-#CFLAGS += -Wl,--stack,8388608 # 8MB
 else
 	CC = clang
 	CFLAGS += -fPIC -Werror
