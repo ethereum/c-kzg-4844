@@ -1,9 +1,0 @@
-{
-  "trailingComma": "all",
-  "overrides": [
-    {
-      "files": "*.gyp",
-      "options": { "parser": "json" }
-    }
-  ]
-}

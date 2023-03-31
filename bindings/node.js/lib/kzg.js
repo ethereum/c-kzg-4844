@@ -35,9 +35,7 @@ const originalLoadTrustedSetup = bindings.loadTrustedSetup;
 // docstring in ./kzg.d.ts with exported definition
 bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
   if (!(filePath && typeof filePath === "string")) {
-    throw new TypeError(
-      "must initialize kzg with the filePath to a txt/json trusted setup",
-    );
+    throw new TypeError("must initialize kzg with the filePath to a txt/json trusted setup");
   }
   if (!fs.existsSync(filePath)) {
     throw new Error(`no trusted setup found: ${filePath}`);
