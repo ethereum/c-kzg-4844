@@ -36,38 +36,34 @@ jobs:
           git diff --exit-code
 
       # Build and test with minimal preset.
-      - name: Build/Test (minimal)
-        continue-on-error: true
+      - name: Build (minimal)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4
-          make clean && make
+          make clean && make test_c_kzg_4844
           unset FIELD_ELEMENTS_PER_BLOB
-
-      # Save test binary for reference.
-      # It's hard to reproduce the Windows binary.
       - name: Save test binary (minimal)
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: test_minimal_${{matrix.os}}
           path: src/test_c_kzg_4844.exe
+      - name: Test (minimal)
+        run: make test
 
       # Build and test with mainnet preset.
-      - name: Build/Test (mainnet)
-        continue-on-error: true
+      - name: Build (mainnet)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4096
-          make clean && make
+          make clean && make test_c_kzg_4844
           unset FIELD_ELEMENTS_PER_BLOB
-
-      # Save test binary for reference.
-      # It's hard to reproduce the Windows binary.
       - name: Save test binary (mainnet)
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: test_mainnet_${{matrix.os}}
           path: src/test_c_kzg_4844.exe
+      - name: Test (mainnet)
+        run: make test
 
       # Run sanitizers.
       # Doesn't work on Windows.
