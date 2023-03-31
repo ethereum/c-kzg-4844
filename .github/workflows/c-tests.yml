@@ -43,11 +43,13 @@ jobs:
           unset FIELD_ELEMENTS_PER_BLOB
 
       # Save test binary for reference.
+      # It's hard to reproduce the windows binary.
       - name: Save test binary (mainnet)
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_mainnet_${{matrix.os}}
-          path: ${{ if contains(matrix.os, 'windows') }}src/test_c_kzg_4844.exe${{ else }}src/test_c_kzg_4844${{ endif }}
+          path: src/test_c_kzg_4844.exe
 
       # Build and test with minimal preset.
       - name: Build/Test (minimal)
@@ -57,11 +59,13 @@ jobs:
           unset FIELD_ELEMENTS_PER_BLOB
 
       # Save test binary for reference.
+      # It's hard to reproduce the windows binary.
       - name: Save test binary (minimal)
+        if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
         with:
           name: ckzg_minimal_${{matrix.os}}
-          path: ${{ if contains(matrix.os, 'windows') }}src/test_c_kzg_4844.exe${{ else }}src/test_c_kzg_4844${{ endif }}
+          path: src/test_c_kzg_4844.exe
 
       # Run sanitizers.
       # Doesn't work on Windows.
