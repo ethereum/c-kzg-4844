@@ -35,19 +35,19 @@ jobs:
           make format
           git diff --exit-code
 
-      # Build and test with minimal preset.
-      - name: Build/Test (minimal)
-        run: |
-          export FIELD_ELEMENTS_PER_BLOB=4096
-          make clean
-          make
-
       # Build and test with mainnet preset.
       - name: Build/Test (mainnet)
         run: |
           export FIELD_ELEMENTS_PER_BLOB=4096
-          make clean
-          make
+          make clean && make
+          unset FIELD_ELEMENTS_PER_BLOB
+
+      # Build and test with minimal preset.
+      - name: Build/Test (minimal)
+        run: |
+          export FIELD_ELEMENTS_PER_BLOB=4
+          make clean && make
+          unset FIELD_ELEMENTS_PER_BLOB
 
       # Run sanitizers.
       # Doesn't work on Windows.
