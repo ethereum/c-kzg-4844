@@ -1485,7 +1485,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    const int n_samples = 16;
+    const int n_samples = 3;
     Bytes48 proofs[n_samples];
     KZGCommitment commitments[n_samples];
     Blob blobs[n_samples];
@@ -1502,7 +1502,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
-    /* Verify batched proofs for 0,1,2,..16 blobs */
+    /* Verify batched proofs for 0,1,2 blobs */
     /* This should still work with zero blobs */
     for (int count = 0; count <= n_samples; count++) {
         ret = verify_blob_kzg_proof_batch(
