@@ -67,28 +67,12 @@ fn main() {
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
-    // in windows we need gcc. This works on linux as well but we let cc pick the compiler.
-    // #[cfg(windows)]
     #[cfg(windows)]
-    cc.compiler("clang")
-        .flag("-D_CRT_SECURE_NO_WARNINGS")
-        .flag("-Wl,-stack_size,8388608");
+    cc.flag("-D_CRT_SECURE_NO_WARNINGS");
+    // .flag("-Wl,-z,-stack_size,8388608");
 
     cc.include(blst_headers_dir.clone());
-    // cc.ar_flag("-c");
-    // cc.ar_flag("-r");
-    // cc.ar_flag("-u");
-    // cc.ar_flag("-s");
-    // cc.flag("-opatito4844.o");
-    // cc.no_default_flags(true);
-    // cc.flag("-Wall");
-    // cc.flag("-Wextra");
-    // cc.flag("-Werror");
-    // cc.opt_level(2);
-    //
-    // cc.flag("-Zl");
     cc.warnings(false);
-    // cc.out_dir(c_src_dir.clone());
     cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
     cc.files(&file_vec);
 
