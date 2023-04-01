@@ -507,8 +507,10 @@ static bool pairings_verify(
  * @return the log base two of n
  */
 static int log2_pow2(uint32_t n) {
-    /* clz (count leading zero) bits */
-    return 31 - __builtin_clz(n);
+    int position = 0;
+    while (n >>= 1)
+        position++;
+    return position;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
