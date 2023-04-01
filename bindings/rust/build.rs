@@ -69,7 +69,6 @@ fn main() {
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
     // in windows we need gcc. This works on linux as well but we let cc pick the compiler.
     // #[cfg(windows)]
-    cc.compiler("clang");
     cc.include(blst_headers_dir.clone());
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS")
