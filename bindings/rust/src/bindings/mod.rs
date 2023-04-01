@@ -6,10 +6,7 @@ mod test_formats;
 
 include!("generated.rs");
 
-use libc::fopen;
-use std::ffi::CString;
 use std::mem::MaybeUninit;
-use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 
 pub const BYTES_PER_G1_POINT: usize = 48;
@@ -102,12 +99,33 @@ impl KZGSettings {
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
     pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
-        let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
-            Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
-        })?;
+        #[cfg(unix)]
+        let file_ptr = {
+            use std::os::unix::prelude::OsStrExt;
+            use std::ffi::CString;
+
+            let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
+                Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
+            })?;
+
+            // TODO: this can fail. Needs error handling.
+            unsafe { libc::fopen(file_path.as_ptr(), &('r' as libc::c_char)) }
+        };
+
+        #[cfg(windows)]
+        let file_ptr = {
+            use std::os::windows::ffi::OsStrExt;
+
+            let file_path: Vec<u16> = file_path.as_os_str().encode_wide().collect();
+
+            // TODO: this can fail. Needs error handling.
+            let file_descriptor = unsafe { libc::wopen(file_path.as_ptr(), libc::O_RDONLY) };
+
+            // TODO: this can fail. Needs error handling.
+            unsafe { libc::fdopen(file_descriptor, &('r' as libc::c_char)) }
+        };
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
-            let file_ptr = fopen(file_path.as_ptr(), &('r' as libc::c_char));
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())

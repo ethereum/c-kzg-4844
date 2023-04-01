@@ -5,14 +5,6 @@ use std::process::Command;
 const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
 
-fn move_file(src: &Path, dst: &Path) -> Result<(), String> {
-    std::fs::copy(src, dst)
-        .map_err(|_| format!("Failed to copy {} to {}", src.display(), dst.display()))?;
-    std::fs::remove_file(src)
-        .map_err(|_| format!("Failed to remove file {} from source", src.display()))?;
-    Ok(())
-}
-
 fn main() {
     let cargo_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let root_dir = cargo_dir
@@ -20,7 +12,6 @@ fn main() {
         .expect("rust dir is nested")
         .parent()
         .expect("bindings dir is nested");
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
         MINIMAL_FIELD_ELEMENTS_PER_BLOB
@@ -30,38 +21,75 @@ fn main() {
 
     eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
 
-    // Deleting any existing assembly and object files to ensure that compiling with a different
-    // feature flag changes the final linked library file.
-    let obj_file = root_dir.join("src").join("c_kzg_4844.o");
-    if obj_file.exists() {
-        std::fs::remove_file(obj_file).unwrap();
+    let c_src_dir = root_dir.join("src");
+
+    let mut cc = cc::Build::new();
+
+    let file_vec = vec![c_src_dir.join("c_kzg_4844.c")];
+
+    /*
+     * BLST env
+     */
+
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+
+    if target_arch.eq("x86_64") || target_arch.eq("aarch64") {
+    } else {
+        cc.define("__BLST_NO_ASM__", None);
     }
+    match (cfg!(feature = "portable"), cfg!(feature = "force-adx")) {
+        (true, false) => {
+            println!("Compiling in portable mode without ISA extensions");
+            cc.define("__BLST_PORTABLE__", None);
+        }
+        (false, true) => {
+            if target_arch.eq("x86_64") {
+                println!("Enabling ADX support via `force-adx` feature");
+                cc.define("__ADX__", None);
+            } else {
+                println!("`force-adx` is ignored for non-x86_64 targets");
+            }
+        }
+        (false, false) =>
+        {
+            #[cfg(target_arch = "x86_64")]
+            if target_arch.eq("x86_64") && std::is_x86_feature_detected!("adx") {
+                println!("Enabling ADX because it was detected on the host");
+                cc.define("__ADX__", None);
+            }
+        }
+        (true, true) => panic!("Cannot compile with both `portable` and `force-adx` features"),
+    }
+    /*
+     * END OF BLST env
+     */
 
-    // Ensure libckzg exists in `OUT_DIR`
-    Command::new("make")
-        .current_dir(root_dir.join("src"))
-        .arg("c_kzg_4844.o")
-        .arg(format!(
-            "FIELD_ELEMENTS_PER_BLOB={}",
-            field_elements_per_blob
-        ))
-        .status()
-        .unwrap();
+    // Obtain the header files exposed by blst-bindings' crate.
+    let blst_headers_dir =
+        std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
+    // in windows we need gcc. This works on linux as well but we let cc pick the compiler.
+    #[cfg(windows)]
+    cc.compiler("gcc");
+    cc.include(blst_headers_dir.clone());
+    // cc.ar_flag("-c");
+    // cc.ar_flag("-r");
+    // cc.ar_flag("-u");
+    // cc.ar_flag("-s");
+    // cc.flag("-opatito4844.o");
+    // cc.no_default_flags(true);
+    // cc.flag("-Wall");
+    // cc.flag("-Wextra");
+    // cc.flag("-Werror");
+    // cc.opt_level(2);
+    //
+    // cc.flag("-Zl");
+    cc.warnings(false);
+    // cc.out_dir(c_src_dir.clone());
+    cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
+    cc.files(&file_vec);
 
-    Command::new("ar")
-        .current_dir(&root_dir.join("src"))
-        .args(["crus", "libckzg.a", "c_kzg_4844.o"])
-        .status()
-        .unwrap();
-    move_file(
-        root_dir.join("src").join("libckzg.a").as_path(),
-        out_dir.join("libckzg.a").as_path(),
-    )
-    .unwrap();
+    cc.try_compile("ckzg").expect("Failed to compile ckzg");
 
-    println!("cargo:rustc-link-search={}", out_dir.display());
-    println!("cargo:rustc-link-search={}", out_dir.display());
-    println!("cargo:rustc-link-lib=static=ckzg");
     // Tell cargo to search for the static blst exposed by the blst-bindings' crate.
     println!("cargo:rustc-link-lib=static=blst");
 
@@ -74,9 +102,6 @@ fn main() {
     let header_file_path = root_dir.join("src").join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 
-    // Obtain the header files exposed by blst-bindings' crate.
-    let blst_headers_dir =
-        std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
     make_bindings(
         field_elements_per_blob,
         header_file,
@@ -84,12 +109,6 @@ fn main() {
         bindings_out_path,
         snapshot_path,
     );
-
-    // Cleanup
-    let obj_file = root_dir.join("src").join("c_kzg_4844.o");
-    if obj_file.exists() {
-        std::fs::remove_file(obj_file).unwrap();
-    }
 }
 
 fn make_bindings<P>(
@@ -182,6 +201,10 @@ fn make_bindings<P>(
     bindings
         .write_to_file(bindings_out_path)
         .expect("Failed to write bindings");
+    // let generated = bindings.to_string();
+    // for line in generated.lines() {
+    // println!("cargo:warning=Generated\t{line}");
+    // }
     bindings
         .write_to_file(snapshot_path)
         .expect("Failed to write snapshot");

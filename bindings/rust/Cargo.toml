@@ -24,6 +24,7 @@ serde_yaml = "0.9.17"
 
 [build-dependencies]
 bindgen = { git = "https://github.com/rust-lang/rust-bindgen" , rev = "0de11f0a521611ac8738b7b01d19dddaf3899e66" }
+cc = "1.0"
 
 [[bench]]
 name = "kzg_benches"
