@@ -71,6 +71,11 @@ fn main() {
     // #[cfg(windows)]
     cc.compiler("clang");
     cc.include(blst_headers_dir.clone());
+    #[cfg(windows)]
+    cc.flag("-D_CRT_SECURE_NO_WARNINGS")
+        .flag("-Wl")
+        .flag("--stack")
+        .flag("8388608");
     // cc.ar_flag("-c");
     // cc.ar_flag("-r");
     // cc.ar_flag("-u");
