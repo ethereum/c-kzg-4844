@@ -495,24 +495,6 @@ static bool pairings_verify(
     return blst_fp12_is_one(&gt_point);
 }
 
-/**
- * Calculate log base two of a power of two.
- *
- * In other words, the bit index of the one bit.
- *
- * @remark Works only for n a power of two, and only for n up to 2^31.
- *
- * @param[in] n The power of two
- *
- * @return the log base two of n
- */
-static int log2_pow2(uint32_t n) {
-    int position = 0;
-    while (n >>= 1)
-        position++;
-    return position;
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Bytes Conversion Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -550,89 +532,6 @@ static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
         out[i] = n & 0xFF;
         n >>= 8;
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Bit-reversal Permutation Functions
-///////////////////////////////////////////////////////////////////////////////
-
-/**
- * Utility function to test whether the argument is a power of two.
- *
- * @remark This method returns `true` for `is_power_of_two(0)` which is a bit
- *     weird, but not an issue in the contexts in which we use it.
- *
- * @param[in] n The number to test
- * @retval true  if @p n is a power of two or zero
- * @retval false otherwise
- */
-static bool is_power_of_two(uint64_t n) {
-    return (n & (n - 1)) == 0;
-}
-
-/**
- * Reverse the bit order in a 32 bit integer.
- *
- * @param[in] a The integer to be reversed
- * @return An integer with the bits of @p a reversed
- */
-static uint32_t reverse_bits(uint32_t n) {
-    uint32_t result = 0;
-    for (int i = 0; i < 32; ++i) {
-        result <<= 1;
-        result |= (n & 1);
-        n >>= 1;
-    }
-    return result;
-}
-
-/**
- * Reorder an array in reverse bit order of its indices.
- *
- * @remark This means that input[n] == output[n'], where input and output
- *         denote the input and output array and n' is obtained from n by
- *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
- *         operates on log2(@p n)-bit numbers.
- *
- * @remark Operates in-place on the array.
- * @remark Can handle arrays of any type: provide the element size in @p size.
- *
- * @param[in,out] values The array, which is re-ordered in-place
- * @param[in]     size   The size in bytes of an element of the array
- * @param[in]     n      The length of the array, must be a power of two
- *                       strictly greater than 1 and less than 2^32.
- */
-static C_KZG_RET bit_reversal_permutation(
-    void *values, size_t size, uint64_t n
-) {
-    CHECK(n != 0);
-    CHECK(n >> 32 == 0);
-    CHECK(is_power_of_two(n));
-    CHECK(log2_pow2(n) != 0);
-
-    /* copy pointer and convert from void* to byte* */
-    byte *v = values;
-
-    /* allocate scratch space for swapping an entry of the values array */
-    byte *tmp = NULL;
-    C_KZG_RET ret = c_kzg_malloc((void **)&tmp, size);
-    if (ret != C_KZG_OK) {
-        return ret;
-    }
-
-    int unused_bit_len = 32 - log2_pow2(n);
-    for (uint32_t i = 0; i < n; i++) {
-        uint32_t r = reverse_bits(i) >> unused_bit_len;
-        if (r > i) {
-            /* Swap the two elements */
-            memcpy(tmp, v + (i * size), size);
-            memcpy(v + (i * size), v + (r * size), size);
-            memcpy(v + (r * size), tmp, size);
-        }
-    }
-    c_kzg_free(tmp);
-
-    return C_KZG_OK;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1565,6 +1464,102 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 // Trusted Setup Functions
 ///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Utility function to test whether the argument is a power of two.
+ *
+ * @remark This method returns `true` for `is_power_of_two(0)` which is a bit
+ *     weird, but not an issue in the contexts in which we use it.
+ *
+ * @param[in] n The number to test
+ * @retval true  if @p n is a power of two or zero
+ * @retval false otherwise
+ */
+static bool is_power_of_two(uint64_t n) {
+    return (n & (n - 1)) == 0;
+}
+
+/**
+ * Reverse the bit order in a 32 bit integer.
+ *
+ * @param[in] a The integer to be reversed
+ * @return An integer with the bits of @p a reversed
+ */
+static uint32_t reverse_bits(uint32_t n) {
+    uint32_t result = 0;
+    for (int i = 0; i < 32; ++i) {
+        result <<= 1;
+        result |= (n & 1);
+        n >>= 1;
+    }
+    return result;
+}
+
+/**
+ * Calculate log base two of a power of two.
+ *
+ * In other words, the bit index of the one bit.
+ *
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ *
+ * @param[in] n The power of two
+ *
+ * @return the log base two of n
+ */
+static int log2_pow2(uint32_t n) {
+    int position = 0;
+    while (n >>= 1)
+        position++;
+    return position;
+}
+
+/**
+ * Reorder an array in reverse bit order of its indices.
+ *
+ * @remark Operates in-place on the array.
+ * @remark Can handle arrays of any type: provide the element size in @p size.
+ * @remark This means that input[n] == output[n'], where input and output
+ *         denote the input and output array and n' is obtained from n by
+ *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
+ *         operates on log2(@p n)-bit numbers.
+ *
+ * @param[in,out] values The array, which is re-ordered in-place
+ * @param[in]     size   The size in bytes of an element of the array
+ * @param[in]     n      The length of the array, must be a power of two
+ *                       strictly greater than 1 and less than 2^32.
+ */
+static C_KZG_RET bit_reversal_permutation(
+    void *values, size_t size, uint64_t n
+) {
+    CHECK(n != 0);
+    CHECK(n >> 32 == 0);
+    CHECK(is_power_of_two(n));
+    CHECK(log2_pow2(n) != 0);
+
+    /* copy pointer and convert from void* to byte* */
+    byte *v = values;
+
+    /* allocate scratch space for swapping an entry of the values array */
+    byte *tmp = NULL;
+    C_KZG_RET ret = c_kzg_malloc((void **)&tmp, size);
+    if (ret != C_KZG_OK) {
+        return ret;
+    }
+
+    int unused_bit_len = 32 - log2_pow2(n);
+    for (uint32_t i = 0; i < n; i++) {
+        uint32_t r = reverse_bits(i) >> unused_bit_len;
+        if (r > i) {
+            /* Swap the two elements */
+            memcpy(tmp, v + (i * size), size);
+            memcpy(v + (i * size), v + (r * size), size);
+            memcpy(v + (r * size), tmp, size);
+        }
+    }
+    c_kzg_free(tmp);
+
+    return C_KZG_OK;
+}
 
 /**
  * Fast Fourier Transform.
