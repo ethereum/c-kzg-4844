@@ -941,7 +941,7 @@ C_KZG_RET verify_kzg_proof(
     ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
-    /* Do a pairings check */
+    /* Call helper to do pairings check */
     return verify_kzg_proof_impl(
         ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
     );
@@ -1204,7 +1204,7 @@ C_KZG_RET verify_blob_kzg_proof(
     );
     if (ret != C_KZG_OK) return ret;
 
-    /* Call helper to do pairing check */
+    /* Call helper to do pairings check */
     return verify_kzg_proof_impl(
         ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
     );
