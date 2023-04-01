@@ -62,7 +62,7 @@ extern "C" {
  * need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2.  As this
  * case is neither maintained nor tested, we prefer to not support it.
  */
-#if (FIELD_ELEMENTS_PER_BLOB & (FIELD_ELEMENTS_PER_BLOB-1)) != 0
+#if (FIELD_ELEMENTS_PER_BLOB & (FIELD_ELEMENTS_PER_BLOB - 1)) != 0
 #error FIELD_ELEMENTS_PER_BLOB must be a power of two
 #endif /* FIELD_ELEMENTS_PER_BLOB */
 
