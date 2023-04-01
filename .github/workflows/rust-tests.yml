@@ -34,7 +34,7 @@ jobs:
         run: |
           cd bindings/rust
           cargo clean
-          RUST_BACKTRACE=1 cargo test --all --release --tests
+          env RUST_BACKTRACE=1 cargo test --all --release --tests
       - name: Build and Test (minimal preset)
         run: |
           cd bindings/rust
