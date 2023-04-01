@@ -67,6 +67,7 @@ fn main() {
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
+    cc.compiler("clang");
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS");
     // .flag("-Wl,-z,-stack_size,8388608");
