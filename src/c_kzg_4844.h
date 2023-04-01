@@ -50,7 +50,7 @@ extern "C" {
  * current implementation limitation. Notably, the size of the FFT setup would
  * overflow uint32_t, which would cause issues.
  */
-#if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1UL << 31))
+#if FIELD_ELEMENTS_PER_BLOB <= 0 || FIELD_ELEMENTS_PER_BLOB > (1UL << 31)
 #error FIELD_ELEMENTS_PER_BLOB must be between 1 and 2^31
 #endif /* FIELD_ELEMENTS_PER_BLOB */
 
@@ -62,7 +62,7 @@ extern "C" {
  * need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2.  As this
  * case is neither maintained nor tested, we prefer to not support it.
  */
-#if ((FIELD_ELEMENTS_PER_BLOB) & (FIELD_ELEMENTS_PER_BLOB)-1) != 0
+#if (FIELD_ELEMENTS_PER_BLOB & (FIELD_ELEMENTS_PER_BLOB-1)) != 0
 #error FIELD_ELEMENTS_PER_BLOB must be a power of two
 #endif /* FIELD_ELEMENTS_PER_BLOB */
 
