@@ -48,9 +48,7 @@
 // Types
 ///////////////////////////////////////////////////////////////////////////////
 
-/**
- * Internal representation of a polynomial.
- */
+/** Internal representation of a polynomial. */
 typedef struct {
     fr_t evals[FIELD_ELEMENTS_PER_BLOB];
 } Polynomial;
@@ -59,8 +57,10 @@ typedef struct {
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
-/** The Fiat-Shamir protocol domains. */
+/** The domain separator for the Fiat-Shamir protocol. */
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
+
+/** The domain separator for a random challenge. */
 static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 
 /** Length of the domain strings above. */
@@ -507,15 +507,8 @@ static bool pairings_verify(
  * @return the log base two of n
  */
 static int log2_pow2(uint32_t n) {
-    const uint32_t b[] = {
-        0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0, 0xFF00FF00, 0xFFFF0000};
-    register uint32_t r;
-    r = (n & b[0]) != 0;
-    r |= ((n & b[1]) != 0) << 1;
-    r |= ((n & b[2]) != 0) << 2;
-    r |= ((n & b[3]) != 0) << 3;
-    r |= ((n & b[4]) != 0) << 4;
-    return r;
+    /* clz (count leading zero) bits */
+    return 31 - __builtin_clz(n);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1037,6 +1030,7 @@ C_KZG_RET verify_kzg_proof(
 
     *ok = false;
 
+    /* Convert untrusted inputs to trusted inputs */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_bls_field(&z_fr, z_bytes);
@@ -1046,6 +1040,7 @@ C_KZG_RET verify_kzg_proof(
     ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
 
+    /* Do a pairings check */
     return verify_kzg_proof_impl(
         ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
     );
@@ -1248,14 +1243,16 @@ C_KZG_RET compute_blob_kzg_proof(
     fr_t evaluation_challenge_fr;
     fr_t y;
 
+    /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) goto out;
 
+    /* Compute the challenge for the given blob/commitment */
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
+    /* Call helper function to compute proof and y */
     ret = compute_kzg_proof_impl(
         out, &y, &polynomial, &evaluation_challenge_fr, s
     );
@@ -1289,22 +1286,24 @@ C_KZG_RET verify_blob_kzg_proof(
 
     *ok = false;
 
+    /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
-
     ret = blob_to_polynomial(&polynomial, blob);
     if (ret != C_KZG_OK) return ret;
+    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
+    if (ret != C_KZG_OK) return ret;
 
+    /* Compute challenge for the blob/commitment */
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
+    /* Evaluate challenge to get y */
     ret = evaluate_polynomial_in_evaluation_form(
         &y_fr, &polynomial, &evaluation_challenge_fr, s
     );
     if (ret != C_KZG_OK) return ret;
 
-    ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
-    if (ret != C_KZG_OK) return ret;
-
+    /* Call helper to do pairing check */
     return verify_kzg_proof_impl(
         ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
     );
@@ -1689,7 +1688,7 @@ static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
     C_KZG_RET ret;
     fr_t root_of_unity;
 
-    fs->max_width = (uint64_t)1 << max_scale;
+    fs->max_width = 1ULL << max_scale;
     fs->expanded_roots_of_unity = NULL;
     fs->reverse_roots_of_unity = NULL;
     fs->roots_of_unity = NULL;
@@ -1796,9 +1795,11 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g2_values = NULL;
 
+    /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
     CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
 
+    /* Allocate all of our arrays */
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
@@ -1806,6 +1807,7 @@ C_KZG_RET load_trusted_setup(
     ret = new_g1_array(&g1_projective, n1);
     if (ret != C_KZG_OK) goto out_error;
 
+    /* Convert all g1 bytes to g1 points */
     for (i = 0; i < n1; i++) {
         ret = validate_kzg_g1(
             &g1_projective[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
@@ -1813,15 +1815,18 @@ C_KZG_RET load_trusted_setup(
         if (ret != C_KZG_OK) goto out_error;
     }
 
+    /* Convert all g2 bytes to g2 points */
     for (i = 0; i < n2; i++) {
         blst_p2_uncompress(&g2_affine, &g2_bytes[BYTES_PER_G2 * i]);
         blst_p2_from_affine(&out->g2_values[i], &g2_affine);
     }
 
+    /* It's the smallest power of 2 >= n1 */
     unsigned int max_scale = 0;
-    while (((uint64_t)1 << max_scale) < n1)
+    while ((1ULL << max_scale) < n1)
         max_scale++;
 
+    /* Initialize the KZGSettings struct */
     ret = c_kzg_malloc((void **)&out->fs, sizeof(FFTSettings));
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fft_settings(out->fs, max_scale);
