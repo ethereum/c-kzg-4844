@@ -67,7 +67,27 @@ fn main() {
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
-    cc.compiler("clang");
+    /*
+     * Hack ahead
+     */
+    const AWK_COMMAND: &str =
+        "{gsub(/typedef struct \\{\\} blst_uniq;/, \"typedef struct { int dummy; } blst_uniq;\")}1";
+    let awk_succeeds = Command::new("awk")
+        .current_dir(blst_headers_dir.clone())
+        .arg("-i")
+        .arg("inplace")
+        .arg(AWK_COMMAND)
+        .arg("blst_aux.h")
+        .status()
+        .expect("ask is installed")
+        .success();
+    if !awk_succeeds {
+        panic!("awk command failed")
+    }
+
+    /*
+     * End of hack
+     */
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS");
     // .flag("-Wl,-z,-stack_size,8388608");
