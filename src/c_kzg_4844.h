@@ -36,9 +36,14 @@ extern "C" {
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
+/**
+ * This value represents the number of field elements in a blob. It must be
+ * supplied externally. It is expected to be 4096 for mainnet and 4 for minimal.
+ */
 #ifndef FIELD_ELEMENTS_PER_BLOB
 #error FIELD_ELEMENTS_PER_BLOB must be defined
-#endif // FIELD_ELEMENTS_PER_BLOB
+#endif /* FIELD_ELEMENTS_PER_BLOB */
+
 /**
  * There are only 1<<32 2-adic roots of unity in the field, limiting the
  * possible values of FIELD_ELEMENTS_PER_BLOB. The restriction to 1<<31 is a
@@ -47,7 +52,7 @@ extern "C" {
  */
 #if (FIELD_ELEMENTS_PER_BLOB <= 0) || (FIELD_ELEMENTS_PER_BLOB > (1UL << 31))
 #error FIELD_ELEMENTS_PER_BLOB must be between 1 and 2^31
-#endif // FIELD_ELEMENTS_PER_BLOB
+#endif /* FIELD_ELEMENTS_PER_BLOB */
 
 /**
  * If FIELD_ELEMENTS_PER_BLOB is not a power of 2, the size of the FFT domain
@@ -58,12 +63,19 @@ extern "C" {
  * As this case is neither maintained nor tested, we prefer to not support it.
  */
 #if ((FIELD_ELEMENTS_PER_BLOB) & (FIELD_ELEMENTS_PER_BLOB)-1) != 0
-#error FIELD_ELEMENTS_PER_BLOB is not a power of two
-#endif
+#error FIELD_ELEMENTS_PER_BLOB must be a power of two
+#endif /* FIELD_ELEMENTS_PER_BLOB */
 
+/** The number of bytes in a KZG commitment. */
 #define BYTES_PER_COMMITMENT 48
+
+/** The number of bytes in a KZG proof. */
 #define BYTES_PER_PROOF 48
+
+/** The number of bytes in a BLS scalar field element. */
 #define BYTES_PER_FIELD_ELEMENT 32
+
+/** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
 
 ///////////////////////////////////////////////////////////////////////////////
