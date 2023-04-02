@@ -27,43 +27,6 @@ fn main() {
 
     let file_vec = vec![c_src_dir.join("c_kzg_4844.c")];
 
-    /*
-     * BLST env
-     */
-
-    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-
-    if target_arch.eq("x86_64") || target_arch.eq("aarch64") {
-    } else {
-        cc.define("__BLST_NO_ASM__", None);
-    }
-    match (cfg!(feature = "portable"), cfg!(feature = "force-adx")) {
-        (true, false) => {
-            println!("Compiling in portable mode without ISA extensions");
-            cc.define("__BLST_PORTABLE__", None);
-        }
-        (false, true) => {
-            if target_arch.eq("x86_64") {
-                println!("Enabling ADX support via `force-adx` feature");
-                cc.define("__ADX__", None);
-            } else {
-                println!("`force-adx` is ignored for non-x86_64 targets");
-            }
-        }
-        (false, false) =>
-        {
-            #[cfg(target_arch = "x86_64")]
-            if target_arch.eq("x86_64") && std::is_x86_feature_detected!("adx") {
-                println!("Enabling ADX because it was detected on the host");
-                cc.define("__ADX__", None);
-            }
-        }
-        (true, true) => panic!("Cannot compile with both `portable` and `force-adx` features"),
-    }
-    /*
-     * END OF BLST env
-     */
-
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
