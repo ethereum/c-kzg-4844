@@ -88,6 +88,7 @@ fn main() {
     /*
      * End of hack
      */
+
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS");
     // .flag("-Wl,-z,-stack_size,8388608");

@@ -6,6 +6,7 @@ mod test_formats;
 
 include!("generated.rs");
 
+use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::path::PathBuf;
 
@@ -99,30 +100,35 @@ impl KZGSettings {
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
     pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
+        let mode = unsafe { CString::from_vec_unchecked(vec!['r' as u8]) };
         #[cfg(unix)]
         let file_ptr = {
             use std::os::unix::prelude::OsStrExt;
-            use std::ffi::CString;
 
             let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
                 Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
             })?;
 
-            // TODO: this can fail. Needs error handling.
-            unsafe { libc::fopen(file_path.as_ptr(), &('r' as libc::c_char)) }
+            let fp = unsafe { libc::fopen(file_path.as_ptr(), mode.as_ptr()) };
+            if fp.is_null() {
+                let e = std::io::Error::last_os_error();
+                println!("Failed to get file_descriptor {e}");
+                return Err(Error::CError(C_KZG_RET::C_KZG_BADARGS));
+            }
+            fp
         };
-
         #[cfg(windows)]
         let file_ptr = {
-            use std::os::windows::ffi::OsStrExt;
+            let file_path =
+                CString::new(file_path.as_os_str().to_str().unwrap().as_bytes()).unwrap();
 
-            let file_path: Vec<u16> = file_path.as_os_str().encode_wide().collect();
-
-            // TODO: this can fail. Needs error handling.
-            let file_descriptor = unsafe { libc::wopen(file_path.as_ptr(), libc::O_RDONLY) };
-
-            // TODO: this can fail. Needs error handling.
-            unsafe { libc::fdopen(file_descriptor, &('r' as libc::c_char)) }
+            let fp = unsafe { libc::fopen(file_path.as_ptr(), mode.as_ptr()) };
+            if fp.is_null() {
+                let e = std::io::Error::last_os_error();
+                println!("Failed to get file_descriptor {e}");
+                return Err(Error::CError(C_KZG_RET::C_KZG_BADARGS));
+            }
+            fp
         };
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
