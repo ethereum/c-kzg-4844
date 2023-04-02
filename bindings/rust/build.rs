@@ -1,5 +1,5 @@
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 
 const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
@@ -91,7 +91,6 @@ fn main() {
 
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS");
-    // .flag("-Wl,-z,-stack_size,8388608");
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
@@ -211,10 +210,6 @@ fn make_bindings<P>(
     bindings
         .write_to_file(bindings_out_path)
         .expect("Failed to write bindings");
-    // let generated = bindings.to_string();
-    // for line in generated.lines() {
-    // println!("cargo:warning=Generated\t{line}");
-    // }
     bindings
         .write_to_file(snapshot_path)
         .expect("Failed to write snapshot");
