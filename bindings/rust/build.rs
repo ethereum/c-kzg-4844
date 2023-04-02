@@ -21,12 +21,6 @@ fn main() {
 
     eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
 
-    let c_src_dir = root_dir.join("src");
-
-    let mut cc = cc::Build::new();
-
-    let file_vec = vec![c_src_dir.join("c_kzg_4844.c")];
-
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
@@ -52,13 +46,17 @@ fn main() {
      * End of hack
      */
 
+    let c_src_dir = root_dir.join("src");
+
+    let mut cc = cc::Build::new();
+
     #[cfg(windows)]
     cc.flag("-D_CRT_SECURE_NO_WARNINGS");
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
     cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
-    cc.files(&file_vec);
+    cc.file(c_src_dir.join("c_kzg_4844.c"));
 
     cc.try_compile("ckzg").expect("Failed to compile ckzg");
 
@@ -71,7 +69,7 @@ fn main() {
         "bindings_{build_target}_{field_elements_per_blob}.rs"
     ));
 
-    let header_file_path = root_dir.join("src").join("c_kzg_4844.h");
+    let header_file_path = c_src_dir.join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 
     make_bindings(
