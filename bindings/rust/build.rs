@@ -36,7 +36,7 @@ fn main() {
         .arg(AWK_COMMAND)
         .arg("blst_aux.h")
         .status()
-        .expect("ask is installed")
+        .expect("awk is installed")
         .success();
     if !awk_succeeds {
         panic!("awk command failed")
