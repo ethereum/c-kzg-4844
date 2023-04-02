@@ -79,6 +79,9 @@ fn main() {
         bindings_out_path,
         snapshot_path,
     );
+
+    // Finally, tell cargo this provides ckzg
+    println!("cargo:rustc-link-lib=ckzg");
 }
 
 fn make_bindings<P>(
