@@ -1795,18 +1795,11 @@ static void profile_verify_blob_kzg_proof_batch(void) {
 ///////////////////////////////////////////////////////////////////////////////
 
 static void setup(void) {
-    FILE *fp;
     C_KZG_RET ret;
 
-    /* Open the mainnet trusted setup file */
-    fp = fopen("trusted_setup.txt", "r");
-    assert(fp != NULL);
-
     /* Load that trusted setup file */
-    ret = load_trusted_setup_file(&s, fp);
+    ret = load_trusted_setup_file(&s, "trusted_setup.txt");
     assert(ret == C_KZG_OK);
-
-    fclose(fp);
 }
 
 static void teardown(void) {
