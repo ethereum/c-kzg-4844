@@ -1888,7 +1888,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, const char *in) {
     }
 
     /* Close the file */
-    //CHECK(fclose(fp) == 0);
+    CHECK(fclose(fp) == 0);
 
     return load_trusted_setup(
         out,
