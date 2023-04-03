@@ -172,19 +172,13 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
         return env.Undefined();
     }
 
-    // Open the trusted setup file
+    // Get the file path from the arguments
     std::string file_path = info[0].As<Napi::String>().Utf8Value();
-    FILE *file_handle = fopen(file_path.c_str(), "r");
-    if (file_handle == nullptr) {
-        Napi::Error::New(env, "Error opening trusted setup file: " + file_path)
-            .ThrowAsJavaScriptException();
-        return env.Undefined();
-    }
 
     // Load the trusted setup from that file
-    C_KZG_RET ret = load_trusted_setup_file(&(data->settings), file_handle);
-    // Close the trusted setup file
-    fclose(file_handle);
+    C_KZG_RET ret = load_trusted_setup_file(
+        &(data->settings), file_path.c_str()
+    );
 
     // Check that loading the trusted setup was successful
     if (ret != C_KZG_OK) {

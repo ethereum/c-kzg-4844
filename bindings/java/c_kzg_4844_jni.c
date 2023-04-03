@@ -75,20 +75,9 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 
   const char *file_native = (*env)->GetStringUTFChars(env, file, 0);
 
-  FILE *f = fopen(file_native, "r");
-
-  if (f == NULL)
-  {
-    reset_trusted_setup();
-    (*env)->ReleaseStringUTFChars(env, file, file_native);
-    throw_exception(env, "Couldn't load Trusted Setup. File might not exist or there is a permission issue.");
-    return;
-  }
-
-  C_KZG_RET ret = load_trusted_setup_file(settings, f);
+  C_KZG_RET ret = load_trusted_setup_file(settings, file_native);
 
   (*env)->ReleaseStringUTFChars(env, file, file_native);
-  fclose(f);
 
   if (ret != C_KZG_OK)
   {

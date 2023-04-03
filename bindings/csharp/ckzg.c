@@ -9,13 +9,8 @@ KZGSettings* load_trusted_setup_wrap(const char* file) {
 
   if (out == NULL) return NULL;
 
-  FILE* f = fopen(file, "r");
+  if (load_trusted_setup_file(out, file) != C_KZG_OK) { free(out); return NULL; }
 
-  if (f == NULL) { free(out); return NULL; }
-
-  if (load_trusted_setup_file(out, f) != C_KZG_OK) { free(out); fclose(f); return NULL; }
-
-  fclose(f);
   return out;
 }
 

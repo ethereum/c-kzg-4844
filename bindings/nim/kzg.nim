@@ -54,19 +54,11 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 # Public functions
 ##############################################################
 
-proc loadTrustedSetup*(input: File): Result[KzgCtx, string] =
+proc loadTrustedSetup*(filePath: string): Result[KzgCtx, string] =
   let
     ctx = newKzgCtx()
-    res = load_trusted_setup_file(ctx.val, input)
+    res = load_trusted_setup_file(ctx.val, filePath)
   verify(res, ctx)
-
-proc loadTrustedSetup*(fileName: string): Result[KzgCtx, string] =
-  try:
-    let file = open(fileName)
-    result = file.loadTrustedSetup()
-    file.close()
-  except IOError as ex:
-    return err(ex.msg)
 
 proc loadTrustedSetup*(g1: openArray[G1Data],
                        g2: openArray[G2Data]):

@@ -103,7 +103,7 @@ LoadTrustedSetupFile is the binding for:
 
 	C_KZG_RET load_trusted_setup_file(
 	    KZGSettings *out,
-	    FILE *in);
+	    const char *in);
 */
 func LoadTrustedSetupFile(trustedSetupFile string) error {
 	if loaded {
@@ -111,14 +111,7 @@ func LoadTrustedSetupFile(trustedSetupFile string) error {
 	}
 	cTrustedSetupFile := C.CString(trustedSetupFile)
 	defer C.free(unsafe.Pointer(cTrustedSetupFile))
-	cMode := C.CString("r")
-	defer C.free(unsafe.Pointer(cMode))
-	fp := C.fopen(cTrustedSetupFile, cMode)
-	if fp == nil {
-		panic("error reading trusted setup")
-	}
-	ret := C.load_trusted_setup_file(&settings, fp)
-	C.fclose(fp)
+	ret := C.load_trusted_setup_file(&settings, cTrustedSetupFile)
 	if ret == C.C_KZG_OK {
 		loaded = true
 	}

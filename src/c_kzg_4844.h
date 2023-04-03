@@ -169,7 +169,7 @@ C_KZG_RET load_trusted_setup(
     size_t n2
 );
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, const char *in);
 
 void free_trusted_setup(KZGSettings *s);
 

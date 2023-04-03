@@ -6,7 +6,6 @@ mod test_formats;
 
 include!("generated.rs");
 
-use libc::fopen;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
 use std::os::unix::prelude::OsStrExt;
@@ -107,8 +106,7 @@ impl KZGSettings {
         })?;
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
-            let file_ptr = fopen(file_path.as_ptr(), &('r' as libc::c_char));
-            let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
+            let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_path.as_ptr());
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
             } else {

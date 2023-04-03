@@ -140,12 +140,6 @@ fn make_bindings<P>(
         /*
          * Cleanup instructions.
          */
-        // Remove stdio definitions related to FILE.
-        .opaque_type("FILE")
-        // Remove the definition of FILE to use the libc one, which is more convenient.
-        .blocklist_type("FILE")
-        // Inject rust code using libc's FILE
-        .raw_line("use libc::FILE;")
         // Do no generate layout tests.
         .layout_tests(false)
         // Extern functions do not need individual extern blocks.

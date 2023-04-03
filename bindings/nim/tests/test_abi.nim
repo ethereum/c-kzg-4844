@@ -36,11 +36,9 @@ proc readSetup(): KzgSettings =
   doAssert(res == KZG_OK,
     "ERROR: " & $res)
 
-proc readSetup(filename: string): KzgSettings =
-  var file = open(filename)
-  let ret =  load_trusted_setup_file(result, file)
+proc readSetup(filePath: string): KzgSettings =
+  let ret = load_trusted_setup_file(result, cstring(filePath))
   doAssert ret == KZG_OK
-  file.close()
 
 proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
   for i in 0..<n:
