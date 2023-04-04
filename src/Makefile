@@ -31,7 +31,6 @@ CFLAGS += -O2 -Wall -Wextra
 ifeq ($(PLATFORM),Windows)
 	CC = gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
-	CFLAGS += -Wl,--stack,8388608 # 8MB
 else
 	CC = clang
 	CFLAGS += -fPIC -Werror
@@ -66,7 +65,7 @@ c_kzg_4844.o: c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -c $<
 
 test_c_kzg_4844: CFLAGS += -O0
-test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c
+test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
