@@ -1506,7 +1506,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
-    /* Verify batched proofs for 0,1,2 blobs */
+    /* Verify batched proofs for 0,1,2..16 blobs */
     /* This should still work with zero blobs */
     for (int count = 0; count <= n_samples; count++) {
         ret = verify_blob_kzg_proof_batch(
