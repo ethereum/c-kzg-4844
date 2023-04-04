@@ -1501,6 +1501,7 @@ static uint32_t reverse_bits(uint32_t n) {
  * In other words, the bit index of the one bit.
  *
  * @remark Works only for n a power of two, and only for n up to 2^31.
+ * @remark Not the fastest implementation, but it doesn't need to be fast.
  *
  * @param[in] n The power of two
  *
