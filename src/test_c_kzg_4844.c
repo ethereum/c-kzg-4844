@@ -1485,11 +1485,15 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    const int n_samples = 3;
+    const int n_samples = 16;
     Bytes48 proofs[n_samples];
     KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    Blob *blobs = NULL;
     bool ok;
+
+    /* Allocate blobs because they are big */
+    ret = c_kzg_malloc((void **)&blobs, n_samples * sizeof(Blob));
+    ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
@@ -1511,6 +1515,9 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
+
+    /* Free the blobs */
+    c_kzg_free(blobs);
 }
 
 static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
