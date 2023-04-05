@@ -1,6 +1,5 @@
 use std::env;
 use std::path::PathBuf;
-use std::process::Command;
 
 const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
@@ -24,34 +23,13 @@ fn main() {
     // Obtain the header files exposed by blst-bindings' crate.
     let blst_headers_dir =
         std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
-    /*
-     * Hack ahead
-     */
-    const AWK_COMMAND: &str =
-        "{gsub(/typedef struct \\{\\} blst_uniq;/, \"typedef struct { int dummy; } blst_uniq;\")}1";
-    let awk_succeeds = Command::new("awk")
-        .current_dir(blst_headers_dir.clone())
-        .arg("-i")
-        .arg("inplace")
-        .arg(AWK_COMMAND)
-        .arg("blst_aux.h")
-        .status()
-        .expect("awk is installed")
-        .success();
-    if !awk_succeeds {
-        panic!("awk command failed")
-    }
-
-    /*
-     * End of hack
-     */
 
     let c_src_dir = root_dir.join("src");
 
     let mut cc = cc::Build::new();
 
     #[cfg(windows)]
-    cc.flag("-D_CRT_SECURE_NO_WARNINGS");
+    cc.compiler("clang").flag("-D_CRT_SECURE_NO_WARNINGS");
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
