@@ -4,9 +4,8 @@
 
 ### Prerequisites
 
-* Follow the instructions in the [README.md](../../README.md) to build blst.
-* `JAVA_HOME` environment variable is set to a JDK with an `include` folder containing a `jni.h`
-  file.
+* Build blst by running `make blst` in the [library source directory](../../src).
+* Set `JAVA_HOME` environment variable to a JDK with an `include` folder containing a `jni.h` file.
 
 ### Build
 

@@ -1,17 +1,8 @@
 use std::env;
-use std::path::{Path, PathBuf};
-use std::process::Command;
+use std::path::PathBuf;
 
 const MAINNET_FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
-
-fn move_file(src: &Path, dst: &Path) -> Result<(), String> {
-    std::fs::copy(src, dst)
-        .map_err(|_| format!("Failed to copy {} to {}", src.display(), dst.display()))?;
-    std::fs::remove_file(src)
-        .map_err(|_| format!("Failed to remove file {} from source", src.display()))?;
-    Ok(())
-}
 
 fn main() {
     let cargo_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
@@ -20,7 +11,6 @@ fn main() {
         .expect("rust dir is nested")
         .parent()
         .expect("bindings dir is nested");
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
 
     let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
         MINIMAL_FIELD_ELEMENTS_PER_BLOB
@@ -30,48 +20,31 @@ fn main() {
 
     eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
 
-    // Deleting any existing assembly and object files to ensure that compiling with a different
-    // feature flag changes the final linked library file.
-    let obj_file = root_dir.join("src").join("c_kzg_4844.o");
-    if obj_file.exists() {
-        std::fs::remove_file(obj_file).unwrap();
-    }
+    // Obtain the header files exposed by blst-bindings' crate.
+    let blst_headers_dir =
+        std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
 
-    // Ensure libckzg exists in `OUT_DIR`
-    Command::new("make")
-        .current_dir(root_dir.join("src"))
-        .arg("c_kzg_4844.o")
-        .arg(format!(
-            "FIELD_ELEMENTS_PER_BLOB={}",
-            field_elements_per_blob
-        ))
-        .status()
-        .unwrap();
+    let c_src_dir = root_dir.join("src");
 
-    Command::new("ar")
-        .current_dir(&root_dir.join("src"))
-        .args(["crus", "libckzg.a", "c_kzg_4844.o"])
-        .status()
-        .unwrap();
-    move_file(
-        root_dir.join("src").join("libckzg.a").as_path(),
-        out_dir.join("libckzg.a").as_path(),
-    )
-    .unwrap();
+    let mut cc = cc::Build::new();
 
-    println!("cargo:rustc-link-search={}", out_dir.display());
-    println!("cargo:rustc-link-search={}", out_dir.display());
-    println!("cargo:rustc-link-lib=static=ckzg");
+    #[cfg(windows)]
+    cc.compiler("clang").flag("-D_CRT_SECURE_NO_WARNINGS");
+
+    cc.include(blst_headers_dir.clone());
+    cc.warnings(false);
+    cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
+    cc.file(c_src_dir.join("c_kzg_4844.c"));
+
+    cc.try_compile("ckzg").expect("Failed to compile ckzg");
+
     // Tell cargo to search for the static blst exposed by the blst-bindings' crate.
     println!("cargo:rustc-link-lib=static=blst");
 
     let bindings_out_path = cargo_dir.join("src").join("bindings").join("generated.rs");
-    let header_file_path = root_dir.join("src").join("c_kzg_4844.h");
+    let header_file_path = c_src_dir.join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 
-    // Obtain the header files exposed by blst-bindings' crate.
-    let blst_headers_dir =
-        std::env::var_os("DEP_BLST_BINDINGS").expect("BLST exposes header files for bindings");
     make_bindings(
         field_elements_per_blob,
         header_file,
@@ -79,11 +52,8 @@ fn main() {
         bindings_out_path,
     );
 
-    // Cleanup
-    let obj_file = root_dir.join("src").join("c_kzg_4844.o");
-    if obj_file.exists() {
-        std::fs::remove_file(obj_file).unwrap();
-    }
+    // Finally, tell cargo this provides ckzg
+    println!("cargo:rustc-link-lib=ckzg");
 }
 
 fn make_bindings<P>(
