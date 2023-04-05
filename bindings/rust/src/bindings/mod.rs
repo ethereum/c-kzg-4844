@@ -6,10 +6,8 @@ mod test_formats;
 
 include!("generated.rs");
 
-use libc::fopen;
 use std::ffi::CString;
 use std::mem::MaybeUninit;
-use std::os::unix::prelude::OsStrExt;
 use std::path::PathBuf;
 
 pub const BYTES_PER_G1_POINT: usize = 48;
@@ -102,12 +100,41 @@ impl KZGSettings {
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
     pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
-        let file_path = CString::new(file_path.as_os_str().as_bytes()).map_err(|e| {
-            Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {:?}", e))
-        })?;
+        // SAFETY: vec![b'r'] has no 0 bytes.
+        let mode = unsafe { CString::from_vec_unchecked(vec![b'r']) };
+
+        #[cfg(unix)]
+        let file_path_bytes = {
+            use std::os::unix::prelude::OsStrExt;
+            file_path.as_os_str().as_bytes()
+        };
+
+        #[cfg(windows)]
+        let file_path_bytes = {
+            file_path
+                .as_os_str()
+                .to_str()
+                .ok_or(Error::InvalidTrustedSetup(format!(
+                    "Unsuported non unicode file path"
+                )))?
+                .as_bytes()
+        };
+
+        let file_path = CString::new(file_path_bytes)
+            .map_err(|e| Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {e}")))?;
+
+        // SAFETY:
+        // - .as_ptr(): pointer is not dangling because file_path has not been dropped.
+        //    Usage or ptr: File will not be written to it by the c code.
+        let file_ptr = unsafe { libc::fopen(file_path.as_ptr(), mode.as_ptr()) };
+        if file_ptr.is_null() {
+            let e = std::io::Error::last_os_error();
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Failed to open trusted setup file {e}"
+            )));
+        }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
-        unsafe {
-            let file_ptr = fopen(file_path.as_ptr(), &('r' as libc::c_char));
+        let result = unsafe {
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
@@ -117,7 +144,13 @@ impl KZGSettings {
                     res
                 )))
             }
-        }
+        };
+
+        // We don't really care if this succeeds.
+        let _uncheched_close_result = unsafe { libc::fclose(file_ptr) };
+        drop(file_path);
+
+        result
     }
 }
 
