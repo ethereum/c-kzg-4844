@@ -66,11 +66,6 @@ fn main() {
     println!("cargo:rustc-link-lib=static=blst");
 
     let bindings_out_path = cargo_dir.join("src").join("bindings").join("generated.rs");
-    let build_target = env::var("TARGET").unwrap();
-    let snapshot_path = cargo_dir.join("snapshots").join(format!(
-        "bindings_{build_target}_{field_elements_per_blob}.rs"
-    ));
-
     let header_file_path = root_dir.join("src").join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 
@@ -82,7 +77,6 @@ fn main() {
         header_file,
         &blst_headers_dir.to_string_lossy(),
         bindings_out_path,
-        snapshot_path,
     );
 
     // Cleanup
@@ -97,7 +91,6 @@ fn make_bindings<P>(
     header_path: &str,
     blst_headers_dir: &str,
     bindings_out_path: P,
-    snapshot_path: P,
 ) where
     P: AsRef<std::path::Path>,
 {
@@ -182,7 +175,4 @@ fn make_bindings<P>(
     bindings
         .write_to_file(bindings_out_path)
         .expect("Failed to write bindings");
-    bindings
-        .write_to_file(snapshot_path)
-        .expect("Failed to write snapshot");
 }
