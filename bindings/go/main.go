@@ -7,6 +7,7 @@ package cgokzg4844
 import "C"
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"unsafe"
@@ -46,7 +47,7 @@ var (
 )
 
 ///////////////////////////////////////////////////////////////////////////////
-// Helper functions
+// Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 // makeErrorFromRet translates an (integral) return value, as reported
@@ -61,7 +62,47 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Public functions
+// Unmarshal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+func (b *Bytes32) UnmarshalText(input []byte) error {
+	bytes, err := hex.DecodeString(string(input[2:]))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(b) {
+		return errors.New("invalid Bytes32")
+	}
+	copy(b[:], bytes)
+	return nil
+}
+
+func (b *Bytes48) UnmarshalText(input []byte) error {
+	bytes, err := hex.DecodeString(string(input[2:]))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(b) {
+		return errors.New("invalid Bytes48")
+	}
+	copy(b[:], bytes)
+	return nil
+}
+
+func (b *Blob) UnmarshalText(input []byte) error {
+	blobBytes, err := hex.DecodeString(string(input[2:]))
+	if err != nil {
+		return err
+	}
+	if len(blobBytes) != len(b) {
+		return errors.New("invalid Blob")
+	}
+	copy(b[:], blobBytes)
+	return nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Interface Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -283,25 +324,4 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		(C.size_t)(len(blobs)),
 		&settings)
 	return bool(result), makeErrorFromRet(ret)
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Private functions
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-sha256 is the binding for:
-
-	void blst_sha256(
-		byte out[32],
-		const byte *msg,
-		size_t msg_len);
-*/
-func sha256(msg []byte) Bytes32 {
-	var out Bytes32
-	C.blst_sha256(
-		(*C.byte)(unsafe.Pointer(&out)),
-		*(**C.byte)(unsafe.Pointer(&msg)),
-		(C.size_t)(len(msg)))
-	return out
 }
