@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 
 	// So its functions are available during compilation.
@@ -66,36 +67,45 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (b *Bytes32) UnmarshalText(input []byte) error {
+	if !strings.HasPrefix(string(input), "0x") {
+		return ErrBadArgs
+	}
 	bytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
 	if len(bytes) != len(b) {
-		return errors.New("invalid Bytes32")
+		return ErrBadArgs
 	}
 	copy(b[:], bytes)
 	return nil
 }
 
 func (b *Bytes48) UnmarshalText(input []byte) error {
+	if !strings.HasPrefix(string(input), "0x") {
+		return ErrBadArgs
+	}
 	bytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
 	if len(bytes) != len(b) {
-		return errors.New("invalid Bytes48")
+		return ErrBadArgs
 	}
 	copy(b[:], bytes)
 	return nil
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
+	if !strings.HasPrefix(string(input), "0x") {
+		return ErrBadArgs
+	}
 	blobBytes, err := hex.DecodeString(string(input[2:]))
 	if err != nil {
 		return err
 	}
 	if len(blobBytes) != len(b) {
-		return errors.New("invalid Blob")
+		return ErrBadArgs
 	}
 	copy(b[:], blobBytes)
 	return nil
