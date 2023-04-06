@@ -40,6 +40,14 @@ Run the benchmarks with this command:
 go test -bench=Benchmark
 ```
 
+## Minimal
+
+By default, `FIELD_ELEMENTS_PER_BLOB` will be 4096 (mainnet), but you can
+manually set it to 4 (minimal).
+```
+CGO_CFLAGS="-DFIELD_ELEMENTS_PER_BLOB=4" go build
+```
+
 ## Note
 
 The `go.mod` and `go.sum` files are in the project's root directory because the
