@@ -10,7 +10,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"strings"
 	"unsafe"
 
 	// So its functions are available during compilation.
@@ -67,7 +66,7 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (b *Bytes32) UnmarshalText(input []byte) error {
-	if !strings.HasPrefix(string(input), "0x") {
+	if string(input)[:2] != "0x" {
 		return ErrBadArgs
 	}
 	bytes, err := hex.DecodeString(string(input[2:]))
@@ -82,7 +81,7 @@ func (b *Bytes32) UnmarshalText(input []byte) error {
 }
 
 func (b *Bytes48) UnmarshalText(input []byte) error {
-	if !strings.HasPrefix(string(input), "0x") {
+	if string(input)[:2] != "0x" {
 		return ErrBadArgs
 	}
 	bytes, err := hex.DecodeString(string(input[2:]))
@@ -97,7 +96,7 @@ func (b *Bytes48) UnmarshalText(input []byte) error {
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
-	if !strings.HasPrefix(string(input), "0x") {
+	if string(input)[:2] != "0x" {
 		return ErrBadArgs
 	}
 	blobBytes, err := hex.DecodeString(string(input[2:]))
