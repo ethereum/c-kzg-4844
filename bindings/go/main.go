@@ -1,4 +1,4 @@
-package cgokzg4844
+package ckzg4844
 
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers

@@ -1,4 +1,4 @@
-package cgokzg4844
+package ckzg4844
 
 import (
 	"fmt"

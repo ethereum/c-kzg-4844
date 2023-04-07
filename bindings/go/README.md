@@ -1,4 +1,4 @@
-# cgo-kzg-4844
+# Go bindings
 
 This package implements Go bindings (using [Cgo](https://go.dev/blog/cgo)) for the
 exported functions in [C-KZG-4844](https://github.com/ethereum/c-kzg-4844).
