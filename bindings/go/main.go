@@ -101,14 +101,14 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	if string(input)[:2] == "0x" {
 		input = input[2:]
 	}
-	blobBytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(string(input))
 	if err != nil {
 		return err
 	}
-	if len(blobBytes) != len(b) {
+	if len(bytes) != len(b) {
 		return ErrBadArgs
 	}
-	copy(b[:], blobBytes)
+	copy(b[:], bytes)
 	return nil
 }
 
