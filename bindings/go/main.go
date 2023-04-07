@@ -68,10 +68,10 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (b *Bytes32) UnmarshalText(input []byte) error {
-	if string(input)[:2] != "0x" {
-		return ErrBadArgs
+	if string(input)[:2] == "0x" {
+		input = input[2:]
 	}
-	bytes, err := hex.DecodeString(string(input[2:]))
+	bytes, err := hex.DecodeString(string(input))
 	if err != nil {
 		return err
 	}
@@ -83,10 +83,10 @@ func (b *Bytes32) UnmarshalText(input []byte) error {
 }
 
 func (b *Bytes48) UnmarshalText(input []byte) error {
-	if string(input)[:2] != "0x" {
-		return ErrBadArgs
+	if string(input)[:2] == "0x" {
+		input = input[2:]
 	}
-	bytes, err := hex.DecodeString(string(input[2:]))
+	bytes, err := hex.DecodeString(string(input))
 	if err != nil {
 		return err
 	}
@@ -98,10 +98,10 @@ func (b *Bytes48) UnmarshalText(input []byte) error {
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
-	if string(input)[:2] != "0x" {
-		return ErrBadArgs
+	if string(input)[:2] == "0x" {
+		input = input[2:]
 	}
-	blobBytes, err := hex.DecodeString(string(input[2:]))
+	blobBytes, err := hex.DecodeString(string(input))
 	if err != nil {
 		return err
 	}
