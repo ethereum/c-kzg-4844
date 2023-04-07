@@ -64,6 +64,13 @@ const proofBadLength = randomBytes(BYTES_PER_PROOF - 1);
 const fieldElementValidLength = randomBytes(BYTES_PER_FIELD_ELEMENT);
 const fieldElementBadLength = randomBytes(BYTES_PER_FIELD_ELEMENT - 1);
 
+function bytesFromHex(hexString: string): Uint8Array {
+  if (hexString.startsWith("0x")) {
+    hexString = hexString.slice(2);
+  }
+  return Uint8Array.from(Buffer.from(hexString, "hex"));
+}
+
 function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
   if (a.length !== b.length) {
     return false;
@@ -72,13 +79,6 @@ function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
     if (a[i] !== b[i]) return false;
   }
   return true;
-}
-
-function bytesFromHex(hexString: string): Uint8Array {
-  if (hexString.startsWith("0x")) {
-    hexString = hexString.slice(2);
-  }
-  return Uint8Array.from(Buffer.from(hexString, "hex"));
 }
 
 describe("C-KZG", () => {
