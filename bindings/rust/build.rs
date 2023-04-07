@@ -29,7 +29,7 @@ fn main() {
     let mut cc = cc::Build::new();
 
     #[cfg(windows)]
-    cc.compiler("clang").flag("-D_CRT_SECURE_NO_WARNINGS");
+    cc.flag("-D_CRT_SECURE_NO_WARNINGS");
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);

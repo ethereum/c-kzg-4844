@@ -33,10 +33,6 @@ build: install clean
 	@cp -r ../../blst deps
 	@cp ../../src/c_kzg_4844.c deps/c-kzg
 	@cp ../../src/c_kzg_4844.h deps/c-kzg
-	@# Patch the blst_aux.h to fix a compiler error
-	@awk '{gsub(/typedef struct \{\} blst_uniq;/, "typedef struct { int dummy; } blst_uniq;")}1' \
-		deps/blst/bindings/blst_aux.h > blst_aux_temp.h
-	@mv blst_aux_temp.h deps/blst/bindings/blst_aux.h
 	@# Build the bindings
 	@$(YARN) node-gyp --loglevel=warn configure
 	@$(YARN) node-gyp --loglevel=warn build
