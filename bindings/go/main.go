@@ -78,14 +78,14 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
-	if len(g1Bytes)%48 != 0 {
-		panic("len(g1Bytes) is not a multiple of 48")
+	if len(g1Bytes)%C.BYTES_PER_G1 != 0 {
+		panic(fmt.Sprintf("len(g1Bytes) is not a multiple of %v", C.BYTES_PER_G1))
 	}
-	if len(g2Bytes)%96 != 0 {
-		panic("len(g2Bytes) is not a multiple of 96")
+	if len(g2Bytes)%C.BYTES_PER_G2 != 0 {
+		panic(fmt.Sprintf("len(g2Bytes) is not a multiple of %v", C.BYTES_PER_G2))
 	}
-	numG1Elements := len(g1Bytes) / 48
-	numG2Elements := len(g2Bytes) / 96
+	numG1Elements := len(g1Bytes) / C.BYTES_PER_G1
+	numG2Elements := len(g2Bytes) / C.BYTES_PER_G2
 	ret := C.load_trusted_setup(
 		&settings,
 		*(**C.uint8_t)(unsafe.Pointer(&g1Bytes)),
