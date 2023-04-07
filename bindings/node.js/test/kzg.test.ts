@@ -74,30 +74,11 @@ function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
   return true;
 }
 
-function padToEven(a: string): string {
-  return a.length % 2 ? `0${a}` : a;
-}
-
-function bytesFromHex(hex: string): Uint8Array {
-  if (typeof hex !== "string") {
-    throw new Error(`hex argument type ${typeof hex} must be of type string`);
+function bytesFromHex(hexString: string): Uint8Array {
+  if (hexString.startsWith("0x")) {
+    hexString = hexString.slice(2);
   }
-
-  if (hex.startsWith("0x")) {
-    hex = hex.slice(2);
-  }
-
-  if (hex.length % 2 !== 0) {
-    hex = padToEven(hex);
-  }
-
-  const byteLen = hex.length / 2;
-  const bytes = new Uint8Array(byteLen);
-  for (let i = 0; i < byteLen; i++) {
-    const byte = parseInt(hex.slice(i * 2, (i + 1) * 2), 16);
-    bytes[i] = byte;
-  }
-  return bytes;
+  return Uint8Array.from(Buffer.from(hexString, "hex"));
 }
 
 describe("C-KZG", () => {
@@ -148,7 +129,12 @@ describe("C-KZG", () => {
         }
 
         expect(test.output).not.toBeNull();
-        expect(proof.reduce((acc, pitem, pindex) => acc && bytesEqual(pitem, bytesFromHex(test.output[pindex])), true));
+
+        const [proofBytes, yBytes] = proof;
+        const [expectedProofBytes, expectedYBytes] = test.output.map((out) => bytesFromHex(out));
+
+        expect(bytesEqual(proofBytes, expectedProofBytes));
+        expect(bytesEqual(yBytes, expectedYBytes));
       });
     });
 
