@@ -64,8 +64,21 @@ const proofBadLength = randomBytes(BYTES_PER_PROOF - 1);
 const fieldElementValidLength = randomBytes(BYTES_PER_FIELD_ELEMENT);
 const fieldElementBadLength = randomBytes(BYTES_PER_FIELD_ELEMENT - 1);
 
-function bytesFromHex(hexString: string): Buffer {
-  return Buffer.from(hexString.slice(2), "hex");
+function bytesFromHex(hexString: string): Uint8Array {
+  if (hexString.startsWith("0x")) {
+    hexString = hexString.slice(2);
+  }
+  return Uint8Array.from(Buffer.from(hexString, "hex"));
+}
+
+function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 describe("C-KZG", () => {
@@ -81,7 +94,7 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test: BlobToKzgCommitmentTest = yaml.load(readFileSync(testFile, "ascii"));
 
-        let commitment: Buffer;
+        let commitment: Uint8Array;
         const blob = bytesFromHex(test.input.blob);
 
         try {
@@ -93,7 +106,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         const expectedCommitment = bytesFromHex(test.output);
-        expect(commitment).toEqual(expectedCommitment);
+        expect(bytesEqual(commitment, expectedCommitment));
       });
     });
 
@@ -116,7 +129,12 @@ describe("C-KZG", () => {
         }
 
         expect(test.output).not.toBeNull();
-        expect(proof).toEqual(test.output.map((hex) => bytesFromHex(hex)));
+
+        const [proofBytes, yBytes] = proof;
+        const [expectedProofBytes, expectedYBytes] = test.output.map((out) => bytesFromHex(out));
+
+        expect(bytesEqual(proofBytes, expectedProofBytes));
+        expect(bytesEqual(yBytes, expectedYBytes));
       });
     });
 
@@ -127,7 +145,7 @@ describe("C-KZG", () => {
       tests.forEach((testFile: string) => {
         const test: ComputeBlobKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
 
-        let proof: Buffer;
+        let proof: Uint8Array;
         const blob = bytesFromHex(test.input.blob);
         const commitment = bytesFromHex(test.input.commitment);
 
@@ -140,7 +158,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         const expectedProof = bytesFromHex(test.output);
-        expect(proof).toEqual(expectedProof);
+        expect(bytesEqual(proof, expectedProof));
       });
     });
 
