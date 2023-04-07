@@ -38,7 +38,7 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code, const char *messag
 void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size, size_t expected_size)
 {
   char message[100];
-  sprintf(message, "%s Expected %zu bytes but got %zu.", prefix, expected_size, size);
+  snprintf(message, sizeof(message), "%s Expected %zu bytes but got %zu.", prefix, expected_size, size);
   throw_c_kzg_exception(env, C_KZG_BADARGS, message);
 }
 
