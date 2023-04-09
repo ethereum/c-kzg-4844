@@ -1,6 +1,6 @@
 {
   "name": "c-kzg",
-  "version": "1.1.2",
+  "version": "2.0.4",
   "description": "NodeJS bindings for C-KZG",
   "contributors": [
     "Dan Coffman <dgcoffman@gmail.com>",
