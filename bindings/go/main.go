@@ -1,4 +1,4 @@
-package cgokzg4844
+package ckzg4844
 
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers
@@ -9,6 +9,7 @@ package cgokzg4844
 import "C"
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"unsafe"
@@ -48,7 +49,7 @@ var (
 )
 
 ///////////////////////////////////////////////////////////////////////////////
-// Helper functions
+// Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 // makeErrorFromRet translates an (integral) return value, as reported
@@ -63,7 +64,56 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Public functions
+// Unmarshal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+func (b *Bytes32) UnmarshalText(input []byte) error {
+	if string(input[:2]) == "0x" {
+		input = input[2:]
+	}
+	bytes, err := hex.DecodeString(string(input))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(b) {
+		return ErrBadArgs
+	}
+	copy(b[:], bytes)
+	return nil
+}
+
+func (b *Bytes48) UnmarshalText(input []byte) error {
+	if string(input[:2]) == "0x" {
+		input = input[2:]
+	}
+	bytes, err := hex.DecodeString(string(input))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(b) {
+		return ErrBadArgs
+	}
+	copy(b[:], bytes)
+	return nil
+}
+
+func (b *Blob) UnmarshalText(input []byte) error {
+	if string(input[:2]) == "0x" {
+		input = input[2:]
+	}
+	bytes, err := hex.DecodeString(string(input))
+	if err != nil {
+		return err
+	}
+	if len(bytes) != len(b) {
+		return ErrBadArgs
+	}
+	copy(b[:], bytes)
+	return nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Interface Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -285,25 +335,4 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		(C.size_t)(len(blobs)),
 		&settings)
 	return bool(result), makeErrorFromRet(ret)
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Private functions
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-sha256 is the binding for:
-
-	void blst_sha256(
-		byte out[32],
-		const byte *msg,
-		size_t msg_len);
-*/
-func sha256(msg []byte) Bytes32 {
-	var out Bytes32
-	C.blst_sha256(
-		(*C.byte)(unsafe.Pointer(&out)),
-		*(**C.byte)(unsafe.Pointer(&msg)),
-		(C.size_t)(len(msg)))
-	return out
 }

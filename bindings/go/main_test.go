@@ -1,8 +1,6 @@
-package cgokzg4844
+package ckzg4844
 
 import (
-	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -27,43 +25,7 @@ func TestMain(m *testing.M) {
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-func (f *Bytes32) UnmarshalText(input []byte) error {
-	bytes, err := hex.DecodeString(string(input[2:]))
-	if err != nil {
-		return err
-	}
-	if len(bytes) != len(f) {
-		return errors.New("invalid Bytes32")
-	}
-	copy(f[:], bytes)
-	return nil
-}
-
-func (f *Bytes48) UnmarshalText(input []byte) error {
-	bytes, err := hex.DecodeString(string(input[2:]))
-	if err != nil {
-		return err
-	}
-	if len(bytes) != len(f) {
-		return errors.New("invalid Bytes48")
-	}
-	copy(f[:], bytes)
-	return nil
-}
-
-func (b *Blob) UnmarshalText(input []byte) error {
-	blobBytes, err := hex.DecodeString(string(input[2:]))
-	if err != nil {
-		return err
-	}
-	if len(blobBytes) != len(b) {
-		return errors.New("invalid Blob")
-	}
-	copy(b[:], blobBytes)
-	return nil
-}
-
-func GetRandFieldElement(seed int64) Bytes32 {
+func getRandFieldElement(seed int64) Bytes32 {
 	rand.Seed(seed)
 	bytes := make([]byte, 31)
 	_, err := rand.Read(bytes)
@@ -78,34 +40,17 @@ func GetRandFieldElement(seed int64) Bytes32 {
 	return fieldElementBytes
 }
 
-func GetRandBlob(seed int64) Blob {
+func getRandBlob(seed int64) Blob {
 	var blob Blob
 	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
-		fieldElementBytes := GetRandFieldElement(seed + int64(i))
+		fieldElementBytes := getRandFieldElement(seed + int64(i))
 		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
 	}
 	return blob
 }
 
-/*
-HumanBytes will convert an integer to a human-readable value. Adapted from:
-https://programming.guide/go/formatting-byte-size-to-human-readable-format.html
-*/
-func HumanBytes(b int64) string {
-	const unit = 1024
-	if b < unit {
-		return fmt.Sprintf("%dB", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%v%cB", float64(b)/float64(div), "KMGTPE"[exp])
-}
-
 ///////////////////////////////////////////////////////////////////////////////
-// Tests
+// Reference Tests
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
@@ -454,7 +399,7 @@ func Benchmark(b *testing.B) {
 	proofs := [length]Bytes48{}
 	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
-		blob := GetRandBlob(int64(i))
+		blob := getRandBlob(int64(i))
 		commitment, err := BlobToKZGCommitment(blob)
 		require.NoError(b, err)
 		proof, err := ComputeBlobKZGProof(blob, Bytes48(commitment))
@@ -463,12 +408,8 @@ func Benchmark(b *testing.B) {
 		blobs[i] = blob
 		commitments[i] = Bytes48(commitment)
 		proofs[i] = Bytes48(proof)
-		fields[i] = GetRandFieldElement(int64(i))
+		fields[i] = getRandFieldElement(int64(i))
 	}
-
-	///////////////////////////////////////////////////////////////////////////
-	// Public functions
-	///////////////////////////////////////////////////////////////////////////
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -504,21 +445,6 @@ func Benchmark(b *testing.B) {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
-			}
-		})
-	}
-
-	///////////////////////////////////////////////////////////////////////////
-	// Private functions
-	///////////////////////////////////////////////////////////////////////////
-
-	for i := 2; i <= 20; i += 2 {
-		numBytes := int64(1 << i)
-		bytes := make([]byte, numBytes)
-		b.Run(fmt.Sprintf("sha256(size=%v)", HumanBytes(numBytes)), func(b *testing.B) {
-			b.SetBytes(numBytes)
-			for n := 0; n < b.N; n++ {
-				sha256(bytes)
 			}
 		})
 	}
