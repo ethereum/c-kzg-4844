@@ -11,9 +11,7 @@ go get github.com/ethereum/c-kzg-4844
 
 ## Go version
 
-This package requires `1.19rc1` or later. Version `1.19beta1` and before will
-not work. These versions have a linking issue and are unable to see `blst`
-functions.
+This package should work with Go 1.11 and later.
 
 ## Example
 
