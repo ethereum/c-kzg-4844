@@ -1,11 +1,12 @@
 package ckzg4844
 
+// #cgo CFLAGS: -O2 -D__BLST_PORTABLE__ -D__GO_BINDINGS__
+// #cgo CFLAGS: -Wno-incompatible-pointer-types
 // #cgo CFLAGS: -I${SRCDIR}/../../src
-// #cgo CFLAGS: -I${SRCDIR}/blst_headers
-// #ifndef FIELD_ELEMENTS_PER_BLOB
-// #define FIELD_ELEMENTS_PER_BLOB 4096
-// #endif
-// #include "c_kzg_4844.c"
+// #cgo CFLAGS: -I${SRCDIR}/../../blst/src
+// #cgo CFLAGS: -I${SRCDIR}/../../blst/bindings
+// #cgo CFLAGS: -I${SRCDIR}/../../blst/build
+// #include "header.h"
 import "C"
 
 import (
@@ -13,9 +14,6 @@ import (
 	"errors"
 	"fmt"
 	"unsafe"
-
-	// So its functions are available during compilation.
-	_ "github.com/supranational/blst/bindings/go"
 )
 
 const (

@@ -26,7 +26,13 @@
 #include <stdint.h>
 #include <stdio.h>
 
+/*
+ * We are currently doing a hack in the Go bindings to force them to always use
+ * the portable version of blst. That hack requires we not include this.
+ */
+#ifndef __GO_BINDINGS__
 #include "blst.h"
+#endif /* __GO_BINDINGS__ */
 
 #ifdef __cplusplus
 extern "C" {
