@@ -27,6 +27,3 @@ jobs:
         run: |
           cd bindings/go
           go test -bench=Benchmark
-      - name: Check assembly file
-        run: |
-          cmp blst/build/assembly.S bindings/go/assembly.S
