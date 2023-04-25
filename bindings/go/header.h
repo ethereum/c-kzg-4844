@@ -4,9 +4,8 @@
 /*
  * The necessary types from blst.h:
  */
-#if 0
 typedef uint8_t byte;
-typedef uint64_t limb_t;
+typedef long long unsigned int limb_t;
 typedef struct { byte b[256/8]; } blst_scalar;
 typedef struct { limb_t l[256/8/sizeof(limb_t)]; } blst_fr;
 typedef struct { limb_t l[384/8/sizeof(limb_t)]; } blst_fp;
@@ -17,7 +16,6 @@ typedef struct { blst_fp x, y, z; } blst_p1;
 typedef struct { blst_fp x, y; } blst_p1_affine;
 typedef struct { blst_fp2 x, y, z; } blst_p2;
 typedef struct { blst_fp2 x, y; } blst_p2_affine;
-#endif
 
 /*
  * Default to the mainnet preset.
