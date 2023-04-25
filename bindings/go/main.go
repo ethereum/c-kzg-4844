@@ -4,7 +4,6 @@ package ckzg4844
 // #cgo CFLAGS: -Wno-incompatible-pointer-types
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/../../blst/src
-// #cgo CFLAGS: -I${SRCDIR}/../../blst/bindings
 // #cgo CFLAGS: -I${SRCDIR}/../../blst/build
 // #include "header.h"
 import "C"
