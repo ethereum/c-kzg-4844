@@ -4,6 +4,6 @@
 
 #include "c_kzg_4844.h"
 
-DLLEXPORT KZGSettings* load_trusted_setup_wrap(const char* file);
+KZGSettings* load_trusted_setup_wrap(const char* file);
 
-DLLEXPORT void free_trusted_setup_wrap(KZGSettings *s);
+void free_trusted_setup_wrap(KZGSettings *s);

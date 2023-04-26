@@ -8,7 +8,7 @@ ifeq ($(OS),Windows_NT)
 	LOCATION ?= win-x64
 	CLANG_EXECUTABLE = clang
 	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg.dll
-	CFLAGS += -DDLLEXPORT=__declspec\(dllexport\)
+	CFLAGS += -Wl,/def:ckzg.def
 else
 	BLST_BUILDSCRIPT = ./build.sh
 	BLST_OBJ = libblst.a
