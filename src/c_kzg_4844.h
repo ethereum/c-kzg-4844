@@ -32,14 +32,6 @@
 extern "C" {
 #endif
 
-/**
- * Used to modify the signatures of the interface functions by the wrappers.
- * Required to export the functions when it is compiled as a dll on Windows.
- */
-#ifndef DLLEXPORT
-#define DLLEXPORT
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
@@ -181,7 +173,7 @@ typedef struct {
 // Interface functions
 ///////////////////////////////////////////////////////////////////////////////
 
-DLLEXPORT C_KZG_RET load_trusted_setup(
+C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_bytes, /* n1 * 48 bytes */
     size_t n1,
@@ -189,15 +181,15 @@ DLLEXPORT C_KZG_RET load_trusted_setup(
     size_t n2
 );
 
-DLLEXPORT C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
 
-DLLEXPORT void free_trusted_setup(KZGSettings *s);
+void free_trusted_setup(KZGSettings *s);
 
-DLLEXPORT C_KZG_RET blob_to_kzg_commitment(
+C_KZG_RET blob_to_kzg_commitment(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
 );
 
-DLLEXPORT C_KZG_RET compute_kzg_proof(
+C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
     Bytes32 *y_out,
     const Blob *blob,
@@ -205,14 +197,14 @@ DLLEXPORT C_KZG_RET compute_kzg_proof(
     const KZGSettings *s
 );
 
-DLLEXPORT C_KZG_RET compute_blob_kzg_proof(
+C_KZG_RET compute_blob_kzg_proof(
     KZGProof *out,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 );
 
-DLLEXPORT C_KZG_RET verify_kzg_proof(
+C_KZG_RET verify_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -221,7 +213,7 @@ DLLEXPORT C_KZG_RET verify_kzg_proof(
     const KZGSettings *s
 );
 
-DLLEXPORT C_KZG_RET verify_blob_kzg_proof(
+C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
@@ -229,7 +221,7 @@ DLLEXPORT C_KZG_RET verify_blob_kzg_proof(
     const KZGSettings *s
 );
 
-DLLEXPORT C_KZG_RET verify_blob_kzg_proof_batch(
+C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,

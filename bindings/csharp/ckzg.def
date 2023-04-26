@@ -1,0 +1,15 @@
+LIBRARY ckzg
+
+EXPORTS
+	load_trusted_setup_wrap
+	free_trusted_setup_wrap
+	load_trusted_setup
+	load_trusted_setup_file
+	free_trusted_setup
+	blob_to_kzg_commitment
+	compute_kzg_proof
+	compute_blob_kzg_proof
+	verify_kzg_proof
+	verify_blob_kzg_proof
+	verify_blob_kzg_proof_batch
+
