@@ -1,32 +1,37 @@
 ifeq ($(OS),Windows_NT)
-    BLST_BUILDSCRIPT = ./build.bat
-    BLST_OBJ = blst.lib
-    LOCATION ?= win-x64
-    CLANG_EXECUTABLE = clang
-    CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg.dll
+	ifneq (,$(findstring Git/,$(SHELL)))
+		BLST_BUILDSCRIPT = ./build.bat
+	else
+		BLST_BUILDSCRIPT = .\build.bat
+	endif
+	BLST_OBJ = blst.lib
+	LOCATION ?= win-x64
+	CLANG_EXECUTABLE = clang
+	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg.dll
+	CFLAGS += -Wl,/def:ckzg.def
 else
-    BLST_BUILDSCRIPT = ./build.sh
-    BLST_OBJ = libblst.a
-    CLANG_EXECUTABLE = clang
+	BLST_BUILDSCRIPT = ./build.sh
+	BLST_OBJ = libblst.a
+	CLANG_EXECUTABLE = clang
 
-    UNAME_S := $(shell uname -s)
-    UNAME_M := $(shell uname -m)
-    ifeq ($(UNAME_S),Linux)
-        ifeq ($(UNAME_M),x86_64)
-            LOCATION ?= linux-x64
-        else
-            LOCATION ?= linux-arm64
-        endif
-    endif
-    ifeq ($(UNAME_S),Darwin)
-        ifeq ($(UNAME_M),arm64)
-            LOCATION ?= osx-arm64
-        else
-            LOCATION ?= osx-x64
-        endif
-    endif
+	UNAME_S := $(shell uname -s)
+	UNAME_M := $(shell uname -m)
+	ifeq ($(UNAME_S),Linux)
+		ifeq ($(UNAME_M),x86_64)
+			LOCATION ?= linux-x64
+		else
+			LOCATION ?= linux-arm64
+		endif
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		ifeq ($(UNAME_M),arm64)
+			LOCATION ?= osx-arm64
+		else
+			LOCATION ?= osx-x64
+		endif
+	endif
 
-    CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg.so
+	CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg.so
 endif
 
 FIELD_ELEMENTS_PER_BLOB ?= 4096

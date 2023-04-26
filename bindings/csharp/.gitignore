@@ -3,6 +3,7 @@
 
 .vs
 .vscode
+*.DotSettings.user
 
 Ckzg.Bindings/runtimes/*/native/*
 !**/.gitkeep
