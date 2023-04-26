@@ -32,6 +32,10 @@
 extern "C" {
 #endif
 
+/**
+ * Used to modify the signatures of the interface functions by the wrappers.
+ * Required to export the functions when it is compiled as a dll on Windows.
+ */
 #ifndef DLLEXPORT
 #define DLLEXPORT
 #endif
