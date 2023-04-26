@@ -11,7 +11,7 @@ go get github.com/ethereum/c-kzg-4844
 
 ## Go version
 
-This package should work with Go 1.11 and later.
+This package should work with Go 1.13 and later.
 
 ## Example
 
