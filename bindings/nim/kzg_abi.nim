@@ -10,7 +10,7 @@ from os import DirSep
 const
   # FIELD_ELEMENTS_PER_BLOB is overrideable from
   # compiler switch -d: or --define:
-  FIELD_ELEMENTS_PER_BLOB* {.strdefine.} = 4096
+  FIELD_ELEMENTS_PER_BLOB* {.intdefine.} = 4096
   # kzgPath: c-kzg-4844 project path, removing 3 last elem
   kzgPath  = currentSourcePath.rsplit(DirSep, 3)[0] & "/"
   blstPath = kzgPath & "blst/"
