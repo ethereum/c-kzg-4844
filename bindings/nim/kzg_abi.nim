@@ -5,14 +5,14 @@
 import
   std/[strformat, strutils]
 
-from os import DirSep
+from os import DirSep, AltSep
 
 const
   # FIELD_ELEMENTS_PER_BLOB is overrideable from
   # compiler switch -d: or --define:
   FIELD_ELEMENTS_PER_BLOB* {.intdefine.} = 4096
   # kzgPath: c-kzg-4844 project path, removing 3 last elem
-  kzgPath  = currentSourcePath.rsplit(DirSep, 3)[0] & "/"
+  kzgPath  = currentSourcePath.rsplit({DirSep, AltSep}, 3)[0] & "/"
   blstPath = kzgPath & "blst/"
   srcPath  = kzgPath & "src/"
   bindingsPath = blstPath & "bindings"
@@ -65,14 +65,14 @@ type
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
   KzgBytes48* = array[48, byte]
-  
+
   # An array of 32 bytes. Represents an untrusted
   # (potentially invalid) field element.
   KzgBytes32* = array[32, byte]
 
   # A trusted (valid) KZG commitment.
   KzgCommitment* = KzgBytes48
-  
+
   # A trusted (valid) KZG proof.
   KzgProof* = KzgBytes48
 
