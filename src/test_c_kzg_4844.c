@@ -718,7 +718,7 @@ static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_validate_kzg_g1__fails_with_mask_111(void) {
+static void test_validate_kzg_g1__fails_with_mask_bits_111(void) {
     C_KZG_RET ret;
     Bytes48 g1_bytes;
     g1_t g1;
@@ -732,7 +732,7 @@ static void test_validate_kzg_g1__fails_with_mask_111(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_validate_kzg_g1__fails_with_mask_011(void) {
+static void test_validate_kzg_g1__fails_with_mask_bits_011(void) {
     C_KZG_RET ret;
     Bytes48 g1_bytes;
     g1_t g1;
@@ -746,7 +746,7 @@ static void test_validate_kzg_g1__fails_with_mask_011(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_validate_kzg_g1__fails_with_mask_001(void) {
+static void test_validate_kzg_g1__fails_with_mask_bits_001(void) {
     C_KZG_RET ret;
     Bytes48 g1_bytes;
     g1_t g1;
@@ -1927,9 +1927,9 @@ int main(void) {
     RUN(test_validate_kzg_g1__fails_with_wrong_c_flag);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true);
-    RUN(test_validate_kzg_g1__fails_with_mask_111);
-    RUN(test_validate_kzg_g1__fails_with_mask_011);
-    RUN(test_validate_kzg_g1__fails_with_mask_001);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_111);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_011);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_001);
     RUN(test_reverse_bits__succeeds_round_trip);
     RUN(test_reverse_bits__succeeds_all_bits_are_zero);
     RUN(test_reverse_bits__succeeds_some_bits_are_one);
