@@ -718,6 +718,48 @@ static void test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
+static void test_validate_kzg_g1__fails_with_mask_bits_111(void) {
+    C_KZG_RET ret;
+    Bytes48 g1_bytes;
+    g1_t g1;
+
+    bytes48_from_hex(
+        &g1_bytes,
+        "e491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e264"
+        "4f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a"
+    );
+    ret = validate_kzg_g1(&g1, &g1_bytes);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_with_mask_bits_011(void) {
+    C_KZG_RET ret;
+    Bytes48 g1_bytes;
+    g1_t g1;
+
+    bytes48_from_hex(
+        &g1_bytes,
+        "6491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e264"
+        "4f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a"
+    );
+    ret = validate_kzg_g1(&g1, &g1_bytes);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_validate_kzg_g1__fails_with_mask_bits_001(void) {
+    C_KZG_RET ret;
+    Bytes48 g1_bytes;
+    g1_t g1;
+
+    bytes48_from_hex(
+        &g1_bytes,
+        "2491d1b0ecd9bb917989f0e74f0dea0422eac4a873e5e264"
+        "4f368dffb9a6e20fd6e10c1b77654d067c0618f6e5a7f79a"
+    );
+    ret = validate_kzg_g1(&g1, &g1_bytes);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for reverse_bits
 ///////////////////////////////////////////////////////////////////////////////
@@ -1885,6 +1927,9 @@ int main(void) {
     RUN(test_validate_kzg_g1__fails_with_wrong_c_flag);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_x_nonzero);
     RUN(test_validate_kzg_g1__fails_with_b_flag_and_a_flag_true);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_111);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_011);
+    RUN(test_validate_kzg_g1__fails_with_mask_bits_001);
     RUN(test_reverse_bits__succeeds_round_trip);
     RUN(test_reverse_bits__succeeds_all_bits_are_zero);
     RUN(test_reverse_bits__succeeds_some_bits_are_one);
