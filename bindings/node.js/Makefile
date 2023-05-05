@@ -68,7 +68,7 @@ publish: build bundle
 
 # Run ref-tests in linux environment for cross-compatability check
 .PHONY: linux-test
-linux-test: build
+linux-test: bundle
 	@# Docker cannot copy from outside this dir
 	@cp -r ../../tests ref-tests
 	@docker build -t "linux-test" .
