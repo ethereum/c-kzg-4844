@@ -1563,78 +1563,6 @@ static C_KZG_RET bit_reversal_permutation(
 }
 
 /**
- * Fast Fourier Transform.
- *
- * Recursively divide and conquer.
- *
- * @param[out] out          The results (array of length @p n)
- * @param[in]  in           The input data (array of length @p n * @p stride)
- * @param[in]  stride       The input data stride
- * @param[in]  roots        Roots of unity
- *                          (array of length @p n * @p roots_stride)
- * @param[in]  roots_stride The stride interval among the roots of unity
- * @param[in]  n            Length of the FFT, must be a power of two
- */
-static void fft_g1_fast(
-    g1_t *out,
-    const g1_t *in,
-    uint64_t stride,
-    const fr_t *roots,
-    uint64_t roots_stride,
-    uint64_t n
-) {
-    uint64_t half = n / 2;
-    if (half > 0) { /* Tunable parameter */
-        fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_g1_fast(
-            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
-        );
-        for (uint64_t i = 0; i < half; i++) {
-            g1_t y_times_root;
-            if (fr_is_one(&roots[i * roots_stride])) {
-                /* Don't do the scalar multiplication if the scalar is one */
-                y_times_root = out[i + half];
-            } else {
-                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            }
-            g1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
-        }
-    } else {
-        *out = *in;
-    }
-}
-
-/**
- * The main entry point for forward and reverse FFTs over the finite field.
- *
- * @param[out] out     The results (array of length @p n)
- * @param[in]  in      The input data (array of length @p n)
- * @param[in]  inverse False for forward transform, true for inverse transform
- * @param[in]  n       Length of the FFT, must be a power of two
- * @param[in]  fs      The FFTSettings
- */
-static C_KZG_RET fft_g1(
-    g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs
-) {
-    uint64_t stride = fs->max_width / n;
-    CHECK(n <= fs->max_width);
-    CHECK(is_power_of_two(n));
-    if (inverse) {
-        fr_t inv_len;
-        fr_from_uint64(&inv_len, n);
-        blst_fr_eucl_inverse(&inv_len, &inv_len);
-        fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
-        for (uint64_t i = 0; i < n; i++) {
-            g1_mul(&out[i], &out[i], &inv_len);
-        }
-    } else {
-        fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, n);
-    }
-    return C_KZG_OK;
-}
-
-/**
  * Generate powers of a root of unity in the field for use in the FFTs.
  *
  * @remark @p root must be such that @p root ^ @p width is equal to one, but
@@ -1779,7 +1707,7 @@ C_KZG_RET load_trusted_setup(
     /* Convert all g1 bytes to g1 points */
     for (i = 0; i < n1; i++) {
         ret = validate_kzg_g1(
-            &g1_projective[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
+            &out->g1_values[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
         );
         if (ret != C_KZG_OK) goto out_error;
     }
@@ -1799,8 +1727,6 @@ C_KZG_RET load_trusted_setup(
     ret = c_kzg_malloc((void **)&out->fs, sizeof(FFTSettings));
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fft_settings(out->fs, max_scale);
-    if (ret != C_KZG_OK) goto out_error;
-    ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
     if (ret != C_KZG_OK) goto out_error;
     ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
     if (ret != C_KZG_OK) goto out_error;
