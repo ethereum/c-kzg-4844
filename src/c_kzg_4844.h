@@ -59,7 +59,7 @@ extern "C" {
  * should be chosen as the the next-largest power of two and polynomials
  * represented by their evaluations at a subset of the 2^i'th roots of unity.
  * While the code in this library tries to take this into account, we do not
- * need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2.  As this
+ * need the case where FIELD_ELEMENTS_PER_BLOB is not a power of 2. As this
  * case is neither maintained nor tested, we prefer to not support it.
  */
 #if (FIELD_ELEMENTS_PER_BLOB & (FIELD_ELEMENTS_PER_BLOB - 1)) != 0
