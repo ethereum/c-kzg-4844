@@ -1,5 +1,5 @@
 .PHONY: all
-all: install test ecc_test
+all: install test
 
 ../../src/c_kzg_4844.o:
 	make -C../../src c_kzg_4844.o
@@ -10,8 +10,4 @@ install: setup.py ckzg.c ../../src/c_kzg_4844.o
 
 .PHONY: test
 test: tests.py
-	python3 $<
-
-.PHONY: ecc_test
-ecc_test: py_ecc_tests.py
 	python3 $<
