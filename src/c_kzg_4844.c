@@ -1714,7 +1714,13 @@ C_KZG_RET load_trusted_setup(
 
     /* Convert all g2 bytes to g2 points */
     for (i = 0; i < n2; i++) {
-        blst_p2_uncompress(&g2_affine, &g2_bytes[BYTES_PER_G2 * i]);
+        BLST_ERROR err = blst_p2_uncompress(
+            &g2_affine, &g2_bytes[BYTES_PER_G2 * i]
+        );
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
         blst_p2_from_affine(&out->g2_values[i], &g2_affine);
     }
 
@@ -1810,9 +1816,9 @@ static void free_fft_settings(FFTSettings *fs) {
 /**
  * Free the memory that was previously allocated by new_kzg_settings().
  *
- * @remark It's a NOP if `ks` is NULL.
+ * @remark It's a NOP if `s` is NULL.
  *
- * @param[in] ks The settings to be freed
+ * @param[in] s The settings to be freed
  */
 static void free_kzg_settings(KZGSettings *s) {
     if (s == NULL) return;
