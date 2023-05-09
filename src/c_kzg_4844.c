@@ -1683,9 +1683,6 @@ C_KZG_RET load_trusted_setup(
     const uint8_t *g2_bytes,
     size_t n2
 ) {
-    uint64_t i;
-    blst_p1_affine g1_affine;
-    blst_p2_affine g2_affine;
     C_KZG_RET ret;
 
     out->fs = NULL;
@@ -1703,7 +1700,8 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 bytes to g1 points */
-    for (i = 0; i < n1; i++) {
+    for (uint64_t i = 0; i < n1; i++) {
+        blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(
             &g1_affine, &g1_bytes[BYTES_PER_G1 * i]
         );
@@ -1715,7 +1713,8 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Convert all g2 bytes to g2 points */
-    for (i = 0; i < n2; i++) {
+    for (uint64_t i = 0; i < n2; i++) {
+        blst_p2_affine g2_affine;
         BLST_ERROR err = blst_p2_uncompress(
             &g2_affine, &g2_bytes[BYTES_PER_G2 * i]
         );
