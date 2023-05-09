@@ -164,8 +164,7 @@ typedef struct {
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
     g1_t *g1_values;
-    /** G2 group elements from the trusted setup;
-     * both arrays have `FIELD_ELEMENTS_PER_BLOB` elements. */
+    /** G2 group elements from the trusted setup. */
     g2_t *g2_values;
 } KZGSettings;
 

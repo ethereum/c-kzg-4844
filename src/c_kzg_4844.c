@@ -1671,9 +1671,9 @@ out_success:
  * @remark Free after use with free_trusted_setup().
  *
  * @param[out] out      Pointer to the stored trusted setup data
- * @param[in]  g1_bytes Array of G1 points
+ * @param[in]  g1_bytes Array of G1 points in Lagrange form
  * @param[in]  n1       Number of `g1` points in g1_bytes
- * @param[in]  g2_bytes Array of G2 points
+ * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
 C_KZG_RET load_trusted_setup(
