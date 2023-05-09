@@ -1684,8 +1684,8 @@ C_KZG_RET load_trusted_setup(
     size_t n2
 ) {
     uint64_t i;
+    blst_p1_affine g1_affine;
     blst_p2_affine g2_affine;
-    g1_t *g1_projective = NULL;
     C_KZG_RET ret;
 
     out->fs = NULL;
@@ -1701,15 +1701,17 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&g1_projective, n1);
-    if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 bytes to g1 points */
     for (i = 0; i < n1; i++) {
-        ret = validate_kzg_g1(
-            &out->g1_values[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
+        BLST_ERROR err = blst_p1_uncompress(
+            &g1_affine, &g1_bytes[BYTES_PER_G1 * i]
         );
-        if (ret != C_KZG_OK) goto out_error;
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p1_from_affine(&out->g1_values[i], &g1_affine);
     }
 
     /* Convert all g2 bytes to g2 points */
@@ -1744,7 +1746,6 @@ out_error:
     c_kzg_free(out->g1_values);
     c_kzg_free(out->g2_values);
 out_success:
-    c_kzg_free(g1_projective);
     return ret;
 }
 
