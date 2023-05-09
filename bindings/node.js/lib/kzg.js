@@ -23,7 +23,7 @@ function transformTrustedSetupJson(filePath) {
   const setupText =
     bindings.FIELD_ELEMENTS_PER_BLOB +
     "\n65\n" +
-    trustedSetup.setup_G1.map((p) => p.substring(2)).join("\n") +
+    trustedSetup.setup_G1_lagrange.map((p) => p.substring(2)).join("\n") +
     "\n" +
     trustedSetup.setup_G2.map((p) => p.substring(2)).join("\n");
   const outputPath = filePath.replace(".json", ".txt");
