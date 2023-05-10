@@ -1658,7 +1658,8 @@ C_KZG_RET load_trusted_setup(
     out->max_width = 1ULL << max_scale;
 
     /* Allocate all of our arrays */
-    ret = new_fr_array(&out->roots_of_unity, out->max_width);
+    /* We need max_width+1 when expanding */
+    ret = new_fr_array(&out->roots_of_unity, out->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
