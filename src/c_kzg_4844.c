@@ -35,7 +35,7 @@
     if (!(cond)) return C_KZG_BADARGS
 
 /** Returns number of elements in a statically defined array. */
-#define NUM_ELEMENTS(a) sizeof(a) / sizeof(a[0])
+#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
 /**
  * Helper macro to release memory allocated on the heap. Unlike free(),
