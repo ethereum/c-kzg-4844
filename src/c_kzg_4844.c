@@ -1609,6 +1609,10 @@ static C_KZG_RET new_roots_of_unity(
     /* Calculate the max width */
     max_width = 1ULL << max_scale;
 
+    /* Get the root of unity */
+    CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
+
     /*
      * Allocate an array to store the expanded roots of unity. We do this
      * instead of re-using roots_of_unity_out because the expansion requires
@@ -1616,10 +1620,6 @@ static C_KZG_RET new_roots_of_unity(
      */
     ret = new_fr_array(&expanded_roots, max_width + 1);
     if (ret != C_KZG_OK) goto out;
-
-    /* Get the root of unity */
-    CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
     ret = expand_root_of_unity(expanded_roots, &root_of_unity, max_width);
