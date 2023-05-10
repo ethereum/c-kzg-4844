@@ -1594,6 +1594,8 @@ static C_KZG_RET expand_root_of_unity(
 /**
  * Initialize the roots of unity.
  *
+ * @remark `roots_of_unity_out` may be modified even if there's an error.
+ *
  * @param[out] roots_of_unity_out The roots of unity
  * @param[in]  max_scale          Log base 2 of the number of roots of unity to
  *                                be initialized
