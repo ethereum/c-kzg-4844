@@ -1595,7 +1595,9 @@ static C_KZG_RET expand_root_of_unity(
  * @param[in]  max_scale          Log base 2 of the number of roots of unity to
  *                                be initialised
  */
-static C_KZG_RET new_roots_of_unity(fr_t *roots_of_unity_out, unsigned int max_scale) {
+static C_KZG_RET new_roots_of_unity(
+    fr_t *roots_of_unity_out, unsigned int max_scale
+) {
     C_KZG_RET ret;
     uint64_t max_width;
     fr_t root_of_unity;
@@ -1608,15 +1610,11 @@ static C_KZG_RET new_roots_of_unity(fr_t *roots_of_unity_out, unsigned int max_s
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(
-        roots_of_unity_out, &root_of_unity, max_width
-    );
+    ret = expand_root_of_unity(roots_of_unity_out, &root_of_unity, max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Permute the roots of unity */
-    ret = bit_reversal_permutation(
-        roots_of_unity_out, sizeof(fr_t), max_width
-    );
+    ret = bit_reversal_permutation(roots_of_unity_out, sizeof(fr_t), max_width);
     if (ret != C_KZG_OK) goto out;
 
 out:
