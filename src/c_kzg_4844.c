@@ -1638,6 +1638,21 @@ out:
 }
 
 /**
+ * Free the memory that was previously allocated by new_kzg_settings().
+ *
+ * @remark It's a NOP if `s` is NULL.
+ *
+ * @param[in] s The settings to be freed
+ */
+static void free_kzg_settings(KZGSettings *s) {
+    if (s == NULL) return;
+    s->max_width = 0;
+    c_kzg_free(s->roots_of_unity);
+    c_kzg_free(s->g1_values);
+    c_kzg_free(s->g2_values);
+}
+
+/**
  * Load trusted setup into a KZGSettings.
  *
  * @remark Free after use with free_trusted_setup().
@@ -1657,6 +1672,8 @@ C_KZG_RET load_trusted_setup(
 ) {
     C_KZG_RET ret;
 
+    out->max_width = 0;
+    out->roots_of_unity = NULL;
     out->g1_values = NULL;
     out->g2_values = NULL;
 
@@ -1669,6 +1686,7 @@ C_KZG_RET load_trusted_setup(
     while ((1ULL << max_scale) < n1)
         max_scale++;
 
+    /* Set the max_width */
     out->max_width = 1ULL << max_scale;
 
     /* Allocate all of our arrays */
@@ -1714,9 +1732,7 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
-    c_kzg_free(out->roots_of_unity);
-    c_kzg_free(out->g1_values);
-    c_kzg_free(out->g2_values);
+    free_kzg_settings(out);
 out_success:
     return ret;
 }
@@ -1769,21 +1785,6 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
         g2_bytes,
         TRUSTED_SETUP_NUM_G2_POINTS
     );
-}
-
-/**
- * Free the memory that was previously allocated by new_kzg_settings().
- *
- * @remark It's a NOP if `s` is NULL.
- *
- * @param[in] s The settings to be freed
- */
-static void free_kzg_settings(KZGSettings *s) {
-    if (s == NULL) return;
-    s->max_width = 0;
-    c_kzg_free(s->roots_of_unity);
-    c_kzg_free(s->g1_values);
-    c_kzg_free(s->g2_values);
 }
 
 /**
