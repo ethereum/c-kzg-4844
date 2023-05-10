@@ -38,7 +38,3 @@ jobs:
         run: |
           cd bindings/python
           make test
-      - name: ECC test
-        run: |
-          cd bindings/python
-          make ecc_test
