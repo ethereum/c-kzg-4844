@@ -1625,12 +1625,12 @@ static C_KZG_RET new_roots_of_unity(
     ret = expand_root_of_unity(expanded_roots, &root_of_unity, max_width);
     if (ret != C_KZG_OK) goto out;
 
+    /* Permute the expanded roots of unity */
+    ret = bit_reversal_permutation(expanded_roots, sizeof(fr_t), max_width);
+    if (ret != C_KZG_OK) goto out;
+
     /* Copy all but the last root to the roots of unity */
     memcpy(roots_of_unity_out, expanded_roots, sizeof(fr_t) * max_width);
-
-    /* Permute the roots of unity */
-    ret = bit_reversal_permutation(roots_of_unity_out, sizeof(fr_t), max_width);
-    if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(expanded_roots);
