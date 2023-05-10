@@ -138,7 +138,6 @@ typedef struct {
     /** Powers of the root of unity in bit-reversal permutation order, length
      * `max_width`. */
     fr_t *roots_of_unity;
-
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
     g1_t *g1_values;
