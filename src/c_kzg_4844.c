@@ -34,6 +34,9 @@
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
+/** Returns number of elements in a statically defined array. */
+#define NUM_ELEMENTS(a) sizeof(a) / sizeof(a[0])
+
 /**
  * Helper macro to release memory allocated on the heap. Unlike free(),
  * c_kzg_free() macro sets the pointer value to NULL after freeing it.
@@ -1589,35 +1592,48 @@ static C_KZG_RET expand_root_of_unity(
 }
 
 /**
- * Initialise the roots of unity.
+ * Initialize the roots of unity.
  *
  * @param[out] roots_of_unity_out The roots of unity
  * @param[in]  max_scale          Log base 2 of the number of roots of unity to
- *                                be initialised
+ *                                be initialized
  */
 static C_KZG_RET new_roots_of_unity(
-    fr_t *roots_of_unity_out, unsigned int max_scale
+    fr_t *roots_of_unity_out, uint32_t max_scale
 ) {
     C_KZG_RET ret;
     uint64_t max_width;
     fr_t root_of_unity;
+    fr_t *expanded_roots = NULL;
 
+    /* Calculate the max width */
     max_width = 1ULL << max_scale;
 
-    CHECK((
-        max_scale < sizeof SCALE2_ROOT_OF_UNITY / sizeof SCALE2_ROOT_OF_UNITY[0]
-    ));
+    /*
+     * Allocate an array to store the expanded roots of unity. We do this
+     * instead of re-using roots_of_unity_out because the expansion requires
+     * max_width+1 elements.
+     */
+    ret = new_fr_array(&expanded_roots, max_width + 1);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Get the root of unity */
+    CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(roots_of_unity_out, &root_of_unity, max_width);
+    ret = expand_root_of_unity(expanded_roots, &root_of_unity, max_width);
     if (ret != C_KZG_OK) goto out;
+
+    /* Copy all but the last root to the roots of unity */
+    memcpy(roots_of_unity_out, expanded_roots, sizeof(fr_t) * max_width);
 
     /* Permute the roots of unity */
     ret = bit_reversal_permutation(roots_of_unity_out, sizeof(fr_t), max_width);
     if (ret != C_KZG_OK) goto out;
 
 out:
+    c_kzg_free(expanded_roots);
     return ret;
 }
 
@@ -1649,15 +1665,14 @@ C_KZG_RET load_trusted_setup(
     CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
 
     /* It's the smallest power of 2 >= n1 */
-    unsigned int max_scale = 0;
+    uint32_t max_scale = 0;
     while ((1ULL << max_scale) < n1)
         max_scale++;
 
     out->max_width = 1ULL << max_scale;
 
     /* Allocate all of our arrays */
-    /* We need max_width+1 when expanding */
-    ret = new_fr_array(&out->roots_of_unity, out->max_width + 1);
+    ret = new_fr_array(&out->roots_of_unity, out->max_width);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
