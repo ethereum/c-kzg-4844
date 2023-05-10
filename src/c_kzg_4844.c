@@ -1732,6 +1732,11 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
+    /*
+     * Note: this only frees the fields in the KZGSettings structure
+     * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
+     * structure memory. If necessary, that must be done by the caller.
+     */
     free_trusted_setup(out);
 out_success:
     return ret;
