@@ -11,4 +11,4 @@ pub use bindings::{
     FIELD_ELEMENTS_PER_BLOB, BYTES_PER_G1_POINT, BYTES_PER_G2_POINT
 };
 // Expose the remaining relevant types.
-pub use bindings::{Blob, Bytes32, Bytes48, Error, FFTSettings};
+pub use bindings::{Blob, Bytes32, Bytes48, Error};

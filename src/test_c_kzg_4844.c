@@ -1006,7 +1006,7 @@ test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
     fr_t x, y, c;
 
     get_rand_fr(&c);
-    x = s.fs->roots_of_unity[123];
+    x = s.roots_of_unity[123];
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         p.evals[i] = c;
@@ -1030,7 +1030,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
     }
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        eval_poly(&p.evals[i], poly_coefficients, &s.fs->roots_of_unity[i]);
+        eval_poly(&p.evals[i], poly_coefficients, &s.roots_of_unity[i]);
     }
 
     get_rand_fr(&x);
@@ -1041,7 +1041,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 
     ASSERT("evaluation methods match", fr_equal(&y, &check));
 
-    x = s.fs->roots_of_unity[123];
+    x = s.roots_of_unity[123];
 
     eval_poly(&check, poly_coefficients, &x);
 
@@ -1220,7 +1220,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ret = blob_to_polynomial(&poly, &blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
-        z_fr = s.fs->roots_of_unity[i];
+        z_fr = s.roots_of_unity[i];
         bytes_from_bls_field(&z, &z_fr);
 
         /* Compute the proof */

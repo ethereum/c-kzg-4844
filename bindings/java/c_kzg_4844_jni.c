@@ -11,10 +11,7 @@ void reset_trusted_setup()
 {
   if (settings)
   {
-    if (settings->fs)
-    {
-      free_trusted_setup(settings);
-    }
+    free_trusted_setup(settings);
     free(settings);
     settings = NULL;
   }
@@ -51,7 +48,8 @@ KZGSettings *allocate_settings(JNIEnv *env)
   }
   else
   {
-    s->fs = NULL;
+    s->max_width = 0;
+    s->roots_of_unity = NULL;
     s->g1_values = NULL;
     s->g2_values = NULL;
   }
