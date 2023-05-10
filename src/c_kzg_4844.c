@@ -1714,6 +1714,7 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
+    c_kzg_free(out->roots_of_unity);
     c_kzg_free(out->g1_values);
     c_kzg_free(out->g2_values);
 out_success:
