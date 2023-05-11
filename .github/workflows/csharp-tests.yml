@@ -12,6 +12,7 @@ on:
       - main
 env:
   binding_build_number_based_version: 0.1.2.${{ github.run_number }}
+  CFLAGS: -D__BLST_PORTABLE__
 
 jobs:
   build-ckzg:

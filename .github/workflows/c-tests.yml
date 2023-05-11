@@ -12,6 +12,9 @@ defaults:
     shell: bash
     working-directory: src
 
+env:
+  CFLAGS: -D__BLST_PORTABLE__
+
 jobs:
   tests:
     runs-on: ${{matrix.os}}
@@ -37,10 +40,9 @@ jobs:
 
       # Build and test with minimal preset.
       - name: Build (minimal)
-        run: |
-          export FIELD_ELEMENTS_PER_BLOB=4
-          make clean && make test_c_kzg_4844
-          unset FIELD_ELEMENTS_PER_BLOB
+        env:
+          FIELD_ELEMENTS_PER_BLOB: 4
+        run: make clean && make test_c_kzg_4844
       - name: Save test binary (minimal)
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3
@@ -52,10 +54,9 @@ jobs:
 
       # Build and test with mainnet preset.
       - name: Build (mainnet)
-        run: |
-          export FIELD_ELEMENTS_PER_BLOB=4096
-          make clean && make test_c_kzg_4844
-          unset FIELD_ELEMENTS_PER_BLOB
+        env:
+          FIELD_ELEMENTS_PER_BLOB: 4096
+        run: make clean && make test_c_kzg_4844
       - name: Save test binary (mainnet)
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v3

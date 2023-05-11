@@ -7,7 +7,7 @@ const MINIMAL_FIELD_ELEMENTS_PER_BLOB: usize = 4;
 /// Compiles blst.
 //
 // NOTE: This code is taken from https://github.com/supranational/blst `build.rs` `main`. The crate
-// is not used as a depedency to avoid double link issues on dependants.
+// is not used as a dependency to avoid double link issues on dependants.
 fn compile_blst(blst_base_dir: PathBuf) {
     // account for cross-compilation [by examining environment variables]
     let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
