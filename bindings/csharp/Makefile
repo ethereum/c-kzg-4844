@@ -13,6 +13,7 @@ else
 	BLST_BUILDSCRIPT = ./build.sh
 	BLST_OBJ = libblst.a
 	CLANG_EXECUTABLE = clang
+	CFLAGS += -fPIC
 
 	UNAME_S := $(shell uname -s)
 	UNAME_M := $(shell uname -m)
