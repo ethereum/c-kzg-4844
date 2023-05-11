@@ -1683,7 +1683,7 @@ C_KZG_RET load_trusted_setup(
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
     CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
 
-    /* It's the smallest power of 2 >= n1 */
+    /* 1<<max_scale is the smallest power of 2 >= n1 */
     uint32_t max_scale = 0;
     while ((1ULL << max_scale) < n1)
         max_scale++;
