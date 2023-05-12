@@ -1,6 +1,6 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
-github.com/ethereum/c-kzg-4844 v0.0.0-20230407130613-fd0a51aa35bc h1:bm2sLc9OcgiHkN6+ZlnwIMIXOBMLcPto7SeGyocFQhA=
-github.com/ethereum/c-kzg-4844 v0.0.0-20230407130613-fd0a51aa35bc/go.mod h1:WI2Nd82DMZAAZI1wV2neKGost9EKjvbpQR9OqE5Qqa8=
+github.com/ethereum/c-kzg-4844 v0.1.1-0.20230512134437-6d21a0ea981b h1:+eVyrHcAbV9fTONHBQ28Q+R/prNPa+AqISwlLBy4S7g=
+github.com/ethereum/c-kzg-4844 v0.1.1-0.20230512134437-6d21a0ea981b/go.mod h1:WI2Nd82DMZAAZI1wV2neKGost9EKjvbpQR9OqE5Qqa8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/supranational/blst v0.3.11-0.20230406105308-e9dfc5ee724b h1:u49mjRnygnB34h8OKbnNJFVUtWSKIKb1KukdV8bILUM=
