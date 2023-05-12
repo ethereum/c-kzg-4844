@@ -492,10 +492,8 @@ impl Deref for KZGCommitment {
     }
 }
 
-/// Safety: FFTSettings is initialized once on calling `load_trusted_setup`. After
-/// that, the struct is never modified. The memory for the arrays within `FFTSettings` and
-/// `g1_values` and `g2_values` are only freed on calling `free_trusted_setup` which only happens
-/// when we drop the struct.
+/// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
+/// calling `free_trusted_setup` which only happens when we drop the struct.
 unsafe impl Sync for KZGSettings {}
 unsafe impl Send for KZGSettings {}
 

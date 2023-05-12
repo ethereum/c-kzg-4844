@@ -34,6 +34,9 @@
 #define CHECK(cond) \
     if (!(cond)) return C_KZG_BADARGS
 
+/** Returns number of elements in a statically defined array. */
+#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
+
 /**
  * Helper macro to release memory allocated on the heap. Unlike free(),
  * c_kzg_free() macro sets the pointer value to NULL after freeing it.
@@ -813,7 +816,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
     uint64_t i;
-    const fr_t *roots_of_unity = s->fs->roots_of_unity;
+    const fr_t *roots_of_unity = s->roots_of_unity;
 
     ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -1056,7 +1059,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 
     fr_t tmp;
     Polynomial q;
-    const fr_t *roots_of_unity = s->fs->roots_of_unity;
+    const fr_t *roots_of_unity = s->roots_of_unity;
     uint64_t i;
     /* m != 0 indicates that the evaluation point z equals root_of_unity[m-1] */
     uint64_t m = 0;
@@ -1563,79 +1566,7 @@ static C_KZG_RET bit_reversal_permutation(
 }
 
 /**
- * Fast Fourier Transform.
- *
- * Recursively divide and conquer.
- *
- * @param[out] out          The results (array of length @p n)
- * @param[in]  in           The input data (array of length @p n * @p stride)
- * @param[in]  stride       The input data stride
- * @param[in]  roots        Roots of unity
- *                          (array of length @p n * @p roots_stride)
- * @param[in]  roots_stride The stride interval among the roots of unity
- * @param[in]  n            Length of the FFT, must be a power of two
- */
-static void fft_g1_fast(
-    g1_t *out,
-    const g1_t *in,
-    uint64_t stride,
-    const fr_t *roots,
-    uint64_t roots_stride,
-    uint64_t n
-) {
-    uint64_t half = n / 2;
-    if (half > 0) { /* Tunable parameter */
-        fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_g1_fast(
-            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
-        );
-        for (uint64_t i = 0; i < half; i++) {
-            g1_t y_times_root;
-            if (fr_is_one(&roots[i * roots_stride])) {
-                /* Don't do the scalar multiplication if the scalar is one */
-                y_times_root = out[i + half];
-            } else {
-                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            }
-            g1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
-        }
-    } else {
-        *out = *in;
-    }
-}
-
-/**
- * The main entry point for forward and reverse FFTs over the finite field.
- *
- * @param[out] out     The results (array of length @p n)
- * @param[in]  in      The input data (array of length @p n)
- * @param[in]  inverse False for forward transform, true for inverse transform
- * @param[in]  n       Length of the FFT, must be a power of two
- * @param[in]  fs      The FFTSettings
- */
-static C_KZG_RET fft_g1(
-    g1_t *out, const g1_t *in, bool inverse, uint64_t n, const FFTSettings *fs
-) {
-    uint64_t stride = fs->max_width / n;
-    CHECK(n <= fs->max_width);
-    CHECK(is_power_of_two(n));
-    if (inverse) {
-        fr_t inv_len;
-        fr_from_uint64(&inv_len, n);
-        blst_fr_eucl_inverse(&inv_len, &inv_len);
-        fft_g1_fast(out, in, 1, fs->reverse_roots_of_unity, stride, n);
-        for (uint64_t i = 0; i < n; i++) {
-            g1_mul(&out[i], &out[i], &inv_len);
-        }
-    } else {
-        fft_g1_fast(out, in, 1, fs->expanded_roots_of_unity, stride, n);
-    }
-    return C_KZG_OK;
-}
-
-/**
- * Generate powers of a root of unity in the field for use in the FFTs.
+ * Generate powers of a root of unity in the field.
  *
  * @remark @p root must be such that @p root ^ @p width is equal to one, but
  * no smaller power of @p root is equal to one.
@@ -1661,80 +1592,66 @@ static C_KZG_RET expand_root_of_unity(
 }
 
 /**
- * Initialise an FFTSettings structure.
+ * Initialize the roots of unity.
  *
- * Space is allocated for, and arrays are populated with, powers of the
- * roots of unity. The two arrays contain the same values in reverse order
- * for convenience in inverse FFTs.
+ * @remark `roots_of_unity_out` may be modified even if there's an error.
  *
- * `max_width` is the maximum size of FFT that can be calculated with these
- * settings, and is a power of two by construction. The same settings may be
- * used to calculated FFTs of smaller power sizes.
- *
- * @remark As with all functions prefixed `new_`, this allocates memory that
- * needs to be reclaimed by calling the corresponding `free_` function. In
- * this case, free_fft_settings().
- *
- * @remark These settings may be used for FFTs on both field elements and G1
- * group elements.
- *
- * @param[out] fs        The new settings
- * @param[in]  max_scale Log base 2 of the max FFT size to be used with
- *                       these settings
+ * @param[out] roots_of_unity_out The roots of unity
+ * @param[in]  max_scale          Log base 2 of the number of roots of unity to
+ *                                be initialized
  */
-static C_KZG_RET new_fft_settings(FFTSettings *fs, unsigned int max_scale) {
+static C_KZG_RET compute_roots_of_unity(
+    fr_t *roots_of_unity_out, uint32_t max_scale
+) {
     C_KZG_RET ret;
+    uint64_t max_width;
     fr_t root_of_unity;
+    fr_t *expanded_roots = NULL;
 
-    fs->max_width = 1ULL << max_scale;
-    fs->expanded_roots_of_unity = NULL;
-    fs->reverse_roots_of_unity = NULL;
-    fs->roots_of_unity = NULL;
+    /* Calculate the max width */
+    max_width = 1ULL << max_scale;
 
-    CHECK((
-        max_scale < sizeof SCALE2_ROOT_OF_UNITY / sizeof SCALE2_ROOT_OF_UNITY[0]
-    ));
+    /* Get the root of unity */
+    CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
-    /* Allocate space for the roots of unity */
-    ret = new_fr_array(&fs->expanded_roots_of_unity, fs->max_width + 1);
-    if (ret != C_KZG_OK) goto out_error;
-    ret = new_fr_array(&fs->reverse_roots_of_unity, fs->max_width + 1);
-    if (ret != C_KZG_OK) goto out_error;
-    ret = new_fr_array(&fs->roots_of_unity, fs->max_width);
-    if (ret != C_KZG_OK) goto out_error;
+    /*
+     * Allocate an array to store the expanded roots of unity. We do this
+     * instead of re-using roots_of_unity_out because the expansion requires
+     * max_width+1 elements.
+     */
+    ret = new_fr_array(&expanded_roots, max_width + 1);
+    if (ret != C_KZG_OK) goto out;
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(
-        fs->expanded_roots_of_unity, &root_of_unity, fs->max_width
-    );
-    if (ret != C_KZG_OK) goto out_error;
+    ret = expand_root_of_unity(expanded_roots, &root_of_unity, max_width);
+    if (ret != C_KZG_OK) goto out;
 
-    /* Populate reverse roots of unity */
-    for (uint64_t i = 0; i <= fs->max_width; i++) {
-        fs->reverse_roots_of_unity[i] =
-            fs->expanded_roots_of_unity[fs->max_width - i];
-    }
+    /* Copy all but the last root to the roots of unity */
+    memcpy(roots_of_unity_out, expanded_roots, sizeof(fr_t) * max_width);
 
     /* Permute the roots of unity */
-    memcpy(
-        fs->roots_of_unity,
-        fs->expanded_roots_of_unity,
-        sizeof(fr_t) * fs->max_width
-    );
-    ret = bit_reversal_permutation(
-        fs->roots_of_unity, sizeof(fr_t), fs->max_width
-    );
-    if (ret != C_KZG_OK) goto out_error;
+    ret = bit_reversal_permutation(roots_of_unity_out, sizeof(fr_t), max_width);
+    if (ret != C_KZG_OK) goto out;
 
-    goto out_success;
-
-out_error:
-    c_kzg_free(fs->expanded_roots_of_unity);
-    c_kzg_free(fs->reverse_roots_of_unity);
-    c_kzg_free(fs->roots_of_unity);
-out_success:
+out:
+    c_kzg_free(expanded_roots);
     return ret;
+}
+
+/**
+ * Free a trusted setup (KZGSettings).
+ *
+ * @remark It's a NOP if `s` is NULL.
+ *
+ * @param[in] s The trusted setup to free
+ */
+void free_trusted_setup(KZGSettings *s) {
+    if (s == NULL) return;
+    s->max_width = 0;
+    c_kzg_free(s->roots_of_unity);
+    c_kzg_free(s->g1_values);
+    c_kzg_free(s->g2_values);
 }
 
 /**
@@ -1743,9 +1660,9 @@ out_success:
  * @remark Free after use with free_trusted_setup().
  *
  * @param[out] out      Pointer to the stored trusted setup data
- * @param[in]  g1_bytes Array of G1 points
+ * @param[in]  g1_bytes Array of G1 points in Lagrange form
  * @param[in]  n1       Number of `g1` points in g1_bytes
- * @param[in]  g2_bytes Array of G2 points
+ * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
 C_KZG_RET load_trusted_setup(
@@ -1755,12 +1672,10 @@ C_KZG_RET load_trusted_setup(
     const uint8_t *g2_bytes,
     size_t n2
 ) {
-    uint64_t i;
-    blst_p2_affine g2_affine;
-    g1_t *g1_projective = NULL;
     C_KZG_RET ret;
 
-    out->fs = NULL;
+    out->max_width = 0;
+    out->roots_of_unity = NULL;
     out->g1_values = NULL;
     out->g2_values = NULL;
 
@@ -1768,24 +1683,38 @@ C_KZG_RET load_trusted_setup(
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
     CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
 
+    /* 1<<max_scale is the smallest power of 2 >= n1 */
+    uint32_t max_scale = 0;
+    while ((1ULL << max_scale) < n1)
+        max_scale++;
+
+    /* Set the max_width */
+    out->max_width = 1ULL << max_scale;
+
     /* Allocate all of our arrays */
+    ret = new_fr_array(&out->roots_of_unity, out->max_width);
+    if (ret != C_KZG_OK) goto out_error;
     ret = new_g1_array(&out->g1_values, n1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&g1_projective, n1);
-    if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 bytes to g1 points */
-    for (i = 0; i < n1; i++) {
-        ret = validate_kzg_g1(
-            &g1_projective[i], (Bytes48 *)&g1_bytes[BYTES_PER_G1 * i]
+    for (uint64_t i = 0; i < n1; i++) {
+        blst_p1_affine g1_affine;
+        BLST_ERROR err = blst_p1_uncompress(
+            &g1_affine, &g1_bytes[BYTES_PER_G1 * i]
         );
-        if (ret != C_KZG_OK) goto out_error;
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p1_from_affine(&out->g1_values[i], &g1_affine);
     }
 
     /* Convert all g2 bytes to g2 points */
-    for (i = 0; i < n2; i++) {
+    for (uint64_t i = 0; i < n2; i++) {
+        blst_p2_affine g2_affine;
         BLST_ERROR err = blst_p2_uncompress(
             &g2_affine, &g2_bytes[BYTES_PER_G2 * i]
         );
@@ -1796,17 +1725,8 @@ C_KZG_RET load_trusted_setup(
         blst_p2_from_affine(&out->g2_values[i], &g2_affine);
     }
 
-    /* It's the smallest power of 2 >= n1 */
-    unsigned int max_scale = 0;
-    while ((1ULL << max_scale) < n1)
-        max_scale++;
-
-    /* Initialize the KZGSettings struct */
-    ret = c_kzg_malloc((void **)&out->fs, sizeof(FFTSettings));
-    if (ret != C_KZG_OK) goto out_error;
-    ret = new_fft_settings(out->fs, max_scale);
-    if (ret != C_KZG_OK) goto out_error;
-    ret = fft_g1(out->g1_values, g1_projective, true, n1, out->fs);
+    /* Compute roots of unity and permute the G1 trusted setup */
+    ret = compute_roots_of_unity(out->roots_of_unity, max_scale);
     if (ret != C_KZG_OK) goto out_error;
     ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
     if (ret != C_KZG_OK) goto out_error;
@@ -1814,11 +1734,13 @@ C_KZG_RET load_trusted_setup(
     goto out_success;
 
 out_error:
-    c_kzg_free(out->fs);
-    c_kzg_free(out->g1_values);
-    c_kzg_free(out->g2_values);
+    /*
+     * Note: this only frees the fields in the KZGSettings structure
+     * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
+     * structure memory. If necessary, that must be done by the caller.
+     */
+    free_trusted_setup(out);
 out_success:
-    c_kzg_free(g1_projective);
     return ret;
 }
 
@@ -1870,46 +1792,4 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
         g2_bytes,
         TRUSTED_SETUP_NUM_G2_POINTS
     );
-}
-
-/**
- * Free the memory that was previously allocated by new_fft_settings().
- *
- * @remark It's a NOP if `fs` is NULL.
- *
- * @param[in] fs The settings to be freed
- */
-static void free_fft_settings(FFTSettings *fs) {
-    if (fs == NULL) return;
-    c_kzg_free(fs->expanded_roots_of_unity);
-    c_kzg_free(fs->reverse_roots_of_unity);
-    c_kzg_free(fs->roots_of_unity);
-    fs->max_width = 0;
-}
-
-/**
- * Free the memory that was previously allocated by new_kzg_settings().
- *
- * @remark It's a NOP if `s` is NULL.
- *
- * @param[in] s The settings to be freed
- */
-static void free_kzg_settings(KZGSettings *s) {
-    if (s == NULL) return;
-    c_kzg_free(s->fs);
-    c_kzg_free(s->g1_values);
-    c_kzg_free(s->g2_values);
-}
-
-/**
- * Free a trusted setup (KZGSettings).
- *
- * @remark It's a NOP if `s` is NULL.
- *
- * @param[in] s The trusted setup to free
- */
-void free_trusted_setup(KZGSettings *s) {
-    if (s == NULL) return;
-    free_fft_settings(s->fs);
-    free_kzg_settings(s);
 }

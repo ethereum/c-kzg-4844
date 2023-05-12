@@ -130,42 +130,19 @@ typedef enum {
 } C_KZG_RET;
 
 /**
- * Stores the setup and parameters needed for performing FFTs.
- */
-typedef struct {
-    /** The maximum size of FFT these settings support, a power of 2. */
-    uint64_t max_width;
-    /**
-     * We fix a given primitive roots of unity w of order `max_width` via
-     * `SCALE2_ROOT_OF_UNITY`. Then `expanded_roots_of_unity[i]` == w^i and
-     * `reverse_roots_of_unity[i]` == w^{-i}. Unusually, both
-     * `expanded_roots_of_unity` and `reverse_roots_of_unity` have length
-     * `max_width + 1`. By the above, `expanded_roots_of_unity[max_width] ==
-     * expanded_roots_of_unity[0] == 1` and similarly for
-     * `reverse_roots_of_unity`. The redundant element is just there to simplify
-     * index calculations in some formulas.
-     */
-
-    /** Ascending powers of the root of unity, length `max_width + 1`. */
-    fr_t *expanded_roots_of_unity;
-    /** Descending powers of the root of unity, length `max_width + 1`. */
-    fr_t *reverse_roots_of_unity;
-    /** Powers of the root of unity in bit-reversal permutation order, length
-     * `max_width`. */
-    fr_t *roots_of_unity;
-} FFTSettings;
-
-/**
  * Stores the setup and parameters needed for computing KZG proofs.
  */
 typedef struct {
-    /** The corresponding settings for performing FFTs. */
-    FFTSettings *fs;
+    /** The length of `roots_of_unity`, a power of 2. */
+    uint64_t max_width;
+    /** Powers of the primitive root of unity determined by
+     * `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,
+     * length `max_width`. */
+    fr_t *roots_of_unity;
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
     g1_t *g1_values;
-    /** G2 group elements from the trusted setup;
-     * both arrays have `FIELD_ELEMENTS_PER_BLOB` elements. */
+    /** G2 group elements from the trusted setup. */
     g2_t *g2_values;
 } KZGSettings;
 

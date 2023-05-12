@@ -1006,7 +1006,7 @@ test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
     fr_t x, y, c;
 
     get_rand_fr(&c);
-    x = s.fs->roots_of_unity[123];
+    x = s.roots_of_unity[123];
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         p.evals[i] = c;
@@ -1030,7 +1030,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
     }
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        eval_poly(&p.evals[i], poly_coefficients, &s.fs->roots_of_unity[i]);
+        eval_poly(&p.evals[i], poly_coefficients, &s.roots_of_unity[i]);
     }
 
     get_rand_fr(&x);
@@ -1041,7 +1041,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 
     ASSERT("evaluation methods match", fr_equal(&y, &check));
 
-    x = s.fs->roots_of_unity[123];
+    x = s.roots_of_unity[123];
 
     eval_poly(&check, poly_coefficients, &x);
 
@@ -1220,7 +1220,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ret = blob_to_polynomial(&poly, &blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
-        z_fr = s.fs->roots_of_unity[i];
+        z_fr = s.roots_of_unity[i];
         bytes_from_bls_field(&z, &z_fr);
 
         /* Compute the proof */
@@ -1689,47 +1689,6 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for fft_g1
-///////////////////////////////////////////////////////////////////////////////
-
-static void test_fft_g1__succeeds_round_trip(void) {
-    C_KZG_RET ret;
-    g1_t original[MAX_WIDTH], transformed[MAX_WIDTH], inversed[MAX_WIDTH];
-
-    for (size_t i = 0; i < MAX_WIDTH; i++) {
-        get_rand_g1(&original[i]);
-    }
-
-    ret = fft_g1(transformed, original, false, MAX_WIDTH, s.fs);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    ret = fft_g1(inversed, transformed, true, MAX_WIDTH, s.fs);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    for (size_t i = 0; i < MAX_WIDTH; i++) {
-        ASSERT(
-            "same as original", blst_p1_is_equal(&original[i], &inversed[i])
-        );
-    }
-}
-
-static void test_fft_g1__n_not_power_of_two(void) {
-    C_KZG_RET ret;
-    g1_t original[MAX_WIDTH], transformed[MAX_WIDTH];
-
-    ret = fft_g1(transformed, original, false, MAX_WIDTH - 1, s.fs);
-    ASSERT_EQUALS(ret, C_KZG_BADARGS);
-}
-
-static void test_fft_g1__n_too_large(void) {
-    C_KZG_RET ret;
-    g1_t original[MAX_WIDTH], transformed[MAX_WIDTH];
-
-    ret = fft_g1(transformed, original, false, 2 * s.fs->max_width, s.fs);
-    ASSERT_EQUALS(ret, C_KZG_BADARGS);
-}
-
-///////////////////////////////////////////////////////////////////////////////
 // Tests for expand_root_of_unity
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1970,9 +1929,6 @@ int main(void) {
     RUN(test_verify_kzg_proof_batch__fails_proof_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_commitment_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_invalid_blob);
-    RUN(test_fft_g1__succeeds_round_trip);
-    RUN(test_fft_g1__n_not_power_of_two);
-    RUN(test_fft_g1__n_too_large);
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
