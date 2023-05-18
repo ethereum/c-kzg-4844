@@ -372,6 +372,7 @@ static void test_g1_mul__test_different_bit_lengths(void) {
 
         ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 
+        blst_fr_mul(&f, &f, &two);
         blst_scalar_from_fr(&s, &f);
         blst_lendian_from_scalar(b.bytes, &s);
     }
