@@ -513,29 +513,15 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
 }
 
 /**
- * Convert Bytes32 from little-endian to big-endian, or vice versa.
- *
- * @remark This happens in-place.
- *
- * @param[in,out] b The bytes to convert.
- */
-static void swap_endianness(Bytes32 *b) {
-    for (int i = 0; i < 16; i++) {
-        uint8_t temp = b->bytes[i];
-        b->bytes[i] = b->bytes[31 - i];
-        b->bytes[31 - i] = temp;
-    }
-}
-
-/**
  * Serialize a BLS field element into bytes.
  *
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
 static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
-    blst_scalar_from_fr((blst_scalar *)out->bytes, in);
-    swap_endianness(out);
+    blst_scalar s;
+    blst_scalar_from_fr(&s, in);
+    blst_bendian_from_scalar(out->bytes, &s);
 }
 
 /**

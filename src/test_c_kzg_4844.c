@@ -356,11 +356,13 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     Bytes32 b;
     fr_t f, two;
     g1_t g, r, check;
+    blst_scalar s;
 
     fr_from_uint64(&f, 1);
     fr_from_uint64(&two, 2);
-    bytes_from_bls_field(&b, &f);
-    swap_endianness(&b);
+    blst_scalar_from_fr(&s, &f);
+    /* blst_p1_mult needs it to be little-endian */
+    blst_lendian_from_scalar(b.bytes, &s);
 
     for (int i = 1; i < 255; i++) {
         get_rand_g1(&g);
@@ -370,9 +372,8 @@ static void test_g1_mul__test_different_bit_lengths(void) {
 
         ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 
-        blst_fr_mul(&f, &f, &two);
-        bytes_from_bls_field(&b, &f);
-        swap_endianness(&b);
+        blst_scalar_from_fr(&s, &f);
+        blst_lendian_from_scalar(b.bytes, &s);
     }
 }
 
