@@ -513,6 +513,21 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
 }
 
 /**
+ * Convert Bytes32 from little-endian to big-endian, or vice versa.
+ *
+ * @remark This happens in-place.
+ *
+ * @param[in,out] b The bytes to convert.
+ */
+static void swap_endianness(Bytes32 *b) {
+    for (int i = 0; i < 16; i++) {
+        uint8_t temp = b->bytes[i];
+        b->bytes[i] = b->bytes[31 - i];
+        b->bytes[31 - i] = temp;
+    }
+}
+
+/**
  * Serialize a BLS field element into bytes.
  *
  * @param[out] out A 32-byte array to store the serialized field element
@@ -520,18 +535,19 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
  */
 static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
     blst_scalar_from_fr((blst_scalar *)out->bytes, in);
+    swap_endianness(out);
 }
 
 /**
  * Serialize a 64-bit unsigned integer into bytes.
  *
- * @remark The output format is little-endian.
+ * @remark The output format is big-endian.
  *
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
  */
 static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 7; i >= 0; i--) {
         out[i] = n & 0xFF;
         n >>= 8;
     }
@@ -549,7 +565,7 @@ static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
  */
 static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, b->bytes);
+    blst_scalar_from_bendian(&tmp, b->bytes);
     blst_fr_from_scalar(out, &tmp);
 }
 
@@ -562,7 +578,7 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  */
 static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
-    blst_scalar_from_lendian(&tmp, b->bytes);
+    blst_scalar_from_bendian(&tmp, b->bytes);
     if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
     blst_fr_from_scalar(out, &tmp);
     return C_KZG_OK;
@@ -660,10 +676,10 @@ static void compute_challenge(
     memcpy(offset, FIAT_SHAMIR_PROTOCOL_DOMAIN, DOMAIN_STR_LENGTH);
     offset += DOMAIN_STR_LENGTH;
 
-    /* Copy polynomial degree (16-bytes, little-endian) */
-    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
-    offset += sizeof(uint64_t);
+    /* Copy polynomial degree (16-bytes, big-endian) */
     bytes_from_uint64(offset, 0);
+    offset += sizeof(uint64_t);
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
     offset += sizeof(uint64_t);
 
     /* Copy blob */
