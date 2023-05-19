@@ -33,7 +33,7 @@ func getRandFieldElement(seed int64) Bytes32 {
 		panic("failed to get random field element")
 	}
 
-	// This leaves the last byte in fieldElementBytes as
+	// This leaves the first byte in fieldElementBytes as
 	// zero, which guarantees it's a canonical field element.
 	var fieldElementBytes Bytes32
 	copy(fieldElementBytes[1:], bytes)
