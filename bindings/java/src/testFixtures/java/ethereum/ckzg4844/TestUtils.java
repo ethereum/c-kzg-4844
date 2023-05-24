@@ -48,7 +48,7 @@ public class TestUtils {
     final byte[][] blob =
         IntStream.range(0, CKZG4844JNI.getFieldElementsPerBlob())
             .mapToObj(__ -> randomBLSFieldElement())
-            .map(fieldElement -> fieldElement.toArray(ByteOrder.LITTLE_ENDIAN))
+            .map(fieldElement -> fieldElement.toArray(ByteOrder.BIG_ENDIAN))
             .toArray(byte[][]::new);
     return flatten(blob);
   }
@@ -83,7 +83,7 @@ public class TestUtils {
     final byte[][] blob =
         IntStream.range(0, CKZG4844JNI.getFieldElementsPerBlob())
             .mapToObj(__ -> UInt256.valueOf(CKZG4844JNI.BLS_MODULUS.add(BigInteger.valueOf(42))))
-            .map(greaterThanModulus -> greaterThanModulus.toArray(ByteOrder.LITTLE_ENDIAN))
+            .map(greaterThanModulus -> greaterThanModulus.toArray(ByteOrder.BIG_ENDIAN))
             .toArray(byte[][]::new);
     return flatten(blob);
   }
@@ -230,7 +230,7 @@ public class TestUtils {
   }
 
   public static byte[] randomBLSFieldElementBytes() {
-    return randomBLSFieldElement().toArray(ByteOrder.LITTLE_ENDIAN);
+    return randomBLSFieldElement().toArray(ByteOrder.BIG_ENDIAN);
   }
 
   public static List<String> getFiles(String path) {

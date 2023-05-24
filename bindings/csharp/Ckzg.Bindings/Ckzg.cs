@@ -102,6 +102,7 @@ public static partial class Ckzg
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+        ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
 
         fixed (byte* proofPtr = proof, blobPtr = blob, commitmentPtr = commitment)
         {

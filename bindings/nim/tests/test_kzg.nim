@@ -11,7 +11,7 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
     discard urandom(blob)
     for i in 0..<len(blob):
       # don't overflow modulus
-      if blob[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 31:
+      if blob[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
         blob[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
@@ -81,13 +81,12 @@ suite "verify proof (high-level)":
     let res = loadTrustedSetupFile(trustedSetupFile)
     check res.isOk
     ctx = res.get
-    
+
     discard ctx.blobToKzgCommitment(blob)
     let kp = ctx.computeKzgProof(blob, inputPoint)
     discard ctx.computeBlobKzgProof(blob, commitment)
     discard ctx.verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
     discard ctx.verifyBlobKzgProof(blob, commitment, proof)
-    
+
     let kb = ctx.createKateBlobs(1)
     discard ctx.verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
-    
