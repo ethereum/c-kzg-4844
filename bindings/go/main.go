@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 	"unsafe"
 
 	// So its functions are available during compilation.
@@ -68,10 +69,11 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (b *Bytes32) UnmarshalText(input []byte) error {
-	if string(input[:2]) == "0x" {
-		input = input[2:]
+	inputStr := string(input)
+	if strings.HasPrefix(inputStr, "0x") {
+		inputStr = strings.TrimPrefix(inputStr, "0x")
 	}
-	bytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(inputStr)
 	if err != nil {
 		return err
 	}
@@ -83,10 +85,11 @@ func (b *Bytes32) UnmarshalText(input []byte) error {
 }
 
 func (b *Bytes48) UnmarshalText(input []byte) error {
-	if string(input[:2]) == "0x" {
-		input = input[2:]
+	inputStr := string(input)
+	if strings.HasPrefix(inputStr, "0x") {
+		inputStr = strings.TrimPrefix(inputStr, "0x")
 	}
-	bytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(inputStr)
 	if err != nil {
 		return err
 	}
@@ -98,10 +101,11 @@ func (b *Bytes48) UnmarshalText(input []byte) error {
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
-	if string(input[:2]) == "0x" {
-		input = input[2:]
+	inputStr := string(input)
+	if strings.HasPrefix(inputStr, "0x") {
+		inputStr = strings.TrimPrefix(inputStr, "0x")
 	}
-	bytes, err := hex.DecodeString(string(input))
+	bytes, err := hex.DecodeString(inputStr)
 	if err != nil {
 		return err
 	}
@@ -215,11 +219,11 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 ComputeKZGProof is the binding for:
 
 	C_KZG_RET compute_kzg_proof(
-			KZGProof *proof_out,
-			Bytes32 *y_out,
-			const Blob *blob,
-			const Bytes32 *z_bytes,
-			const KZGSettings *s);
+	    KZGProof *proof_out,
+	    Bytes32 *y_out,
+	    const Blob *blob,
+	    const Bytes32 *z_bytes,
+	    const KZGSettings *s);
 */
 func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 	if !loaded {
@@ -240,10 +244,10 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 ComputeBlobKZGProof is the binding for:
 
 	C_KZG_RET compute_blob_kzg_proof(
-			KZGProof *out,
-			const Blob *blob,
-			const Bytes48 *commitment_bytes,
-			const KZGSettings *s);
+	    KZGProof *out,
+	    const Blob *blob,
+	    const Bytes48 *commitment_bytes,
+	    const KZGSettings *s);
 */
 func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, error) {
 	if !loaded {
