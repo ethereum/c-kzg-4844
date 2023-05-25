@@ -29,7 +29,7 @@ jobs:
             location: linux-arm64
             host: ubuntu-22.04
             ext: .so
-            reqs: sudo apt install -y clang binutils-aarch64-linux-gnu libc6-arm64-cross libc6-dev-arm64-cross crossbuild-essential-arm64
+            reqs: sudo apt update && sudo apt install -y clang binutils-aarch64-linux-gnu libc6-arm64-cross libc6-dev-arm64-cross crossbuild-essential-arm64
           - arch: arm64-darwin
             location: osx-arm64
             host: macos-latest
