@@ -164,6 +164,12 @@ inline Bytes48 *get_bytes48(
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
+    if (info.Length() != 1) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     // Check if the trusted setup is already loaded
     KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
     if (data->is_setup) {
@@ -210,6 +216,13 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
  */
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 1) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
         return env.Null();
@@ -246,6 +259,13 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
  */
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 2) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
         return env.Null();
@@ -295,6 +315,13 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
  */
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 2) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
         return env.Null();
@@ -340,6 +367,13 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
  */
 Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 4) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
     if (commitment_bytes == nullptr) {
         return env.Null();
@@ -390,6 +424,13 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info) {
  */
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 3) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     Blob *blob_bytes = get_blob(env, info[0]);
     if (blob_bytes == nullptr) {
         return env.Null();
@@ -445,6 +486,13 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
     Bytes48 *commitments = NULL;
     Bytes48 *proofs = NULL;
     Napi::Value result = env.Null();
+
+    if (info.Length() != 3) {
+        Napi::Error::New(env, "Invalid number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
     if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray())) {
         Napi::Error::New(
             env, "Blobs, commitments, and proofs must all be arrays"
