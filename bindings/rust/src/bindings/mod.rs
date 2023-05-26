@@ -39,6 +39,8 @@ pub struct KZGProof {
 pub enum Error {
     /// Wrong number of bytes.
     InvalidBytesLength(String),
+    /// The hex string is invalid.
+    InvalidHexFormat(String),
     /// The KZG proof is invalid.
     InvalidKzgProof(String),
     /// The KZG commitment is invalid.
@@ -175,7 +177,10 @@ impl Blob {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
+        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+        hex::decode(trimmed_str)
+            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
+            .and_then(|bytes| Self::from_bytes(&bytes))
     }
 }
 
@@ -194,7 +199,10 @@ impl Bytes32 {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
+        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+        hex::decode(trimmed_str)
+            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
+            .and_then(|bytes| Self::from_bytes(&bytes))
     }
 }
 
@@ -213,7 +221,10 @@ impl Bytes48 {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        Self::from_bytes(&hex::decode(&hex_str[2..]).unwrap())
+        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+        hex::decode(trimmed_str)
+            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
+            .and_then(|bytes| Self::from_bytes(&bytes))
     }
 
     pub fn into_inner(self) -> [u8; 48] {
