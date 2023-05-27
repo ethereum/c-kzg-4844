@@ -53,6 +53,13 @@ pub enum Error {
     CError(C_KZG_RET),
 }
 
+/// Converts a hex string (with or without the 0x prefix) to bytes.
+pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
+    let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
+    hex::decode(trimmed_str)
+        .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
+}
+
 /// Holds the parameters of a kzg trusted setup ceremony.
 impl KZGSettings {
     /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points
@@ -177,10 +184,7 @@ impl Blob {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
-        hex::decode(trimmed_str)
-            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
-            .and_then(|bytes| Self::from_bytes(&bytes))
+        Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 }
 
@@ -199,10 +203,7 @@ impl Bytes32 {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
-        hex::decode(trimmed_str)
-            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
-            .and_then(|bytes| Self::from_bytes(&bytes))
+        Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 }
 
@@ -221,10 +222,7 @@ impl Bytes48 {
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
-        let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
-        hex::decode(trimmed_str)
-            .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
-            .and_then(|bytes| Self::from_bytes(&bytes))
+        Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
     pub fn into_inner(self) -> [u8; 48] {
