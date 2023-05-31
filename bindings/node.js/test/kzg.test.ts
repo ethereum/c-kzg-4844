@@ -83,9 +83,9 @@ function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
 
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   const lessArgs = validArgs.length === 1 ? [] : validArgs.slice(0, -1);
-  expect(lessArgs.length + 1).toEqual(validArgs.length);
+  expect(lessArgs.length).toBeLessThan(validArgs.length);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
-  expect(moreArgs.length - 1).toEqual(validArgs.length);
+  expect(moreArgs.length).toBeGreaterThan(validArgs.length);
   it("should run for expected argument count", () => {
     expect(() => fn(...validArgs)).not.toThrowError();
   });
