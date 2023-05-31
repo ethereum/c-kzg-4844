@@ -1753,14 +1753,14 @@ C_KZG_RET load_trusted_setup(
         blst_p2_from_affine(&out->g2_values[i], &g2_affine);
     }
 
+    /* Make sure the trusted setup was loaded in Lagrange form */
+    ret = is_trusted_setup_in_lagrange_form(out, n1, n2);
+    if (ret != C_KZG_OK) goto out_error;
+
     /* Compute roots of unity and permute the G1 trusted setup */
     ret = compute_roots_of_unity(out->roots_of_unity, max_scale);
     if (ret != C_KZG_OK) goto out_error;
     ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
-    if (ret != C_KZG_OK) goto out_error;
-
-    /* Make sure the trusted setup was loaded in Lagrange form */
-    ret = is_trusted_setup_in_lagrange_form(out, n1, n2);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
