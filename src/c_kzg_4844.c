@@ -1659,23 +1659,24 @@ void free_trusted_setup(KZGSettings *s) {
 /**
  * Basic sanity check that the trusted setup was loaded in Lagrange form.
  *
- * @param[in] trusted_setup  Pointer to the stored trusted setup data
- * @param[in]  n1       Number of `g1` points in trusted_setup
- * @param[in]  n2       Number of `g2` points in trusted_setup
- *
+ * @param[in] s  Pointer to the stored trusted setup data
+ * @param[in] n1 Number of `g1` points in trusted_setup
+ * @param[in] n2 Number of `g2` points in trusted_setup
  */
-C_KZG_RET is_trusted_setup_in_lagrange_form(
+static C_KZG_RET is_trusted_setup_in_lagrange_form(
     const KZGSettings *s, size_t n1, size_t n2
 ) {
-    /* Trusted setup is too small; we can't work with this. */
+    /* Trusted setup is too small; we can't work with this */
     if (n1 < 2 || n2 < 2) {
         return C_KZG_BADARGS;
     }
 
-    /* If the following pairing equation checks out:
-     *           e(G1_SETUP[1], G2_SETUP[0]) ?= e(G1_SETUP[0], G2_setup[1])
+    /*
+     * If the following pairing equation checks out:
+     *     e(G1_SETUP[1], G2_SETUP[0]) ?= e(G1_SETUP[0], G2_setup[1])
      * then the trusted setup was loaded in monomial form.
-     * If so, error out since we want the trusted setup in Lagrange form. */
+     * If so, error out since we want the trusted setup in Lagrange form.
+     */
     bool is_monomial_form = pairings_verify(
         &s->g1_values[1], &s->g2_values[0], &s->g1_values[0], &s->g2_values[1]
     );
