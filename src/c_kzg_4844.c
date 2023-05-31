@@ -1673,7 +1673,7 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
 
     /*
      * If the following pairing equation checks out:
-     *     e(G1_SETUP[1], G2_SETUP[0]) ?= e(G1_SETUP[0], G2_setup[1])
+     *     e(G1_SETUP[1], G2_SETUP[0]) ?= e(G1_SETUP[0], G2_SETUP[1])
      * then the trusted setup was loaded in monomial form.
      * If so, error out since we want the trusted setup in Lagrange form.
      */
