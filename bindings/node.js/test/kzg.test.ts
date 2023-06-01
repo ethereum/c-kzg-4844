@@ -92,7 +92,7 @@ function getValidTest(testDir: string): any {
 }
 
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
-  const lessArgs = validArgs.length === 1 ? [] : validArgs.slice(0, -1);
+  const lessArgs = validArgs.slice(0, -1);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
   
   it("should test for different argument lengths", () => {
