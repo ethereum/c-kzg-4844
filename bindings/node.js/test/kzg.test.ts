@@ -96,26 +96,32 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   expect(lessArgs.length).toBeLessThan(validArgs.length);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
   expect(moreArgs.length).toBeGreaterThan(validArgs.length);
+  
   it("should run for expected argument count", () => {
     expect(() => fn(...validArgs)).not.toThrowError();
   });
+
   it("should ignore extra arguments", () => {
     expect(() => fn(...moreArgs)).not.toThrowError();
   });
+  
   it("should give same result with extra args", () => {
     expect(fn(...validArgs)).toEqual(fn(...moreArgs));
   });
+  
   it("should throw for less than expected argument count", () => {
     expect(() => fn(...lessArgs)).toThrowError();
   });
 }
 
 describe("C-KZG", () => {
+
   beforeAll(async () => {
     loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe("reference tests should pass", () => {
+
     it("reference tests for blobToKzgCommitment should pass", () => {
       const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
       expect(tests.length).toBeGreaterThan(0);
@@ -263,16 +269,19 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for blobToKzgCommitment", () => {
+
     describe("check argument count", () => {
       const test: BlobToKzgCommitmentTest = getValidTest(BLOB_TO_KZG_COMMITMENT_TESTS);
       const blob = bytesFromHex(test.input.blob);
       testArgCount(blobToKzgCommitment, [blob]);
     });
+
     it("throws as expected when given an argument of invalid type", () => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       expect(() => blobToKzgCommitment("wrong type")).toThrowError("Expected blob to be a Uint8Array");
     });
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() => blobToKzgCommitment(blobBadLength)).toThrowError("Expected blob to be 131072 bytes");
     });
@@ -280,17 +289,20 @@ describe("C-KZG", () => {
 
   // TODO: add more tests for this function.
   describe("edge cases for computeKzgProof", () => {
+    
     describe("check argument count", () => {
       const test: ComputeKzgProofTest = getValidTest(COMPUTE_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
       const z = bytesFromHex(test.input.z);
       testArgCount(computeKzgProof, [blob, z]);
     });
+
     it("computes a proof from blob/field element", () => {
       const blob = generateRandomBlob();
       const zBytes = new Uint8Array(BYTES_PER_FIELD_ELEMENT).fill(0);
       computeKzgProof(blob, zBytes);
     });
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() => computeKzgProof(blobBadLength, fieldElementValidLength)).toThrowError(
         "Expected blob to be 131072 bytes"
@@ -303,17 +315,20 @@ describe("C-KZG", () => {
 
   // TODO: add more tests for this function.
   describe("edge cases for computeBlobKzgProof", () => {
+
     describe("check argument count", () => {
       const test: ComputeBlobKzgProofTest = getValidTest(COMPUTE_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
       const commitment = bytesFromHex(test.input.commitment);
       testArgCount(computeBlobKzgProof, [blob, commitment]);
     });
+
     it("computes a proof from blob", () => {
       const blob = generateRandomBlob();
       const commitment = blobToKzgCommitment(blob);
       computeBlobKzgProof(blob, commitment);
     });
+    
     it("throws as expected when given an argument of invalid length", () => {
       expect(() => computeBlobKzgProof(blobBadLength, blobToKzgCommitment(generateRandomBlob()))).toThrowError(
         "Expected blob to be 131072 bytes"
@@ -322,6 +337,7 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyKzgProof", () => {
+
     describe("check argument count", () => {
       const test: VerifyKzgProofTest = getValidTest(VERIFY_KZG_PROOF_TESTS);
       const commitment = bytesFromHex(test.input.commitment);
@@ -330,6 +346,7 @@ describe("C-KZG", () => {
       const proof = bytesFromHex(test.input.proof);
       testArgCount(verifyKzgProof, [commitment, z, y, proof]);
     });
+
     it("valid proof should result in true", () => {
       const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
       commitment[0] = 0xc0;
@@ -339,6 +356,7 @@ describe("C-KZG", () => {
       proof[0] = 0xc0;
       expect(verifyKzgProof(commitment, z, y, proof)).toBe(true);
     });
+
     it("invalid proof should result in false", () => {
       const commitment = new Uint8Array(BYTES_PER_COMMITMENT).fill(0);
       commitment[0] = 0xc0;
@@ -348,6 +366,7 @@ describe("C-KZG", () => {
       proof[0] = 0xc0;
       expect(verifyKzgProof(commitment, z, y, proof)).toBe(false);
     });
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
         verifyKzgProof(commitmentBadLength, fieldElementValidLength, fieldElementValidLength, proofValidLength)
@@ -365,6 +384,7 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyBlobKzgProof", () => {
+
     describe("check argument count", () => {
       const test: VerifyBlobKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
@@ -372,18 +392,21 @@ describe("C-KZG", () => {
       const proof = bytesFromHex(test.input.proof);
       testArgCount(verifyBlobKzgProof, [blob, commitment, proof]);
     });
+
     it("correct blob/commitment/proof should verify as true", () => {
       const blob = generateRandomBlob();
       const commitment = blobToKzgCommitment(blob);
       const proof = computeBlobKzgProof(blob, commitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(true);
     });
+
     it("incorrect commitment should verify as false", () => {
       const blob = generateRandomBlob();
       const commitment = blobToKzgCommitment(generateRandomBlob());
       const proof = computeBlobKzgProof(blob, commitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
+
     it("incorrect proof should verify as false", () => {
       const blob = generateRandomBlob();
       const commitment = blobToKzgCommitment(blob);
@@ -392,6 +415,7 @@ describe("C-KZG", () => {
       const proof = computeBlobKzgProof(randomBlob, randomCommitment);
       expect(verifyBlobKzgProof(blob, commitment, proof)).toBe(false);
     });
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() => verifyBlobKzgProof(blobBadLength, commitmentValidLength, proofValidLength)).toThrowError(
         "Expected blob to be 131072 bytes"
@@ -406,6 +430,7 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyBlobKzgProofBatch", () => {
+
     describe("check argument count", () => {
       const test: VerifyBatchKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       const blobs = test.input.blobs.map(bytesFromHex);
@@ -413,6 +438,7 @@ describe("C-KZG", () => {
       const proofs = test.input.proofs.map(bytesFromHex);
       testArgCount(verifyBlobKzgProofBatch, [blobs, commitments, proofs]);
     });
+
     it("should reject non-array args", () => {
       expect(() =>
         verifyBlobKzgProofBatch(
@@ -422,6 +448,7 @@ describe("C-KZG", () => {
         )
       ).toThrowError("Blobs, commitments, and proofs must all be arrays");
     });
+
     it("should reject non-bytearray blob", () => {
       expect(() =>
         verifyBlobKzgProofBatch(
@@ -431,6 +458,7 @@ describe("C-KZG", () => {
         )
       ).toThrowError("Expected blob to be a Uint8Array");
     });
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() =>
         verifyBlobKzgProofBatch(
@@ -454,9 +482,11 @@ describe("C-KZG", () => {
         )
       ).toThrowError("Expected proofBytes to be 48 bytes");
     });
+
     it("zero blobs/commitments/proofs should verify as true", () => {
       expect(verifyBlobKzgProofBatch([], [], [])).toBe(true);
     });
+
     it("mismatching blobs/commitments/proofs should throw error", () => {
       const count = 3;
       const blobs = new Array(count);
