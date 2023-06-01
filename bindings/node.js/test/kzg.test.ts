@@ -81,6 +81,17 @@ function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
   return true;
 }
 
+/**
+ * Finds a valid test under a glob path to test files. Filters out tests with
+ * "invalid", "incorrect", or "different" in the file name.
+ *
+ * @param {string} testDir Glob path to test files
+ *
+ * @return {any} Test object with valid input and output. Must strongly type
+ *               results at calling location
+ *
+ * @throws {Error} If no valid test is found
+ */
 function getValidTest(testDir: string): any {
   const tests = globSync(testDir);
   const validTest = tests.find(
@@ -91,6 +102,21 @@ function getValidTest(testDir: string): any {
   return yaml.load(readFileSync(validTest, "ascii"));
 }
 
+/**
+ * Runs a suite of tests for the passed function and arguments. Will test base
+ * case to ensure a valid set of arguments was passed with the function being
+ * tested.  Will then test the same function with an extra, invalid, argument
+ * at the end of the argument list to verify extra args are ignored. Checks
+ * validity of the extra argument case against the base case. Finally, will
+ * check that if an argument is removed that an error is thrown.
+ *
+ * @param {(...args: any[]) => any} fn Function to be tested
+ * @param {any[]} validArgs Valid arguments to be passed as base case to fn
+ *
+ * @return {void}
+ *
+ * @throws {Error} If no valid test is found
+ */
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   const lessArgs = validArgs.slice(0, -1);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
