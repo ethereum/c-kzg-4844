@@ -94,7 +94,7 @@ function getValidTest(testDir: string): any {
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   const lessArgs = validArgs.slice(0, -1);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
-  
+
   it("should test for different argument lengths", () => {
     expect(lessArgs.length).toBeLessThan(validArgs.length);
     expect(moreArgs.length).toBeGreaterThan(validArgs.length);
@@ -107,24 +107,22 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   it("should ignore extra arguments", () => {
     expect(() => fn(...moreArgs)).not.toThrowError();
   });
-  
+
   it("should give same result with extra args", () => {
     expect(fn(...validArgs)).toEqual(fn(...moreArgs));
   });
-  
+
   it("should throw for less than expected argument count", () => {
     expect(() => fn(...lessArgs)).toThrowError();
   });
 }
 
 describe("C-KZG", () => {
-
   beforeAll(async () => {
     loadTrustedSetup(SETUP_FILE_PATH);
   });
 
   describe("reference tests should pass", () => {
-
     it("reference tests for blobToKzgCommitment should pass", () => {
       const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
       expect(tests.length).toBeGreaterThan(0);
@@ -272,7 +270,6 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for blobToKzgCommitment", () => {
-
     describe("check argument count", () => {
       const test: BlobToKzgCommitmentTest = getValidTest(BLOB_TO_KZG_COMMITMENT_TESTS);
       const blob = bytesFromHex(test.input.blob);
@@ -292,7 +289,6 @@ describe("C-KZG", () => {
 
   // TODO: add more tests for this function.
   describe("edge cases for computeKzgProof", () => {
-    
     describe("check argument count", () => {
       const test: ComputeKzgProofTest = getValidTest(COMPUTE_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
@@ -318,7 +314,6 @@ describe("C-KZG", () => {
 
   // TODO: add more tests for this function.
   describe("edge cases for computeBlobKzgProof", () => {
-
     describe("check argument count", () => {
       const test: ComputeBlobKzgProofTest = getValidTest(COMPUTE_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
@@ -331,7 +326,7 @@ describe("C-KZG", () => {
       const commitment = blobToKzgCommitment(blob);
       computeBlobKzgProof(blob, commitment);
     });
-    
+
     it("throws as expected when given an argument of invalid length", () => {
       expect(() => computeBlobKzgProof(blobBadLength, blobToKzgCommitment(generateRandomBlob()))).toThrowError(
         "Expected blob to be 131072 bytes"
@@ -340,7 +335,6 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyKzgProof", () => {
-
     describe("check argument count", () => {
       const test: VerifyKzgProofTest = getValidTest(VERIFY_KZG_PROOF_TESTS);
       const commitment = bytesFromHex(test.input.commitment);
@@ -387,7 +381,6 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyBlobKzgProof", () => {
-
     describe("check argument count", () => {
       const test: VerifyBlobKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
@@ -433,7 +426,6 @@ describe("C-KZG", () => {
   });
 
   describe("edge cases for verifyBlobKzgProofBatch", () => {
-
     describe("check argument count", () => {
       const test: VerifyBatchKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       const blobs = test.input.blobs.map(bytesFromHex);
