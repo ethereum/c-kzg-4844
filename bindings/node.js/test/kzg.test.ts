@@ -102,6 +102,9 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   it("should ignore extra arguments", () => {
     expect(() => fn(...moreArgs)).not.toThrowError();
   });
+  it("should give same result with extra args", () => {
+    expect(fn(...validArgs)).toEqual(fn(...moreArgs));
+  });
   it("should throw for less than expected argument count", () => {
     expect(() => fn(...lessArgs)).toThrowError();
   });
