@@ -81,6 +81,16 @@ function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): boolean {
   return true;
 }
 
+function getValidTest(testDir: string): any {
+  const tests = globSync(testDir);
+  const validTest = tests.find(
+    (testFile: string) =>
+      !testFile.includes("invalid") && !testFile.includes("incorrect") && !testFile.includes("different")
+  );
+  if (!validTest) throw new Error("Could not find valid test");
+  return yaml.load(readFileSync(validTest, "ascii"));
+}
+
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   const lessArgs = validArgs.length === 1 ? [] : validArgs.slice(0, -1);
   expect(lessArgs.length).toBeLessThan(validArgs.length);
@@ -89,7 +99,7 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   it("should run for expected argument count", () => {
     expect(() => fn(...validArgs)).not.toThrowError();
   });
-  it("should ignore extras arguments", () => {
+  it("should ignore extra arguments", () => {
     expect(() => fn(...moreArgs)).not.toThrowError();
   });
   it("should throw for less than expected argument count", () => {
@@ -251,10 +261,7 @@ describe("C-KZG", () => {
 
   describe("edge cases for blobToKzgCommitment", () => {
     describe("check argument count", () => {
-      const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
-      const validTest = tests.find((testFile: string) => !testFile.includes("invalid"));
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: BlobToKzgCommitmentTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: BlobToKzgCommitmentTest = getValidTest(BLOB_TO_KZG_COMMITMENT_TESTS);
       const blob = bytesFromHex(test.input.blob);
       testArgCount(blobToKzgCommitment, [blob]);
     });
@@ -271,10 +278,7 @@ describe("C-KZG", () => {
   // TODO: add more tests for this function.
   describe("edge cases for computeKzgProof", () => {
     describe("check argument count", () => {
-      const tests = globSync(COMPUTE_KZG_PROOF_TESTS);
-      const validTest = tests.find((testFile: string) => !testFile.includes("invalid"));
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: ComputeKzgProofTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: ComputeKzgProofTest = getValidTest(COMPUTE_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
       const z = bytesFromHex(test.input.z);
       testArgCount(computeKzgProof, [blob, z]);
@@ -297,10 +301,7 @@ describe("C-KZG", () => {
   // TODO: add more tests for this function.
   describe("edge cases for computeBlobKzgProof", () => {
     describe("check argument count", () => {
-      const tests = globSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
-      const validTest = tests.find((testFile: string) => !testFile.includes("invalid"));
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: ComputeBlobKzgProofTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: ComputeBlobKzgProofTest = getValidTest(COMPUTE_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
       const commitment = bytesFromHex(test.input.commitment);
       testArgCount(computeBlobKzgProof, [blob, commitment]);
@@ -319,10 +320,7 @@ describe("C-KZG", () => {
 
   describe("edge cases for verifyKzgProof", () => {
     describe("check argument count", () => {
-      const tests = globSync(VERIFY_KZG_PROOF_TESTS);
-      const validTest = tests.find((testFile: string) => testFile.includes("correct_proof"));
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: VerifyKzgProofTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: VerifyKzgProofTest = getValidTest(VERIFY_KZG_PROOF_TESTS);
       const commitment = bytesFromHex(test.input.commitment);
       const z = bytesFromHex(test.input.z);
       const y = bytesFromHex(test.input.y);
@@ -365,10 +363,7 @@ describe("C-KZG", () => {
 
   describe("edge cases for verifyBlobKzgProof", () => {
     describe("check argument count", () => {
-      const tests = globSync(VERIFY_BLOB_KZG_PROOF_TESTS);
-      const validTest = tests.find((testFile: string) => testFile.includes("correct_proof"));
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: VerifyBlobKzgProofTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: VerifyBlobKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_TESTS);
       const blob = bytesFromHex(test.input.blob);
       const commitment = bytesFromHex(test.input.commitment);
       const proof = bytesFromHex(test.input.proof);
@@ -409,12 +404,7 @@ describe("C-KZG", () => {
 
   describe("edge cases for verifyBlobKzgProofBatch", () => {
     describe("check argument count", () => {
-      const tests = globSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
-      const validTest = tests.find(
-        (testFile: string) => !testFile.includes("invalid") && !testFile.includes("different")
-      );
-      if (!validTest) throw new Error("Could not find valid test");
-      const test: VerifyBatchKzgProofTest = yaml.load(readFileSync(validTest, "ascii"));
+      const test: VerifyBatchKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       const blobs = test.input.blobs.map(bytesFromHex);
       const commitments = test.input.commitments.map(bytesFromHex);
       const proofs = test.input.proofs.map(bytesFromHex);
