@@ -93,10 +93,13 @@ function getValidTest(testDir: string): any {
 
 function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
   const lessArgs = validArgs.length === 1 ? [] : validArgs.slice(0, -1);
-  expect(lessArgs.length).toBeLessThan(validArgs.length);
   const moreArgs = validArgs.concat("UNKNOWN_ARGUMENT");
-  expect(moreArgs.length).toBeGreaterThan(validArgs.length);
   
+  it("should test for different argument lengths", () => {
+    expect(lessArgs.length).toBeLessThan(validArgs.length);
+    expect(moreArgs.length).toBeGreaterThan(validArgs.length);
+  });
+
   it("should run for expected argument count", () => {
     expect(() => fn(...validArgs)).not.toThrowError();
   });
