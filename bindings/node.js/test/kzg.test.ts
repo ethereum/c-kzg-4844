@@ -93,7 +93,7 @@ function bytesFromHex(hexString: string): Uint8Array {
  *
  * @throws {Error} If arrays are not equal length or byte values are unequal
  */
-function bytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void {
+function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void {
   if (a.length !== b.length) {
     throw new Error("unequal Uint8Array lengths");
   }
@@ -189,7 +189,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         const expectedCommitment = bytesFromHex(test.output);
-        expect(bytesEqual(commitment, expectedCommitment));
+        expect(assertBytesEqual(commitment, expectedCommitment));
       });
     });
 
@@ -216,8 +216,8 @@ describe("C-KZG", () => {
         const [proofBytes, yBytes] = proof;
         const [expectedProofBytes, expectedYBytes] = test.output.map((out) => bytesFromHex(out));
 
-        expect(bytesEqual(proofBytes, expectedProofBytes));
-        expect(bytesEqual(yBytes, expectedYBytes));
+        expect(assertBytesEqual(proofBytes, expectedProofBytes));
+        expect(assertBytesEqual(yBytes, expectedYBytes));
       });
     });
 
@@ -241,7 +241,7 @@ describe("C-KZG", () => {
 
         expect(test.output).not.toBeNull();
         const expectedProof = bytesFromHex(test.output);
-        expect(bytesEqual(proof, expectedProof));
+        expect(assertBytesEqual(proof, expectedProof));
       });
     });
 
