@@ -176,61 +176,77 @@ typedef struct {
 // Interface functions
 ///////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET load_trusted_setup(
-    KZGSettings *out,
-    const uint8_t *g1_bytes, /* n1 * 48 bytes */
-    size_t n1,
-    const uint8_t *g2_bytes, /* n2 * 96 bytes */
-    size_t n2
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    load_trusted_setup,
+    (KZGSettings * out,
+     const uint8_t *g1_bytes, /* n1 * 48 bytes */
+     size_t n1,
+     const uint8_t *g2_bytes, /* n2 * 96 bytes */
+     size_t n2)
 );
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
-
-void free_trusted_setup(KZGSettings *s);
-
-C_KZG_RET blob_to_kzg_commitment(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+PUB_FUNC_DECL(
+    C_KZG_RET, load_trusted_setup_file, (KZGSettings * out, FILE *in)
 );
 
-C_KZG_RET compute_kzg_proof(
-    KZGProof *proof_out,
-    Bytes32 *y_out,
-    const Blob *blob,
-    const Bytes32 *z_bytes,
-    const KZGSettings *s
+PUB_FUNC_DECL(void, free_trusted_setup, (KZGSettings * s));
+
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    blob_to_kzg_commitment,
+    (KZGCommitment * out, const Blob *blob, const KZGSettings *s)
 );
 
-C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const KZGSettings *s
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    compute_kzg_proof,
+    (KZGProof * proof_out,
+     Bytes32 *y_out,
+     const Blob *blob,
+     const Bytes32 *z_bytes,
+     const KZGSettings *s)
 );
 
-C_KZG_RET verify_kzg_proof(
-    bool *ok,
-    const Bytes48 *commitment_bytes,
-    const Bytes32 *z_bytes,
-    const Bytes32 *y_bytes,
-    const Bytes48 *proof_bytes,
-    const KZGSettings *s
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    compute_blob_kzg_proof,
+    (KZGProof * out,
+     const Blob *blob,
+     const Bytes48 *commitment_bytes,
+     const KZGSettings *s)
 );
 
-C_KZG_RET verify_blob_kzg_proof(
-    bool *ok,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const Bytes48 *proof_bytes,
-    const KZGSettings *s
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    verify_kzg_proof,
+    (bool *ok,
+     const Bytes48 *commitment_bytes,
+     const Bytes32 *z_bytes,
+     const Bytes32 *y_bytes,
+     const Bytes48 *proof_bytes,
+     const KZGSettings *s)
 );
 
-C_KZG_RET verify_blob_kzg_proof_batch(
-    bool *ok,
-    const Blob *blobs,
-    const Bytes48 *commitments_bytes,
-    const Bytes48 *proofs_bytes,
-    size_t n,
-    const KZGSettings *s
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    verify_blob_kzg_proof,
+    (bool *ok,
+     const Blob *blob,
+     const Bytes48 *commitment_bytes,
+     const Bytes48 *proof_bytes,
+     const KZGSettings *s)
+);
+
+PUB_FUNC_DECL(
+    C_KZG_RET,
+    verify_blob_kzg_proof_batch,
+    (bool *ok,
+     const Blob *blobs,
+     const Bytes48 *commitments_bytes,
+     const Bytes48 *proofs_bytes,
+     size_t n,
+     const KZGSettings *s)
 );
 
 #ifdef __cplusplus

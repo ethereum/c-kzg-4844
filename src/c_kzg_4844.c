@@ -887,8 +887,10 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  blob The blob representing the polynomial to be committed to
  * @param[in]  s    The trusted setup
  */
-C_KZG_RET blob_to_kzg_commitment(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    blob_to_kzg_commitment,
+    (KZGCommitment * out, const Blob *blob, const KZGSettings *s)
 ) {
     C_KZG_RET ret;
     Polynomial p;
@@ -922,13 +924,15 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  kzg_proof  The KZG proof
  * @param[in]  s          The trusted setup
  */
-C_KZG_RET verify_kzg_proof(
-    bool *ok,
-    const Bytes48 *commitment_bytes,
-    const Bytes32 *z_bytes,
-    const Bytes32 *y_bytes,
-    const Bytes48 *proof_bytes,
-    const KZGSettings *s
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    verify_kzg_proof,
+    (bool *ok,
+     const Bytes48 *commitment_bytes,
+     const Bytes32 *z_bytes,
+     const Bytes32 *y_bytes,
+     const Bytes48 *proof_bytes,
+     const KZGSettings *s)
 ) {
     C_KZG_RET ret;
     fr_t z_fr, y_fr;
@@ -1011,12 +1015,14 @@ static C_KZG_RET compute_kzg_proof_impl(
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The trusted setup
  */
-C_KZG_RET compute_kzg_proof(
-    KZGProof *proof_out,
-    Bytes32 *y_out,
-    const Blob *blob,
-    const Bytes32 *z_bytes,
-    const KZGSettings *s
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    compute_kzg_proof,
+    (KZGProof * proof_out,
+     Bytes32 *y_out,
+     const Blob *blob,
+     const Bytes32 *z_bytes,
+     const KZGSettings *s)
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1137,11 +1143,13 @@ out:
  * @param[in]  commitment_bytes Commitment to verify
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const KZGSettings *s
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    compute_blob_kzg_proof,
+    (KZGProof * out,
+     const Blob *blob,
+     const Bytes48 *commitment_bytes,
+     const KZGSettings *s)
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1178,12 +1186,14 @@ out:
  * @param[in]  proof_bytes      Proof used for verification
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET verify_blob_kzg_proof(
-    bool *ok,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const Bytes48 *proof_bytes,
-    const KZGSettings *s
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    verify_blob_kzg_proof,
+    (bool *ok,
+     const Blob *blob,
+     const Bytes48 *commitment_bytes,
+     const Bytes48 *proof_bytes,
+     const KZGSettings *s)
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1391,14 +1401,16 @@ out:
  * @param[in]  n                 The number of blobs/commitments/proofs
  * @param[in]  s                 The trusted setup
  */
-C_KZG_RET verify_blob_kzg_proof_batch(
-    bool *ok,
-    const Blob *blobs,
-    const Bytes48 *commitments_bytes,
-    const Bytes48 *proofs_bytes,
-    size_t n,
-    const KZGSettings *s
-) {
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    verify_blob_kzg_proof_batch,
+    (bool *ok,
+     const Blob *blobs,
+     const Bytes48 *commitments_bytes,
+     const Bytes48 *proofs_bytes,
+     size_t n,
+     const KZGSettings *s)
+              ) {
     C_KZG_RET ret;
     g1_t *commitments_g1 = NULL;
     g1_t *proofs_g1 = NULL;
@@ -1648,7 +1660,7 @@ out:
  *
  * @param[in] s The trusted setup to free
  */
-void free_trusted_setup(KZGSettings *s) {
+PUB_FUNC_IMPL(void, free_trusted_setup, (KZGSettings * s)) {
     if (s == NULL) return;
     s->max_width = 0;
     c_kzg_free(s->roots_of_unity);
@@ -1667,12 +1679,14 @@ void free_trusted_setup(KZGSettings *s) {
  * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
-C_KZG_RET load_trusted_setup(
-    KZGSettings *out,
-    const uint8_t *g1_bytes,
-    size_t n1,
-    const uint8_t *g2_bytes,
-    size_t n2
+PUB_FUNC_IMPL(
+    C_KZG_RET,
+    load_trusted_setup,
+    (KZGSettings * out,
+     const uint8_t *g1_bytes,
+     size_t n1,
+     const uint8_t *g2_bytes,
+     size_t n2)
 ) {
     C_KZG_RET ret;
 
@@ -1759,7 +1773,9 @@ out_success:
  * @param[out] out Pointer to the loaded trusted setup data
  * @param[in]  in  File handle for input
  */
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
+PUB_FUNC_IMPL(
+    C_KZG_RET, load_trusted_setup_file, (KZGSettings * out, FILE *in)
+) {
     int num_matches;
     uint64_t i;
     uint8_t g1_bytes[TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1];
