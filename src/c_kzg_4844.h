@@ -36,6 +36,32 @@ extern "C" {
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
+// Public function prefix functions
+
+// If LIB_PREFIX is defined the following functions will prepend `LIB_PREFIX` to all public methods of this library
+// If LIB_PREFIX is undefined, everything stays as is
+
+#define CONCAT_IMPL(a, b) a##_##b
+#define CONCAT(a, b) CONCAT_IMPL(a, b)
+#define PREFIX_FUNCNAME(name) CONCAT(LIB_PREFIX, name)
+
+#ifdef LIB_PREFIX
+
+#define PUB_FUNC_DECL(rv, funcname, arglist) \
+    rv PREFIX_FUNCNAME(funcname) arglist;
+#define PUB_FUNC_IMPL(rv, funcname, arglist) \
+    rv(*funcname) arglist = PREFIX_FUNCNAME(funcname); \
+    rv PREFIX_FUNCNAME(funcname) arglist
+
+# else
+
+#define PUB_FUNC_DECL(rv, funcname, arglist) \
+  rv funcname arglist
+#define PUB_FUNC_IMPL(rv, funcname, arglist)        \
+  rv funcname arglist
+
+#endif
+
 /*
  * This value represents the number of field elements in a blob. It must be
  * supplied externally. It is expected to be 4096 for mainnet and 4 for minimal.
