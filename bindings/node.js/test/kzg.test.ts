@@ -47,7 +47,7 @@ const generateRandomBlob = (): Uint8Array => {
   return new Uint8Array(
     randomBytes(BYTES_PER_BLOB).map((x, i) => {
       // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
-      if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 0) {
+      if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 31) {
         return Math.floor(Math.random() * MAX_TOP_BYTE);
       }
       return x;

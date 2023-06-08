@@ -523,7 +523,7 @@ mod tests {
         // Ensure that the blob is canonical by ensuring that
         // each field element contained in the blob is < BLS_MODULUS
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
-            arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
+            arr[i * BYTES_PER_FIELD_ELEMENT + BYTES_PER_FIELD_ELEMENT - 1] = 0;
         }
         arr.into()
     }

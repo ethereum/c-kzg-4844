@@ -356,25 +356,21 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     Bytes32 b;
     fr_t f, two;
     g1_t g, r, check;
-    blst_scalar s;
 
     fr_from_uint64(&f, 1);
     fr_from_uint64(&two, 2);
-    blst_scalar_from_fr(&s, &f);
-    /* blst_p1_mult needs it to be little-endian */
-    blst_lendian_from_scalar(b.bytes, &s);
+    bytes_from_bls_field(&b, &f);
 
     for (int i = 1; i < 255; i++) {
         get_rand_g1(&g);
 
-        blst_p1_mult(&check, &g, b.bytes, 256);
+        blst_p1_mult(&check, &g, (const byte *)&b, 256);
         g1_mul(&r, &g, &f);
 
         ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 
         blst_fr_mul(&f, &f, &two);
-        blst_scalar_from_fr(&s, &f);
-        blst_lendian_from_scalar(b.bytes, &s);
+        bytes_from_bls_field(&b, &f);
     }
 }
 
@@ -429,11 +425,11 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS - 1 should be valid.
      *
-     * int(BLS_MODULUS - 1).to_bytes(32, 'big').hex()
+     * int(BLS_MODULUS - 1).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
         &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000"
+        "00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -452,11 +448,11 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS should be invalid.
      *
-     * int(BLS_MODULUS).to_bytes(32, 'big').hex()
+     * int(BLS_MODULUS).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
         &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -475,11 +471,11 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
      * A valid field element is x < BLS_MODULUS.
      * Therefore, x = BLS_MODULUS + 1 should be invalid.
      *
-     * int(BLS_MODULUS + 1).to_bytes(32, 'big').hex()
+     * int(BLS_MODULUS + 1).to_bytes(32, 'little').hex()
      */
     bytes32_from_hex(
         &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000002"
+        "02000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -520,7 +516,7 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
 
     bytes32_from_hex(
         &field_element,
-        "14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad"
+        "ad5570f5a3810b7af9d4b24bc1c2ea670245db2eaa49aae654b8f7393a9a6214"
     );
 
     /* Initialize the blob with a single field element */
@@ -914,7 +910,7 @@ static void test_compute_powers__succeeds_expected_powers(void) {
     /* Convert random field element to a fr_t */
     bytes32_from_hex(
         &field_element_bytes,
-        "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
     );
     ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -929,21 +925,21 @@ static void test_compute_powers__succeeds_expected_powers(void) {
      */
     bytes32_from_hex(
         &expected_bytes[0],
-        "0000000000000000000000000000000000000000000000000000000000000001"
+        "0100000000000000000000000000000000000000000000000000000000000000"
     );
     bytes32_from_hex(
         &expected_bytes[1],
-        "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
+        "e1c3192925d7eb42bd9861585eba38d231736117ca42e2b4968146a00d41f51b"
     );
 
     /*
-     * b = bytes.fromhex("1bf5410da0468196b...")
-     * i = (int.from_bytes(b, "big") ** 2) % BLS_MODULUS
-     * print(i.to_bytes(32, "big").hex())
+     * b = bytes.fromhex("e1c3192925d...")
+     * i = (int.from_bytes(b, "little") ** 2) % BLS_MODULUS
+     * print(i.to_bytes(32, "little").hex())
      */
     bytes32_from_hex(
         &expected_bytes[2],
-        "2f417bcb88693ff8bc5d61b6d44503f3a99e8c3df3891e0040dee96047458a0e"
+        "0e8a454760e9de40001e89f33d8c9ea9f30345d4b6615dbcf83f6988cb7b412f"
     );
 
     for (int i = 0; i < n; i++) {
@@ -1103,11 +1099,11 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
 
     bytes32_from_hex(
         &field_element,
-        "69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13"
+        "138a16c66bdd9b0b17978ebd00bedf62307aa545d6b899b35703aedb696e3869"
     );
     bytes32_from_hex(
         &input_value,
-        "03ea4fb841b4f9e01aa917c5e40dbd67efb4b8d4d9052069595f0647feba320d"
+        "0d32bafe47065f59692005d9d4b8b4ef67bd0de4c517a91ae0f9b441b84fea03"
     );
 
     /* Initialize the blob with a single field element */
@@ -1354,7 +1350,7 @@ static void test_verify_kzg_proof__fails_z_not_field_element(void) {
 
     get_rand_g1_bytes(&c);
     bytes32_from_hex(
-        &z, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        &z, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     get_rand_field_element(&y);
     get_rand_g1_bytes(&proof);
@@ -1373,7 +1369,7 @@ static void test_verify_kzg_proof__fails_y_not_field_element(void) {
     get_rand_g1_bytes(&c);
     get_rand_field_element(&z);
     bytes32_from_hex(
-        &y, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        &y, "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     get_rand_g1_bytes(&proof);
 
@@ -1513,7 +1509,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
     bytes32_from_hex(
         &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     memset(&blob, 0, sizeof(blob));
     memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
@@ -1682,7 +1678,7 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     /* Overwrite one field element in the blob with modulus */
     bytes32_from_hex(
         &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        "01000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73"
     );
     memcpy(blobs[1].bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
