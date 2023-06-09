@@ -2,7 +2,9 @@
 name = "c-kzg"
 version = "0.1.0"
 edition = "2021"
-links = "ckzg"
+# XXX: Note that we don't set a `links` attribute for Cargo, because this library may link
+# either `ckzg` or `ckzg_min`. This allows the crate to be linked twice as minimal/mainnet variants
+# without Cargo complaining.
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
