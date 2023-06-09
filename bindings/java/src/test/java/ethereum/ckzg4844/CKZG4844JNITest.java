@@ -42,6 +42,13 @@ public class CKZG4844JNITest {
           Preset.MINIMAL,
           "/trusted-setups/trusted_setup_4.txt");
 
+  private static final Map<Preset, String> OLD_TRUSTED_SETUP_FILE_BY_PRESET =
+      Map.of(
+          Preset.MAINNET,
+          "./src/testFixtures/resources/trusted-setups/trusted_setup_old.txt",
+          Preset.MINIMAL,
+          "./src/testFixtures/resources/trusted-setups/trusted_setup_4_old.txt");
+
   static {
     PRESET =
         Optional.ofNullable(System.getenv("PRESET"))
@@ -333,6 +340,16 @@ public class CKZG4844JNITest {
         assertThrows(RuntimeException.class, CKZG4844JNI::freeTrustedSetup);
 
     assertExceptionIsTrustedSetupIsNotLoaded(exception);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfTrustedSetupIsNotInLagrangeForm() {
+    CKZGException exception =
+        assertThrows(
+            CKZGException.class,
+            () -> CKZG4844JNI.loadTrustedSetup(OLD_TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET)));
+
+    assertEquals(C_KZG_BADARGS, exception.getError());
   }
 
   @Test
