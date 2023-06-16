@@ -86,10 +86,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 *commitments.first().unwrap(),
                 *fields.first().unwrap(),
                 *fields.first().unwrap(),
-                *proofs.first().unwrap(),
+                *commitments.first().unwrap(),
                 &kzg_settings,
             )
-        })
+         })
     });
 
     c.bench_function("verify_blob_kzg_proof", |b| {
@@ -97,7 +97,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             KzgProof::verify_blob_kzg_proof(
                 blobs.first().unwrap().clone(),
                 *commitments.first().unwrap(),
-                *proofs.first().unwrap(),
+                *commitments.first().unwrap(),
                 &kzg_settings,
             )
         })
@@ -115,7 +115,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                         .into_iter()
                         .take(count)
                         .collect::<Vec<Bytes48>>();
-                    let proofs_subset = proofs
+                    let proofs_subset = commitments
                         .clone()
                         .into_iter()
                         .take(count)
