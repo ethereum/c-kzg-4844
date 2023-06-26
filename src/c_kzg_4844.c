@@ -1410,7 +1410,7 @@ PUB_FUNC_IMPL(
      const Bytes48 *proofs_bytes,
      size_t n,
      const KZGSettings *s)
-              ) {
+) {
     C_KZG_RET ret;
     g1_t *commitments_g1 = NULL;
     g1_t *proofs_g1 = NULL;
