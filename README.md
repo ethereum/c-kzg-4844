@@ -1,6 +1,6 @@
 # C-KZG-4844
 
-A minimal implemention of the [Polynomial
+A minimal implementation of the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API for EIP-4844, written in C.
 
@@ -8,7 +8,7 @@ API for EIP-4844, written in C.
 
 While the core implementation is in C, bindings are available for various
 high-level languages, providing convenient wrappers around C functions. These
-bindings are intended to be used by Ethereum clients, to avoid re-implemention
+bindings are intended to be used by Ethereum clients, to avoid re-implementation
 of crucial cryptographic functions.
 
 | Language | Link                                 |
@@ -76,11 +76,18 @@ the overhead is negligible.
 C-KZG-4844 does not include C benchmarks; however, some bindings (Go, Java, and
 Rust) have their own benchmarks. Including benchmarks in the bindings offers a
 more realistic performance estimate, as C-KZG-4844 is not expected to be used
-outside of the bindings.
+outside the bindings.
+
+### Security audit
+
+The source code of C-KZG-4844 was audited by [Sigma
+Prime](https://sigmaprime.io/) in June 2023. You can find the [audit
+report](https://github.com/ethereum/c-kzg-4844/blob/main/doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
+in the `doc/audit/` directory.
 
 ### Why C?
 
-The primary reason for choosing C is because
+The primary reason for choosing C is that
 [blst](https://github.com/supranational/blst), the BLS12-381 signature library
 we wanted to use, is mostly written in C. Rust was a viable alternative, but it
 has some disadvantages. The C toolchain is ubiquitous, and it would be somewhat
