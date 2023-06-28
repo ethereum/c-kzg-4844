@@ -52,7 +52,6 @@ extern "C" {
 #define PUB_FUNC_DECL(rv, funcname, arglist) \
     rv PREFIX_FUNCNAME(funcname) arglist;
 #define PUB_FUNC_IMPL(rv, funcname, arglist) \
-    rv(*funcname) arglist = PREFIX_FUNCNAME(funcname); \
     rv PREFIX_FUNCNAME(funcname) arglist
 #else
 #define PUB_FUNC_DECL(rv, funcname, arglist) rv funcname arglist

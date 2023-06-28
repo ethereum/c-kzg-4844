@@ -1425,7 +1425,7 @@ PUB_FUNC_IMPL(
 
     /* For a single blob, just do a regular single verification */
     if (n == 1) {
-        return verify_blob_kzg_proof(
+        return PREFIX_FUNCNAME(verify_blob_kzg_proof)(
             ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s
         );
     }
@@ -1755,7 +1755,7 @@ out_error:
      * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
      * structure memory. If necessary, that must be done by the caller.
      */
-    free_trusted_setup(out);
+    PREFIX_FUNCNAME(free_trusted_setup)(out);
 out_success:
     return ret;
 }
@@ -1803,7 +1803,7 @@ PUB_FUNC_IMPL(
         CHECK(num_matches == 1);
     }
 
-    return load_trusted_setup(
+    return PREFIX_FUNCNAME(load_trusted_setup)(
         out,
         g1_bytes,
         TRUSTED_SETUP_NUM_G1_POINTS,
