@@ -125,13 +125,14 @@ fn main() {
         .parent()
         .expect("bindings dir is nested");
 
-    let field_elements_per_blob = if cfg!(feature = "minimal-spec") {
-        MINIMAL_FIELD_ELEMENTS_PER_BLOB
+    let (lib_name, field_elements_per_blob) = if cfg!(feature = "minimal-spec") {
+        ("ckzg_min", MINIMAL_FIELD_ELEMENTS_PER_BLOB)
     } else {
-        MAINNET_FIELD_ELEMENTS_PER_BLOB
+        ("ckzg", MAINNET_FIELD_ELEMENTS_PER_BLOB)
     };
 
-    eprintln!("Using FIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob);
+    eprintln!("Using LIB_PREFIX={lib_name}");
+    eprintln!("Using FIELD_ELEMENTS_PER_BLOB={field_elements_per_blob}");
 
     let blst_base_dir = root_dir.join("blst");
     compile_blst(blst_base_dir.clone());
@@ -148,30 +149,34 @@ fn main() {
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
+    cc.flag(format!("-DLIB_PREFIX={lib_name}").as_str());
     cc.flag(format!("-DFIELD_ELEMENTS_PER_BLOB={}", field_elements_per_blob).as_str());
     cc.file(c_src_dir.join("c_kzg_4844.c"));
 
-    cc.try_compile("ckzg").expect("Failed to compile ckzg");
+    cc.try_compile(lib_name).expect("Failed to compile ckzg");
 
     // Tell cargo to search for the static blst exposed by the blst-bindings' crate.
     println!("cargo:rustc-link-lib=static=blst");
 
-    let bindings_out_path = cargo_dir.join("src").join("bindings").join("generated.rs");
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let bindings_out_path = out_dir.join("generated.rs");
     let header_file_path = c_src_dir.join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 
     make_bindings(
+        lib_name,
         field_elements_per_blob,
         header_file,
         &blst_headers_dir.to_string_lossy(),
         bindings_out_path,
     );
 
-    // Finally, tell cargo this provides ckzg
-    println!("cargo:rustc-link-lib=ckzg");
+    // Finally, tell cargo this provides ckzg/ckzg_min
+    println!("cargo:rustc-link-lib={lib_name}");
 }
 
 fn make_bindings<P>(
+    lib_name: &str,
     field_elements_per_blob: usize,
     header_path: &str,
     blst_headers_dir: &str,
@@ -207,11 +212,15 @@ fn make_bindings<P>(
         // -D is not supported by bindgen https://github.com/rust-lang/rust-bindgen/issues/2394
         .header_contents(
             "consts",
-            &format!("#define FIELD_ELEMENTS_PER_BLOB {field_elements_per_blob}"),
+            &format!(
+                "#define LIB_PREFIX {lib_name}
+                 #define FIELD_ELEMENTS_PER_BLOB {field_elements_per_blob}"
+            ),
         )
         .header(header_path)
         .clang_args([format!("-I{blst_headers_dir}")])
         // Since this is not part of the header file, needs to be allowed explicitly.
+        .allowlist_var("LIB_PREFIX")
         .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
         // Get bindings only for the header file.
         .allowlist_file(".*c_kzg_4844.h")

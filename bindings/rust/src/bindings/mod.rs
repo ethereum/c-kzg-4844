@@ -4,7 +4,31 @@
 
 mod test_formats;
 
-include!("generated.rs");
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+
+#[cfg(not(feature = "minimal-spec"))]
+use {
+    ckzg_blob_to_kzg_commitment as blob_to_kzg_commitment,
+    ckzg_compute_blob_kzg_proof as compute_blob_kzg_proof,
+    ckzg_compute_kzg_proof as compute_kzg_proof, ckzg_free_trusted_setup as free_trusted_setup,
+    ckzg_load_trusted_setup as load_trusted_setup,
+    ckzg_load_trusted_setup_file as load_trusted_setup_file,
+    ckzg_verify_blob_kzg_proof as verify_blob_kzg_proof,
+    ckzg_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
+    ckzg_verify_kzg_proof as verify_kzg_proof,
+};
+#[cfg(feature = "minimal-spec")]
+use {
+    ckzg_min_blob_to_kzg_commitment as blob_to_kzg_commitment,
+    ckzg_min_compute_blob_kzg_proof as compute_blob_kzg_proof,
+    ckzg_min_compute_kzg_proof as compute_kzg_proof,
+    ckzg_min_free_trusted_setup as free_trusted_setup,
+    ckzg_min_load_trusted_setup as load_trusted_setup,
+    ckzg_min_load_trusted_setup_file as load_trusted_setup_file,
+    ckzg_min_verify_blob_kzg_proof as verify_blob_kzg_proof,
+    ckzg_min_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
+    ckzg_min_verify_kzg_proof as verify_kzg_proof,
+};
 
 use std::ffi::CString;
 use std::mem::MaybeUninit;
