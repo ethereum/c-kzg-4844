@@ -158,7 +158,8 @@ fn main() {
     // Tell cargo to search for the static blst exposed by the blst-bindings' crate.
     println!("cargo:rustc-link-lib=static=blst");
 
-    let bindings_out_path = cargo_dir.join("src").join("bindings").join("generated.rs");
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let bindings_out_path = out_dir.join("generated.rs");
     let header_file_path = c_src_dir.join("c_kzg_4844.h");
     let header_file = header_file_path.to_str().expect("valid header file");
 

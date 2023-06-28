@@ -4,7 +4,7 @@
 
 mod test_formats;
 
-include!("generated.rs");
+include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
 #[cfg(not(feature = "minimal-spec"))]
 use {
