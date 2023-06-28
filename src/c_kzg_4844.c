@@ -923,8 +923,7 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  kzg_proof  The KZG proof
  * @param[in]  s          The trusted setup
  */
-C_KZG_RET
-VERIFY_KZG_PROOF(
+C_KZG_RET VERIFY_KZG_PROOF(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -1013,8 +1012,7 @@ static C_KZG_RET compute_kzg_proof_impl(
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The trusted setup
  */
-C_KZG_RET
-COMPUTE_KZG_PROOF(
+C_KZG_RET COMPUTE_KZG_PROOF(
     KZGProof *proof_out,
     Bytes32 *y_out,
     const Blob *blob,
@@ -1140,8 +1138,7 @@ out:
  * @param[in]  commitment_bytes Commitment to verify
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET
-COMPUTE_BLOB_KZG_PROOF(
+C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
     KZGProof *out,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
@@ -1182,8 +1179,7 @@ out:
  * @param[in]  proof_bytes      Proof used for verification
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET
-VERIFY_BLOB_KZG_PROOF(
+C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
@@ -1396,8 +1392,7 @@ out:
  * @param[in]  n                 The number of blobs/commitments/proofs
  * @param[in]  s                 The trusted setup
  */
-C_KZG_RET
-VERIFY_BLOB_KZG_PROOF_BATCH(
+C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
@@ -1700,8 +1695,7 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
-C_KZG_RET
-LOAD_TRUSTED_SETUP(
+C_KZG_RET LOAD_TRUSTED_SETUP(
     KZGSettings *out,
     const uint8_t *g1_bytes,
     size_t n1,

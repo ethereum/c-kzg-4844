@@ -44,7 +44,7 @@ extern "C" {
 #define CONCAT(a, b) CONCAT_IMPL(a, b)
 #define PREFIX_FUNCNAME(name) CONCAT(LIB_PREFIX, name)
 #else
-#define PREFIX_FUNCNAME(name) name
+#define PREFIX_FUNCNAME(name) (name)
 #endif /* LIB_PREFIX */
 
 /*
@@ -189,13 +189,11 @@ C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in);
 
 void FREE_TRUSTED_SETUP(KZGSettings *s);
 
-C_KZG_RET
-BLOB_TO_KZG_COMMITMENT(
+C_KZG_RET BLOB_TO_KZG_COMMITMENT(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
 );
 
-C_KZG_RET
-COMPUTE_KZG_PROOF(
+C_KZG_RET COMPUTE_KZG_PROOF(
     KZGProof *proof_out,
     Bytes32 *y_out,
     const Blob *blob,
@@ -203,16 +201,14 @@ COMPUTE_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET
-COMPUTE_BLOB_KZG_PROOF(
+C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
     KZGProof *out,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 );
 
-C_KZG_RET
-VERIFY_KZG_PROOF(
+C_KZG_RET VERIFY_KZG_PROOF(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -221,8 +217,7 @@ VERIFY_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET
-VERIFY_BLOB_KZG_PROOF(
+C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
@@ -230,8 +225,7 @@ VERIFY_BLOB_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET
-VERIFY_BLOB_KZG_PROOF_BATCH(
+C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
