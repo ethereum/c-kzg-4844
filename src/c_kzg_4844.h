@@ -176,8 +176,7 @@ typedef struct {
 // Interface functions
 ///////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET
-LOAD_TRUSTED_SETUP(
+C_KZG_RET LOAD_TRUSTED_SETUP(
     KZGSettings *out,
     const uint8_t *g1_bytes, /* n1 * 48 bytes */
     size_t n1,

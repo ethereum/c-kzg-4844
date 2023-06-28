@@ -887,8 +887,7 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  blob The blob representing the polynomial to be committed to
  * @param[in]  s    The trusted setup
  */
-C_KZG_RET
-BLOB_TO_KZG_COMMITMENT(
+C_KZG_RET BLOB_TO_KZG_COMMITMENT(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
