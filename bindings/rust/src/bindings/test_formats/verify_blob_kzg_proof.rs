@@ -12,8 +12,7 @@ pub struct Input<'a> {
 
 impl Input<'_> {
     pub fn get_blob(&self) -> Result<Box<Blob>, Error> {
-        let blob = Blob::from_hex(self.blob)?;
-        Ok(Box::new(blob))
+        Blob::from_hex(self.blob)
     }
 
     pub fn get_commitment(&self) -> Result<Bytes48, Error> {

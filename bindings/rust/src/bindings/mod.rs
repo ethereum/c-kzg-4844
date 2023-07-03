@@ -194,7 +194,7 @@ impl Drop for KZGSettings {
 }
 
 impl Blob {
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Box<Self>, Error> {
         if bytes.len() != BYTES_PER_BLOB {
             return Err(Error::InvalidBytesLength(format!(
                 "Invalid byte length. Expected {} got {}",
@@ -204,10 +204,10 @@ impl Blob {
         }
         let mut new_bytes = [0; BYTES_PER_BLOB];
         new_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: new_bytes })
+        Ok(Box::new(Self { bytes: new_bytes }))
     }
 
-    pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
+    pub fn from_hex(hex_str: &str) -> Result<Box<Self>, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 }

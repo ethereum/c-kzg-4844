@@ -14,8 +14,7 @@ impl Input {
     pub fn get_blobs(&self) -> Result<Vec<Box<Blob>>, Error> {
         let mut v: Vec<Box<Blob>> = Vec::new();
         for blob in &self.blobs {
-            let boxed_blob = Box::new(Blob::from_hex(blob)?);
-            v.push(boxed_blob);
+            v.push(Blob::from_hex(blob)?);
         }
         return Ok(v);
     }
