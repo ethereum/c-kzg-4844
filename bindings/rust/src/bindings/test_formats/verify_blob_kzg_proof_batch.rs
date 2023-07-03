@@ -11,10 +11,11 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
-        let mut v: Vec<Blob> = Vec::new();
+    pub fn get_blobs(&self) -> Result<Vec<Box<Blob>>, Error> {
+        let mut v: Vec<Box<Blob>> = Vec::new();
         for blob in &self.blobs {
-            v.push(Blob::from_hex(blob)?);
+            let boxed_blob = Box::new(Blob::from_hex(blob)?);
+            v.push(boxed_blob);
         }
         return Ok(v);
     }
