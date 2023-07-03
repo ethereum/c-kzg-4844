@@ -12,7 +12,7 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     arr.into()
 }
 
-fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
+fn generate_random_blob(rng: &mut ThreadRng) -> Box<Blob> {
     let mut arr = [0u8; BYTES_PER_BLOB];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
@@ -20,7 +20,7 @@ fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    arr.into()
+    Box::new(arr.into())
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -30,7 +30,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     assert!(trusted_setup_file.exists());
     let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
-    let blobs: Vec<Blob> = (0..max_count)
+    let blobs: Vec<Box<Blob>> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng))
         .collect();
     let commitments: Vec<Bytes48> = blobs
@@ -109,7 +109,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
             b.iter_batched_ref(
                 || {
-                    let blobs_subset = blobs.clone().into_iter().take(count).collect::<Vec<Blob>>();
+                    let blobs_subset: Vec<Blob> =
+                        blobs.iter().take(count).map(|b| (**b).clone()).collect();
+
                     let commitments_subset = commitments
                         .clone()
                         .into_iter()
@@ -125,7 +127,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
                     KzgProof::verify_blob_kzg_proof_batch(
-                        &blobs_subset,
+                        Box::new(&blobs_subset),
                         &commitments_subset,
                         &proofs_subset,
                         &kzg_settings,
