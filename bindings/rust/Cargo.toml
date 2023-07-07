@@ -50,3 +50,8 @@ glob = "0.3"
 [[bench]]
 name = "kzg_benches"
 harness = false
+
+# The benchmarks crash on Windows with Rust 1.70. This is a band-aid fix for
+# that. Refer to #318 for more details. This should be removed if fixed.
+[profile.bench]
+opt-level = 0
