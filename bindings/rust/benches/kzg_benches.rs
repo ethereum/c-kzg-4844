@@ -12,7 +12,7 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     arr.into()
 }
 
-fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
+fn generate_random_blob(rng: &mut ThreadRng) -> Box<Blob> {
     let mut arr = [0u8; BYTES_PER_BLOB];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
@@ -31,12 +31,12 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
     let blobs: Vec<Blob> = (0..max_count)
-        .map(|_| generate_random_blob(&mut rng))
+        .map(|_| *generate_random_blob(&mut rng))
         .collect();
     let commitments: Vec<Bytes48> = blobs
         .iter()
         .map(|blob| {
-            KzgCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings)
+            KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -45,7 +45,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .iter()
         .zip(commitments.iter())
         .map(|(blob, commitment)| {
-            KzgProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings)
+            KzgProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -56,15 +56,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("blob_to_kzg_commitment", |b| {
         b.iter(|| {
-            KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap().clone(), &kzg_settings)
+            KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap(), &kzg_settings)
         })
     });
 
     c.bench_function("compute_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::compute_kzg_proof(
-                blobs.first().unwrap().clone(),
-                *fields.first().unwrap(),
+                blobs.first().unwrap(),
+                fields.first().unwrap(),
                 &kzg_settings,
             )
         })
@@ -73,8 +73,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("compute_blob_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::compute_blob_kzg_proof(
-                blobs.first().unwrap().clone(),
-                *commitments.first().unwrap(),
+                blobs.first().unwrap(),
+                commitments.first().unwrap(),
                 &kzg_settings,
             )
         })
@@ -83,10 +83,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("verify_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::verify_kzg_proof(
-                *commitments.first().unwrap(),
-                *fields.first().unwrap(),
-                *fields.first().unwrap(),
-                *proofs.first().unwrap(),
+                commitments.first().unwrap(),
+                fields.first().unwrap(),
+                fields.first().unwrap(),
+                proofs.first().unwrap(),
                 &kzg_settings,
             )
         })
@@ -95,9 +95,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("verify_blob_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::verify_blob_kzg_proof(
-                blobs.first().unwrap().clone(),
-                *commitments.first().unwrap(),
-                *proofs.first().unwrap(),
+                blobs.first().unwrap(),
+                commitments.first().unwrap(),
+                proofs.first().unwrap(),
                 &kzg_settings,
             )
         })

@@ -9,7 +9,7 @@ pub struct Input<'a> {
 }
 
 impl Input<'_> {
-    pub fn get_blob(&self) -> Result<Blob, Error> {
+    pub fn get_blob(&self) -> Result<Box<Blob>, Error> {
         Blob::from_hex(self.blob)
     }
 }
