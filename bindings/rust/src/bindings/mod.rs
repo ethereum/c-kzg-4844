@@ -429,10 +429,7 @@ impl KZGCommitment {
         hex::encode(self.bytes)
     }
 
-    pub fn blob_to_kzg_commitment(
-        blob: &Blob,
-        kzg_settings: &KZGSettings,
-    ) -> Result<Self, Error> {
+    pub fn blob_to_kzg_commitment(blob: &Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
             let res = blob_to_kzg_commitment(
@@ -573,9 +570,7 @@ mod tests {
 
         let commitments: Vec<Bytes48> = blobs
             .iter()
-            .map(|blob| {
-                KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap()
-            })
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap())
             .map(|commitment| commitment.to_bytes())
             .collect();
 
@@ -583,8 +578,7 @@ mod tests {
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings)
-                    .unwrap()
+                KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings).unwrap()
             })
             .map(|proof| proof.to_bytes())
             .collect();
@@ -599,13 +593,9 @@ mod tests {
 
         blobs.pop();
 
-        let error = KZGProof::verify_blob_kzg_proof_batch(
-            &blobs,
-            &commitments,
-            &proofs,
-            &kzg_settings,
-        )
-        .unwrap_err();
+        let error =
+            KZGProof::verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &kzg_settings)
+                .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
         let incorrect_blob = *generate_random_blob(&mut rng);

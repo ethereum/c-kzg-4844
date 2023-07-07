@@ -55,9 +55,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .collect();
 
     c.bench_function("blob_to_kzg_commitment", |b| {
-        b.iter(|| {
-            KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap(), &kzg_settings)
-        })
+        b.iter(|| KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap(), &kzg_settings))
     });
 
     c.bench_function("compute_kzg_proof", |b| {
