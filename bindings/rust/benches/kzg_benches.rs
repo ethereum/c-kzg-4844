@@ -127,7 +127,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
                     KzgProof::verify_blob_kzg_proof_batch(
-                        Box::new(&blobs_subset),
+                        &blobs_subset,
                         &commitments_subset,
                         &proofs_subset,
                         &kzg_settings,

@@ -202,9 +202,9 @@ impl Blob {
                 bytes.len(),
             )));
         }
-        let mut new_bytes = [0; BYTES_PER_BLOB];
-        new_bytes.copy_from_slice(bytes);
-        Ok(Box::new(Self { bytes: new_bytes }))
+        let mut blob = Box::new(Self { bytes: [0; BYTES_PER_BLOB] });
+        blob.copy_from_slice(bytes);
+        Ok(blob)
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Box<Self>, Error> {
@@ -369,7 +369,7 @@ impl KZGProof {
     }
 
     pub fn verify_blob_kzg_proof_batch(
-        blobs: Box<&[Blob]>,
+        blobs: &[Blob],
         commitments_bytes: &[Bytes48],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
@@ -389,14 +389,13 @@ impl KZGProof {
             )));
         }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        let blob_slice = &**blobs;
         unsafe {
             let res = verify_blob_kzg_proof_batch(
                 verified.as_mut_ptr(),
-                blob_slice.as_ptr(),
+                blobs.as_ptr(),
                 commitments_bytes.as_ptr(),
                 proofs_bytes.as_ptr(),
-                blob_slice.len(),
+                blobs.len(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -591,9 +590,8 @@ mod tests {
             .collect();
 
         let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
-        let blobs_boxed_slice: Box<&[Blob]> = Box::new(&blobs_copy);
         assert!(KZGProof::verify_blob_kzg_proof_batch(
-            blobs_boxed_slice,
+            &blobs_copy,
             &commitments,
             &proofs,
             &kzg_settings
@@ -603,9 +601,8 @@ mod tests {
         blobs.pop();
 
         let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
-        let blobs_boxed_slice: Box<&[Blob]> = Box::new(&blobs_copy);
         let error = KZGProof::verify_blob_kzg_proof_batch(
-            blobs_boxed_slice,
+            &blobs_copy,
             &commitments,
             &proofs,
             &kzg_settings,
@@ -617,9 +614,8 @@ mod tests {
         blobs.push(incorrect_blob);
 
         let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
-        let blobs_boxed_slice: Box<&[Blob]> = Box::new(&blobs_copy);
         assert!(!KZGProof::verify_blob_kzg_proof_batch(
-            blobs_boxed_slice,
+            &blobs_copy,
             &commitments,
             &proofs,
             &kzg_settings
@@ -819,10 +815,8 @@ mod tests {
             };
 
             let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
-            let blobs_boxed_slice: Box<&[Blob]> = Box::new(&blobs_copy);
-
             match KZGProof::verify_blob_kzg_proof_batch(
-                blobs_boxed_slice,
+                &blobs_copy,
                 &commitments,
                 &proofs,
                 &kzg_settings,
