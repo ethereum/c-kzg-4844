@@ -55,50 +55,35 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .collect();
 
     c.bench_function("blob_to_kzg_commitment", |b| {
-        b.iter(|| KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap(), &kzg_settings))
+        let blob = blobs.first().unwrap();
+        b.iter(|| KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings))
     });
 
     c.bench_function("compute_kzg_proof", |b| {
-        b.iter(|| {
-            KzgProof::compute_kzg_proof(
-                blobs.first().unwrap(),
-                fields.first().unwrap(),
-                &kzg_settings,
-            )
-        })
+        let blob = blobs.first().unwrap();
+        let z = fields.first().unwrap();
+        b.iter(|| KzgProof::compute_kzg_proof(blob, z, &kzg_settings))
     });
 
     c.bench_function("compute_blob_kzg_proof", |b| {
-        b.iter(|| {
-            KzgProof::compute_blob_kzg_proof(
-                blobs.first().unwrap(),
-                commitments.first().unwrap(),
-                &kzg_settings,
-            )
-        })
+        let blob = blobs.first().unwrap();
+        let commitment = commitments.first().unwrap();
+        b.iter(|| KzgProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings))
     });
 
     c.bench_function("verify_kzg_proof", |b| {
-        b.iter(|| {
-            KzgProof::verify_kzg_proof(
-                commitments.first().unwrap(),
-                fields.first().unwrap(),
-                fields.first().unwrap(),
-                proofs.first().unwrap(),
-                &kzg_settings,
-            )
-        })
+        let commitment = commitments.first().unwrap();
+        let z = fields.first().unwrap();
+        let y = fields.first().unwrap();
+        let proof = proofs.first().unwrap();
+        b.iter(|| KzgProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings))
     });
 
     c.bench_function("verify_blob_kzg_proof", |b| {
-        b.iter(|| {
-            KzgProof::verify_blob_kzg_proof(
-                blobs.first().unwrap(),
-                commitments.first().unwrap(),
-                proofs.first().unwrap(),
-                &kzg_settings,
-            )
-        })
+        let blob = blobs.first().unwrap();
+        let commitment = commitments.first().unwrap();
+        let proof = proofs.first().unwrap();
+        b.iter(|| KzgProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings))
     });
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
@@ -128,7 +113,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                         &proofs_subset,
                         &kzg_settings,
                     )
-                    .unwrap();
                 },
                 BatchSize::LargeInput,
             );
