@@ -23,8 +23,8 @@ jobs:
       # Switch back to stable when 1.73.0 is released
       - name: Get latest version of nightly rust
         run: |
-          rustup install nightly-2023-07-31
-          rustup default nightly-2023-07-31
+          rustup install nightly-2023-08-01
+          rustup default nightly-2023-08-01
       - name: Build and Test (minimal preset)
         working-directory: bindings/rust
         run: cargo test --all --release --features="minimal-spec" --tests
