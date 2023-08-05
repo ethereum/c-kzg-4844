@@ -20,8 +20,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Get latest version of stable rust
-        run: rustup update stable
+      # Switch back to stable when 1.73.0 is released
+      - name: Get latest version of nightly rust
+        run: |
+          rustup update nightly
+          rustup default nightly
       - name: Build and Test (minimal preset)
         working-directory: bindings/rust
         run: cargo test --all --release --features="minimal-spec" --tests
