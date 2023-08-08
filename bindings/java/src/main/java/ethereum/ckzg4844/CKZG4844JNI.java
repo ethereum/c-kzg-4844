@@ -67,6 +67,10 @@ public class CKZG4844JNI {
   public static final BigInteger BLS_MODULUS =
       new BigInteger(
           "52435875175126190479447740508185965837690552500527637822603658699938581184513");
+  /** The number of bytes in a g1 point. */
+  public static final int BYTES_PER_G1 = 48;
+  /** The number of bytes in a g2 point. */
+  public static final int BYTES_PER_G2 = 96;
   /** The number of bytes in a KZG commitment */
   public static final int BYTES_PER_COMMITMENT = 48;
   /** The number of bytes in a KZG proof */
