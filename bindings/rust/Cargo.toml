@@ -35,7 +35,7 @@ libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5.1"
 glob = "0.3.1"
 rand = "0.8.5"
 serde_yaml = "0.9.17"
