@@ -26,13 +26,15 @@ jobs:
         with:
           submodules: recursive
       - name: Test
-        run: |
-          cd bindings/go
-          CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test
+        run: go test
+        working-directory: bindings/go
+        env:
+          CGO_CFLAGS: "-O2 -D__BLST_PORTABLE__"
       - name: Benchmark
-        run: |
-          cd bindings/go
-          CGO_CFLAGS="-O2 -D__BLST_PORTABLE__" go test -bench=Benchmark
+        run: go test -bench=Benchmark
+        working-directory: bindings/go
+        env:
+          CGO_CFLAGS: "-O2 -D__BLST_PORTABLE__"
       - name: Check headers
         run: |
           cmp blst/bindings/blst.h bindings/go/blst_headers/blst.h
