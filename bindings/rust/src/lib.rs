@@ -1,5 +1,3 @@
-extern crate core;
-
 mod bindings;
 
 // Expose relevant types with idiomatic names.
