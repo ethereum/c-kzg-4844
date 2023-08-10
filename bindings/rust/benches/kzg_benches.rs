@@ -6,21 +6,21 @@ use rand::{rngs::ThreadRng, Rng};
 use std::sync::Arc;
 
 fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
-    let mut arr = [0u8; BYTES_PER_FIELD_ELEMENT];
+    let mut arr = [0; BYTES_PER_FIELD_ELEMENT];
     rng.fill(&mut arr[..]);
     arr[0] = 0;
     arr.into()
 }
 
 fn generate_random_blob(rng: &mut ThreadRng) -> Box<Blob> {
-    let mut arr = [0u8; BYTES_PER_BLOB];
+    let mut arr = Box::new([0u8; BYTES_PER_BLOB]);
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
     // each field element contained in the blob is < BLS_MODULUS
     for i in 0..FIELD_ELEMENTS_PER_BLOB {
         arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    Box::new(arr.into())
+    arr.into()
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -110,7 +110,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             b.iter_batched_ref(
                 || {
                     let blobs_subset: Vec<Blob> =
-                        blobs.iter().take(count).map(|b| (**b).clone()).collect();
+                        blobs.iter().take(count).map(|b| *b.clone()).collect();
 
                     let commitments_subset = commitments
                         .clone()

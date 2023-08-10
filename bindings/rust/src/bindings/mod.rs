@@ -202,8 +202,10 @@ impl Blob {
                 bytes.len(),
             )));
         }
-        let mut blob = Box::new(Self { bytes: [0; BYTES_PER_BLOB] });
-        blob.copy_from_slice(bytes);
+        let mut blob = Box::new(Self {
+            bytes: [0; BYTES_PER_BLOB],
+        });
+        blob.bytes.copy_from_slice(bytes);
         Ok(blob)
     }
 
@@ -461,15 +463,13 @@ impl From<[u8; BYTES_PER_PROOF]> for KZGProof {
     }
 }
 
-impl From<[u8; BYTES_PER_BLOB]> for Blob {
-    fn from(value: [u8; BYTES_PER_BLOB]) -> Self {
-        Self { bytes: value }
-    }
-}
-
-impl From<[u8; BYTES_PER_BLOB]> for Box<Blob> {
-    fn from(value: [u8; BYTES_PER_BLOB]) -> Self {
-        Box::new(Blob { bytes: value })
+impl From<Box<[u8; BYTES_PER_BLOB]>> for Box<Blob> {
+    fn from(value: Box<[u8; BYTES_PER_BLOB]>) -> Self {
+        let mut blob = Box::new(Blob {
+            bytes: [0; BYTES_PER_BLOB],
+        });
+        blob.bytes.copy_from_slice(value.as_slice());
+        blob
     }
 }
 
@@ -485,7 +485,7 @@ impl From<[u8; 48]> for Bytes48 {
     }
 }
 
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 impl Deref for Bytes32 {
     type Target = [u8; 32];
@@ -501,22 +501,13 @@ impl Deref for Bytes48 {
     }
 }
 
-impl Deref for Blob {
-    type Target = [u8; BYTES_PER_BLOB];
-    fn deref(&self) -> &Self::Target {
-        &self.bytes
-    }
-}
-
-impl DerefMut for Blob {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.bytes
-    }
-}
-
-impl Clone for Blob {
+impl Clone for Box<Blob> {
     fn clone(&self) -> Self {
-        Blob { bytes: self.bytes }
+        let mut blob = Box::new(Blob {
+            bytes: [0; BYTES_PER_BLOB],
+        });
+        blob.bytes.copy_from_slice(&self.bytes);
+        blob
     }
 }
 
@@ -551,14 +542,14 @@ mod tests {
     };
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Box<Blob> {
-        let mut arr = [0u8; BYTES_PER_BLOB];
+        let mut arr = Box::new([0; BYTES_PER_BLOB]);
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
         // each field element contained in the blob is < BLS_MODULUS
         for i in 0..FIELD_ELEMENTS_PER_BLOB {
             arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
         }
-        Box::new(arr.into())
+        arr.into()
     }
 
     fn test_simple(trusted_setup_file: PathBuf) {
@@ -574,7 +565,7 @@ mod tests {
         let commitments: Vec<Bytes48> = blobs
             .iter()
             .map(|blob| {
-                KZGCommitment::blob_to_kzg_commitment((*blob).clone(), &kzg_settings).unwrap()
+                KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap()
             })
             .map(|commitment| commitment.to_bytes())
             .collect();
@@ -589,7 +580,7 @@ mod tests {
             .map(|proof| proof.to_bytes())
             .collect();
 
-        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
+        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| *b.clone()).collect();
         assert!(KZGProof::verify_blob_kzg_proof_batch(
             &blobs_copy,
             &commitments,
@@ -600,7 +591,7 @@ mod tests {
 
         blobs.pop();
 
-        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
+        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| *b.clone()).collect();
         let error = KZGProof::verify_blob_kzg_proof_batch(
             &blobs_copy,
             &commitments,
@@ -613,7 +604,7 @@ mod tests {
         let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
-        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
+        let blobs_copy: Vec<Blob> = blobs.iter().map(|b| *b.clone()).collect();
         assert!(!KZGProof::verify_blob_kzg_proof_batch(
             &blobs_copy,
             &commitments,
@@ -814,7 +805,7 @@ mod tests {
                 continue;
             };
 
-            let blobs_copy: Vec<Blob> = blobs.iter().map(|b| (**b).clone()).collect();
+            let blobs_copy: Vec<Blob> = blobs.iter().map(|b| *b.clone()).collect();
             match KZGProof::verify_blob_kzg_proof_batch(
                 &blobs_copy,
                 &commitments,
