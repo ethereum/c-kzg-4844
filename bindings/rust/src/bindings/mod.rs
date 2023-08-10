@@ -148,7 +148,7 @@ impl KZGSettings {
                 .as_os_str()
                 .to_str()
                 .ok_or(Error::InvalidTrustedSetup(format!(
-                    "Unsuported non unicode file path"
+                    "Unsupported non unicode file path"
                 )))?
                 .as_bytes()
         };
@@ -180,7 +180,7 @@ impl KZGSettings {
         };
 
         // We don't really care if this succeeds.
-        let _uncheched_close_result = unsafe { libc::fclose(file_ptr) };
+        let _unchecked_close_result = unsafe { libc::fclose(file_ptr) };
         drop(file_path);
 
         result
