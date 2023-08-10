@@ -289,7 +289,7 @@ impl KZGProof {
             let res = compute_kzg_proof(
                 kzg_proof.as_mut_ptr(),
                 y_out.as_mut_ptr(),
-                &*blob,
+                blob.as_ref(),
                 &z_bytes,
                 kzg_settings,
             );
@@ -310,7 +310,7 @@ impl KZGProof {
         unsafe {
             let res = compute_blob_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                &*blob,
+                blob.as_ref(),
                 &commitment_bytes,
                 kzg_settings,
             );
@@ -357,7 +357,7 @@ impl KZGProof {
         unsafe {
             let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
-                &*blob,
+                blob.as_ref(),
                 &commitment_bytes,
                 &proof_bytes,
                 kzg_settings,
@@ -439,7 +439,7 @@ impl KZGCommitment {
         unsafe {
             let res = blob_to_kzg_commitment(
                 kzg_commitment.as_mut_ptr(),
-                (*blob).bytes.as_ptr() as *const Blob,
+                blob.bytes.as_ptr() as *const Blob,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -574,7 +574,7 @@ mod tests {
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof((*blob).clone(), *commitment, &kzg_settings)
+                KZGProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings)
                     .unwrap()
             })
             .map(|proof| proof.to_bytes())
