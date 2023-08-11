@@ -501,13 +501,9 @@ impl Deref for Bytes48 {
     }
 }
 
-impl Clone for Box<Blob> {
+impl Clone for Blob {
     fn clone(&self) -> Self {
-        let mut blob = Box::new(Blob {
-            bytes: [0; BYTES_PER_BLOB],
-        });
-        blob.bytes.copy_from_slice(&self.bytes);
-        blob
+        Self { bytes: self.bytes }
     }
 }
 
