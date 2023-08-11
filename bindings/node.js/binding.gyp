@@ -12,7 +12,10 @@
         "<(module_root_dir)/deps/c-kzg",
         "<!@(node -p \"require('node-addon-api').include\")"
       ],
-      "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"],
+      "defines": [
+        "__BLST_PORTABLE__",
+        "NAPI_DISABLE_CPP_EXCEPTIONS"
+      ],
       "conditions": [
         ["OS!='win'", {
           "sources": ["deps/blst/build/assembly.S"],
