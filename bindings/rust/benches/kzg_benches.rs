@@ -82,6 +82,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("verify_kzg_proof", |b| {
         b.iter(|| {
+            print!("");
             KzgProof::verify_kzg_proof(
                 *commitments.first().unwrap(),
                 *fields.first().unwrap(),
