@@ -39,6 +39,7 @@ endif
 # Settings for blst.
 BLST_LIBRARY = ../lib/libblst.a
 BLST_BUILDSCRIPT = ../blst/build.sh
+BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
 
 # Libraries to build with.
 LIBS = $(BLST_LIBRARY)
@@ -54,7 +55,7 @@ $(BLST_BUILDSCRIPT):
 
 $(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
 	@cd $(dir $(BLST_BUILDSCRIPT)) && \
-	./$(notdir $(BLST_BUILDSCRIPT)) && \
+	./$(notdir $(BLST_BUILDSCRIPT)) $(BLST_BUILDSCRIPT_FLAGS) && \
 	cp $(notdir $(BLST_LIBRARY)) ../lib && \
 	cp bindings/*.h ../inc
 
