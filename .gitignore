@@ -17,3 +17,6 @@ analysis-report/
 *bindings/csharp/*.dll
 __pycache__
 .DS_Store
+
+# nimble build dir
+build/

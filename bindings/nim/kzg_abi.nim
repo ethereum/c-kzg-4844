@@ -21,6 +21,7 @@ when not defined(kzgExternalBlst):
   # Use default blst shipped with c-kzg-4844
   {.compile: blstPath & "build/assembly.S".}
   {.compile: blstPath & "src/server.c"}
+  {.passc: "-D__BLST_PORTABLE__"}
 
 {.compile: srcPath & "c_kzg_4844.c"}
 
