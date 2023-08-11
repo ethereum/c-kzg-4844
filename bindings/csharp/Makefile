@@ -41,6 +41,7 @@ TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 CFLAGS += -O2 -Wall -Wextra -shared
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
+BLST_BUILDSCRIPT_FLAGS += -D__BLST_PORTABLE__
 ifdef ARCH
 	CFLAGS += --target=$(ARCH)
 	BLST_BUILDSCRIPT_FLAGS += --target=$(ARCH)
