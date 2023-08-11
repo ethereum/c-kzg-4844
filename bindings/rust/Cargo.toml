@@ -2,6 +2,7 @@
 name = "c-kzg"
 version = "0.1.0"
 edition = "2021"
+license = "Apache-2.0"
 # XXX: Note that we don't set a `links` attribute for Cargo, because this library may link
 # either `ckzg` or `ckzg_min`. This allows the crate to be linked twice as minimal/mainnet variants
 # without Cargo complaining.
@@ -35,7 +36,7 @@ libc = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5.1"
 glob = "0.3.1"
 rand = "0.8.5"
 serde_yaml = "0.9.17"
