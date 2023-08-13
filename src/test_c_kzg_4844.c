@@ -1292,7 +1292,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     /* Change the proof so it should not verify */
     ret = bytes_to_kzg_commitment(&proof_g1, &proof);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    blst_p1_add(&proof_g1, &proof_g1, &G1_GENERATOR);
+    blst_p1_add(&proof_g1, &proof_g1, blst_p1_generator());
     bytes_from_g1(&proof, &proof_g1);
 
     /* Finally verify the proof */
@@ -1428,7 +1428,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
     /* Change the proof so it should not verify */
     ret = bytes_to_kzg_commitment(&proof_g1, &proof);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    blst_p1_add(&proof_g1, &proof_g1, &G1_GENERATOR);
+    blst_p1_add(&proof_g1, &proof_g1, blst_p1_generator());
     bytes_from_g1(&proof, &proof_g1);
 
     /* Finally verify the proof */

@@ -89,30 +89,6 @@ static const g1_t G1_IDENTITY = {
     {0L, 0L, 0L, 0L, 0L, 0L},
     {0L, 0L, 0L, 0L, 0L, 0L}};
 
-/** The G1 generator. */
-static const g1_t G1_GENERATOR = {
-    {0x5cb38790fd530c16L, 0x7817fc679976fff5L, 0x154f95c7143ba1c1L,
-     0xf0ae6acdf3d0e747L, 0xedce6ecc21dbf440L, 0x120177419e0bfb75L},
-    {0xbaac93d50ce72271L, 0x8c22631a7918fd8eL, 0xdd595f13570725ceL,
-     0x51ac582950405194L, 0x0e1c8c3fad0059c0L, 0x0bbc3efc5008a26aL},
-    {0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL,
-     0x77ce585370525745L, 0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L}};
-
-/** The G2 generator. */
-static const g2_t G2_GENERATOR = {
-    {{{0xf5f28fa202940a10L, 0xb3f5fb2687b4961aL, 0xa1a893b53e2ae580L,
-       0x9894999d1a3caee9L, 0x6f67b7631863366bL, 0x058191924350bcd7L},
-      {0xa5a9c0759e23f606L, 0xaaa0c59dbccd60c3L, 0x3bb17e18e2867806L,
-       0x1b1ab6cc8541b367L, 0xc2b6ed0ef2158547L, 0x11922a097360edf3L}}},
-    {{{0x4c730af860494c4aL, 0x597cfa1f5e369c5aL, 0xe7e6856caa0a635aL,
-       0xbbefb5e96e0d495fL, 0x07d3a975f0ef25a2L, 0x0083fd8e7e80dae5L},
-      {0xadc0fc92df64b05dL, 0x18aa270a2b1461dcL, 0x86adac6a3be4eba0L,
-       0x79495c4ec93da33aL, 0xe7175850a43ccaedL, 0x0b2bc2a163de1bf2L}}},
-    {{{0x760900000002fffdL, 0xebf4000bc40c0002L, 0x5f48985753c758baL,
-       0x77ce585370525745L, 0x5c071a97a256ec6dL, 0x15f65ec3fa80e493L},
-      {0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L,
-       0x0000000000000000L, 0x0000000000000000L, 0x0000000000000000L}}}};
-
 /**
  * The first 32 roots of unity in the finite field F_r.
  * SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of unity.
@@ -979,15 +955,15 @@ static C_KZG_RET verify_kzg_proof_impl(
     g1_t y_g1, P_minus_y;
 
     /* Calculate: X_minus_z */
-    g2_mul(&x_g2, &G2_GENERATOR, z);
+    g2_mul(&x_g2, blst_p2_generator(), z);
     g2_sub(&X_minus_z, &s->g2_values[1], &x_g2);
 
     /* Calculate: P_minus_y */
-    g1_mul(&y_g1, &G1_GENERATOR, y);
+    g1_mul(&y_g1, blst_p1_generator(), y);
     g1_sub(&P_minus_y, commitment, &y_g1);
 
     /* Verify: P - y = Q * (X - z) */
-    *ok = pairings_verify(&P_minus_y, &G2_GENERATOR, proof, &X_minus_z);
+    *ok = pairings_verify(&P_minus_y, blst_p2_generator(), proof, &X_minus_z);
 
     return C_KZG_OK;
 }
@@ -1348,7 +1324,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
         /* Get [y_i] */
-        g1_mul(&ys_encrypted, &G1_GENERATOR, &ys_fr[i]);
+        g1_mul(&ys_encrypted, blst_p1_generator(), &ys_fr[i]);
         /* Get C_i - [y_i] */
         g1_sub(&C_minus_y[i], &commitments_g1[i], &ys_encrypted);
         /* Get r^i * z_i */
@@ -1364,7 +1340,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     /* Do the pairing check! */
     *ok = pairings_verify(
-        &proof_lincomb, &s->g2_values[1], &rhs_g1, &G2_GENERATOR
+        &proof_lincomb, &s->g2_values[1], &rhs_g1, blst_p2_generator()
     );
 
 out:
