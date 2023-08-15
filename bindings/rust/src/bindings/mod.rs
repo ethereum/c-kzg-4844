@@ -3,6 +3,7 @@
 #![allow(non_snake_case)]
 
 mod test_formats;
+mod serde_helpers;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -489,6 +490,12 @@ impl Deref for Bytes48 {
     type Target = [u8; 48];
     fn deref(&self) -> &Self::Target {
         &self.bytes
+    }
+}
+
+impl DerefMut for Bytes48 {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.bytes
     }
 }
 
