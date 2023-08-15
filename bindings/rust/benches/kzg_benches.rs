@@ -95,7 +95,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("verify_blob_kzg_proof", |b| {
         b.iter(|| {
-            KzgProof::verify_blob_kzg_proof(
+            KzgProof::verify_blob_kzg_proof2(
                 blobs.first().unwrap().clone(),
                 *commitments.first().unwrap(),
                 *proofs.first().unwrap(),

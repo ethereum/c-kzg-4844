@@ -370,6 +370,94 @@ impl KZGProof {
         }
     }
 
+    pub fn blob_to_polynomial(blob: Box<Blob>) -> Result<Polynomial, Error> {
+        unsafe {
+            let mut polynomial = MaybeUninit::uninit();
+            let res = blob_to_polynomial(polynomial.as_mut_ptr(), &*blob);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(polynomial.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn bytes_to_g1(bytes: Bytes48) -> Result<g1_t, Error> {
+        unsafe {
+            let mut g1_point = MaybeUninit::uninit();
+            let res = bytes_to_g1(g1_point.as_mut_ptr(), &bytes);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(g1_point.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn bytes_from_bls_field(field_element: fr_t) -> Bytes32 {
+        unsafe {
+            let mut bytes = MaybeUninit::uninit();
+            bytes_from_bls_field(bytes.as_mut_ptr(), &field_element);
+            bytes.assume_init()
+        }
+    }
+
+    pub fn compute_challenge(blob: Box<Blob>, commitment_bytes: Bytes48) -> Result<fr_t, Error> {
+        let commitment_g1 = Self::bytes_to_g1(commitment_bytes)?;
+        let mut eval_challenge_out = MaybeUninit::uninit();
+        unsafe {
+            compute_challenge(eval_challenge_out.as_mut_ptr(), &*blob, &commitment_g1);
+            Ok(eval_challenge_out.assume_init())
+        }
+    }
+
+    pub fn evaluate_polynomial_in_evaluation_form(
+        p: Polynomial,
+        x: fr_t,
+        s: &KZGSettings,
+    ) -> Result<fr_t, Error> {
+        let mut out = MaybeUninit::uninit();
+        unsafe {
+            let res = evaluate_polynomial_in_evaluation_form(out.as_mut_ptr(), &p, &x, s);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(out.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_blob_kzg_proof2(
+        blob: Box<Blob>,
+        commitment_bytes: Bytes48,
+        proof_bytes: Bytes48,
+        kzg_settings: &KZGSettings,
+    ) -> Result<bool, Error> {
+        let polynomial = Self::blob_to_polynomial(blob.clone())?;
+        let evaluation_challenge = Self::compute_challenge(blob.clone(), commitment_bytes)?;
+        let y = Self::evaluate_polynomial_in_evaluation_form(
+            polynomial,
+            evaluation_challenge,
+            kzg_settings,
+        )?;
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_kzg_proof(
+                verified.as_mut_ptr(),
+                &commitment_bytes,
+                &Self::bytes_from_bls_field(evaluation_challenge),
+                &Self::bytes_from_bls_field(y),
+                &proof_bytes,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
     pub fn verify_blob_kzg_proof_batch(
         blobs: &[Blob],
         commitments_bytes: &[Bytes48],

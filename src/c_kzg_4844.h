@@ -135,6 +135,11 @@ typedef struct {
     uint8_t bytes[BYTES_PER_BLOB];
 } Blob;
 
+/** Internal representation of a polynomial. */
+typedef struct {
+    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
+} Polynomial;
+
 /**
  * A trusted (valid) KZG commitment.
  */
@@ -232,6 +237,27 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     size_t n,
     const KZGSettings *s
 );
+
+C_KZG_RET evaluate_polynomial_in_evaluation_form(
+    fr_t *out,
+    const Polynomial *p,
+    const fr_t *x,
+    const KZGSettings *s
+);
+
+void compute_challenge(
+    fr_t *eval_challenge_out,
+    const Blob *blob,
+    const g1_t *commitment
+);
+
+C_KZG_RET blob_to_polynomial(
+    Polynomial *p,
+    const Blob *blob
+);
+
+C_KZG_RET bytes_to_g1(g1_t *out, const Bytes48 *b);
+void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
 
 #ifdef __cplusplus
 }

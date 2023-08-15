@@ -51,10 +51,7 @@
 // Types
 ///////////////////////////////////////////////////////////////////////////////
 
-/** Internal representation of a polynomial. */
-typedef struct {
-    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
-} Polynomial;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Constants
@@ -518,7 +515,7 @@ static void bytes_from_g1(Bytes48 *out, const g1_t *in) {
  * @param[out] out A 32-byte array to store the serialized field element
  * @param[in] in The field element to be serialized
  */
-static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
+void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
     blst_scalar s;
     blst_scalar_from_fr(&s, in);
     blst_bendian_from_scalar(out->bytes, &s);
@@ -617,6 +614,10 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
     return validate_kzg_g1(out, b);
 }
 
+C_KZG_RET bytes_to_g1(g1_t *out, const Bytes48 *b) {
+    return validate_kzg_g1(out, b);
+}
+
 /**
  * Deserialize a Blob (array of bytes) into a Polynomial (array of field
  * elements).
@@ -624,7 +625,7 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
  * @param[out] p    The output polynomial (array of field elements)
  * @param[in]  blob The blob (an array of bytes)
  */
-static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
+C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         ret = bytes_to_bls_field(
@@ -649,7 +650,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
  * @param[in]  blob               A blob
  * @param[in]  commitment         A commitment
  */
-static void compute_challenge(
+void compute_challenge(
     fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
 ) {
     Bytes32 eval_challenge;
@@ -810,7 +811,7 @@ static void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
  * @param[in]  x   The point to evaluate the polynomial at
  * @param[in]  s   The trusted setup
  */
-static C_KZG_RET evaluate_polynomial_in_evaluation_form(
+C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
 ) {
     C_KZG_RET ret;
