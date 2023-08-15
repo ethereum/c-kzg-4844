@@ -9,7 +9,12 @@
 //! Deserialize impls from `serde`:
 //! <https://github.com/serde-rs/serde/blob/7b548db91ed7da81a5c0ddbd6f6f21238aacfebe/serde/src/de/impls.rs>
 use crate::{Blob, Bytes48, BYTES_PER_BLOB};
-use serde::{Serialize, Deserialize, de::{Visitor, SeqAccess}, Deserializer, ser::SerializeTuple, __private::de::InPlaceSeed};
+use serde::{
+    de::{SeqAccess, Visitor},
+    ser::SerializeTuple,
+    Deserialize, Deserializer, Serialize,
+    __private::de::InPlaceSeed,
+};
 use std::{fmt, marker::PhantomData};
 
 /// Copied from serde:
@@ -48,8 +53,7 @@ impl Serialize for Blob {
 
 // modified slightly from serde:
 // <https://github.com/serde-rs/serde/blob/7b548db91ed7da81a5c0ddbd6f6f21238aacfebe/serde/src/de/impls.rs#L1142-L1164>
-impl <'de> Visitor<'de> for ArrayVisitor<[u8; BYTES_PER_BLOB]>
-{
+impl<'de> Visitor<'de> for ArrayVisitor<[u8; BYTES_PER_BLOB]> {
     type Value = [u8; BYTES_PER_BLOB];
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -74,8 +78,7 @@ impl <'de> Visitor<'de> for ArrayVisitor<[u8; BYTES_PER_BLOB]>
 
 // copied from serde:
 // <https://github.com/serde-rs/serde/blob/7b548db91ed7da81a5c0ddbd6f6f21238aacfebe/serde/src/de/impls.rs#L1166-L1193>
-impl<'de> Visitor<'de> for ArrayInPlaceVisitor<'_, [u8; BYTES_PER_BLOB]>
-{
+impl<'de> Visitor<'de> for ArrayInPlaceVisitor<'_, [u8; BYTES_PER_BLOB]> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -110,15 +113,19 @@ impl<'de> Deserialize<'de> for Blob {
     where
         D: Deserializer<'de>,
     {
-        let bytes = deserializer.deserialize_tuple(BYTES_PER_BLOB, ArrayVisitor::<[u8; BYTES_PER_BLOB]>::new())?;
-        Ok(Blob{bytes})
+        let bytes = deserializer
+            .deserialize_tuple(BYTES_PER_BLOB, ArrayVisitor::<[u8; BYTES_PER_BLOB]>::new())?;
+        Ok(Blob { bytes })
     }
 
     fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
-        deserializer.deserialize_tuple(BYTES_PER_BLOB, ArrayInPlaceVisitor::<[u8; BYTES_PER_BLOB]>(place))
+        deserializer.deserialize_tuple(
+            BYTES_PER_BLOB,
+            ArrayInPlaceVisitor::<[u8; BYTES_PER_BLOB]>(place),
+        )
     }
 }
 
@@ -142,8 +149,7 @@ impl Serialize for Bytes48 {
 
 // modified slightly from serde:
 // <https://github.com/serde-rs/serde/blob/7b548db91ed7da81a5c0ddbd6f6f21238aacfebe/serde/src/de/impls.rs#L1142-L1164>
-impl <'de> Visitor<'de> for ArrayVisitor<[u8; 48]>
-{
+impl<'de> Visitor<'de> for ArrayVisitor<[u8; 48]> {
     type Value = [u8; 48];
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -168,8 +174,7 @@ impl <'de> Visitor<'de> for ArrayVisitor<[u8; 48]>
 
 // copied from serde:
 // <https://github.com/serde-rs/serde/blob/7b548db91ed7da81a5c0ddbd6f6f21238aacfebe/serde/src/de/impls.rs#L1166-L1193>
-impl<'de> Visitor<'de> for ArrayInPlaceVisitor<'_, [u8; 48]>
-{
+impl<'de> Visitor<'de> for ArrayInPlaceVisitor<'_, [u8; 48]> {
     type Value = ();
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -205,12 +210,12 @@ impl<'de> Deserialize<'de> for Bytes48 {
         D: Deserializer<'de>,
     {
         let bytes = deserializer.deserialize_tuple(48, ArrayVisitor::<[u8; 48]>::new())?;
-        Ok(Bytes48{bytes})
+        Ok(Bytes48 { bytes })
     }
 
     fn deserialize_in_place<D>(deserializer: D, place: &mut Self) -> Result<(), D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         deserializer.deserialize_tuple(48, ArrayInPlaceVisitor::<[u8; 48]>(place))
     }

@@ -2,8 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-mod test_formats;
 mod serde_helpers;
+mod test_formats;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
@@ -700,10 +700,8 @@ mod tests {
         for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(blob), Ok(commitment)) = (
-                test.input.get_blob(),
-                test.input.get_commitment()
-            ) else {
+            let (Ok(blob), Ok(commitment)) = (test.input.get_blob(), test.input.get_commitment())
+            else {
                 assert!(test.get_output().is_none());
                 continue;
             };
@@ -734,7 +732,7 @@ mod tests {
                 test.input.get_commitment(),
                 test.input.get_z(),
                 test.input.get_y(),
-                test.input.get_proof()
+                test.input.get_proof(),
             ) else {
                 assert!(test.get_output().is_none());
                 continue;
@@ -765,7 +763,7 @@ mod tests {
             let (Ok(blob), Ok(commitment), Ok(proof)) = (
                 test.input.get_blob(),
                 test.input.get_commitment(),
-                test.input.get_proof()
+                test.input.get_proof(),
             ) else {
                 assert!(test.get_output().is_none());
                 continue;
@@ -796,7 +794,7 @@ mod tests {
             let (Ok(blobs), Ok(commitments), Ok(proofs)) = (
                 test.input.get_blobs(),
                 test.input.get_commitments(),
-                test.input.get_proofs()
+                test.input.get_proofs(),
             ) else {
                 assert!(test.get_output().is_none());
                 continue;
