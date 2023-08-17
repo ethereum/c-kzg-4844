@@ -36,7 +36,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let commitments: Vec<Bytes48> = blobs
         .iter()
         .map(|blob| {
-            KzgCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings)
+            KzgCommitment::blob_to_kzg_commitment(&blob, &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -45,7 +45,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .iter()
         .zip(commitments.iter())
         .map(|(blob, commitment)| {
-            KzgProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings)
+            KzgProof::compute_blob_kzg_proof(&blob, *commitment, &kzg_settings)
                 .unwrap()
                 .to_bytes()
         })
@@ -56,14 +56,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("blob_to_kzg_commitment", |b| {
         b.iter(|| {
-            KzgCommitment::blob_to_kzg_commitment(blobs.first().unwrap().clone(), &kzg_settings)
+            KzgCommitment::blob_to_kzg_commitment(&blobs[0], &kzg_settings)
         })
     });
 
     c.bench_function("compute_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::compute_kzg_proof(
-                blobs.first().unwrap().clone(),
+                &blobs[0],
                 *fields.first().unwrap(),
                 &kzg_settings,
             )
@@ -73,7 +73,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("compute_blob_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::compute_blob_kzg_proof(
-                blobs.first().unwrap().clone(),
+                &blobs[0],
                 *commitments.first().unwrap(),
                 &kzg_settings,
             )
@@ -96,7 +96,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("verify_blob_kzg_proof", |b| {
         b.iter(|| {
             KzgProof::verify_blob_kzg_proof2(
-                blobs.first().unwrap().clone(),
+                &blobs[0],
                 *commitments.first().unwrap(),
                 *proofs.first().unwrap(),
                 &kzg_settings,
