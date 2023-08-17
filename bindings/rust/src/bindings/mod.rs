@@ -16,6 +16,11 @@ use {
     ckzg_verify_blob_kzg_proof as verify_blob_kzg_proof,
     ckzg_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
     ckzg_verify_kzg_proof as verify_kzg_proof,
+    ckzg_evaluate_polynomial_in_evaluation_form as evaluate_polynomial_in_evaluation_form,
+    ckzg_compute_challenge as compute_challenge,
+    ckzg_blob_to_polynomial as blob_to_polynomial,
+    ckzg_bytes_to_g1 as bytes_to_g1,
+    ckzg_bytes_from_bls_field as bytes_from_bls_field,
 };
 #[cfg(feature = "minimal-spec")]
 use {
@@ -28,6 +33,11 @@ use {
     ckzg_min_verify_blob_kzg_proof as verify_blob_kzg_proof,
     ckzg_min_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
     ckzg_min_verify_kzg_proof as verify_kzg_proof,
+    ckzg_min_evaluate_polynomial_in_evaluation_form as evaluate_polynomial_in_evaluation_form,
+    ckzg_min_compute_challenge as compute_challenge,
+    ckzg_min_blob_to_polynomial as blob_to_polynomial,
+    ckzg_min_bytes_to_g1 as bytes_to_g1,
+    ckzg_min_bytes_from_bls_field as bytes_from_bls_field,
 };
 
 use std::ffi::CString;

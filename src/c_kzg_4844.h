@@ -61,6 +61,12 @@ extern "C" {
 #define LOAD_TRUSTED_SETUP PREFIX_FUNCNAME(load_trusted_setup)
 #define LOAD_TRUSTED_SETUP_FILE PREFIX_FUNCNAME(load_trusted_setup_file)
 #define FREE_TRUSTED_SETUP PREFIX_FUNCNAME(free_trusted_setup)
+#define EVALUATE_POLYNOMIAL_IN_EVALUATION_FORM PREFIX_FUNCNAME(evaluate_polynomial_in_evaluation_form)
+#define COMPUTE_CHALLENGE PREFIX_FUNCNAME(compute_challenge)
+#define BLOB_TO_POLYNOMIAL PREFIX_FUNCNAME(blob_to_polynomial)
+#define BYTES_TO_G1 PREFIX_FUNCNAME(bytes_to_g1)
+#define BYTES_FROM_BLS_FIELD PREFIX_FUNCNAME(bytes_from_bls_field)
+
 
 /*
  * This value represents the number of field elements in a blob. It must be
@@ -238,26 +244,26 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     const KZGSettings *s
 );
 
-C_KZG_RET evaluate_polynomial_in_evaluation_form(
+C_KZG_RET EVALUATE_POLYNOMIAL_IN_EVALUATION_FORM(
     fr_t *out,
     const Polynomial *p,
     const fr_t *x,
     const KZGSettings *s
 );
 
-void compute_challenge(
+void COMPUTE_CHALLENGE(
     fr_t *eval_challenge_out,
     const Blob *blob,
     const g1_t *commitment
 );
 
-C_KZG_RET blob_to_polynomial(
+C_KZG_RET BLOB_TO_POLYNOMIAL(
     Polynomial *p,
     const Blob *blob
 );
 
-C_KZG_RET bytes_to_g1(g1_t *out, const Bytes48 *b);
-void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
+C_KZG_RET BYTES_TO_G1(g1_t *out, const Bytes48 *b);
+void BYTES_FROM_BLS_FIELD(Bytes32 *out, const fr_t *in);
 
 #ifdef __cplusplus
 }
