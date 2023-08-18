@@ -1,8 +1,7 @@
-use std::path::PathBuf;
-
 use c_kzg::*;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
+use std::path::Path;
 use std::sync::Arc;
 
 fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
@@ -26,7 +25,7 @@ fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
 pub fn criterion_benchmark(c: &mut Criterion) {
     let max_count: usize = 64;
     let mut rng = rand::thread_rng();
-    let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+    let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
     assert!(trusted_setup_file.exists());
     let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
@@ -125,9 +124,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
                     KzgProof::verify_blob_kzg_proof_batch(
-                        &blobs_subset,
-                        &commitments_subset,
-                        &proofs_subset,
+                        blobs_subset,
+                        commitments_subset,
+                        proofs_subset,
                         &kzg_settings,
                     )
                     .unwrap();
