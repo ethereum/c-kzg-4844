@@ -79,10 +79,18 @@ mod tests {
         arr.into()
     }
 
+    fn trusted_setup_file() -> PathBuf {
+        if cfg!(feature = "minimal-spec") {
+            PathBuf::from("../../src/trusted_setup_4.txt")
+        } else {
+            PathBuf::from("../../src/trusted_setup.txt")
+        }
+    }
+
     #[test]
     fn test_serialize_roundtrip() {
         // load setup so we can create commitments and blobs
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = trusted_setup_file();
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
@@ -134,7 +142,7 @@ mod tests {
     #[test]
     fn test_serialize_bytes_48_with_prefix() {
         // load setup so we can create a commitments
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = trusted_setup_file();
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
