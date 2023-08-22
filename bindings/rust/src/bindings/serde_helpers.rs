@@ -1,8 +1,6 @@
 //! Serde serialization and deserialization for the basic types in this crate.
 use crate::{Blob, Bytes48};
-use serde::{
-    Serializer, Deserialize, Deserializer, Serialize,
-};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Serialize a byte vec as a hex string with 0x prefix
 pub fn serialize_bytes<S, T>(x: T, s: S) -> Result<S::Ok, S::Error>
@@ -15,16 +13,18 @@ where
 
 impl Serialize for Blob {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer {
-            serialize_bytes(self.bytes, serializer)
+    where
+        S: Serializer,
+    {
+        serialize_bytes(self.bytes, serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for Blob {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de> {
+        D: Deserializer<'de>,
+    {
         let value = String::deserialize(deserializer)?;
         let bytes_res = match value.strip_prefix("0x") {
             Some(value) => hex::decode(value),
@@ -38,16 +38,18 @@ impl<'de> Deserialize<'de> for Blob {
 
 impl Serialize for Bytes48 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-        where
-            S: Serializer {
-            serialize_bytes(self.bytes, serializer)
+    where
+        S: Serializer,
+    {
+        serialize_bytes(self.bytes, serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for Bytes48 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de> {
+        D: Deserializer<'de>,
+    {
         let value = String::deserialize(deserializer)?;
         let bytes_res = match value.strip_prefix("0x") {
             Some(value) => hex::decode(value),
@@ -55,10 +57,10 @@ impl<'de> Deserialize<'de> for Bytes48 {
         };
 
         let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Bytes48::from_bytes(bytes.as_slice()).map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+        Bytes48::from_bytes(bytes.as_slice())
+            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -87,8 +89,11 @@ mod tests {
         // generate blob, commitment, proof
         let mut rng = rand::thread_rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment = KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
-        let proof = KZGProof::compute_blob_kzg_proof(blob.clone(), commitment.to_bytes(), &kzg_settings).unwrap();
+        let commitment =
+            KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
+        let proof =
+            KZGProof::compute_blob_kzg_proof(blob.clone(), commitment.to_bytes(), &kzg_settings)
+                .unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
@@ -97,7 +102,8 @@ mod tests {
 
         // check commitment serialization
         let commitment_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
-        let commitment_deserialized: Bytes48 = serde_json::from_str(&commitment_serialized).unwrap();
+        let commitment_deserialized: Bytes48 =
+            serde_json::from_str(&commitment_serialized).unwrap();
         assert_eq!(commitment.to_bytes(), commitment_deserialized);
 
         // check proof serialization
@@ -135,7 +141,8 @@ mod tests {
         // generate blob just to calculate a commitment
         let mut rng = rand::thread_rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment = KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
+        let commitment =
+            KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
