@@ -14,7 +14,12 @@ pub struct Input {
 
 impl Input {
     pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
-        self.blobs.iter().map(|blob| Blob::from_hex(blob)).collect()
+        // TODO: `iter.map.collect` overflows the stack
+        let mut v = Vec::with_capacity(self.blobs.len());
+        for blob in &self.blobs {
+            v.push(Blob::from_hex(blob)?);
+        }
+        Ok(v)
     }
 
     pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
