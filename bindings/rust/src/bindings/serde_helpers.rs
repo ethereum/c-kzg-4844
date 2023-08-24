@@ -1,5 +1,5 @@
 //! Serde serialization and deserialization for the basic types in this crate.
-use crate::{Blob, Bytes48};
+use crate::{Blob, Bytes32, Bytes48};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Serialize a byte vec as a hex string with 0x prefix
@@ -58,6 +58,32 @@ impl<'de> Deserialize<'de> for Bytes48 {
 
         let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
         Bytes48::from_bytes(bytes.as_slice())
+            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+    }
+}
+
+impl Serialize for Bytes32 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serialize_bytes(self.bytes, serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Bytes32 {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        let bytes_res = match value.strip_prefix("0x") {
+            Some(value) => hex::decode(value),
+            None => hex::decode(&value),
+        };
+
+        let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
+        Bytes32::from_bytes(bytes.as_slice())
             .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
     }
 }
