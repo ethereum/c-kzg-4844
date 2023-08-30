@@ -11,7 +11,7 @@ license = "Apache-2.0"
 
 [features]
 default = ["std", "mainnet-spec"]
-std = ["hex/std", "libc/std", "serde/std", "blst/std"]
+std = ["hex/std", "libc/std", "serde/std"]
 mainnet-spec = []
 minimal-spec = []
 

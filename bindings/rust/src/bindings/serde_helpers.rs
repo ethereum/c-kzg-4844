@@ -92,7 +92,6 @@ impl<'de> Deserialize<'de> for Bytes32 {
 mod tests {
     use super::super::*;
     use rand::{rngs::ThreadRng, Rng};
-    use std::path::PathBuf;
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
         let mut arr = [0u8; BYTES_PER_BLOB];
@@ -105,11 +104,11 @@ mod tests {
         arr.into()
     }
 
-    fn trusted_setup_file() -> PathBuf {
+    fn trusted_setup_file() -> &'static Path {
         if cfg!(feature = "minimal-spec") {
-            PathBuf::from("../../src/trusted_setup_4.txt")
+            Path::new("../../src/trusted_setup_4.txt")
         } else {
-            PathBuf::from("../../src/trusted_setup.txt")
+            Path::new("../../src/trusted_setup.txt")
         }
     }
 
