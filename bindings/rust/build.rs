@@ -30,7 +30,15 @@ fn main() {
     let mut cc = cc::Build::new();
 
     #[cfg(windows)]
-    cc.flag("-D_CRT_SECURE_NO_WARNINGS");
+    {
+        cc.flag("-D_CRT_SECURE_NO_WARNINGS");
+
+        // In blst, if __STDC_VERSION__ isn't defined as c99 or greater, it will typedef a bool to
+        // an int. There is a bug in bindgen associated with this. It assumes that a bool in C is
+        // the same size as a bool in Rust. This is the root cause of the issues on Windows. If/when
+        // this is fixed in bindgen, it should be safe to remove this compiler flag.
+        cc.flag("/std:c11");
+    }
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
