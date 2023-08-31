@@ -2,6 +2,7 @@
 
 use crate::{Blob, Bytes32, Bytes48};
 use alloc::string::String;
+use alloc::vec::Vec;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Serialize a byte vec as a hex string with 0x prefix
