@@ -328,7 +328,7 @@ impl KZGProof {
         proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        let mut verified: MaybeUninit<u8> = MaybeUninit::uninit();
         unsafe {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
@@ -339,7 +339,11 @@ impl KZGProof {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
+                if verified.assume_init() == 0 {
+                    return Ok(false);
+                } else {
+                    return Ok(true);
+                }
             } else {
                 Err(Error::CError(res))
             }
@@ -352,7 +356,7 @@ impl KZGProof {
         proof_bytes: Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        let mut verified: MaybeUninit<u8> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
@@ -362,7 +366,11 @@ impl KZGProof {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
+                if verified.assume_init() == 0 {
+                    return Ok(false);
+                } else {
+                    return Ok(true);
+                }
             } else {
                 Err(Error::CError(res))
             }
@@ -389,7 +397,7 @@ impl KZGProof {
                 proofs_bytes.len()
             )));
         }
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        let mut verified: MaybeUninit<u8> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof_batch(
                 verified.as_mut_ptr(),
@@ -400,7 +408,11 @@ impl KZGProof {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
+                if verified.assume_init() == 0 {
+                    return Ok(false);
+                } else {
+                    return Ok(true);
+                }
             } else {
                 Err(Error::CError(res))
             }

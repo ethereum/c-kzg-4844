@@ -446,7 +446,7 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal
  */
-static bool pairings_verify(
+uint8_t pairings_verify(
     const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2
 ) {
     blst_fp12 loop0, loop1, gt_point;
@@ -880,7 +880,7 @@ C_KZG_RET BLOB_TO_KZG_COMMITMENT(
 
 /* Forward function declaration */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *ok,
+    uint8_t *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -899,7 +899,7 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  s          The trusted setup
  */
 C_KZG_RET VERIFY_KZG_PROOF(
-    bool *ok,
+    uint8_t *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
     const Bytes32 *y_bytes,
@@ -910,7 +910,7 @@ C_KZG_RET VERIFY_KZG_PROOF(
     fr_t z_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
-    *ok = false;
+    *ok = 0;
 
     /* Convert untrusted inputs to trusted inputs */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
@@ -944,7 +944,7 @@ C_KZG_RET VERIFY_KZG_PROOF(
  * @param[in]  s          The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
-    bool *ok,
+    uint8_t *ok,
     const g1_t *commitment,
     const fr_t *z,
     const fr_t *y,
@@ -1155,7 +1155,7 @@ out:
  * @param[in]  s                The trusted setup
  */
 C_KZG_RET VERIFY_BLOB_KZG_PROOF(
-    bool *ok,
+    uint8_t *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
@@ -1166,7 +1166,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     fr_t evaluation_challenge_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
-    *ok = false;
+    *ok = 0;
 
     /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
@@ -1286,7 +1286,7 @@ out:
  * @param[in]  s              The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_batch(
-    bool *ok,
+    uint8_t *ok,
     const g1_t *commitments_g1,
     const fr_t *zs_fr,
     const fr_t *ys_fr,
@@ -1302,7 +1302,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     assert(n > 0);
 
-    *ok = false;
+    *ok = 0;
 
     /* First let's allocate our arrays */
     ret = new_fr_array(&r_powers, n);
@@ -1368,7 +1368,7 @@ out:
  * @param[in]  s                 The trusted setup
  */
 C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
-    bool *ok,
+    uint8_t *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
@@ -1383,7 +1383,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
 
     /* Exit early if we are given zero blobs */
     if (n == 0) {
-        *ok = true;
+        *ok = 1;
         return C_KZG_OK;
     }
 
@@ -1653,7 +1653,7 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
      * then the trusted setup was loaded in monomial form.
      * If so, error out since we want the trusted setup in Lagrange form.
      */
-    bool is_monomial_form = pairings_verify(
+    uint8_t is_monomial_form = pairings_verify(
         &s->g1_values[1], &s->g2_values[0], &s->g1_values[0], &s->g2_values[1]
     );
     return is_monomial_form ? C_KZG_BADARGS : C_KZG_OK;

@@ -208,7 +208,7 @@ C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
 );
 
 C_KZG_RET VERIFY_KZG_PROOF(
-    bool *ok,
+    uint8_t *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
     const Bytes32 *y_bytes,
@@ -217,7 +217,7 @@ C_KZG_RET VERIFY_KZG_PROOF(
 );
 
 C_KZG_RET VERIFY_BLOB_KZG_PROOF(
-    bool *ok,
+    uint8_t *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
@@ -225,7 +225,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF(
 );
 
 C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
-    bool *ok,
+    uint8_t *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
