@@ -446,7 +446,7 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal
  */
-uint8_t pairings_verify(
+static bool pairings_verify(
     const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2
 ) {
     blst_fp12 loop0, loop1, gt_point;
