@@ -104,22 +104,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("verify_blob_kzg_proof_batch");
     for count in [1, 2, 4, 8, 16, 32, 64] {
+        assert!(count <= max_count);
         group.throughput(Throughput::Elements(count as u64));
         group.bench_with_input(BenchmarkId::from_parameter(count), &count, |b, &count| {
             b.iter_batched_ref(
                 || {
-                    let blobs_subset = blobs.clone().into_iter().take(count).collect::<Vec<Blob>>();
-                    let commitments_subset = commitments
-                        .clone()
-                        .into_iter()
-                        .take(count)
-                        .collect::<Vec<Bytes48>>();
-                    let proofs_subset = proofs
-                        .clone()
-                        .into_iter()
-                        .take(count)
-                        .collect::<Vec<Bytes48>>();
-
+                    let blobs_subset = blobs[..count].to_vec();
+                    let commitments_subset = commitments[..count].to_vec();
+                    let proofs_subset = proofs[..count].to_vec();
                     (blobs_subset, commitments_subset, proofs_subset)
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
