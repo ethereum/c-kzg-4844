@@ -191,7 +191,12 @@ impl KZGSettings {
         Self::load_trusted_setup_file_inner(file_path)
     }
 
-    fn load_trusted_setup_file_inner(file_path: &CStr) -> Result<Self, Error> {
+    /// Loads the trusted setup parameters from a file.
+    ///
+    /// Same as [`load_trusted_setup_file`](Self::load_trusted_setup_file)
+    #[cfg_attr(not(feature = "std"), doc = ", but takes a `CStr` instead of a `Path`")]
+    /// .
+    pub fn load_trusted_setup_file_inner(file_path: &CStr) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
         const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
 
