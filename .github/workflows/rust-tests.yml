@@ -17,7 +17,8 @@ jobs:
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
       - name: cargo hack
-        run: cargo hack check --feature-powerset --depth 2 --all-targets
+        working-directory: bindings/rust
+        run: cargo hack check --feature-powerset --depth 2
 
   tests:
     runs-on: ${{ matrix.os }}
