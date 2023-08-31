@@ -8,6 +8,17 @@ on:
       - main
 
 jobs:
+  feature-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-hack
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo hack
+        run: cargo hack check --feature-powerset --depth 2 --all-targets
+
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -20,14 +31,14 @@ jobs:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
-      - name: Get latest version of stable rust
-        run: rustup update stable
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
       - name: Build and Test (minimal preset)
         working-directory: bindings/rust
-        run: cargo test --all --release --features="minimal-spec" --tests
+        run: cargo test --features minimal-spec
       - name: Build and Test (mainnet preset)
         working-directory: bindings/rust
-        run: cargo test --all --release --tests
+        run: cargo test --features mainnet-spec
       - name: Benchmark
         working-directory: bindings/rust
         run: cargo bench

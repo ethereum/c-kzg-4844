@@ -1,6 +1,8 @@
 //! Serde serialization and deserialization for the basic types in this crate.
+
 use crate::{Blob, Bytes32, Bytes48};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use alloc::string::String;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 
 /// Serialize a byte vec as a hex string with 0x prefix
 pub fn serialize_bytes<S, T>(x: T, s: S) -> Result<S::Ok, S::Error>
@@ -9,6 +11,12 @@ where
     T: AsRef<[u8]>,
 {
     s.serialize_str(&format!("0x{}", hex::encode(x.as_ref())))
+}
+
+fn deserialize_hex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>, D::Error> {
+    let s = String::deserialize(deserializer)?;
+    let hex_bytes = s.strip_prefix("0x").unwrap_or(&s);
+    hex::decode(hex_bytes).map_err(Error::custom)
 }
 
 impl Serialize for Blob {
@@ -21,44 +29,20 @@ impl Serialize for Blob {
 }
 
 impl<'de> Deserialize<'de> for Blob {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        let bytes_res = match value.strip_prefix("0x") {
-            Some(value) => hex::decode(value),
-            None => hex::decode(&value),
-        };
-
-        let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Blob::from_bytes(bytes.as_slice()).map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Blob::from_bytes(&deserialize_hex(deserializer)?).map_err(Error::custom)
     }
 }
 
 impl Serialize for Bytes48 {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serialize_bytes(self.bytes, serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for Bytes48 {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        let bytes_res = match value.strip_prefix("0x") {
-            Some(value) => hex::decode(value),
-            None => hex::decode(&value),
-        };
-
-        let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Bytes48::from_bytes(bytes.as_slice())
-            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Bytes48::from_bytes(&deserialize_hex(deserializer)?).map_err(Error::custom)
     }
 }
 
@@ -76,15 +60,7 @@ impl<'de> Deserialize<'de> for Bytes32 {
     where
         D: Deserializer<'de>,
     {
-        let value = String::deserialize(deserializer)?;
-        let bytes_res = match value.strip_prefix("0x") {
-            Some(value) => hex::decode(value),
-            None => hex::decode(&value),
-        };
-
-        let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        Bytes32::from_bytes(bytes.as_slice())
-            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
+        Bytes32::from_bytes(&deserialize_hex(deserializer)?).map_err(Error::custom)
     }
 }
 

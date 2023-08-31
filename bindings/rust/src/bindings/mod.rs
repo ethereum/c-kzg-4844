@@ -2,7 +2,8 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-mod serde_helpers;
+#[cfg(feature = "serde")]
+mod serde;
 #[cfg(test)]
 mod test_formats;
 
