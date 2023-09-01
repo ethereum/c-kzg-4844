@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes48, Error};
+use crate::{Blob, Error, KzgCommitment, KzgProof};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -15,12 +15,12 @@ impl Input<'_> {
         Blob::from_hex(self.blob)
     }
 
-    pub fn get_commitment(&self) -> Result<Bytes48, Error> {
-        Bytes48::from_hex(self.commitment)
+    pub fn get_commitment(&self) -> Result<KzgCommitment, Error> {
+        KzgCommitment::from_hex(self.commitment)
     }
 
-    pub fn get_proof(&self) -> Result<Bytes48, Error> {
-        Bytes48::from_hex(self.proof)
+    pub fn get_proof(&self) -> Result<KzgProof, Error> {
+        KzgProof::from_hex(self.proof)
     }
 }
 

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes32, Bytes48, Error};
+use crate::{Blob, Bytes32, Error, KzgProof};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -28,10 +28,10 @@ pub struct Test<'a> {
 }
 
 impl Test<'_> {
-    pub fn get_output(&self) -> Option<(Bytes48, Bytes32)> {
+    pub fn get_output(&self) -> Option<(KzgProof, Bytes32)> {
         self.output.map(|(proof, y)| {
             (
-                Bytes48::from_hex(proof).unwrap(),
+                KzgProof::from_hex(proof).unwrap(),
                 Bytes32::from_hex(y).unwrap(),
             )
         })
