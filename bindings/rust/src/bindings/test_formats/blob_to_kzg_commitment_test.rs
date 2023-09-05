@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Error, KzgCommitment};
+use crate::{Blob, Bytes48, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -23,7 +23,7 @@ pub struct Test<'a> {
 }
 
 impl Test<'_> {
-    pub fn get_output(&self) -> Option<KzgCommitment> {
-        self.output.map(|s| KzgCommitment::from_hex(s).unwrap())
+    pub fn get_output(&self) -> Option<Bytes48> {
+        self.output.map(|s| Bytes48::from_hex(s).unwrap())
     }
 }

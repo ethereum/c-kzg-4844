@@ -33,19 +33,21 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let blobs: Vec<Blob> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng))
         .collect();
-    let commitments: Vec<KzgCommitment> = blobs
+    let commitments: Vec<Bytes48> = blobs
         .iter()
         .map(|blob| {
             KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings)
                 .unwrap()
+                .to_bytes()
         })
         .collect();
-    let proofs: Vec<KzgProof> = blobs
+    let proofs: Vec<Bytes48> = blobs
         .iter()
         .zip(commitments.iter())
         .map(|(blob, commitment)| {
             KzgProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings)
                 .unwrap()
+                .to_bytes()
         })
         .collect();
     let fields: Vec<Bytes32> = (0..max_count)
@@ -93,12 +95,12 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<KzgCommitment>>();
+                        .collect::<Vec<Bytes48>>();
                     let proofs_subset = proofs
                         .clone()
                         .into_iter()
                         .take(count)
-                        .collect::<Vec<KzgProof>>();
+                        .collect::<Vec<Bytes48>>();
 
                     (blobs_subset, commitments_subset, proofs_subset)
                 },

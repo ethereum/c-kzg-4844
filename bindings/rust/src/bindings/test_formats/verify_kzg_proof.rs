@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Bytes32, Error, KzgCommitment, KzgProof};
+use crate::{Bytes32, Bytes48, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,8 +12,8 @@ pub struct Input<'a> {
 }
 
 impl Input<'_> {
-    pub fn get_commitment(&self) -> Result<KzgCommitment, Error> {
-        KzgCommitment::from_hex(self.commitment)
+    pub fn get_commitment(&self) -> Result<Bytes48, Error> {
+        Bytes48::from_hex(self.commitment)
     }
 
     pub fn get_z(&self) -> Result<Bytes32, Error> {
@@ -24,8 +24,8 @@ impl Input<'_> {
         Bytes32::from_hex(self.y)
     }
 
-    pub fn get_proof(&self) -> Result<KzgProof, Error> {
-        KzgProof::from_hex(self.proof)
+    pub fn get_proof(&self) -> Result<Bytes48, Error> {
+        Bytes48::from_hex(self.proof)
     }
 }
 

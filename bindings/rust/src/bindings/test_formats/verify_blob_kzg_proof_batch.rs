@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Error, KzgCommitment, KzgProof};
+use crate::{Blob, Bytes48, Error};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -19,18 +19,18 @@ impl Input {
         return Ok(v);
     }
 
-    pub fn get_commitments(&self) -> Result<Vec<KzgCommitment>, Error> {
+    pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
         self.commitments
             .iter()
-            .map(|s| KzgCommitment::from_hex(s))
-            .collect::<Result<Vec<KzgCommitment>, Error>>()
+            .map(|s| Bytes48::from_hex(s))
+            .collect::<Result<Vec<Bytes48>, Error>>()
     }
 
-    pub fn get_proofs(&self) -> Result<Vec<KzgProof>, Error> {
+    pub fn get_proofs(&self) -> Result<Vec<Bytes48>, Error> {
         self.proofs
             .iter()
-            .map(|s| KzgProof::from_hex(s))
-            .collect::<Result<Vec<KzgProof>, Error>>()
+            .map(|s| Bytes48::from_hex(s))
+            .collect::<Result<Vec<Bytes48>, Error>>()
     }
 }
 

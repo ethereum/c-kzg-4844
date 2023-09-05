@@ -1,5 +1,5 @@
 //! Serde serialization and deserialization for the basic types in this crate.
-use crate::{Blob, Bytes32, KzgCommitment, KzgProof};
+use crate::{Blob, Bytes32, Bytes48};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 /// Serialize a byte vec as a hex string with 0x prefix
@@ -36,16 +36,16 @@ impl<'de> Deserialize<'de> for Blob {
     }
 }
 
-impl Serialize for KzgCommitment {
+impl Serialize for Bytes48 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serialize_bytes(self.0.bytes, serializer)
+        serialize_bytes(self.bytes, serializer)
     }
 }
 
-impl<'de> Deserialize<'de> for KzgCommitment {
+impl<'de> Deserialize<'de> for Bytes48 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -57,33 +57,7 @@ impl<'de> Deserialize<'de> for KzgCommitment {
         };
 
         let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        KzgCommitment::from_bytes(bytes.as_slice())
-            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
-    }
-}
-
-impl Serialize for KzgProof {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serialize_bytes(self.0.bytes, serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for KzgProof {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = String::deserialize(deserializer)?;
-        let bytes_res = match value.strip_prefix("0x") {
-            Some(value) => hex::decode(value),
-            None => hex::decode(&value),
-        };
-
-        let bytes = bytes_res.map_err(|e| serde::de::Error::custom(e.to_string()))?;
-        KzgProof::from_bytes(bytes.as_slice())
+        Bytes48::from_bytes(bytes.as_slice())
             .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))
     }
 }
@@ -151,7 +125,7 @@ mod tests {
         let blob = generate_random_blob(&mut rng);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
         let proof =
-            KZGProof::compute_blob_kzg_proof(&blob, &commitment, &kzg_settings).unwrap();
+            KZGProof::compute_blob_kzg_proof(&blob, &commitment.to_bytes(), &kzg_settings).unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
@@ -159,15 +133,15 @@ mod tests {
         assert_eq!(blob, blob_deserialized);
 
         // check commitment serialization
-        let commitment_serialized = serde_json::to_string(&commitment).unwrap();
-        let commitment_deserialized: KZGCommitment =
+        let commitment_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
+        let commitment_deserialized: Bytes48 =
             serde_json::from_str(&commitment_serialized).unwrap();
-        assert_eq!(commitment, commitment_deserialized);
+        assert_eq!(commitment.to_bytes(), commitment_deserialized);
 
         // check proof serialization
-        let proof_serialized = serde_json::to_string(&proof).unwrap();
-        let proof_deserialized: KZGProof = serde_json::from_str(&proof_serialized).unwrap();
-        assert_eq!(proof, proof_deserialized);
+        let proof_serialized = serde_json::to_string(&proof.to_bytes()).unwrap();
+        let proof_deserialized: Bytes48 = serde_json::from_str(&proof_serialized).unwrap();
+        assert_eq!(proof.to_bytes(), proof_deserialized);
     }
 
     #[test]
@@ -202,7 +176,7 @@ mod tests {
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
 
         // check blob serialization
-        let blob_serialized = serde_json::to_string(&commitment).unwrap();
+        let blob_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
 
         // check that this begins with a quote and 0x
         let mut chars = blob_serialized.chars();
