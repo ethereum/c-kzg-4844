@@ -99,11 +99,9 @@ mod tests {
         // generate blob, commitment, proof
         let mut rng = rand::thread_rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment =
-            KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
+        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
         let proof =
-            KZGProof::compute_blob_kzg_proof(blob.clone(), commitment.to_bytes(), &kzg_settings)
-                .unwrap();
+            KZGProof::compute_blob_kzg_proof(&blob, &commitment.to_bytes(), &kzg_settings).unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
@@ -151,8 +149,7 @@ mod tests {
         // generate blob just to calculate a commitment
         let mut rng = rand::thread_rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment =
-            KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap();
+        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
