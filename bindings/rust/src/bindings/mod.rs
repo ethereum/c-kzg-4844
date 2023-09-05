@@ -2,7 +2,9 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
-mod serde_helpers;
+#[cfg(feature = "serde")]
+mod serde;
+#[cfg(test)]
 mod test_formats;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
@@ -31,9 +33,17 @@ use {
     ckzg_min_verify_kzg_proof as verify_kzg_proof,
 };
 
-use std::ffi::CString;
-use std::mem::MaybeUninit;
-use std::path::PathBuf;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::ffi::CStr;
+use core::fmt;
+use core::mem::MaybeUninit;
+use core::ops::{Deref, DerefMut};
+
+#[cfg(feature = "std")]
+use alloc::ffi::CString;
+#[cfg(feature = "std")]
+use std::path::Path;
 
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
@@ -78,6 +88,23 @@ pub enum Error {
     CError(C_KZG_RET),
 }
 
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidBytesLength(s)
+            | Self::InvalidHexFormat(s)
+            | Self::InvalidKzgProof(s)
+            | Self::InvalidKzgCommitment(s)
+            | Self::InvalidTrustedSetup(s)
+            | Self::MismatchLength(s) => f.write_str(s),
+            Self::CError(s) => fmt::Debug::fmt(s, f),
+        }
+    }
+}
+
 /// Converts a hex string (with or without the 0x prefix) to bytes.
 pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
     let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
@@ -90,8 +117,8 @@ impl KZGSettings {
     /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points
     /// and 65 g2 points in byte format.
     pub fn load_trusted_setup(
-        g1_bytes: Vec<[u8; BYTES_PER_G1_POINT]>,
-        g2_bytes: Vec<[u8; BYTES_PER_G2_POINT]>,
+        g1_bytes: &[[u8; BYTES_PER_G1_POINT]],
+        g2_bytes: &[[u8; BYTES_PER_G2_POINT]],
     ) -> Result<Self, Error> {
         if g1_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
             return Err(Error::InvalidTrustedSetup(format!(
@@ -111,17 +138,16 @@ impl KZGSettings {
         unsafe {
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
-                g1_bytes.as_ptr() as *const u8,
+                g1_bytes.as_ptr().cast(),
                 g1_bytes.len(),
-                g2_bytes.as_ptr() as *const u8,
+                g2_bytes.as_ptr().cast(),
                 g2_bytes.len(),
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
             } else {
                 Err(Error::InvalidTrustedSetup(format!(
-                    "Invalid trusted setup: {:?}",
-                    res
+                    "Invalid trusted setup: {res:?}",
                 )))
             }
         }
@@ -133,10 +159,8 @@ impl KZGSettings {
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
-    pub fn load_trusted_setup_file(file_path: PathBuf) -> Result<Self, Error> {
-        // SAFETY: vec![b'r'] has no 0 bytes.
-        let mode = unsafe { CString::from_vec_unchecked(vec![b'r']) };
-
+    #[cfg(feature = "std")]
+    pub fn load_trusted_setup_file(file_path: &Path) -> Result<Self, Error> {
         #[cfg(unix)]
         let file_path_bytes = {
             use std::os::unix::prelude::OsStrExt;
@@ -144,27 +168,52 @@ impl KZGSettings {
         };
 
         #[cfg(windows)]
-        let file_path_bytes = {
-            file_path
-                .as_os_str()
-                .to_str()
-                .ok_or(Error::InvalidTrustedSetup(format!(
-                    "Unsupported non unicode file path"
-                )))?
-                .as_bytes()
-        };
+        let file_path_bytes = file_path
+            .as_os_str()
+            .to_str()
+            .ok_or_else(|| Error::InvalidTrustedSetup("Unsupported non unicode file path".into()))?
+            .as_bytes();
 
         let file_path = CString::new(file_path_bytes)
             .map_err(|e| Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {e}")))?;
 
+        Self::load_trusted_setup_file_inner(&file_path)
+    }
+
+    /// Loads the trusted setup parameters from a file. The file format is as follows:
+    ///
+    /// FIELD_ELEMENTS_PER_BLOB
+    /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values
+    /// 65 g2 byte values
+    #[cfg(not(feature = "std"))]
+    pub fn load_trusted_setup_file(file_path: &CStr) -> Result<Self, Error> {
+        Self::load_trusted_setup_file_inner(file_path)
+    }
+
+    /// Loads the trusted setup parameters from a file.
+    ///
+    /// Same as [`load_trusted_setup_file`](Self::load_trusted_setup_file)
+    #[cfg_attr(not(feature = "std"), doc = ", but takes a `CStr` instead of a `Path`")]
+    /// .
+    pub fn load_trusted_setup_file_inner(file_path: &CStr) -> Result<Self, Error> {
+        // SAFETY: `b"r\0"` is a valid null-terminated string.
+        const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
+
         // SAFETY:
         // - .as_ptr(): pointer is not dangling because file_path has not been dropped.
         //    Usage or ptr: File will not be written to it by the c code.
-        let file_ptr = unsafe { libc::fopen(file_path.as_ptr(), mode.as_ptr()) };
+        let file_ptr = unsafe { libc::fopen(file_path.as_ptr(), MODE.as_ptr()) };
         if file_ptr.is_null() {
-            let e = std::io::Error::last_os_error();
+            #[cfg(not(feature = "std"))]
             return Err(Error::InvalidTrustedSetup(format!(
-                "Failed to open trusted setup file {e}"
+                "Failed to open trusted setup file {file_path:?}"
+            )));
+
+            #[cfg(feature = "std")]
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Failed to open trusted setup file {file_path:?}: {}",
+                std::io::Error::last_os_error()
             )));
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
@@ -174,15 +223,13 @@ impl KZGSettings {
                 Ok(kzg_settings.assume_init())
             } else {
                 Err(Error::InvalidTrustedSetup(format!(
-                    "Invalid trusted setup: {:?}",
-                    res
+                    "Invalid trusted setup: {res:?}"
                 )))
             }
         };
 
-        // We don't really care if this succeeds.
+        // We don't really care if this fails.
         let _unchecked_close_result = unsafe { libc::fclose(file_ptr) };
-        drop(file_path);
 
         result
     }
@@ -278,8 +325,8 @@ impl KZGProof {
     }
 
     pub fn compute_kzg_proof(
-        blob: Blob,
-        z_bytes: Bytes32,
+        blob: &Blob,
+        z_bytes: &Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<(Self, Bytes32), Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
@@ -288,8 +335,8 @@ impl KZGProof {
             let res = compute_kzg_proof(
                 kzg_proof.as_mut_ptr(),
                 y_out.as_mut_ptr(),
-                &blob,
-                &z_bytes,
+                blob,
+                z_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -301,16 +348,16 @@ impl KZGProof {
     }
 
     pub fn compute_blob_kzg_proof(
-        blob: Blob,
-        commitment_bytes: Bytes48,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<Self, Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
             let res = compute_blob_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                &blob,
-                &commitment_bytes,
+                blob,
+                commitment_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -322,20 +369,20 @@ impl KZGProof {
     }
 
     pub fn verify_kzg_proof(
-        commitment_bytes: Bytes48,
-        z_bytes: Bytes32,
-        y_bytes: Bytes32,
-        proof_bytes: Bytes48,
+        commitment_bytes: &Bytes48,
+        z_bytes: &Bytes32,
+        y_bytes: &Bytes32,
+        proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
-                &commitment_bytes,
-                &z_bytes,
-                &y_bytes,
-                &proof_bytes,
+                commitment_bytes,
+                z_bytes,
+                y_bytes,
+                proof_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -347,18 +394,18 @@ impl KZGProof {
     }
 
     pub fn verify_blob_kzg_proof(
-        blob: Blob,
-        commitment_bytes: Bytes48,
-        proof_bytes: Bytes48,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
+        proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
-                &blob,
-                &commitment_bytes,
-                &proof_bytes,
+                blob,
+                commitment_bytes,
+                proof_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -430,14 +477,10 @@ impl KZGCommitment {
         hex::encode(self.bytes)
     }
 
-    pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn blob_to_kzg_commitment(blob: &Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
-            let res = blob_to_kzg_commitment(
-                kzg_commitment.as_mut_ptr(),
-                blob.as_ptr() as *const Blob,
-                kzg_settings,
-            );
+            let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_commitment.assume_init())
             } else {
@@ -476,8 +519,6 @@ impl From<[u8; 48]> for Bytes48 {
         Self { bytes: value }
     }
 }
-
-use std::ops::{Deref, DerefMut};
 
 impl Deref for Bytes32 {
     type Target = [u8; 32];
@@ -538,11 +579,11 @@ unsafe impl Sync for KZGSettings {}
 unsafe impl Send for KZGSettings {}
 
 #[cfg(test)]
+#[allow(unused_imports, dead_code)]
 mod tests {
     use super::*;
     use rand::{rngs::ThreadRng, Rng};
-    use std::fs;
-
+    use std::{fs, path::PathBuf};
     use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_kzg_proof,
         verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
@@ -559,7 +600,7 @@ mod tests {
         arr.into()
     }
 
-    fn test_simple(trusted_setup_file: PathBuf) {
+    fn test_simple(trusted_setup_file: &Path) {
         let mut rng = rand::thread_rng();
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
@@ -571,7 +612,7 @@ mod tests {
 
         let commitments: Vec<Bytes48> = blobs
             .iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap())
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings).unwrap())
             .map(|commitment| commitment.to_bytes())
             .collect();
 
@@ -579,7 +620,7 @@ mod tests {
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings).unwrap()
+                KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings).unwrap()
             })
             .map(|proof| proof.to_bytes())
             .collect();
@@ -614,9 +655,9 @@ mod tests {
     #[test]
     fn test_end_to_end() {
         let trusted_setup_file = if cfg!(feature = "minimal-spec") {
-            PathBuf::from("../../src/trusted_setup_4.txt")
+            Path::new("../../src/trusted_setup_4.txt")
         } else {
-            PathBuf::from("../../src/trusted_setup.txt")
+            Path::new("../../src/trusted_setup.txt")
         };
         test_simple(trusted_setup_file);
     }
@@ -631,7 +672,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_blob_to_kzg_commitment() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS)
@@ -648,7 +689,7 @@ mod tests {
                 continue;
             };
 
-            match KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings) {
+            match KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -658,7 +699,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_kzg_proof() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(COMPUTE_KZG_PROOF_TESTS)
@@ -675,7 +716,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_kzg_proof(blob, z, &kzg_settings) {
+            match KZGProof::compute_kzg_proof(&blob, &z, &kzg_settings) {
                 Ok((proof, y)) => {
                     assert_eq!(proof.bytes, test.get_output().unwrap().0.bytes);
                     assert_eq!(y.bytes, test.get_output().unwrap().1.bytes);
@@ -688,7 +729,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_blob_kzg_proof() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
@@ -706,7 +747,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings) {
+            match KZGProof::compute_blob_kzg_proof(&blob, &commitment, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -716,7 +757,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_KZG_PROOF_TESTS)
@@ -738,7 +779,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings) {
+            match KZGProof::verify_kzg_proof(&commitment, &z, &y, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -748,7 +789,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
@@ -769,7 +810,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings) {
+            match KZGProof::verify_blob_kzg_proof(&blob, &commitment, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -779,7 +820,7 @@ mod tests {
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
-        let trusted_setup_file = PathBuf::from("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
