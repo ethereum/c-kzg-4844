@@ -278,8 +278,8 @@ impl KZGProof {
     }
 
     pub fn compute_kzg_proof(
-        blob: Blob,
-        z_bytes: Bytes32,
+        blob: &Blob,
+        z_bytes: &Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<(Self, Bytes32), Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
@@ -288,8 +288,8 @@ impl KZGProof {
             let res = compute_kzg_proof(
                 kzg_proof.as_mut_ptr(),
                 y_out.as_mut_ptr(),
-                &blob,
-                &z_bytes,
+                blob,
+                z_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -301,16 +301,16 @@ impl KZGProof {
     }
 
     pub fn compute_blob_kzg_proof(
-        blob: Blob,
-        commitment_bytes: Bytes48,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<Self, Error> {
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
             let res = compute_blob_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                &blob,
-                &commitment_bytes,
+                blob,
+                commitment_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -322,20 +322,20 @@ impl KZGProof {
     }
 
     pub fn verify_kzg_proof(
-        commitment_bytes: Bytes48,
-        z_bytes: Bytes32,
-        y_bytes: Bytes32,
-        proof_bytes: Bytes48,
+        commitment_bytes: &Bytes48,
+        z_bytes: &Bytes32,
+        y_bytes: &Bytes32,
+        proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_kzg_proof(
                 verified.as_mut_ptr(),
-                &commitment_bytes,
-                &z_bytes,
-                &y_bytes,
-                &proof_bytes,
+                commitment_bytes,
+                z_bytes,
+                y_bytes,
+                proof_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -347,18 +347,18 @@ impl KZGProof {
     }
 
     pub fn verify_blob_kzg_proof(
-        blob: Blob,
-        commitment_bytes: Bytes48,
-        proof_bytes: Bytes48,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
+        proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
-                &blob,
-                &commitment_bytes,
-                &proof_bytes,
+                blob,
+                commitment_bytes,
+                proof_bytes,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -430,14 +430,10 @@ impl KZGCommitment {
         hex::encode(self.bytes)
     }
 
-    pub fn blob_to_kzg_commitment(blob: Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn blob_to_kzg_commitment(blob: &Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
-            let res = blob_to_kzg_commitment(
-                kzg_commitment.as_mut_ptr(),
-                blob.as_ptr() as *const Blob,
-                kzg_settings,
-            );
+            let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_commitment.assume_init())
             } else {
@@ -571,7 +567,7 @@ mod tests {
 
         let commitments: Vec<Bytes48> = blobs
             .iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob.clone(), &kzg_settings).unwrap())
+            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings).unwrap())
             .map(|commitment| commitment.to_bytes())
             .collect();
 
@@ -579,7 +575,7 @@ mod tests {
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(blob.clone(), *commitment, &kzg_settings).unwrap()
+                KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings).unwrap()
             })
             .map(|proof| proof.to_bytes())
             .collect();
@@ -648,7 +644,7 @@ mod tests {
                 continue;
             };
 
-            match KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings) {
+            match KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -675,7 +671,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_kzg_proof(blob, z, &kzg_settings) {
+            match KZGProof::compute_kzg_proof(&blob, &z, &kzg_settings) {
                 Ok((proof, y)) => {
                     assert_eq!(proof.bytes, test.get_output().unwrap().0.bytes);
                     assert_eq!(y.bytes, test.get_output().unwrap().1.bytes);
@@ -706,7 +702,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings) {
+            match KZGProof::compute_blob_kzg_proof(&blob, &commitment, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -738,7 +734,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_kzg_proof(commitment, z, y, proof, &kzg_settings) {
+            match KZGProof::verify_kzg_proof(&commitment, &z, &y, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -769,7 +765,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof(blob, commitment, proof, &kzg_settings) {
+            match KZGProof::verify_blob_kzg_proof(&blob, &commitment, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
