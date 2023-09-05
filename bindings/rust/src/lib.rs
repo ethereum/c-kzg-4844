@@ -1,3 +1,8 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[macro_use]
+extern crate alloc;
+
 // This `extern crate` invocation tells `rustc` that we actually need the symbols from `blst`.
 // Without it, the compiler won't link to `blst` when compiling this crate.
 // See: https://kornel.ski/rust-sys-crate#linking

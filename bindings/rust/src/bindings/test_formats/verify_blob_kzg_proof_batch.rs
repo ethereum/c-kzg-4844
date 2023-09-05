@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
 use crate::{Blob, Bytes48, Error};
+use alloc::string::String;
+use alloc::vec::Vec;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -12,11 +14,12 @@ pub struct Input {
 
 impl Input {
     pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
-        let mut v: Vec<Blob> = Vec::new();
+        // TODO: `iter.map.collect` overflows the stack
+        let mut v = Vec::with_capacity(self.blobs.len());
         for blob in &self.blobs {
             v.push(Blob::from_hex(blob)?);
         }
-        return Ok(v);
+        Ok(v)
     }
 
     pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
