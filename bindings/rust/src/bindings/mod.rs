@@ -241,6 +241,42 @@ impl Drop for KZGSettings {
     }
 }
 
+impl Clone for KZGSettings {
+    fn clone(&self) -> Self {
+        use alloc::alloc::{alloc, Layout};
+
+        const TRUSTED_SETUP_NUM_G1_POINTS: usize = FIELD_ELEMENTS_PER_BLOB;
+        const TRUSTED_SETUP_NUM_G2_POINTS: usize = NUM_G2_POINTS;
+
+        // SAFETY: is initialized successfully and G1, G2 points lengths are enforced when loading from trusted setup.
+        unsafe {
+            let layout = Layout::array::<fr_t>(self.max_width as usize).unwrap_or_else(|_| {
+                panic!(
+                    "broken invariant for roots of unity with length {}",
+                    self.max_width
+                )
+            });
+            let roots_of_unity = alloc(layout).cast::<fr_t>();
+            roots_of_unity.copy_from(self.roots_of_unity, self.max_width as usize);
+
+            let layout = Layout::array::<g1_t>(TRUSTED_SETUP_NUM_G1_POINTS).expect("no overflow");
+            let g1_values = alloc(layout).cast::<g1_t>();
+            g1_values.copy_from(self.g1_values, TRUSTED_SETUP_NUM_G1_POINTS);
+
+            let layout = Layout::array::<g2_t>(TRUSTED_SETUP_NUM_G2_POINTS).expect("no overflow");
+            let g2_values = alloc(layout).cast::<g2_t>();
+            g2_values.copy_from(self.g2_values, TRUSTED_SETUP_NUM_G2_POINTS);
+
+            Self {
+                max_width: self.max_width,
+                roots_of_unity,
+                g1_values,
+                g2_values,
+            }
+        }
+    }
+}
+
 impl Blob {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_BLOB {
@@ -819,6 +855,38 @@ mod tests {
 
     #[cfg(not(feature = "minimal-spec"))]
     #[test]
+    fn test_clone_verify_blob_kzg_proof() {
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings = settings.clone();
+        let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert!(!test_files.is_empty());
+
+        for test_file in test_files {
+            let yaml_data = fs::read_to_string(test_file).unwrap();
+            let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
+            let (Ok(blob), Ok(commitment), Ok(proof)) = (
+                test.input.get_blob(),
+                test.input.get_commitment(),
+                test.input.get_proof(),
+            ) else {
+                assert!(test.get_output().is_none());
+                continue;
+            };
+
+            match KZGProof::verify_blob_kzg_proof(&blob, &commitment, &proof, &kzg_settings) {
+                Ok(res) => assert_eq!(res, test.get_output().unwrap()),
+                _ => assert!(test.get_output().is_none()),
+            }
+        }
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
     fn test_verify_blob_kzg_proof_batch() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
@@ -851,5 +919,44 @@ mod tests {
                 _ => assert!(test.get_output().is_none()),
             }
         }
+    }
+
+    #[cfg(not(feature = "minimal-spec"))]
+    #[test]
+    fn test_clone_kzg_settings() {
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let mut cloned_kzg_settings = kzg_settings.clone();
+        assert_eq!(kzg_settings.max_width, cloned_kzg_settings.max_width);
+        unsafe {
+            for i in 0..(kzg_settings.max_width as usize) {
+                assert_eq!(
+                    *kzg_settings.roots_of_unity.add(i),
+                    *cloned_kzg_settings.roots_of_unity.add(i)
+                );
+            }
+            for i in 0..FIELD_ELEMENTS_PER_BLOB {
+                assert_eq!(
+                    *kzg_settings.g1_values.add(i),
+                    *cloned_kzg_settings.g1_values.add(i)
+                );
+            }
+            for i in 0..NUM_G2_POINTS {
+                assert_eq!(
+                    *kzg_settings.g2_values.add(i),
+                    *cloned_kzg_settings.g2_values.add(i)
+                );
+            }
+        };
+
+        unsafe {
+            ckzg_free_trusted_setup(&mut cloned_kzg_settings);
+        }
+        assert!(cloned_kzg_settings.roots_of_unity.is_null());
+        assert!(cloned_kzg_settings.g1_values.is_null());
+        assert!(cloned_kzg_settings.g2_values.is_null());
+
+        std::mem::forget(cloned_kzg_settings);
     }
 }
