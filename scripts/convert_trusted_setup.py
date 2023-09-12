@@ -24,21 +24,21 @@ if __name__ == "__main__":
         description="Convert trusted setup from JSON to text format.",
     )
     parser.add_argument(
-        "--json",
+        "--input",
         required=True,
         type=argparse.FileType("r"),
-        help="The trusted setup in JSON format (input)",
+        help="The trusted setup in JSON format",
     )
     parser.add_argument(
-        "--text",
+        "--output",
         required=True,
         type=argparse.FileType("w"),
-        help="The trusted setup in text format (output)",
+        help="The trusted setup in text format",
     )
     args = parser.parse_args()
 
     try:
-        convert(args.json, args.text)
+        convert(args.input, args.output)
     finally:
-        args.json.close()
-        args.text.close()
+        args.input.close()
+        args.output.close()
