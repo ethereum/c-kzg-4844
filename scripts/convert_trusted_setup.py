@@ -27,13 +27,13 @@ if __name__ == "__main__":
         "--input",
         required=True,
         type=argparse.FileType("r"),
-        help="The trusted setup in JSON format",
+        help="the trusted setup in JSON format",
     )
     parser.add_argument(
         "--output",
         required=True,
         type=argparse.FileType("w"),
-        help="The trusted setup in text format",
+        help="the trusted setup in text format",
     )
     args = parser.parse_args()
 
