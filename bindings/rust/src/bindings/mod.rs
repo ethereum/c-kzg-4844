@@ -241,6 +241,10 @@ impl Drop for KZGSettings {
     }
 }
 
+// This mirrors the array allocation of the external [load_trusted_setup] function and copies the pointers.
+// This assumes the invariants of the [KZGSettings] struct are upheld:
+//    - length of the `roots_of_unity` array is stored in `max_width`
+//    - length of G1 and G2 are constants [FIELD_ELEMENTS_PER_BLOB], and [NUM_G2_POINTS].
 impl Clone for KZGSettings {
     fn clone(&self) -> Self {
         use alloc::alloc::{alloc, Layout};
@@ -248,7 +252,7 @@ impl Clone for KZGSettings {
         const TRUSTED_SETUP_NUM_G1_POINTS: usize = FIELD_ELEMENTS_PER_BLOB;
         const TRUSTED_SETUP_NUM_G2_POINTS: usize = NUM_G2_POINTS;
 
-        // SAFETY: is initialized successfully and G1, G2 points lengths are enforced when loading from trusted setup.
+        // SAFETY: is initialized successfully and G1, G2 points lengths are enforced when loading from trusted setup: [KZGSettings::load_trusted_setup]
         unsafe {
             let layout = Layout::array::<fr_t>(self.max_width as usize).unwrap_or_else(|_| {
                 panic!(
