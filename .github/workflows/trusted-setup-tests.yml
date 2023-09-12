@@ -17,15 +17,15 @@ jobs:
           python-version: '3.x'
 
       - name: Download minimal preset
-        run: wget https://github.com/ethereum/consensus-specs/raw/dev/presets/minimal/trusted_setups/testing_trusted_setups.json
+        run: wget -O minimal.json https://github.com/ethereum/consensus-specs/raw/dev/presets/minimal/trusted_setups/testing_trusted_setups.json
       - name: Convert minimal to txt
-        run: python3 ./scripts/convert_trusted_setup.py --json testing_trusted_setups.json --text trusted_setup_minimal.txt
+        run: python3 ./scripts/convert_trusted_setup.py --json minimal.json --text minimal.txt
       - name: Compare to existing file
-        run: cmp src/trusted_setup_4.txt trusted_setup_minimal.txt
+        run: cmp src/trusted_setup_4.txt minimal.txt
 
       - name: Download mainnet preset
-        run: wget https://github.com/ethereum/consensus-specs/raw/dev/presets/mainnet/trusted_setups/testing_trusted_setups.json
+        run: wget -O mainnet.json https://github.com/ethereum/consensus-specs/raw/dev/presets/mainnet/trusted_setups/testing_trusted_setups.json
       - name: Convert mainnet to txt
-        run: python3 ./scripts/convert_trusted_setup.py --json testing_trusted_setups.json --text trusted_setup_mainnet.txt
+        run: python3 ./scripts/convert_trusted_setup.py --json mainnet.json --text mainnet.txt
       - name: Compare to existing file
-        run: cmp src/trusted_setup.txt trusted_setup_mainnet.txt
+        run: cmp src/trusted_setup.txt mainnet.txt
