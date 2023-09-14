@@ -1135,9 +1135,7 @@ C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
     /* Call helper function to compute proof and y */
-    ret = compute_kzg_proof_impl(
-        out, &y, &poly, &evaluation_challenge_fr, s
-    );
+    ret = compute_kzg_proof_impl(out, &y, &poly, &evaluation_challenge_fr, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -1418,7 +1416,9 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
         if (ret != C_KZG_OK) goto out;
 
         compute_challenge(
-            &evaluation_challenges_fr[i], &blobs[i * BYTES_PER_BLOB], &commitments_g1[i]
+            &evaluation_challenges_fr[i],
+            &blobs[i * BYTES_PER_BLOB],
+            &commitments_g1[i]
         );
 
         ret = evaluate_polynomial_in_evaluation_form(
