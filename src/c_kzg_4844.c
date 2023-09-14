@@ -600,11 +600,11 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
  * @param[out] p    The output polynomial (array of field elements)
  * @param[in]  blob The blob (an array of bytes)
  */
-static C_KZG_RET blob_to_polynomial(Polynomial *poly, const Blob *blob) {
+static C_KZG_RET blob_to_polynomial(Polynomial *poly, const uint8_t *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         ret = bytes_to_bls_field(
-            &poly->evals[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]
+            &poly->evals[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]
         );
         if (ret != C_KZG_OK) return ret;
     }
@@ -626,7 +626,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *poly, const Blob *blob) {
  * @param[in]  commitment         A commitment
  */
 static void compute_challenge(
-    fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
+    fr_t *eval_challenge_out, const uint8_t *blob, const g1_t *commitment
 ) {
     Bytes32 eval_challenge;
     uint8_t bytes[CHALLENGE_INPUT_SIZE];
@@ -645,7 +645,7 @@ static void compute_challenge(
     offset += sizeof(uint64_t);
 
     /* Copy blob */
-    memcpy(offset, blob->bytes, BYTES_PER_BLOB);
+    memcpy(offset, blob, BYTES_PER_BLOB);
     offset += BYTES_PER_BLOB;
 
     /* Copy commitment */
@@ -864,7 +864,7 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  s    The trusted setup
  */
 C_KZG_RET BLOB_TO_KZG_COMMITMENT(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+    KZGCommitment *out, const uint8_t *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     Polynomial poly;
@@ -990,7 +990,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 C_KZG_RET COMPUTE_KZG_PROOF(
     KZGProof *proof_out,
     Bytes32 *y_out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes32 *z_bytes,
     const KZGSettings *s
 ) {
@@ -1115,7 +1115,7 @@ out:
  */
 C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
     KZGProof *out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 ) {
@@ -1156,7 +1156,7 @@ out:
  */
 C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     bool *ok,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
     const KZGSettings *s
@@ -1369,7 +1369,7 @@ out:
  */
 C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     bool *ok,
-    const Blob *blobs,
+    const uint8_t *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
@@ -1414,11 +1414,11 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
         if (ret != C_KZG_OK) goto out;
 
         /* Convert each blob from bytes to a poly */
-        ret = blob_to_polynomial(&poly, &blobs[i]);
+        ret = blob_to_polynomial(&poly, &blobs[i * BYTES_PER_BLOB]);
         if (ret != C_KZG_OK) goto out;
 
         compute_challenge(
-            &evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]
+            &evaluation_challenges_fr[i], &blobs[i * BYTES_PER_BLOB], &commitments_g1[i]
         );
 
         ret = evaluate_polynomial_in_evaluation_form(

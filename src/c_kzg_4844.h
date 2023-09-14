@@ -129,13 +129,6 @@ typedef struct {
 } Bytes48;
 
 /**
- * A basic blob data.
- */
-typedef struct {
-    uint8_t bytes[BYTES_PER_BLOB];
-} Blob;
-
-/**
  * A trusted (valid) KZG commitment.
  */
 typedef Bytes48 KZGCommitment;
@@ -189,20 +182,20 @@ C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in);
 void FREE_TRUSTED_SETUP(KZGSettings *s);
 
 C_KZG_RET BLOB_TO_KZG_COMMITMENT(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+    KZGCommitment *out, const uint8_t *blob, const KZGSettings *s
 );
 
 C_KZG_RET COMPUTE_KZG_PROOF(
     KZGProof *proof_out,
     Bytes32 *y_out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes32 *z_bytes,
     const KZGSettings *s
 );
 
 C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
     KZGProof *out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 );
@@ -218,7 +211,7 @@ C_KZG_RET VERIFY_KZG_PROOF(
 
 C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     bool *ok,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
     const KZGSettings *s
@@ -226,7 +219,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF(
 
 C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     bool *ok,
-    const Blob *blobs,
+    const uint8_t *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
