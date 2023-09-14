@@ -986,17 +986,17 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(
     void
 ) {
     C_KZG_RET ret;
-    Polynomial p;
+    Polynomial poly;
     fr_t x, y, c;
 
     get_rand_fr(&c);
     get_rand_fr(&x);
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        p.evals[i] = c;
+        poly.evals[i] = c;
     }
 
-    ret = evaluate_polynomial_in_evaluation_form(&y, &p, &x, &s);
+    ret = evaluate_polynomial_in_evaluation_form(&y, &poly, &x, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
@@ -1006,17 +1006,17 @@ static void
 test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
 ) {
     C_KZG_RET ret;
-    Polynomial p;
+    Polynomial poly;
     fr_t x, y, c;
 
     get_rand_fr(&c);
     x = s.roots_of_unity[123];
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        p.evals[i] = c;
+        poly.evals[i] = c;
     }
 
-    ret = evaluate_polynomial_in_evaluation_form(&y, &p, &x, &s);
+    ret = evaluate_polynomial_in_evaluation_form(&y, &poly, &x, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
@@ -1026,7 +1026,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 ) {
     C_KZG_RET ret;
     fr_t poly_coefficients[FIELD_ELEMENTS_PER_BLOB];
-    Polynomial p;
+    Polynomial poly;
     fr_t x, y, check;
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -1034,13 +1034,13 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
     }
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        eval_poly(&p.evals[i], poly_coefficients, &s.roots_of_unity[i]);
+        eval_poly(&poly.evals[i], poly_coefficients, &s.roots_of_unity[i]);
     }
 
     get_rand_fr(&x);
     eval_poly(&check, poly_coefficients, &x);
 
-    ret = evaluate_polynomial_in_evaluation_form(&y, &p, &x, &s);
+    ret = evaluate_polynomial_in_evaluation_form(&y, &poly, &x, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ASSERT("evaluation methods match", fr_equal(&y, &check));
@@ -1049,7 +1049,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 
     eval_poly(&check, poly_coefficients, &x);
 
-    ret = evaluate_polynomial_in_evaluation_form(&y, &p, &x, &s);
+    ret = evaluate_polynomial_in_evaluation_form(&y, &poly, &x, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ASSERT("evaluation methods match", fr_equal(&y, &check));
