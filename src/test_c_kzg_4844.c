@@ -65,7 +65,7 @@ static void get_rand_fr(fr_t *out) {
 }
 
 static void get_rand_blob(uint8_t *out) {
-    for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (uint64_t i = 0; i < s.field_elements_per_blob; i++) {
         get_rand_field_element((Bytes32 *)&out[i * 32]);
     }
 }
@@ -125,8 +125,8 @@ static void get_rand_uint32(uint32_t *out) {
 }
 
 static void eval_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
-    *out = poly_coefficients[FIELD_ELEMENTS_PER_BLOB - 1];
-    for (size_t i = FIELD_ELEMENTS_PER_BLOB - 1; i > 0; i--) {
+    *out = poly_coefficients[s.field_elements_per_blob - 1];
+    for (size_t i = s.field_elements_per_blob - 1; i > 0; i--) {
         blst_fr_mul(out, out, x);
         blst_fr_add(out, out, &poly_coefficients[i - 1]);
     }
@@ -1007,13 +1007,13 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(
     fr_t *poly = NULL;
     fr_t x, y, c;
 
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_fr(&c);
     get_rand_fr(&x);
 
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < s.field_elements_per_blob; i++) {
         poly[i] = c;
     }
 
@@ -1030,13 +1030,13 @@ test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
     fr_t *poly = NULL;
     fr_t x, y, c;
 
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_fr(&c);
     x = s.roots_of_unity[123];
 
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < s.field_elements_per_blob; i++) {
         poly[i] = c;
     }
 
@@ -1049,18 +1049,18 @@ test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
 static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
 ) {
     C_KZG_RET ret;
-    fr_t poly_coefficients[FIELD_ELEMENTS_PER_BLOB];
+    fr_t poly_coefficients[s.field_elements_per_blob];
     fr_t *poly = NULL;
     fr_t x, y, check;
 
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < s.field_elements_per_blob; i++) {
         get_rand_fr(&poly_coefficients[i]);
     }
 
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < s.field_elements_per_blob; i++) {
         eval_poly(&poly[i], poly_coefficients, &s.roots_of_unity[i]);
     }
 
@@ -1130,7 +1130,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
 
     ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     bytes32_from_hex(
@@ -1197,7 +1197,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
 
     ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_field_element(&z);
@@ -1253,7 +1253,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
 
         ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+        ret = new_fr_array(&poly, s.field_elements_per_blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         get_rand_blob(blob);
@@ -1304,7 +1304,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
 
     ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&poly, s.field_elements_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_field_element(&z);
