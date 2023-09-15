@@ -842,9 +842,7 @@ out:
 static C_KZG_RET poly_to_kzg_commitment(
     g1_t *out, const fr_t *poly, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(
-        out, s->g1_values, poly, FIELD_ELEMENTS_PER_BLOB
-    );
+    return g1_lincomb_fast(out, s->g1_values, poly, FIELD_ELEMENTS_PER_BLOB);
 }
 
 /**
