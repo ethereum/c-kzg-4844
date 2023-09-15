@@ -16,16 +16,22 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
-#if FIELD_ELEMENTS_PER_BLOB == 4096
+#if defined(MAINNET) && defined(MINIMAL)
+#error Cannot have both defined at the same time
+#endif
+
+#if !defined(MAINNET) && !defined(MINIMAL)
 #define MAINNET
+#endif
+
+#if defined(MAINNET)
 #define TRUSTED_SETUP_FILE "trusted_setup.txt"
 #define MAX_WIDTH 32
-#elif FIELD_ELEMENTS_PER_BLOB == 4
-#define MINIMAL
+#elif defined(MINIMAL)
 #define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
 #define MAX_WIDTH 4
 #else
-#error FIELD_ELEMENTS_PER_BLOB must be 4096 or 4
+#error Must define either MAINNET or MINIMAL
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
