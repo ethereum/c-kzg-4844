@@ -66,10 +66,11 @@ static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 /** The number of bytes in a g2 point. */
 #define BYTES_PER_G2 96
 
-/** The number of g1 points in a trusted setup. */
-#define TRUSTED_SETUP_NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
-
-/** The number of g2 points in a trusted setup. */
+/** The number of G1 points in the mainnet config. */
+#define TRUSTED_SETUP_NUM_G1_POINTS_MAINNET 4096
+/** The number of G1 points in the minimal config. */
+#define TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL 4
+/** The number of G2 points in mainnet/minimal configs. */
 #define TRUSTED_SETUP_NUM_G2_POINTS 65
 
 // clang-format off
@@ -1812,7 +1813,8 @@ C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in) {
         ret = C_KZG_BADARGS;
         goto out;
     }
-    if (num_g1_points != 4096 && num_g1_points != 4) {
+    if (num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS_MAINNET &&
+        num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -1824,7 +1826,7 @@ C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in) {
         ret = C_KZG_BADARGS;
         goto out;
     }
-    if (num_g2_points != 65) {
+    if (num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
