@@ -74,7 +74,7 @@ static void get_rand_g1_bytes(Bytes48 *out) {
     C_KZG_RET ret;
     uint8_t *blob = NULL;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -428,7 +428,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     uint8_t *blob = NULL;
     Bytes32 field_element;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -442,7 +442,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000"
     );
 
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -454,7 +454,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
     uint8_t *blob = NULL;
     Bytes32 field_element;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -468,7 +468,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
 
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
@@ -480,7 +480,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
     uint8_t *blob = NULL;
     Bytes32 field_element;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /*
@@ -494,7 +494,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000002"
     );
 
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     ret = blob_to_kzg_commitment(&c, blob, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
@@ -507,11 +507,11 @@ static void test_blob_to_kzg_commitment__succeeds_point_at_infinity(void) {
     Bytes48 point_at_infinity;
     int diff;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the commitment for a blob that's all zeros */
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     ret = blob_to_kzg_commitment(&c, blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -533,7 +533,7 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     Bytes48 expected_commitment;
     int diff;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     bytes32_from_hex(
@@ -542,7 +542,7 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     );
 
     /* Initialize the blob with a single field element */
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
     /* Get a commitment to this particular blob */
@@ -1128,7 +1128,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     Bytes48 proof, expected_proof;
     int diff;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1143,7 +1143,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     );
 
     /* Initialize the blob with a single field element */
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
     /* Compute the KZG proof for the given blob & z */
@@ -1195,7 +1195,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
     bool ok;
     int diff;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1251,7 +1251,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         bool ok;
         int diff;
 
-        ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+        ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1302,7 +1302,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     fr_t y_fr, z_fr;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = new_fr_array(&poly, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1439,7 +1439,7 @@ static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
     uint8_t *blob = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
@@ -1466,7 +1466,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
     uint8_t *blob = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
@@ -1498,7 +1498,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
     uint8_t *blob = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
@@ -1523,7 +1523,7 @@ test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void
     KZGCommitment c;
     uint8_t *blob = NULL;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
@@ -1548,7 +1548,7 @@ test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1(void
     uint8_t *blob = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
@@ -1573,14 +1573,14 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
     uint8_t *blob = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     bytes32_from_hex(
         &field_element,
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
-    memset(blob, 0, BYTES_PER_BLOB);
+    memset(blob, 0, s.bytes_per_blob);
     memcpy(blob, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
     get_rand_g1_bytes(&c);
     get_rand_g1_bytes(&proof);
@@ -1603,18 +1603,18 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     bool ok;
 
     /* Allocate blobs because they are big */
-    ret = c_kzg_malloc((void **)&blobs, n_samples * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n_samples * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         ret = blob_to_kzg_commitment(
-            &commitments[i], &blobs[i * BYTES_PER_BLOB], &s
+            &commitments[i], &blobs[i * s.bytes_per_blob], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i * BYTES_PER_BLOB], &commitments[i], &s
+            &proofs[i], &blobs[i * s.bytes_per_blob], &commitments[i], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
@@ -1641,18 +1641,18 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     uint8_t *blobs = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blobs, n_samples * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n_samples * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         ret = blob_to_kzg_commitment(
-            &commitments[i], &blobs[i * BYTES_PER_BLOB], &s
+            &commitments[i], &blobs[i * s.bytes_per_blob], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i * BYTES_PER_BLOB], &commitments[i], &s
+            &proofs[i], &blobs[i * s.bytes_per_blob], &commitments[i], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
@@ -1675,18 +1675,18 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     uint8_t *blobs = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blobs, n_samples * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n_samples * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         ret = blob_to_kzg_commitment(
-            &commitments[i], &blobs[i * BYTES_PER_BLOB], &s
+            &commitments[i], &blobs[i * s.bytes_per_blob], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i * BYTES_PER_BLOB], &commitments[i], &s
+            &proofs[i], &blobs[i * s.bytes_per_blob], &commitments[i], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
@@ -1712,18 +1712,18 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     uint8_t *blobs = NULL;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blobs, n_samples * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n_samples * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         ret = blob_to_kzg_commitment(
-            &commitments[i], &blobs[i * BYTES_PER_BLOB], &s
+            &commitments[i], &blobs[i * s.bytes_per_blob], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i * BYTES_PER_BLOB], &commitments[i], &s
+            &proofs[i], &blobs[i * s.bytes_per_blob], &commitments[i], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
@@ -1750,18 +1750,18 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     Bytes32 field_element;
     bool ok;
 
-    ret = c_kzg_malloc((void **)&blobs, n_samples * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n_samples * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
     for (int i = 0; i < n_samples; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         ret = blob_to_kzg_commitment(
-            &commitments[i], &blobs[i * BYTES_PER_BLOB], &s
+            &commitments[i], &blobs[i * s.bytes_per_blob], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i * BYTES_PER_BLOB], &commitments[i], &s
+            &proofs[i], &blobs[i * s.bytes_per_blob], &commitments[i], &s
         );
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
@@ -1772,7 +1772,9 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
         "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
     memcpy(
-        &blobs[1 * BYTES_PER_BLOB], field_element.bytes, BYTES_PER_FIELD_ELEMENT
+        &blobs[1 * s.bytes_per_blob],
+        field_element.bytes,
+        BYTES_PER_FIELD_ELEMENT
     );
 
     ret = verify_blob_kzg_proof_batch(
@@ -1824,7 +1826,7 @@ static void profile_blob_to_kzg_commitment(void) {
     uint8_t *blob = NULL;
     KZGCommitment c;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_blob(blob);
@@ -1841,7 +1843,7 @@ static void profile_compute_kzg_proof(void) {
     Bytes32 z, y_out;
     KZGProof proof_out;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_blob(blob);
@@ -1859,7 +1861,7 @@ static void profile_compute_blob_kzg_proof(void) {
     Bytes48 commitment;
     KZGProof out;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_blob(blob);
@@ -1894,7 +1896,7 @@ static void profile_verify_blob_kzg_proof(void) {
     Bytes48 commitment, proof;
     bool out;
 
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blob, s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     get_rand_blob(blob);
@@ -1915,11 +1917,11 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     Bytes48 proofs[n];
     bool out;
 
-    ret = c_kzg_malloc((void **)&blobs, n * BYTES_PER_BLOB);
+    ret = c_kzg_malloc((void **)&blobs, n * s.bytes_per_blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     for (int i = 0; i < n; i++) {
-        get_rand_blob(&blobs[i * BYTES_PER_BLOB]);
+        get_rand_blob(&blobs[i * s.bytes_per_blob]);
         get_rand_g1_bytes(&commitments[i]);
         get_rand_g1_bytes(&proofs[i]);
     }
