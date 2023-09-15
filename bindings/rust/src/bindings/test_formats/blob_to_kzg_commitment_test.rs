@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes48, Error};
+use crate::{Blob, Bytes48, Error, KzgSettings};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -9,8 +9,8 @@ pub struct Input<'a> {
 }
 
 impl Input<'_> {
-    pub fn get_blob(&self) -> Result<Blob, Error> {
-        Blob::from_hex(self.blob)
+    pub fn get_blob(&self, s: &KzgSettings) -> Result<Blob, Error> {
+        Blob::from_hex(self.blob, s)
     }
 }
 

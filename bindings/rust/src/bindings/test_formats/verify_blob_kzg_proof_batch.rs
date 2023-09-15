@@ -1,8 +1,6 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes48, Error};
-use alloc::string::String;
-use alloc::vec::Vec;
+use crate::{Blob, Bytes48, Error, KzgSettings};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -13,11 +11,10 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn get_blobs(&self) -> Result<Vec<Blob>, Error> {
-        // TODO: `iter.map.collect` overflows the stack
-        let mut v = Vec::with_capacity(self.blobs.len());
+    pub fn get_blobs(&self, s: &KzgSettings) -> Result<Vec<Blob>, Error> {
+        let mut v: Vec<Blob> = Vec::new();
         for blob in &self.blobs {
-            v.push(Blob::from_hex(blob)?);
+            v.push(Blob::from_hex(blob, s)?);
         }
         Ok(v)
     }
