@@ -152,6 +152,10 @@ typedef enum {
  * Stores the setup and parameters needed for computing KZG proofs.
  */
 typedef struct {
+    /** Number of field elements in a blob. */
+    uint64_t field_elements_per_blob;
+    /** Number of bytes in a blob. */
+    uint64_t bytes_per_blob;
     /** The length of `roots_of_unity`, a power of 2. */
     uint64_t max_width;
     /** Powers of the primitive root of unity determined by
