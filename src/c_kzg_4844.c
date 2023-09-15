@@ -867,7 +867,7 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  blob The blob representing the polynomial to be committed to
  * @param[in]  s    The trusted setup
  */
-C_KZG_RET BLOB_TO_KZG_COMMITMENT(
+C_KZG_RET blob_to_kzg_commitment(
     KZGCommitment *out, const uint8_t *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -907,7 +907,7 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  kzg_proof  The KZG proof
  * @param[in]  s          The trusted setup
  */
-C_KZG_RET VERIFY_KZG_PROOF(
+C_KZG_RET verify_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -996,7 +996,7 @@ static C_KZG_RET compute_kzg_proof_impl(
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The trusted setup
  */
-C_KZG_RET COMPUTE_KZG_PROOF(
+C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
     Bytes32 *y_out,
     const uint8_t *blob,
@@ -1128,7 +1128,7 @@ out:
  * @param[in]  commitment_bytes Commitment to verify
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
+C_KZG_RET compute_blob_kzg_proof(
     KZGProof *out,
     const uint8_t *blob,
     const Bytes48 *commitment_bytes,
@@ -1173,7 +1173,7 @@ out:
  * @param[in]  proof_bytes      Proof used for verification
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET VERIFY_BLOB_KZG_PROOF(
+C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
     const uint8_t *blob,
     const Bytes48 *commitment_bytes,
@@ -1397,7 +1397,7 @@ out:
  * @param[in]  n                 The number of blobs/commitments/proofs
  * @param[in]  s                 The trusted setup
  */
-C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
+C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
     const uint8_t *blobs,
     const Bytes48 *commitments_bytes,
@@ -1420,7 +1420,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
 
     /* For a single blob, just do a regular single verification */
     if (n == 1) {
-        return VERIFY_BLOB_KZG_PROOF(
+        return verify_blob_kzg_proof(
             ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s
         );
     }
@@ -1660,7 +1660,7 @@ out:
  *
  * @param[in] s The trusted setup to free
  */
-void FREE_TRUSTED_SETUP(KZGSettings *s) {
+void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
     s->field_elements_per_blob = 0;
     s->bytes_per_blob = 0;
@@ -1708,7 +1708,7 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
-C_KZG_RET LOAD_TRUSTED_SETUP(
+C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_bytes,
     size_t n1,
@@ -1781,7 +1781,7 @@ out_error:
      * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
      * structure memory. If necessary, that must be done by the caller.
      */
-    FREE_TRUSTED_SETUP(out);
+    free_trusted_setup(out);
 out_success:
     return ret;
 }
@@ -1799,7 +1799,7 @@ out_success:
  * @param[out] out Pointer to the loaded trusted setup data
  * @param[in]  in  File handle for input
  */
-C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
     C_KZG_RET ret;
     int num_matches;
     size_t size;
@@ -1863,7 +1863,7 @@ C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in) {
         }
     }
 
-    ret = LOAD_TRUSTED_SETUP(
+    ret = load_trusted_setup(
         out, g1_bytes, num_g1_points, g2_bytes, num_g2_points
     );
 
