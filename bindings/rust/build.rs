@@ -49,11 +49,8 @@ fn main() {
     println!("cargo:rustc-link-lib=ckzg");
 }
 
-fn make_bindings<P>(
-    header_path: &str,
-    blst_headers_dir: &str,
-    bindings_out_path: P,
-) where
+fn make_bindings<P>(header_path: &str, blst_headers_dir: &str, bindings_out_path: P)
+where
     P: AsRef<std::path::Path>,
 {
     use bindgen::Builder;
@@ -63,12 +60,12 @@ fn make_bindings<P>(
     impl bindgen::callbacks::ParseCallbacks for Callbacks {
         fn int_macro(&self, name: &str, _value: i64) -> Option<bindgen::callbacks::IntKind> {
             match name {
-                | "BYTES_PER_COMMITMENT"
-                | "BYTES_PER_PROOF"
-                | "BYTES_PER_FIELD_ELEMENT" => Some(bindgen::callbacks::IntKind::Custom {
-                    name: "usize",
-                    is_signed: false,
-                }),
+                "BYTES_PER_COMMITMENT" | "BYTES_PER_PROOF" | "BYTES_PER_FIELD_ELEMENT" => {
+                    Some(bindgen::callbacks::IntKind::Custom {
+                        name: "usize",
+                        is_signed: false,
+                    })
+                }
                 _ => None,
             }
         }
