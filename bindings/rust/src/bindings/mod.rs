@@ -260,6 +260,12 @@ impl Blob {
     }
 }
 
+impl AsRef<[u8]> for Blob {
+    fn as_ref(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 impl Bytes32 {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 32 {
