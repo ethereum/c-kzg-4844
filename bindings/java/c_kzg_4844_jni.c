@@ -48,6 +48,8 @@ KZGSettings *allocate_settings(JNIEnv *env)
   }
   else
   {
+    s->field_elements_per_blob = 0;
+    s->bytes_per_blob = 0;
     s->max_width = 0;
     s->roots_of_unity = NULL;
     s->g1_values = NULL;
@@ -58,7 +60,12 @@ KZGSettings *allocate_settings(JNIEnv *env)
 
 JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
 {
-  return (jint)FIELD_ELEMENTS_PER_BLOB;
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+  return (jint)settings->field_elements_per_blob;
 }
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
@@ -159,9 +166,9 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   }
 
   size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
-  if (blob_size != BYTES_PER_BLOB)
+  if (blob_size != settings->bytes_per_blob)
   {
-    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, settings->bytes_per_blob);
     return NULL;
   }
 
@@ -169,7 +176,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
   jbyteArray commitment = (*env)->NewByteArray(env, BYTES_PER_COMMITMENT);
   KZGCommitment *commitment_native = (KZGCommitment *)(*env)->GetByteArrayElements(env, commitment, NULL);
 
-  C_KZG_RET ret = blob_to_kzg_commitment(commitment_native, (const Blob *)blob_native, settings);
+  C_KZG_RET ret = blob_to_kzg_commitment(commitment_native, (const uint8_t *)blob_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, blob, blob_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, commitment, (jbyte *)commitment_native, 0);
@@ -192,9 +199,9 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
   }
 
   size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
-  if (blob_size != BYTES_PER_BLOB)
+  if (blob_size != settings->bytes_per_blob)
   {
-    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, settings->bytes_per_blob);
     return NULL;
   }
 
@@ -212,7 +219,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
   /* The native variables */
   KZGProof *proof_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proof, NULL);
   Bytes32 *y_native = (Bytes32 *)(uint8_t *)(*env)->GetByteArrayElements(env, y, NULL);
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
   Bytes32 *z_native = (Bytes32 *)(*env)->GetByteArrayElements(env, z_bytes, NULL);
 
   C_KZG_RET ret = compute_kzg_proof(proof_native, y_native, blob_native, z_native, settings);
@@ -261,9 +268,9 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgPr
   }
 
   size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
-  if (blob_size != BYTES_PER_BLOB)
+  if (blob_size != settings->bytes_per_blob)
   {
-    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, settings->bytes_per_blob);
     return NULL;
   }
 
@@ -274,7 +281,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgPr
     return NULL;
   }
 
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
 
   jbyteArray proof = (*env)->NewByteArray(env, BYTES_PER_PROOF);
@@ -362,9 +369,9 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   }
 
   size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
-  if (blob_size != BYTES_PER_BLOB)
+  if (blob_size != settings->bytes_per_blob)
   {
-    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, settings->bytes_per_blob);
     return 0;
   }
 
@@ -382,7 +389,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
     return 0;
   }
 
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+  uint8_t *blob_native = (uint8_t *)(*env)->GetByteArrayElements(env, blob, NULL);
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
   Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
 
@@ -412,9 +419,9 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
 
   size_t count_native = (size_t)count;
   size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
-  if (blobs_size != count_native * BYTES_PER_BLOB)
+  if (blobs_size != count_native * settings->bytes_per_blob)
   {
-    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, count_native * BYTES_PER_BLOB);
+    throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size, count_native * settings->bytes_per_blob);
     return 0;
   }
 
@@ -432,7 +439,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
     return 0;
   }
 
-  Blob *blobs_native = (Blob *)(*env)->GetByteArrayElements(env, blobs, NULL);
+  uint8_t *blobs_native = (uint8_t *)(*env)->GetByteArrayElements(env, blobs, NULL);
   Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
   Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
 

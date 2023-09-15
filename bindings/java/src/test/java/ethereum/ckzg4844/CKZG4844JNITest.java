@@ -55,7 +55,7 @@ public class CKZG4844JNITest {
             .map(String::toUpperCase)
             .map(Preset::valueOf)
             .orElse(Preset.MAINNET);
-    CKZG4844JNI.loadNativeLibrary(PRESET);
+    CKZG4844JNI.loadNativeLibrary();
   }
 
   @ParameterizedTest
@@ -157,10 +157,19 @@ public class CKZG4844JNITest {
 
   @Test
   public void getsTheConfiguredFieldElementsPerBlob() {
+    loadTrustedSetup();
     assertEquals(PRESET.fieldElementsPerBlob, CKZG4844JNI.getFieldElementsPerBlob());
     assertEquals(
         PRESET.fieldElementsPerBlob * CKZG4844JNI.BYTES_PER_FIELD_ELEMENT,
         CKZG4844JNI.getBytesPerBlob());
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void failsToGetFieldElementsPerBlobIfNotLoaded() {
+    final RuntimeException exception =
+        assertThrows(RuntimeException.class, CKZG4844JNI::getFieldElementsPerBlob);
+    assertExceptionIsTrustedSetupIsNotLoaded(exception);
   }
 
   @ParameterizedTest
@@ -382,16 +391,6 @@ public class CKZG4844JNITest {
                     parameters.getG2Count() + 1));
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertTrue(exception.getErrorMessage().contains("Invalid g2 size."));
-  }
-
-  @Test
-  public void shouldThrowExceptionOnIncorrectTrustedSetupFromFile() {
-    final Preset incorrectPreset = PRESET == Preset.MAINNET ? Preset.MINIMAL : Preset.MAINNET;
-    final CKZGException exception =
-        assertThrows(
-            CKZGException.class,
-            () -> CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(incorrectPreset)));
-    assertEquals(C_KZG_BADARGS, exception.getError());
   }
 
   private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {

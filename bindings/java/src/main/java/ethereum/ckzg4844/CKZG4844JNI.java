@@ -13,19 +13,10 @@ public class CKZG4844JNI {
   private static final String LIBRARY_NAME = "ckzg4844jni";
   private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
-  /**
-   * Loads the appropriate native library based on your platform and the selected {@link Preset}
-   *
-   * @param preset the preset
-   */
-  public static void loadNativeLibrary(Preset preset) {
+  /** Loads the appropriate native library based on your platform. */
+  public static void loadNativeLibrary() {
     String libraryResourcePath =
-        "lib/"
-            + System.getProperty("os.arch")
-            + "/"
-            + preset.name().toLowerCase()
-            + "/"
-            + PLATFORM_NATIVE_LIBRARY_NAME;
+        "lib/" + System.getProperty("os.arch") + "/" + PLATFORM_NATIVE_LIBRARY_NAME;
     InputStream libraryResource = CKZG4844JNI.class.getResourceAsStream(libraryResourcePath);
     if (libraryResource == null) {
       try {
