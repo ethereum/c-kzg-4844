@@ -21,8 +21,10 @@ const bindings = require("bindings")("kzg");
 function transformTrustedSetupJson(filePath) {
   const trustedSetup = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const setupText =
-    bindings.FIELD_ELEMENTS_PER_BLOB +
-    "\n65\n" +
+    trustedSetup.setup_G1_lagrange.length.toString() +
+    "\n" +
+    trustedSetup.setup_G2.length.toString() +
+    "\n" +
     trustedSetup.setup_G1_lagrange.map((p) => p.substring(2)).join("\n") +
     "\n" +
     trustedSetup.setup_G2.map((p) => p.substring(2)).join("\n");
@@ -43,6 +45,7 @@ bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
   if (path.parse(filePath).ext === ".json") {
     filePath = transformTrustedSetupJson(filePath);
   }
+  console.log(filePath);
   originalLoadTrustedSetup(filePath);
 };
 
