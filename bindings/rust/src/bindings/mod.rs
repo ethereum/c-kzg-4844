@@ -50,7 +50,7 @@ pub const BYTES_PER_G2_POINT: usize = 96;
 
 /// Number of G2 points required for the kzg trusted setup.
 /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
-const NUM_G2_POINTS: usize = 65;
+pub const NUM_G2_POINTS: usize = 65;
 
 /// A trusted (valid) KZG commitment.
 // NOTE: this is a type alias to the struct Bytes48, same as [`KZGProof`] in the C header files. To
