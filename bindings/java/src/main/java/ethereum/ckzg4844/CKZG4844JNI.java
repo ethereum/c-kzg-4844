@@ -81,8 +81,9 @@ public class CKZG4844JNI {
   }
 
   /**
-   * Retrieves the compile-time configured FIELD_ELEMENTS_PER_BLOB. The value will be based on the
-   * selected {@link Preset} when loading the native library.
+   * Retrieves the number of field elements in a blob. This is a runtime-configured value based on
+   * the trusted setup (either mainnet or minimal) that is loaded. Therefore, the trusted setup must
+   * be loaded prior to calling this method.
    *
    * @return the field elements per blob
    */
