@@ -42,7 +42,6 @@ pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }
 
-#[repr(C)]
 pub struct Blob {
     bytes: Vec<u8>,
 }
