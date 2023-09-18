@@ -12,12 +12,11 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
 }
 
 fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Blob {
-    let mut arr: Vec<u8> = vec![0; s.get_bytes_per_blob()];
-    arr.resize(s.get_bytes_per_blob(), 0);
+    let mut arr: Vec<u8> = vec![0; s.bytes_per_blob()];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
     // each field element contained in the blob is < BLS_MODULUS
-    for i in 0..s.get_field_elements_per_blob() {
+    for i in 0..s.field_elements_per_blob() {
         arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
     Blob::from_bytes(arr.as_slice(), s).unwrap()
