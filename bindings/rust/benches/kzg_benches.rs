@@ -12,7 +12,7 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
 }
 
 fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Blob {
-    let mut arr: Vec<u8> = Vec::with_capacity(s.get_bytes_per_blob());
+    let mut arr: Vec<u8> = vec![0; s.get_bytes_per_blob()];
     arr.resize(s.get_bytes_per_blob(), 0);
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
