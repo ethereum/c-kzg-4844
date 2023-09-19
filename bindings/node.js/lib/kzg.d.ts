@@ -96,7 +96,12 @@ export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGPr
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyKzgProof(commitmentBytes: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proofBytes: Bytes48): boolean;
+export function verifyKzgProof(
+  commitmentBytes: Bytes48,
+  zBytes: Bytes32,
+  yBytes: Bytes32,
+  proofBytes: Bytes48
+): boolean;
 
 /**
  * Given a blob and its proof, verify that it corresponds to the provided
