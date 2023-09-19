@@ -21,9 +21,9 @@ const bindings = require("bindings")("kzg");
 function transformTrustedSetupJson(filePath) {
   const trustedSetup = JSON.parse(fs.readFileSync(filePath, "utf8"));
   const setupText =
-    trustedSetup.setup_G1_lagrange.length.toString() +
+    trustedSetup.setup_G1_lagrange.length +
     "\n" +
-    trustedSetup.setup_G2.length.toString() +
+    trustedSetup.setup_G2.length +
     "\n" +
     trustedSetup.setup_G1_lagrange.map((p) => p.substring(2)).join("\n") +
     "\n" +
