@@ -1701,6 +1701,8 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * Load trusted setup into a KZGSettings.
  *
  * @remark Free after use with free_trusted_setup().
+ * @remark The number of g1 points (n1) must be either 4096 or 4.
+ * @remark The number of g2 points (n2) must be 65.
  *
  * @param[out] out      Pointer to the stored trusted setup data
  * @param[in]  g1_bytes Array of G1 points in Lagrange form
@@ -1716,6 +1718,17 @@ C_KZG_RET load_trusted_setup(
     size_t n2
 ) {
     C_KZG_RET ret;
+
+    /* Check that the expect counts are correct */
+    if (n1 != TRUSTED_SETUP_NUM_G1_POINTS_MAINNET &&
+        n1 != TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
+    if (n2 != TRUSTED_SETUP_NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
 
     /* 1<<max_scale is the smallest power of 2 >= n1 */
     uint32_t max_scale = 0;
@@ -1793,6 +1806,11 @@ out_success:
  *     the first two numbers are in decimal and the remainder are hexstrings
  *     and any whitespace can be used as separators.
  *
+ * @remark This function expects the input file's read position to be at the
+ *     start of the file. After calling this function, this file pointer's
+ *     position will not be at the start of the file. Therefore, if you call
+ *     this function twice with the same file pointer, it is expected to fail.
+ *
  * @remark See also load_trusted_setup().
  * @remark The input file will not be closed.
  *
@@ -1813,20 +1831,11 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
         ret = C_KZG_BADARGS;
         goto out;
     }
-    if (num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS_MAINNET &&
-        num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
 
     /* Read the number of g2 points */
     uint64_t num_g2_points;
     num_matches = fscanf(in, "%" SCNu64, &num_g2_points);
     if (num_matches != 1) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
-    if (num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
