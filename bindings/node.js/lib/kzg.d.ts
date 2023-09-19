@@ -6,6 +6,7 @@ export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
+export type Blob = Uint8Array; // Dynamic size
 export type ProofResult = [KZGProof, Bytes32];
 export interface TrustedSetupJson {
   setup_G1: string[];
@@ -36,39 +37,39 @@ export function loadTrustedSetup(filePath: string): void;
 /**
  * Convert a blob to a KZG commitment.
  *
- * @param {Uint8Array} blob - The blob representing the polynomial to be committed to
+ * @param {Blob} blob - The blob representing the polynomial to be committed to
  *
  * @return {KZGCommitment} - The resulting commitment
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function blobToKzgCommitment(blob: Uint8Array): KZGCommitment;
+export function blobToKzgCommitment(blob: Blob): KZGCommitment;
 
 /**
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
- * @param {Uint8Array} blob - The blob (polynomial) to generate a proof for
- * @param {Bytes32}    zBytes - The generator z-value for the evaluation points
+ * @param {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes32} zBytes - The generator z-value for the evaluation points
  *
  * @return {ProofResult} - Tuple containing the resulting proof and evaluation
  *                         of the polynomial at the evaluation point z
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeKzgProof(blob: Uint8Array, zBytes: Bytes32): ProofResult;
+export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
 
 /**
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
  *
- * @param {Uint8Array} blob - The blob (polynomial) to generate a proof for
+ * @param {Blob} blob - The blob (polynomial) to generate a proof for
  * @param {Bytes48}    commitmentBytes - Commitment to verify
  *
  * @return {KZGProof} - The resulting proof
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeBlobKzgProof(blob: Uint8Array, commitmentBytes: Bytes48): KZGProof;
+export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
 
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
@@ -88,15 +89,15 @@ export function verifyKzgProof(commitment: Bytes48, zBytes: Bytes32, yBytes: Byt
  * Given a blob and its proof, verify that it corresponds to the provided
  * commitment.
  *
- * @param {Uint8Array} blob - The serialized blob to verify
- * @param {Bytes48}    commitmentBytes - The serialized commitment to verify
- * @param {Bytes48}    proofBytes - The serialized KZG proof for verification
+ * @param {Blob}    blob - The serialized blob to verify
+ * @param {Bytes48} commitmentBytes - The serialized commitment to verify
+ * @param {Bytes48} proofBytes - The serialized KZG proof for verification
  *
  * @return {boolean} - true/false depending on proof validity
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProof(blob: Uint8Array, commitment: Bytes48, proof: Bytes48): boolean;
+export function verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes48): boolean;
 
 /**
  * Given an array of blobs and their proofs, verify that they correspond to their
@@ -104,12 +105,12 @@ export function verifyBlobKzgProof(blob: Uint8Array, commitment: Bytes48, proof:
  *
  * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
  *
- * @param {Uint8Array} blobs - An array of serialized blobs to verify
- * @param {Bytes48}    commitmentBytes - An array of serialized commitments to verify
- * @param {Bytes48}    proofBytes - An array of serialized KZG proofs for verification
+ * @param {Blob}    blobs - An array of serialized blobs to verify
+ * @param {Bytes48} commitmentBytes - An array of serialized commitments to verify
+ * @param {Bytes48} proofBytes - An array of serialized KZG proofs for verification
  *
  * @return {boolean} - true/false depending on batch validity
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProofBatch(blobs: Uint8Array[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
+export function verifyBlobKzgProofBatch(blobs: Blob[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
