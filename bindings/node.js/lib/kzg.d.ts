@@ -75,8 +75,8 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  * Given a blob, return the KZG proof that is used to verify it against the
  * commitment.
  *
- * @param {Blob} blob - The blob (polynomial) to generate a proof for
- * @param {Bytes48}    commitmentBytes - Commitment to verify
+ * @param {Blob}    blob - The blob (polynomial) to generate a proof for
+ * @param {Bytes48} commitmentBytes - Commitment to verify
  *
  * @return {KZGProof} - The resulting proof
  *
