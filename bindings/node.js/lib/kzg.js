@@ -45,7 +45,6 @@ bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
   if (path.parse(filePath).ext === ".json") {
     filePath = transformTrustedSetupJson(filePath);
   }
-  console.log(filePath);
   originalLoadTrustedSetup(filePath);
 };
 
