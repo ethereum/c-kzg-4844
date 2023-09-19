@@ -24,7 +24,7 @@ export const BYTES_PER_PROOF: number;
  *
  * @return {number} - The number of fields
  *
- * @throws {TypeError} - The trusted setup isn't loaded
+ * @throws {Error} - The trusted setup isn't loaded
  */
 export function getFieldElementsPerBlob(): number;
 
@@ -33,7 +33,7 @@ export function getFieldElementsPerBlob(): number;
  *
  * @return {number} - The number of bytes
  *
- * @throws {TypeError} - The trusted setup isn't loaded
+ * @throws {Error} - The trusted setup isn't loaded
  */
 export function getBytesPerBlob(): number;
 
