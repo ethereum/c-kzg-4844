@@ -6,7 +6,7 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Ckzg.Test;
 
 [TestFixture]
-public class ReferenceTests
+public unsafe class ReferenceTests
 {
     [OneTimeSetUp]
     public void Setup()
@@ -24,10 +24,10 @@ public class ReferenceTests
     [TestCase]
     public void TestSetupLoaded()
     {
-        Assert.That(_ts, Is.Not.EqualTo(IntPtr.Zero));
+        Assert.True(_ts != null);
     }
 
-    private IntPtr _ts;
+    private KzgSettings* _ts;
     private const string TestDir = "../../../../../../tests";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
     private readonly string _computeKzgProofTests = Path.Join(TestDir, "compute_kzg_proof");
@@ -339,7 +339,7 @@ public class ReferenceTests
             byte[] blobs = GetFlatBytes(test.Input.Blobs);
             byte[] commitments = GetFlatBytes(test.Input.Commitments);
             byte[] proofs = GetFlatBytes(test.Input.Proofs);
-            int count = blobs.Length / Ckzg.BytesPerBlob;
+            ulong count = (ulong)blobs.Length / _ts->bytes_per_blob;
 
             try
             {
