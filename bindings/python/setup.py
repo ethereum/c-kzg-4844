@@ -10,7 +10,6 @@ def main():
                 "ckzg",
                 sources=["ckzg.c", "../../src/c_kzg_4844.c"],
                 include_dirs=["../../inc", "../../src"],
-                define_macros=[("FIELD_ELEMENTS_PER_BLOB", "4096")],
                 library_dirs=["../../lib"],
                 libraries=["blst"])])
 
