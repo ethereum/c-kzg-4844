@@ -2,9 +2,6 @@ package ckzg4844
 
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers
-// #ifndef FIELD_ELEMENTS_PER_BLOB
-// #define FIELD_ELEMENTS_PER_BLOB 4096
-// #endif
 // #include "c_kzg_4844.c"
 import "C"
 
@@ -20,11 +17,9 @@ import (
 )
 
 const (
-	BytesPerBlob         = C.BYTES_PER_BLOB
 	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
 	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
 	BytesPerProof        = C.BYTES_PER_PROOF
-	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
 )
 
 type (
@@ -32,7 +27,7 @@ type (
 	Bytes48       [48]byte
 	KZGCommitment Bytes48
 	KZGProof      Bytes48
-	Blob          [BytesPerBlob]byte
+	Blob          []byte
 )
 
 var (
@@ -101,6 +96,9 @@ func (b *Bytes48) UnmarshalText(input []byte) error {
 }
 
 func (b *Blob) UnmarshalText(input []byte) error {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
 	inputStr := string(input)
 	if strings.HasPrefix(inputStr, "0x") {
 		inputStr = strings.TrimPrefix(inputStr, "0x")
@@ -109,11 +107,30 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	if err != nil {
 		return err
 	}
-	if len(bytes) != len(b) {
+	if len(bytes) != GetBytesPerBlob() {
 		return ErrBadArgs
 	}
-	copy(b[:], bytes)
+	*b = make(Blob, GetBytesPerBlob())
+	copy(*b, bytes)
 	return nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Configuration Functions
+///////////////////////////////////////////////////////////////////////////////
+
+func GetFieldElementsPerBlob() int {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	return int(settings.field_elements_per_blob)
+}
+
+func GetBytesPerBlob() int {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	return int(settings.bytes_per_blob)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -200,7 +217,7 @@ BlobToKZGCommitment is the binding for:
 
 	C_KZG_RET blob_to_kzg_commitment(
 	    KZGCommitment *out,
-	    const Blob *blob,
+	    const uint8_t *blob,
 	    const KZGSettings *s);
 */
 func BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
@@ -208,9 +225,12 @@ func BlobToKZGCommitment(blob Blob) (KZGCommitment, error) {
 		panic("trusted setup isn't loaded")
 	}
 	commitment := KZGCommitment{}
+	if len(blob) != GetBytesPerBlob() {
+		return commitment, ErrBadArgs
+	}
 	ret := C.blob_to_kzg_commitment(
 		(*C.KZGCommitment)(unsafe.Pointer(&commitment)),
-		(*C.Blob)(unsafe.Pointer(&blob)),
+		*(**C.uint8_t)(unsafe.Pointer(&blob)),
 		&settings)
 	return commitment, makeErrorFromRet(ret)
 }
@@ -221,7 +241,7 @@ ComputeKZGProof is the binding for:
 	C_KZG_RET compute_kzg_proof(
 	    KZGProof *proof_out,
 	    Bytes32 *y_out,
-	    const Blob *blob,
+	    const uint8_t *blob,
 	    const Bytes32 *z_bytes,
 	    const KZGSettings *s);
 */
@@ -231,10 +251,13 @@ func ComputeKZGProof(blob Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 	}
 	proof := KZGProof{}
 	y := Bytes32{}
+	if len(blob) != GetBytesPerBlob() {
+		return proof, y, ErrBadArgs
+	}
 	ret := C.compute_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(&proof)),
 		(*C.Bytes32)(unsafe.Pointer(&y)),
-		(*C.Blob)(unsafe.Pointer(&blob)),
+		*(**C.uint8_t)(unsafe.Pointer(&blob)),
 		(*C.Bytes32)(unsafe.Pointer(&zBytes)),
 		&settings)
 	return proof, y, makeErrorFromRet(ret)
@@ -245,7 +268,7 @@ ComputeBlobKZGProof is the binding for:
 
 	C_KZG_RET compute_blob_kzg_proof(
 	    KZGProof *out,
-	    const Blob *blob,
+	    const uint8_t *blob,
 	    const Bytes48 *commitment_bytes,
 	    const KZGSettings *s);
 */
@@ -254,9 +277,12 @@ func ComputeBlobKZGProof(blob Blob, commitmentBytes Bytes48) (KZGProof, error) {
 		panic("trusted setup isn't loaded")
 	}
 	proof := KZGProof{}
+	if len(blob) != GetBytesPerBlob() {
+		return proof, ErrBadArgs
+	}
 	ret := C.compute_blob_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(&proof)),
-		(*C.Blob)(unsafe.Pointer(&blob)),
+		*(**C.uint8_t)(unsafe.Pointer(&blob)),
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		&settings)
 	return proof, makeErrorFromRet(ret)
@@ -293,7 +319,7 @@ VerifyBlobKZGProof is the binding for:
 
 	C_KZG_RET verify_blob_kzg_proof(
 	    bool *out,
-	    const Blob *blob,
+	    const uint8_t *blob,
 	    const Bytes48 *commitment_bytes,
 	    const Bytes48 *proof_bytes,
 	    const KZGSettings *s);
@@ -302,10 +328,13 @@ func VerifyBlobKZGProof(blob Blob, commitmentBytes, proofBytes Bytes48) (bool, e
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if len(blob) != GetBytesPerBlob() {
+		return false, ErrBadArgs
+	}
 	var result C.bool
 	ret := C.verify_blob_kzg_proof(
 		&result,
-		(*C.Blob)(unsafe.Pointer(&blob)),
+		*(**C.uint8_t)(unsafe.Pointer(&blob)),
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)
@@ -317,7 +346,7 @@ VerifyBlobKZGProofBatch is the binding for:
 
 	C_KZG_RET verify_blob_kzg_proof_batch(
 	    bool *out,
-	    const Blob *blobs,
+	    const uint8_t *blobs,
 	    const Bytes48 *commitments_bytes,
 	    const Bytes48 *proofs_bytes,
 	    const KZGSettings *s);
@@ -330,10 +359,19 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		return false, ErrBadArgs
 	}
 
+	bytesPerBlob := GetBytesPerBlob()
+	flatBlobs := make(Blob, bytesPerBlob*len(blobs))
+	for i, blob := range blobs {
+		if len(blob) != bytesPerBlob {
+			return false, ErrBadArgs
+		}
+		copy(flatBlobs[i*bytesPerBlob:], blob)
+	}
+
 	var result C.bool
 	ret := C.verify_blob_kzg_proof_batch(
 		&result,
-		*(**C.Blob)(unsafe.Pointer(&blobs)),
+		*(**C.uint8_t)(unsafe.Pointer(&flatBlobs)),
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),

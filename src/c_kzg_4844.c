@@ -48,15 +48,6 @@
     } while (0)
 
 ///////////////////////////////////////////////////////////////////////////////
-// Types
-///////////////////////////////////////////////////////////////////////////////
-
-/** Internal representation of a polynomial. */
-typedef struct {
-    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
-} Polynomial;
-
-///////////////////////////////////////////////////////////////////////////////
 // Constants
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -75,10 +66,11 @@ static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
 /** The number of bytes in a g2 point. */
 #define BYTES_PER_G2 96
 
-/** The number of g1 points in a trusted setup. */
-#define TRUSTED_SETUP_NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
-
-/** The number of g2 points in a trusted setup. */
+/** The number of G1 points in the mainnet config. */
+#define TRUSTED_SETUP_NUM_G1_POINTS_MAINNET 4096
+/** The number of G1 points in the minimal config. */
+#define TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL 4
+/** The number of G2 points in mainnet/minimal configs. */
 #define TRUSTED_SETUP_NUM_G2_POINTS 65
 
 // clang-format off
@@ -599,21 +591,20 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
  *
  * @param[out] p    The output polynomial (array of field elements)
  * @param[in]  blob The blob (an array of bytes)
+ * @param[in]  s    The trusted setup
  */
-static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
+static C_KZG_RET blob_to_polynomial(
+    fr_t *poly, const uint8_t *blob, const KZGSettings *s
+) {
     C_KZG_RET ret;
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < s->field_elements_per_blob; i++) {
         ret = bytes_to_bls_field(
-            &p->evals[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]
+            &poly[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]
         );
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
 }
-
-/* Input size to the Fiat-Shamir challenge computation. */
-#define CHALLENGE_INPUT_SIZE \
-    (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
 
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and
@@ -624,12 +615,23 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
  * @param[out] eval_challenge_out The evaluation challenge
  * @param[in]  blob               A blob
  * @param[in]  commitment         A commitment
+ * @param[in]  s                  The trusted setup
  */
-static void compute_challenge(
-    fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
+static C_KZG_RET compute_challenge(
+    fr_t *eval_challenge_out,
+    const uint8_t *blob,
+    const g1_t *commitment,
+    const KZGSettings *s
 ) {
+    C_KZG_RET ret;
     Bytes32 eval_challenge;
-    uint8_t bytes[CHALLENGE_INPUT_SIZE];
+    uint8_t *bytes = NULL;
+
+    /* Input size to the Fiat-Shamir challenge computation. */
+    size_t challenge_input_size = DOMAIN_STR_LENGTH + 16 + s->bytes_per_blob +
+                                  BYTES_PER_COMMITMENT;
+    ret = c_kzg_malloc((void **)&bytes, challenge_input_size);
+    if (ret != C_KZG_OK) goto out;
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
@@ -641,23 +643,27 @@ static void compute_challenge(
     /* Copy polynomial degree (16-bytes, big-endian) */
     bytes_from_uint64(offset, 0);
     offset += sizeof(uint64_t);
-    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    bytes_from_uint64(offset, s->field_elements_per_blob);
     offset += sizeof(uint64_t);
 
     /* Copy blob */
-    memcpy(offset, blob->bytes, BYTES_PER_BLOB);
-    offset += BYTES_PER_BLOB;
+    memcpy(offset, blob, s->bytes_per_blob);
+    offset += s->bytes_per_blob;
 
     /* Copy commitment */
     bytes_from_g1((Bytes48 *)offset, commitment);
     offset += BYTES_PER_COMMITMENT;
 
     /* Make sure we wrote the entire buffer */
-    assert(offset == bytes + CHALLENGE_INPUT_SIZE);
+    assert(offset == bytes + challenge_input_size);
 
     /* Now let's create the challenge! */
-    blst_sha256(eval_challenge.bytes, bytes, CHALLENGE_INPUT_SIZE);
+    blst_sha256(eval_challenge.bytes, bytes, challenge_input_size);
     hash_to_bls_field(eval_challenge_out, &eval_challenge);
+
+out:
+    c_kzg_free(bytes);
+    return ret;
 }
 
 /**
@@ -781,13 +787,13 @@ static void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
 /**
  * Evaluate a polynomial in evaluation form at a given point.
  *
- * @param[out] out The result of the evaluation
- * @param[in]  p   The polynomial in evaluation form
- * @param[in]  x   The point to evaluate the polynomial at
- * @param[in]  s   The trusted setup
+ * @param[out] out  The result of the evaluation
+ * @param[in]  poly The polynomial in evaluation form
+ * @param[in]  x    The point to evaluate the polynomial at
+ * @param[in]  s    The trusted setup
  */
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(
-    fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
+    fr_t *out, const fr_t *poly, const fr_t *x, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t tmp;
@@ -796,12 +802,12 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     uint64_t i;
     const fr_t *roots_of_unity = s->roots_of_unity;
 
-    ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&inverses_in, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&inverses, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
 
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (i = 0; i < s->field_elements_per_blob; i++) {
         /*
          * If the point to evaluate at is one of the evaluation points by which
          * the polynomial is given, we can just return the result directly.
@@ -809,25 +815,25 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
          * would divide by zero otherwise.
          */
         if (fr_equal(x, &roots_of_unity[i])) {
-            *out = p->evals[i];
+            *out = poly[i];
             ret = C_KZG_OK;
             goto out;
         }
         blst_fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
     }
 
-    ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    ret = fr_batch_inv(inverses, inverses_in, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
 
     *out = FR_ZERO;
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (i = 0; i < s->field_elements_per_blob; i++) {
         blst_fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
-        blst_fr_mul(&tmp, &tmp, &p->evals[i]);
+        blst_fr_mul(&tmp, &tmp, &poly[i]);
         blst_fr_add(out, out, &tmp);
     }
-    fr_from_uint64(&tmp, FIELD_ELEMENTS_PER_BLOB);
+    fr_from_uint64(&tmp, s->field_elements_per_blob);
     fr_div(out, out, &tmp);
-    fr_pow(&tmp, x, FIELD_ELEMENTS_PER_BLOB);
+    fr_pow(&tmp, x, s->field_elements_per_blob);
     blst_fr_sub(&tmp, &tmp, &FR_ONE);
     blst_fr_mul(out, out, &tmp);
 
@@ -844,16 +850,14 @@ out:
 /**
  * Compute a KZG commitment from a polynomial.
  *
- * @param[out] out The resulting commitment
- * @param[in]  p   The polynomial to commit to
- * @param[in]  s   The trusted setup
+ * @param[out] out  The resulting commitment
+ * @param[in]  poly The polynomial to commit to
+ * @param[in]  s    The trusted setup
  */
 static C_KZG_RET poly_to_kzg_commitment(
-    g1_t *out, const Polynomial *p, const KZGSettings *s
+    g1_t *out, const fr_t *poly, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(
-        out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB
-    );
+    return g1_lincomb_fast(out, s->g1_values, poly, s->field_elements_per_blob);
 }
 
 /**
@@ -863,19 +867,24 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  blob The blob representing the polynomial to be committed to
  * @param[in]  s    The trusted setup
  */
-C_KZG_RET BLOB_TO_KZG_COMMITMENT(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
+C_KZG_RET blob_to_kzg_commitment(
+    KZGCommitment *out, const uint8_t *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    Polynomial p;
+    fr_t *poly = NULL;
     g1_t commitment;
 
-    ret = blob_to_polynomial(&p, blob);
-    if (ret != C_KZG_OK) return ret;
-    ret = poly_to_kzg_commitment(&commitment, &p, s);
-    if (ret != C_KZG_OK) return ret;
+    ret = new_fr_array(&poly, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
+    ret = blob_to_polynomial(poly, blob, s);
+    if (ret != C_KZG_OK) goto out;
+    ret = poly_to_kzg_commitment(&commitment, poly, s);
+    if (ret != C_KZG_OK) goto out;
     bytes_from_g1(out, &commitment);
-    return C_KZG_OK;
+
+out:
+    c_kzg_free(poly);
+    return ret;
 }
 
 /* Forward function declaration */
@@ -898,7 +907,7 @@ static C_KZG_RET verify_kzg_proof_impl(
  * @param[in]  kzg_proof  The KZG proof
  * @param[in]  s          The trusted setup
  */
-C_KZG_RET VERIFY_KZG_PROOF(
+C_KZG_RET verify_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -972,7 +981,7 @@ static C_KZG_RET verify_kzg_proof_impl(
 static C_KZG_RET compute_kzg_proof_impl(
     KZGProof *proof_out,
     fr_t *y_out,
-    const Polynomial *polynomial,
+    const fr_t *poly,
     const fr_t *z,
     const KZGSettings *s
 );
@@ -987,26 +996,29 @@ static C_KZG_RET compute_kzg_proof_impl(
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The trusted setup
  */
-C_KZG_RET COMPUTE_KZG_PROOF(
+C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
     Bytes32 *y_out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes32 *z_bytes,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    Polynomial polynomial;
+    fr_t *poly = NULL;
     fr_t frz, fry;
 
-    ret = blob_to_polynomial(&polynomial, blob);
+    ret = new_fr_array(&poly, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
+    ret = blob_to_polynomial(poly, blob, s);
     if (ret != C_KZG_OK) goto out;
     ret = bytes_to_bls_field(&frz, z_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = compute_kzg_proof_impl(proof_out, &fry, &polynomial, &frz, s);
+    ret = compute_kzg_proof_impl(proof_out, &fry, poly, &frz, s);
     if (ret != C_KZG_OK) goto out;
     bytes_from_bls_field(y_out, &fry);
 
 out:
+    c_kzg_free(poly);
     return ret;
 }
 
@@ -1014,40 +1026,42 @@ out:
  * Helper function for compute_kzg_proof() and
  * compute_blob_kzg_proof().
  *
- * @param[out] proof_out  The combined proof as a single G1 element
- * @param[out] y_out      The evaluation of the polynomial at the evaluation
- *                        point z
- * @param[in]  polynomial The polynomial in Lagrange form
- * @param[in]  z          The evaluation point
- * @param[in]  s          The trusted setup
+ * @param[out] proof_out The combined proof as a single G1 element
+ * @param[out] y_out     The evaluation of the polynomial at the evaluation
+ *                       point z
+ * @param[in]  poly      The polynomial in Lagrange form
+ * @param[in]  z         The evaluation point
+ * @param[in]  s         The trusted setup
  */
 static C_KZG_RET compute_kzg_proof_impl(
     KZGProof *proof_out,
     fr_t *y_out,
-    const Polynomial *polynomial,
+    const fr_t *poly,
     const fr_t *z,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
+    fr_t *q_poly = NULL;
 
-    ret = evaluate_polynomial_in_evaluation_form(y_out, polynomial, z, s);
+    ret = evaluate_polynomial_in_evaluation_form(y_out, poly, z, s);
     if (ret != C_KZG_OK) goto out;
 
     fr_t tmp;
-    Polynomial q;
     const fr_t *roots_of_unity = s->roots_of_unity;
     uint64_t i;
     /* m != 0 indicates that the evaluation point z equals root_of_unity[m-1] */
     uint64_t m = 0;
 
-    ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&inverses_in, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&inverses, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&q_poly, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
 
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (i = 0; i < s->field_elements_per_blob; i++) {
         if (fr_equal(z, &roots_of_unity[i])) {
             /* We are asked to compute a KZG proof inside the domain */
             m = i + 1;
@@ -1055,43 +1069,43 @@ static C_KZG_RET compute_kzg_proof_impl(
             continue;
         }
         // (p_i - y) / (ω_i - z)
-        blst_fr_sub(&q.evals[i], &polynomial->evals[i], y_out);
+        blst_fr_sub(&q_poly[i], &poly[i], y_out);
         blst_fr_sub(&inverses_in[i], &roots_of_unity[i], z);
     }
 
-    ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
+    ret = fr_batch_inv(inverses, inverses_in, s->field_elements_per_blob);
     if (ret != C_KZG_OK) goto out;
 
-    for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        blst_fr_mul(&q.evals[i], &q.evals[i], &inverses[i]);
+    for (i = 0; i < s->field_elements_per_blob; i++) {
+        blst_fr_mul(&q_poly[i], &q_poly[i], &inverses[i]);
     }
 
     if (m != 0) { /* ω_{m-1} == z */
-        q.evals[--m] = FR_ZERO;
-        for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        q_poly[--m] = FR_ZERO;
+        for (i = 0; i < s->field_elements_per_blob; i++) {
             if (i == m) continue;
             /* Build denominator: z * (z - ω_i) */
             blst_fr_sub(&tmp, z, &roots_of_unity[i]);
             blst_fr_mul(&inverses_in[i], &tmp, z);
         }
 
-        ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
+        ret = fr_batch_inv(inverses, inverses_in, s->field_elements_per_blob);
         if (ret != C_KZG_OK) goto out;
 
-        for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        for (i = 0; i < s->field_elements_per_blob; i++) {
             if (i == m) continue;
             /* Build numerator: ω_i * (p_i - y) */
-            blst_fr_sub(&tmp, &polynomial->evals[i], y_out);
+            blst_fr_sub(&tmp, &poly[i], y_out);
             blst_fr_mul(&tmp, &tmp, &roots_of_unity[i]);
             /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
             blst_fr_mul(&tmp, &tmp, &inverses[i]);
-            blst_fr_add(&q.evals[m], &q.evals[m], &tmp);
+            blst_fr_add(&q_poly[m], &q_poly[m], &tmp);
         }
     }
 
     g1_t out_g1;
     ret = g1_lincomb_fast(
-        &out_g1, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB
+        &out_g1, s->g1_values, q_poly, s->field_elements_per_blob
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -1100,6 +1114,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 out:
     c_kzg_free(inverses_in);
     c_kzg_free(inverses);
+    c_kzg_free(q_poly);
     return ret;
 }
 
@@ -1113,34 +1128,38 @@ out:
  * @param[in]  commitment_bytes Commitment to verify
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
+C_KZG_RET compute_blob_kzg_proof(
     KZGProof *out,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    Polynomial polynomial;
+    fr_t *poly = NULL;
     g1_t commitment_g1;
     fr_t evaluation_challenge_fr;
     fr_t y;
 
+    /* Allocate our polynomial */
+    ret = new_fr_array(&poly, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
+
     /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = blob_to_polynomial(&polynomial, blob);
+    ret = blob_to_polynomial(poly, blob, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute the challenge for the given blob/commitment */
-    compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
+    ret = compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1, s);
+    if (ret != C_KZG_OK) goto out;
 
     /* Call helper function to compute proof and y */
-    ret = compute_kzg_proof_impl(
-        out, &y, &polynomial, &evaluation_challenge_fr, s
-    );
+    ret = compute_kzg_proof_impl(out, &y, poly, &evaluation_challenge_fr, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
+    c_kzg_free(poly);
     return ret;
 }
 
@@ -1154,41 +1173,50 @@ out:
  * @param[in]  proof_bytes      Proof used for verification
  * @param[in]  s                The trusted setup
  */
-C_KZG_RET VERIFY_BLOB_KZG_PROOF(
+C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
-    const Blob *blob,
+    const uint8_t *blob,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    Polynomial polynomial;
+    fr_t *poly = NULL;
     fr_t evaluation_challenge_fr, y_fr;
     g1_t commitment_g1, proof_g1;
 
     *ok = false;
 
+    /* Allocate our polynomial */
+    ret = new_fr_array(&poly, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
+
     /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
-    if (ret != C_KZG_OK) return ret;
-    ret = blob_to_polynomial(&polynomial, blob);
-    if (ret != C_KZG_OK) return ret;
+    if (ret != C_KZG_OK) goto out;
+    ret = blob_to_polynomial(poly, blob, s);
+    if (ret != C_KZG_OK) goto out;
     ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
-    if (ret != C_KZG_OK) return ret;
+    if (ret != C_KZG_OK) goto out;
 
     /* Compute challenge for the blob/commitment */
-    compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
+    ret = compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1, s);
+    if (ret != C_KZG_OK) goto out;
 
     /* Evaluate challenge to get y */
     ret = evaluate_polynomial_in_evaluation_form(
-        &y_fr, &polynomial, &evaluation_challenge_fr, s
+        &y_fr, poly, &evaluation_challenge_fr, s
     );
-    if (ret != C_KZG_OK) return ret;
+    if (ret != C_KZG_OK) goto out;
 
     /* Call helper to do pairings check */
-    return verify_kzg_proof_impl(
+    ret = verify_kzg_proof_impl(
         ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
     );
+
+out:
+    c_kzg_free(poly);
+    return ret;
 }
 
 /**
@@ -1199,6 +1227,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF(
  * @param[in]   zs_fr          The input evaluation points
  * @param[in]   ys_fr          The input evaluation results
  * @param[in]   proofs_g1      The input proofs
+ * @param[in]   s              The trusted setup
  */
 static C_KZG_RET compute_r_powers(
     fr_t *r_powers_out,
@@ -1206,7 +1235,8 @@ static C_KZG_RET compute_r_powers(
     const fr_t *zs_fr,
     const fr_t *ys_fr,
     const g1_t *proofs_g1,
-    size_t n
+    size_t n,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
@@ -1228,7 +1258,7 @@ static C_KZG_RET compute_r_powers(
     offset += DOMAIN_STR_LENGTH;
 
     /* Copy degree of the polynomial */
-    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    bytes_from_uint64(offset, s->field_elements_per_blob);
     offset += sizeof(uint64_t);
 
     /* Copy number of commitments */
@@ -1314,7 +1344,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     /* Compute the random lincomb challenges */
     ret = compute_r_powers(
-        r_powers, commitments_g1, zs_fr, ys_fr, proofs_g1, n
+        r_powers, commitments_g1, zs_fr, ys_fr, proofs_g1, n, s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -1354,22 +1384,21 @@ out:
  * Given a list of blobs and blob KZG proofs, verify that they correspond to the
  * provided commitments.
  *
- * @remark This function assumes that `n` is trusted and that all input arrays
- * contain `n` elements. `n` should be the actual size of the arrays and not
- * read off a length field in the protocol.
- *
+ * @remark This function assumes that `n` is trusted.
  * @remark This function accepts if called with `n==0`.
+ * @remark `blobs` is expected to be `n * BLOB_SIZE` bytes.
+ * @remark `blobs` must be a flattened array of bytes, not pointers.
  *
  * @param[out] ok                True if the proofs are valid, otherwise false
- * @param[in]  blobs             Array of blobs to verify
+ * @param[in]  blobs             Flattened array of blob bytes to verify
  * @param[in]  commitments_bytes Array of commitments to verify
  * @param[in]  proofs_bytes      Array of proofs used for verification
  * @param[in]  n                 The number of blobs/commitments/proofs
  * @param[in]  s                 The trusted setup
  */
-C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
+C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
-    const Blob *blobs,
+    const uint8_t *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
@@ -1380,6 +1409,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     g1_t *proofs_g1 = NULL;
     fr_t *evaluation_challenges_fr = NULL;
     fr_t *ys_fr = NULL;
+    fr_t *poly = NULL;
 
     /* Exit early if we are given zero blobs */
     if (n == 0) {
@@ -1389,7 +1419,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
 
     /* For a single blob, just do a regular single verification */
     if (n == 1) {
-        return VERIFY_BLOB_KZG_PROOF(
+        return verify_blob_kzg_proof(
             ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s
         );
     }
@@ -1403,10 +1433,10 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&ys_fr, n);
     if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&poly, s->field_elements_per_blob);
+    if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < n; i++) {
-        Polynomial polynomial;
-
         /* Convert each commitment to a g1 point */
         ret = bytes_to_kzg_commitment(
             &commitments_g1[i], &commitments_bytes[i]
@@ -1414,15 +1444,19 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
         if (ret != C_KZG_OK) goto out;
 
         /* Convert each blob from bytes to a poly */
-        ret = blob_to_polynomial(&polynomial, &blobs[i]);
+        ret = blob_to_polynomial(poly, &blobs[i * s->bytes_per_blob], s);
         if (ret != C_KZG_OK) goto out;
 
-        compute_challenge(
-            &evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]
+        ret = compute_challenge(
+            &evaluation_challenges_fr[i],
+            &blobs[i * s->bytes_per_blob],
+            &commitments_g1[i],
+            s
         );
+        if (ret != C_KZG_OK) goto out;
 
         ret = evaluate_polynomial_in_evaluation_form(
-            &ys_fr[i], &polynomial, &evaluation_challenges_fr[i], s
+            &ys_fr[i], poly, &evaluation_challenges_fr[i], s
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -1439,6 +1473,7 @@ out:
     c_kzg_free(proofs_g1);
     c_kzg_free(evaluation_challenges_fr);
     c_kzg_free(ys_fr);
+    c_kzg_free(poly);
     return ret;
 }
 
@@ -1624,8 +1659,10 @@ out:
  *
  * @param[in] s The trusted setup to free
  */
-void FREE_TRUSTED_SETUP(KZGSettings *s) {
+void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
+    s->field_elements_per_blob = 0;
+    s->bytes_per_blob = 0;
     s->max_width = 0;
     c_kzg_free(s->roots_of_unity);
     c_kzg_free(s->g1_values);
@@ -1663,6 +1700,8 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * Load trusted setup into a KZGSettings.
  *
  * @remark Free after use with free_trusted_setup().
+ * @remark The number of g1 points (n1) must be either 4096 or 4.
+ * @remark The number of g2 points (n2) must be 65.
  *
  * @param[out] out      Pointer to the stored trusted setup data
  * @param[in]  g1_bytes Array of G1 points in Lagrange form
@@ -1670,7 +1709,7 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
  */
-C_KZG_RET LOAD_TRUSTED_SETUP(
+C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_bytes,
     size_t n1,
@@ -1679,22 +1718,28 @@ C_KZG_RET LOAD_TRUSTED_SETUP(
 ) {
     C_KZG_RET ret;
 
-    out->max_width = 0;
-    out->roots_of_unity = NULL;
-    out->g1_values = NULL;
-    out->g2_values = NULL;
-
-    /* Sanity check in case this is called directly */
-    CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
-    CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
+    /* Check that the counts are correct */
+    if (n1 != TRUSTED_SETUP_NUM_G1_POINTS_MAINNET &&
+        n1 != TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
+    if (n2 != TRUSTED_SETUP_NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
 
     /* 1<<max_scale is the smallest power of 2 >= n1 */
     uint32_t max_scale = 0;
     while ((1ULL << max_scale) < n1)
         max_scale++;
 
-    /* Set the max_width */
+    out->field_elements_per_blob = n1;
+    out->bytes_per_blob = n1 * BYTES_PER_FIELD_ELEMENT;
     out->max_width = 1ULL << max_scale;
+    out->roots_of_unity = NULL;
+    out->g1_values = NULL;
+    out->g2_values = NULL;
 
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->roots_of_unity, out->max_width);
@@ -1748,7 +1793,7 @@ out_error:
      * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
      * structure memory. If necessary, that must be done by the caller.
      */
-    FREE_TRUSTED_SETUP(out);
+    free_trusted_setup(out);
 out_success:
     return ret;
 }
@@ -1760,45 +1805,78 @@ out_success:
  *     the first two numbers are in decimal and the remainder are hexstrings
  *     and any whitespace can be used as separators.
  *
+ * @remark This function expects the input file's read position to be at the
+ *     start of the file. After calling this function, this file pointer's
+ *     position will not be at the start of the file. Therefore, if you call
+ *     this function twice with the same file pointer, it is expected to fail.
+ *
  * @remark See also load_trusted_setup().
  * @remark The input file will not be closed.
  *
  * @param[out] out Pointer to the loaded trusted setup data
  * @param[in]  in  File handle for input
  */
-C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
+    C_KZG_RET ret;
     int num_matches;
-    uint64_t i;
-    uint8_t g1_bytes[TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1];
-    uint8_t g2_bytes[TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2];
+    size_t size;
+    uint8_t *g1_bytes = NULL;
+    uint8_t *g2_bytes = NULL;
 
     /* Read the number of g1 points */
-    num_matches = fscanf(in, "%" SCNu64, &i);
-    CHECK(num_matches == 1);
-    CHECK(i == TRUSTED_SETUP_NUM_G1_POINTS);
+    uint64_t num_g1_points;
+    num_matches = fscanf(in, "%" SCNu64, &num_g1_points);
+    if (num_matches != 1) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
     /* Read the number of g2 points */
-    num_matches = fscanf(in, "%" SCNu64, &i);
-    CHECK(num_matches == 1);
-    CHECK(i == TRUSTED_SETUP_NUM_G2_POINTS);
+    uint64_t num_g2_points;
+    num_matches = fscanf(in, "%" SCNu64, &num_g2_points);
+    if (num_matches != 1) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Allocate space for the g1 bytes */
+    size = num_g1_points * BYTES_PER_G1;
+    ret = c_kzg_malloc((void **)&g1_bytes, size);
+    if (ret != C_KZG_OK) {
+        goto out;
+    }
+
+    /* Allocate space for the g2 bytes */
+    size = num_g2_points * BYTES_PER_G2;
+    ret = c_kzg_malloc((void **)&g2_bytes, size);
+    if (ret != C_KZG_OK) {
+        goto out;
+    }
 
     /* Read all of the g1 points, byte by byte */
-    for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
+    for (uint64_t i = 0; i < num_g1_points * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_bytes[i]);
-        CHECK(num_matches == 1);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
     }
 
     /* Read all of the g2 points, byte by byte */
-    for (i = 0; i < TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2; i++) {
+    for (uint64_t i = 0; i < num_g2_points * BYTES_PER_G2; i++) {
         num_matches = fscanf(in, "%2hhx", &g2_bytes[i]);
-        CHECK(num_matches == 1);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
     }
 
-    return LOAD_TRUSTED_SETUP(
-        out,
-        g1_bytes,
-        TRUSTED_SETUP_NUM_G1_POINTS,
-        g2_bytes,
-        TRUSTED_SETUP_NUM_G2_POINTS
+    ret = load_trusted_setup(
+        out, g1_bytes, num_g1_points, g2_bytes, num_g2_points
     );
+
+out:
+    c_kzg_free(g1_bytes);
+    c_kzg_free(g2_bytes);
+    return ret;
 }
