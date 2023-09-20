@@ -143,7 +143,7 @@ inline uint8_t *get_bytes(
     return array.Data();
 }
 inline uint8_t *get_blob(
-    const Napi::Env &env, const KZGSettings *s, const Napi::Value &val
+    const Napi::Env &env, const Napi::Value &val, const KZGSettings *s
 ) {
     return get_bytes(env, val, s->bytes_per_blob, "blob");
 }
@@ -237,7 +237,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
     if (kzg_settings == nullptr) {
         return env.Null();
     }
-    uint8_t *blob = get_blob(env, kzg_settings, info[0]);
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
     if (blob == nullptr) {
         return env.Null();
     }
@@ -273,7 +273,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
     if (kzg_settings == nullptr) {
         return env.Null();
     }
-    uint8_t *blob = get_blob(env, kzg_settings, info[0]);
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
     if (blob == nullptr) {
         return env.Null();
     }
@@ -322,7 +322,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
     if (kzg_settings == nullptr) {
         return env.Null();
     }
-    uint8_t *blob = get_blob(env, kzg_settings, info[0]);
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
     if (blob == nullptr) {
         return env.Null();
     }
@@ -417,7 +417,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
     if (kzg_settings == nullptr) {
         return env.Null();
     }
-    uint8_t *blob_bytes = get_blob(env, kzg_settings, info[0]);
+    uint8_t *blob_bytes = get_blob(env, info[0], kzg_settings);
     if (blob_bytes == nullptr) {
         return env.Null();
     }
@@ -513,7 +513,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
-        uint8_t *blob = get_blob(env, kzg_settings, blobs_param[index]);
+        uint8_t *blob = get_blob(env, blobs_param[index], kzg_settings);
         if (blob == nullptr) {
             goto out;
         }
