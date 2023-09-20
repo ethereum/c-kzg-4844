@@ -41,8 +41,8 @@ func getRandFieldElement(seed int64) Bytes32 {
 }
 
 func getRandBlob(seed int64) Blob {
-	var blob Blob
-	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
+	blob := make(Blob, GetBytesPerBlob())
+	for i := 0; i < GetBytesPerBlob(); i += BytesPerFieldElement {
 		fieldElementBytes := getRandFieldElement(seed + int64(i))
 		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
 	}

@@ -14,8 +14,7 @@ make build
 ```
 
 This will install the shared library in `src/main/resources/ethereum/ckzg4844/lib` with a folder
-structure
-and name according to the preset selected (mainnet or minimal) and your OS.
+structure and name according to your OS.
 
 All variables which could be passed to the `make` command and the defaults can be found in
 the [Makefile](./Makefile).
