@@ -1384,15 +1384,13 @@ out:
  * Given a list of blobs and blob KZG proofs, verify that they correspond to the
  * provided commitments.
  *
- * @remark This function assumes that `n` is trusted and that all input arrays
- * contain `n` elements. `n` should be the actual size of the arrays and not
- * read off a length field in the protocol.
- *
+ * @remark This function assumes that `n` is trusted.
  * @remark This function accepts if called with `n==0`.
- * @remark Blobs must be a flattened array of bytes, not pointers.
+ * @remark `blobs` is expected to be `n * BLOB_SIZE` bytes.
+ * @remark `blobs` must be a flattened array of bytes, not pointers.
  *
  * @param[out] ok                True if the proofs are valid, otherwise false
- * @param[in]  blobs             Array of blobs to verify
+ * @param[in]  blobs             Flattened array of blob bytes to verify
  * @param[in]  commitments_bytes Array of commitments to verify
  * @param[in]  proofs_bytes      Array of proofs used for verification
  * @param[in]  n                 The number of blobs/commitments/proofs
