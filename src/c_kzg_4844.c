@@ -1389,6 +1389,7 @@ out:
  * read off a length field in the protocol.
  *
  * @remark This function accepts if called with `n==0`.
+ * @remark Blobs must be a flattened array of bytes, not pointers.
  *
  * @param[out] ok                True if the proofs are valid, otherwise false
  * @param[in]  blobs             Array of blobs to verify
