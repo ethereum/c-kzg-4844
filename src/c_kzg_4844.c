@@ -1719,7 +1719,7 @@ C_KZG_RET load_trusted_setup(
 ) {
     C_KZG_RET ret;
 
-    /* Check that the expect counts are correct */
+    /* Check that the counts are correct */
     if (n1 != TRUSTED_SETUP_NUM_G1_POINTS_MAINNET &&
         n1 != TRUSTED_SETUP_NUM_G1_POINTS_MINIMAL) {
         ret = C_KZG_BADARGS;
