@@ -6,7 +6,7 @@ export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
-export type Blob = Uint8Array; // 4096 * 32 bytes
+export type Blob = Uint8Array; // Dynamic size
 export type ProofResult = [KZGProof, Bytes32];
 export interface TrustedSetupJson {
   setup_G1: string[];
@@ -15,18 +15,32 @@ export interface TrustedSetupJson {
   roots_of_unity: string[];
 }
 
-export const BYTES_PER_BLOB: number;
 export const BYTES_PER_COMMITMENT: number;
 export const BYTES_PER_FIELD_ELEMENT: number;
 export const BYTES_PER_PROOF: number;
-export const FIELD_ELEMENTS_PER_BLOB: number;
+
+/**
+ * Get the number of field elements in a blob.
+ *
+ * @return {number} - The number of field elements
+ *
+ * @throws {Error} - The trusted setup isn't loaded
+ */
+export function getFieldElementsPerBlob(): number;
+
+/**
+ * Get the number of bytes in a blob.
+ *
+ * @return {number} - The number of bytes
+ *
+ * @throws {Error} - The trusted setup isn't loaded
+ */
+export function getBytesPerBlob(): number;
 
 /**
  * Factory function that passes trusted setup to the bindings
  *
  * @param {string} filePath
- *
- * @return {KzgBindings}
  *
  * @throws {TypeError} - Non-String input
  * @throws {Error} - For all other errors. See error message for more info
@@ -82,7 +96,12 @@ export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGPr
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyKzgProof(commitment: Bytes48, zBytes: Bytes32, yBytes: Bytes32, proof: Bytes48): boolean;
+export function verifyKzgProof(
+  commitmentBytes: Bytes48,
+  zBytes: Bytes32,
+  yBytes: Bytes32,
+  proofBytes: Bytes48
+): boolean;
 
 /**
  * Given a blob and its proof, verify that it corresponds to the provided
@@ -96,10 +115,10 @@ export function verifyKzgProof(commitment: Bytes48, zBytes: Bytes32, yBytes: Byt
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes48): boolean;
+export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
 
 /**
- * Given an array of blobs and their proofs, verify that they corresponds to their
+ * Given an array of blobs and their proofs, verify that they correspond to their
  * provided commitment.
  *
  * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
@@ -112,4 +131,4 @@ export function verifyBlobKzgProof(blob: Blob, commitment: Bytes48, proof: Bytes
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProofBatch(blobs: Blob[], commitments: Bytes48[], proofs: Bytes48[]): boolean;
+export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentBytes: Bytes48[], proofBytes: Bytes48[]): boolean;

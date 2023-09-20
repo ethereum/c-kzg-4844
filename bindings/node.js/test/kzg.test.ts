@@ -11,6 +11,7 @@ interface TestMeta<I extends Record<string, any>, O extends boolean | string | s
 }
 
 import {
+  getBytesPerBlob,
   loadTrustedSetup,
   blobToKzgCommitment,
   computeKzgProof,
@@ -18,7 +19,6 @@ import {
   verifyKzgProof,
   verifyBlobKzgProof,
   verifyBlobKzgProofBatch,
-  BYTES_PER_BLOB,
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
@@ -43,8 +43,8 @@ type VerifyKzgProofTest = TestMeta<{commitment: string; y: string; z: string; pr
 type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof: string}, boolean>;
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
-const blobValidLength = randomBytes(BYTES_PER_BLOB);
-const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
+let blobValidLength: Buffer;
+let blobBadLength: Buffer;
 const commitmentValidLength = randomBytes(BYTES_PER_COMMITMENT);
 const commitmentBadLength = randomBytes(BYTES_PER_COMMITMENT - 1);
 const proofValidLength = randomBytes(BYTES_PER_PROOF);
@@ -59,7 +59,7 @@ const fieldElementBadLength = randomBytes(BYTES_PER_FIELD_ELEMENT - 1);
  */
 function generateRandomBlob(): Uint8Array {
   return new Uint8Array(
-    randomBytes(BYTES_PER_BLOB).map((x, i) => {
+    randomBytes(getBytesPerBlob()).map((x, i) => {
       // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
       if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 0) {
         return Math.floor(Math.random() * MAX_TOP_BYTE);
@@ -167,6 +167,8 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
 describe("C-KZG", () => {
   beforeAll(async () => {
     loadTrustedSetup(SETUP_FILE_PATH);
+    blobValidLength = randomBytes(getBytesPerBlob());
+    blobBadLength = randomBytes(getBytesPerBlob() - 1);
   });
 
   describe("reference tests should pass", () => {

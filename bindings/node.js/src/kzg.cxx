@@ -142,9 +142,10 @@ inline uint8_t *get_bytes(
     }
     return array.Data();
 }
-inline Blob *get_blob(const Napi::Env &env, const Napi::Value &val) {
-    return reinterpret_cast<Blob *>(get_bytes(env, val, BYTES_PER_BLOB, "blob")
-    );
+inline uint8_t *get_blob(
+    const Napi::Env &env, const Napi::Value &val, const KZGSettings *s
+) {
+    return get_bytes(env, val, s->bytes_per_blob, "blob");
 }
 inline Bytes32 *get_bytes32(
     const Napi::Env &env, const Napi::Value &val, std::string_view name
@@ -158,6 +159,28 @@ inline Bytes48 *get_bytes48(
 ) {
     return reinterpret_cast<Bytes48 *>(
         get_bytes(env, val, BYTES_PER_COMMITMENT, name)
+    );
+}
+
+Napi::Value GetFieldElementsPerBlob(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    return Napi::Number::New(
+        env, static_cast<double>(kzg_settings->field_elements_per_blob)
+    );
+}
+
+Napi::Value GetBytesPerBlob(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    return Napi::Number::New(
+        env, static_cast<double>(kzg_settings->bytes_per_blob)
     );
 }
 
@@ -210,12 +233,12 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
  */
 Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    Blob *blob = get_blob(env, info[0]);
-    if (blob == nullptr) {
-        return env.Null();
-    }
     KZGSettings *kzg_settings = get_kzg_settings(env, info);
     if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
+    if (blob == nullptr) {
         return env.Null();
     }
 
@@ -246,16 +269,16 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
  */
 Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    Blob *blob = get_blob(env, info[0]);
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
     if (blob == nullptr) {
         return env.Null();
     }
     Bytes32 *z_bytes = get_bytes32(env, info[1], "zBytes");
     if (z_bytes == nullptr) {
-        return env.Null();
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
         return env.Null();
     }
 
@@ -295,16 +318,16 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
  */
 Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    Blob *blob = get_blob(env, info[0]);
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    uint8_t *blob = get_blob(env, info[0], kzg_settings);
     if (blob == nullptr) {
         return env.Null();
     }
     Bytes48 *commitment_bytes = get_bytes48(env, info[1], "commitmentBytes");
     if (commitment_bytes == nullptr) {
-        return env.Null();
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
         return env.Null();
     }
 
@@ -390,7 +413,11 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info) {
  */
 Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
-    Blob *blob_bytes = get_blob(env, info[0]);
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+    uint8_t *blob_bytes = get_blob(env, info[0], kzg_settings);
     if (blob_bytes == nullptr) {
         return env.Null();
     }
@@ -400,10 +427,6 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
     }
     Bytes48 *proof_bytes = get_bytes48(env, info[2], "proofBytes");
     if (proof_bytes == nullptr) {
-        return env.Null();
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
         return env.Null();
     }
 
@@ -441,7 +464,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
 Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     C_KZG_RET ret;
-    Blob *blobs = NULL;
+    uint8_t *blobs = NULL;
     Bytes48 *commitments = NULL;
     Bytes48 *proofs = NULL;
     Napi::Value result = env.Null();
@@ -467,7 +490,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
             .ThrowAsJavaScriptException();
         return result;
     }
-    blobs = (Blob *)calloc(count, sizeof(Blob));
+    blobs = (uint8_t *)calloc(count, kzg_settings->bytes_per_blob);
     if (blobs == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for blobs")
             .ThrowAsJavaScriptException();
@@ -490,11 +513,15 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
-        Blob *blob = get_blob(env, blobs_param[index]);
+        uint8_t *blob = get_blob(env, blobs_param[index], kzg_settings);
         if (blob == nullptr) {
             goto out;
         }
-        memcpy(&blobs[index], blob, BYTES_PER_BLOB);
+        memcpy(
+            &blobs[index * kzg_settings->bytes_per_blob],
+            blob,
+            kzg_settings->bytes_per_blob
+        );
         Bytes48 *commitment = get_bytes48(
             env, commitments_param[index], "commitmentBytes"
         );
@@ -548,6 +575,12 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     }
 
     // Functions
+    exports["getBytesPerBlob"] = Napi::Function::New(
+        env, GetBytesPerBlob, "getBytesPerBlob"
+    );
+    exports["getFieldElementsPerBlob"] = Napi::Function::New(
+        env, GetFieldElementsPerBlob, "getFieldElementsPerBlob"
+    );
     exports["loadTrustedSetup"] = Napi::Function::New(
         env, LoadTrustedSetup, "setup"
     );
@@ -571,7 +604,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
 
     // Constants
-    exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
     exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(
         env, BYTES_PER_COMMITMENT
     );
@@ -579,9 +611,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
         env, BYTES_PER_FIELD_ELEMENT
     );
     exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
-    exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
-        env, FIELD_ELEMENTS_PER_BLOB
-    );
     return exports;
 }
 
