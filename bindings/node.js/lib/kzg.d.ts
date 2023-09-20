@@ -22,7 +22,7 @@ export const BYTES_PER_PROOF: number;
 /**
  * Get the number of field elements in a blob.
  *
- * @return {number} - The number of fields
+ * @return {number} - The number of field elements
  *
  * @throws {Error} - The trusted setup isn't loaded
  */
