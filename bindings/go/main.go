@@ -110,7 +110,8 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	if len(bytes) != GetBytesPerBlob() {
 		return ErrBadArgs
 	}
-	*b = bytes
+	*b = make(Blob, GetBytesPerBlob())
+	copy(*b, bytes)
 	return nil
 }
 
