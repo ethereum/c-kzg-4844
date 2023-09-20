@@ -25,13 +25,13 @@ impl Serialize for Blob {
     where
         S: Serializer,
     {
-        serialize_bytes(self.bytes, serializer)
+        serialize_bytes(self.bytes.as_slice(), serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for Blob {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Blob::from_bytes(&deserialize_hex(deserializer)?).map_err(Error::custom)
+        Blob::from_bytes_unsafe(&deserialize_hex(deserializer)?).map_err(Error::custom)
     }
 }
 
@@ -70,12 +70,12 @@ mod tests {
     use super::super::*;
     use rand::{rngs::ThreadRng, Rng};
 
-    fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
-        let mut arr = [0u8; BYTES_PER_BLOB];
+    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Blob {
+        let mut arr: Vec<u8> = vec![0; s.bytes_per_blob()];
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
         // each field element contained in the blob is < BLS_MODULUS
-        for i in 0..FIELD_ELEMENTS_PER_BLOB {
+        for i in 0..s.field_elements_per_blob() {
             arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
         }
         arr.into()
@@ -98,7 +98,7 @@ mod tests {
 
         // generate blob, commitment, proof
         let mut rng = rand::thread_rng();
-        let blob = generate_random_blob(&mut rng);
+        let blob = generate_random_blob(&mut rng, &kzg_settings);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
         let proof =
             KZGProof::compute_blob_kzg_proof(&blob, &commitment.to_bytes(), &kzg_settings).unwrap();
@@ -122,9 +122,14 @@ mod tests {
 
     #[test]
     fn test_serialize_blob_with_prefix() {
+        // load setup so we can create blobs
+        let trusted_setup_file = trusted_setup_file();
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
         // generate blob
         let mut rng = rand::thread_rng();
-        let blob = generate_random_blob(&mut rng);
+        let blob = generate_random_blob(&mut rng, &kzg_settings);
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
@@ -148,7 +153,7 @@ mod tests {
 
         // generate blob just to calculate a commitment
         let mut rng = rand::thread_rng();
-        let blob = generate_random_blob(&mut rng);
+        let blob = generate_random_blob(&mut rng, &kzg_settings);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
 
         // check blob serialization

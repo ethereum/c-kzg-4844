@@ -212,6 +212,12 @@ impl Drop for KZGSettings {
 }
 
 impl Blob {
+    pub fn from_bytes_unsafe(bytes: &[u8]) -> Result<Self, Error> {
+        Ok(Self {
+            bytes: bytes.to_vec(),
+        })
+    }
+
     pub fn from_bytes(bytes: &[u8], s: &KZGSettings) -> Result<Self, Error> {
         if bytes.len() != s.bytes_per_blob() {
             return Err(Error::InvalidBytesLength(format!(
@@ -220,9 +226,7 @@ impl Blob {
                 bytes.len(),
             )));
         }
-        Ok(Self {
-            bytes: bytes.to_vec(),
-        })
+        Self::from_bytes_unsafe(bytes)
     }
 
     pub fn from_hex(hex_str: &str, s: &KZGSettings) -> Result<Self, Error> {
