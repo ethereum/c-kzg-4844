@@ -75,17 +75,17 @@ proc freeTrustedSetup*(_: type Kzg): Result[void, string] =
     gCtx = nil
     ok()
 
-proc toCommitment*(blob: KzgBlob):
+proc toCommitment*(blob: openArray[byte]):
                     Result[KzgCommitment, string] {.gcsafe.} =
   verifyCtx:
     gCtx.toCommitment(blob)
 
-proc computeProof*(blob: KzgBlob,
+proc computeProof*(blob: openArray[byte],
                    z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
   verifyCtx:
     gCtx.computeProof(blob, z)
 
-proc computeProof*(blob: KzgBlob,
+proc computeProof*(blob: openArray[byte],
                    commitmentBytes: KzgBytes48):
                      Result[KzgProof, string] {.gcsafe.} =
   verifyCtx:
@@ -98,17 +98,29 @@ proc verifyProof*(commitment: KzgBytes48,
   verifyCtx:
     gCtx.verifyProof(commitment, z, y, proof)
 
-proc verifyProof*(blob: KzgBlob,
+proc verifyProof*(blob: openArray[byte],
                   commitment: KzgBytes48,
                   proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProof(blob, commitment, proof)
 
-proc verifyProofs*(blobs: openArray[KzgBlob],
+proc verifyProofs*(blobs: openArray[byte],
                   commitments: openArray[KzgBytes48],
                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
+
+##############################################################
+# Getters
+##############################################################
+
+proc bytesPerblob*(_: type Kzg): Result[uint64, string] {.gcsafe.} =
+  verifyCtx:
+    ok(gCtx.bytesPerblob)
+
+proc fieldElementsPerBlob*(_: type Kzg): Result[uint64, string] {.gcsafe.} =
+  verifyCtx:
+    ok(gCtx.fieldElementsPerBlob)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -117,13 +129,13 @@ proc verifyProofs*(blobs: openArray[KzgBlob],
 template loadTrustedSetupFile*(T: type Kzg, input: File | string): untyped =
   loadTrustedSetup(T, input)
 
-template blobToKzgCommitment*(blob: KzgBlob): untyped =
+template blobToKzgCommitment*(blob: openArray[byte]): untyped =
   toCommitment(blob)
 
-template computeKzgProof*(blob: KzgBlob, z: KzgBytes32): untyped =
+template computeKzgProof*(blob: openArray[byte], z: KzgBytes32): untyped =
   computeProof(blob, z)
 
-template computeBlobKzgProof*(blob: KzgBlob,
+template computeBlobKzgProof*(blob: openArray[byte],
                    commitmentBytes: KzgBytes48): untyped =
   computeProof(blob, commitmentBytes)
 
@@ -133,12 +145,12 @@ template verifyKzgProof*(commitment: KzgBytes48,
                    proof: KzgBytes48): untyped =
   verifyProof(commitment, z, y, proof)
 
-template verifyBlobKzgProof*(blob: KzgBlob,
+template verifyBlobKzgProof*(blob: openArray[byte],
                    commitment: KzgBytes48,
                    proof: KzgBytes48): untyped =
   verifyProof(blob, commitment, proof)
 
-template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
+template verifyBlobKzgProofBatch*(blobs: openArray[byte],
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(blobs, commitments, proofs)

@@ -3,10 +3,7 @@ import
   test_kzg,
   test_kzg_ex
 
-when (NimMajor, NimMinor) >= (1, 4) and
-     (NimMajor, NimMinor) <= (1, 6):
-  # nim devel causes shallowCopy error
-  # on yaml
+when (NimMajor, NimMinor) >= (2, 0):
   import
     test_yaml
 else:

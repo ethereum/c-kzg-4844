@@ -6,7 +6,7 @@ import
   ./types
 
 proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
-  var blob: KzgBlob
+  var blob = newSeq[byte](ctx.bytesPerBlob.int)
   for i in 0..<n:
     discard urandom(blob)
     for i in 0..<len(blob):
@@ -21,7 +21,8 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
     result.kates.add(res.get)
 
 suite "verify proof (high-level)":
-  var ctx: KzgCtx
+  var
+    ctx: KzgCtx
 
   test "load trusted setup from string":
     let res = loadTrustedSetupFromString(trustedSetup)
@@ -36,7 +37,11 @@ suite "verify proof (high-level)":
       check pres.isOk
       kp[i] = pres.get
 
-    let res = ctx.verifyProofs(kb.blobs, kb.kates, kp)
+    var blobs = newSeqOfCap[byte](kb.blobs.len * ctx.bytesPerBlob.int)
+    for x in kb.blobs:
+      blobs.add x
+
+    let res = ctx.verifyProofs(blobs, kb.kates, kp)
     check res.isOk
     check res.get == true
 
@@ -55,7 +60,11 @@ suite "verify proof (high-level)":
       check pres.isOk
       badProofs[i] = pres.get
 
-    let res = ctx.verifyProofs(kb.blobs, kb.kates, badProofs)
+    var blobs = newSeqOfCap[byte](kb.blobs.len * ctx.bytesPerBlob.int)
+    for x in kb.blobs:
+      blobs.add x
+
+    let res = ctx.verifyProofs(blobs, kb.kates, badProofs)
     check res.isOk
     check res.get == false
 
@@ -89,4 +98,7 @@ suite "verify proof (high-level)":
     discard ctx.verifyBlobKzgProof(blob, commitment, proof)
 
     let kb = ctx.createKateBlobs(1)
-    discard ctx.verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+    var blobs = newSeqOfCap[byte](kb.blobs.len * ctx.bytesPerBlob.int)
+    for x in kb.blobs:
+      blobs.add x
+    discard ctx.verifyBlobKzgProofBatch(blobs, kb.kates, [kp.get.proof])

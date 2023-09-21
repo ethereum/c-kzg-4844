@@ -6,7 +6,7 @@ import
   ./types
 
 proc createKateBlobs(n: int): KateBlobs =
-  var blob: KzgBlob
+  var blob = newSeq[byte](Kzg.bytesPerBlob.unsafeGet.int)
   for i in 0..<n:
     discard urandom(blob)
     for i in 0..<len(blob):
@@ -33,7 +33,11 @@ suite "verify proof (extended version)":
       check pres.isOk
       kp[i] = pres.get
 
-    let res = verifyProofs(kb.blobs, kb.kates, kp)
+    var blobs = newSeqOfCap[byte](kb.blobs.len * Kzg.bytesPerBlob.unsafeGet.int)
+    for x in kb.blobs:
+      blobs.add x
+
+    let res = verifyProofs(blobs, kb.kates, kp)
     check res.isOk
     check res.get == true
 
@@ -52,7 +56,11 @@ suite "verify proof (extended version)":
       check pres.isOk
       badProofs[i] = pres.get
 
-    let res = verifyProofs(kb.blobs, kb.kates, badProofs)
+    var blobs = newSeqOfCap[byte](kb.blobs.len * Kzg.bytesPerBlob.unsafeGet.int)
+    for x in kb.blobs:
+      blobs.add x
+
+    let res = verifyProofs(blobs, kb.kates, badProofs)
     check res.isOk
     check res.get == false
 
@@ -83,7 +91,10 @@ suite "verify proof (extended version)":
     discard verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
     discard verifyBlobKzgProof(blob, commitment, proof)
     let kb = createKateBlobs(1)
-    discard verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+    var blobs = newSeqOfCap[byte](kb.blobs.len * Kzg.bytesPerBlob.unsafeGet.int)
+    for x in kb.blobs:
+      blobs.add x
+    discard verifyBlobKzgProofBatch(blobs, kb.kates, [kp.get.proof])
 
   test "load trusted setup more than once":
     let res = Kzg.loadTrustedSetupFromString(trustedSetup)

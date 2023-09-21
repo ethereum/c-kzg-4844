@@ -55,4 +55,5 @@ jobs:
     - name: Test
       run: |
         cd bindings/nim
+        nim -v
         nim test

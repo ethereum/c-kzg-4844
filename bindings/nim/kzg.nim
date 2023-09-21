@@ -50,6 +50,10 @@ template verify(res: KZG_RET, ret: untyped): untyped =
     return err($res)
   ok(ret)
 
+template verifyBlob(ctx, blob: untyped) =
+  if blob.len.uint64 != ctx.val.bytesPerBlob:
+    return err($KZG_BADARGS)
+
 ##############################################################
 # Public functions
 ##############################################################
@@ -91,14 +95,13 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
 
   var
     s = newStringStream(input)
-    g1: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
     g2: array[NumG2, G2Data]
 
   try:
     let fieldElems = s.readLine().parseInt()
-    if fieldElems != FIELD_ELEMENTS_PER_BLOB:
-      return err("invalid field elemments per blob, expect $1, got $2" % [
-        $FIELD_ELEMENTS_PER_BLOB, $fieldElems
+    if fieldElems <= 0:
+      return err("invalid field elemments per blob: $1" % [
+        $fieldElems
       ])
     let numG2 = s.readLine().parseInt()
     if numG2 != NumG2:
@@ -106,46 +109,50 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
         $NumG2, $numG2
       ])
 
-    for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
+    var g1 = newSeq[G1Data](fieldElems)
+    for i in 0 ..< fieldElems:
       g1[i] = hexToByteArray[G1Len](s.readLine())
 
     for i in 0 ..< NumG2:
       g2[i] = hexToByteArray[G2Len](s.readLine())
-  except ValueError as ex:
-    return err(ex.msg)
-  except OSError as ex:
-    return err(ex.msg)
-  except IOError as ex:
-    return err(ex.msg)
 
-  loadTrustedSetup(g1, g2)
+    loadTrustedSetup(g1, g2)
+  except ValueError as ex:
+    err(ex.msg)
+  except OSError as ex:
+    err(ex.msg)
+  except IOError as ex:
+    err(ex.msg)
 
 proc toCommitment*(ctx: KzgCtx,
-                   blob: KzgBlob):
+                   blob: openArray[byte]):
                      Result[KzgCommitment, string] {.gcsafe.} =
+  verifyBlob(ctx, blob)
   var ret: KzgCommitment
-  let res = blob_to_kzg_commitment(ret, blob, ctx.val)
+  let res = blob_to_kzg_commitment(ret, blob[0].getPtr, ctx.val)
   verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
+                   blob: openArray[byte],
                    z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
+  verifyBlob(ctx, blob)
   var ret: KzgProofAndY
   let res = compute_kzg_proof(
     ret.proof,
     ret.y,
-    blob,
+    blob[0].getPtr,
     z,
     ctx.val)
   verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
+                   blob: openArray[byte],
                    commitmentBytes: KzgBytes48): Result[KzgProof, string] {.gcsafe.} =
+  verifyBlob(ctx, blob)
   var proof: KzgProof
   let res = compute_blob_kzg_proof(
     proof,
-    blob,
+    blob[0].getPtr,
     commitmentBytes,
     ctx.val)
   verify(res, proof)
@@ -166,26 +173,28 @@ proc verifyProof*(ctx: KzgCtx,
   verify(res, valid)
 
 proc verifyProof*(ctx: KzgCtx,
-                  blob: KzgBlob,
+                  blob: openArray[byte],
                   commitment: KzgBytes48,
                   proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
+  verifyBlob(ctx, blob)
   var valid: bool
   let res = verify_blob_kzg_proof(
     valid,
-    blob,
+    blob[0].getPtr,
     commitment,
     proof,
     ctx.val)
   verify(res, valid)
 
 proc verifyProofs*(ctx: KzgCtx,
-                  blobs: openArray[KzgBlob],
+                  blobs: openArray[byte],
                   commitments: openArray[KzgBytes48],
                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
-  if blobs.len != commitments.len:
+  ## blobs is a flat byte array
+  if blobs.len div ctx.val.bytesPerBlob.int != commitments.len:
     return err($KZG_BADARGS)
 
-  if blobs.len != proofs.len:
+  if blobs.len div ctx.val.bytesPerBlob.int != proofs.len:
     return err($KZG_BADARGS)
 
   if blobs.len == 0:
@@ -197,9 +206,19 @@ proc verifyProofs*(ctx: KzgCtx,
     blobs[0].getPtr,
     commitments[0].getPtr,
     proofs[0].getPtr,
-    blobs.len.csize_t,
+    proofs.len.csize_t,
     ctx.val)
   verify(res, valid)
+
+##############################################################
+# Getters
+##############################################################
+
+template bytesPerblob*(ctx: KzgCtx): uint64 =
+  ctx.val.bytesPerBlob
+
+template fieldElementsPerBlob*(ctx: KzgCtx): uint64 =
+  ctx.val.fieldElementsPerBlob
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -210,17 +229,17 @@ template loadTrustedSetupFile*(input: File | string): untyped =
 
 template freeTrustedSetup*(ctx: KzgCtx) =
   free_trusted_setup(ctx.val)
-  
+
 template blobToKzgCommitment*(ctx: KzgCtx,
-                   blob: KzgBlob): untyped =
+                   blob: openArray[byte]): untyped =
   toCommitment(ctx, blob)
 
 template computeKzgProof*(ctx: KzgCtx,
-                   blob: KzgBlob, z: KzgBytes32): untyped =
+                   blob: openArray[byte], z: KzgBytes32): untyped =
   computeProof(ctx, blob, z)
 
 template computeBlobKzgProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
+                   blob: openArray[byte],
                    commitmentBytes: KzgBytes48): untyped =
   computeProof(ctx, blob, commitmentBytes)
 
@@ -232,13 +251,13 @@ template verifyKzgProof*(ctx: KzgCtx,
   verifyProof(ctx, commitment, z, y, proof)
 
 template verifyBlobKzgProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
+                   blob: openArray[byte],
                    commitment: KzgBytes48,
                    proof: KzgBytes48): untyped =
   verifyProof(ctx, blob, commitment, proof)
 
 template verifyBlobKzgProofBatch*(ctx: KzgCtx,
-                   blobs: openArray[KzgBlob],
+                   blobs: openArray[byte],
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, blobs, commitments, proofs)

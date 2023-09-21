@@ -3,14 +3,11 @@
 ############################################################
 
 import
-  std/[strformat, strutils]
+  std/[strutils]
 
 from os import DirSep, AltSep
 
 const
-  # FIELD_ELEMENTS_PER_BLOB is overrideable from
-  # compiler switch -d: or --define:
-  FIELD_ELEMENTS_PER_BLOB* {.intdefine.} = 4096
   # kzgPath: c-kzg-4844 project path, removing 3 last elem
   kzgPath  = currentSourcePath.rsplit({DirSep, AltSep}, 3)[0] & "/"
   blstPath = kzgPath & "blst/"
@@ -25,14 +22,10 @@ when not defined(kzgExternalBlst):
 
 {.compile: srcPath & "c_kzg_4844.c"}
 
-{.passc: "-I" & bindingsPath &
-  " -DFIELD_ELEMENTS_PER_BLOB=" &
-  fmt"{FIELD_ELEMENTS_PER_BLOB}".}
+{.passc: "-I" & bindingsPath .}
 {.passc: "-I" & srcPath .}
 
-const
-  BYTES_PER_FIELD_ELEMENT* = 32
-  KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+
 
 type
   KZG_RET* = distinct cint
@@ -57,11 +50,14 @@ proc `==`*(a, b: KZG_RET): bool =
 
 type
   # Stores the setup and parameters needed for performing FFTs.
+  # note: Only expose two of the fields, the rest are still hidden
   KzgSettings* {.importc: "KZGSettings",
     header: "c_kzg_4844.h", byref.} = object
+    # Number of field elements in a blob.
+    fieldElementsPerBlob* {.importc: "field_elements_per_blob".}: uint64
 
-  # A basic blob data.
-  KzgBlob* = array[KzgBlobSize, byte]
+    # Number of bytes in a blob.
+    bytesPerBlob* {.importc: "bytes_per_blob".}: uint64
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
@@ -91,17 +87,17 @@ proc load_trusted_setup_file*(res: KzgSettings,
 proc free_trusted_setup*(s: KzgSettings) {.kzg_abi.}
 
 proc blob_to_kzg_commitment*(res: var KzgCommitment,
-                         blob: KzgBlob,
+                         blob: ptr byte,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc compute_kzg_proof*(res: var KzgProof,
                          yOut: var KzgBytes32,
-                         blob: KzgBlob,
+                         blob: ptr byte,
                          zBytes: KzgBytes32,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc compute_blob_kzg_proof*(res: var KzgProof,
-                         blob: KzgBlob,
+                         blob: ptr byte,
                          commitmentBytes: KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
@@ -113,13 +109,13 @@ proc verify_kzg_proof*(res: var bool,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_blob_kzg_proof*(res: var bool,
-                         blob: KzgBlob,
+                         blob: ptr byte,
                          commitmentsBytes: KzgBytes48,
                          proofBytes: KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_blob_kzg_proof_batch*(res: var bool,
-                         blobs: ptr KzgBlob,
+                         blobs: ptr byte,
                          commitmentsBytes: ptr KzgBytes48,
                          proofBytes: ptr KzgBytes48,
                          n: csize_t,
