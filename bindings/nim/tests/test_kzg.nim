@@ -45,6 +45,11 @@ suite "verify proof (high-level)":
     check res.isOk
     check res.get == true
 
+    # make invalid blobs with additional bytes
+    blobs.add 0.byte
+    let r = ctx.verifyProofs(blobs, kb.kates, kp)
+    check r.isErr
+
   test "verify batch proof failure":
     let kb = ctx.createKateBlobs(nblobs)
     var kp: array[nblobs, KzgProof]

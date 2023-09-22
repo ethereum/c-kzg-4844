@@ -73,12 +73,7 @@ template checkRes(res, body: untyped) =
 
 template checkBool(res: untyped) =
   checkRes(res):
-    # hmm, verify_blob_kzg_proof_batch_case_invalid_blob_59d64ff6b4648fad
-    # output.content is null instead of false, is this ok?
-    if n["output"].content == "null":
-      check $res.get == "false"
-    else:
-      check n["output"].content == $res.get
+    check n["output"].content == $res.get
 
 template checkBytes48(res: untyped) =
   checkRes(res):

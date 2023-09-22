@@ -194,7 +194,12 @@ proc verifyProofs*(ctx: KzgCtx,
   if blobs.len div ctx.val.bytesPerBlob.int != commitments.len:
     return err($KZG_BADARGS)
 
+  # the number of blobs, commitments, and proofs should same
   if blobs.len div ctx.val.bytesPerBlob.int != proofs.len:
+    return err($KZG_BADARGS)
+
+  # reject blobs with extra bytes too!
+  if blobs.len mod ctx.val.bytesPerBlob.int != 0:
     return err($KZG_BADARGS)
 
   if blobs.len == 0:
