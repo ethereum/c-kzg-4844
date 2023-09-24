@@ -10,12 +10,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.CKZG4844JNI.Preset;
 import ethereum.ckzg4844.test_formats.*;
+import java.util.Arrays;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -25,8 +26,6 @@ public class CKZG4844JNITest {
     PARAMETERS,
     RESOURCE
   }
-
-  private static final Preset PRESET;
 
   private static final Map<Preset, String> TRUSTED_SETUP_FILE_BY_PRESET =
       Map.of(
@@ -50,19 +49,12 @@ public class CKZG4844JNITest {
           "./src/testFixtures/resources/trusted-setups/trusted_setup_4_old.txt");
 
   static {
-    PRESET =
-        Optional.ofNullable(System.getenv("PRESET"))
-            .map(String::toUpperCase)
-            .map(Preset::valueOf)
-            .orElse(Preset.MAINNET);
     CKZG4844JNI.loadNativeLibrary();
   }
 
   @ParameterizedTest
   @MethodSource("getBlobToKzgCommitmentTests")
-  public void blobToKzgCommitmentTests(final BlobToKzgCommitmentTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void blobToKzgCommitmentTests(BlobToKzgCommitmentTest test) {
     try {
       byte[] commitment = CKZG4844JNI.blobToKzgCommitment(test.getInput().getBlob());
       assertArrayEquals(test.getOutput(), commitment);
@@ -73,9 +65,7 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getComputeKzgProofTests")
-  public void computeKzgProofTests(final ComputeKzgProofTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void computeKzgProofTests(ComputeKzgProofTest test) {
     try {
       ProofAndY proofAndY =
           CKZG4844JNI.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
@@ -88,9 +78,7 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getComputeBlobKzgProofTests")
-  public void computeBlobKzgProofTests(final ComputeBlobKzgProofTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void computeBlobKzgProofTests(ComputeBlobKzgProofTest test) {
     try {
       byte[] proof =
           CKZG4844JNI.computeBlobKzgProof(
@@ -103,9 +91,7 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getVerifyKzgProofTests")
-  public void verifyKzgProofTests(final VerifyKzgProofTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void verifyKzgProofTests(VerifyKzgProofTest test) {
     try {
       boolean valid =
           CKZG4844JNI.verifyKzgProof(
@@ -121,9 +107,7 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getVerifyBlobKzgProofTests")
-  public void verifyBlobKzgProofTests(final VerifyBlobKzgProofTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void verifyBlobKzgProofTests(VerifyBlobKzgProofTest test) {
     try {
       boolean valid =
           CKZG4844JNI.verifyBlobKzgProof(
@@ -138,9 +122,7 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getVerifyBlobKzgProofBatchTests")
-  public void verifyBlobKzgProofBatchTests(final VerifyBlobKzgProofBatchTest test) {
-    if (PRESET != Preset.MAINNET) return;
-
+  public void verifyBlobKzgProofBatchTests(VerifyBlobKzgProofBatchTest test) {
     try {
       int count = test.getInput().getBlobs().length / CKZG4844JNI.getBytesPerBlob();
       boolean valid =
@@ -155,31 +137,32 @@ public class CKZG4844JNITest {
     }
   }
 
-  @Test
-  public void getsTheConfiguredFieldElementsPerBlob() {
-    loadTrustedSetup();
-    assertEquals(PRESET.fieldElementsPerBlob, CKZG4844JNI.getFieldElementsPerBlob());
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void getsTheConfiguredFieldElementsPerBlob(Preset preset) {
+    loadTrustedSetup(preset);
+    assertEquals(preset.fieldElementsPerBlob, CKZG4844JNI.getFieldElementsPerBlob());
     assertEquals(
-        PRESET.fieldElementsPerBlob * CKZG4844JNI.BYTES_PER_FIELD_ELEMENT,
+        preset.fieldElementsPerBlob * CKZG4844JNI.BYTES_PER_FIELD_ELEMENT,
         CKZG4844JNI.getBytesPerBlob());
     CKZG4844JNI.freeTrustedSetup();
   }
 
   @Test
-  public void failsToGetFieldElementsPerBlobIfNotLoaded() {
-    final RuntimeException exception =
+  public void failsToGetFieldElementsPerBlobIfTrustedSetupIsNotLoaded() {
+    RuntimeException exception =
         assertThrows(RuntimeException.class, CKZG4844JNI::getFieldElementsPerBlob);
     assertExceptionIsTrustedSetupIsNotLoaded(exception);
   }
 
   @ParameterizedTest
-  @EnumSource(TrustedSetupSource.class)
-  public void testVerifyBlobKzgProofBatch(final TrustedSetupSource trustedSetupSource) {
-    loadTrustedSetup(trustedSetupSource);
-    final int count = 3;
-    final byte[][] blobsArray = new byte[count][];
-    final byte[][] commitmentsArray = new byte[count][];
-    final byte[][] proofsArray = new byte[count][];
+  @MethodSource("getTrustedSetupSources")
+  public void testVerifyBlobKzgProofBatch(Preset preset, TrustedSetupSource trustedSetupSource) {
+    loadTrustedSetup(preset, trustedSetupSource);
+    int count = 3;
+    byte[][] blobsArray = new byte[count][];
+    byte[][] commitmentsArray = new byte[count][];
+    byte[][] proofsArray = new byte[count][];
     IntStream.range(0, count)
         .forEach(
             i -> {
@@ -187,51 +170,54 @@ public class CKZG4844JNITest {
               commitmentsArray[i] = CKZG4844JNI.blobToKzgCommitment(blobsArray[i]);
               proofsArray[i] = CKZG4844JNI.computeBlobKzgProof(blobsArray[i], commitmentsArray[i]);
             });
-    final byte[] blobs = TestUtils.flatten(blobsArray);
-    final byte[] commitments = TestUtils.flatten(commitmentsArray);
-    final byte[] proofs = TestUtils.flatten(proofsArray);
+    byte[] blobs = TestUtils.flatten(blobsArray);
+    byte[] commitments = TestUtils.flatten(commitmentsArray);
+    byte[] proofs = TestUtils.flatten(proofsArray);
 
     assertTrue(CKZG4844JNI.verifyBlobKzgProofBatch(blobs, commitments, proofs, count));
 
-    final byte[] fakeBlobs = TestUtils.createRandomBlobs(count);
+    byte[] fakeBlobs = TestUtils.createRandomBlobs(count);
     assertFalse(CKZG4844JNI.verifyBlobKzgProofBatch(fakeBlobs, commitments, proofs, count));
-    final byte[] fakeCommitments = TestUtils.createRandomCommitments(count);
+    byte[] fakeCommitments = TestUtils.createRandomCommitments(count);
     assertFalse(CKZG4844JNI.verifyBlobKzgProofBatch(blobs, fakeCommitments, proofs, count));
-    final byte[] fakeProofs = TestUtils.createRandomProofs(count);
+    byte[] fakeProofs = TestUtils.createRandomProofs(count);
     assertFalse(CKZG4844JNI.verifyBlobKzgProofBatch(blobs, commitments, fakeProofs, count));
 
     CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void checkComputeKzgProof() {
-    loadTrustedSetup();
-    final byte[] blob = TestUtils.createRandomBlob();
-    final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
-    final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void checkComputeKzgProof(Preset preset) {
+    loadTrustedSetup(preset);
+    byte[] blob = TestUtils.createRandomBlob();
+    byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
+    ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
     assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proofAndY.getProof().length);
     assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
     CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void checkComputeBlobKzgProof() {
-    loadTrustedSetup();
-    final byte[] blob = TestUtils.createRandomBlob();
-    final byte[] commitment = TestUtils.createRandomCommitment();
-    final byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob, commitment);
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void checkComputeBlobKzgProof(Preset preset) {
+    loadTrustedSetup(preset);
+    byte[] blob = TestUtils.createRandomBlob();
+    byte[] commitment = TestUtils.createRandomCommitment();
+    byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob, commitment);
     assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proof.length);
     CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void checkCustomExceptionIsThrownAsExpected() {
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void checkCustomExceptionIsThrownAsExpected(Preset preset) {
 
-    loadTrustedSetup();
+    loadTrustedSetup(preset);
 
-    final byte[] blob = TestUtils.createNonCanonicalBlob();
+    byte[] blob = TestUtils.createNonCanonicalBlob();
 
-    final CKZGException exception =
+    CKZGException exception =
         assertThrows(CKZGException.class, () -> CKZG4844JNI.blobToKzgCommitment(blob));
 
     assertEquals(C_KZG_BADARGS, exception.getError());
@@ -240,17 +226,18 @@ public class CKZG4844JNITest {
     CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void passingDifferentLengthForCommitmentsThrowsAnException() {
-    loadTrustedSetup();
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void passingDifferentLengthForCommitmentsThrowsAnException(Preset preset) {
+    loadTrustedSetup(preset);
 
-    final int count = 2;
-    final byte[] blobs = TestUtils.createRandomBlobs(count);
-    final byte[] proofs = TestUtils.createRandomProofs(count);
+    int count = 2;
+    byte[] blobs = TestUtils.createRandomBlobs(count);
+    byte[] proofs = TestUtils.createRandomProofs(count);
     // different length for commitments
-    final byte[] commitments = TestUtils.createRandomCommitments(3);
+    byte[] commitments = TestUtils.createRandomCommitments(3);
 
-    final CKZGException exception =
+    CKZGException exception =
         assertThrows(
             CKZGException.class,
             () -> CKZG4844JNI.verifyBlobKzgProofBatch(blobs, commitments, proofs, count));
@@ -261,10 +248,11 @@ public class CKZG4844JNITest {
     CKZG4844JNI.freeTrustedSetup();
   }
 
-  @Test
-  public void passingInvalidLengthForBlobsThrowsAnException() {
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void passingInvalidLengthForBlobsThrowsAnException(Preset preset) {
 
-    loadTrustedSetup();
+    loadTrustedSetup(preset);
 
     CKZGException exception =
         assertThrows(CKZGException.class, () -> CKZG4844JNI.blobToKzgCommitment(new byte[0]));
@@ -319,7 +307,7 @@ public class CKZG4844JNITest {
   @Test
   public void throwsIfMethodIsUsedWithoutLoadingTrustedSetup() {
 
-    final RuntimeException exception =
+    RuntimeException exception =
         assertThrows(
             RuntimeException.class,
             () -> CKZG4844JNI.blobToKzgCommitment(TestUtils.createRandomBlob()));
@@ -330,10 +318,10 @@ public class CKZG4844JNITest {
   @Test
   public void throwsIfSetupIsLoadedTwice() {
 
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
 
-    final RuntimeException exception =
-        assertThrows(RuntimeException.class, CKZG4844JNITest::loadTrustedSetup);
+    RuntimeException exception =
+        assertThrows(RuntimeException.class, () -> loadTrustedSetup(Preset.MAINNET));
 
     assertEquals(
         "Trusted Setup is already loaded. Free it before loading a new one.",
@@ -345,26 +333,28 @@ public class CKZG4844JNITest {
   @Test
   public void throwsIfTryToFreeTrustedSetupWithoutLoadingIt() {
 
-    final RuntimeException exception =
+    RuntimeException exception =
         assertThrows(RuntimeException.class, CKZG4844JNI::freeTrustedSetup);
 
     assertExceptionIsTrustedSetupIsNotLoaded(exception);
   }
 
-  @Test
-  public void shouldThrowExceptionIfTrustedSetupIsNotInLagrangeForm() {
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void shouldThrowExceptionIfTrustedSetupIsNotInLagrangeForm(Preset preset) {
     CKZGException exception =
         assertThrows(
             CKZGException.class,
-            () -> CKZG4844JNI.loadTrustedSetup(OLD_TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET)));
+            () -> CKZG4844JNI.loadTrustedSetup(OLD_TRUSTED_SETUP_FILE_BY_PRESET.get(preset)));
 
     assertEquals(C_KZG_BADARGS, exception.getError());
   }
 
-  @Test
-  public void shouldThrowExceptionOnIncorrectTrustedSetupParameters() {
-    final LoadTrustedSetupParameters parameters =
-        TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+  @ParameterizedTest
+  @EnumSource(Preset.class)
+  public void shouldThrowExceptionOnIncorrectTrustedSetupParameters(Preset preset) {
+    LoadTrustedSetupParameters parameters =
+        TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
 
     // wrong g1Count
     CKZGException exception =
@@ -393,68 +383,76 @@ public class CKZG4844JNITest {
     assertTrue(exception.getErrorMessage().contains("Invalid g2 size."));
   }
 
-  private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {
+  private void assertExceptionIsTrustedSetupIsNotLoaded(RuntimeException exception) {
     assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
-  private static void loadTrustedSetup(final TrustedSetupSource trustedSetupSource) {
+  private static void loadTrustedSetup(Preset preset, TrustedSetupSource trustedSetupSource) {
     switch (trustedSetupSource) {
       case FILE:
-        loadTrustedSetup();
+        loadTrustedSetup(preset);
         break;
       case PARAMETERS:
-        loadTrustedSetupFromParameters();
+        loadTrustedSetupFromParameters(preset);
         break;
       case RESOURCE:
-        loadTrustedSetupFromResource();
+        loadTrustedSetupFromResource(preset);
         break;
     }
   }
 
-  private static void loadTrustedSetup() {
-    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+  private static void loadTrustedSetup(Preset preset) {
+    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
   }
 
-  private static void loadTrustedSetupFromParameters() {
-    final LoadTrustedSetupParameters parameters =
-        TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(PRESET));
+  private static void loadTrustedSetupFromParameters(Preset preset) {
+    LoadTrustedSetupParameters parameters =
+        TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
     CKZG4844JNI.loadTrustedSetup(
         parameters.getG1(), parameters.getG1Count(), parameters.getG2(), parameters.getG2Count());
   }
 
-  public static void loadTrustedSetupFromResource() {
+  private static void loadTrustedSetupFromResource(Preset preset) {
     CKZG4844JNI.loadTrustedSetupFromResource(
-        TRUSTED_SETUP_RESOURCE_BY_PRESET.get(PRESET), CKZG4844JNITest.class);
+        TRUSTED_SETUP_RESOURCE_BY_PRESET.get(preset), CKZG4844JNITest.class);
   }
 
   private static Stream<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getBlobToKzgCommitmentTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<ComputeKzgProofTest> getComputeKzgProofTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getComputeKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<ComputeBlobKzgProofTest> getComputeBlobKzgProofTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getComputeBlobKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<VerifyKzgProofTest> getVerifyKzgProofTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getVerifyKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<VerifyBlobKzgProofTest> getVerifyBlobKzgProofTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getVerifyBlobKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<VerifyBlobKzgProofBatchTest> getVerifyBlobKzgProofBatchTests() {
-    loadTrustedSetup();
+    loadTrustedSetup(Preset.MAINNET);
     return TestUtils.getVerifyBlobKzgProofBatchTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<Arguments> getTrustedSetupSources() {
+    return Arrays.stream(Preset.values())
+        .flatMap(
+            preset ->
+                Arrays.stream(TrustedSetupSource.values())
+                    .map(trustedSetupSource -> Arguments.of(preset, trustedSetupSource)));
   }
 }
