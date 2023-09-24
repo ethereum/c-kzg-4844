@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 public class CKZG4844JNITest {
+
   private enum TrustedSetupSource {
     FILE,
     PARAMETERS,
@@ -387,7 +388,7 @@ public class CKZG4844JNITest {
     assertEquals("Trusted Setup is not loaded.", exception.getMessage());
   }
 
-  private static void loadTrustedSetup(Preset preset, TrustedSetupSource trustedSetupSource) {
+  private void loadTrustedSetup(Preset preset, TrustedSetupSource trustedSetupSource) {
     switch (trustedSetupSource) {
       case FILE:
         loadTrustedSetup(preset);
@@ -401,20 +402,20 @@ public class CKZG4844JNITest {
     }
   }
 
-  private static void loadTrustedSetup(Preset preset) {
-    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
-  }
-
-  private static void loadTrustedSetupFromParameters(Preset preset) {
+  private void loadTrustedSetupFromParameters(Preset preset) {
     LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
     CKZG4844JNI.loadTrustedSetup(
         parameters.getG1(), parameters.getG1Count(), parameters.getG2(), parameters.getG2Count());
   }
 
-  private static void loadTrustedSetupFromResource(Preset preset) {
+  private void loadTrustedSetupFromResource(Preset preset) {
     CKZG4844JNI.loadTrustedSetupFromResource(
         TRUSTED_SETUP_RESOURCE_BY_PRESET.get(preset), CKZG4844JNITest.class);
+  }
+
+  private static void loadTrustedSetup(Preset preset) {
+    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE_BY_PRESET.get(preset));
   }
 
   private static Stream<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
