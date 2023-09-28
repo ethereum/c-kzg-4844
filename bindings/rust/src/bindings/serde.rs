@@ -55,8 +55,8 @@ mod tests {
     use super::super::*;
     use rand::{rngs::ThreadRng, Rng};
 
-    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Blob {
-        let mut arr: Vec<u8> = vec![0; s.bytes_per_blob()];
+    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Vec<u8> {
+        let mut arr = vec![0; s.bytes_per_blob()];
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
         // each field element contained in the blob is < BLS_MODULUS
@@ -90,7 +90,7 @@ mod tests {
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
-        let blob_deserialized: Blob = serde_json::from_str(&blob_serialized).unwrap();
+        let blob_deserialized = serde_json::from_str(&blob_serialized).unwrap();
         assert_eq!(blob, blob_deserialized);
 
         // check commitment serialization

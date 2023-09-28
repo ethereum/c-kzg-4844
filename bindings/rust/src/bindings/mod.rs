@@ -385,7 +385,7 @@ impl KZGProof {
     }
 
     pub fn verify_blob_kzg_proof_batch(
-        blobs: &Vec<Vec<u8>>,
+        blobs: &[Vec<u8>],
         commitments_bytes: &[Bytes48],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
@@ -558,7 +558,7 @@ mod tests {
     };
 
     fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Vec<u8> {
-        let mut arr: Vec<u8> = vec![0; s.bytes_per_blob()];
+        let mut arr = vec![0; s.bytes_per_blob()];
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
         // each field element contained in the blob is < BLS_MODULUS
