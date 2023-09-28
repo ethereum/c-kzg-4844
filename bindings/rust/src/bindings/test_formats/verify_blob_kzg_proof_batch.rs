@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes48, Error, KzgSettings};
+use crate::{Bytes48, Error};
 use serde::Deserialize;
+use crate::bindings::hex_to_bytes;
 
 #[derive(Deserialize)]
 pub struct Input {
@@ -11,10 +12,10 @@ pub struct Input {
 }
 
 impl Input {
-    pub fn get_blobs(&self, s: &KzgSettings) -> Result<Vec<Blob>, Error> {
-        let mut v: Vec<Blob> = Vec::new();
+    pub fn get_blobs(&self) -> Result<Vec<Vec<u8>>, Error> {
+        let mut v: Vec<Vec<u8>> = Vec::new();
         for blob in &self.blobs {
-            v.push(Blob::from_hex(blob, s)?);
+            v.push(hex_to_bytes(blob)?);
         }
         Ok(v)
     }

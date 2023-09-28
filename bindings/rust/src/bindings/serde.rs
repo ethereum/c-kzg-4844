@@ -1,6 +1,6 @@
 //! Serde serialization and deserialization for the basic types in this crate.
 
-use crate::{Blob, Bytes32, Bytes48};
+use crate::{Bytes32, Bytes48};
 use alloc::string::String;
 use alloc::vec::Vec;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
@@ -18,21 +18,6 @@ fn deserialize_hex<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<u8>
     let s = String::deserialize(deserializer)?;
     let hex_bytes = s.strip_prefix("0x").unwrap_or(&s);
     hex::decode(hex_bytes).map_err(Error::custom)
-}
-
-impl Serialize for Blob {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serialize_bytes(self.bytes.as_slice(), serializer)
-    }
-}
-
-impl<'de> Deserialize<'de> for Blob {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Blob::from_bytes_unsafe(&deserialize_hex(deserializer)?).map_err(Error::custom)
-    }
 }
 
 impl Serialize for Bytes48 {
