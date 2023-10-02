@@ -25,7 +25,7 @@ FIELD_ELEMENTS_PER_BLOB ?= 4096
 # The base compiler flags. More can be added on command line.
 CFLAGS += -I../inc
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
-CFLAGS += -O2 -Wall -Wextra
+CFLAGS += -O2 -Wall -Wextra -Wpedantic
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)

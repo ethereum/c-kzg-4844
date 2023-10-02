@@ -780,20 +780,20 @@ static void test_reverse_bits__succeeds_round_trip(void) {
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_zero(void) {
-    uint32_t original = 0b00000000000000000000000000000000;
-    uint32_t reversed = 0b00000000000000000000000000000000;
+    uint32_t original = 0;
+    uint32_t reversed = 0;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_some_bits_are_one(void) {
-    uint32_t original = 0b10101000011111100000000000000010;
-    uint32_t reversed = 0b01000000000000000111111000010101;
+    uint32_t original = 2826829826;
+    uint32_t reversed = 1073774101;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_one(void) {
-    uint32_t original = 0b11111111111111111111111111111111;
-    uint32_t reversed = 0b11111111111111111111111111111111;
+    uint32_t original = 4294967295;
+    uint32_t reversed = 4294967295;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 

@@ -71,7 +71,7 @@ const char* tt_current_expression = NULL;
 const char* tt_current_file = NULL;
 int tt_current_line = 0;
 
-void tt_execute(const char* name, void (*test_function)())
+void tt_execute(const char* name, void (*test_function)(void))
 {
   tt_current_test_failed = 0;
   test_function();
