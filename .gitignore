@@ -13,8 +13,6 @@ analysis-report/
 .idea/
 *bindings/*/*.so
 *bindings/rust/target
-*bindings/csharp/*.exe
-*bindings/csharp/*.dll
 __pycache__
 .DS_Store
 

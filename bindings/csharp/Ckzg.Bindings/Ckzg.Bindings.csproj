@@ -32,10 +32,12 @@
 
 	<ItemGroup>
 		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/win-x64/native/ckzg.dll')" Include="runtimes/win-x64/native/ckzg.dll" Pack="true" PackagePath="runtimes/win-x64/native/ckzg.dll" />
+		
 		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-x64/native/ckzg.so')" Include="runtimes/linux-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-x64/native/ckzg.so" />
 		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/linux-arm64/native/ckzg.so')" Include="runtimes/linux-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/linux-arm64/native/ckzg.so" />
-		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-x64/native/ckzg.so')" Include="runtimes/osx-x64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-x64/native/ckzg.so" />
-		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-arm64/native/ckzg.so')" Include="runtimes/osx-arm64/native/ckzg.so" Pack="true" PackagePath="runtimes/osx-arm64/native/ckzg.so" />
+
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-x64/native/ckzg.dylib')" Include="runtimes/osx-x64/native/ckzg.dylib" Pack="true" PackagePath="runtimes/osx-x64/native/ckzg.dylib" />
+		<Content CopyToOutputDirectory="PreserveNewest" Condition="Exists('runtimes/osx-arm64/native/ckzg.dylib')" Include="runtimes/osx-arm64/native/ckzg.dylib" Pack="true" PackagePath="runtimes/osx-arm64/native/ckzg.dylib" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
@@ -5,20 +6,31 @@ namespace Ckzg;
 
 public static partial class Ckzg
 {
-    static Ckzg()
+    static Ckzg() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += LoadNativeLibrary;
+
+    private static IntPtr LoadNativeLibrary(Assembly _, string path)
     {
-        AssemblyLoadContext.Default.ResolvingUnmanagedDll += (_, path) =>
-            path.Contains("ckzg", StringComparison.OrdinalIgnoreCase)
-                ? NativeLibrary.Load($"runtimes/{(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
-                    RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "")}-{RuntimeInformation.ProcessArchitecture switch
-                {
-                    Architecture.X64 => "x64",
-                    Architecture.Arm64 => "arm64",
-                    _ => ""
-                }}/native/{path}.{(RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "so")}")
-                : IntPtr.Zero;
+        if (!path.Equals("ckzg", StringComparison.OrdinalIgnoreCase))
+        {
+            return IntPtr.Zero;
+        }
+
+        string platform =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "linux" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "osx" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "win" : "";
+        string arch = RuntimeInformation.ProcessArchitecture switch
+        {
+            Architecture.X64 => "x64",
+            Architecture.Arm64 => "arm64",
+            _ => "",
+        };
+        string extension =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? "so" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "";
+
+        return NativeLibrary.Load(Path.Combine(AppContext.BaseDirectory, $"runtimes/{platform}-{arch}/native/{path}.{extension}"));
     }
 
     [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")]

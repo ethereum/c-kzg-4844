@@ -33,14 +33,13 @@ jobs:
           - arch: arm64-apple-macos11
             location: osx-arm64
             host: macos-latest
-            ext: .so
+            ext: .dylib
             reqs:
           - arch: x86_64-darwin
             location: osx-x64
             host: macos-latest
-            ext: .so
+            ext: .dylib
             reqs:
-          #TODO: support arch: x86_64-v2-win
           - arch:
             location: win-x64
             host: windows-latest
