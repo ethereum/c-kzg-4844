@@ -110,7 +110,7 @@ static const g1_t G1_IDENTITY = {
  *
  * In the formula above, the restriction can be slightly relaxed to `r` being a non-square.
  * This is easy to check: We just require that r^((q-1)/2) == -1. Instead of
- * 5, we could use 7, 10, 13, 14, 15, 20... to create the 2^i'th roots of unity below.
+ * 7, we could use 5, 10, 13, 14, 15, 20... to create the 2^i'th roots of unity below.
  * Generally, there are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
