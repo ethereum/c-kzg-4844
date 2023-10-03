@@ -1,15 +1,15 @@
 #include "../base_fuzz.h"
 
-static const size_t BLOB_OFFSET = 0;
-static const size_t INPUT_SIZE = BLOB_OFFSET + BYTES_PER_BLOB;
-
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     initialize();
-    if (size == INPUT_SIZE) {
+    size_t blob_offset = 0;
+    size_t input_size = blob_offset + s.bytes_per_blob;
+
+    if (size == input_size) {
         KZGCommitment commitment;
         blob_to_kzg_commitment(
             &commitment,
-            (const Blob *)(data + BLOB_OFFSET),
+            (const uint8_t *)(data + blob_offset),
             &s
         );
     }

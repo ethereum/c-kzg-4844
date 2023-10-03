@@ -1,19 +1,19 @@
 #include "../base_fuzz.h"
 
-static const size_t BLOB_OFFSET = 0;
-static const size_t COMMITMENT_OFFSET = BLOB_OFFSET + BYTES_PER_BLOB;
-static const size_t PROOF_OFFSET = COMMITMENT_OFFSET + BYTES_PER_COMMITMENT;
-static const size_t INPUT_SIZE = PROOF_OFFSET + BYTES_PER_PROOF;
-
 int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size) {
     initialize();
-    if (size == INPUT_SIZE) {
+    size_t blob_offset = 0;
+    size_t commitment_offset = blob_offset + s.bytes_per_blob;
+    size_t proof_offset = commitment_offset + BYTES_PER_COMMITMENT;
+    size_t input_size = proof_offset + BYTES_PER_PROOF;
+
+    if (size == input_size) {
         bool ok;
         verify_blob_kzg_proof(
             &ok,
-            (const Blob *)(data + BLOB_OFFSET),
-            (const Bytes48 *)(data + COMMITMENT_OFFSET),
-            (const Bytes48 *)(data + PROOF_OFFSET),
+            (const uint8_t *)(data + blob_offset),
+            (const Bytes48 *)(data + commitment_offset),
+            (const Bytes48 *)(data + proof_offset),
             &s
         );
     }
