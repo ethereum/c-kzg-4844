@@ -11,15 +11,15 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     arr.into()
 }
 
-fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Vec<u8> {
-    let mut arr = vec![0; s.bytes_per_blob()];
+fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Blob {
+    let mut arr: Vec<u8> = vec![0; s.bytes_per_blob()];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
     // each field element contained in the blob is < BLS_MODULUS
     for i in 0..s.field_elements_per_blob() {
         arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    arr
+    Blob::from_bytes(&arr, &s).unwrap()
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -29,7 +29,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     assert!(trusted_setup_file.exists());
     let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
-    let blobs: Vec<Vec<u8>> = (0..max_count)
+    let blobs: Vec<Blob> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng, &kzg_settings))
         .collect();
     let commitments: Vec<Bytes48> = blobs

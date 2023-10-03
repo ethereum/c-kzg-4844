@@ -55,7 +55,7 @@ mod tests {
     use super::super::*;
     use rand::{rngs::ThreadRng, Rng};
 
-    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Vec<u8> {
+    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Blob {
         let mut arr = vec![0; s.bytes_per_blob()];
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
@@ -63,7 +63,7 @@ mod tests {
         for i in 0..s.field_elements_per_blob() {
             arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
         }
-        arr.into()
+        Blob::from_bytes(&arr, &s).unwrap()
     }
 
     fn trusted_setup_file() -> &'static Path {
