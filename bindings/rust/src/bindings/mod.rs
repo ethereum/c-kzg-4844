@@ -212,12 +212,12 @@ impl Drop for KZGSettings {
 }
 
 impl Blob {
-    pub fn from_bytes(bytes: &[u8], kzg_settings: &KZGSettings) -> Result<Blob, Error> {
+    pub fn from_bytes(bytes: &[u8], kzg_settings: &KZGSettings) -> Result<Self, Error> {
         if bytes.len() != kzg_settings.bytes_per_blob() {
             return Err(Error::InvalidBytesLength(format!(
                 "Invalid byte length. Expected {} got {}",
                 kzg_settings.bytes_per_blob(),
-                bytes.len()
+                bytes.len(),
             )));
         }
         Ok(Blob(Bytes::copy_from_slice(bytes)))
