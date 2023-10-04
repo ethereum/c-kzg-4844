@@ -311,13 +311,6 @@ impl KZGProof {
         z_bytes: &Bytes32,
         kzg_settings: &KZGSettings,
     ) -> Result<(Self, Bytes32), Error> {
-        if blob.len() != kzg_settings.bytes_per_blob() {
-            return Err(Error::MismatchLength(format!(
-                "Blob has {} bytes, expected {} bytes",
-                blob.len(),
-                kzg_settings.bytes_per_blob()
-            )));
-        }
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         let mut y_out = MaybeUninit::<Bytes32>::uninit();
         unsafe {
@@ -341,13 +334,6 @@ impl KZGProof {
         commitment_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<Self, Error> {
-        if blob.len() != kzg_settings.bytes_per_blob() {
-            return Err(Error::MismatchLength(format!(
-                "Blob has {} bytes, expected {} bytes",
-                blob.len(),
-                kzg_settings.bytes_per_blob()
-            )));
-        }
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
             let res = compute_blob_kzg_proof(
@@ -395,13 +381,6 @@ impl KZGProof {
         proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        if blob.len() != kzg_settings.bytes_per_blob() {
-            return Err(Error::MismatchLength(format!(
-                "Blob has {} bytes, expected {} bytes",
-                blob.len(),
-                kzg_settings.bytes_per_blob()
-            )));
-        }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof(
@@ -488,13 +467,6 @@ impl KZGCommitment {
     }
 
     pub fn blob_to_kzg_commitment(blob: &Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
-        if blob.len() != kzg_settings.bytes_per_blob() {
-            return Err(Error::MismatchLength(format!(
-                "Blob has {} bytes, expected {} bytes",
-                blob.len(),
-                kzg_settings.bytes_per_blob()
-            )));
-        }
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
             let res =
