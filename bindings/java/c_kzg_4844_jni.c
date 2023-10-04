@@ -3,11 +3,13 @@
 #include "c_kzg_4844_jni.h"
 #include "c_kzg_4844.h"
 
+#define NOT_USED(x) (void)(x)
+
 static const char *TRUSTED_SETUP_NOT_LOADED = "Trusted Setup is not loaded.";
 
 KZGSettings *settings;
 
-void reset_trusted_setup()
+void reset_trusted_setup(void)
 {
   if (settings)
   {
@@ -58,11 +60,14 @@ KZGSettings *allocate_settings(JNIEnv *env)
 
 JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
 {
+  NOT_USED(env);
+  NOT_USED(thisCls);
   return (jint)FIELD_ELEMENTS_PER_BLOB;
 }
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
 {
+  NOT_USED(thisCls);
   if (settings)
   {
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
@@ -98,6 +103,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
 {
+  NOT_USED(thisCls);
   if (settings)
   {
     throw_exception(env, "Trusted Setup is already loaded. Free it before loading a new one.");
@@ -142,6 +148,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
 
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEnv *env, jclass thisCls)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -152,6 +159,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(JNIEn
 
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env, jclass thisCls, jbyteArray blob)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -185,6 +193,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitm
 
 JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray z_bytes)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -254,6 +263,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(JNI
 
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -297,6 +307,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgPr
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jbyteArray z_bytes, jbyteArray y_bytes, jbyteArray proof_bytes)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -355,6 +366,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(JNI
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes, jbyteArray proof_bytes)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -404,6 +416,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes, jbyteArray proofs_bytes, jlong count)
 {
+  NOT_USED(thisCls);
   if (settings == NULL)
   {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
