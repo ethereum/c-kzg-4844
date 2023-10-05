@@ -1557,13 +1557,16 @@ static C_KZG_RET bit_reversal_permutation(
 static C_KZG_RET expand_root_of_unity(
     fr_t *out, const fr_t *root, uint64_t width
 ) {
+    uint64_t i;
+    CHECK(width >= 2);
     out[0] = FR_ONE;
     out[1] = *root;
 
-    for (uint64_t i = 2; !fr_is_one(&out[i - 1]); i++) {
-        CHECK(i <= width);
+    for (i = 2; i <= width; i++) {
         blst_fr_mul(&out[i], &out[i - 1], root);
+        if (fr_is_one(&out[i])) break;
     }
+    CHECK(i == width);
     CHECK(fr_is_one(&out[width]));
 
     return C_KZG_OK;
