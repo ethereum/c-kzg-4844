@@ -42,6 +42,17 @@ pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }
 
+/// Bytes representing **valid** blob data w.r.t a given trusted setup.
+///
+/// An object of this type will have `bytes.len()` equal to the number of g1 points in the trusted setup
+/// that was used to create an instance of this type.
+///
+/// Note: This is a private type for use internally in this crate.
+#[derive(PartialEq, Debug)]
+struct Blob<'a> {
+    bytes: &'a [u8],
+}
+
 #[derive(Debug)]
 pub enum Error {
     /// Wrong number of bytes.
@@ -56,6 +67,7 @@ pub enum Error {
     InvalidTrustedSetup(String),
     /// Paired arguments have different lengths.
     MismatchLength(String),
+    InvalidBlob(String),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
 }
@@ -71,7 +83,8 @@ impl fmt::Display for Error {
             | Self::InvalidKzgProof(s)
             | Self::InvalidKzgCommitment(s)
             | Self::InvalidTrustedSetup(s)
-            | Self::MismatchLength(s) => f.write_str(s),
+            | Self::MismatchLength(s)
+            | Self::InvalidBlob(s) => f.write_str(s),
             Self::CError(s) => fmt::Debug::fmt(s, f),
         }
     }
@@ -204,20 +217,33 @@ impl KZGSettings {
         self.bytes_per_blob as usize
     }
 
-    pub fn validate_blob(&self, blob: &[u8]) -> Result<(), Error> {
-        if blob.len() != self.bytes_per_blob() {
-            // TODO: return better error
-            return Err(Error::InvalidBytesLength("Invalid blob".to_string()));
+    /// Checks that the given bytes are valid w.r.t the trusted setup parameters.
+    ///
+    /// Note: This check **does not** guarantee that the bytes form a valid `Blob`.
+    /// It just validates that the `Blob` bytes is consistent w.r.t `Self::bytes_per_blob()`.
+    fn validate_blob<'a>(&self, bytes: &'a [u8]) -> Result<Blob<'a>, Error> {
+        if bytes.len() != self.bytes_per_blob() {
+            return Err(Error::InvalidBlob(format!(
+                "Blob bytes have inconsistent length. \
+                                    Trusted setup bytes_per_blob: {}, \
+                                    Blob length: {}",
+                self.bytes_per_blob(),
+                bytes.len()
+            )));
         }
-        Ok(())
+        Ok(Blob { bytes: bytes })
     }
 
     /// Return the `KzgCommitment` corresponding to the `Blob`.
     pub fn blob_to_kzg_commitment(&self, blob: &[u8]) -> Result<KZGCommitment, Error> {
-        self.validate_blob(blob)?;
+        let validated_blob = self.validate_blob(blob)?;
         let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
         unsafe {
-            let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob.as_ptr(), self);
+            let res = blob_to_kzg_commitment(
+                kzg_commitment.as_mut_ptr(),
+                validated_blob.bytes.as_ptr(),
+                self,
+            );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_commitment.assume_init())
             } else {
@@ -232,14 +258,14 @@ impl KZGSettings {
         blob: &[u8],
         z_bytes: &Bytes32,
     ) -> Result<(KZGProof, Bytes32), Error> {
-        self.validate_blob(blob)?;
+        let validated_blob = self.validate_blob(blob)?;
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         let mut y_out = MaybeUninit::<Bytes32>::uninit();
         unsafe {
             let res = compute_kzg_proof(
                 kzg_proof.as_mut_ptr(),
                 y_out.as_mut_ptr(),
-                blob.as_ptr(),
+                validated_blob.bytes.as_ptr(),
                 z_bytes,
                 self,
             );
@@ -257,12 +283,12 @@ impl KZGSettings {
         blob: &[u8],
         commitment_bytes: &Bytes48,
     ) -> Result<KZGProof, Error> {
-        self.validate_blob(blob)?;
+        let validated_blob = self.validate_blob(blob)?;
         let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
         unsafe {
             let res = compute_blob_kzg_proof(
                 kzg_proof.as_mut_ptr(),
-                blob.as_ptr(),
+                validated_blob.bytes.as_ptr(),
                 commitment_bytes,
                 self,
             );
@@ -307,12 +333,12 @@ impl KZGSettings {
         commitment_bytes: &Bytes48,
         proof_bytes: &Bytes48,
     ) -> Result<bool, Error> {
-        self.validate_blob(blob)?;
+        let validated_blob = self.validate_blob(blob)?;
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
             let res = verify_blob_kzg_proof(
                 verified.as_mut_ptr(),
-                blob.as_ptr(),
+                validated_blob.bytes.as_ptr(),
                 commitment_bytes,
                 proof_bytes,
                 self,
@@ -333,7 +359,7 @@ impl KZGSettings {
         commitments_bytes: &[Bytes48],
         proofs_bytes: &[Bytes48],
     ) -> Result<bool, Error> {
-        blobs
+        let validated_blobs = blobs
             .iter()
             .map(|blob| self.validate_blob(blob))
             .collect::<Result<Vec<_>, Error>>()?;
@@ -353,8 +379,8 @@ impl KZGSettings {
         }
 
         let mut flat_blobs: Vec<u8> = Vec::with_capacity(blobs.len() * self.bytes_per_blob());
-        for blob in blobs {
-            flat_blobs.extend(*blob);
+        for blob in validated_blobs {
+            flat_blobs.extend(blob.bytes);
         }
 
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
