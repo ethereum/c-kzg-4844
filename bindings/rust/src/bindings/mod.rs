@@ -218,6 +218,7 @@ impl KZGSettings {
     }
 
     /// Checks that the given bytes are valid w.r.t the trusted setup parameters.
+    /// Returns a length validated `Blob`
     ///
     /// Note: This check **does not** guarantee that the bytes form a valid `Blob`.
     /// It just validates that the `Blob` bytes is consistent w.r.t `Self::bytes_per_blob()`.
@@ -234,47 +235,23 @@ impl KZGSettings {
         Ok(Blob { bytes: bytes })
     }
 
-    /// Return the `KzgCommitment` corresponding to the `Blob`.
+    /// Return the `KzgCommitment` for the `Blob` represented by the byte slice.
+    /// 
+    /// Note: This method returns an error if the given blob bytes have invalid length.
     pub fn blob_to_kzg_commitment(&self, blob: &[u8]) -> Result<KZGCommitment, Error> {
         let validated_blob = self.validate_blob(blob)?;
-        let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
-        unsafe {
-            let res = blob_to_kzg_commitment(
-                kzg_commitment.as_mut_ptr(),
-                validated_blob.bytes.as_ptr(),
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_commitment.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
+        blob_to_kzg_commitment_internal(validated_blob, self)
     }
 
     /// Compute the `KzgProof` given the `Blob` at the point corresponding to field element `z`.
+    /// Note: This method returns an error if the given blob bytes have invalid length.
     pub fn compute_kzg_proof(
         &self,
         blob: &[u8],
         z_bytes: &Bytes32,
     ) -> Result<(KZGProof, Bytes32), Error> {
         let validated_blob = self.validate_blob(blob)?;
-        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
-        let mut y_out = MaybeUninit::<Bytes32>::uninit();
-        unsafe {
-            let res = compute_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                y_out.as_mut_ptr(),
-                validated_blob.bytes.as_ptr(),
-                z_bytes,
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok((kzg_proof.assume_init(), y_out.assume_init()))
-            } else {
-                Err(Error::CError(res))
-            }
-        }
+        compute_kzg_proof_internal(validated_blob, z_bytes, self)
     }
 
     /// Compute the `KzgProof` given the `Blob` and `KzgCommitment`.
@@ -284,20 +261,7 @@ impl KZGSettings {
         commitment_bytes: &Bytes48,
     ) -> Result<KZGProof, Error> {
         let validated_blob = self.validate_blob(blob)?;
-        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
-        unsafe {
-            let res = compute_blob_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                validated_blob.bytes.as_ptr(),
-                commitment_bytes,
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_proof.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
+        compute_blob_kzg_proof_internal(validated_blob, commitment_bytes, self)
     }
 
     /// Verify a KZG proof claiming that `p(z) == y`.
@@ -308,22 +272,7 @@ impl KZGSettings {
         y_bytes: &Bytes32,
         proof_bytes: &Bytes48,
     ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_kzg_proof(
-                verified.as_mut_ptr(),
-                commitment_bytes,
-                z_bytes,
-                y_bytes,
-                proof_bytes,
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
+        verify_kzg_proof_internal(commitment_bytes, z_bytes, y_bytes, proof_bytes, self)
     }
 
     /// Given a blob and its proof, verify that it corresponds to the provided commitment.
@@ -334,21 +283,7 @@ impl KZGSettings {
         proof_bytes: &Bytes48,
     ) -> Result<bool, Error> {
         let validated_blob = self.validate_blob(blob)?;
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof(
-                verified.as_mut_ptr(),
-                validated_blob.bytes.as_ptr(),
-                commitment_bytes,
-                proof_bytes,
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
+        verify_blob_kzg_proof_internal(validated_blob, commitment_bytes, proof_bytes, self)
     }
 
     /// Given a list of blobs and blob KZG proofs, verify that they correspond to the
@@ -363,41 +298,171 @@ impl KZGSettings {
             .iter()
             .map(|blob| self.validate_blob(blob))
             .collect::<Result<Vec<_>, Error>>()?;
-        if blobs.len() != commitments_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} blobs and {} commitments",
-                blobs.len(),
-                commitments_bytes.len()
-            )));
-        }
-        if blobs.len() != proofs_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} blobs and {} proofs",
-                blobs.len(),
-                proofs_bytes.len()
-            )));
-        }
+        verify_blob_kzg_proof_batch_internal(validated_blobs, commitments_bytes, proofs_bytes, self)
+    }
+}
 
-        let mut flat_blobs: Vec<u8> = Vec::with_capacity(blobs.len() * self.bytes_per_blob());
-        for blob in validated_blobs {
-            flat_blobs.extend(blob.bytes);
+fn blob_to_kzg_commitment_internal<'a>(
+    blob: Blob<'a>,
+    kzg_settings: &KZGSettings,
+) -> Result<KZGCommitment, Error> {
+    let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
+    unsafe {
+        let res = blob_to_kzg_commitment(
+            kzg_commitment.as_mut_ptr(),
+            blob.bytes.as_ptr(),
+            kzg_settings,
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok(kzg_commitment.assume_init())
+        } else {
+            Err(Error::CError(res))
         }
+    }
+}
 
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof_batch(
-                verified.as_mut_ptr(),
-                flat_blobs.as_ptr(),
-                commitments_bytes.as_ptr(),
-                proofs_bytes.as_ptr(),
-                blobs.len(),
-                self,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
+/// Compute the `KzgProof` given the `Blob` at the point corresponding to field element `z`.
+fn compute_kzg_proof_internal<'a>(
+    blob: Blob<'a>,
+    z_bytes: &Bytes32,
+    kzg_settings: &KZGSettings,
+) -> Result<(KZGProof, Bytes32), Error> {
+    let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
+    let mut y_out = MaybeUninit::<Bytes32>::uninit();
+    unsafe {
+        let res = compute_kzg_proof(
+            kzg_proof.as_mut_ptr(),
+            y_out.as_mut_ptr(),
+            blob.bytes.as_ptr(),
+            z_bytes,
+            kzg_settings,
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok((kzg_proof.assume_init(), y_out.assume_init()))
+        } else {
+            Err(Error::CError(res))
+        }
+    }
+}
+
+/// Compute the `KzgProof` given the `Blob` and `KzgCommitment`.
+fn compute_blob_kzg_proof_internal<'a>(
+    blob: Blob<'a>,
+    commitment_bytes: &Bytes48,
+    kzg_settings: &KZGSettings,
+) -> Result<KZGProof, Error> {
+    let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
+    unsafe {
+        let res = compute_blob_kzg_proof(
+            kzg_proof.as_mut_ptr(),
+            blob.bytes.as_ptr(),
+            commitment_bytes,
+            kzg_settings,
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok(kzg_proof.assume_init())
+        } else {
+            Err(Error::CError(res))
+        }
+    }
+}
+
+/// Verify a KZG proof claiming that `p(z) == y`.
+fn verify_kzg_proof_internal(
+    commitment_bytes: &Bytes48,
+    z_bytes: &Bytes32,
+    y_bytes: &Bytes32,
+    proof_bytes: &Bytes48,
+    kzg_settings: &KZGSettings,
+) -> Result<bool, Error> {
+    let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+    unsafe {
+        let res = verify_kzg_proof(
+            verified.as_mut_ptr(),
+            commitment_bytes,
+            z_bytes,
+            y_bytes,
+            proof_bytes,
+            kzg_settings,
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok(verified.assume_init())
+        } else {
+            Err(Error::CError(res))
+        }
+    }
+}
+
+/// Given a blob and its proof, verify that it corresponds to the provided commitment.
+fn verify_blob_kzg_proof_internal<'a>(
+    blob: Blob<'a>,
+    commitment_bytes: &Bytes48,
+    proof_bytes: &Bytes48,
+    kzg_settings: &KZGSettings,
+) -> Result<bool, Error> {
+    let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+    unsafe {
+        let res = verify_blob_kzg_proof(
+            verified.as_mut_ptr(),
+            blob.bytes.as_ptr(),
+            commitment_bytes,
+            proof_bytes,
+            kzg_settings,
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok(verified.assume_init())
+        } else {
+            Err(Error::CError(res))
+        }
+    }
+}
+
+/// Given a list of blobs and blob KZG proofs, verify that they correspond to the
+/// provided commitments.
+fn verify_blob_kzg_proof_batch_internal<'a>(
+    blobs: Vec<Blob<'a>>,
+    commitments_bytes: &[Bytes48],
+    proofs_bytes: &[Bytes48],
+    kzg_settings: &KZGSettings,
+) -> Result<bool, Error> {
+    let num_blobs = blobs.len();
+    if blobs.len() != commitments_bytes.len() {
+        return Err(Error::MismatchLength(format!(
+            "There are {} blobs and {} commitments",
+            num_blobs,
+            commitments_bytes.len()
+        )));
+    }
+    if blobs.len() != proofs_bytes.len() {
+        return Err(Error::MismatchLength(format!(
+            "There are {} blobs and {} proofs",
+            num_blobs,
+            proofs_bytes.len()
+        )));
+    }
+
+    let flat_blobs = blobs.into_iter().fold(
+        Vec::with_capacity(num_blobs * kzg_settings.bytes_per_blob()),
+        |mut acc, blob| {
+            acc.extend(blob.bytes);
+            acc
+        }
+    );
+
+    let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+    unsafe {
+        let res = verify_blob_kzg_proof_batch(
+            verified.as_mut_ptr(),
+            flat_blobs.as_ptr(),
+            commitments_bytes.as_ptr(),
+            proofs_bytes.as_ptr(),
+            num_blobs,
+            kzg_settings
+        );
+        if let C_KZG_RET::C_KZG_OK = res {
+            Ok(verified.assume_init())
+        } else {
+            Err(Error::CError(res))
         }
     }
 }
