@@ -36,7 +36,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let commitments: Vec<Bytes48> = blobs
         .iter()
         .map(|blob| {
-            KzgCommitment::blob_to_kzg_commitment(blob, &kzg_settings)
+            kzg_settings.blob_to_kzg_commitment(blob)
                 .unwrap()
                 .to_bytes()
         })
@@ -45,7 +45,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .iter()
         .zip(commitments.iter())
         .map(|(blob, commitment)| {
-            KzgProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings)
+            kzg_settings.compute_blob_kzg_proof(blob, commitment)
                 .unwrap()
                 .to_bytes()
         })
@@ -55,32 +55,31 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .collect();
 
     c.bench_function("blob_to_kzg_commitment", |b| {
-        b.iter(|| KzgCommitment::blob_to_kzg_commitment(&blobs[0], &kzg_settings))
+        b.iter(|| kzg_settings.blob_to_kzg_commitment(&blobs[0]))
     });
 
     c.bench_function("compute_kzg_proof", |b| {
-        b.iter(|| KzgProof::compute_kzg_proof(&blobs[0], &fields[0], &kzg_settings))
+        b.iter(|| kzg_settings.compute_kzg_proof(&blobs[0], &fields[0]))
     });
 
     c.bench_function("compute_blob_kzg_proof", |b| {
-        b.iter(|| KzgProof::compute_blob_kzg_proof(&blobs[0], &commitments[0], &kzg_settings))
+        b.iter(|| kzg_settings.compute_blob_kzg_proof(&blobs[0], &commitments[0]))
     });
 
     c.bench_function("verify_kzg_proof", |b| {
         b.iter(|| {
-            KzgProof::verify_kzg_proof(
+            kzg_settings.verify_kzg_proof(
                 &commitments[0],
                 &fields[0],
                 &fields[0],
                 &proofs[0],
-                &kzg_settings,
             )
         })
     });
 
     c.bench_function("verify_blob_kzg_proof", |b| {
         b.iter(|| {
-            KzgProof::verify_blob_kzg_proof(&blobs[0], &commitments[0], &proofs[0], &kzg_settings)
+            kzg_settings.verify_blob_kzg_proof(&blobs[0], &commitments[0], &proofs[0])
         })
     });
 
@@ -98,11 +97,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
                     let blobs_subset: Vec<_> = blobs_subset.iter().map(AsRef::as_ref).collect();
-                    KzgProof::verify_blob_kzg_proof_batch(
+                    kzg_settings.verify_blob_kzg_proof_batch(
                         &blobs_subset,
                         commitments_subset,
                         proofs_subset,
-                        &kzg_settings,
                     )
                     .unwrap();
                 },
