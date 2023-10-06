@@ -53,9 +53,10 @@ impl<'de> Deserialize<'de> for Bytes32 {
 #[cfg(test)]
 mod tests {
     use super::super::*;
+    use bytes::Bytes;
     use rand::{rngs::ThreadRng, Rng};
 
-    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Blob {
+    fn generate_random_blob(rng: &mut ThreadRng, s: &KZGSettings) -> Bytes {
         let mut arr = vec![0; s.bytes_per_blob()];
         rng.fill(&mut arr[..]);
         // Ensure that the blob is canonical by ensuring that
@@ -63,7 +64,7 @@ mod tests {
         for i in 0..s.field_elements_per_blob() {
             arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
         }
-        Blob::from_bytes(&arr, &s).unwrap()
+        Bytes::from(arr)
     }
 
     fn trusted_setup_file() -> &'static Path {
@@ -88,11 +89,6 @@ mod tests {
         let proof =
             KZGProof::compute_blob_kzg_proof(&blob, &commitment.to_bytes(), &kzg_settings).unwrap();
 
-        // check blob serialization
-        let blob_serialized = serde_json::to_string(&blob).unwrap();
-        let blob_deserialized = serde_json::from_str(&blob_serialized).unwrap();
-        assert_eq!(blob, blob_deserialized);
-
         // check commitment serialization
         let commitment_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
         let commitment_deserialized: Bytes48 =
@@ -103,30 +99,6 @@ mod tests {
         let proof_serialized = serde_json::to_string(&proof.to_bytes()).unwrap();
         let proof_deserialized: Bytes48 = serde_json::from_str(&proof_serialized).unwrap();
         assert_eq!(proof.to_bytes(), proof_deserialized);
-    }
-
-    #[test]
-    fn test_serialize_blob_with_prefix() {
-        // load setup so we can create blobs
-        let trusted_setup_file = trusted_setup_file();
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-
-        // generate blob
-        let mut rng = rand::thread_rng();
-        let blob = generate_random_blob(&mut rng, &kzg_settings);
-
-        // check blob serialization
-        let blob_serialized = serde_json::to_string(&blob).unwrap();
-
-        // check that this begins with a quote and 0x
-        let mut chars = blob_serialized.chars();
-        assert_eq!(chars.next().unwrap(), '"');
-        assert_eq!(chars.next().unwrap(), '0');
-        assert_eq!(chars.next().unwrap(), 'x');
-
-        // check that it ends with a quote (sanity check)
-        assert_eq!(chars.last().unwrap(), '"');
     }
 
     #[test]

@@ -21,4 +21,4 @@ pub use bindings::{
     BYTES_PER_PROOF,
 };
 // Expose the remaining relevant types.
-pub use bindings::{Blob, Bytes32, Bytes48, Error};
+pub use bindings::{Bytes32, Bytes48, Error};

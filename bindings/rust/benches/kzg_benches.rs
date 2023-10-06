@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use c_kzg::*;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
@@ -11,7 +12,7 @@ fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     arr.into()
 }
 
-fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Blob {
+fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Bytes {
     let mut arr = vec![0; s.bytes_per_blob()];
     rng.fill(&mut arr[..]);
     // Ensure that the blob is canonical by ensuring that
@@ -19,7 +20,7 @@ fn generate_random_blob(rng: &mut ThreadRng, s: &KzgSettings) -> Blob {
     for i in 0..s.field_elements_per_blob() {
         arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
     }
-    Blob::from_bytes(&arr, &s).unwrap()
+    Bytes::from(arr)
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -29,7 +30,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     assert!(trusted_setup_file.exists());
     let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
 
-    let blobs: Vec<Blob> = (0..max_count)
+    let blobs: Vec<Bytes> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng, &kzg_settings))
         .collect();
     let commitments: Vec<Bytes48> = blobs
@@ -96,8 +97,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                     (blobs_subset, commitments_subset, proofs_subset)
                 },
                 |(blobs_subset, commitments_subset, proofs_subset)| {
+                    let blobs_subset: Vec<_> = blobs_subset.iter().map(AsRef::as_ref).collect();
                     KzgProof::verify_blob_kzg_proof_batch(
-                        blobs_subset,
+                        &blobs_subset,
                         commitments_subset,
                         proofs_subset,
                         &kzg_settings,
