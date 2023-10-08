@@ -233,7 +233,7 @@ impl KZGSettings {
                 bytes.len()
             )));
         }
-        Ok(Blob { bytes: bytes })
+        Ok(Blob { bytes })
     }
 
     /// Return the `KzgCommitment` for the `Blob` represented by the byte slice.
@@ -304,8 +304,8 @@ impl KZGSettings {
     }
 }
 
-fn blob_to_kzg_commitment_internal<'a>(
-    blob: Blob<'a>,
+fn blob_to_kzg_commitment_internal(
+    blob: Blob<'_>,
     kzg_settings: &KZGSettings,
 ) -> Result<KZGCommitment, Error> {
     let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
@@ -330,8 +330,8 @@ unsafe impl Send for KZGSettings {}
 
 /* Internal wrappers to ckzg FFI functions */
 
-fn compute_kzg_proof_internal<'a>(
-    blob: Blob<'a>,
+fn compute_kzg_proof_internal(
+    blob: Blob<'_>,
     z_bytes: &Bytes32,
     kzg_settings: &KZGSettings,
 ) -> Result<(KZGProof, Bytes32), Error> {
@@ -353,8 +353,8 @@ fn compute_kzg_proof_internal<'a>(
     }
 }
 
-fn compute_blob_kzg_proof_internal<'a>(
-    blob: Blob<'a>,
+fn compute_blob_kzg_proof_internal(
+    blob: Blob<'_>,
     commitment_bytes: &Bytes48,
     kzg_settings: &KZGSettings,
 ) -> Result<KZGProof, Error> {
@@ -399,8 +399,8 @@ fn verify_kzg_proof_internal(
     }
 }
 
-fn verify_blob_kzg_proof_internal<'a>(
-    blob: Blob<'a>,
+fn verify_blob_kzg_proof_internal(
+    blob: Blob<'_>,
     commitment_bytes: &Bytes48,
     proof_bytes: &Bytes48,
     kzg_settings: &KZGSettings,
@@ -422,8 +422,8 @@ fn verify_blob_kzg_proof_internal<'a>(
     }
 }
 
-fn verify_blob_kzg_proof_batch_internal<'a>(
-    blobs: Vec<Blob<'a>>,
+fn verify_blob_kzg_proof_batch_internal(
+    blobs: Vec<Blob<'_>>,
     commitments_bytes: &[Bytes48],
     proofs_bytes: &[Bytes48],
     kzg_settings: &KZGSettings,
