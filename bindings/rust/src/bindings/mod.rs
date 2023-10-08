@@ -127,10 +127,12 @@ impl KZGSettings {
 
     /// Loads the trusted setup parameters from a file. The file format is as follows:
     ///
+    /// ```
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
+    /// ```
     #[cfg(feature = "std")]
     pub fn load_trusted_setup_file(file_path: &Path) -> Result<Self, Error> {
         #[cfg(unix)]
@@ -154,10 +156,12 @@ impl KZGSettings {
 
     /// Loads the trusted setup parameters from a file. The file format is as follows:
     ///
+    /// ```
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
+    /// ```
     #[cfg(not(feature = "std"))]
     pub fn load_trusted_setup_file(file_path: &CStr) -> Result<Self, Error> {
         Self::load_trusted_setup_file_inner(file_path)
@@ -238,7 +242,7 @@ impl KZGSettings {
 
     /// Return the `KzgCommitment` for the `Blob` represented by the byte slice.
     ///
-    /// Note: This method returns an error if the given blob bytes have invalid length.
+    /// Note: The length of the provided blob **must** be equal to `self.bytes_per_blob()`.
     pub fn blob_to_kzg_commitment(&self, blob: &[u8]) -> Result<KZGCommitment, Error> {
         let validated_blob = self.validate_blob(blob)?;
         blob_to_kzg_commitment_internal(validated_blob, self)
@@ -246,7 +250,8 @@ impl KZGSettings {
 
     /// Compute the `KzgProof` given the `Blob` represented by the byte slice at the
     /// point corresponding to field element `z`.
-    /// Note: This method returns an error if the given blob bytes have invalid length.
+    ///
+    /// Note: The length of the provided blob **must** be equal to `self.bytes_per_blob()`.
     pub fn compute_kzg_proof(
         &self,
         blob: &[u8],
@@ -257,6 +262,8 @@ impl KZGSettings {
     }
 
     /// Compute the `KzgProof` given the `Blob` represented by the byte slice and the `KzgCommitment`.
+    ///
+    /// Note: The length of the provided blob **must** be equal to `self.bytes_per_blob()`.
     pub fn compute_blob_kzg_proof(
         &self,
         blob: &[u8],
@@ -278,6 +285,8 @@ impl KZGSettings {
     }
 
     /// Verify that the `Blob` represented by the byte slice and its `KzgProof` corresponds to the provided `KzgCommitment`.
+    ///
+    /// Note: The length of the provided blob **must** be equal to `self.bytes_per_blob()`.
     pub fn verify_blob_kzg_proof(
         &self,
         blob: &[u8],
@@ -290,6 +299,8 @@ impl KZGSettings {
 
     /// Given a list of `Blob` represented by their byte slices and `KzgProof`, verify that they correspond to the
     /// provided `KzgCommitment`.
+    ///
+    /// Note: The length of each blob **must** be equal to `self.bytes_per_blob()`.
     pub fn verify_blob_kzg_proof_batch(
         &self,
         blobs: &[&[u8]],
@@ -303,6 +314,13 @@ impl KZGSettings {
         verify_blob_kzg_proof_batch_internal(validated_blobs, commitments_bytes, proofs_bytes, self)
     }
 }
+
+/// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
+/// calling `free_trusted_setup` which only happens when we drop the struct.
+unsafe impl Sync for KZGSettings {}
+unsafe impl Send for KZGSettings {}
+
+/* Internal wrappers to ckzg FFI functions */
 
 fn blob_to_kzg_commitment_internal(
     blob: Blob<'_>,
@@ -322,13 +340,6 @@ fn blob_to_kzg_commitment_internal(
         }
     }
 }
-
-/// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
-/// calling `free_trusted_setup` which only happens when we drop the struct.
-unsafe impl Sync for KZGSettings {}
-unsafe impl Send for KZGSettings {}
-
-/* Internal wrappers to ckzg FFI functions */
 
 fn compute_kzg_proof_internal(
     blob: Blob<'_>,

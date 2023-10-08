@@ -3,7 +3,6 @@ use c_kzg::*;
 use criterion::{criterion_group, criterion_main, BatchSize, BenchmarkId, Criterion, Throughput};
 use rand::{rngs::ThreadRng, Rng};
 use std::path::Path;
-use std::sync::Arc;
 
 fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     let mut arr = [0u8; BYTES_PER_FIELD_ELEMENT];
@@ -28,7 +27,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
     assert!(trusted_setup_file.exists());
-    let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
+    let kzg_settings = KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 
     let blobs: Vec<Bytes> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng, &kzg_settings))
