@@ -5,8 +5,8 @@ pub mod verify_blob_kzg_proof;
 pub mod verify_blob_kzg_proof_batch;
 pub mod verify_kzg_proof;
 
-use bytes::Bytes;
 use crate::Error;
+use bytes::Bytes;
 
 use super::hex_to_bytes;
 

@@ -86,8 +86,9 @@ mod tests {
         let mut rng = rand::thread_rng();
         let blob = generate_random_blob(&mut rng, &kzg_settings);
         let commitment = kzg_settings.blob_to_kzg_commitment(&blob).unwrap();
-        let proof =
-            kzg_settings.compute_blob_kzg_proof(&blob, &commitment.to_bytes()).unwrap();
+        let proof = kzg_settings
+            .compute_blob_kzg_proof(&blob, &commitment.to_bytes())
+            .unwrap();
 
         // check commitment serialization
         let commitment_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();

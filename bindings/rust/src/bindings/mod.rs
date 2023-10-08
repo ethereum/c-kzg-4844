@@ -47,7 +47,7 @@ pub struct KZGProof {
 /// An object of this type will have `bytes.len()` equal to the number of g1 points in the trusted setup
 /// that was used to create an instance of this type.
 ///
-/// Note: This is a private type for use internally in this crate.
+/// Note: This is a private type for use internally in this module.
 #[derive(PartialEq, Debug)]
 struct Blob<'a> {
     bytes: &'a [u8],
@@ -67,6 +67,7 @@ pub enum Error {
     InvalidTrustedSetup(String),
     /// Paired arguments have different lengths.
     MismatchLength(String),
+    /// The provided `Blob` is invalid.
     InvalidBlob(String),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
@@ -236,14 +237,15 @@ impl KZGSettings {
     }
 
     /// Return the `KzgCommitment` for the `Blob` represented by the byte slice.
-    /// 
+    ///
     /// Note: This method returns an error if the given blob bytes have invalid length.
     pub fn blob_to_kzg_commitment(&self, blob: &[u8]) -> Result<KZGCommitment, Error> {
         let validated_blob = self.validate_blob(blob)?;
         blob_to_kzg_commitment_internal(validated_blob, self)
     }
 
-    /// Compute the `KzgProof` given the `Blob` at the point corresponding to field element `z`.
+    /// Compute the `KzgProof` given the `Blob` represented by the byte slice at the
+    /// point corresponding to field element `z`.
     /// Note: This method returns an error if the given blob bytes have invalid length.
     pub fn compute_kzg_proof(
         &self,
@@ -254,7 +256,7 @@ impl KZGSettings {
         compute_kzg_proof_internal(validated_blob, z_bytes, self)
     }
 
-    /// Compute the `KzgProof` given the `Blob` and `KzgCommitment`.
+    /// Compute the `KzgProof` given the `Blob` represented by the byte slice and the `KzgCommitment`.
     pub fn compute_blob_kzg_proof(
         &self,
         blob: &[u8],
@@ -275,7 +277,7 @@ impl KZGSettings {
         verify_kzg_proof_internal(commitment_bytes, z_bytes, y_bytes, proof_bytes, self)
     }
 
-    /// Given a blob and its proof, verify that it corresponds to the provided commitment.
+    /// Verify that the `Blob` represented by the byte slice and its `KzgProof` corresponds to the provided `KzgCommitment`.
     pub fn verify_blob_kzg_proof(
         &self,
         blob: &[u8],
@@ -286,8 +288,8 @@ impl KZGSettings {
         verify_blob_kzg_proof_internal(validated_blob, commitment_bytes, proof_bytes, self)
     }
 
-    /// Given a list of blobs and blob KZG proofs, verify that they correspond to the
-    /// provided commitments.
+    /// Given a list of `Blob` represented by their byte slices and `KzgProof`, verify that they correspond to the
+    /// provided `KzgCommitment`.
     pub fn verify_blob_kzg_proof_batch(
         &self,
         blobs: &[&[u8]],
@@ -321,7 +323,13 @@ fn blob_to_kzg_commitment_internal<'a>(
     }
 }
 
-/// Compute the `KzgProof` given the `Blob` at the point corresponding to field element `z`.
+/// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
+/// calling `free_trusted_setup` which only happens when we drop the struct.
+unsafe impl Sync for KZGSettings {}
+unsafe impl Send for KZGSettings {}
+
+/* Internal wrappers to ckzg FFI functions */
+
 fn compute_kzg_proof_internal<'a>(
     blob: Blob<'a>,
     z_bytes: &Bytes32,
@@ -345,7 +353,6 @@ fn compute_kzg_proof_internal<'a>(
     }
 }
 
-/// Compute the `KzgProof` given the `Blob` and `KzgCommitment`.
 fn compute_blob_kzg_proof_internal<'a>(
     blob: Blob<'a>,
     commitment_bytes: &Bytes48,
@@ -367,7 +374,6 @@ fn compute_blob_kzg_proof_internal<'a>(
     }
 }
 
-/// Verify a KZG proof claiming that `p(z) == y`.
 fn verify_kzg_proof_internal(
     commitment_bytes: &Bytes48,
     z_bytes: &Bytes32,
@@ -393,7 +399,6 @@ fn verify_kzg_proof_internal(
     }
 }
 
-/// Given a blob and its proof, verify that it corresponds to the provided commitment.
 fn verify_blob_kzg_proof_internal<'a>(
     blob: Blob<'a>,
     commitment_bytes: &Bytes48,
@@ -417,8 +422,6 @@ fn verify_blob_kzg_proof_internal<'a>(
     }
 }
 
-/// Given a list of blobs and blob KZG proofs, verify that they correspond to the
-/// provided commitments.
 fn verify_blob_kzg_proof_batch_internal<'a>(
     blobs: Vec<Blob<'a>>,
     commitments_bytes: &[Bytes48],
@@ -446,7 +449,7 @@ fn verify_blob_kzg_proof_batch_internal<'a>(
         |mut acc, blob| {
             acc.extend(blob.bytes);
             acc
-        }
+        },
     );
 
     let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -457,7 +460,7 @@ fn verify_blob_kzg_proof_batch_internal<'a>(
             commitments_bytes.as_ptr(),
             proofs_bytes.as_ptr(),
             num_blobs,
-            kzg_settings
+            kzg_settings,
         );
         if let C_KZG_RET::C_KZG_OK = res {
             Ok(verified.assume_init())
@@ -618,11 +621,6 @@ impl Deref for KZGCommitment {
         &self.bytes
     }
 }
-
-/// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
-/// calling `free_trusted_setup` which only happens when we drop the struct.
-unsafe impl Sync for KZGSettings {}
-unsafe impl Send for KZGSettings {}
 
 #[cfg(test)]
 #[allow(unused_imports, dead_code)]
