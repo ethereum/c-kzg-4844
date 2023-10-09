@@ -127,12 +127,10 @@ impl KZGSettings {
 
     /// Loads the trusted setup parameters from a file. The file format is as follows:
     ///
-    /// ```
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
-    /// ```
     #[cfg(feature = "std")]
     pub fn load_trusted_setup_file(file_path: &Path) -> Result<Self, Error> {
         #[cfg(unix)]
@@ -156,12 +154,10 @@ impl KZGSettings {
 
     /// Loads the trusted setup parameters from a file. The file format is as follows:
     ///
-    /// ```
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
     /// FIELD_ELEMENT_PER_BLOB g1 byte values
     /// 65 g2 byte values
-    /// ```
     #[cfg(not(feature = "std"))]
     pub fn load_trusted_setup_file(file_path: &CStr) -> Result<Self, Error> {
         Self::load_trusted_setup_file_inner(file_path)
