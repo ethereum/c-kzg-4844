@@ -7,7 +7,7 @@ static const char *TRUSTED_SETUP_NOT_LOADED = "Trusted Setup is not loaded.";
 
 KZGSettings *settings;
 
-void reset_trusted_setup()
+void reset_trusted_setup(void)
 {
   if (settings)
   {
