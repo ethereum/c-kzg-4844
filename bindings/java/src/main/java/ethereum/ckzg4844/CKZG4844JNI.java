@@ -13,19 +13,10 @@ public class CKZG4844JNI {
   private static final String LIBRARY_NAME = "ckzg4844jni";
   private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
-  /**
-   * Loads the appropriate native library based on your platform and the selected {@link Preset}
-   *
-   * @param preset the preset
-   */
-  public static void loadNativeLibrary(Preset preset) {
+  /** Loads the appropriate native library based on your platform. */
+  public static void loadNativeLibrary() {
     String libraryResourcePath =
-        "lib/"
-            + System.getProperty("os.arch")
-            + "/"
-            + preset.name().toLowerCase()
-            + "/"
-            + PLATFORM_NATIVE_LIBRARY_NAME;
+        "lib/" + System.getProperty("os.arch") + "/" + PLATFORM_NATIVE_LIBRARY_NAME;
     InputStream libraryResource = CKZG4844JNI.class.getResourceAsStream(libraryResourcePath);
     if (libraryResource == null) {
       try {
@@ -52,17 +43,6 @@ public class CKZG4844JNI {
     }
   }
 
-  public enum Preset {
-    MAINNET(4096),
-    MINIMAL(4);
-
-    public final int fieldElementsPerBlob;
-
-    Preset(int fieldElementsPerBlob) {
-      this.fieldElementsPerBlob = fieldElementsPerBlob;
-    }
-  }
-
   /** Scalar field modulus of BLS12-381 */
   public static final BigInteger BLS_MODULUS =
       new BigInteger(
@@ -77,25 +57,12 @@ public class CKZG4844JNI {
   public static final int BYTES_PER_PROOF = 48;
   /** Bytes used to encode a BLS scalar field element */
   public static final int BYTES_PER_FIELD_ELEMENT = 32;
+  /** Number of field elements in a blob */
+  public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
+  /** Number of field elements in a blob */
+  public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
 
   private CKZG4844JNI() {}
-
-  /**
-   * Calculates the bytes per blob based on the output from {@link #getFieldElementsPerBlob()}
-   *
-   * @return the bytes per blob
-   */
-  public static int getBytesPerBlob() {
-    return getFieldElementsPerBlob() * BYTES_PER_FIELD_ELEMENT;
-  }
-
-  /**
-   * Retrieves the compile-time configured FIELD_ELEMENTS_PER_BLOB. The value will be based on the
-   * selected {@link Preset} when loading the native library.
-   *
-   * @return the field elements per blob
-   */
-  public static native int getFieldElementsPerBlob();
 
   /**
    * Loads the trusted setup from a file. Once loaded, the same setup will be used for all the

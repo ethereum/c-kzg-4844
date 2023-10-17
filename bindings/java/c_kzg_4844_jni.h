@@ -13,13 +13,10 @@ extern "C" {
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_PROOF 48L
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_FIELD_ELEMENT
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_FIELD_ELEMENT 32L
-/*
- * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    getFieldElementsPerBlob
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob
-  (JNIEnv *, jclass);
+#undef ethereum_ckzg4844_CKZG4844JNI_FIELD_ELEMENTS_PER_BLOB
+#define ethereum_ckzg4844_CKZG4844JNI_FIELD_ELEMENTS_PER_BLOB 4096L
+#undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_BLOB
+#define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_BLOB 131072L
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
