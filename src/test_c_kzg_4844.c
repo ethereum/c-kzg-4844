@@ -538,8 +538,8 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     bytes48_from_hex(
         &expected_commitment,
 #ifdef MAINNET
-        "9815ded2101b6d233fdf31d826ba0557778506df8526f42a"
-        "87ccd82db36a238b50f8965c25d4484782097436d29e458e"
+        "91a5e1c143820d2e7bec38a5404c5145807cb88c0abbbecb"
+        "cb4bccc83a4b417326e337574cff43303f8a6648ecbee7ac"
 #else
         "95d2d20379b60c353a9c2c75333a5d7d26d5ef5137c5200b"
         "51bc9d0fd82d0270e98ac9d41a44c366684089e385e815e6"
@@ -1121,8 +1121,8 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     bytes48_from_hex(
         &expected_proof,
 #ifdef MAINNET
-        "899b7e1e7ff2e9b28c631d2f9d6b9ae828749c9dbf84f3f4"
-        "3b910bda9558f360f2fa0dac1143460b55908406038eb538"
+        "b21f8f9b85e52fd9c4a6d4fb4e9a27ebdc5a09c3f5ca17f6"
+        "bcd85c26f04953b0e6925607aaebed1087e5cc2fe4b2b356"
 #else
         "a846d83184f6d5b67bbbe905a875f6cfaf1c905e527ea49c"
         "0616992fb8cce56d202c702b83d6fbe1fa75cacb050ffc27"
