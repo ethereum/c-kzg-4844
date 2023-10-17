@@ -36,32 +36,6 @@ extern "C" {
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
- * Helper function for when LIB_PREFIX is defined.
- */
-#ifdef LIB_PREFIX
-#define CONCAT_IMPL(a, b) a##_##b
-#define CONCAT(a, b) CONCAT_IMPL(a, b)
-#define PREFIX_FUNCNAME(name) CONCAT(LIB_PREFIX, name)
-#else
-#define PREFIX_FUNCNAME(name) (name)
-#endif /* LIB_PREFIX */
-
-/*
- * If LIB_PREFIX is defined, the following functions will prepend `LIB_PREFIX`
- * to all public methods of this library. If LIB_PREFIX is undefined,
- * everything stays as is.
- */
-#define BLOB_TO_KZG_COMMITMENT PREFIX_FUNCNAME(blob_to_kzg_commitment)
-#define COMPUTE_KZG_PROOF PREFIX_FUNCNAME(compute_kzg_proof)
-#define COMPUTE_BLOB_KZG_PROOF PREFIX_FUNCNAME(compute_blob_kzg_proof)
-#define VERIFY_KZG_PROOF PREFIX_FUNCNAME(verify_kzg_proof)
-#define VERIFY_BLOB_KZG_PROOF PREFIX_FUNCNAME(verify_blob_kzg_proof)
-#define VERIFY_BLOB_KZG_PROOF_BATCH PREFIX_FUNCNAME(verify_blob_kzg_proof_batch)
-#define LOAD_TRUSTED_SETUP PREFIX_FUNCNAME(load_trusted_setup)
-#define LOAD_TRUSTED_SETUP_FILE PREFIX_FUNCNAME(load_trusted_setup_file)
-#define FREE_TRUSTED_SETUP PREFIX_FUNCNAME(free_trusted_setup)
-
 /** The number of bytes in a KZG commitment. */
 #define BYTES_PER_COMMITMENT 48
 
@@ -149,7 +123,7 @@ typedef struct {
 // Interface functions
 ///////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET LOAD_TRUSTED_SETUP(
+C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_bytes, /* n1 * 48 bytes */
     size_t n1,
@@ -157,15 +131,15 @@ C_KZG_RET LOAD_TRUSTED_SETUP(
     size_t n2
 );
 
-C_KZG_RET LOAD_TRUSTED_SETUP_FILE(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
 
-void FREE_TRUSTED_SETUP(KZGSettings *s);
+void free_trusted_setup(KZGSettings *s);
 
-C_KZG_RET BLOB_TO_KZG_COMMITMENT(
+C_KZG_RET blob_to_kzg_commitment(
     KZGCommitment *out, const Blob *blob, const KZGSettings *s
 );
 
-C_KZG_RET COMPUTE_KZG_PROOF(
+C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
     Bytes32 *y_out,
     const Blob *blob,
@@ -173,14 +147,14 @@ C_KZG_RET COMPUTE_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET COMPUTE_BLOB_KZG_PROOF(
+C_KZG_RET compute_blob_kzg_proof(
     KZGProof *out,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
     const KZGSettings *s
 );
 
-C_KZG_RET VERIFY_KZG_PROOF(
+C_KZG_RET verify_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes32 *z_bytes,
@@ -189,7 +163,7 @@ C_KZG_RET VERIFY_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET VERIFY_BLOB_KZG_PROOF(
+C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
     const Blob *blob,
     const Bytes48 *commitment_bytes,
@@ -197,7 +171,7 @@ C_KZG_RET VERIFY_BLOB_KZG_PROOF(
     const KZGSettings *s
 );
 
-C_KZG_RET VERIFY_BLOB_KZG_PROOF_BATCH(
+C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
