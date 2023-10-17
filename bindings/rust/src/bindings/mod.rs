@@ -9,30 +9,6 @@ mod test_formats;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-#[cfg(not(feature = "minimal-spec"))]
-use {
-    ckzg_blob_to_kzg_commitment as blob_to_kzg_commitment,
-    ckzg_compute_blob_kzg_proof as compute_blob_kzg_proof,
-    ckzg_compute_kzg_proof as compute_kzg_proof, ckzg_free_trusted_setup as free_trusted_setup,
-    ckzg_load_trusted_setup as load_trusted_setup,
-    ckzg_load_trusted_setup_file as load_trusted_setup_file,
-    ckzg_verify_blob_kzg_proof as verify_blob_kzg_proof,
-    ckzg_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
-    ckzg_verify_kzg_proof as verify_kzg_proof,
-};
-#[cfg(feature = "minimal-spec")]
-use {
-    ckzg_min_blob_to_kzg_commitment as blob_to_kzg_commitment,
-    ckzg_min_compute_blob_kzg_proof as compute_blob_kzg_proof,
-    ckzg_min_compute_kzg_proof as compute_kzg_proof,
-    ckzg_min_free_trusted_setup as free_trusted_setup,
-    ckzg_min_load_trusted_setup as load_trusted_setup,
-    ckzg_min_load_trusted_setup_file as load_trusted_setup_file,
-    ckzg_min_verify_blob_kzg_proof as verify_blob_kzg_proof,
-    ckzg_min_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
-    ckzg_min_verify_kzg_proof as verify_kzg_proof,
-};
-
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ffi::CStr;
@@ -660,11 +636,7 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        let trusted_setup_file = if cfg!(feature = "minimal-spec") {
-            Path::new("../../src/trusted_setup_4.txt")
-        } else {
-            Path::new("../../src/trusted_setup.txt")
-        };
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         test_simple(trusted_setup_file);
     }
 
@@ -675,7 +647,6 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/*/*/*";
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_blob_to_kzg_commitment() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -702,7 +673,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -732,7 +702,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_blob_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -760,7 +729,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -792,7 +760,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -823,7 +790,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
