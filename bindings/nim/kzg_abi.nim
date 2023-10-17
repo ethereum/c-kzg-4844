@@ -8,9 +8,6 @@ import
 from os import DirSep, AltSep
 
 const
-  # FIELD_ELEMENTS_PER_BLOB is overrideable from
-  # compiler switch -d: or --define:
-  FIELD_ELEMENTS_PER_BLOB* {.intdefine.} = 4096
   # kzgPath: c-kzg-4844 project path, removing 3 last elem
   kzgPath  = currentSourcePath.rsplit({DirSep, AltSep}, 3)[0] & "/"
   blstPath = kzgPath & "blst/"
@@ -25,12 +22,11 @@ when not defined(kzgExternalBlst):
 
 {.compile: srcPath & "c_kzg_4844.c"}
 
-{.passc: "-I" & bindingsPath &
-  " -DFIELD_ELEMENTS_PER_BLOB=" &
-  fmt"{FIELD_ELEMENTS_PER_BLOB}".}
+{.passc: "-I" & bindingsPath .}
 {.passc: "-I" & srcPath .}
 
 const
+  FIELD_ELEMENTS_PER_BLOB* = 4096
   BYTES_PER_FIELD_ELEMENT* = 32
   KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
 

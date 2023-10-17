@@ -77,7 +77,7 @@ suite "verify proof (high-level)":
 
   test "template aliases":
     # no need to check return value
-    # only test if those templates can be compiled succesfully
+    # only test if those templates can be compiled successfully
     let res = loadTrustedSetupFile(trustedSetupFile)
     check res.isOk
     ctx = res.get
