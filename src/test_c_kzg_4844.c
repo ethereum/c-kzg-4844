@@ -13,22 +13,6 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-// Macros
-///////////////////////////////////////////////////////////////////////////////
-
-#if FIELD_ELEMENTS_PER_BLOB == 4096
-#define MAINNET
-#define TRUSTED_SETUP_FILE "trusted_setup.txt"
-#define MAX_WIDTH 32
-#elif FIELD_ELEMENTS_PER_BLOB == 4
-#define MINIMAL
-#define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
-#define MAX_WIDTH 4
-#else
-#error FIELD_ELEMENTS_PER_BLOB must be 4096 or 4
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -537,13 +521,8 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
      */
     bytes48_from_hex(
         &expected_commitment,
-#ifdef MAINNET
         "91a5e1c143820d2e7bec38a5404c5145807cb88c0abbbecb"
         "cb4bccc83a4b417326e337574cff43303f8a6648ecbee7ac"
-#else
-        "95d2d20379b60c353a9c2c75333a5d7d26d5ef5137c5200b"
-        "51bc9d0fd82d0270e98ac9d41a44c366684089e385e815e6"
-#endif
     );
     diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
@@ -1120,13 +1099,8 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
 
     bytes48_from_hex(
         &expected_proof,
-#ifdef MAINNET
         "b21f8f9b85e52fd9c4a6d4fb4e9a27ebdc5a09c3f5ca17f6"
         "bcd85c26f04953b0e6925607aaebed1087e5cc2fe4b2b356"
-#else
-        "a846d83184f6d5b67bbbe905a875f6cfaf1c905e527ea49c"
-        "0616992fb8cce56d202c702b83d6fbe1fa75cacb050ffc27"
-#endif
     );
 
     /* Compare the computed proof to the expected proof */
@@ -1837,7 +1811,7 @@ static void setup(void) {
     C_KZG_RET ret;
 
     /* Open the mainnet trusted setup file */
-    fp = fopen(TRUSTED_SETUP_FILE, "r");
+    fp = fopen("trusted_setup.txt", "r");
     assert(fp != NULL);
 
     /* Load that trusted setup file */
