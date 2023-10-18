@@ -46,7 +46,7 @@ public class TestUtils {
 
   public static byte[] createRandomBlob() {
     final byte[][] blob =
-        IntStream.range(0, CKZG4844JNI.getFieldElementsPerBlob())
+        IntStream.range(0, CKZG4844JNI.FIELD_ELEMENTS_PER_BLOB)
             .mapToObj(__ -> randomBLSFieldElement())
             .map(fieldElement -> fieldElement.toArray(ByteOrder.BIG_ENDIAN))
             .toArray(byte[][]::new);
@@ -81,7 +81,7 @@ public class TestUtils {
 
   public static byte[] createNonCanonicalBlob() {
     final byte[][] blob =
-        IntStream.range(0, CKZG4844JNI.getFieldElementsPerBlob())
+        IntStream.range(0, CKZG4844JNI.FIELD_ELEMENTS_PER_BLOB)
             .mapToObj(__ -> UInt256.valueOf(CKZG4844JNI.BLS_MODULUS.add(BigInteger.valueOf(42))))
             .map(greaterThanModulus -> greaterThanModulus.toArray(ByteOrder.BIG_ENDIAN))
             .toArray(byte[][]::new);

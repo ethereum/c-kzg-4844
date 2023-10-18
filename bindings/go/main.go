@@ -2,9 +2,6 @@ package ckzg4844
 
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers
-// #ifndef FIELD_ELEMENTS_PER_BLOB
-// #define FIELD_ELEMENTS_PER_BLOB 4096
-// #endif
 // #include "c_kzg_4844.c"
 import "C"
 

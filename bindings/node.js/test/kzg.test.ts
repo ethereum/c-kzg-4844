@@ -25,7 +25,7 @@ import {
   ProofResult,
 } from "../lib/kzg";
 
-const SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "testing_trusted_setups.json");
+const SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
 
 const MAX_TOP_BYTE = 114;
 

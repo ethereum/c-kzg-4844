@@ -19,13 +19,8 @@ ifeq ($(PLATFORM),Darwin)
 	XCRUN = xcrun
 endif
 
-# By default, this is set to the mainnet value.
-FIELD_ELEMENTS_PER_BLOB ?= 4096
-
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I../inc
-CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
-CFLAGS += -O2 -Wall -Wextra -Wpedantic
+CFLAGS += -I../inc -O2 -Wall -Wextra
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)

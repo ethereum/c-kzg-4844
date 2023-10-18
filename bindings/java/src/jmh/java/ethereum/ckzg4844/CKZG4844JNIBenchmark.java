@@ -1,6 +1,5 @@
 package ethereum.ckzg4844;
 
-import ethereum.ckzg4844.CKZG4844JNI.Preset;
 import java.util.concurrent.TimeUnit;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
@@ -25,7 +24,7 @@ import org.openjdk.jmh.annotations.Warmup;
 public class CKZG4844JNIBenchmark {
 
   static {
-    CKZG4844JNI.loadNativeLibrary(Preset.MAINNET);
+    CKZG4844JNI.loadNativeLibrary();
   }
 
   @State(Scope.Benchmark)

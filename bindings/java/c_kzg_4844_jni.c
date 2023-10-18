@@ -56,11 +56,6 @@ KZGSettings *allocate_settings(JNIEnv *env)
   return s;
 }
 
-JNIEXPORT jint JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getFieldElementsPerBlob(JNIEnv *env, jclass thisCls)
-{
-  return (jint)FIELD_ELEMENTS_PER_BLOB;
-}
-
 JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
 {
   if (settings)
