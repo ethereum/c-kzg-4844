@@ -53,7 +53,7 @@ all: build test benchmark
 .PHONY: build
 build:
 	mkdir -p ${LIBRARY_FOLDER}
-	${CLANG_EXECUTABLE} ${CC_FLAGS} ${CLANG_FLAGS} ${OPTIMIZATION_LEVEL} -Wall -Wextra -Wpedantic -Werror -Wno-missing-braces -Wno-unused-parameter -Wno-format ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -o ${LIBRARY_FOLDER}/${LIBRARY_RESOURCE} ${TARGETS}
+	${CLANG_EXECUTABLE} ${CC_FLAGS} ${CLANG_FLAGS} ${OPTIMIZATION_LEVEL} -Wall -Wextra -Werror -Wno-missing-braces -Wno-unused-parameter -Wno-format ${addprefix -I,${INCLUDE_DIRS}} -I"${JAVA_HOME}/include" -I"${JAVA_HOME}/include/${JNI_INCLUDE_FOLDER}" -o ${LIBRARY_FOLDER}/${LIBRARY_RESOURCE} ${TARGETS}
 
 .PHONY: test
 test:

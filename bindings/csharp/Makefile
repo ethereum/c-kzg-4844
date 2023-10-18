@@ -41,7 +41,7 @@ endif
 INCLUDE_DIRS = ../../src ../../blst/bindings
 TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 
-CFLAGS += -O2 -Wall -Wextra -Wpedantic -shared
+CFLAGS += -O2 -Wall -Wextra -shared
 CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
 BLST_BUILDSCRIPT_FLAGS += -D__BLST_PORTABLE__
 ifdef ARCH

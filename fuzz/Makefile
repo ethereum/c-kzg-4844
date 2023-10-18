@@ -7,7 +7,7 @@ CC = clang
 FIELD_ELEMENTS_PER_BLOB ?= 4096
 
 CFLAGS += -I../inc
-CFLAGS += -Wall -Wextra -Wpedantic -Werror -O0
+CFLAGS += -Wall -Wextra -Werror -O0
 CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += -g -fsanitize=fuzzer
 
