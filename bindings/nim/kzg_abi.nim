@@ -3,7 +3,7 @@
 ############################################################
 
 import
-  std/[strformat, strutils]
+  std/strutils
 
 from os import DirSep, AltSep
 
