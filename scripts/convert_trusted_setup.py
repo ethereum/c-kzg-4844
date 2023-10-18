@@ -8,8 +8,8 @@ from typing import TextIO
 def convert(ts_json: TextIO, ts_text: TextIO) -> None:
     """Convert trusted setup to text format."""
     trusted_setup = json.load(ts_json)
-    g1_values = trusted_setup["setup_G1_lagrange"]
-    g2_values = trusted_setup["setup_G2"]
+    g1_values = trusted_setup["g1_lagrange"]
+    g2_values = trusted_setup["g2_monomial"]
 
     print(len(g1_values), file=ts_text)
     print(len(g2_values), file=ts_text)
