@@ -82,11 +82,7 @@ mod tests {
     }
 
     fn trusted_setup_file() -> &'static Path {
-        if cfg!(feature = "minimal-spec") {
-            Path::new("../../src/trusted_setup_4.txt")
-        } else {
-            Path::new("../../src/trusted_setup.txt")
-        }
+        Path::new("../../src/trusted_setup.txt")
     }
 
     #[test]

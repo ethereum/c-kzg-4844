@@ -10,3 +10,5 @@ Ckzg.Bindings/runtimes/*/native/*
 test_ckzg*
 *.so
 *.dll
+*.exe
+*.dylib

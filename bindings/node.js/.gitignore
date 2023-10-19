@@ -3,4 +3,4 @@ deps
 dist
 *.node
 node_modules
-test/__fixtures__/testing_trusted_setups.*
+test/__fixtures__/trusted_setup.*

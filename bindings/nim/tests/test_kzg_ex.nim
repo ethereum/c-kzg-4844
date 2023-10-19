@@ -74,7 +74,7 @@ suite "verify proof (extended version)":
 
   test "template aliases":
     # no need to check return value
-    # only test if those templates can be compiled succesfully
+    # only test if those templates can be compiled successfully
     check Kzg.freeTrustedSetup().isOk
     check Kzg.loadTrustedSetupFile(trustedSetupFile).isOk
     discard blobToKzgCommitment(blob)

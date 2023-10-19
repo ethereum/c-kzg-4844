@@ -26,11 +26,7 @@ jobs:
         run: |
           cd src
           make blst
-      - name: Build and Test (mainnet preset)
+      - name: Build and Test
         run: |
           cd bindings/java
           make build test
-      - name: Build and Test (minimal preset)
-        run: |
-          cd bindings/java
-          make PRESET=minimal build test

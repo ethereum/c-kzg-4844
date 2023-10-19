@@ -7,7 +7,8 @@ ifeq ($(OS),Windows_NT)
 	BLST_OBJ = blst.lib
 	LOCATION ?= win-x64
 	CLANG_EXECUTABLE = clang
-	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg.dll
+	EXTENSION ?= ".dll"
+	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg$(EXTENSION)
 	CFLAGS += -Wl,/def:ckzg.def
 else
 	BLST_BUILDSCRIPT = ./build.sh
@@ -18,6 +19,7 @@ else
 	UNAME_S := $(shell uname -s)
 	UNAME_M := $(shell uname -m)
 	ifeq ($(UNAME_S),Linux)
+		EXTENSION ?= ".so"
 		ifeq ($(UNAME_M),x86_64)
 			LOCATION ?= linux-x64
 		else
@@ -25,6 +27,7 @@ else
 		endif
 	endif
 	ifeq ($(UNAME_S),Darwin)
+		EXTENSION ?= ".dylib"
 		ifeq ($(UNAME_M),arm64)
 			LOCATION ?= osx-arm64
 		else
@@ -32,15 +35,13 @@ else
 		endif
 	endif
 
-	CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg.so
+	CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg$(EXTENSION)
 endif
 
-FIELD_ELEMENTS_PER_BLOB ?= 4096
 INCLUDE_DIRS = ../../src ../../blst/bindings
 TARGETS = ckzg.c ../../src/c_kzg_4844.c ../../blst/$(BLST_OBJ)
 
 CFLAGS += -O2 -Wall -Wextra -shared
-CFLAGS += -DFIELD_ELEMENTS_PER_BLOB=$(FIELD_ELEMENTS_PER_BLOB)
 CFLAGS += ${addprefix -I,${INCLUDE_DIRS}}
 BLST_BUILDSCRIPT_FLAGS += -D__BLST_PORTABLE__
 ifdef ARCH

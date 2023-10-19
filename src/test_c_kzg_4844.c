@@ -13,22 +13,6 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
-// Macros
-///////////////////////////////////////////////////////////////////////////////
-
-#if FIELD_ELEMENTS_PER_BLOB == 4096
-#define MAINNET
-#define TRUSTED_SETUP_FILE "trusted_setup.txt"
-#define MAX_WIDTH 32
-#elif FIELD_ELEMENTS_PER_BLOB == 4
-#define MINIMAL
-#define TRUSTED_SETUP_FILE "trusted_setup_4.txt"
-#define MAX_WIDTH 4
-#else
-#error FIELD_ELEMENTS_PER_BLOB must be 4096 or 4
-#endif
-
-///////////////////////////////////////////////////////////////////////////////
 // Globals
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -537,13 +521,8 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
      */
     bytes48_from_hex(
         &expected_commitment,
-#ifdef MAINNET
-        "9815ded2101b6d233fdf31d826ba0557778506df8526f42a"
-        "87ccd82db36a238b50f8965c25d4484782097436d29e458e"
-#else
-        "95d2d20379b60c353a9c2c75333a5d7d26d5ef5137c5200b"
-        "51bc9d0fd82d0270e98ac9d41a44c366684089e385e815e6"
-#endif
+        "91a5e1c143820d2e7bec38a5404c5145807cb88c0abbbecb"
+        "cb4bccc83a4b417326e337574cff43303f8a6648ecbee7ac"
     );
     diff = memcmp(c.bytes, expected_commitment.bytes, BYTES_PER_COMMITMENT);
     ASSERT_EQUALS(diff, 0);
@@ -780,20 +759,20 @@ static void test_reverse_bits__succeeds_round_trip(void) {
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_zero(void) {
-    uint32_t original = 0b00000000000000000000000000000000;
-    uint32_t reversed = 0b00000000000000000000000000000000;
+    uint32_t original = 0;
+    uint32_t reversed = 0;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_some_bits_are_one(void) {
-    uint32_t original = 0b10101000011111100000000000000010;
-    uint32_t reversed = 0b01000000000000000111111000010101;
+    uint32_t original = 2826829826;
+    uint32_t reversed = 1073774101;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_one(void) {
-    uint32_t original = 0b11111111111111111111111111111111;
-    uint32_t reversed = 0b11111111111111111111111111111111;
+    uint32_t original = 4294967295;
+    uint32_t reversed = 4294967295;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
@@ -1120,13 +1099,8 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
 
     bytes48_from_hex(
         &expected_proof,
-#ifdef MAINNET
-        "899b7e1e7ff2e9b28c631d2f9d6b9ae828749c9dbf84f3f4"
-        "3b910bda9558f360f2fa0dac1143460b55908406038eb538"
-#else
-        "a846d83184f6d5b67bbbe905a875f6cfaf1c905e527ea49c"
-        "0616992fb8cce56d202c702b83d6fbe1fa75cacb050ffc27"
-#endif
+        "b21f8f9b85e52fd9c4a6d4fb4e9a27ebdc5a09c3f5ca17f6"
+        "bcd85c26f04953b0e6925607aaebed1087e5cc2fe4b2b356"
     );
 
     /* Compare the computed proof to the expected proof */
@@ -1837,7 +1811,7 @@ static void setup(void) {
     C_KZG_RET ret;
 
     /* Open the mainnet trusted setup file */
-    fp = fopen(TRUSTED_SETUP_FILE, "r");
+    fp = fopen("trusted_setup.txt", "r");
     assert(fp != NULL);
 
     /* Load that trusted setup file */

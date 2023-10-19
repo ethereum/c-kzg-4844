@@ -4,8 +4,9 @@ This directory contains C# bindings for the C-KZG-4844 library.
 
 ## Prerequisites
 
-These bindings require .NET 6.0 (not 7.0). This can be found here:
-* https://dotnet.microsoft.com/en-us/download/dotnet/6.0
+Build requires:
+- `clang` as a preferred build tool for the native wrapper of ckzg. On Windows, it's tested with clang from [Microsoft Visual Studio components](https://learn.microsoft.com/en-us/cpp/build/clang-support-msbuild?view=msvc-170);
+- [.NET SDK](https://dotnet.microsoft.com/en-us/download) to build the bindings.
 
 ## Build & test
 

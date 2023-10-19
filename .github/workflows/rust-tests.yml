@@ -36,12 +36,9 @@ jobs:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - name: Build and Test (minimal preset)
+      - name: Build and Test
         working-directory: bindings/rust
-        run: cargo test --features minimal-spec
-      - name: Build and Test (mainnet preset)
-        working-directory: bindings/rust
-        run: cargo test --features mainnet-spec
+        run: cargo test
       - name: Benchmark
         working-directory: bindings/rust
         run: cargo bench

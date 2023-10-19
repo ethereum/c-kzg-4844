@@ -9,30 +9,6 @@ mod test_formats;
 
 include!(concat!(env!("OUT_DIR"), "/generated.rs"));
 
-#[cfg(not(feature = "minimal-spec"))]
-use {
-    ckzg_blob_to_kzg_commitment as blob_to_kzg_commitment,
-    ckzg_compute_blob_kzg_proof as compute_blob_kzg_proof,
-    ckzg_compute_kzg_proof as compute_kzg_proof, ckzg_free_trusted_setup as free_trusted_setup,
-    ckzg_load_trusted_setup as load_trusted_setup,
-    ckzg_load_trusted_setup_file as load_trusted_setup_file,
-    ckzg_verify_blob_kzg_proof as verify_blob_kzg_proof,
-    ckzg_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
-    ckzg_verify_kzg_proof as verify_kzg_proof,
-};
-#[cfg(feature = "minimal-spec")]
-use {
-    ckzg_min_blob_to_kzg_commitment as blob_to_kzg_commitment,
-    ckzg_min_compute_blob_kzg_proof as compute_blob_kzg_proof,
-    ckzg_min_compute_kzg_proof as compute_kzg_proof,
-    ckzg_min_free_trusted_setup as free_trusted_setup,
-    ckzg_min_load_trusted_setup as load_trusted_setup,
-    ckzg_min_load_trusted_setup_file as load_trusted_setup_file,
-    ckzg_min_verify_blob_kzg_proof as verify_blob_kzg_proof,
-    ckzg_min_verify_blob_kzg_proof_batch as verify_blob_kzg_proof_batch,
-    ckzg_min_verify_kzg_proof as verify_kzg_proof,
-};
-
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ffi::CStr;
@@ -50,7 +26,7 @@ pub const BYTES_PER_G2_POINT: usize = 96;
 
 /// Number of G2 points required for the kzg trusted setup.
 /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
-const NUM_G2_POINTS: usize = 65;
+pub const NUM_G2_POINTS: usize = 65;
 
 /// A trusted (valid) KZG commitment.
 // NOTE: this is a type alias to the struct Bytes48, same as [`KZGProof`] in the C header files. To
@@ -257,6 +233,12 @@ impl Blob {
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
+    }
+}
+
+impl AsRef<[u8]> for Blob {
+    fn as_ref(&self) -> &[u8] {
+        &self.bytes
     }
 }
 
@@ -654,11 +636,7 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        let trusted_setup_file = if cfg!(feature = "minimal-spec") {
-            Path::new("../../src/trusted_setup_4.txt")
-        } else {
-            Path::new("../../src/trusted_setup.txt")
-        };
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         test_simple(trusted_setup_file);
     }
 
@@ -669,7 +647,6 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/*/*/*";
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_blob_to_kzg_commitment() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -696,7 +673,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -726,7 +702,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_compute_blob_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -754,7 +729,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -786,7 +760,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
@@ -817,7 +790,6 @@ mod tests {
         }
     }
 
-    #[cfg(not(feature = "minimal-spec"))]
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");

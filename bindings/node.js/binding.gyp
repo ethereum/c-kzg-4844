@@ -19,7 +19,6 @@
       "conditions": [
         ["OS!='win'", {
           "sources": ["deps/blst/build/assembly.S"],
-          "defines": ["FIELD_ELEMENTS_PER_BLOB=<!(echo ${FIELD_ELEMENTS_PER_BLOB:-4096})"],
           "cflags_cc": [
             "-std=c++17",
             "-fPIC"
@@ -29,7 +28,6 @@
           "sources": ["deps/blst/build/win64/*-x86_64.asm"],
           "defines": [
             "_CRT_SECURE_NO_WARNINGS",
-            "FIELD_ELEMENTS_PER_BLOB=<!(powershell -Command \"if ($env:FIELD_ELEMENTS_PER_BLOB) { $env:FIELD_ELEMENTS_PER_BLOB } else { 4096 }\")"
           ],
           "msbuild_settings": {
             "ClCompile": {
