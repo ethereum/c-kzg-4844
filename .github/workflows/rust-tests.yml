@@ -21,6 +21,8 @@ jobs:
       - name: cargo hack
         working-directory: bindings/rust
         run: cargo hack check --feature-powerset --depth 2
+      - name: Check that bindings are up to date
+        run: git diff --exit-code bindings/rust/src/bindings/generated.rs
 
   tests:
     runs-on: ${{ matrix.os }}
@@ -38,7 +40,9 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build and Test
         working-directory: bindings/rust
-        run: cargo test
+        run: cargo test --features generate_bindings
+      - name: Check that bindings are up to date
+        run: git diff --exit-code bindings/rust/src/bindings/generated.rs
       - name: Benchmark
         working-directory: bindings/rust
         run: cargo bench
