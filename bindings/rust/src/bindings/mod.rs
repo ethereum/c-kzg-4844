@@ -242,6 +242,11 @@ impl Drop for KZGSettings {
 }
 
 impl Blob {
+    /// Creates a new blob from a byte array.
+    pub const fn new(bytes: [u8; BYTES_PER_BLOB]) -> Self {
+        Self { bytes }
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_BLOB {
             return Err(Error::InvalidBytesLength(format!(
@@ -252,7 +257,7 @@ impl Blob {
         }
         let mut new_bytes = [0; BYTES_PER_BLOB];
         new_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: new_bytes })
+        Ok(Self::new(new_bytes))
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
@@ -261,6 +266,11 @@ impl Blob {
 }
 
 impl Bytes32 {
+    /// Creates a new blob from a byte array.
+    pub const fn new(bytes: [u8; 32]) -> Self {
+        Self { bytes }
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 32 {
             return Err(Error::InvalidBytesLength(format!(
@@ -271,7 +281,7 @@ impl Bytes32 {
         }
         let mut new_bytes = [0; 32];
         new_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: new_bytes })
+        Ok(Self::new(new_bytes))
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
@@ -280,6 +290,11 @@ impl Bytes32 {
 }
 
 impl Bytes48 {
+    /// Creates a new blob from a byte array.
+    pub const fn new(bytes: [u8; 48]) -> Self {
+        Self { bytes }
+    }
+
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 48 {
             return Err(Error::InvalidBytesLength(format!(
@@ -290,7 +305,7 @@ impl Bytes48 {
         }
         let mut new_bytes = [0; 48];
         new_bytes.copy_from_slice(bytes);
-        Ok(Self { bytes: new_bytes })
+        Ok(Self::new(new_bytes))
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
