@@ -34,28 +34,23 @@ fn main() {
 
     cc.try_compile("ckzg").expect("Failed to compile ckzg");
 
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let bindings_out_path = out_dir.join("generated.rs");
-    let header_file_path = c_src_dir.join("c_kzg_4844.h");
-    let header_file = header_file_path.to_str().expect("valid header file");
-
-    make_bindings(
-        header_file,
-        &blst_headers_dir.to_string_lossy(),
-        bindings_out_path,
-    );
+    #[cfg(feature = "generate_bindings")]
+    {
+        let header_path = c_src_dir.join("c_kzg_4844.h");
+        let bindings_out_path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/bindings/generated.rs");
+        make_bindings(
+            header_path.to_str().expect("valid header path"),
+            blst_headers_dir.to_str().expect("valid blst header path"),
+            bindings_out_path.as_ref(),
+        );
+    }
 
     // Finally, tell cargo this provides ckzg/ckzg_min
     println!("cargo:rustc-link-lib=ckzg");
 }
 
-fn make_bindings<P>(
-    header_path: &str,
-    blst_headers_dir: &str,
-    bindings_out_path: P,
-) where
-    P: AsRef<std::path::Path>,
-{
+#[cfg(feature = "generate_bindings")]
+fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &std::path::Path) {
     use bindgen::Builder;
 
     #[derive(Debug)]
@@ -122,7 +117,7 @@ fn make_bindings<P>(
         /*
          * Re-build instructions
          */
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .unwrap();
 
