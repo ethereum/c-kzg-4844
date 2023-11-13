@@ -266,7 +266,7 @@ impl Blob {
 }
 
 impl Bytes32 {
-    /// Creates a new blob from a byte array.
+    /// Creates a new instance from a byte array.
     pub const fn new(bytes: [u8; 32]) -> Self {
         Self { bytes }
     }
@@ -290,7 +290,7 @@ impl Bytes32 {
 }
 
 impl Bytes48 {
-    /// Creates a new blob from a byte array.
+    /// Creates a new instance from a byte array.
     pub const fn new(bytes: [u8; 48]) -> Self {
         Self { bytes }
     }
