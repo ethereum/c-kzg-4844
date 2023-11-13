@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{matrix.node}}
+      - name: Install setuptools
+        run: python3 -m pip install setuptools
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
         working-directory: bindings/node.js
