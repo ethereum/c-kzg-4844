@@ -156,6 +156,11 @@ static const fr_t FR_ONE = {
     0x00000001fffffffeL, 0x5884b7fa00034802L,
     0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
+/** This used to represent a missing element. It's a invalid value. */
+static const fr_t FR_NULL = {
+    0xffffffffffffffffL, 0xffffffffffffffffL,
+    0xffffffffffffffffL, 0xffffffffffffffffL};
+
 // clang-format on
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -234,6 +239,18 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Get the minimum of two unsigned integers.
+ *
+ * @param[in]   a   An unsigned integer
+ * @param[in]   b   An unsigned integer
+ *
+ * @return Whichever value is smaller.
+ */
+static inline size_t min(size_t a, size_t b) {
+    return a < b ? a : b;
+}
+
+/**
  * Test whether the operand is one in the finite field.
  *
  * @param[in] p The field element to be checked
@@ -275,6 +292,18 @@ static bool fr_equal(const fr_t *aa, const fr_t *bb) {
     blst_uint64_from_fr(a, aa);
     blst_uint64_from_fr(b, bb);
     return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
+}
+
+/**
+ * Test whether the operand is null (all 0xff's).
+ *
+ * @param[in] p The field element to be checked
+ *
+ * @retval true  The element is null
+ * @retval false The element is not null
+ */
+static bool fr_is_null(const fr_t *p) {
+    return fr_equal(p, &FR_NULL);
 }
 
 /**
@@ -842,18 +871,31 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Compute a KZG commitment from a polynomial.
+ * Compute a KZG commitment from a polynomial (in monomial form).
  *
  * @param[out] out The resulting commitment
  * @param[in]  p   The polynomial to commit to
+ * @param[in]  n   The polynomial length
  * @param[in]  s   The trusted setup
  */
-static C_KZG_RET poly_to_kzg_commitment(
-    g1_t *out, const Polynomial *p, const KZGSettings *s
+static C_KZG_RET poly_to_kzg_commitment_monomial(
+    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(
-        out, s->g1_values, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB
-    );
+    return g1_lincomb_fast(out, s->g1_values, p, n);
+}
+
+/**
+ * Compute a KZG commitment from a polynomial (in lagrange form).
+ *
+ * @param[out] out The resulting commitment
+ * @param[in]  p   The polynomial to commit to
+ * @param[in]  n   The polynomial length
+ * @param[in]  s   The trusted setup
+ */
+C_KZG_RET poly_to_kzg_commitment_lagrange(
+    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
+) {
+    return g1_lincomb_fast(out, s->g1_values_lagrange, p, n);
 }
 
 /**
@@ -872,7 +914,9 @@ C_KZG_RET blob_to_kzg_commitment(
 
     ret = blob_to_polynomial(&p, blob);
     if (ret != C_KZG_OK) return ret;
-    ret = poly_to_kzg_commitment(&commitment, &p, s);
+    ret = poly_to_kzg_commitment_lagrange(
+        &commitment, p.evals, FIELD_ELEMENTS_PER_BLOB, s
+    );
     if (ret != C_KZG_OK) return ret;
     bytes_from_g1(out, &commitment);
     return C_KZG_OK;
@@ -1091,7 +1135,10 @@ static C_KZG_RET compute_kzg_proof_impl(
 
     g1_t out_g1;
     ret = g1_lincomb_fast(
-        &out_g1, s->g1_values, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB
+        &out_g1,
+        s->g1_values_lagrange,
+        (const fr_t *)(&q.evals),
+        FIELD_ELEMENTS_PER_BLOB
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -1443,7 +1490,7 @@ out:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Trusted Setup Functions
+// FFT for G1 points
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -1461,7 +1508,103 @@ static bool is_power_of_two(uint64_t n) {
 }
 
 /**
- * Reverse the bit order in a 32 bit integer.
+ * Fast Fourier Transform.
+ *
+ * Recursively divide and conquer.
+ *
+ * @param[out] out          The results (array of length @p n)
+ * @param[in]  in           The input data (array of length @p n * @p stride)
+ * @param[in]  stride       The input data stride
+ * @param[in]  roots        Roots of unity
+ *                          (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n            Length of the FFT, must be a power of two
+ */
+static void fft_g1_fast(
+    g1_t *out,
+    const g1_t *in,
+    uint64_t stride,
+    const fr_t *roots,
+    uint64_t roots_stride,
+    uint64_t n
+) {
+    uint64_t half = n / 2;
+    if (half > 0) { /* Tunable parameter */
+        fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
+        fft_g1_fast(
+            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
+        );
+        for (uint64_t i = 0; i < half; i++) {
+            g1_t y_times_root;
+            if (fr_is_one(&roots[i * roots_stride])) {
+                /* Don't do the scalar multiplication if the scalar is one */
+                y_times_root = out[i + half];
+            } else {
+                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            }
+            g1_sub(&out[i + half], &out[i], &y_times_root);
+            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
+        }
+    } else {
+        *out = *in;
+    }
+}
+
+/**
+ * The entry point for forward FFT over G1 points.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The array lengths must be a power of two.
+ * @remark Use ifft_g1 for inverse transformation.
+ */
+C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+    CHECK(n <= s->max_width);
+    CHECK(is_power_of_two(n));
+
+    uint64_t stride = s->max_width / n;
+    fft_g1_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+
+    return C_KZG_OK;
+}
+
+/**
+ * The entry point for inverse FFT over G1 points.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The array lengths must be a power of two.
+ * @remark Use fft_g1 for forward transformation.
+ */
+C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+    CHECK(n <= s->max_width);
+    CHECK(is_power_of_two(n));
+
+    uint64_t stride = s->max_width / n;
+    fft_g1_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
+
+    fr_t inv_len;
+    fr_from_uint64(&inv_len, n);
+    blst_fr_eucl_inverse(&inv_len, &inv_len);
+    for (uint64_t i = 0; i < n; i++) {
+        g1_mul(&out[i], &out[i], &inv_len);
+    }
+
+    return C_KZG_OK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Trusted Setup Functions
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Reverse the bit order in a 32-bit integer.
  *
  * @param[in] a The integer to be reversed
  * @return An integer with the bits of @p a reversed
@@ -1493,6 +1636,21 @@ static int log2_pow2(uint32_t n) {
     while (n >>= 1)
         position++;
     return position;
+}
+
+/**
+ * Reverse the low-order bits in a 32-bit integer.
+ *
+ * @remark n must be a power of two.
+ *
+ * @param[in]   n       To reverse `b` bits, set `n = 2 ^ b`
+ * @param[in]   value   The bits to be reversed
+ *
+ * @return The reversal of the lowest log_2(n) bits of the input value
+ */
+static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
+    size_t unused_bit_len = 32 - log2_pow2(n);
+    return reverse_bits(value) >> unused_bit_len;
 }
 
 /**
@@ -1575,22 +1733,15 @@ static C_KZG_RET expand_root_of_unity(
 /**
  * Initialize the roots of unity.
  *
- * @remark `roots_of_unity_out` may be modified even if there's an error.
- *
- * @param[out] roots_of_unity_out The roots of unity
- * @param[in]  max_scale          Log base 2 of the number of roots of unity to
- *                                be initialized
+ * @param[out]  s   Pointer to KZGSettings
  */
-static C_KZG_RET compute_roots_of_unity(
-    fr_t *roots_of_unity_out, uint32_t max_scale
-) {
+static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     C_KZG_RET ret;
-    uint64_t max_width;
     fr_t root_of_unity;
-    fr_t *expanded_roots = NULL;
 
-    /* Calculate the max width */
-    max_width = 1ULL << max_scale;
+    uint32_t max_scale = 0;
+    while ((1ULL << max_scale) < s->max_width)
+        max_scale++;
 
     /* Get the root of unity */
     CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
@@ -1601,22 +1752,35 @@ static C_KZG_RET compute_roots_of_unity(
      * instead of re-using roots_of_unity_out because the expansion requires
      * max_width+1 elements.
      */
-    ret = new_fr_array(&expanded_roots, max_width + 1);
+    ret = new_fr_array(&s->expanded_roots_of_unity, s->max_width + 1);
     if (ret != C_KZG_OK) goto out;
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(expanded_roots, &root_of_unity, max_width);
+    ret = expand_root_of_unity(
+        s->expanded_roots_of_unity, &root_of_unity, s->max_width
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
-    memcpy(roots_of_unity_out, expanded_roots, sizeof(fr_t) * max_width);
+    memcpy(
+        s->roots_of_unity,
+        s->expanded_roots_of_unity,
+        sizeof(fr_t) * s->max_width
+    );
 
     /* Permute the roots of unity */
-    ret = bit_reversal_permutation(roots_of_unity_out, sizeof(fr_t), max_width);
+    ret = bit_reversal_permutation(
+        s->roots_of_unity, sizeof(fr_t), s->max_width
+    );
     if (ret != C_KZG_OK) goto out;
 
+    /* Populate reverse roots of unity */
+    for (uint64_t i = 0; i <= s->max_width; i++) {
+        s->reverse_roots_of_unity[i] =
+            s->expanded_roots_of_unity[s->max_width - i];
+    }
+
 out:
-    c_kzg_free(expanded_roots);
     return ret;
 }
 
@@ -1631,8 +1795,64 @@ void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
     s->max_width = 0;
     c_kzg_free(s->roots_of_unity);
+    c_kzg_free(s->expanded_roots_of_unity);
+    c_kzg_free(s->reverse_roots_of_unity);
     c_kzg_free(s->g1_values);
+    c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
+    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+        c_kzg_free(s->x_ext_fft_files[i]);
+    }
+    c_kzg_free(s->x_ext_fft_files);
+}
+
+/* Forward function declaration */
+static C_KZG_RET toeplitz_part_1(
+    g1_t *out, const g1_t *x, uint64_t n, const KZGSettings *s
+);
+
+/**
+ * Initialize fields for FK20 multi-proof computations.
+ *
+ * @param[out]  s   Pointer to KZGSettings to initialize
+ */
+static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
+    C_KZG_RET ret;
+    uint64_t n, k;
+    g1_t *x = NULL;
+
+    n = s->max_width / 2;
+    k = n / SAMPLE_SIZE;
+
+    if (SAMPLE_SIZE >= TRUSTED_SETUP_NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Allocate space for array of pointers, this is a 2D array */
+    void **tmp = (void **)&s->x_ext_fft_files;
+    ret = c_kzg_calloc(tmp, SAMPLE_SIZE, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+
+    ret = new_g1_array(&x, k);
+    if (ret != C_KZG_OK) goto out;
+
+    for (uint64_t offset = 0; offset < SAMPLE_SIZE; offset++) {
+        uint64_t start = n - SAMPLE_SIZE - 1 - offset;
+        for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= SAMPLE_SIZE) {
+            x[i] = s->g1_values[j];
+        }
+        x[k - 1] = G1_IDENTITY;
+
+        ret = new_g1_array(&s->x_ext_fft_files[offset], 2 * k);
+        if (ret != C_KZG_OK) goto out;
+        ret = toeplitz_part_1(s->x_ext_fft_files[offset], x, k, s);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+out:
+    c_kzg_free(x);
+    return ret;
 }
 
 /**
@@ -1684,8 +1904,12 @@ C_KZG_RET load_trusted_setup(
 
     out->max_width = 0;
     out->roots_of_unity = NULL;
+    out->expanded_roots_of_unity = NULL;
+    out->reverse_roots_of_unity = NULL;
     out->g1_values = NULL;
+    out->g1_values_lagrange = NULL;
     out->g2_values = NULL;
+    out->x_ext_fft_files = NULL;
 
     /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
@@ -1699,10 +1923,20 @@ C_KZG_RET load_trusted_setup(
     /* Set the max_width */
     out->max_width = 1ULL << max_scale;
 
+    /* For DAS reconstruction */
+    out->max_width *= 2;
+    CHECK(out->max_width == DATA_COUNT);
+
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->roots_of_unity, out->max_width);
     if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&out->expanded_roots_of_unity, out->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
     ret = new_g1_array(&out->g1_values, n1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g1_array(&out->g1_values_lagrange, n1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values, n2);
     if (ret != C_KZG_OK) goto out_error;
@@ -1717,7 +1951,10 @@ C_KZG_RET load_trusted_setup(
             ret = C_KZG_BADARGS;
             goto out_error;
         }
-        blst_p1_from_affine(&out->g1_values[i], &g1_affine);
+        blst_p1_from_affine(&out->g1_values_lagrange[i], &g1_affine);
+
+        /* Copying, will modify later */
+        out->g1_values[i] = out->g1_values_lagrange[i];
     }
 
     /* Convert all g2 bytes to g2 points */
@@ -1738,18 +1975,28 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
 
     /* Compute roots of unity and permute the G1 trusted setup */
-    ret = compute_roots_of_unity(out->roots_of_unity, max_scale);
+    ret = compute_roots_of_unity(out);
     if (ret != C_KZG_OK) goto out_error;
-    ret = bit_reversal_permutation(out->g1_values, sizeof(g1_t), n1);
+
+    /* Get monomial, non-bit-reversed form */
+    ret = fft_g1(out->g1_values, out->g1_values_lagrange, n1, out);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Bit reverse the Lagrange form points */
+    ret = bit_reversal_permutation(out->g1_values_lagrange, sizeof(g1_t), n1);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Stuff for sample proofs */
+    ret = init_fk20_multi_settings(out);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;
 
 out_error:
     /*
-     * Note: this only frees the fields in the KZGSettings structure
-     * (roots_of_unity, g1_values, g2_values). It does not free the KZGSettings
-     * structure memory. If necessary, that must be done by the caller.
+     * Note: this only frees the fields in the KZGSettings structure. It does
+     * not free the KZGSettings structure memory. If necessary, that must be
+     * done by the caller.
      */
     free_trusted_setup(out);
 out_success:
@@ -1804,4 +2051,1666 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
         g2_bytes,
         TRUSTED_SETUP_NUM_G2_POINTS
     );
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Fast Fourier Transform
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Fast Fourier Transform.
+ *
+ * Recursively divide and conquer.
+ *
+ * @param[out] out    The results (array of length @p n)
+ * @param[in]  in     The input data (array of length @p n * @p stride)
+ * @param[in]  stride The input data stride
+ * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
+ * @param[in]  roots_stride The stride interval among the roots of unity
+ * @param[in]  n      Length of the FFT, must be a power of two
+ */
+static void fft_fr_fast(
+    fr_t *out,
+    const fr_t *in,
+    size_t stride,
+    const fr_t *roots,
+    size_t roots_stride,
+    size_t n
+) {
+    size_t half = n / 2;
+    if (half > 0) { // Tunable parameter
+        fr_t y_times_root;
+        fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
+        fft_fr_fast(
+            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
+        );
+        for (size_t i = 0; i < half; i++) {
+            blst_fr_mul(
+                &y_times_root, &out[i + half], &roots[i * roots_stride]
+            );
+            blst_fr_sub(&out[i + half], &out[i], &y_times_root);
+            blst_fr_add(&out[i], &out[i], &y_times_root);
+        }
+    } else {
+        *out = *in;
+    }
+}
+
+/**
+ * The entry point for forward FFT over field elements.
+ *
+ * @param[out]  out     The results (array of length n)
+ * @param[in]   in      The input data (array of length n)
+ * @param[in]   n       Length of the arrays
+ * @param[in]   s       The trusted setup
+ *
+ * @remark The array lengths must be a power of two.
+ * @remark Use ifft_fr for inverse transformation.
+ */
+static C_KZG_RET fft_fr(
+    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
+) {
+    CHECK(n <= s->max_width);
+    CHECK(is_power_of_two(n));
+
+    size_t stride = s->max_width / n;
+    fft_fr_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+
+    return C_KZG_OK;
+}
+
+/**
+ * The entry point for inverse FFT over field elements.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The array lengths must be a power of two.
+ * @remark Use fft_fr for forward transformation.
+ */
+static C_KZG_RET ifft_fr(
+    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
+) {
+    CHECK(n <= s->max_width);
+    CHECK(is_power_of_two(n));
+
+    size_t stride = s->max_width / n;
+    fft_fr_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
+
+    fr_t inv_len;
+    fr_from_uint64(&inv_len, n);
+    blst_fr_inverse(&inv_len, &inv_len);
+    for (size_t i = 0; i < n; i++) {
+        blst_fr_mul(&out[i], &out[i], &inv_len);
+    }
+    return C_KZG_OK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Zero poly
+///////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    fr_t *coeffs;
+    size_t length;
+} poly_t;
+
+static C_KZG_RET new_poly(poly_t *out, uint64_t length) {
+    out->length = length;
+    return new_fr_array(&out->coeffs, length);
+}
+
+static void free_poly(poly_t *p) {
+    if (p->coeffs != NULL) {
+        c_kzg_free(p->coeffs);
+    }
+}
+
+/**
+ * Return the next highest power of two.
+ *
+ * @param[in]   v   A 64-bit unsigned integer <= 2^31
+ * @return The lowest power of two equal or larger than @p v
+ *
+ * @remark If v is already a power of two, it is returned as-is.
+ */
+static inline uint64_t next_power_of_two(uint64_t v) {
+    if (v == 0) return 1;
+    v--;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    v |= v >> 32;
+    v++;
+    return v;
+}
+
+/**
+ * Calculates the minimal polynomial that evaluates to zero for powers of roots
+ * of unity at the given indices.
+ *
+ * Uses straightforward long multiplication to calculate the product of `(x -
+ * r^i)` where `r` is a root of unity and the `i`s are the indices at which it
+ * must evaluate to zero. This results in a polynomial of degree @p len_indices.
+ *
+ * @param[in,out] dst      The zero polynomial for @p indices. The space
+ * allocated for coefficients must be at least @p len_indices + 1, as indicated
+ * by the `length` value on entry.
+ * @param[in]  indices     Array of missing indices of length @p len_indices
+ * @param[in]  len_indices Length of the missing indices array, @p indices
+ * @param[in]  stride      Stride length through the powers of the root of unity
+ * @param[in]   s           The trusted setup
+ */
+static C_KZG_RET do_zero_poly_mul_partial(
+    fr_t *dst,
+    size_t *dst_len,
+    const uint64_t *indices,
+    uint64_t len_indices,
+    uint64_t stride,
+    const KZGSettings *s
+) {
+    if (len_indices == 0) {
+        return C_KZG_BADARGS;
+    }
+
+    blst_fr_cneg(
+        &dst[0], &s->expanded_roots_of_unity[indices[0] * stride], true
+    );
+
+    for (size_t i = 1; i < len_indices; i++) {
+        fr_t neg_di;
+        blst_fr_cneg(
+            &neg_di, &s->expanded_roots_of_unity[indices[i] * stride], true
+        );
+        dst[i] = neg_di;
+        blst_fr_add(&dst[i], &dst[i], &dst[i - 1]);
+        for (size_t j = i - 1; j > 0; j--) {
+            blst_fr_mul(&dst[j], &dst[j], &neg_di);
+            blst_fr_add(&dst[j], &dst[j], &dst[j - 1]);
+        }
+        blst_fr_mul(&dst[0], &dst[0], &neg_di);
+    }
+
+    dst[len_indices] = FR_ONE;
+    for (size_t i = len_indices + 1; i < *dst_len; i++) {
+        dst[i] = FR_ZERO;
+    }
+    *dst_len = len_indices + 1;
+
+    return C_KZG_OK;
+}
+
+/**
+ * Copy polynomial and set remaining fields to zero.
+ *
+ * @param[out]  out     The output polynomial with padded zeros
+ * @param[out]  out_len The length of the output polynomial
+ * @param[in]   in      The input polynomial to be copied
+ * @param[in]   out_len The length of the input polynomial
+ */
+static C_KZG_RET pad_p(
+    fr_t *out, size_t out_len, const fr_t *in, size_t in_len
+) {
+    /* Ensure out is big enough */
+    if (out_len < in_len) {
+        return C_KZG_BADARGS;
+    }
+
+    /* Copy polynomial fields */
+    for (size_t i = 0; i < in_len; i++) {
+        out[i] = in[i];
+    }
+
+    /* Set remaining fields to zero */
+    for (size_t i = in_len; i < out_len; i++) {
+        out[i] = FR_ZERO;
+    }
+
+    return C_KZG_OK;
+}
+
+/**
+ * Calculate the product of the input polynomials via convolution.
+ *
+ * Pad the polynomials in @p ps, perform FFTs, point-wise multiply the results
+ * together, and apply an inverse FFT to the result.
+ *
+ * @param[out] out         Polynomial with @p len_out space allocated. The
+ * length will be set on return.
+ * @param[in]  len_out     Length of the domain of evaluation, a power of two
+ * @param      scratch     Scratch space of size at least 3 times the @p len_out
+ * @param[in]  len_scratch Length of @p scratch, at least 3 times @p len_out
+ * @param[in]  partials    Array of polynomials to be multiplied together
+ * @param[in]  partial_count The number of polynomials to be multiplied together
+ * @param[in]   s           The trusted setup
+ */
+static C_KZG_RET reduce_partials(
+    poly_t *out,
+    uint64_t len_out,
+    fr_t *scratch,
+    uint64_t len_scratch,
+    const poly_t *partials,
+    uint64_t partial_count,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+
+    CHECK(is_power_of_two(len_out));
+    CHECK(len_scratch >= 3 * len_out);
+    CHECK(partial_count > 0);
+
+    // The degree of the output polynomial is the sum of the degrees of the
+    // input polynomials.
+    uint64_t out_degree = 0;
+    for (size_t i = 0; i < partial_count; i++) {
+        out_degree += partials[i].length - 1;
+    }
+    CHECK(out_degree + 1 <= len_out);
+
+    // Split `scratch` up into three equally sized working arrays
+    fr_t *p_padded = scratch;
+    fr_t *mul_eval_ps = scratch + len_out;
+    fr_t *p_eval = scratch + 2 * len_out;
+
+    // Do the last partial first: it is no longer than the others and the
+    // padding can remain in place for the rest.
+    ret = pad_p(
+        p_padded,
+        len_out,
+        partials[partial_count - 1].coeffs,
+        partials[partial_count - 1].length
+    );
+    if (ret != C_KZG_OK) goto out;
+    ret = fft_fr(mul_eval_ps, p_padded, len_out, s);
+    if (ret != C_KZG_OK) goto out;
+
+    for (uint64_t i = 0; i < partial_count - 1; i++) {
+        ret = pad_p(
+            p_padded, partials[i].length, partials[i].coeffs, partials[i].length
+        );
+        if (ret != C_KZG_OK) goto out;
+        ret = fft_fr(p_eval, p_padded, len_out, s);
+        if (ret != C_KZG_OK) goto out;
+        for (uint64_t j = 0; j < len_out; j++) {
+            blst_fr_mul(&mul_eval_ps[j], &mul_eval_ps[j], &p_eval[j]);
+        }
+    }
+
+    ret = ifft_fr(out->coeffs, mul_eval_ps, len_out, s);
+    if (ret != C_KZG_OK) goto out;
+
+    out->length = out_degree + 1;
+
+out:
+    return ret;
+}
+
+/**
+ * Calculate the minimal polynomial that evaluates to zero for powers of roots
+ * of unity that correspond to missing indices.
+ *
+ * This is done simply by multiplying together `(x - r^i)` for all the `i` that
+ * are missing indices, using a combination of direct multiplication
+ * (#do_zero_poly_mul_partial) and iterated multiplication via convolution
+ * (#reduce_partials).
+ *
+ * Also calculates the FFT (the "evaluation polynomial").
+ *
+ * @remark This fails when all the indices in our domain are missing (@p
+ * len_missing == @p length), since the resulting polynomial exceeds the size
+ * allocated. But we know that the answer is `x^length - 1` in that case if we
+ * ever need it.
+ *
+ * @param[out] zero_eval The "evaluation polynomial": the coefficients are the
+ * values of @p zero_poly for each power of `r`. Space required is @p length.
+ * @param[out] zero_poly The zero polynomial. On return the length will be set
+ * to `len_missing + 1` and the remaining coefficients set to zero.  Space
+ * required is @p length.
+ * @param[in]  length    Size of the domain of evaluation (number of powers of
+ * `r`)
+ * @param[in]  missing_indices Array length @p len_missing containing the
+ * indices of the missing coefficients
+ * @param[in]  len_missing     Length of @p missing_indices
+ * @param[in]   s           The trusted setup
+ *
+ * @todo What is the performance impact of tuning `degree_of_partial` and
+ * `reduction factor`?
+ */
+static C_KZG_RET zero_polynomial_via_multiplication(
+    fr_t *zero_eval,
+    poly_t *zero_poly,
+    uint64_t length,
+    const uint64_t *missing_indices,
+    uint64_t len_missing,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    if (len_missing == 0) {
+        zero_poly->length = 0;
+        for (uint64_t i = 0; i < length; i++) {
+            zero_eval[i] = FR_ZERO;
+            zero_poly->coeffs[i] = FR_ZERO;
+        }
+        return C_KZG_OK;
+    }
+    CHECK(len_missing < length);
+    CHECK(length <= s->max_width);
+    CHECK(is_power_of_two(length));
+
+    // Tunable parameter. Must be a power of two.
+    uint64_t degree_of_partial = 32;
+    uint64_t missing_per_partial = degree_of_partial - 1;
+    uint64_t domain_stride = s->max_width / length;
+    uint64_t partial_count = (len_missing + missing_per_partial - 1) /
+                             missing_per_partial;
+    uint64_t n = min(
+        next_power_of_two(partial_count * degree_of_partial), length
+    );
+
+    if (len_missing <= missing_per_partial) {
+        ret = do_zero_poly_mul_partial(
+            zero_poly->coeffs,
+            &zero_poly->length,
+            missing_indices,
+            len_missing,
+            domain_stride,
+            s
+        );
+        if (ret != C_KZG_OK) goto out;
+        ret = fft_fr(zero_eval, zero_poly->coeffs, length, s);
+        if (ret != C_KZG_OK) goto out;
+    } else {
+
+        // Work space for building and reducing the partials
+        fr_t *work;
+        ret = new_fr_array(
+            &work, next_power_of_two(partial_count * degree_of_partial)
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        // Build the partials from the missing indices
+
+        // Just allocate pointers here since we're re-using `work` for the
+        // partial processing Combining partials can be done mostly in-place,
+        // using a scratchpad.
+        poly_t *partials;
+        ret = c_kzg_calloc((void **)&partials, partial_count, sizeof(poly_t));
+        if (ret != C_KZG_OK) goto out;
+
+        uint64_t offset = 0, out_offset = 0, max = len_missing;
+        for (size_t i = 0; i < partial_count; i++) {
+            uint64_t end = min(offset + missing_per_partial, max);
+            partials[i].coeffs = &work[out_offset];
+            partials[i].length = degree_of_partial;
+            do_zero_poly_mul_partial(
+                partials[i].coeffs,
+                &partials[i].length,
+                &missing_indices[offset],
+                end - offset,
+                domain_stride,
+                s
+            );
+            if (ret != C_KZG_OK) goto out;
+            offset += missing_per_partial;
+            out_offset += degree_of_partial;
+        }
+        // Adjust the length of the last partial
+        partials[partial_count - 1].length = 1 + len_missing -
+                                             (partial_count - 1) *
+                                                 missing_per_partial;
+
+        // Reduce all the partials to a single polynomial
+        int reduction_factor =
+            4; // must be a power of 2 (for sake of the FFTs in reduce_partials)
+        fr_t *scratch;
+        new_fr_array(&scratch, n * 3);
+        if (ret != C_KZG_OK) goto out;
+
+        while (partial_count > 1) {
+            uint64_t reduced_count = (partial_count + reduction_factor - 1) /
+                                     reduction_factor;
+            uint64_t partial_size = next_power_of_two(partials[0].length);
+            for (uint64_t i = 0; i < reduced_count; i++) {
+                uint64_t start = i * reduction_factor;
+                uint64_t out_end = min(
+                    (start + reduction_factor) * partial_size, n
+                );
+                uint64_t reduced_len = min(
+                    out_end - start * partial_size, length
+                );
+                uint64_t partials_num = min(
+                    reduction_factor, partial_count - start
+                );
+                partials[i].coeffs = work + start * partial_size;
+                if (partials_num > 1) {
+                    reduce_partials(
+                        &partials[i],
+                        reduced_len,
+                        scratch,
+                        n * 3,
+                        &partials[start],
+                        partials_num,
+                        s
+                    );
+                    if (ret != C_KZG_OK) goto out;
+                } else {
+                    partials[i].length = partials[start].length;
+                }
+            }
+            partial_count = reduced_count;
+        }
+
+        // Process final output
+        ret = pad_p(
+            zero_poly->coeffs, length, partials[0].coeffs, partials[0].length
+        );
+        if (ret != C_KZG_OK) goto out;
+        ret = fft_fr(zero_eval, zero_poly->coeffs, length, s);
+        if (ret != C_KZG_OK) goto out;
+
+        zero_poly->length = partials[0].length;
+
+        c_kzg_free(work);
+        c_kzg_free(partials);
+        c_kzg_free(scratch);
+    }
+
+out:
+    return C_KZG_OK;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Sample Recovery
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Currently five. This is a primitive element, but actually this can be pretty
+ * much anything not zero or a low-degree root of unity.
+ */
+static const fr_t SCALE_FACTOR = {
+    0x0000000afffffff5L,
+    0x66d9f3df00120c0bL,
+    0xcc83b7a7960bb7c5L,
+    0x04c9cf6d363b9de5L
+};
+static const fr_t INV_SCALE_FACTOR = {
+    0x0000000066666666L,
+    0x11b424cb999a419aL,
+    0x51e8dcc995bf4331L,
+    0x04d4237855c10116L
+};
+
+/**
+ * Scale a polynomial in place.
+ *
+ * Multiplies each coefficient by `1 / scale_factor ^ i`. Equivalent to
+ * creating a polynomial that evaluates at `x * k` rather than `x`.
+ *
+ * @param[out,in]   p       The polynomial coefficients to be scaled
+ * @param[in]       len_p   Length of the polynomial coefficients
+ */
+static void scale_poly(fr_t *p, uint64_t len_p) {
+    fr_t factor_power = FR_ONE;
+    for (uint64_t i = 1; i < len_p; i++) {
+        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
+        blst_fr_mul(&p[i], &p[i], &factor_power);
+    }
+}
+
+/**
+ * Unscale a polynomial in place.
+ *
+ * Multiplies each coefficient by `scale_factor ^ i`. Equivalent to creating a
+ * polynomial that evaluates at `x / k` rather than `x`.
+ *
+ * @param[out,in]   p       The polynomial coefficients to be unscaled
+ * @param[in]       len_p   Length of the polynomial coefficients
+ */
+static void unscale_poly(fr_t *p, uint64_t len_p) {
+    fr_t factor_power = FR_ONE;
+    for (uint64_t i = 1; i < len_p; i++) {
+        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
+        blst_fr_mul(&p[i], &p[i], &factor_power);
+    }
+}
+
+/**
+ * Given a dataset with up to half the entries missing, return the
+ * reconstructed original. Assumes that the inverse FFT of the original data
+ * has the upper half of its values equal to zero.
+ *
+ * @param[out]  recovered   A preallocated array for recovered samples
+ * @param[in]   samples     The samples that you have
+ * @param[in]   s           The trusted setup
+ *
+ * @remark `recovered` and `samples` can point to the same memory.
+ * @remark The array of samples must be 2n length and in the correct order.
+ * @remark Missing samples should be equal to FR_NULL.
+ */
+static C_KZG_RET recover_samples_impl(
+    fr_t *recovered, fr_t *samples, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    uint64_t *missing = NULL;
+    fr_t *zero_eval = NULL;
+    fr_t *poly_evaluations_with_zero = NULL;
+    fr_t *poly_with_zero = NULL;
+    fr_t *eval_scaled_poly_with_zero = NULL;
+    fr_t *eval_scaled_zero_poly = NULL;
+    fr_t *scaled_reconstructed_poly = NULL;
+    fr_t *samples_brp = NULL;
+
+    poly_t zero_poly = {NULL, 0};
+    zero_poly.coeffs = NULL;
+
+    /* Allocate space for arrays */
+    ret = c_kzg_calloc((void **)&missing, s->max_width, sizeof(uint64_t));
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&zero_eval, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&poly_evaluations_with_zero, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&poly_with_zero, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&eval_scaled_poly_with_zero, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&eval_scaled_zero_poly, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&scaled_reconstructed_poly, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&samples_brp, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate space for the zero poly */
+    ret = new_fr_array(&zero_poly.coeffs, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    zero_poly.length = s->max_width;
+
+    /* Bit-reverse the data points */
+    memcpy(samples_brp, samples, s->max_width * sizeof(fr_t));
+    ret = bit_reversal_permutation(
+        samples_brp, sizeof(samples_brp[0]), s->max_width
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    /* Identify missing samples */
+    uint64_t len_missing = 0;
+    for (uint64_t i = 0; i < s->max_width; i++) {
+        if (fr_is_null(&samples_brp[i])) {
+            missing[len_missing++] = i;
+        }
+    }
+
+    /* Check that we have enough samples */
+    if (len_missing > s->max_width / 2) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    // Calculate `Z_r,I`
+    ret = zero_polynomial_via_multiplication(
+        zero_eval, &zero_poly, s->max_width, missing, len_missing, s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    // Construct E * Z_r,I: the loop makes the evaluation polynomial
+    for (size_t i = 0; i < s->max_width; i++) {
+        if (fr_is_null(&samples_brp[i])) {
+            poly_evaluations_with_zero[i] = FR_ZERO;
+        } else {
+            blst_fr_mul(
+                &poly_evaluations_with_zero[i], &samples_brp[i], &zero_eval[i]
+            );
+        }
+    }
+
+    // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
+    ret = ifft_fr(poly_with_zero, poly_evaluations_with_zero, s->max_width, s);
+    if (ret != C_KZG_OK) goto out;
+
+    // x -> k * x
+    scale_poly(poly_with_zero, s->max_width);
+    scale_poly(zero_poly.coeffs, zero_poly.length);
+
+    // Q1 = (D * Z_r,I)(k * x)
+    fr_t *scaled_poly_with_zero = poly_with_zero; // Renaming
+    // Q2 = Z_r,I(k * x)
+    fr_t *scaled_zero_poly = zero_poly.coeffs; // Renaming
+
+    // Polynomial division by convolution: Q3 = Q1 / Q2
+    ret = fft_fr(
+        eval_scaled_poly_with_zero, scaled_poly_with_zero, s->max_width, s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    ret = fft_fr(eval_scaled_zero_poly, scaled_zero_poly, s->max_width, s);
+    if (ret != C_KZG_OK) goto out;
+
+    fr_t *eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero;
+    for (uint64_t i = 0; i < s->max_width; i++) {
+        fr_div(
+            &eval_scaled_reconstructed_poly[i],
+            &eval_scaled_poly_with_zero[i],
+            &eval_scaled_zero_poly[i]
+        );
+    }
+
+    // The result of the division is D(k * x):
+    ret = ifft_fr(
+        scaled_reconstructed_poly,
+        eval_scaled_reconstructed_poly,
+        s->max_width,
+        s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    // k * x -> x
+    unscale_poly(scaled_reconstructed_poly, s->max_width);
+
+    // Finally we have D(x) which evaluates to our original data at the powers
+    // of roots of unity
+    fr_t *reconstructed_poly = scaled_reconstructed_poly; // Renaming
+
+    // The evaluation polynomial for D(x) is the reconstructed data:
+    ret = fft_fr(recovered, reconstructed_poly, s->max_width, s);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Bit-reverse the recovered data points */
+    ret = bit_reversal_permutation(
+        recovered, sizeof(recovered[0]), s->max_width
+    );
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(missing);
+    c_kzg_free(zero_eval);
+    c_kzg_free(poly_evaluations_with_zero);
+    c_kzg_free(poly_with_zero);
+    c_kzg_free(eval_scaled_poly_with_zero);
+    c_kzg_free(eval_scaled_zero_poly);
+    c_kzg_free(scaled_reconstructed_poly);
+    c_kzg_free(zero_poly.coeffs);
+    c_kzg_free(samples_brp);
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Polynomial Conversion Functions
+///////////////////////////////////////////////////////////////////////////////
+
+C_KZG_RET poly_monomial_to_lagrange(
+    fr_t *monomial, const fr_t *lagrange, size_t len, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+
+    ret = fft_fr(monomial, lagrange, len, s);
+    if (ret != C_KZG_OK) goto out;
+    ret = bit_reversal_permutation(monomial, sizeof(fr_t), len);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    return ret;
+}
+
+C_KZG_RET poly_lagrange_to_monomial(
+    fr_t *lagrange, const fr_t *monomial, size_t len, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *monomial_brp = NULL;
+
+    ret = new_fr_array(&monomial_brp, len);
+    if (ret != C_KZG_OK) goto out;
+
+    memcpy(monomial_brp, monomial, sizeof(fr_t) * len);
+
+    ret = bit_reversal_permutation(monomial_brp, sizeof(fr_t), len);
+    if (ret != C_KZG_OK) goto out;
+    ret = ifft_fr(lagrange, monomial_brp, len, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Sample Proofs
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
+ * transform of the vector @p x extended.
+ *
+ * @param[out] out The FFT of the extension of @p x, size @p n * 2
+ * @param[in]  x   The input vector, size @p n
+ * @param[in]  n   The length of the input vector @p x
+ * @param[in]  fs  The FFT settings previously initialised with
+ * #new_fft_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+static C_KZG_RET toeplitz_part_1(
+    g1_t *out, const g1_t *x, uint64_t n, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    uint64_t n2 = n * 2;
+    g1_t *x_ext;
+
+    ret = new_g1_array(&x_ext, n2);
+    if (ret != C_KZG_OK) goto out;
+
+    for (uint64_t i = 0; i < n; i++) {
+        x_ext[i] = x[i];
+    }
+    for (uint64_t i = n; i < n2; i++) {
+        x_ext[i] = G1_IDENTITY;
+    }
+
+    ret = fft_g1(out, x_ext, n2, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(x_ext);
+    return ret;
+}
+
+/**
+ * The second part of the Toeplitz matrix multiplication algorithm.
+ *
+ * @param[out] out Array of G1 group elements, length `n`
+ * @param[in]  toeplitz_coeffs Toeplitz coefficients, a polynomial length `n`
+ * @param[in]  x_ext_fft The Fourier transform of the extended `x` vector,
+ * length `n`
+ * @param[in]  fs  The FFT settings previously initialised with
+ * #new_fft_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_ERROR   An internal error occurred
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+static C_KZG_RET toeplitz_part_2(
+    g1_t *out,
+    const poly_t *toeplitz_coeffs,
+    const g1_t *x_ext_fft,
+    const KZGSettings *fs
+) {
+    C_KZG_RET ret;
+
+    fr_t *toeplitz_coeffs_fft;
+
+    // CHECK(toeplitz_coeffs->length == fk->x_ext_fft_len); // TODO: how to
+    // implement?
+
+    ret = new_fr_array(&toeplitz_coeffs_fft, toeplitz_coeffs->length);
+    if (ret != C_KZG_OK) goto out;
+
+    ret = fft_fr(
+        toeplitz_coeffs_fft,
+        toeplitz_coeffs->coeffs,
+        toeplitz_coeffs->length,
+        fs
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
+        g1_mul(&out[i], &x_ext_fft[i], &toeplitz_coeffs_fft[i]);
+    }
+
+out:
+    c_kzg_free(toeplitz_coeffs_fft);
+    return ret;
+}
+
+/**
+ * The third part of the Toeplitz matrix multiplication algorithm: transform
+ * back and zero the top half.
+ *
+ * @param[out] out Array of G1 group elements, length @p n2
+ * @param[in]  h_ext_fft FFT of the extended `h` values, length @p n2
+ * @param[in]  n2  Size of the arrays
+ * @param[in]  fs  The FFT settings previously initialised with
+ * #new_fft_settings
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_ERROR   An internal error occurred
+ */
+static C_KZG_RET toeplitz_part_3(
+    g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const KZGSettings *fs
+) {
+    C_KZG_RET ret;
+    uint64_t n = n2 / 2;
+
+    ret = ifft_g1(out, h_ext_fft, n2, fs);
+    if (ret != C_KZG_OK) goto out;
+
+    // Zero the second half of h
+    for (uint64_t i = n; i < n2; i++) {
+        out[i] = G1_IDENTITY;
+    }
+
+out:
+    return ret;
+}
+
+/**
+ * Reorder and extend polynomial coefficients for the toeplitz method, strided
+ * version.
+ *
+ * @remark The upper half of the input polynomial coefficients is treated as
+ * being zero.
+ *
+ * @param[out] out The reordered polynomial, size `n * 2 / stride`
+ * @param[in]  in  The input polynomial, size `n`
+ * @param[in]  offset The offset
+ * @param[in]  stride The stride
+ * @retval C_CZK_OK      All is well
+ * @retval C_CZK_BADARGS Invalid parameters were supplied
+ * @retval C_CZK_MALLOC  Memory allocation failed
+ */
+static C_KZG_RET toeplitz_coeffs_stride(
+    poly_t *out, const poly_t *in, uint64_t offset, uint64_t stride
+) {
+    uint64_t n = in->length, k, k2;
+
+    CHECK(stride > 0);
+
+    k = n / stride;
+    k2 = k * 2;
+
+    CHECK(out->length >= k2);
+
+    out->coeffs[0] = in->coeffs[n - 1 - offset];
+    for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
+        out->coeffs[i] = FR_ZERO;
+    }
+    for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2;
+         i++, j += stride) {
+        out->coeffs[i] = in->coeffs[j];
+    }
+
+    return C_KZG_OK;
+}
+
+/**
+ * FK20 multi-proof method, optimized for data availability where the top half
+ * of polynomial coefficients is zero.
+ *
+ * @remark Only the lower half of the polynomial is supplied; the upper, zero,
+ * half is assumed. The #toeplitz_coeffs_stride routine does the right thing.
+ *
+ * @param[out] out The proofs, array size `2 * n / s->chunk_length`
+ * @param[in]  p   The polynomial, length `n`
+ * @param[in]  s  FK20 multi settings previously initialised by
+ * #new_fk20_multi_settings
+ */
+static C_KZG_RET fk20_multi_da_opt(
+    g1_t *out, const poly_t *p, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    uint64_t n = p->length, n2 = n * 2, k, k2;
+    g1_t *h_ext_fft = NULL, *h_ext_fft_file = NULL, *h = NULL;
+    poly_t toeplitz_coeffs = {NULL, 0};
+
+    CHECK(n2 <= s->max_width);
+    CHECK(is_power_of_two(n));
+
+    n = n2 / 2;
+    k = n / SAMPLE_SIZE;
+    k2 = k * 2;
+
+    ret = new_g1_array(&h_ext_fft, k2);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        h_ext_fft[i] = G1_IDENTITY;
+    }
+
+    ret = new_poly(&toeplitz_coeffs, n2 / SAMPLE_SIZE);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < SAMPLE_SIZE; i++) {
+        ret = toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, SAMPLE_SIZE);
+        if (ret != C_KZG_OK) goto out;
+        ret = toeplitz_part_2(
+            h_ext_fft_file, &toeplitz_coeffs, s->x_ext_fft_files[i], s
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        for (uint64_t j = 0; j < k2; j++) {
+            blst_p1_add_or_double(
+                &h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]
+            );
+        }
+    }
+
+    // Calculate `h`
+    ret = new_g1_array(&h, k2);
+    if (ret != C_KZG_OK) goto out;
+    ret = toeplitz_part_3(h, h_ext_fft, k2, s);
+    if (ret != C_KZG_OK) goto out;
+
+    // Overwrite the second half of `h` with zero
+    for (uint64_t i = k; i < k2; i++) {
+        h[i] = G1_IDENTITY;
+    }
+
+    ret = fft_g1(out, h, k2, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    free_poly(&toeplitz_coeffs);
+    c_kzg_free(h_ext_fft_file);
+    c_kzg_free(h_ext_fft);
+    c_kzg_free(h);
+    return ret;
+}
+
+/**
+ * Computes all the KZG proofs for data availability checks. This involves
+ * sampling on the double domain and reordering according to reverse bit order.
+ */
+static C_KZG_RET da_using_fk20_multi(
+    g1_t *out, const poly_t *p, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+
+    ret = fk20_multi_da_opt(out, p, s);
+    if (ret != C_KZG_OK) goto out;
+    ret = bit_reversal_permutation(out, sizeof out[0], SAMPLE_COUNT);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    return ret;
+}
+
+/**
+ * Check a proof for a KZG commitment for evaluations `f(x * w^i) = y_i`.
+ *
+ * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed
+ * values @p y at values @p x `* w^i`, verify the claim. Here, `w` is an `n`th
+ * root of unity.
+ *
+ * @param[out] out        `true` if the proof is valid, `false` if not
+ * @param[in]  commitment The commitment to a polynomial
+ * @param[in]  proof      A proof of the value of the polynomial at the points
+ * @p x * w^i
+ * @param[in]  x          The generator x-value for the evaluation points
+ * @param[in]  ys         The claimed value of the polynomial at the points @p x
+ * * w^i
+ * @param[in]  n          The number of points at which to evaluate the
+ * polynomial, must be a power of two
+ * @param[in]  ks         The settings containing the secrets, previously
+ * initialised with #new_kzg_settings
+ */
+static C_KZG_RET verify_kzg_proof_multi_impl(
+    bool *out,
+    const g1_t *commitment,
+    const g1_t *proof,
+    const fr_t *x,
+    const fr_t *ys,
+    size_t n,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    poly_t interp = {NULL, 0};
+    fr_t inv_x, inv_x_pow, x_pow;
+    g2_t xn2, xn_minus_yn;
+    g1_t is1, commit_minus_interp;
+
+    CHECK(is_power_of_two(n));
+
+    // Interpolate at a coset.
+    ret = new_poly(&interp, n);
+    if (ret != C_KZG_OK) goto out;
+    ret = ifft_fr(interp.coeffs, ys, n, s);
+    if (ret != C_KZG_OK) goto out;
+
+    // Because it is a coset, not the subgroup, we have to multiply the
+    // polynomial coefficients by x^-i
+    blst_fr_eucl_inverse(&inv_x, x);
+    inv_x_pow = inv_x;
+    for (uint64_t i = 1; i < n; i++) {
+        blst_fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
+        blst_fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
+    }
+
+    // [x^n]_2
+    blst_fr_eucl_inverse(&x_pow, &inv_x_pow);
+    g2_mul(&xn2, blst_p2_generator(), &x_pow);
+
+    // [s^n - x^n]_2
+    g2_sub(&xn_minus_yn, &s->g2_values[n], &xn2);
+
+    // [interpolation_polynomial(s)]_1
+    ret = poly_to_kzg_commitment_monomial(&is1, interp.coeffs, n, s);
+    if (ret != C_KZG_OK) return ret;
+
+    // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 -
+    // [interpolation_polynomial(s)]_1
+    g1_sub(&commit_minus_interp, commitment, &is1);
+
+    *out = pairings_verify(
+        &commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn
+    );
+
+out:
+    free_poly(&interp);
+    return ret;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper Functions for 2D Recovery
+///////////////////////////////////////////////////////////////////////////////
+
+static size_t get_missing_count(const fr_t *data, size_t length) {
+    size_t missing_count = 0;
+    for (size_t i = 0; i < length; i++) {
+        if (fr_equal(&data[i], &FR_NULL)) {
+            missing_count++;
+        }
+    }
+    return missing_count;
+}
+
+static void get_column(fr_t *column, fr_t **data, size_t index) {
+    for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            size_t col_index = (i * SAMPLE_SIZE) + j;
+            size_t row_index = (index * SAMPLE_SIZE) + j;
+            column[col_index] = data[i][row_index];
+        }
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Data Availability Sampling Functions
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Given DATA_COUNT data points, get a blob.
+ *
+ * @param[out]  blob    The resultant blob from the data points
+ * @param[in]   data    An array of DATA_COUNT data points
+ * @param[in]   s       The trusted setup
+ *
+ * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
+ * @remark The array of data points must be in the correct order.
+ */
+C_KZG_RET samples_to_blob(
+    Blob *blob, const Bytes32 *data, const KZGSettings *s
+) {
+    (void)s; // Will be used later.
+    memcpy(&blob->bytes, data, BYTES_PER_BLOB);
+    return C_KZG_OK;
+}
+
+/**
+ * Given a blob, get DATA_COUNT data points and SAMPLE_COUNT proofs.
+ *
+ * @param[out]  data    An array of DATA_COUNT data points
+ * @param[out]  proofs  An array of SAMPLE_COUNT proofs
+ * @param[in]   blob    The blob to get samples for
+ * @param[in]   s       The trusted setup
+ *
+ * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
+ * @remark Use samples_to_blob to convert the data points into a blob.
+ * @remark Up to half of these samples may be lost.
+ * @remark Use recover_samples to recover missing samples.
+ * @remark If `data` is NULL, samples won't be computed.
+ * @remark If `proofs` is NULL, proofs won't be computed.
+ */
+C_KZG_RET get_samples_and_proofs(
+    Bytes32 *data, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *poly_monomial = NULL;
+    fr_t *poly_lagrange = NULL;
+    fr_t *data_fr = NULL;
+    g1_t *proofs_g1 = NULL;
+
+    /* Allocate space fr-form arrays */
+    ret = new_fr_array(&poly_monomial, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&poly_lagrange, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&data_fr, SAMPLE_COUNT * SAMPLE_SIZE);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&proofs_g1, SAMPLE_COUNT);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Initialize all of the polynomial fields to zero */
+    memset(poly_monomial, 0, sizeof(fr_t) * s->max_width);
+    memset(poly_lagrange, 0, sizeof(fr_t) * s->max_width);
+
+    /*
+     * Convert the blob to a polynomial. Note that only the first 4096 fields
+     * of the polynomial will be set. The upper 4096 fields will remain zero.
+     * This is required because the polynomial will be evaluated with 8192
+     * roots of unity.
+     */
+    ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
+    if (ret != C_KZG_OK) goto out;
+
+    ret = poly_lagrange_to_monomial(
+        poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    if (data != NULL) {
+        /* Get the data points via forward transformation */
+        ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Convert all of the samples to byte-form */
+        for (size_t i = 0; i < s->max_width; i++) {
+            bytes_from_bls_field(&data[i], &data_fr[i]);
+        }
+
+        /* Bit-reverse the data points */
+        ret = bit_reversal_permutation(data, sizeof(data[0]), s->max_width);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    if (proofs != NULL) {
+        poly_t p = {NULL, 0};
+        p.length = s->max_width / 2;
+        p.coeffs = poly_monomial;
+        ret = da_using_fk20_multi(proofs_g1, &p, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Convert all of the proofs to byte-form */
+        for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+            bytes_from_g1(&proofs[i], &proofs_g1[i]);
+        }
+    }
+
+out:
+    c_kzg_free(poly_monomial);
+    c_kzg_free(poly_lagrange);
+    c_kzg_free(data_fr);
+    c_kzg_free(proofs_g1);
+    return ret;
+}
+
+/**
+ * Given BLOB_COUNT blobs, generate a 2D array of samples and proofs.
+ *
+ * @param[out]  data    An array of DATA_COUNT data points
+ * @param[out]  proofs  An array of SAMPLE_COUNT**2 proofs
+ * @param[in]   blobs   The blobs to generate samples for
+ * @param[in]   s       The trusted setup
+ *
+ * @remark Where BLOB_COUNT is FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE.
+ * @remark Where DATA_COUNT is SAMPLE_COUNT^2 * SAMPLE_LEN.
+ * @remark If `proofs` is NULL, they won't be computed.
+ * @remark Proof computation is REALLY slow.
+ */
+C_KZG_RET get_2d_samples_and_proofs(
+    Bytes32 *data, KZGProof *proofs, const Blob *blobs, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t **data_fr = NULL;
+    fr_t **monomial_polys = NULL;
+    fr_t **lagrange_polys = NULL;
+    size_t n = 2 * BLOB_COUNT;
+    fr_t *column_poly = NULL;
+    fr_t *column_poly_lagrange = NULL;
+    fr_t *column_data = NULL;
+    g1_t *proofs_g1 = NULL;
+
+    /* Allocate 2D arrays */
+    ret = c_kzg_calloc((void **)&data_fr, n, sizeof(fr_t *));
+    if (ret != C_KZG_OK) goto out_pre_2d;
+    ret = c_kzg_calloc((void **)&monomial_polys, n, sizeof(fr_t *));
+    if (ret != C_KZG_OK) goto out_pre_2d;
+    ret = c_kzg_calloc((void **)&lagrange_polys, n, sizeof(fr_t *));
+    if (ret != C_KZG_OK) goto out_pre_2d;
+
+    /* Initialize 2D arrays as NULL */
+    for (size_t i = 0; i < n; i++) {
+        data_fr[i] = NULL;
+        monomial_polys[i] = NULL;
+        lagrange_polys[i] = NULL;
+    }
+
+    /* Allocate 2D arrays */
+    for (size_t i = 0; i < n; i++) {
+        ret = new_fr_array(&data_fr[i], s->max_width);
+        if (ret != C_KZG_OK) goto out;
+        ret = new_fr_array(&monomial_polys[i], s->max_width);
+        if (ret != C_KZG_OK) goto out;
+        ret = new_fr_array(&lagrange_polys[i], s->max_width);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Allocate arrays for the column poly */
+    ret = new_fr_array(&column_poly, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&column_poly_lagrange, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&column_data, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate array for single row of proofs */
+    ret = new_g1_array(&proofs_g1, SAMPLE_COUNT);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Extend each blob */
+    for (size_t i = 0; i < BLOB_COUNT; i++) {
+        /* Initialize all of the polynomial fields to zero */
+        memset(monomial_polys[i], 0, sizeof(fr_t) * s->max_width);
+        memset(lagrange_polys[i], 0, sizeof(fr_t) * s->max_width);
+
+        /* Convert blob to lagrange & monomial forms */
+        ret = blob_to_polynomial((Polynomial *)lagrange_polys[i], &blobs[i]);
+        if (ret != C_KZG_OK) goto out;
+        ret = poly_lagrange_to_monomial(
+            monomial_polys[i], lagrange_polys[i], FIELD_ELEMENTS_PER_BLOB, s
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Get the data points via forward transformation */
+        ret = fft_fr(data_fr[i], monomial_polys[i], s->max_width, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Bit-reverse the data points */
+        ret = bit_reversal_permutation(
+            data_fr[i], sizeof(data_fr[i][0]), s->max_width
+        );
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Extend each column */
+    for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+        /* Initialize the poly to all zeros */
+        memset(column_poly, 0, sizeof(fr_t) * s->max_width);
+        size_t index = 0;
+
+        /* Make the column polynomial */
+        for (size_t j = 0; j < BLOB_COUNT; j++) {
+            for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+                size_t row_index = (i * SAMPLE_SIZE) + k;
+                column_poly[index] = data_fr[j][row_index];
+                index++;
+            }
+        }
+
+        /* Convert the column to lagrange form */
+        ret = poly_lagrange_to_monomial(
+            column_poly_lagrange, column_poly, FIELD_ELEMENTS_PER_BLOB, s
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Generate samples for poly */
+        ret = fft_fr(column_data, column_poly_lagrange, s->max_width, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Bit-reverse the data points */
+        ret = bit_reversal_permutation(
+            column_data, sizeof(column_data[0]), s->max_width
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Copy column back into data array */
+        for (size_t j = BLOB_COUNT; j < n; j++) {
+            for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+                size_t row_index = (i * SAMPLE_SIZE) + k;
+                data_fr[j][row_index] = column_data[index];
+                index++;
+            }
+        }
+    }
+
+    /* Convert the results to bytes */
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < s->max_width; j++) {
+            bytes_from_bls_field(&data[i * s->max_width + j], &data_fr[i][j]);
+        }
+    }
+
+    if (proofs != NULL) {
+        /* Convert the extended polys to monomial form */
+        for (size_t i = BLOB_COUNT; i < n; i++) {
+            /* Initialize all of the polynomial fields to zero */
+            memset(monomial_polys[i], 0, sizeof(fr_t) * s->max_width);
+            memset(lagrange_polys[i], 0, sizeof(fr_t) * s->max_width);
+
+            Blob blob;
+            ret = samples_to_blob(&blob, &data[i * s->max_width], s);
+            if (ret != C_KZG_OK) goto out;
+
+            /* Convert blob to lagrange & monomial forms */
+            ret = blob_to_polynomial((Polynomial *)lagrange_polys[i], &blob);
+            if (ret != C_KZG_OK) goto out;
+            ret = poly_lagrange_to_monomial(
+                monomial_polys[i], lagrange_polys[i], FIELD_ELEMENTS_PER_BLOB, s
+            );
+            if (ret != C_KZG_OK) goto out;
+        }
+
+        /* Compute proofs for each row */
+        for (size_t i = 0; i < n; i++) {
+            poly_t p = {NULL, 0};
+            p.length = s->max_width / 2;
+            p.coeffs = monomial_polys[i];
+            ret = da_using_fk20_multi(proofs_g1, &p, s);
+            if (ret != C_KZG_OK) goto out;
+
+            /* Convert all of the proofs to byte-form */
+            for (size_t j = 0; j < SAMPLE_COUNT; j++) {
+                size_t index = i * n + j;
+                bytes_from_g1(&proofs[index], &proofs_g1[j]);
+            }
+        }
+    }
+
+out:
+    for (size_t i = 0; i < n; i++) {
+        c_kzg_free(monomial_polys[i]);
+        c_kzg_free(lagrange_polys[i]);
+        c_kzg_free(data_fr[i]);
+    }
+out_pre_2d:
+    c_kzg_free(monomial_polys);
+    c_kzg_free(lagrange_polys);
+    c_kzg_free(data_fr);
+    c_kzg_free(column_poly);
+    c_kzg_free(column_poly_lagrange);
+    c_kzg_free(column_data);
+    c_kzg_free(proofs_g1);
+    return ret;
+}
+
+/**
+ * Given at least DATA_COUNT/2 of data points, recover the missing data points.
+ *
+ * @param[out]  recovered   An array of DATA_COUNT data points
+ * @param[in]   data        An array of DATA_COUNT data points
+ * @param[in]   s           The trusted setup
+ *
+ * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
+ * @remark The array of data points must be in the correct order.
+ * @remark Missing data points are marked as 0xffff...ffff (32 bytes).
+ * @remark Recovery is faster if there are fewer missing data points.
+ */
+C_KZG_RET recover_samples(
+    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *recovered_fr = NULL;
+
+    /* Check if there's a missing data point */
+    for (size_t i = 0; i < s->max_width; i++) {
+        if (!memcmp(&data[i].bytes, &FR_NULL, sizeof(Bytes32))) {
+            goto recover;
+        }
+    }
+
+    /* Nothing is missing, copy original data and return */
+    memcpy(recovered, data, sizeof(Bytes32) * s->max_width);
+    return C_KZG_OK;
+
+recover:
+    /* Allocate space fr-form arrays */
+    ret = new_fr_array(&recovered_fr, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert data points to fr-form */
+    for (size_t i = 0; i < s->max_width; i++) {
+        /* Missing data points are marked as 0xffff...ffff */
+        if (!memcmp(&data[i].bytes, &FR_NULL, sizeof(Bytes32))) {
+            recovered_fr[i] = FR_NULL;
+        } else {
+            ret = bytes_to_bls_field(&recovered_fr[i], &data[i]);
+            if (ret != C_KZG_OK) goto out;
+        }
+    }
+
+    /* Call the implementation function to do the bulk of the work */
+    ret = recover_samples_impl(recovered_fr, recovered_fr, s);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert the recovered data points to byte-form */
+    for (size_t i = 0; i < s->max_width; i++) {
+        bytes_from_bls_field(&recovered[i], &recovered_fr[i]);
+    }
+
+out:
+    c_kzg_free(recovered_fr);
+    return ret;
+}
+
+/**
+ * Given at least 75% of data points, recover the missing data points.
+ *
+ * @param[out]  recovered   A flat array of DATA_COUNT data points
+ * @param[in]   data        A flat array of DATA_COUNT data points
+ * @param[in]   s           The trusted setup
+ *
+ * @remark Where DATA_COUNT is SAMPLE_COUNT^2 * SAMPLE_LEN.
+ * @remark The array of data points must be in the correct order.
+ * @remark The 2D array is a SAMPLE_COUNT by SAMPLE_COUNT in size.
+ * @remark Missing data points are marked as 0xffff...ffff (32 bytes).
+ * @remark Recovery is faster if there are fewer missing data points.
+ */
+C_KZG_RET recover_2d_samples(
+    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t **recovered_fr = NULL;
+    fr_t *column = NULL;
+    fr_t *recovered_column = NULL;
+    size_t n = 2 * BLOB_COUNT;
+    size_t total_data_count = n * s->max_width;
+    size_t missing_count = 0;
+    bool *complete_rows = NULL;
+    bool *complete_cols = NULL;
+
+    /* Allocate space fr-form arrays */
+    ret = c_kzg_calloc((void **)&recovered_fr, n, sizeof(fr_t *));
+    if (ret != C_KZG_OK) goto out_pre_2d;
+
+    /* Initialize 2D arrays as NULL */
+    for (size_t i = 0; i < n; i++) {
+        recovered_fr[i] = NULL;
+    }
+
+    /* Allocate 2D array values */
+    for (size_t i = 0; i < n; i++) {
+        ret = new_fr_array(&recovered_fr[i], s->max_width);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Allocate space for a column, unnecessary for rows */
+    ret = new_fr_array(&column, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&recovered_column, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate space for incomplete tracking array */
+    ret = c_kzg_calloc((void **)&complete_rows, n, sizeof(bool));
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc((void **)&complete_cols, n, sizeof(bool));
+    if (ret != C_KZG_OK) goto out;
+
+    /* Initialize everything as complete */
+    memset(complete_rows, true, n);
+    memset(complete_cols, true, n);
+
+    /* Convert data points to fr-form */
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < s->max_width; j++) {
+            size_t index = i * s->max_width + j;
+            if (!memcmp(&data[index].bytes, &FR_NULL, sizeof(Bytes32))) {
+                /* Track count */
+                missing_count++;
+
+                /* Use null value to mark it as missing */
+                recovered_fr[i][j] = FR_NULL;
+
+                /* Mark this row/col as incomplete */
+                complete_rows[i] = false;
+                complete_cols[j / SAMPLE_SIZE] = false;
+            } else {
+                /* Convert the data to fr-form */
+                ret = bytes_to_bls_field(&recovered_fr[i][j], &data[index]);
+                if (ret != C_KZG_OK) goto out;
+            }
+        }
+    }
+
+    /* If nothing is missing, copy original data and return */
+    if (missing_count == 0) {
+        memcpy(recovered, data, sizeof(Bytes32) * s->max_width);
+        goto out;
+    }
+
+    /* Ensure there's enough info to recover */
+    if (missing_count * 4 > total_data_count) {
+        /* More than 25% is missing */
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Recover rows */
+    for (size_t i = 0; i < n; i++) {
+        /* Skip if the row is already complete */
+        if (complete_rows[i]) continue;
+
+        /* Calculate how many data points are missing */
+        size_t missing = get_missing_count(recovered_fr[i], s->max_width);
+        if (missing == 0 || missing > FIELD_ELEMENTS_PER_BLOB) continue;
+
+        /* Call the implementation function to do the bulk of the work */
+        ret = recover_samples_impl(recovered_fr[i], recovered_fr[i], s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Mark this row as complete */
+        complete_rows[i] = true;
+    }
+
+    /* Recover columns */
+    for (size_t i = 0; i < n; i++) {
+        /* Skip if the column is already complete */
+        if (complete_cols[i]) continue;
+
+        /* Get the column for this index */
+        get_column(column, recovered_fr, i);
+
+        /* Calculate how many data points are missing */
+        size_t missing = get_missing_count(column, s->max_width);
+        if (missing == 0 || missing > FIELD_ELEMENTS_PER_BLOB) continue;
+
+        /* Call the implementation function to do the bulk of the work */
+        ret = recover_samples_impl(recovered_column, column, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Save column to recovered data */
+        for (size_t j = 0; j < SAMPLE_COUNT; j++) {
+            for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+                size_t col_index = (j * SAMPLE_SIZE) + k;
+                size_t row_index = (i * SAMPLE_SIZE) + k;
+                recovered_fr[j][row_index] = recovered_column[col_index];
+            }
+        }
+    }
+
+    /* Recover rows */
+    for (size_t i = 0; i < n; i++) {
+        /* Skip if the row is already complete */
+        if (complete_rows[i]) continue;
+
+        /* Calculate how many data points are missing */
+        size_t missing = get_missing_count(recovered_fr[i], s->max_width);
+        if (missing == 0 || missing > FIELD_ELEMENTS_PER_BLOB) continue;
+
+        /* Call the implementation function to do the bulk of the work */
+        ret = recover_samples_impl(recovered_fr[i], recovered_fr[i], s);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Convert the recovered data points to byte-form */
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < s->max_width; j++) {
+            size_t index = i * s->max_width + j;
+            bytes_from_bls_field(&recovered[index], &recovered_fr[i][j]);
+        }
+    }
+
+out_pre_2d:
+    for (size_t i = 0; i < n; i++) {
+        c_kzg_free(recovered_fr[i]);
+    }
+out:
+    c_kzg_free(recovered_fr);
+    c_kzg_free(column);
+    c_kzg_free(recovered_column);
+    c_kzg_free(complete_rows);
+    c_kzg_free(complete_cols);
+    return ret;
+}
+
+/**
+ * Given SAMPLE_LEN data points, verify that the proof is valid.
+ *
+ * @param[out]  ok                  True if the proof are valid, otherwise false
+ * @param[in]   commitment_bytes    The commitment to the blob's samples
+ * @param[in]   proof_bytes         The proof for the sample
+ * @param[in]   data                The sample to check
+ * @param[in]   index               The sample/proof index
+ * @param[in]   s                   The trusted setup
+ */
+C_KZG_RET verify_sample_proof(
+    bool *ok,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const Bytes32 *data,
+    size_t index,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    g1_t commitment, proof;
+    fr_t x, *ys = NULL;
+
+    *ok = false;
+
+    /* Check that index is a valid value */
+    if (index >= SAMPLE_COUNT) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Allocate array for fr-form data points */
+    ret = new_fr_array(&ys, SAMPLE_SIZE);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert untrusted inputs */
+    ret = bytes_to_kzg_commitment(&commitment, commitment_bytes);
+    if (ret != C_KZG_OK) goto out;
+    ret = bytes_to_kzg_proof(&proof, proof_bytes);
+    if (ret != C_KZG_OK) goto out;
+    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+        ret = bytes_to_bls_field(&ys[i], &data[i]);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Calculate the input value */
+    size_t pos = reverse_bits_limited(SAMPLE_COUNT, index);
+    x = s->expanded_roots_of_unity[pos];
+
+    /* Reorder ys */
+    ret = bit_reversal_permutation(ys, sizeof(ys[0]), SAMPLE_SIZE);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Check the proof */
+    ret = verify_kzg_proof_multi_impl(
+        ok, &commitment, &proof, &x, ys, SAMPLE_SIZE, s
+    );
+
+out:
+    c_kzg_free(ys);
+    return ret;
 }

@@ -1,13 +1,16 @@
 package ckzg4844
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	blst "github.com/supranational/blst/bindings/go"
 	"gopkg.in/yaml.v3"
 )
 
@@ -47,6 +50,53 @@ func getRandBlob(seed int64) Blob {
 		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
 	}
 	return blob
+}
+
+func getRandPoint(seed int64) Bytes48 {
+	var ikm [32]byte
+	binary.BigEndian.PutUint64(ikm[0:8], uint64(seed))
+	sk := blst.KeyGen(ikm[:])
+	pk := new(blst.P1Affine).From(sk).Compress()
+	bytes := Bytes48{}
+	copy(bytes[:], pk)
+	return bytes
+}
+
+func deleteSamples(samples Samples1d, i int) Samples1d {
+	var partialSamples Samples1d
+	for j := 0; j < SampleCount; j++ {
+		if j%i == 0 {
+			partialSamples[j] = NullSample
+		} else {
+			partialSamples[j] = samples[j]
+		}
+	}
+	return partialSamples
+}
+
+func getPartialSamples(samples Samples2d) Samples2d {
+	type Pair[T, U any] struct {
+		First  T
+		Second U
+	}
+
+	var partialSamples Samples2d
+	indices := make([]Pair[int, int], SampleCount*SampleCount)
+	for i := 0; i < 2*BlobCount; i++ {
+		for j := 0; j < SampleCount; j++ {
+			indices[i*SampleCount+j] = Pair[int, int]{i, j}
+			partialSamples[i][j] = samples[i][j]
+		}
+	}
+
+	/* Mark the first 25% of shuffled indices as missing */
+	rand.Shuffle(len(indices), func(i, j int) { indices[i], indices[j] = indices[j], indices[i] })
+	count := len(indices) / 4
+	for _, index := range indices[:count] {
+		partialSamples[index.First][index.Second] = NullSample
+	}
+
+	return partialSamples
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -388,64 +438,248 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
+func TestSampleProof(t *testing.T) {
+	blob := getRandBlob(0)
+
+	commitment, err := BlobToKZGCommitment(blob)
+	require.NoError(t, err)
+	samples, proofs, err := GetSamplesAndProofs(blob)
+	require.NoError(t, err)
+
+	for i := range proofs[:] {
+		ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[i]), samples[i], i)
+		require.NoError(t, err)
+		require.True(t, ok)
+	}
+}
+
+func Test2dRecover(t *testing.T) {
+	/* Generate some random blobs */
+	var blobs [BlobCount]Blob
+	for i := range blobs {
+		blobs[i] = getRandBlob(int64(i))
+	}
+
+	/* Get a 2d array of samples for the blobs */
+	samples, proofs, err := Get2dSamplesAndProofs(blobs)
+	require.NoError(t, err)
+
+	/* Mark 25% of them as missing */
+	partialSamples := getPartialSamples(samples)
+
+	/* Recover data */
+	recovered, err := Recover2dSamples(partialSamples)
+	require.NoError(t, err)
+
+	/* Ensure recovered matches original */
+	require.Equal(t, len(samples), len(recovered))
+	var wg sync.WaitGroup
+	for i := range samples {
+		wg.Add(1)
+		go func(x int) {
+			defer wg.Done()
+			require.Equal(t, len(samples[x]), len(recovered[x]))
+			blob, err := SamplesToBlob(samples[x])
+			require.NoError(t, err)
+			commitment, err := BlobToKZGCommitment(blob)
+			require.NoError(t, err)
+			for j := range samples[x] {
+				require.Equal(t, samples[x][j], recovered[x][j])
+				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), samples[x][j], j)
+				require.NoError(t, err)
+				require.True(t, ok)
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func Test2dRecoverFirstRowIsMissing(t *testing.T) {
+	/* Generate some random blobs */
+	var blobs [BlobCount]Blob
+	for i := range blobs {
+		blobs[i] = getRandBlob(int64(i))
+	}
+
+	/* Get a 2d array of samples for the blobs */
+	samples, proofs, err := Get2dSamplesAndProofs(blobs)
+	require.NoError(t, err)
+
+	/* Copy samples so we mark some as missing */
+	var partialSamples Samples2d
+	for i := range samples {
+		copy(partialSamples[i][:], samples[i][:])
+	}
+
+	/* Mark the first 75% samples in the first row as null */
+	l := (len(partialSamples[0]) / 4) * 3
+	for j := range partialSamples[0][:l] {
+		partialSamples[0][j] = NullSample
+	}
+
+	/* Recover data */
+	recovered, err := Recover2dSamples(partialSamples)
+	require.NoError(t, err)
+
+	/* Ensure recovered matches original */
+	require.Equal(t, len(samples), len(recovered))
+	var wg sync.WaitGroup
+	for i := range samples {
+		wg.Add(1)
+		go func(x int) {
+			defer wg.Done()
+			require.Equal(t, len(samples[x]), len(recovered[x]))
+			blob, err := SamplesToBlob(samples[x])
+			require.NoError(t, err)
+			commitment, err := BlobToKZGCommitment(blob)
+			require.NoError(t, err)
+			for j := range samples[x] {
+				require.Equal(t, samples[x][j], recovered[x][j])
+				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), samples[x][j], j)
+				require.NoError(t, err)
+				require.True(t, ok)
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func TestRecoverNoMissing(t *testing.T) {
+	blob := getRandBlob(0)
+	samples, _, err := GetSamplesAndProofs(blob)
+	require.NoError(t, err)
+	recovered, err := RecoverSamples(samples)
+	require.NoError(t, err)
+	require.Equal(t, recovered, samples)
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Benchmarks
 ///////////////////////////////////////////////////////////////////////////////
 
 func Benchmark(b *testing.B) {
-	const length = 64
-	blobs := [length]Blob{}
-	commitments := [length]Bytes48{}
-	proofs := [length]Bytes48{}
-	fields := [length]Bytes32{}
-	for i := 0; i < length; i++ {
-		blob := getRandBlob(int64(i))
-		commitment, err := BlobToKZGCommitment(blob)
-		require.NoError(b, err)
-		proof, err := ComputeBlobKZGProof(blob, Bytes48(commitment))
-		require.NoError(b, err)
+	var blobs [BlobCount]Blob
+	var commitments [BlobCount]Bytes48
+	var proofs [BlobCount]Bytes48
+	var fields [BlobCount]Bytes32
+	var samples [BlobCount]Samples1d
+	var sampleProofs [BlobCount]SampleProofs1d
+	var samples2d [BlobCount]Samples2d
+	var partialSamples2d [BlobCount]Samples2d
 
-		blobs[i] = blob
-		commitments[i] = Bytes48(commitment)
-		proofs[i] = Bytes48(proof)
-		fields[i] = getRandFieldElement(int64(i))
+	randBlob := getRandBlob(0)
+	randCommitment := getRandPoint(0)
+	randProof := getRandPoint(0)
+	randField := getRandFieldElement(0)
+	var randSample Sample
+	for i := range randSample {
+		randSample[i] = randField
+	}
+
+	for i := 0; i < BlobCount; i++ {
+		blobs[i] = randBlob
+		commitments[i] = randCommitment
+		proofs[i] = randProof
+		fields[i] = randField
+		for j := 0; j < SampleCount; j++ {
+			sampleProofs[i][j] = KZGProof(randProof)
+			samples[i][j] = randSample
+		}
+		for j := 0; j < SampleCount; j++ {
+			for k := 0; k < SampleCount; k++ {
+				samples2d[i][j][k] = randSample
+			}
+		}
+		partialSamples2d[i] = getPartialSamples(samples2d[i])
 	}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			BlobToKZGCommitment(blobs[0])
+			_, err := BlobToKZGCommitment(blobs[0])
+			require.Nil(b, err)
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeKZGProof(blobs[0], fields[0])
+			_, _, err := ComputeKZGProof(blobs[0], fields[0])
+			require.Nil(b, err)
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeBlobKZGProof(blobs[0], commitments[0])
+			_, err := ComputeBlobKZGProof(blobs[0], commitments[0])
+			require.Nil(b, err)
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
+			_, err := VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
+			require.Nil(b, err)
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			_, err := VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			require.Nil(b, err)
 		}
 	})
 
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
+				_, err := VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
+				require.Nil(b, err)
 			}
 		})
 	}
+
+	b.Run("GetSamplesAndProofs", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, _, err := GetSamplesAndProofs(blobs[0])
+			require.Nil(b, err)
+		}
+	})
+
+	b.Run("SamplesToBlob", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, err := SamplesToBlob(samples[0])
+			require.Nil(b, err)
+		}
+	})
+
+	for i := 2; i <= 8; i *= 2 {
+		percentMissing := (1.0 / float64(i)) * 100
+		partial := deleteSamples(samples[0], i)
+		b.Run(fmt.Sprintf("RecoverSamples(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, err := RecoverSamples(partial)
+				require.Nil(b, err)
+			}
+		})
+	}
+
+	b.Run("VerifySampleProof", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, err := VerifySampleProof(commitments[0], Bytes48(sampleProofs[0][0]), samples[0][0], 0)
+			require.Nil(b, err)
+		}
+	})
+
+	b.Run("Get2dSamplesAndProofs", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, _, err := Get2dSamplesAndProofs(blobs)
+			require.Nil(b, err)
+		}
+	})
+
+	b.Run("Recover2dSamples", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, err := Recover2dSamples(partialSamples2d[0])
+			require.Nil(b, err)
+		}
+	})
 }

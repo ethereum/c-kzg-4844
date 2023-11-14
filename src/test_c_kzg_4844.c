@@ -1701,6 +1701,169 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for reconstruction
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_get_samples__succeeds_first_half_is_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    size_t n = s.max_width;
+    Bytes32 *samples = NULL;
+    KZGProof *proofs = NULL;
+    int diff;
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the samples and proofs */
+    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Ensure the first half of the samples is the blob */
+    diff = memcmp(blob.bytes, samples, sizeof(Blob));
+    ASSERT_EQUALS(diff, 0);
+}
+
+static void test_reconstruct__succeeds_random_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    size_t n = s.max_width;
+    Bytes32 *samples = NULL;
+    Bytes32 *partial = NULL;
+    Bytes32 *recovered = NULL;
+    KZGProof *proofs = NULL;
+    int diff;
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&partial, n, sizeof(Bytes32));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&recovered, n, sizeof(Bytes32));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the samples and proofs */
+    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Erase half of the samples */
+    for (size_t i = 0; i < s.max_width; i++) {
+        if (i % 2 == 0) {
+            partial[i] = samples[i];
+        } else {
+            /* To mark as missing, set all bits */
+            memset(&partial[i].bytes, 0xff, 32);
+        }
+    }
+
+    /* Reconstruct with half of the samples */
+    ret = recover_samples(recovered, partial, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Check that all of the samples match */
+    for (size_t i = 0; i < n; i++) {
+        diff = memcmp(samples[i].bytes, recovered[i].bytes, sizeof(Bytes32));
+        ASSERT_EQUALS(diff, 0);
+    }
+
+    /* Recover the blob from the recovered samples */
+    Blob recovered_blob;
+    ret = samples_to_blob(&recovered_blob, recovered, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Ensure the blobs are the same */
+    diff = memcmp(blob.bytes, recovered_blob.bytes, sizeof(Blob));
+    ASSERT_EQUALS(diff, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for sample proofs
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_verify_sample_proof__succeeds_random_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    size_t n = s.max_width;
+    Bytes32 *samples = NULL;
+    KZGProof *proofs = NULL;
+    KZGCommitment commitment;
+    bool ok;
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get a commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Get the samples and proofs */
+    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Verify all of the sample proofs */
+    for (uint64_t i = 0; i < SAMPLE_COUNT; i++) {
+        Bytes32 *sample = samples + (i * SAMPLE_SIZE);
+        verify_sample_proof(&ok, &commitment, &proofs[i], sample, i, &s);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for polynomial conversions
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_poly_conversion__succeeds_round_trip(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    fr_t *a = NULL;
+    fr_t *b = NULL;
+    fr_t *c = NULL;
+    int diff;
+
+    ret = new_fr_array(&a, FIELD_ELEMENTS_PER_BLOB);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = new_fr_array(&b, FIELD_ELEMENTS_PER_BLOB);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = new_fr_array(&c, FIELD_ELEMENTS_PER_BLOB);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    get_rand_blob(&blob);
+
+    /* Convert the blob to a polynomial */
+    ret = blob_to_polynomial((Polynomial *)a, &blob);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Make B a polynomial in monomial form */
+    ret = poly_lagrange_to_monomial(b, a, FIELD_ELEMENTS_PER_BLOB, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Make C a polynomial in lagrange form */
+    ret = poly_monomial_to_lagrange(c, b, FIELD_ELEMENTS_PER_BLOB, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The result should match the first polynomial */
+    diff = memcmp(a, c, sizeof(fr_t) * FIELD_ELEMENTS_PER_BLOB);
+    ASSERT_EQUALS(diff, 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1910,6 +2073,10 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
+    RUN(test_get_samples__succeeds_first_half_is_blob);
+    RUN(test_reconstruct__succeeds_random_blob);
+    RUN(test_verify_sample_proof__succeeds_random_blob);
+    RUN(test_poly_conversion__succeeds_round_trip);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes

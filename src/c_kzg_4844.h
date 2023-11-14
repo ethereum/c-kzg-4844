@@ -51,6 +51,18 @@ extern "C" {
 /** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
 
+/** The number of data points in an extended blob */
+#define DATA_COUNT (FIELD_ELEMENTS_PER_BLOB * 2)
+
+/** The number of data points in a sample. */
+#define SAMPLE_SIZE 16
+
+/** The number of samples in an extended blob. */
+#define SAMPLE_COUNT (DATA_COUNT / SAMPLE_SIZE)
+
+/** The number of blobs we're working with. */
+#define BLOB_COUNT (FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
@@ -112,11 +124,21 @@ typedef struct {
      * `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,
      * length `max_width`. */
     fr_t *roots_of_unity;
+    /** The expanded roots of unity */
+    fr_t *expanded_roots_of_unity;
+    /** The bit-reversal permuted roots of unity. */
+    fr_t *reverse_roots_of_unity;
+    /** G1 group elements from the trusted setup,
+     * in monomial form. */
+    g1_t *g1_values;
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
-    g1_t *g1_values;
-    /** G2 group elements from the trusted setup. */
+    g1_t *g1_values_lagrange;
+    /** G2 group elements from the trusted setup,
+     * in monomial form. */
     g2_t *g2_values;
+    /** Data used during FK20 proof generation. */
+    g1_t **x_ext_fft_files;
 } KZGSettings;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -177,6 +199,35 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
+    const KZGSettings *s
+);
+
+C_KZG_RET get_samples_and_proofs(
+    Bytes32 *data, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+);
+
+C_KZG_RET get_2d_samples_and_proofs(
+    Bytes32 *data, KZGProof *proofs, const Blob *blobs, const KZGSettings *s
+);
+
+C_KZG_RET samples_to_blob(
+    Blob *blob, const Bytes32 *data, const KZGSettings *s
+);
+
+C_KZG_RET recover_samples(
+    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+);
+
+C_KZG_RET recover_2d_samples(
+    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+);
+
+C_KZG_RET verify_sample_proof(
+    bool *ok,
+    const Bytes48 *commitment_bytes,
+    const Bytes48 *proof_bytes,
+    const Bytes32 *data,
+    size_t index,
     const KZGSettings *s
 );
 
