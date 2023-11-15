@@ -1,6 +1,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
+#![allow(dead_code)]
 
 #[cfg(feature = "serde")]
 mod serde;
@@ -45,6 +46,21 @@ pub struct KZGCommitment {
 pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }
+
+#[repr(C)]
+pub struct Sample([Bytes32; SAMPLE_SIZE]);
+
+#[repr(C)]
+pub struct Samples1d([Sample; SAMPLE_COUNT]);
+
+#[repr(C)]
+pub struct SampleProofs1d([KZGProof; SAMPLE_COUNT]);
+
+#[repr(C)]
+pub struct Samples2d([Samples1d; SAMPLE_COUNT]);
+
+#[repr(C)]
+pub struct SampleProofs2d([SampleProofs1d; SAMPLE_COUNT]);
 
 #[derive(Debug)]
 pub enum Error {
@@ -238,6 +254,22 @@ impl Blob {
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
+    }
+
+    pub fn samples_to_blob(samples: &Samples1d, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+        let mut blob = MaybeUninit::<Self>::uninit();
+        unsafe {
+            let res = samples_to_blob(
+                blob.as_mut_ptr(),
+                samples.0.as_ptr() as *const Bytes32,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(blob.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
     }
 }
 
@@ -450,6 +482,31 @@ impl KZGProof {
             }
         }
     }
+
+    pub fn verify_sample_proof(
+        commitment_bytes: &Bytes48,
+        proof_bytes: &Bytes48,
+        sample: &Sample,
+        index: usize,
+        kzg_settings: &KZGSettings,
+    ) -> Result<bool, Error> {
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_sample_proof(
+                verified.as_mut_ptr(),
+                commitment_bytes,
+                proof_bytes,
+                sample.0.as_ptr(),
+                index,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
 }
 
 impl KZGCommitment {
@@ -480,6 +537,87 @@ impl KZGCommitment {
             let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_commitment.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+}
+
+impl Samples1d {
+    pub fn get_samples_and_proofs(
+        blob: &Blob,
+        kzg_settings: &KZGSettings,
+    ) -> Result<(Box<Self>, Box<SampleProofs1d>), Error> {
+        let mut samples: Box<MaybeUninit<Samples1d>> = Box::new_uninit();
+        let mut proofs: Box<MaybeUninit<SampleProofs1d>> = Box::new_uninit();
+        unsafe {
+            let res = get_samples_and_proofs(
+                samples.as_mut_ptr() as *mut Bytes32,
+                proofs.as_mut_ptr() as *mut KZGProof,
+                blob,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((samples.assume_init(), proofs.assume_init()))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn recover_samples(samples: &Samples1d, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+        let mut recovered = MaybeUninit::<Self>::uninit();
+        unsafe {
+            let res = recover_samples(
+                recovered.as_mut_ptr() as *mut Bytes32,
+                samples.0.as_ptr() as *mut Bytes32,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(recovered.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+}
+
+impl Samples2d {
+    pub fn get_2d_samples_and_proofs(
+        blobs: &[Blob; BLOB_COUNT],
+        kzg_settings: &KZGSettings,
+    ) -> Result<(Box<Samples2d>, Box<SampleProofs2d>), Error> {
+        let mut samples: Box<MaybeUninit<Samples2d>> = Box::new_uninit();
+        let mut proofs: Box<MaybeUninit<SampleProofs2d>> = Box::new_uninit();
+        unsafe {
+            let res = get_2d_samples_and_proofs(
+                samples.as_mut_ptr() as *mut Bytes32,
+                proofs.as_mut_ptr() as *mut KZGProof,
+                blobs.as_ptr(),
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((samples.assume_init(), proofs.assume_init()))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn recover_2d_samples(
+        samples: &Samples2d,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
+        let mut recovered = MaybeUninit::<Self>::uninit();
+        unsafe {
+            let res = recover_2d_samples(
+                recovered.as_mut_ptr() as *mut Bytes32,
+                samples.0.as_ptr() as *mut Bytes32,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(recovered.assume_init())
             } else {
                 Err(Error::CError(res))
             }
@@ -836,6 +974,67 @@ mod tests {
             ) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_and_prove_samples_1d() {
+        let mut rng = rand::thread_rng();
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        let blob = generate_random_blob(&mut rng);
+        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
+        let (samples, proofs) = Samples1d::get_samples_and_proofs(&blob, &kzg_settings).unwrap();
+
+        for i in 0..SAMPLE_COUNT {
+            let ok = KZGProof::verify_sample_proof(
+                &commitment.to_bytes(),
+                &proofs.0[i].to_bytes(),
+                &samples.0[i],
+                i,
+                &kzg_settings,
+            )
+            .unwrap();
+            assert_eq!(ok, true);
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "slow-tests")]
+    fn test_get_and_prove_samples_2d() {
+        let mut rng = rand::thread_rng();
+        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+
+        /* Make this simpler */
+        let mut blob_vec: Vec<Blob> = Vec::with_capacity(BLOB_COUNT);
+        for _ in 0..BLOB_COUNT {
+            blob_vec.push(generate_random_blob(&mut rng));
+        }
+        let blob_boxed_slice = blob_vec.into_boxed_slice();
+        let blobs: Box<[Blob; BLOB_COUNT]> =
+            unsafe { Box::from_raw(Box::into_raw(blob_boxed_slice) as *mut [Blob; BLOB_COUNT]) };
+
+        let (samples, proofs) =
+            Samples2d::get_2d_samples_and_proofs(&blobs, &kzg_settings).unwrap();
+
+        for i in 0..SAMPLE_COUNT {
+            for j in 0..SAMPLE_COUNT {
+                let ok = KZGProof::verify_sample_proof(
+                    &KZGCommitment::blob_to_kzg_commitment(&blobs[i], &kzg_settings)
+                        .unwrap()
+                        .to_bytes(),
+                    &proofs.0[i].0[j].to_bytes(),
+                    &samples.0[i].0[j],
+                    j,
+                    &kzg_settings,
+                )
+                .unwrap();
+                assert_eq!(ok, true);
             }
         }
     }
