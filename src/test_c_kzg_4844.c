@@ -1818,7 +1818,7 @@ static void test_verify_sample_proof__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Verify all of the sample proofs */
-    for (uint64_t i = 0; i < SAMPLE_COUNT; i++) {
+    for (uint64_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         Bytes32 *sample = samples + (i * SAMPLE_SIZE);
         verify_sample_proof(&ok, &commitment, &proofs[i], sample, i, &s);
         ASSERT_EQUALS(ok, true);

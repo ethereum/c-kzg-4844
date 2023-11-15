@@ -23,21 +23,21 @@ const (
 	BytesPerProof        = C.BYTES_PER_PROOF
 	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
 	SampleSize           = C.SAMPLE_SIZE
-	SampleCount          = C.SAMPLE_COUNT
+	SamplesPerBlob       = C.SAMPLES_PER_BLOB
 	BlobCount            = C.BLOB_COUNT
 )
 
 type (
-	Bytes32        [32]byte
-	Bytes48        [48]byte
-	KZGCommitment  Bytes48
-	KZGProof       Bytes48
-	Blob           [BytesPerBlob]byte
-	Sample         [SampleSize]Bytes32
-	Samples1d      [SampleCount]Sample
-	SampleProofs1d [SampleCount]KZGProof
-	Samples2d      [SampleCount][SampleCount]Sample
-	SampleProofs2d [SampleCount][SampleCount]KZGProof
+	Bytes32          [32]byte
+	Bytes48          [48]byte
+	KZGCommitment    Bytes48
+	KZGProof         Bytes48
+	Blob             [BytesPerBlob]byte
+	Sample           [SampleSize]Bytes32
+	BlobSamples      [SamplesPerBlob]Sample
+	BlobSampleProofs [SamplesPerBlob]KZGProof
+	SampleTable      [SamplesPerBlob]BlobSamples
+	SampleProofTable [SamplesPerBlob]BlobSampleProofs
 )
 
 var (
@@ -373,12 +373,12 @@ GetSamplesAndProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func GetSamplesAndProofs(blob Blob) (Samples1d, SampleProofs1d, error) {
+func GetSamplesAndProofs(blob Blob) (BlobSamples, BlobSampleProofs, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var samples Samples1d
-	var proofs SampleProofs1d
+	var samples BlobSamples
+	var proofs BlobSampleProofs
 	err := makeErrorFromRet(C.get_samples_and_proofs(
 		(*C.Bytes32)(unsafe.Pointer(&samples)),
 		(*C.KZGProof)(unsafe.Pointer(&proofs)),
@@ -396,12 +396,12 @@ Get2dSamplesAndProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func Get2dSamplesAndProofs(blobs [BlobCount]Blob) (Samples2d, SampleProofs2d, error) {
+func Get2dSamplesAndProofs(blobs [BlobCount]Blob) (SampleTable, SampleProofTable, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var samples Samples2d
-	var proofs SampleProofs2d
+	var samples SampleTable
+	var proofs SampleProofTable
 	err := makeErrorFromRet(C.get_2d_samples_and_proofs(
 		(*C.Bytes32)(unsafe.Pointer(&samples)),
 		(*C.KZGProof)(unsafe.Pointer(&proofs)),
@@ -418,7 +418,7 @@ SamplesToBlob is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func SamplesToBlob(samples Samples1d) (Blob, error) {
+func SamplesToBlob(samples BlobSamples) (Blob, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -438,11 +438,11 @@ RecoverSamples is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func RecoverSamples(samples Samples1d) (Samples1d, error) {
+func RecoverSamples(samples BlobSamples) (BlobSamples, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var recovered Samples1d
+	var recovered BlobSamples
 	err := makeErrorFromRet(C.recover_samples(
 		(*C.Bytes32)(unsafe.Pointer(&recovered)),
 		(*C.Bytes32)(unsafe.Pointer(&samples)),
@@ -458,11 +458,11 @@ Recover2dSamples is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func Recover2dSamples(samples Samples2d) (Samples2d, error) {
+func Recover2dSamples(samples SampleTable) (SampleTable, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var recovered Samples2d
+	var recovered SampleTable
 	err := makeErrorFromRet(C.recover_2d_samples(
 		(*C.Bytes32)(unsafe.Pointer(&recovered)),
 		(*C.Bytes32)(unsafe.Pointer(&samples)),

@@ -52,13 +52,13 @@ extern "C" {
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
 
 /** The number of data points in an extended blob */
-#define DATA_COUNT (FIELD_ELEMENTS_PER_BLOB * 2)
+#define DATA_POINTS_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
 /** The number of data points in a sample. */
 #define SAMPLE_SIZE 16
 
 /** The number of samples in an extended blob. */
-#define SAMPLE_COUNT (DATA_COUNT / SAMPLE_SIZE)
+#define SAMPLES_PER_BLOB (DATA_POINTS_PER_BLOB / SAMPLE_SIZE)
 
 /** The number of blobs we're working with. */
 #define BLOB_COUNT (FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE)

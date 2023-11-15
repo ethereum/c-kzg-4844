@@ -68,9 +68,9 @@ fn make_bindings<P>(
                 | "BYTES_PER_PROOF"
                 | "BYTES_PER_FIELD_ELEMENT"
                 | "BYTES_PER_BLOB"
-                | "DATA_COUNT"
+                | "DATA_POINTS_PER_BLOB"
                 | "SAMPLE_SIZE"
-                | "SAMPLE_COUNT"
+                | "SAMPLES_PER_BLOB"
                 | "BLOB_COUNT" => Some(bindgen::callbacks::IntKind::Custom {
                     name: "usize",
                     is_signed: false,

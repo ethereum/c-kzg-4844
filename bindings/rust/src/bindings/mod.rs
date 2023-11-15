@@ -51,16 +51,16 @@ pub struct KZGProof {
 pub struct Sample([Bytes32; SAMPLE_SIZE]);
 
 #[repr(C)]
-pub struct Samples1d([Sample; SAMPLE_COUNT]);
+pub struct BlobSamples([Sample; SAMPLES_PER_BLOB]);
 
 #[repr(C)]
-pub struct SampleProofs1d([KZGProof; SAMPLE_COUNT]);
+pub struct BlobSampleProofs([KZGProof; SAMPLES_PER_BLOB]);
 
 #[repr(C)]
-pub struct Samples2d([Samples1d; SAMPLE_COUNT]);
+pub struct SampleTable([BlobSamples; SAMPLES_PER_BLOB]);
 
 #[repr(C)]
-pub struct SampleProofs2d([SampleProofs1d; SAMPLE_COUNT]);
+pub struct SampleProofTable([BlobSampleProofs; SAMPLES_PER_BLOB]);
 
 #[derive(Debug)]
 pub enum Error {
@@ -256,7 +256,7 @@ impl Blob {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
-    pub fn samples_to_blob(samples: &Samples1d, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn samples_to_blob(samples: &BlobSamples, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut blob = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = samples_to_blob(
@@ -544,13 +544,13 @@ impl KZGCommitment {
     }
 }
 
-impl Samples1d {
+impl BlobSamples {
     pub fn get_samples_and_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
-    ) -> Result<(Box<Self>, Box<SampleProofs1d>), Error> {
-        let mut samples: Box<MaybeUninit<Samples1d>> = Box::new_uninit();
-        let mut proofs: Box<MaybeUninit<SampleProofs1d>> = Box::new_uninit();
+    ) -> Result<(Box<Self>, Box<BlobSampleProofs>), Error> {
+        let mut samples: Box<MaybeUninit<BlobSamples>> = Box::new_uninit();
+        let mut proofs: Box<MaybeUninit<BlobSampleProofs>> = Box::new_uninit();
         unsafe {
             let res = get_samples_and_proofs(
                 samples.as_mut_ptr() as *mut Bytes32,
@@ -566,7 +566,7 @@ impl Samples1d {
         }
     }
 
-    pub fn recover_samples(samples: &Samples1d, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn recover_samples(samples: &BlobSamples, kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut recovered = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = recover_samples(
@@ -583,13 +583,13 @@ impl Samples1d {
     }
 }
 
-impl Samples2d {
+impl SampleTable {
     pub fn get_2d_samples_and_proofs(
         blobs: &[Blob; BLOB_COUNT],
         kzg_settings: &KZGSettings,
-    ) -> Result<(Box<Samples2d>, Box<SampleProofs2d>), Error> {
-        let mut samples: Box<MaybeUninit<Samples2d>> = Box::new_uninit();
-        let mut proofs: Box<MaybeUninit<SampleProofs2d>> = Box::new_uninit();
+    ) -> Result<(Box<SampleTable>, Box<SampleProofTable>), Error> {
+        let mut samples: Box<MaybeUninit<SampleTable>> = Box::new_uninit();
+        let mut proofs: Box<MaybeUninit<SampleProofTable>> = Box::new_uninit();
         unsafe {
             let res = get_2d_samples_and_proofs(
                 samples.as_mut_ptr() as *mut Bytes32,
@@ -606,7 +606,7 @@ impl Samples2d {
     }
 
     pub fn recover_2d_samples(
-        samples: &Samples2d,
+        samples: &SampleTable,
         kzg_settings: &KZGSettings,
     ) -> Result<Self, Error> {
         let mut recovered = MaybeUninit::<Self>::uninit();
@@ -987,9 +987,9 @@ mod tests {
 
         let blob = generate_random_blob(&mut rng);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
-        let (samples, proofs) = Samples1d::get_samples_and_proofs(&blob, &kzg_settings).unwrap();
+        let (samples, proofs) = BlobSamples::get_samples_and_proofs(&blob, &kzg_settings).unwrap();
 
-        for i in 0..SAMPLE_COUNT {
+        for i in 0..SAMPLES_PER_BLOB {
             let ok = KZGProof::verify_sample_proof(
                 &commitment.to_bytes(),
                 &proofs.0[i].to_bytes(),
@@ -1020,10 +1020,10 @@ mod tests {
             unsafe { Box::from_raw(Box::into_raw(blob_boxed_slice) as *mut [Blob; BLOB_COUNT]) };
 
         let (samples, proofs) =
-            Samples2d::get_2d_samples_and_proofs(&blobs, &kzg_settings).unwrap();
+            SampleTable::get_2d_samples_and_proofs(&blobs, &kzg_settings).unwrap();
 
-        for i in 0..SAMPLE_COUNT {
-            for j in 0..SAMPLE_COUNT {
+        for i in 0..SAMPLES_PER_BLOB {
+            for j in 0..SAMPLES_PER_BLOB {
                 let ok = KZGProof::verify_sample_proof(
                     &KZGCommitment::blob_to_kzg_commitment(&blobs[i], &kzg_settings)
                         .unwrap()

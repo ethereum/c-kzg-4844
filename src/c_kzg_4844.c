@@ -1925,7 +1925,7 @@ C_KZG_RET load_trusted_setup(
 
     /* For DAS reconstruction */
     out->max_width *= 2;
-    CHECK(out->max_width == DATA_COUNT);
+    CHECK(out->max_width == DATA_POINTS_PER_BLOB);
 
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->roots_of_unity, out->max_width);
@@ -3019,7 +3019,7 @@ static C_KZG_RET da_using_fk20_multi(
 
     ret = fk20_multi_da_opt(out, p, s);
     if (ret != C_KZG_OK) goto out;
-    ret = bit_reversal_permutation(out, sizeof out[0], SAMPLE_COUNT);
+    ret = bit_reversal_permutation(out, sizeof out[0], SAMPLES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3116,7 +3116,7 @@ static size_t get_missing_count(const fr_t *data, size_t length) {
 }
 
 static void get_column(fr_t *column, fr_t **data, size_t index) {
-    for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         for (size_t j = 0; j < SAMPLE_SIZE; j++) {
             size_t col_index = (i * SAMPLE_SIZE) + j;
             size_t row_index = (index * SAMPLE_SIZE) + j;
@@ -3130,13 +3130,12 @@ static void get_column(fr_t *column, fr_t **data, size_t index) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Given DATA_COUNT data points, get a blob.
+ * Given DATA_POINTS_PER_BLOB data points, get a blob.
  *
  * @param[out]  blob    The resultant blob from the data points
- * @param[in]   data    An array of DATA_COUNT data points
+ * @param[in]   data    An array of DATA_POINTS_PER_BLOB data points
  * @param[in]   s       The trusted setup
  *
- * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
  * @remark The array of data points must be in the correct order.
  */
 C_KZG_RET samples_to_blob(
@@ -3148,14 +3147,13 @@ C_KZG_RET samples_to_blob(
 }
 
 /**
- * Given a blob, get DATA_COUNT data points and SAMPLE_COUNT proofs.
+ * Given a blob, get DATA_POINTS_PER_BLOB data points and SAMPLES_PER_BLOB proofs.
  *
- * @param[out]  data    An array of DATA_COUNT data points
- * @param[out]  proofs  An array of SAMPLE_COUNT proofs
+ * @param[out]  data    An array of DATA_POINTS_PER_BLOB data points
+ * @param[out]  proofs  An array of SAMPLES_PER_BLOB proofs
  * @param[in]   blob    The blob to get samples for
  * @param[in]   s       The trusted setup
  *
- * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
  * @remark Use samples_to_blob to convert the data points into a blob.
  * @remark Up to half of these samples may be lost.
  * @remark Use recover_samples to recover missing samples.
@@ -3176,9 +3174,9 @@ C_KZG_RET get_samples_and_proofs(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_lagrange, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&data_fr, SAMPLE_COUNT * SAMPLE_SIZE);
+    ret = new_fr_array(&data_fr, SAMPLES_PER_BLOB * SAMPLE_SIZE);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, SAMPLE_COUNT);
+    ret = new_g1_array(&proofs_g1, SAMPLES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all of the polynomial fields to zero */
@@ -3222,7 +3220,7 @@ C_KZG_RET get_samples_and_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
-        for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+        for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
             bytes_from_g1(&proofs[i], &proofs_g1[i]);
         }
     }
@@ -3238,13 +3236,11 @@ out:
 /**
  * Given BLOB_COUNT blobs, generate a 2D array of samples and proofs.
  *
- * @param[out]  data    An array of DATA_COUNT data points
- * @param[out]  proofs  An array of SAMPLE_COUNT**2 proofs
+ * @param[out]  data    An array of DATA_POINTS_PER_BLOB**2 data points
+ * @param[out]  proofs  An array of SAMPLES_PER_BLOB**2 proofs
  * @param[in]   blobs   The blobs to generate samples for
  * @param[in]   s       The trusted setup
  *
- * @remark Where BLOB_COUNT is FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE.
- * @remark Where DATA_COUNT is SAMPLE_COUNT^2 * SAMPLE_LEN.
  * @remark If `proofs` is NULL, they won't be computed.
  * @remark Proof computation is REALLY slow.
  */
@@ -3295,7 +3291,7 @@ C_KZG_RET get_2d_samples_and_proofs(
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate array for single row of proofs */
-    ret = new_g1_array(&proofs_g1, SAMPLE_COUNT);
+    ret = new_g1_array(&proofs_g1, SAMPLES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Extend each blob */
@@ -3324,7 +3320,7 @@ C_KZG_RET get_2d_samples_and_proofs(
     }
 
     /* Extend each column */
-    for (size_t i = 0; i < SAMPLE_COUNT; i++) {
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         /* Initialize the poly to all zeros */
         memset(column_poly, 0, sizeof(fr_t) * s->max_width);
         size_t index = 0;
@@ -3400,7 +3396,7 @@ C_KZG_RET get_2d_samples_and_proofs(
             if (ret != C_KZG_OK) goto out;
 
             /* Convert all of the proofs to byte-form */
-            for (size_t j = 0; j < SAMPLE_COUNT; j++) {
+            for (size_t j = 0; j < SAMPLES_PER_BLOB; j++) {
                 size_t index = i * n + j;
                 bytes_from_g1(&proofs[index], &proofs_g1[j]);
             }
@@ -3425,13 +3421,12 @@ out_pre_2d:
 }
 
 /**
- * Given at least DATA_COUNT/2 of data points, recover the missing data points.
+ * Given at least 50% of data points, recover the missing data points.
  *
- * @param[out]  recovered   An array of DATA_COUNT data points
- * @param[in]   data        An array of DATA_COUNT data points
+ * @param[out]  recovered   An array of DATA_POINTS_PER_BLOB data points
+ * @param[in]   data        An array of DATA_POINTS_PER_BLOB data points
  * @param[in]   s           The trusted setup
  *
- * @remark Where DATA_COUNT is SAMPLE_COUNT * SAMPLE_LEN.
  * @remark The array of data points must be in the correct order.
  * @remark Missing data points are marked as 0xffff...ffff (32 bytes).
  * @remark Recovery is faster if there are fewer missing data points.
@@ -3486,13 +3481,12 @@ out:
 /**
  * Given at least 75% of data points, recover the missing data points.
  *
- * @param[out]  recovered   A flat array of DATA_COUNT data points
- * @param[in]   data        A flat array of DATA_COUNT data points
+ * @param[out]  recovered   A flat array of DATA_POINTS_PER_BLOB**2 data points
+ * @param[in]   data        A flat array of DATA_POINTS_PER_BLOB**2 data points
  * @param[in]   s           The trusted setup
  *
- * @remark Where DATA_COUNT is SAMPLE_COUNT^2 * SAMPLE_LEN.
  * @remark The array of data points must be in the correct order.
- * @remark The 2D array is a SAMPLE_COUNT by SAMPLE_COUNT in size.
+ * @remark The 2D array is a SAMPLES_PER_BLOB by SAMPLES_PER_BLOB in size.
  * @remark Missing data points are marked as 0xffff...ffff (32 bytes).
  * @remark Recovery is faster if there are fewer missing data points.
  */
@@ -3609,7 +3603,7 @@ C_KZG_RET recover_2d_samples(
         if (ret != C_KZG_OK) goto out;
 
         /* Save column to recovered data */
-        for (size_t j = 0; j < SAMPLE_COUNT; j++) {
+        for (size_t j = 0; j < SAMPLES_PER_BLOB; j++) {
             for (size_t k = 0; k < SAMPLE_SIZE; k++) {
                 size_t col_index = (j * SAMPLE_SIZE) + k;
                 size_t row_index = (i * SAMPLE_SIZE) + k;
@@ -3654,7 +3648,7 @@ out:
 }
 
 /**
- * Given SAMPLE_LEN data points, verify that the proof is valid.
+ * For a given sample, verify that the proof is valid.
  *
  * @param[out]  ok                  True if the proof are valid, otherwise false
  * @param[in]   commitment_bytes    The commitment to the blob's samples
@@ -3678,7 +3672,7 @@ C_KZG_RET verify_sample_proof(
     *ok = false;
 
     /* Check that index is a valid value */
-    if (index >= SAMPLE_COUNT) {
+    if (index >= SAMPLES_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -3698,7 +3692,7 @@ C_KZG_RET verify_sample_proof(
     }
 
     /* Calculate the input value */
-    size_t pos = reverse_bits_limited(SAMPLE_COUNT, index);
+    size_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, index);
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */
