@@ -44,7 +44,7 @@ func getRandFieldElement(seed int64) Bytes32 {
 }
 
 func getRandBlob(seed int64) Blob {
-	var blob Blob
+	blob := Blob{}
 	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
 		fieldElementBytes := getRandFieldElement(seed + int64(i))
 		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
@@ -62,8 +62,8 @@ func getRandPoint(seed int64) Bytes48 {
 	return bytes
 }
 
-func deleteSamples(samples BlobSamples, i int) BlobSamples {
-	var partialSamples BlobSamples
+func deleteSamples(samples *BlobSamples, i int) *BlobSamples {
+	partialSamples := &BlobSamples{}
 	for j := 0; j < SamplesPerBlob; j++ {
 		if j%i == 0 {
 			partialSamples[j] = NullSample
@@ -74,13 +74,13 @@ func deleteSamples(samples BlobSamples, i int) BlobSamples {
 	return partialSamples
 }
 
-func getPartialSamples(samples SampleTable) SampleTable {
+func getPartialSamples(samples *SampleTable) *SampleTable {
 	type Pair[T, U any] struct {
 		First  T
 		Second U
 	}
 
-	var partialSamples SampleTable
+	partialSamples := &SampleTable{}
 	indices := make([]Pair[int, int], SamplesPerBlob*SamplesPerBlob)
 	for i := 0; i < 2*BlobCount; i++ {
 		for j := 0; j < SamplesPerBlob; j++ {
@@ -443,11 +443,11 @@ func TestSampleProof(t *testing.T) {
 
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	samples, proofs, err := GetSamplesAndProofs(blob)
+	samples, proofs, err := GetSamplesAndProofs(&blob)
 	require.NoError(t, err)
 
 	for i := range proofs[:] {
-		ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[i]), samples[i], i)
+		ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[i]), &samples[i], i)
 		require.NoError(t, err)
 		require.True(t, ok)
 	}
@@ -455,13 +455,13 @@ func TestSampleProof(t *testing.T) {
 
 func Test2dRecover(t *testing.T) {
 	/* Generate some random blobs */
-	var blobs [BlobCount]Blob
+	blobs := [BlobCount]Blob{}
 	for i := range blobs {
 		blobs[i] = getRandBlob(int64(i))
 	}
 
 	/* Get a 2d array of samples for the blobs */
-	samples, proofs, err := Get2dSamplesAndProofs(blobs)
+	samples, proofs, err := Get2dSamplesAndProofs(&blobs)
 	require.NoError(t, err)
 
 	/* Mark 25% of them as missing */
@@ -479,13 +479,13 @@ func Test2dRecover(t *testing.T) {
 		go func(x int) {
 			defer wg.Done()
 			require.Equal(t, len(samples[x]), len(recovered[x]))
-			blob, err := SamplesToBlob(samples[x])
+			blob, err := SamplesToBlob(&samples[x])
 			require.NoError(t, err)
-			commitment, err := BlobToKZGCommitment(blob)
+			commitment, err := BlobToKZGCommitment(*blob)
 			require.NoError(t, err)
 			for j := range samples[x] {
 				require.Equal(t, samples[x][j], recovered[x][j])
-				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), samples[x][j], j)
+				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), &samples[x][j], j)
 				require.NoError(t, err)
 				require.True(t, ok)
 			}
@@ -496,17 +496,17 @@ func Test2dRecover(t *testing.T) {
 
 func Test2dRecoverFirstRowIsMissing(t *testing.T) {
 	/* Generate some random blobs */
-	var blobs [BlobCount]Blob
+	blobs := [BlobCount]Blob{}
 	for i := range blobs {
 		blobs[i] = getRandBlob(int64(i))
 	}
 
 	/* Get a 2d array of samples for the blobs */
-	samples, proofs, err := Get2dSamplesAndProofs(blobs)
+	samples, proofs, err := Get2dSamplesAndProofs(&blobs)
 	require.NoError(t, err)
 
 	/* Copy samples so we mark some as missing */
-	var partialSamples SampleTable
+	partialSamples := &SampleTable{}
 	for i := range samples {
 		copy(partialSamples[i][:], samples[i][:])
 	}
@@ -529,13 +529,13 @@ func Test2dRecoverFirstRowIsMissing(t *testing.T) {
 		go func(x int) {
 			defer wg.Done()
 			require.Equal(t, len(samples[x]), len(recovered[x]))
-			blob, err := SamplesToBlob(samples[x])
+			blob, err := SamplesToBlob(&samples[x])
 			require.NoError(t, err)
-			commitment, err := BlobToKZGCommitment(blob)
+			commitment, err := BlobToKZGCommitment(*blob)
 			require.NoError(t, err)
 			for j := range samples[x] {
 				require.Equal(t, samples[x][j], recovered[x][j])
-				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), samples[x][j], j)
+				ok, err := VerifySampleProof(Bytes48(commitment), Bytes48(proofs[x][j]), &samples[x][j], j)
 				require.NoError(t, err)
 				require.True(t, ok)
 			}
@@ -546,7 +546,7 @@ func Test2dRecoverFirstRowIsMissing(t *testing.T) {
 
 func TestRecoverNoMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	samples, _, err := GetSamplesAndProofs(blob)
+	samples, _, err := GetSamplesAndProofs(&blob)
 	require.NoError(t, err)
 	recovered, err := RecoverSamples(samples)
 	require.NoError(t, err)
@@ -558,20 +558,19 @@ func TestRecoverNoMissing(t *testing.T) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func Benchmark(b *testing.B) {
-	blobs := [BlobCount]Blob{}
-	commitments := [BlobCount]Bytes48{}
-	proofs := [BlobCount]Bytes48{}
-	fields := [BlobCount]Bytes32{}
-	samples := [BlobCount]BlobSamples{}
-	sampleProofs := [BlobCount]BlobSampleProofs{}
-	sampleTable := SampleTable{}
-	partialSampleTable := SampleTable{}
+	blobs := &[BlobCount]Blob{}
+	commitments := &[BlobCount]Bytes48{}
+	proofs := &[BlobCount]Bytes48{}
+	fields := &[BlobCount]Bytes32{}
+	samples := &[BlobCount]BlobSamples{}
+	sampleProofs := &[BlobCount]BlobSampleProofs{}
+	sampleTable := &SampleTable{}
 
 	randBlob := getRandBlob(0)
 	randCommitment := getRandPoint(0)
 	randProof := getRandPoint(0)
 	randField := getRandFieldElement(0)
-	var randSample Sample
+	randSample := Sample{}
 	for i := range randSample {
 		randSample[i] = randField
 	}
@@ -592,7 +591,7 @@ func Benchmark(b *testing.B) {
 			sampleTable[j][k] = randSample
 		}
 	}
-	partialSampleTable = getPartialSamples(sampleTable)
+	partialSampleTable := getPartialSamples(sampleTable)
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -640,21 +639,21 @@ func Benchmark(b *testing.B) {
 
 	b.Run("GetSamplesAndProofs", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, err := GetSamplesAndProofs(blobs[0])
+			_, _, err := GetSamplesAndProofs(&blobs[0])
 			require.Nil(b, err)
 		}
 	})
 
 	b.Run("SamplesToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := SamplesToBlob(samples[0])
+			_, err := SamplesToBlob(&samples[0])
 			require.Nil(b, err)
 		}
 	})
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		partial := deleteSamples(samples[0], i)
+		partial := deleteSamples(&samples[0], i)
 		b.Run(fmt.Sprintf("RecoverSamples(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, err := RecoverSamples(partial)
@@ -665,7 +664,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifySampleProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifySampleProof(commitments[0], Bytes48(sampleProofs[0][0]), samples[0][0], 0)
+			_, err := VerifySampleProof(commitments[0], Bytes48(sampleProofs[0][0]), &samples[0][0], 0)
 			require.Nil(b, err)
 		}
 	})

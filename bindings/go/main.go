@@ -373,16 +373,16 @@ GetSamplesAndProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func GetSamplesAndProofs(blob Blob) (BlobSamples, BlobSampleProofs, error) {
+func GetSamplesAndProofs(blob *Blob) (*BlobSamples, *BlobSampleProofs, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var samples BlobSamples
-	var proofs BlobSampleProofs
+	samples := &BlobSamples{}
+	proofs := &BlobSampleProofs{}
 	err := makeErrorFromRet(C.get_samples_and_proofs(
-		(*C.Bytes32)(unsafe.Pointer(&samples)),
-		(*C.KZGProof)(unsafe.Pointer(&proofs)),
-		(*C.Blob)(unsafe.Pointer(&blob)),
+		(*C.Bytes32)(unsafe.Pointer(samples)),
+		(*C.KZGProof)(unsafe.Pointer(proofs)),
+		(*C.Blob)(unsafe.Pointer(blob)),
 		&settings))
 	return samples, proofs, err
 }
@@ -396,16 +396,16 @@ Get2dSamplesAndProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func Get2dSamplesAndProofs(blobs [BlobCount]Blob) (SampleTable, SampleProofTable, error) {
+func Get2dSamplesAndProofs(blobs *[BlobCount]Blob) (*SampleTable, *SampleProofTable, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var samples SampleTable
-	var proofs SampleProofTable
+	samples := &SampleTable{}
+	proofs := &SampleProofTable{}
 	err := makeErrorFromRet(C.get_2d_samples_and_proofs(
-		(*C.Bytes32)(unsafe.Pointer(&samples)),
-		(*C.KZGProof)(unsafe.Pointer(&proofs)),
-		(*C.Blob)(unsafe.Pointer(&blobs)),
+		(*C.Bytes32)(unsafe.Pointer(samples)),
+		(*C.KZGProof)(unsafe.Pointer(proofs)),
+		(*C.Blob)(unsafe.Pointer(blobs)),
 		&settings))
 	return samples, proofs, err
 }
@@ -418,14 +418,14 @@ SamplesToBlob is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func SamplesToBlob(samples BlobSamples) (Blob, error) {
+func SamplesToBlob(samples *BlobSamples) (*Blob, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	blob := Blob{}
+	blob := &Blob{}
 	err := makeErrorFromRet(C.samples_to_blob(
-		(*C.Blob)(unsafe.Pointer(&blob)),
-		(*C.Bytes32)(unsafe.Pointer(&samples)),
+		(*C.Blob)(unsafe.Pointer(blob)),
+		(*C.Bytes32)(unsafe.Pointer(samples)),
 		&settings))
 	return blob, err
 }
@@ -438,14 +438,14 @@ RecoverSamples is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func RecoverSamples(samples BlobSamples) (BlobSamples, error) {
+func RecoverSamples(samples *BlobSamples) (*BlobSamples, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var recovered BlobSamples
+	recovered := &BlobSamples{}
 	err := makeErrorFromRet(C.recover_samples(
-		(*C.Bytes32)(unsafe.Pointer(&recovered)),
-		(*C.Bytes32)(unsafe.Pointer(&samples)),
+		(*C.Bytes32)(unsafe.Pointer(recovered)),
+		(*C.Bytes32)(unsafe.Pointer(samples)),
 		&settings))
 	return recovered, err
 }
@@ -458,14 +458,14 @@ Recover2dSamples is the binding for:
 	    const Bytes32 *data,
 	    const KZGSettings *s);
 */
-func Recover2dSamples(samples SampleTable) (SampleTable, error) {
+func Recover2dSamples(samples *SampleTable) (*SampleTable, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	var recovered SampleTable
+	recovered := &SampleTable{}
 	err := makeErrorFromRet(C.recover_2d_samples(
-		(*C.Bytes32)(unsafe.Pointer(&recovered)),
-		(*C.Bytes32)(unsafe.Pointer(&samples)),
+		(*C.Bytes32)(unsafe.Pointer(recovered)),
+		(*C.Bytes32)(unsafe.Pointer(samples)),
 		&settings))
 	return recovered, err
 }
@@ -481,7 +481,7 @@ VerifySampleProof is the binding for:
 	    size_t index,
 	    const KZGSettings *s);
 */
-func VerifySampleProof(commitment, proof Bytes48, sample Sample, index int) (bool, error) {
+func VerifySampleProof(commitment, proof Bytes48, sample *Sample, index int) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -490,7 +490,7 @@ func VerifySampleProof(commitment, proof Bytes48, sample Sample, index int) (boo
 		&result,
 		(*C.Bytes48)(unsafe.Pointer(&commitment)),
 		(*C.Bytes48)(unsafe.Pointer(&proof)),
-		(*C.Bytes32)(unsafe.Pointer(&sample)),
+		(*C.Bytes32)(unsafe.Pointer(sample)),
 		(C.size_t)(index),
 		&settings))
 	return bool(result), err
