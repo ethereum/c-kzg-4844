@@ -473,6 +473,43 @@ func TestVerifySampleProofBatch(t *testing.T) {
 	require.True(t, ok)
 }
 
+func TestVerifySampleProofBatchMultiBlobs(t *testing.T) {
+	blob1 := getRandBlob(0)
+	blob2 := getRandBlob(1)
+
+	commitment1, err := BlobToKZGCommitment(blob1)
+	require.NoError(t, err)
+	commitment2, err := BlobToKZGCommitment(blob2)
+	require.NoError(t, err)
+
+	samples1, proofs1, err := GetSamplesAndProofs(&blob1)
+	require.NoError(t, err)
+	samples2, proofs2, err := GetSamplesAndProofs(&blob2)
+	require.NoError(t, err)
+
+	var samples []Sample
+	var proofs []KZGProof
+	var rows, cols []uint64
+
+	commitments := []KZGCommitment{commitment1, commitment2}
+	for i, sample := range samples1 {
+		samples = append(samples, sample)
+		proofs = append(proofs, proofs1[i])
+		rows = append(rows, 0)
+		cols = append(cols, uint64(i))
+	}
+	for i, sample := range samples2 {
+		samples = append(samples, sample)
+		proofs = append(proofs, proofs2[i])
+		rows = append(rows, 1)
+		cols = append(cols, uint64(i))
+	}
+
+	ok, err := VerifySampleProofBatch(commitments, proofs, samples, rows, cols)
+	require.NoError(t, err)
+	require.True(t, ok)
+}
+
 func Test2dRecover(t *testing.T) {
 	/* Generate some random blobs */
 	blobs := [BlobCount]Blob{}
