@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // For memcpy
 #include "c_kzg_4844_jni.h"
 #include "c_kzg_4844.h"
 
@@ -447,7 +448,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   return (jboolean)out;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNIEnv *env, jclass thisCls, jbyteArray blob)
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNIEnv *env, jclass thisCls, jbyteArray blob, jint index)
 {
   if (settings == NULL)
   {
@@ -497,7 +498,7 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNI
     return NULL;
   }
 
-  jobjectArray samples = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, data, proofs);
+  jobjectArray samples = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, data, proofs, index);
   if (samples == NULL)
   {
     throw_exception(env, "Failed to instantiate samples.");
@@ -546,6 +547,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
   bool out;
   C_KZG_RET ret = verify_sample_proof(&out, commitment_native, proof_native, data_native, index_native, settings);
 
+  (*env)->DeleteLocalRef(env, sampleClass);
   (*env)->ReleaseByteArrayElements(env, data, (jbyte *)data_native, 0);
   (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
@@ -553,6 +555,103 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
   if (ret != C_KZG_OK)
   {
     throw_c_kzg_exception(env, ret, "There was an error in verifySample.");
+    return 0;
+  }
+
+  return (jboolean)out;
+}
+
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jobjectArray samples)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  if (samples == NULL) {
+    throw_exception(env, "Array of samples is null.");
+    return 0;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
+
+  if (count == 0) {
+    return 1;
+  }
+
+  jobject sampleObj = (*env)->GetObjectArrayElement(env, samples, 0);
+  if (sampleObj == NULL) {
+    throw_exception(env, "Sample is null.");
+    return 0;
+  }
+
+  jclass sampleClass = (*env)->GetObjectClass(env, sampleObj);
+
+  /* Get the methods */
+  jmethodID getDataMethod = (*env)->GetMethodID(env, sampleClass, "getData", "()[B");
+  if (getDataMethod == NULL) {
+    throw_exception(env, "Failed to find getData method");
+    return 0;
+  }
+  jmethodID getProofMethod = (*env)->GetMethodID(env, sampleClass, "getProof", "()[B");
+  if (getProofMethod == NULL) {
+    throw_exception(env, "Failed to find getProof method");
+    return 0;
+  }
+  jmethodID getRowIndexMethod = (*env)->GetMethodID(env, sampleClass, "getRowIndex", "()I");
+  if (getRowIndexMethod == NULL) {
+    throw_exception(env, "Failed to find getRowIndex method");
+    return 0;
+  }
+  jmethodID getColumnIndexMethod = (*env)->GetMethodID(env, sampleClass, "getColumnIndex", "()I");
+  if (getColumnIndexMethod == NULL) {
+    throw_exception(env, "Failed to find getColumnIndex method");
+    return 0;
+  }
+
+  Sample *total_samples = calloc(sizeof(Sample), count);
+  KZGProof *total_proofs = calloc(sizeof(KZGProof), count);
+  uint64_t *row_indices = calloc(sizeof(uint64_t), count);
+  uint64_t *col_indices = calloc(sizeof(uint64_t), count);
+  for (size_t i = 0; i < count; i++) {
+    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
+    if (sample == NULL) {
+      throw_exception(env, "Sample is null.");
+      return 0;
+    }
+    jbyteArray data = (jbyteArray)(*env)->CallObjectMethod(env, sample, getDataMethod);
+    jbyteArray proof = (jbyteArray)(*env)->CallObjectMethod(env, sample, getProofMethod);
+    jint row_index = (*env)->CallIntMethod(env, sample, getRowIndexMethod);
+    jint column_index = (*env)->CallIntMethod(env, sample, getColumnIndexMethod);
+
+    Sample *data_native = (Sample *)(*env)->GetByteArrayElements(env, data, NULL);
+    Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
+    size_t row_index_native = (size_t)row_index;
+    size_t column_index_native = (size_t)column_index;
+
+    memcpy(&total_samples[i], data_native, sizeof(Sample));
+    memcpy(&total_proofs[i], proof_native, sizeof(KZGProof));
+    row_indices[i] = row_index_native;
+    col_indices[i] = column_index_native;
+
+    (*env)->ReleaseByteArrayElements(env, data, (jbyte *)data_native, 0);
+    (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
+  }
+
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
+  size_t num_commitments = (size_t)(*env)->GetArrayLength(env, commitments_bytes) / BYTES_PER_COMMITMENT;
+
+  bool out;
+  C_KZG_RET ret = verify_sample_proof_batch(&out, commitments_native, num_commitments, total_proofs, total_samples, count, row_indices, col_indices, settings);
+
+  (*env)->DeleteLocalRef(env, sampleObj);
+  (*env)->DeleteLocalRef(env, sampleClass);
+  (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in verifySamples.");
     return 0;
   }
 

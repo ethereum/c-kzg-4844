@@ -213,4 +213,14 @@ public class CKZG4844JNI {
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifySample(byte[] commitment_bytes, Sample sample);
+
+  /**
+   * Verify that a sample's proof is valid.
+   *
+   * @param commitments_bytes the commitments for all blobs
+   * @param samples the samples to verify
+   * @return true if the sample is valid with respect to this commitment
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native boolean verifySamples(byte[] commitments_bytes, Sample[] samples);
 }
