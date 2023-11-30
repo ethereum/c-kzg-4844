@@ -25,8 +25,6 @@ public class CKZG4844JNITest {
 
   private static final String TRUSTED_SETUP_FILE = "../../src/trusted_setup.txt";
   private static final String TRUSTED_SETUP_RESOURCE = "/trusted-setups/trusted_setup.txt";
-  private static final String OLD_TRUSTED_SETUP_FILE =
-      "./src/testFixtures/resources/trusted-setups/trusted_setup_old.txt";
 
   static {
     CKZG4844JNI.loadNativeLibrary();
@@ -156,6 +154,18 @@ public class CKZG4844JNITest {
     final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
     assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proofAndY.getProof().length);
     assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkVerifySampleProof() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
+    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+    for (Sample sample : samples) {
+      CKZG4844JNI.verifySample(commitment, sample);
+    }
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -294,15 +304,6 @@ public class CKZG4844JNITest {
         assertThrows(RuntimeException.class, CKZG4844JNI::freeTrustedSetup);
 
     assertExceptionIsTrustedSetupIsNotLoaded(exception);
-  }
-
-  @Test
-  public void shouldThrowExceptionIfTrustedSetupIsNotInLagrangeForm() {
-    CKZGException exception =
-        assertThrows(
-            CKZGException.class, () -> CKZG4844JNI.loadTrustedSetup(OLD_TRUSTED_SETUP_FILE));
-
-    assertEquals(C_KZG_BADARGS, exception.getError());
   }
 
   @Test

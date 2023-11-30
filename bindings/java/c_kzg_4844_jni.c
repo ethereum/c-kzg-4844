@@ -446,3 +446,115 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
 
   return (jboolean)out;
 }
+
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNIEnv *env, jclass thisCls, jbyteArray blob)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return NULL;
+  }
+
+  /* The output variables, will be combined in a Sample object */
+  jbyteArray data = (*env)->NewByteArray(env, DATA_POINTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT);
+  jbyteArray proofs = (*env)->NewByteArray(env, SAMPLES_PER_BLOB * BYTES_PER_PROOF);
+
+  /* The native variables */
+  Bytes32 *data_native = (Bytes32 *)(uint8_t *)(*env)->GetByteArrayElements(env, data, NULL);
+  KZGProof *proofs_native = (KZGProof *)(uint8_t *)(*env)->GetByteArrayElements(env, proofs, NULL);
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  C_KZG_RET ret = get_samples_and_proofs(data_native, proofs_native, blob_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, data, (jbyte *)data_native, 0);
+  (*env)->ReleaseByteArrayElements(env, proofs, (jbyte *)proofs_native, 0);
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in getSamples.");
+    return NULL;
+  }
+
+  jclass sample_class = (*env)->FindClass(env, "ethereum/ckzg4844/Sample");
+  if (sample_class == NULL)
+  {
+    throw_exception(env, "Failed to find Sample class.");
+    return NULL;
+  }
+
+  jmethodID sample_of = (*env)->GetStaticMethodID(env, sample_class, "of", "([B[BI)[Lethereum/ckzg4844/Sample;");
+  if (sample_of == NULL)
+  {
+    throw_exception(env, "Failed to find Sample#of method.");
+    return NULL;
+  }
+
+  jobjectArray samples = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, data, proofs);
+  if (samples == NULL)
+  {
+    throw_exception(env, "Failed to instantiate samples.");
+    return NULL;
+  }
+
+  return samples;
+}
+
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jobject sample)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  jclass sampleClass = (*env)->GetObjectClass(env, sample);
+
+  /* Get the methods */
+  jmethodID getDataMethod = (*env)->GetMethodID(env, sampleClass, "getData", "()[B");
+  if (getDataMethod == NULL) {
+    throw_exception(env, "Failed to find getData method");
+    return 0;
+  }
+  jmethodID getProofMethod = (*env)->GetMethodID(env, sampleClass, "getProof", "()[B");
+  if (getProofMethod == NULL) {
+    throw_exception(env, "Failed to find getProof method");
+    return 0;
+  }
+  jmethodID getColumnIndexMethod = (*env)->GetMethodID(env, sampleClass, "getColumnIndex", "()I");
+  if (getColumnIndexMethod == NULL) {
+    throw_exception(env, "Failed to find getColumnIndex method");
+    return 0;
+  }
+
+  jbyteArray data = (jbyteArray)(*env)->CallObjectMethod(env, sample, getDataMethod);
+  jbyteArray proof = (jbyteArray)(*env)->CallObjectMethod(env, sample, getProofMethod);
+  jint index = (*env)->CallIntMethod(env, sample, getColumnIndexMethod);
+
+  Sample *data_native = (Sample *)(*env)->GetByteArrayElements(env, data, NULL);
+  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof, NULL);
+  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
+  size_t index_native = (size_t)index;
+
+  bool out;
+  C_KZG_RET ret = verify_sample_proof(&out, commitment_native, proof_native, data_native, index_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, data, (jbyte *)data_native, 0);
+  (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
+  (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in verifySample.");
+    return 0;
+  }
+
+  return (jboolean)out;
+}

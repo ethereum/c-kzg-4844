@@ -61,6 +61,14 @@ public class CKZG4844JNI {
   public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
   /** Number of field elements in a blob */
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
+  /** The number of data points in an extended blob */
+  public static final int DATA_POINTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
+  /** The number of data points in a sample. */
+  public static final int SAMPLE_SIZE = 16;
+  /** The number of samples in an extended blob. */
+  public static final int SAMPLES_PER_BLOB = DATA_POINTS_PER_BLOB / SAMPLE_SIZE;
+  /** The number of blobs we're working with. */
+  public static final int BLOB_COUNT = FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE;
 
   private CKZG4844JNI() {}
 
@@ -185,4 +193,24 @@ public class CKZG4844JNI {
    */
   public static native boolean verifyBlobKzgProofBatch(
       byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
+
+  /**
+   * Get the samples (data & proofs) for a given blob.
+   *
+   * @param blob the blob to get samples for
+   * @param index the blob index
+   * @return an array of samples
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native Sample[] getSamples(byte[] blob, int index);
+
+  /**
+   * Verify that a sample's proof is valid.
+   *
+   * @param commitment_bytes commitment bytes
+   * @param sample the sample to verify
+   * @return true if the sample is valid with respect to this commitment
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native boolean verifySample(byte[] commitment_bytes, Sample sample);
 }
