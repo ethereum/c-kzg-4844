@@ -477,7 +477,7 @@ VerifySampleProof is the binding for:
 	    bool *ok,
 	    const Bytes48 *commitment_bytes,
 	    const Bytes48 *proof_bytes,
-	    const Bytes32 *data,
+	    const Sample *sample,
 	    size_t index,
 	    const KZGSettings *s);
 */
@@ -490,7 +490,7 @@ func VerifySampleProof(commitment, proof Bytes48, sample *Sample, index int) (bo
 		&result,
 		(*C.Bytes48)(unsafe.Pointer(&commitment)),
 		(*C.Bytes48)(unsafe.Pointer(&proof)),
-		(*C.Bytes32)(unsafe.Pointer(sample)),
+		(*C.Sample)(unsafe.Pointer(sample)),
 		(C.size_t)(index),
 		&settings))
 	return bool(result), err

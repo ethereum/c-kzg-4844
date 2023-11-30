@@ -3654,7 +3654,7 @@ out:
  * @param[out]  ok                  True if the proof are valid, otherwise false
  * @param[in]   commitment_bytes    The commitment to the blob's samples
  * @param[in]   proof_bytes         The proof for the sample
- * @param[in]   data                The sample to check
+ * @param[in]   sample              The sample to check
  * @param[in]   index               The sample/proof index
  * @param[in]   s                   The trusted setup
  */
@@ -3662,7 +3662,7 @@ C_KZG_RET verify_sample_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
-    const Bytes32 *data,
+    const Sample *sample,
     size_t index,
     const KZGSettings *s
 ) {
@@ -3688,7 +3688,7 @@ C_KZG_RET verify_sample_proof(
     ret = bytes_to_kzg_proof(&proof, proof_bytes);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < SAMPLE_SIZE; i++) {
-        ret = bytes_to_bls_field(&ys[i], &data[i]);
+        ret = bytes_to_bls_field(&ys[i], &sample->data[i]);
         if (ret != C_KZG_OK) goto out;
     }
 

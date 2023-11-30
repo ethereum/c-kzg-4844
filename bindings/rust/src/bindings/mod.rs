@@ -48,9 +48,6 @@ pub struct KZGProof {
 }
 
 #[repr(C)]
-pub struct Sample([Bytes32; SAMPLE_SIZE]);
-
-#[repr(C)]
 pub struct BlobSamples([Sample; SAMPLES_PER_BLOB]);
 
 #[repr(C)]
@@ -256,7 +253,10 @@ impl Blob {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
-    pub fn samples_to_blob(samples: &BlobSamples, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn samples_to_blob(
+        samples: &BlobSamples,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
         let mut blob = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = samples_to_blob(
@@ -496,8 +496,44 @@ impl KZGProof {
                 verified.as_mut_ptr(),
                 commitment_bytes,
                 proof_bytes,
-                sample.0.as_ptr(),
+                sample,
                 index,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_sample_proof_batch(
+        commitments_bytes: &[Bytes48],
+        proofs_bytes: &[Bytes48],
+        samples: &[Sample],
+        rows: &[u64],
+        cols: &[u64],
+        kzg_settings: &KZGSettings,
+    ) -> Result<bool, Error> {
+        if proofs_bytes.len() != samples.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} samples and {} sample proofs",
+                samples.len(),
+                proofs_bytes.len()
+            )));
+        }
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_sample_proof_batch(
+                verified.as_mut_ptr(),
+                commitments_bytes.as_ptr(),
+                commitments_bytes.len(),
+                proofs_bytes.as_ptr(),
+                samples.as_ptr(),
+                samples.len(),
+                rows.as_ptr(),
+                cols.as_ptr(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -566,7 +602,10 @@ impl BlobSamples {
         }
     }
 
-    pub fn recover_samples(samples: &BlobSamples, kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn recover_samples(
+        samples: &BlobSamples,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
         let mut recovered = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = recover_samples(
@@ -989,6 +1028,7 @@ mod tests {
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
         let (samples, proofs) = BlobSamples::get_samples_and_proofs(&blob, &kzg_settings).unwrap();
 
+        /* Verify samples individually */
         for i in 0..SAMPLES_PER_BLOB {
             let ok = KZGProof::verify_sample_proof(
                 &commitment.to_bytes(),
@@ -1000,6 +1040,30 @@ mod tests {
             .unwrap();
             assert_eq!(ok, true);
         }
+
+        let commitment_bytes = vec![commitment.to_bytes()];
+        let mut samps: Vec<Sample> = Vec::new();
+        let mut proof_bytes: Vec<Bytes48> = Vec::new();
+        let mut rows: Vec<u64> = Vec::new();
+        let mut cols: Vec<u64> = Vec::new();
+        for i in 0..SAMPLES_PER_BLOB {
+            samps.push(samples.0[i]);
+            proof_bytes.push(proofs.0[i].to_bytes());
+            rows.push(0);
+            cols.push(i as u64);
+        }
+
+        /* Verify samples in batch */
+        let ok = KZGProof::verify_sample_proof_batch(
+            &commitment_bytes,
+            &proof_bytes,
+            samps.as_slice(),
+            rows.as_slice(),
+            cols.as_slice(),
+            &kzg_settings,
+        )
+        .unwrap();
+        assert_eq!(ok, true);
     }
 
     #[test]

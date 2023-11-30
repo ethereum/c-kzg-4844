@@ -49,11 +49,8 @@ fn main() {
     println!("cargo:rustc-link-lib=ckzg");
 }
 
-fn make_bindings<P>(
-    header_path: &str,
-    blst_headers_dir: &str,
-    bindings_out_path: P,
-) where
+fn make_bindings<P>(header_path: &str, blst_headers_dir: &str, bindings_out_path: P)
+where
     P: AsRef<std::path::Path>,
 {
     use bindgen::Builder;

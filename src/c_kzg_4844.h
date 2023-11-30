@@ -233,7 +233,7 @@ C_KZG_RET verify_sample_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Bytes48 *proof_bytes,
-    const Bytes32 *data,
+    const Sample *sample,
     size_t index,
     const KZGSettings *s
 );
