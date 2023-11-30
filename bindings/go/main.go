@@ -495,3 +495,35 @@ func VerifySampleProof(commitment, proof Bytes48, sample *Sample, index int) (bo
 		&settings))
 	return bool(result), err
 }
+
+/*
+VerifySampleProofBatch is the binding for:
+
+	C_KZG_RET verify_sample_proof_batch(
+	    bool *ok,
+	    const Bytes48 *commitments_bytes,
+	    size_t num_commitments,
+	    const Bytes48 *proofs_bytes,
+	    const Sample *samples,
+	    size_t num_samples,
+	    const uint64_t *rows,
+	    const uint64_t *cols,
+	    const KZGSettings *s);
+*/
+func VerifySampleProofBatch(commitments []KZGCommitment, proofs []KZGProof, samples []Sample, rows, cols []uint64) (bool, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	var result C.bool
+	err := makeErrorFromRet(C.verify_sample_proof_batch(
+		&result,
+		*(**C.Bytes48)(unsafe.Pointer(&commitments)),
+		(C.size_t)(len(commitments)),
+		*(**C.Bytes48)(unsafe.Pointer(&proofs)),
+		*(**C.Sample)(unsafe.Pointer(&samples)),
+		(C.size_t)(len(samples)),
+		*(**C.uint64_t)(unsafe.Pointer(&rows)),
+		*(**C.uint64_t)(unsafe.Pointer(&cols)),
+		&settings))
+	return bool(result), err
+}

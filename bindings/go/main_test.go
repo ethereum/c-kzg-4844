@@ -438,7 +438,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func TestSampleProof(t *testing.T) {
+func TestVerifySampleProof(t *testing.T) {
 	blob := getRandBlob(0)
 
 	commitment, err := BlobToKZGCommitment(blob)
@@ -451,6 +451,26 @@ func TestSampleProof(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, ok)
 	}
+}
+
+func TestVerifySampleProofBatch(t *testing.T) {
+	blob := getRandBlob(0)
+	commitment, err := BlobToKZGCommitment(blob)
+	require.NoError(t, err)
+	samples, proofs, err := GetSamplesAndProofs(&blob)
+	require.NoError(t, err)
+
+	commitments := []KZGCommitment{commitment}
+
+	var rows, cols []uint64
+	for i := range samples {
+		rows = append(rows, 0)
+		cols = append(cols, uint64(i))
+	}
+
+	ok, err := VerifySampleProofBatch(commitments, proofs[:], samples[:], rows, cols)
+	require.NoError(t, err)
+	require.True(t, ok)
 }
 
 func Test2dRecover(t *testing.T) {
@@ -666,6 +686,26 @@ func Benchmark(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := VerifySampleProof(commitments[0], Bytes48(sampleProofs[0][0]), &samples[0][0], 0)
 			require.Nil(b, err)
+		}
+	})
+
+	b.Run("VerifySampleProofBatch", func(b *testing.B) {
+		commitment, err := BlobToKZGCommitment(randBlob)
+		require.NoError(b, err)
+		samps, pros, err := GetSamplesAndProofs(&randBlob)
+		require.NoError(b, err)
+		comms := []KZGCommitment{commitment}
+		var rows, cols []uint64
+		for i := range samps {
+			rows = append(rows, 0)
+			cols = append(cols, uint64(i))
+		}
+		b.ResetTimer()
+
+		for n := 0; n < b.N; n++ {
+			ok, err := VerifySampleProofBatch(comms, pros[:], samps[:], rows, cols)
+			require.NoError(b, err)
+			require.True(b, ok)
 		}
 	})
 

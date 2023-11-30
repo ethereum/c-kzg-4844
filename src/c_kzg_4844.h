@@ -105,6 +105,13 @@ typedef Bytes48 KZGCommitment;
 typedef Bytes48 KZGProof;
 
 /**
+ * A single sample for a blob.
+ */
+typedef struct {
+    Bytes32 data[SAMPLE_SIZE];
+} Sample;
+
+/**
  * The common return type for all routines in which something can go wrong.
  */
 typedef enum {
@@ -228,6 +235,18 @@ C_KZG_RET verify_sample_proof(
     const Bytes48 *proof_bytes,
     const Bytes32 *data,
     size_t index,
+    const KZGSettings *s
+);
+
+C_KZG_RET verify_sample_proof_batch(
+    bool *ok,
+    const Bytes48 *commitments_bytes,
+    size_t num_commitments,
+    const Bytes48 *proofs_bytes,
+    const Sample *samples,
+    size_t num_samples,
+    const uint64_t *rows,
+    const uint64_t *cols,
     const KZGSettings *s
 );
 

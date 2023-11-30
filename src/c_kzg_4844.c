@@ -3708,3 +3708,309 @@ out:
     c_kzg_free(ys);
     return ret;
 }
+
+/**
+ * Check if a sample is uninitialized (all zeros).
+ *
+ * @param[in]   sample  The sample to check
+ *
+ * @retval  True    The sample is uninitialized.
+ * @retval  False   The sample is initialized.
+ */
+static bool is_sample_uninit(fr_t *sample) {
+    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+        if (!fr_is_zero(&sample[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Given some samples, verify that all of the proofs are valid.
+ *
+ * @param[out]  ok                  True if the proofs are valid
+ * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
+ * @param[in]   num_commitments     The number of commitments being passed
+ * @param[in]   proofs_bytes        Proofs which correspond to each sample
+ * @param[in]   samples             The samples to check
+ * @param[in]   num_samples         The number of samples provided
+ * @param[in]   rows                Row indices for each sample
+ * @param[in]   cols                Column indices for each sample
+ * @param[in]   s                   The trusted setup
+ */
+C_KZG_RET verify_sample_proof_batch(
+    bool *ok,
+    const Bytes48 *commitments_bytes, // ALL commitments
+    size_t num_commitments,
+    const Bytes48 *proofs_bytes,
+    const Sample *samples,
+    size_t num_samples,
+    const uint64_t *rows,
+    const uint64_t *cols,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *aggregated_column_samples = NULL;
+    fr_t *commitment_weights = NULL;
+    fr_t *r_powers = NULL;
+    fr_t *used_commitment_weights = NULL;
+    fr_t *weighted_powers_of_r = NULL;
+    fr_t *weights = NULL;
+    fr_t aggregated_interpolation_poly[SAMPLE_SIZE];
+    fr_t column_interpolation_poly[SAMPLE_SIZE];
+    g1_t *proofs_g1 = NULL;
+    g1_t *used_commitments = NULL;
+    g1_t evaluation;
+    g1_t final_g1_sum;
+    g1_t proof_lincomb;
+    g1_t weighted_proof_lincomb;
+    g2_t power_of_s = s->g2_values[SAMPLE_SIZE];
+    size_t num_used_commitments = 0;
+
+    *ok = false;
+
+    /* Exit early if we are given zero samples */
+    if (num_samples == 0) {
+        *ok = true;
+        return C_KZG_OK;
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Sanity checks
+    ///////////////////////////////////////////////////////////////////////////
+
+    /* If there are more samples than the matrix allows, error */
+    if (num_samples > (SAMPLES_PER_BLOB * SAMPLES_PER_BLOB)) {
+        return C_KZG_BADARGS;
+    }
+
+    for (size_t i = 0; i < num_samples; i++) {
+        /* Can't have more commitments than blobs */
+        if (rows[i] >= BLOB_COUNT) {
+            return C_KZG_BADARGS;
+        }
+
+        /* Make sure we can reference all commitments */
+        if (rows[i] >= num_commitments) {
+            return C_KZG_BADARGS;
+        }
+
+        /* Can't have more columns than samples in a blob */
+        if (cols[i] >= SAMPLES_PER_BLOB) {
+            return C_KZG_BADARGS;
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Array allocations
+    ///////////////////////////////////////////////////////////////////////////
+
+    ret = new_fr_array(&r_powers, num_samples);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&proofs_g1, num_samples);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&used_commitments, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&weights, num_samples);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&weighted_powers_of_r, num_samples);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&used_commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&aggregated_column_samples, DATA_POINTS_PER_BLOB);
+    if (ret != C_KZG_OK) goto out;
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Compute random linear combination of the proofs
+    ///////////////////////////////////////////////////////////////////////////
+
+    /*
+     * Derive random factors for the linear combination. The exponents start
+     * with 1, for example r^1, r^2, r^3, and so on.
+     *
+     * TODO: make this more random.
+     */
+    fr_from_uint64(&r_powers[0], 27);
+    for (size_t i = 1; i < num_samples; i++) {
+        blst_fr_mul(&r_powers[i], &r_powers[i - 1], &r_powers[0]);
+    }
+
+    /* There should be a proof for each sample */
+    for (size_t i = 0; i < num_samples; i++) {
+        ret = bytes_to_kzg_proof(&proofs_g1[i], &proofs_bytes[i]);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, num_samples);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Compute sum of the commitments
+    ///////////////////////////////////////////////////////////////////////////
+
+    /* Zero out all of the weights */
+    for (size_t i = 0; i < num_commitments; i++) {
+        commitment_weights[i] = FR_ZERO;
+    }
+
+    /* Update commitment weights */
+    for (size_t i = 0; i < num_samples; i++) {
+        blst_fr_add(
+            &commitment_weights[rows[i]],
+            &commitment_weights[rows[i]],
+            &r_powers[i]
+        );
+    }
+
+    /* Generate list with only used commitments */
+    for (size_t i = 0; i < num_commitments; i++) {
+        if (fr_is_zero(&commitment_weights[i])) continue;
+
+        /*
+         * Convert & validate commitment. Only do this for used
+         * commitments to save processing time.
+         */
+        ret = bytes_to_kzg_commitment(
+            &used_commitments[num_used_commitments], &commitments_bytes[i]
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Assign commitment weight and increment */
+        used_commitment_weights[num_used_commitments] = commitment_weights[i];
+        num_used_commitments++;
+    }
+
+    g1_lincomb_naive(
+        &final_g1_sum,
+        used_commitments,
+        used_commitment_weights,
+        num_used_commitments
+    );
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Compute aggregated columns
+    ///////////////////////////////////////////////////////////////////////////
+
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            size_t index = i * SAMPLE_SIZE + j;
+            aggregated_column_samples[index] = FR_ZERO;
+        }
+    }
+
+    for (size_t i = 0; i < num_samples; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            fr_t field, scaled;
+            ret = bytes_to_bls_field(&field, &samples[i].data[j]);
+            if (ret != C_KZG_OK) goto out;
+            blst_fr_mul(&scaled, &field, &r_powers[i]);
+            size_t index = cols[i] * SAMPLE_SIZE + j;
+            blst_fr_add(
+                &aggregated_column_samples[index],
+                &aggregated_column_samples[index],
+                &scaled
+            );
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Compute sum of the interpolation polynomials
+    ///////////////////////////////////////////////////////////////////////////
+
+    for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+        aggregated_interpolation_poly[j] = FR_ZERO;
+    }
+
+    for (size_t j = 0; j < SAMPLES_PER_BLOB; j++) {
+        if (is_sample_uninit(&aggregated_column_samples[j])) continue;
+
+        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, j);
+        fr_t coset_factor = s->expanded_roots_of_unity[pos];
+
+        fr_t reversed_sample[SAMPLE_SIZE];
+        for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+            size_t index = j * SAMPLE_SIZE + k;
+            reversed_sample[k] = aggregated_column_samples[index];
+        }
+        ret = bit_reversal_permutation(
+            reversed_sample, sizeof(fr_t), SAMPLE_SIZE
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /*
+         * Get interpolation polynomial for this column. To do so we first do an
+         * IDFT over the roots of unity and then we scale by the coset factor.
+         * We can't do an IDFT directly over the coset because it's not a
+         * subgroup.
+         */
+        ret = ifft_fr(
+            column_interpolation_poly, reversed_sample, SAMPLE_SIZE, s
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        fr_t inv_x, inv_x_pow;
+        blst_fr_eucl_inverse(&inv_x, &coset_factor);
+        inv_x_pow = inv_x;
+        for (uint64_t i = 1; i < SAMPLE_SIZE; i++) {
+            blst_fr_mul(
+                &column_interpolation_poly[i],
+                &column_interpolation_poly[i],
+                &inv_x_pow
+            );
+            blst_fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
+        }
+
+        /* Update the aggregated poly */
+        for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+            blst_fr_add(
+                &aggregated_interpolation_poly[k],
+                &aggregated_interpolation_poly[k],
+                &column_interpolation_poly[k]
+            );
+        }
+    }
+
+    /* Commit to the final aggregated interpolation polynomial */
+    g1_lincomb_naive(
+        &evaluation, s->g1_values, aggregated_interpolation_poly, SAMPLE_SIZE
+    );
+    blst_p1_cneg(&evaluation, true);
+    blst_p1_add(&final_g1_sum, &final_g1_sum, &evaluation);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Compute sum of the proofs scaled by the coset factors
+    ///////////////////////////////////////////////////////////////////////////
+
+    for (size_t i = 0; i < num_samples; i++) {
+        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, cols[i]);
+        fr_t coset_factor = s->expanded_roots_of_unity[pos];
+        fr_pow(&weights[i], &coset_factor, SAMPLE_SIZE);
+        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
+    }
+
+    g1_lincomb_naive(
+        &weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_samples
+    );
+    blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Do the final pairing check
+    ///////////////////////////////////////////////////////////////////////////
+
+    *ok = pairings_verify(
+        &final_g1_sum, blst_p2_generator(), &proof_lincomb, &power_of_s
+    );
+
+out:
+    c_kzg_free(aggregated_column_samples);
+    c_kzg_free(commitment_weights);
+    c_kzg_free(proofs_g1);
+    c_kzg_free(r_powers);
+    c_kzg_free(used_commitment_weights);
+    c_kzg_free(used_commitments);
+    c_kzg_free(weighted_powers_of_r);
+    c_kzg_free(weights);
+    return ret;
+}
