@@ -3842,6 +3842,7 @@ C_KZG_RET verify_sample_proof_batch(
         if (ret != C_KZG_OK) goto out;
     }
 
+    /* Do the linear combination */
     g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, num_samples);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3862,8 +3863,9 @@ C_KZG_RET verify_sample_proof_batch(
         );
     }
 
-    /* Generate list with only used commitments */
+    /* Generate array of used commitments */
     for (size_t i = 0; i < num_commitments; i++) {
+        /* We can ignore unused commitments */
         if (fr_is_zero(&commitment_weights[i])) continue;
 
         /*
@@ -3880,6 +3882,7 @@ C_KZG_RET verify_sample_proof_batch(
         num_used_commitments++;
     }
 
+    /* Compute commitment sum */
     g1_lincomb_naive(
         &final_g1_sum,
         used_commitments,
@@ -3891,6 +3894,7 @@ C_KZG_RET verify_sample_proof_batch(
     // Compute aggregated columns
     ///////////////////////////////////////////////////////////////////////////
 
+    /* Start with zeroed out columns */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         for (size_t j = 0; j < SAMPLE_SIZE; j++) {
             size_t index = i * SAMPLE_SIZE + j;
@@ -3898,6 +3902,7 @@ C_KZG_RET verify_sample_proof_batch(
         }
     }
 
+    /* Scale each sample's data points */
     for (size_t i = 0; i < num_samples; i++) {
         for (size_t j = 0; j < SAMPLE_SIZE; j++) {
             fr_t field, scaled;
@@ -3917,17 +3922,20 @@ C_KZG_RET verify_sample_proof_batch(
     // Compute sum of the interpolation polynomials
     ///////////////////////////////////////////////////////////////////////////
 
+    /* Start with a zeroed out poly */
     for (size_t i = 0; i < SAMPLE_SIZE; i++) {
         aggregated_interpolation_poly[i] = FR_ZERO;
     }
 
+    /* Interpolate each column */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        /* Offset to the first sample for this column */
         size_t index = i * SAMPLE_SIZE;
+
+        /* We only care about initialized samples */
         if (is_sample_uninit(&aggregated_column_samples[index])) continue;
 
-        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, i);
-        fr_t coset_factor = s->expanded_roots_of_unity[pos];
-
+        /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
             &aggregated_column_samples[index], sizeof(fr_t), SAMPLE_SIZE
         );
@@ -3947,7 +3955,13 @@ C_KZG_RET verify_sample_proof_batch(
         );
         if (ret != C_KZG_OK) goto out;
 
+        /*
+         * To unscale, divide by the coset. It's faster to multiply with the
+         * inverse. We can skip the first iteration because its dividing by one.
+         */
         fr_t inv_x, inv_x_pow;
+        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, i);
+        fr_t coset_factor = s->expanded_roots_of_unity[pos];
         blst_fr_eucl_inverse(&inv_x, &coset_factor);
         inv_x_pow = inv_x;
         for (uint64_t i = 1; i < SAMPLE_SIZE; i++) {
