@@ -3147,7 +3147,8 @@ C_KZG_RET samples_to_blob(
 }
 
 /**
- * Given a blob, get DATA_POINTS_PER_BLOB data points and SAMPLES_PER_BLOB proofs.
+ * Given a blob, get DATA_POINTS_PER_BLOB data points and SAMPLES_PER_BLOB
+ * proofs.
  *
  * @param[out]  data    An array of DATA_POINTS_PER_BLOB data points
  * @param[out]  proofs  An array of SAMPLES_PER_BLOB proofs
@@ -3781,25 +3782,22 @@ C_KZG_RET verify_sample_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     /* If there are more samples than the matrix allows, error */
-    if (num_samples > (SAMPLES_PER_BLOB * SAMPLES_PER_BLOB)) {
+    if (num_samples > SAMPLES_PER_BLOB * SAMPLES_PER_BLOB) {
+        return C_KZG_BADARGS;
+    }
+
+    /* Can't have more commitments than blobs */
+    if (num_commitments > BLOB_COUNT) {
         return C_KZG_BADARGS;
     }
 
     for (size_t i = 0; i < num_samples; i++) {
-        /* Can't have more commitments than blobs */
-        if (rows[i] >= BLOB_COUNT) {
-            return C_KZG_BADARGS;
-        }
-
+        /* Make sure row index is valid */
+        if (rows[i] >= BLOB_COUNT) return C_KZG_BADARGS;
+        /* Make sure column index is valid */
+        if (cols[i] >= SAMPLES_PER_BLOB) return C_KZG_BADARGS;
         /* Make sure we can reference all commitments */
-        if (rows[i] >= num_commitments) {
-            return C_KZG_BADARGS;
-        }
-
-        /* Can't have more columns than samples in a blob */
-        if (cols[i] >= SAMPLES_PER_BLOB) {
-            return C_KZG_BADARGS;
-        }
+        if (rows[i] >= num_commitments) return C_KZG_BADARGS;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3919,23 +3917,19 @@ C_KZG_RET verify_sample_proof_batch(
     // Compute sum of the interpolation polynomials
     ///////////////////////////////////////////////////////////////////////////
 
-    for (size_t j = 0; j < SAMPLE_SIZE; j++) {
-        aggregated_interpolation_poly[j] = FR_ZERO;
+    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+        aggregated_interpolation_poly[i] = FR_ZERO;
     }
 
-    for (size_t j = 0; j < SAMPLES_PER_BLOB; j++) {
-        if (is_sample_uninit(&aggregated_column_samples[j])) continue;
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        size_t index = i * SAMPLE_SIZE;
+        if (is_sample_uninit(&aggregated_column_samples[index])) continue;
 
-        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, j);
+        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, i);
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
 
-        fr_t reversed_sample[SAMPLE_SIZE];
-        for (size_t k = 0; k < SAMPLE_SIZE; k++) {
-            size_t index = j * SAMPLE_SIZE + k;
-            reversed_sample[k] = aggregated_column_samples[index];
-        }
         ret = bit_reversal_permutation(
-            reversed_sample, sizeof(fr_t), SAMPLE_SIZE
+            &aggregated_column_samples[index], sizeof(fr_t), SAMPLE_SIZE
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3946,7 +3940,10 @@ C_KZG_RET verify_sample_proof_batch(
          * subgroup.
          */
         ret = ifft_fr(
-            column_interpolation_poly, reversed_sample, SAMPLE_SIZE, s
+            column_interpolation_poly,
+            &aggregated_column_samples[index],
+            SAMPLE_SIZE,
+            s
         );
         if (ret != C_KZG_OK) goto out;
 
