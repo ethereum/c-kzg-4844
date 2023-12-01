@@ -19,6 +19,51 @@
 KZGSettings s;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Debugging functions
+///////////////////////////////////////////////////////////////////////////////
+
+void print_bytes32(const Bytes32 *bytes) {
+    for (size_t i = 0; i < 32; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
+}
+
+void print_bytes48(const Bytes48 *bytes) {
+    for (size_t i = 0; i < 48; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
+}
+
+void print_fr(const fr_t *f) {
+    Bytes32 bytes;
+    bytes_from_bls_field(&bytes, f);
+    print_bytes32(&bytes);
+}
+
+void print_g1(const g1_t *g) {
+    Bytes48 bytes;
+    bytes_from_g1(&bytes, g);
+    print_bytes48(&bytes);
+}
+
+void print_blob(const Blob *blob) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
+    }
+}
+
+void print_sample(const Sample *sample) {
+    printf("row: %u, col: %u\n", sample->row_index, sample->column_index);
+    print_bytes48(&sample->proof);
+    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+        print_bytes32(&sample->data[i]);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1706,81 +1751,71 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 
 static void test_get_samples__succeeds_first_half_is_blob(void) {
     C_KZG_RET ret;
-    Blob blob;
-    size_t n = s.max_width;
-    Bytes32 *samples = NULL;
-    KZGProof *proofs = NULL;
+    Blob blob, blob2;
+    Sample *samples = NULL;
     int diff;
 
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    /* Allocate array of samples */
+    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
     get_rand_blob(&blob);
 
-    /* Get the samples and proofs */
-    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    /* Get the samples */
+    ret = get_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
+    /* Get the original blob from the samples */
+    samples_to_blob(&blob2, samples);
+
     /* Ensure the first half of the samples is the blob */
-    diff = memcmp(blob.bytes, samples, sizeof(Blob));
+    diff = memcmp(blob.bytes, blob2.bytes, sizeof(Blob));
     ASSERT_EQUALS(diff, 0);
 }
 
 static void test_reconstruct__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
-    size_t n = s.max_width;
-    Bytes32 *samples = NULL;
-    Bytes32 *partial = NULL;
-    Bytes32 *recovered = NULL;
-    KZGProof *proofs = NULL;
+    Sample *samples = NULL;
+    Sample *partial = NULL;
+    Sample *recovered = NULL;
+    size_t num_partial_samples = SAMPLES_PER_BLOB / 2;
     int diff;
 
     /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
+    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&partial, n, sizeof(Bytes32));
+    ret = c_kzg_calloc((void **)&partial, num_partial_samples, sizeof(Sample));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&recovered, n, sizeof(Bytes32));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    ret = c_kzg_calloc((void **)&recovered, SAMPLES_PER_BLOB, sizeof(Sample));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
     get_rand_blob(&blob);
 
     /* Get the samples and proofs */
-    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    ret = get_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Erase half of the samples */
-    for (size_t i = 0; i < s.max_width; i++) {
-        if (i % 2 == 0) {
-            partial[i] = samples[i];
-        } else {
-            /* To mark as missing, set all bits */
-            memset(&partial[i].bytes, 0xff, 32);
-        }
+    for (size_t i = 0; i < num_partial_samples; i++) {
+        memcpy(&partial[i], &samples[i*2], sizeof(Sample));
     }
 
     /* Reconstruct with half of the samples */
-    ret = recover_samples(recovered, partial, &s);
+    ret = recover_samples(recovered, partial, num_partial_samples, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Check that all of the samples match */
-    for (size_t i = 0; i < n; i++) {
-        diff = memcmp(samples[i].bytes, recovered[i].bytes, sizeof(Bytes32));
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        diff = memcmp(&samples[i], &recovered[i], sizeof(Sample));
         ASSERT_EQUALS(diff, 0);
     }
 
     /* Recover the blob from the recovered samples */
     Blob recovered_blob;
-    ret = samples_to_blob(&recovered_blob, recovered, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
+    samples_to_blob(&recovered_blob, recovered);
 
     /* Ensure the blobs are the same */
     diff = memcmp(blob.bytes, recovered_blob.bytes, sizeof(Blob));
@@ -1794,16 +1829,12 @@ static void test_reconstruct__succeeds_random_blob(void) {
 static void test_verify_sample_proof__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
-    size_t n = s.max_width;
-    Bytes32 *samples = NULL;
-    KZGProof *proofs = NULL;
+    Sample *samples = NULL;
     KZGCommitment commitment;
     bool ok;
 
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&samples, n, sizeof(Bytes32));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, n, sizeof(KZGProof));
+    /* Allocate array of samples */
+    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
@@ -1814,13 +1845,13 @@ static void test_verify_sample_proof__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the samples and proofs */
-    ret = get_samples_and_proofs(samples, proofs, &blob, &s);
+    ret = get_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Verify all of the sample proofs */
     for (uint64_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        Bytes32 *sample = samples + (i * SAMPLE_SIZE);
-        verify_sample_proof(&ok, &commitment, &proofs[i], sample, i, &s);
+        ret = verify_sample_proof(&ok, &commitment, &samples[i], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
 }

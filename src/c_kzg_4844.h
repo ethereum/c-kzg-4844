@@ -109,6 +109,9 @@ typedef Bytes48 KZGProof;
  */
 typedef struct {
     Bytes32 data[SAMPLE_SIZE];
+    KZGProof proof;
+    uint32_t row_index;
+    uint32_t column_index;
 } Sample;
 
 /**
@@ -209,32 +212,35 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const KZGSettings *s
 );
 
-C_KZG_RET get_samples_and_proofs(
-    Bytes32 *data, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+C_KZG_RET get_samples(
+    Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 );
 
+#if 0
 C_KZG_RET get_2d_samples_and_proofs(
     Bytes32 *data, KZGProof *proofs, const Blob *blobs, const KZGSettings *s
 );
+#endif
 
-C_KZG_RET samples_to_blob(
-    Blob *blob, const Bytes32 *data, const KZGSettings *s
-);
+void samples_to_blob(Blob *blob, const Sample *samples);
 
 C_KZG_RET recover_samples(
-    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+    Sample *recovered,
+    const Sample *samples,
+    size_t num_samples,
+    const KZGSettings *s
 );
 
+#if 0
 C_KZG_RET recover_2d_samples(
     Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
 );
+#endif
 
 C_KZG_RET verify_sample_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    const Bytes48 *proof_bytes,
     const Sample *sample,
-    size_t index,
     const KZGSettings *s
 );
 
@@ -242,11 +248,8 @@ C_KZG_RET verify_sample_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
-    const Bytes48 *proofs_bytes,
     const Sample *samples,
     size_t num_samples,
-    const uint64_t *rows,
-    const uint64_t *cols,
     const KZGSettings *s
 );
 

@@ -3105,6 +3105,7 @@ out:
 // Helper Functions for 2D Recovery
 ///////////////////////////////////////////////////////////////////////////////
 
+#if 0
 static size_t get_missing_count(const fr_t *data, size_t length) {
     size_t missing_count = 0;
     for (size_t i = 0; i < length; i++) {
@@ -3124,45 +3125,45 @@ static void get_column(fr_t *column, fr_t **data, size_t index) {
         }
     }
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Data Availability Sampling Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Given DATA_POINTS_PER_BLOB data points, get a blob.
+ * Given SAMPLES_PER_BLOB samples, get a blob.
  *
- * @param[out]  blob    The resultant blob from the data points
- * @param[in]   data    An array of DATA_POINTS_PER_BLOB data points
- * @param[in]   s       The trusted setup
+ * @param[out]  blob    The original blob
+ * @param[in]   samples An array of SAMPLES_PER_BLOB samples
  *
  * @remark The array of data points must be in the correct order.
  */
-C_KZG_RET samples_to_blob(
-    Blob *blob, const Bytes32 *data, const KZGSettings *s
-) {
-    (void)s; // Will be used later.
-    memcpy(&blob->bytes, data, BYTES_PER_BLOB);
-    return C_KZG_OK;
+void samples_to_blob(Blob *blob, const Sample *samples) {
+    /* The first half of sample data is the blob */
+    for (size_t i = 0; i < SAMPLES_PER_BLOB / 2; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            size_t index = i * SAMPLE_SIZE + j;
+            Bytes32 *field = (Bytes32 *)(blob->bytes) + index;
+            memcpy(field->bytes, &samples[i].data[j], 32);
+        }
+    }
 }
 
 /**
- * Given a blob, get DATA_POINTS_PER_BLOB data points and SAMPLES_PER_BLOB
- * proofs.
+ * Given a blob, get all of its samples.
  *
- * @param[out]  data    An array of DATA_POINTS_PER_BLOB data points
- * @param[out]  proofs  An array of SAMPLES_PER_BLOB proofs
- * @param[in]   blob    The blob to get samples for
- * @param[in]   s       The trusted setup
+ * @param[out]  samples     An array of SAMPLES_PER_BLOB samples
+ * @param[in]   blob        The blob to get samples for
+ * @param[in]   row_index   The row index for the blob
+ * @param[in]   s           The trusted setup
  *
  * @remark Use samples_to_blob to convert the data points into a blob.
  * @remark Up to half of these samples may be lost.
  * @remark Use recover_samples to recover missing samples.
- * @remark If `data` is NULL, samples won't be computed.
- * @remark If `proofs` is NULL, proofs won't be computed.
  */
-C_KZG_RET get_samples_and_proofs(
-    Bytes32 *data, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+C_KZG_RET get_samples(
+    Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *poly_monomial = NULL;
@@ -3198,32 +3199,39 @@ C_KZG_RET get_samples_and_proofs(
     );
     if (ret != C_KZG_OK) goto out;
 
-    if (data != NULL) {
-        /* Get the data points via forward transformation */
-        ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
-        if (ret != C_KZG_OK) goto out;
+    /* Get the data points via forward transformation */
+    ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
+    if (ret != C_KZG_OK) goto out;
 
-        /* Convert all of the samples to byte-form */
-        for (size_t i = 0; i < s->max_width; i++) {
-            bytes_from_bls_field(&data[i], &data_fr[i]);
+    /* Bit-reverse the data points */
+    ret = bit_reversal_permutation(data_fr, sizeof(data_fr[0]), s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert all of the samples to byte-form */
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            size_t index = i * SAMPLE_SIZE + j;
+            bytes_from_bls_field(&samples[i].data[j], &data_fr[index]);
         }
-
-        /* Bit-reverse the data points */
-        ret = bit_reversal_permutation(data, sizeof(data[0]), s->max_width);
-        if (ret != C_KZG_OK) goto out;
     }
 
-    if (proofs != NULL) {
-        poly_t p = {NULL, 0};
-        p.length = s->max_width / 2;
-        p.coeffs = poly_monomial;
-        ret = da_using_fk20_multi(proofs_g1, &p, s);
-        if (ret != C_KZG_OK) goto out;
+    poly_t p = {NULL, 0};
+    p.length = s->max_width / 2;
+    p.coeffs = poly_monomial;
+    ret = da_using_fk20_multi(proofs_g1, &p, s);
+    if (ret != C_KZG_OK) goto out;
 
-        /* Convert all of the proofs to byte-form */
-        for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-            bytes_from_g1(&proofs[i], &proofs_g1[i]);
-        }
+    /* Convert all of the proofs to byte-form */
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        bytes_from_g1(&samples[i].proof, &proofs_g1[i]);
+        samples[i].row_index = row_index;
+        samples[i].column_index = i;
+    }
+
+    /* Update index fields */
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        samples[i].row_index = row_index;
+        samples[i].column_index = i;
     }
 
 out:
@@ -3234,6 +3242,7 @@ out:
     return ret;
 }
 
+#if 0
 /**
  * Given BLOB_COUNT blobs, generate a 2D array of samples and proofs.
  *
@@ -3420,47 +3429,72 @@ out_pre_2d:
     c_kzg_free(proofs_g1);
     return ret;
 }
+#endif
 
 /**
- * Given at least 50% of data points, recover the missing data points.
+ * Given some samples for a blob, try to recover the missing ones.
  *
- * @param[out]  recovered   An array of DATA_POINTS_PER_BLOB data points
- * @param[in]   data        An array of DATA_POINTS_PER_BLOB data points
+ * @param[out]  recovered   An array of SAMPLES_PER_BLOB samples
+ * @param[in]   samples     An array of samples
+ * @param[in]   num_samples How many samples were provided
  * @param[in]   s           The trusted setup
  *
- * @remark The array of data points must be in the correct order.
- * @remark Missing data points are marked as 0xffff...ffff (32 bytes).
- * @remark Recovery is faster if there are fewer missing data points.
+ * @remark Recovery is faster if there are fewer missing samples.
  */
 C_KZG_RET recover_samples(
-    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
+    Sample *recovered,
+    const Sample *samples,
+    size_t num_samples,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *recovered_fr = NULL;
+    uint32_t row_index;
+    Blob blob;
 
-    /* Check if there's a missing data point */
-    for (size_t i = 0; i < s->max_width; i++) {
-        if (!memcmp(&data[i].bytes, &FR_NULL, sizeof(Bytes32))) {
-            goto recover;
+    /* Ensure only one blob's worth of samples was provided */
+    if (num_samples > SAMPLES_PER_BLOB) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Check if it's possible to recover */
+    if (num_samples < SAMPLES_PER_BLOB / 2) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Check that samples are for the same blob */
+    row_index = samples[0].row_index;
+    for (size_t i = 0; i < num_samples; i++) {
+        if (samples[i].row_index != row_index) {
+            ret = C_KZG_BADARGS;
+            goto out;
         }
     }
 
-    /* Nothing is missing, copy original data and return */
-    memcpy(recovered, data, sizeof(Bytes32) * s->max_width);
-    return C_KZG_OK;
+    /* Check if recovery is necessary */
+    if (num_samples == SAMPLES_PER_BLOB) {
+        memcpy(recovered, samples, SAMPLES_PER_BLOB * sizeof(Sample));
+        return C_KZG_OK;
+    }
 
-recover:
     /* Allocate space fr-form arrays */
     ret = new_fr_array(&recovered_fr, s->max_width);
     if (ret != C_KZG_OK) goto out;
 
-    /* Convert data points to fr-form */
+    /* Initialize all samples as missing */
     for (size_t i = 0; i < s->max_width; i++) {
-        /* Missing data points are marked as 0xffff...ffff */
-        if (!memcmp(&data[i].bytes, &FR_NULL, sizeof(Bytes32))) {
-            recovered_fr[i] = FR_NULL;
-        } else {
-            ret = bytes_to_bls_field(&recovered_fr[i], &data[i]);
+        recovered_fr[i] = FR_NULL;
+    }
+
+    /* Update with existing samples */
+    for (size_t i = 0; i < num_samples; i++) {
+        size_t index = samples[i].column_index * SAMPLE_SIZE;
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            ret = bytes_to_bls_field(
+                &recovered_fr[index + j], &samples[i].data[j]
+            );
             if (ret != C_KZG_OK) goto out;
         }
     }
@@ -3470,15 +3504,28 @@ recover:
     if (ret != C_KZG_OK) goto out;
 
     /* Convert the recovered data points to byte-form */
-    for (size_t i = 0; i < s->max_width; i++) {
-        bytes_from_bls_field(&recovered[i], &recovered_fr[i]);
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+            size_t index = i * SAMPLE_SIZE + j;
+            recovered[i].row_index = row_index;
+            recovered[i].column_index = j;
+            bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
+        }
     }
+
+    /* Get the original blob from the samples */
+    samples_to_blob(&blob, recovered);
+
+    /* TODO: do this more efficiently */
+    ret = get_samples(recovered, &blob, row_index, s);
+    if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(recovered_fr);
     return ret;
 }
 
+#if 0
 /**
  * Given at least 75% of data points, recover the missing data points.
  *
@@ -3647,23 +3694,20 @@ out:
     c_kzg_free(complete_cols);
     return ret;
 }
+#endif
 
 /**
  * For a given sample, verify that the proof is valid.
  *
  * @param[out]  ok                  True if the proof are valid, otherwise false
- * @param[in]   commitment_bytes    The commitment to the blob's samples
- * @param[in]   proof_bytes         The proof for the sample
+ * @param[in]   commitment_bytes    The commitment associated with the sample
  * @param[in]   sample              The sample to check
- * @param[in]   index               The sample/proof index
  * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_sample_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    const Bytes48 *proof_bytes,
     const Sample *sample,
-    size_t index,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3673,7 +3717,7 @@ C_KZG_RET verify_sample_proof(
     *ok = false;
 
     /* Check that index is a valid value */
-    if (index >= SAMPLES_PER_BLOB) {
+    if (sample->column_index >= SAMPLES_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -3685,7 +3729,7 @@ C_KZG_RET verify_sample_proof(
     /* Convert untrusted inputs */
     ret = bytes_to_kzg_commitment(&commitment, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_kzg_proof(&proof, proof_bytes);
+    ret = bytes_to_kzg_proof(&proof, &sample->proof);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < SAMPLE_SIZE; i++) {
         ret = bytes_to_bls_field(&ys[i], &sample->data[i]);
@@ -3693,7 +3737,7 @@ C_KZG_RET verify_sample_proof(
     }
 
     /* Calculate the input value */
-    size_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, index);
+    size_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, sample->column_index);
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */
@@ -3733,22 +3777,16 @@ static bool is_sample_uninit(fr_t *sample) {
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
  * @param[in]   num_commitments     The number of commitments being passed
- * @param[in]   proofs_bytes        Proofs which correspond to each sample
  * @param[in]   samples             The samples to check
  * @param[in]   num_samples         The number of samples provided
- * @param[in]   rows                Row indices for each sample
- * @param[in]   cols                Column indices for each sample
  * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_sample_proof_batch(
     bool *ok,
-    const Bytes48 *commitments_bytes, // ALL commitments
+    const Bytes48 *commitments_bytes,
     size_t num_commitments,
-    const Bytes48 *proofs_bytes,
     const Sample *samples,
     size_t num_samples,
-    const uint64_t *rows,
-    const uint64_t *cols,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3793,11 +3831,11 @@ C_KZG_RET verify_sample_proof_batch(
 
     for (size_t i = 0; i < num_samples; i++) {
         /* Make sure row index is valid */
-        if (rows[i] >= BLOB_COUNT) return C_KZG_BADARGS;
+        if (samples[i].row_index >= BLOB_COUNT) return C_KZG_BADARGS;
         /* Make sure column index is valid */
-        if (cols[i] >= SAMPLES_PER_BLOB) return C_KZG_BADARGS;
+        if (samples[i].column_index >= SAMPLES_PER_BLOB) return C_KZG_BADARGS;
         /* Make sure we can reference all commitments */
-        if (rows[i] >= num_commitments) return C_KZG_BADARGS;
+        if (samples[i].row_index >= num_commitments) return C_KZG_BADARGS;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3838,7 +3876,7 @@ C_KZG_RET verify_sample_proof_batch(
 
     /* There should be a proof for each sample */
     for (size_t i = 0; i < num_samples; i++) {
-        ret = bytes_to_kzg_proof(&proofs_g1[i], &proofs_bytes[i]);
+        ret = bytes_to_kzg_proof(&proofs_g1[i], &samples[i].proof);
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -3857,8 +3895,8 @@ C_KZG_RET verify_sample_proof_batch(
     /* Update commitment weights */
     for (size_t i = 0; i < num_samples; i++) {
         blst_fr_add(
-            &commitment_weights[rows[i]],
-            &commitment_weights[rows[i]],
+            &commitment_weights[samples[i].row_index],
+            &commitment_weights[samples[i].row_index],
             &r_powers[i]
         );
     }
@@ -3909,7 +3947,7 @@ C_KZG_RET verify_sample_proof_batch(
             ret = bytes_to_bls_field(&field, &samples[i].data[j]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
-            size_t index = cols[i] * SAMPLE_SIZE + j;
+            size_t index = samples[i].column_index * SAMPLE_SIZE + j;
             blst_fr_add(
                 &aggregated_column_samples[index],
                 &aggregated_column_samples[index],
@@ -3995,7 +4033,9 @@ C_KZG_RET verify_sample_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     for (size_t i = 0; i < num_samples; i++) {
-        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, cols[i]);
+        uint32_t pos = reverse_bits_limited(
+            SAMPLES_PER_BLOB, samples[i].column_index
+        );
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, SAMPLE_SIZE);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
