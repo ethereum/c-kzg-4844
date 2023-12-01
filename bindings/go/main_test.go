@@ -61,9 +61,9 @@ func getRandPoint(seed int64) Bytes48 {
 	return bytes
 }
 
-func getPartialSamples(samples *BlobSamples, i int) []Sample {
+func getPartialSamples(samples *[SamplesPerBlob]Sample, i int) []Sample {
 	partialSamples := []Sample{}
-	for j := 0; j < SamplesPerBlob; j++ {
+	for j := range samples {
 		if j%i != 0 {
 			partialSamples = append(partialSamples, samples[j])
 		}
@@ -496,7 +496,7 @@ func Benchmark(b *testing.B) {
 	commitments := &[n]Bytes48{}
 	proofs := &[n]Bytes48{}
 	fields := &[n]Bytes32{}
-	blobSamples := &[n]*BlobSamples{}
+	blobSamples := &[n]*[SamplesPerBlob]Sample{}
 
 	for i := int64(0); i < n; i++ {
 		blobs[i] = getRandBlob(i)

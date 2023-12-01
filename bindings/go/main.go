@@ -38,8 +38,6 @@ type (
 		RowIndex    uint32
 		ColumnIndex uint32
 	}
-	BlobSamples      [SamplesPerBlob]Sample
-	BlobSampleProofs [SamplesPerBlob]KZGProof
 )
 
 var (
@@ -356,11 +354,11 @@ GetSamples is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func GetSamples(blob *Blob, rowIndex uint32) (*BlobSamples, error) {
+func GetSamples(blob *Blob, rowIndex uint32) (*[SamplesPerBlob]Sample, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	samples := &BlobSamples{}
+	samples := &[SamplesPerBlob]Sample{}
 	err := makeErrorFromRet(C.get_samples(
 		(*C.Sample)(unsafe.Pointer(samples)),
 		(*C.Blob)(unsafe.Pointer(blob)),
@@ -376,7 +374,7 @@ SamplesToBlob is the binding for:
 	    Blob *blob,
 	    const Sample *samples);
 */
-func SamplesToBlob(samples *BlobSamples) *Blob {
+func SamplesToBlob(samples *[SamplesPerBlob]Sample) *Blob {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -396,11 +394,11 @@ RecoverSamples is the binding for:
 	    size_t num_samples,
 	    const KZGSettings *s);
 */
-func RecoverSamples(samples []Sample) (*BlobSamples, error) {
+func RecoverSamples(samples []Sample) (*[SamplesPerBlob]Sample, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	recovered := &BlobSamples{}
+	recovered := &[SamplesPerBlob]Sample{}
 	err := makeErrorFromRet(C.recover_samples(
 		(*C.Sample)(unsafe.Pointer(recovered)),
 		*(**C.Sample)(unsafe.Pointer(&samples)),
