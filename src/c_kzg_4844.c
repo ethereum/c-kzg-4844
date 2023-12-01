@@ -3704,7 +3704,7 @@ out:
  * @param[in]   sample              The sample to check
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_sample_proof(
+C_KZG_RET verify_sample(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Sample *sample,
@@ -3781,7 +3781,7 @@ static bool is_sample_uninit(fr_t *sample) {
  * @param[in]   num_samples         The number of samples provided
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_sample_proof_batch(
+C_KZG_RET verify_samples(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,

@@ -231,20 +231,14 @@ C_KZG_RET recover_samples(
     const KZGSettings *s
 );
 
-#if 0
-C_KZG_RET recover_2d_samples(
-    Bytes32 *recovered, const Bytes32 *data, const KZGSettings *s
-);
-#endif
-
-C_KZG_RET verify_sample_proof(
+C_KZG_RET verify_sample(
     bool *ok,
     const Bytes48 *commitment_bytes,
     const Sample *sample,
     const KZGSettings *s
 );
 
-C_KZG_RET verify_sample_proof_batch(
+C_KZG_RET verify_samples(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,

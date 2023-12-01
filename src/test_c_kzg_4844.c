@@ -1850,7 +1850,7 @@ static void test_verify_sample_proof__succeeds_random_blob(void) {
 
     /* Verify all of the sample proofs */
     for (uint64_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        ret = verify_sample_proof(&ok, &commitment, &samples[i], &s);
+        ret = verify_sample(&ok, &commitment, &samples[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
