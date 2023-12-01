@@ -216,12 +216,6 @@ C_KZG_RET get_samples(
     Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 );
 
-#if 0
-C_KZG_RET get_2d_samples_and_proofs(
-    Bytes32 *data, KZGProof *proofs, const Blob *blobs, const KZGSettings *s
-);
-#endif
-
 void samples_to_blob(Blob *blob, const Sample *samples);
 
 C_KZG_RET recover_samples(

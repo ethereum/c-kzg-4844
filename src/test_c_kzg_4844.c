@@ -1800,7 +1800,7 @@ static void test_reconstruct__succeeds_random_blob(void) {
 
     /* Erase half of the samples */
     for (size_t i = 0; i < num_partial_samples; i++) {
-        memcpy(&partial[i], &samples[i*2], sizeof(Sample));
+        memcpy(&partial[i], &samples[i * 2], sizeof(Sample));
     }
 
     /* Reconstruct with half of the samples */
