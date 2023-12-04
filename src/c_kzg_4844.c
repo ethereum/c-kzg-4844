@@ -3110,26 +3110,22 @@ out:
  *
  * @param[out]  blob    The original blob
  * @param[in]   samples An array of SAMPLES_PER_BLOB samples
- *
- * @remark The array of data points must be in the correct order.
  */
 C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples) {
     /* Check that all samples have the same row index */
     uint32_t row_index = samples[0].row_index;
-    for (size_t i = 0; i < SAMPLES_PER_BLOB / 2; i++) {
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         if (samples[i].row_index != row_index) {
             return C_KZG_BADARGS;
         }
     }
 
-    /* TODO: change this so order doesn't matter */
     /* The first half of sample data is the blob */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB / 2; i++) {
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
-            size_t index = i * SAMPLE_SIZE + j;
-            Bytes32 *field = (Bytes32 *)(blob->bytes) + index;
-            memcpy(field->bytes, &samples[i].data[j], 32);
-        }
+    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        if (samples[i].column_index >= (SAMPLES_PER_BLOB / 2)) continue;
+        size_t offset = samples[i].column_index * SAMPLE_SIZE;
+        Bytes32 *field = (Bytes32 *)(blob->bytes) + offset;
+        memcpy(field->bytes, samples[i].data, 32 * SAMPLE_SIZE);
     }
 
     return C_KZG_OK;
@@ -3301,10 +3297,10 @@ C_KZG_RET recover_samples(
 
     /* Convert the recovered data points to byte-form */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+        recovered[i].row_index = row_index;
+        recovered[i].column_index = i;
         for (size_t j = 0; j < SAMPLE_SIZE; j++) {
             size_t index = i * SAMPLE_SIZE + j;
-            recovered[i].row_index = row_index;
-            recovered[i].column_index = j;
             bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
         }
     }

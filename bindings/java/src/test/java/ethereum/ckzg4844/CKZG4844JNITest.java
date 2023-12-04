@@ -167,7 +167,12 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
-    final byte[] newBlob = CKZG4844JNI.samplesToBlob(samples);
+
+    Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
+    List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
+    Collections.shuffle(shuffledSamples);
+
+    final byte[] newBlob = CKZG4844JNI.samplesToBlob(shuffledSamples.toArray(new Sample[0]));
     assertArrayEquals(blob, newBlob);
     CKZG4844JNI.freeTrustedSetup();
   }
