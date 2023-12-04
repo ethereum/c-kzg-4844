@@ -11,6 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.test_formats.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -156,6 +159,33 @@ public class CKZG4844JNITest {
     final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
     assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proofAndY.getProof().length);
     assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkSamplesToBlob() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+    final byte[] newBlob = CKZG4844JNI.samplesToBlob(samples);
+    assertArrayEquals(blob, newBlob);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkRecoverSamples() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+
+    Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
+    List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
+    Collections.shuffle(shuffledSamples);
+    final List<Sample> partialSamples = shuffledSamples.subList(0, SAMPLES_PER_BLOB / 2);
+    final Sample[] partial = partialSamples.toArray(new Sample[0]);
+
+    final Sample[] recovered = CKZG4844JNI.recoverSamples(partial);
+    assertArrayEquals(samples, recovered);
     CKZG4844JNI.freeTrustedSetup();
   }
 

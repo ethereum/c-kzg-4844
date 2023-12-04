@@ -217,7 +217,7 @@ C_KZG_RET get_samples(
     Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 );
 
-void samples_to_blob(Blob *blob, const Sample *samples);
+C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples);
 
 C_KZG_RET recover_samples(
     Sample *recovered,

@@ -206,6 +206,24 @@ public class CKZG4844JNI {
   public static native Sample[] getSamples(byte[] blob, int index);
 
   /**
+   * Convert an array of samples to a blob.
+   *
+   * @param samples the samples to convert to a blob
+   * @return the blob for the given samples
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] samplesToBlob(Sample[] samples);
+
+  /**
+   * Given at least 50% of samples, reconstruct the missing ones.
+   *
+   * @param samples the samples you have
+   * @return all samples for that blob
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native Sample[] recoverSamples(Sample[] samples);
+
+  /**
    * Verify that a sample's proof is valid.
    *
    * @param commitment_bytes commitment bytes

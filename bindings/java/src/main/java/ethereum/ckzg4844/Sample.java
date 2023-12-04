@@ -6,6 +6,8 @@ import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_SAMPLE;
 import static ethereum.ckzg4844.CKZG4844JNI.SAMPLES_PER_BLOB;
 import static ethereum.ckzg4844.CKZG4844JNI.SAMPLE_SIZE;
 
+import java.util.Arrays;
+
 public class Sample {
   private final byte[] data;
   private final byte[] proof;
@@ -97,5 +99,26 @@ public class Sample {
     bytes[2] = (byte) (value >> 16 & 0xFF);
     bytes[3] = (byte) (value >> 24 & 0xFF);
     return bytes;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Arrays.hashCode(data);
+    result = 31 * result + Arrays.hashCode(proof);
+    result = 31 * result + rowIndex;
+    result = 31 * result + columnIndex;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null || getClass() != obj.getClass()) return false;
+
+    Sample other = (Sample) obj;
+    return Arrays.equals(data, other.data)
+        && Arrays.equals(proof, other.proof)
+        && rowIndex == other.rowIndex
+        && columnIndex == other.columnIndex;
   }
 }

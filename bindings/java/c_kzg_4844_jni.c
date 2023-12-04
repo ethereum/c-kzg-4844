@@ -506,6 +506,172 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNI
   return result;
 }
 
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_samplesToBlob(JNIEnv *env, jclass thisCls, jobjectArray samples)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  if (samples == NULL)
+  {
+    throw_exception(env, "Array of samples is null.");
+    return NULL;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
+  if (count != SAMPLES_PER_BLOB)
+  {
+    throw_exception(env, "Invalid number of samples.");
+    return NULL;
+  }
+
+  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
+  if (sample_obj == NULL)
+  {
+    throw_exception(env, "Sample is null.");
+    return NULL;
+  }
+
+  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  if (to_bytes_method == NULL)
+  {
+    throw_exception(env, "Failed to find toBytes method");
+    return NULL;
+  }
+
+  Sample *total_samples = calloc(sizeof(Sample), count);
+  for (size_t i = 0; i < count; i++)
+  {
+    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
+    if (sample == NULL)
+    {
+      throw_exception(env, "Sample is null.");
+      return NULL;
+    }
+
+    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    if ((*env)->ExceptionCheck(env))
+    {
+        return NULL;
+    }
+
+    Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
+    memcpy(&total_samples[i], sample_native, sizeof(Sample));
+    (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+  }
+
+  jbyteArray blob = (*env)->NewByteArray(env, BYTES_PER_BLOB);
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  C_KZG_RET ret = samples_to_blob(blob_native, total_samples);
+
+  (*env)->DeleteLocalRef(env, sample_obj);
+  (*env)->DeleteLocalRef(env, sample_class);
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, 0);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in samplesToBlob.");
+    return NULL;
+  }
+
+  return blob;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples(JNIEnv *env, jclass thisCls, jobjectArray samples)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  if (samples == NULL)
+  {
+    throw_exception(env, "Array of samples is null.");
+    return NULL;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
+  if (count == 0)
+  {
+    throw_exception(env, "Invalid number of samples.");
+    return NULL;
+  }
+
+  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
+  if (sample_obj == NULL)
+  {
+    throw_exception(env, "Sample is null.");
+    return NULL;
+  }
+
+  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  if (to_bytes_method == NULL)
+  {
+    throw_exception(env, "Failed to find toBytes method");
+    return NULL;
+  }
+
+  Sample *total_samples = calloc(sizeof(Sample), count);
+  for (size_t i = 0; i < count; i++)
+  {
+    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
+    if (sample == NULL)
+    {
+      throw_exception(env, "Sample is null.");
+      return NULL;
+    }
+
+    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    if ((*env)->ExceptionCheck(env))
+    {
+        return NULL;
+    }
+
+    Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
+    memcpy(&total_samples[i], sample_native, sizeof(Sample));
+    (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+  }
+
+  jbyteArray recovered = (*env)->NewByteArray(env, SAMPLES_PER_BLOB * sizeof(Sample));
+  Sample *recovered_native = (Sample *)(*env)->GetByteArrayElements(env, recovered, NULL);
+  size_t count_native = (size_t)count;
+
+  C_KZG_RET ret = recover_samples(recovered_native, total_samples, count_native, settings);
+
+  (*env)->DeleteLocalRef(env, sample_obj);
+  (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in samplesToBlob.");
+    return NULL;
+  }
+
+  jmethodID sample_of = (*env)->GetStaticMethodID(env, sample_class, "of", "([B)[Lethereum/ckzg4844/Sample;");
+  if (sample_of == NULL)
+  {
+    throw_exception(env, "Failed to find Sample#of method.");
+    return NULL;
+  }
+
+  jobjectArray result = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, recovered);
+  if (result == NULL)
+  {
+    throw_exception(env, "Failed to instantiate samples.");
+    return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, sample_class);
+
+  return result;
+}
+
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jobject sample)
 {
   if (settings == NULL)
@@ -558,7 +724,6 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
   }
 
   size_t count = (size_t)(*env)->GetArrayLength(env, samples);
-
   if (count == 0)
   {
     return 1;
@@ -572,8 +737,6 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
   }
 
   jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
-
-  /* Get the methods */
   jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
   if (to_bytes_method == NULL)
   {
@@ -594,15 +757,11 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
     jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
     if ((*env)->ExceptionCheck(env))
     {
-        (*env)->ExceptionDescribe(env);
         return 0;
     }
 
     Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    (void)sample_native;
-
     memcpy(&total_samples[i], sample_native, sizeof(Sample));
-
     (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
   }
 

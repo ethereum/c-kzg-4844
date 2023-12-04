@@ -565,7 +565,8 @@ func Benchmark(b *testing.B) {
 
 	b.Run("SamplesToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_ = SamplesToBlob(blobSamples[0])
+			_, err := SamplesToBlob(blobSamples[0])
+			require.Nil(b, err)
 		}
 	})
 

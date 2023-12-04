@@ -3113,7 +3113,16 @@ out:
  *
  * @remark The array of data points must be in the correct order.
  */
-void samples_to_blob(Blob *blob, const Sample *samples) {
+C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples) {
+    /* Check that all samples have the same row index */
+    uint32_t row_index = samples[0].row_index;
+    for (size_t i = 0; i < SAMPLES_PER_BLOB / 2; i++) {
+        if (samples[i].row_index != row_index) {
+            return C_KZG_BADARGS;
+        }
+    }
+
+    /* TODO: change this so order doesn't matter */
     /* The first half of sample data is the blob */
     for (size_t i = 0; i < SAMPLES_PER_BLOB / 2; i++) {
         for (size_t j = 0; j < SAMPLE_SIZE; j++) {
@@ -3122,6 +3131,8 @@ void samples_to_blob(Blob *blob, const Sample *samples) {
             memcpy(field->bytes, &samples[i].data[j], 32);
         }
     }
+
+    return C_KZG_OK;
 }
 
 /**

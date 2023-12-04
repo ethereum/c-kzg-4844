@@ -370,19 +370,19 @@ func GetSamples(blob *Blob, rowIndex uint32) (*[SamplesPerBlob]Sample, error) {
 /*
 SamplesToBlob is the binding for:
 
-	void samples_to_blob(
+	C_KZG_RET samples_to_blob(
 	    Blob *blob,
 	    const Sample *samples);
 */
-func SamplesToBlob(samples *[SamplesPerBlob]Sample) *Blob {
+func SamplesToBlob(samples *[SamplesPerBlob]Sample) (*Blob, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	blob := &Blob{}
-	C.samples_to_blob(
+	err := makeErrorFromRet(C.samples_to_blob(
 		(*C.Blob)(unsafe.Pointer(blob)),
-		(*C.Sample)(unsafe.Pointer(samples)))
-	return blob
+		(*C.Sample)(unsafe.Pointer(samples))))
+	return blob, err
 }
 
 /*
