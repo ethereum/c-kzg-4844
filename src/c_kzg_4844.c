@@ -3438,14 +3438,7 @@ C_KZG_RET verify_samples(
         return C_KZG_BADARGS;
     }
 
-    /* Can't have more commitments than blobs */
-    if (num_commitments > BLOB_COUNT) {
-        return C_KZG_BADARGS;
-    }
-
     for (size_t i = 0; i < num_samples; i++) {
-        /* Make sure row index is valid */
-        if (samples[i].row_index >= BLOB_COUNT) return C_KZG_BADARGS;
         /* Make sure column index is valid */
         if (samples[i].column_index >= SAMPLES_PER_BLOB) return C_KZG_BADARGS;
         /* Make sure we can reference all commitments */

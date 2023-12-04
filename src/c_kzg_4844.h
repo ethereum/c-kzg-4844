@@ -60,9 +60,6 @@ extern "C" {
 /** The number of samples in an extended blob. */
 #define SAMPLES_PER_BLOB (DATA_POINTS_PER_BLOB / SAMPLE_SIZE)
 
-/** The number of blobs we're working with. */
-#define BLOB_COUNT (FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE)
-
 /** The number of bytes in a single sample */
 #define BYTES_PER_SAMPLE \
     (BYTES_PER_FIELD_ELEMENT * SAMPLE_SIZE + BYTES_PER_PROOF + 8)
