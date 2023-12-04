@@ -514,14 +514,15 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
     return 0;
   }
 
-  jclass sampleClass = (*env)->GetObjectClass(env, sample);
+  jclass sample_class = (*env)->GetObjectClass(env, sample);
 
-  jmethodID toBytesMethod = (*env)->GetMethodID(env, sampleClass, "toBytes", "()[B");
-  if (toBytesMethod == NULL) {
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  if (to_bytes_method == NULL)
+  {
     throw_exception(env, "Failed to find toBytes method");
     return 0;
   }
-  jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, toBytesMethod);
+  jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
 
   Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
@@ -529,7 +530,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
   bool out;
   C_KZG_RET ret = verify_sample(&out, commitment_native, sample_native, settings);
 
-  (*env)->DeleteLocalRef(env, sampleClass);
+  (*env)->DeleteLocalRef(env, sample_class);
   (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
 
@@ -550,42 +551,49 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
     return 0;
   }
 
-  if (samples == NULL) {
+  if (samples == NULL)
+  {
     throw_exception(env, "Array of samples is null.");
     return 0;
   }
 
   size_t count = (size_t)(*env)->GetArrayLength(env, samples);
 
-  if (count == 0) {
+  if (count == 0)
+  {
     return 1;
   }
 
-  jobject sampleObj = (*env)->GetObjectArrayElement(env, samples, 0);
-  if (sampleObj == NULL) {
+  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
+  if (sample_obj == NULL)
+  {
     throw_exception(env, "Sample is null.");
     return 0;
   }
 
-  jclass sampleClass = (*env)->GetObjectClass(env, sampleObj);
+  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
 
   /* Get the methods */
-  jmethodID toBytesMethod = (*env)->GetMethodID(env, sampleClass, "toBytes", "()[B");
-  if (toBytesMethod == NULL) {
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  if (to_bytes_method == NULL)
+  {
     throw_exception(env, "Failed to find toBytes method");
     return 0;
   }
 
   Sample *total_samples = calloc(sizeof(Sample), count);
-  for (size_t i = 0; i < count; i++) {
+  for (size_t i = 0; i < count; i++)
+  {
     jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
-    if (sample == NULL) {
+    if (sample == NULL)
+    {
       throw_exception(env, "Sample is null.");
       return 0;
     }
 
-    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, toBytesMethod);
-    if ((*env)->ExceptionCheck(env)) {
+    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    if ((*env)->ExceptionCheck(env))
+    {
         (*env)->ExceptionDescribe(env);
         return 0;
     }
@@ -604,8 +612,8 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
   bool out;
   C_KZG_RET ret = verify_samples(&out, commitments_native, num_commitments, total_samples, count, settings);
 
-  (*env)->DeleteLocalRef(env, sampleObj);
-  (*env)->DeleteLocalRef(env, sampleClass);
+  (*env)->DeleteLocalRef(env, sample_obj);
+  (*env)->DeleteLocalRef(env, sample_class);
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
