@@ -67,8 +67,9 @@ public class CKZG4844JNI {
   public static final int SAMPLE_SIZE = 16;
   /** The number of samples in an extended blob. */
   public static final int SAMPLES_PER_BLOB = DATA_POINTS_PER_BLOB / SAMPLE_SIZE;
-  /** The number of blobs we're working with. */
-  public static final int BLOB_COUNT = FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE;
+  /** The number of bytes in a single sample. */
+  public static final int BYTES_PER_SAMPLE =
+      (BYTES_PER_FIELD_ELEMENT * SAMPLE_SIZE) + BYTES_PER_PROOF + 8;
 
   private CKZG4844JNI() {}
 
@@ -195,7 +196,7 @@ public class CKZG4844JNI {
       byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
 
   /**
-   * Get the samples (data & proofs) for a given blob.
+   * Get the samples (data and proofs) for a given blob.
    *
    * @param blob the blob to get samples for
    * @param index the blob index

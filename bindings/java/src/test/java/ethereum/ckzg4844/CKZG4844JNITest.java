@@ -1,7 +1,6 @@
 package ethereum.ckzg4844;
 
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_COMMITMENT;
-import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_PROOF;
 import static ethereum.ckzg4844.CKZG4844JNI.SAMPLES_PER_BLOB;
 import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -184,7 +183,8 @@ public class CKZG4844JNITest {
       final byte[] blob = TestUtils.createRandomBlob();
       final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
       final Sample[] samples = CKZG4844JNI.getSamples(blob, i);
-      System.arraycopy(commitment, 0, allCommitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
+      System.arraycopy(
+          commitment, 0, allCommitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
       System.arraycopy(samples, 0, allSamples, i * SAMPLES_PER_BLOB, SAMPLES_PER_BLOB);
     }
 

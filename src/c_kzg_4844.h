@@ -63,6 +63,10 @@ extern "C" {
 /** The number of blobs we're working with. */
 #define BLOB_COUNT (FIELD_ELEMENTS_PER_BLOB / SAMPLE_SIZE)
 
+/** The number of bytes in a single sample */
+#define BYTES_PER_SAMPLE \
+    (BYTES_PER_FIELD_ELEMENT * SAMPLE_SIZE + BYTES_PER_PROOF + 8)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
