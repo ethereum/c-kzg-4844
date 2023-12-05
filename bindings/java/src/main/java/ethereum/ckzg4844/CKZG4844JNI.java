@@ -203,7 +203,7 @@ public class CKZG4844JNI {
    * @return an array of samples
    * @throws CKZGException if there is a crypto error
    */
-  public static native Sample[] getSamples(byte[] blob, int index);
+  public static native Sample[] computeSamples(byte[] blob, int index);
 
   /**
    * Convert an array of samples to a blob.
@@ -241,5 +241,5 @@ public class CKZG4844JNI {
    * @return true if the sample is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifySamples(byte[] commitments_bytes, Sample[] samples);
+  public static native boolean verifySampleBatch(byte[] commitments_bytes, Sample[] samples);
 }

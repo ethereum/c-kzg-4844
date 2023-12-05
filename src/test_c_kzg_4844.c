@@ -1749,7 +1749,7 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 // Tests for reconstruction
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_get_samples__succeeds_first_half_is_blob(void) {
+static void test_compute_samples__succeeds_first_half_is_blob(void) {
     C_KZG_RET ret;
     Blob blob, blob2;
     Sample *samples = NULL;
@@ -1763,7 +1763,7 @@ static void test_get_samples__succeeds_first_half_is_blob(void) {
     get_rand_blob(&blob);
 
     /* Get the samples */
-    ret = get_samples(samples, &blob, 0, &s);
+    ret = compute_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the original blob from the samples */
@@ -1795,7 +1795,7 @@ static void test_reconstruct__succeeds_random_blob(void) {
     get_rand_blob(&blob);
 
     /* Get the samples and proofs */
-    ret = get_samples(samples, &blob, 0, &s);
+    ret = compute_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Erase half of the samples */
@@ -1845,7 +1845,7 @@ static void test_verify_sample_proof__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the samples and proofs */
-    ret = get_samples(samples, &blob, 0, &s);
+    ret = compute_samples(samples, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Verify all of the sample proofs */
@@ -2104,7 +2104,7 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
-    RUN(test_get_samples__succeeds_first_half_is_blob);
+    RUN(test_compute_samples__succeeds_first_half_is_blob);
     RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_verify_sample_proof__succeeds_random_blob);
     RUN(test_poly_conversion__succeeds_round_trip);

@@ -415,7 +415,7 @@ func TestVerifySample(t *testing.T) {
 
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	samples, err := GetSamples(&blob, 0)
+	samples, err := ComputeSamples(&blob, 0)
 	require.NoError(t, err)
 
 	for i := range samples {
@@ -429,11 +429,11 @@ func TestVerifySamples(t *testing.T) {
 	blob := getRandBlob(0)
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	samples, err := GetSamples(&blob, 0)
+	samples, err := ComputeSamples(&blob, 0)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment)}
-	ok, err := VerifySamples(commitments, samples[:])
+	ok, err := VerifySampleBatch(commitments, samples[:])
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -447,9 +447,9 @@ func TestVerifySamplesMultiBlobs(t *testing.T) {
 	commitment2, err := BlobToKZGCommitment(blob2)
 	require.NoError(t, err)
 
-	samples1, err := GetSamples(&blob1, 0)
+	samples1, err := ComputeSamples(&blob1, 0)
 	require.NoError(t, err)
-	samples2, err := GetSamples(&blob2, 1)
+	samples2, err := ComputeSamples(&blob2, 1)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment1), Bytes48(commitment2)}
@@ -462,14 +462,14 @@ func TestVerifySamplesMultiBlobs(t *testing.T) {
 		samples = append(samples, sample)
 	}
 
-	ok, err := VerifySamples(commitments, samples)
+	ok, err := VerifySampleBatch(commitments, samples)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
 
 func TestRecoverHalfMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	samples, err := GetSamples(&blob, 0)
+	samples, err := ComputeSamples(&blob, 0)
 	require.NoError(t, err)
 	partial := getPartialSamples(samples, 2)
 	recovered, err := RecoverSamples(partial)
@@ -479,7 +479,7 @@ func TestRecoverHalfMissing(t *testing.T) {
 
 func TestRecoverNoMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	samples, err := GetSamples(&blob, 0)
+	samples, err := ComputeSamples(&blob, 0)
 	require.NoError(t, err)
 	recovered, err := RecoverSamples(samples[:])
 	require.NoError(t, err)
@@ -509,7 +509,7 @@ func Benchmark(b *testing.B) {
 		require.NoError(b, err)
 		proofs[i] = Bytes48(proof)
 
-		blobSamples[i], err = GetSamples(&blobs[i], uint32(i))
+		blobSamples[i], err = ComputeSamples(&blobs[i], uint32(i))
 	}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
@@ -556,9 +556,9 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	b.Run("GetSamples", func(b *testing.B) {
+	b.Run("ComputeSamples", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := GetSamples(&blobs[0], 0)
+			_, err := ComputeSamples(&blobs[0], 0)
 			require.Nil(b, err)
 		}
 	})
@@ -588,7 +588,7 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	b.Run("VerifySamples", func(b *testing.B) {
+	b.Run("VerifySampleBatch", func(b *testing.B) {
 		var samples []Sample
 		for _, blobSample := range blobSamples {
 			for _, sample := range blobSample {
@@ -597,7 +597,7 @@ func Benchmark(b *testing.B) {
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifySamples(commitments[:], samples)
+			ok, err := VerifySampleBatch(commitments[:], samples)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}

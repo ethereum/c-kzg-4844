@@ -3143,7 +3143,7 @@ C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples) {
  * @remark Up to half of these samples may be lost.
  * @remark Use recover_samples to recover missing samples.
  */
-C_KZG_RET get_samples(
+C_KZG_RET compute_samples(
     Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3309,7 +3309,7 @@ C_KZG_RET recover_samples(
     samples_to_blob(&blob, recovered);
 
     /* TODO: do this more efficiently */
-    ret = get_samples(recovered, &blob, row_index, s);
+    ret = compute_samples(recovered, &blob, row_index, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3402,7 +3402,7 @@ static bool is_sample_uninit(fr_t *sample) {
  * @param[in]   num_samples         The number of samples provided
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_samples(
+C_KZG_RET verify_sample_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,

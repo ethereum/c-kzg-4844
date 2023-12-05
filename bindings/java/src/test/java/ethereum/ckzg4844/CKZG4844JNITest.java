@@ -166,7 +166,7 @@ public class CKZG4844JNITest {
   public void checkSamplesToBlob() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
 
     Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
     List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
@@ -181,7 +181,7 @@ public class CKZG4844JNITest {
   public void checkRecoverSamples() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
 
     Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
     List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
@@ -199,7 +199,7 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-    final Sample[] samples = CKZG4844JNI.getSamples(blob, 0);
+    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
     for (Sample sample : samples) {
       assertTrue(CKZG4844JNI.verifySample(commitment, sample));
     }
@@ -207,7 +207,7 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void checkVerifySamples() {
+  public void checkVerifySampleBatch() {
     loadTrustedSetup();
 
     int count = 6;
@@ -217,13 +217,13 @@ public class CKZG4844JNITest {
     for (int i = 0; i < count; i++) {
       final byte[] blob = TestUtils.createRandomBlob();
       final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-      final Sample[] samples = CKZG4844JNI.getSamples(blob, i);
+      final Sample[] samples = CKZG4844JNI.computeSamples(blob, i);
       System.arraycopy(
           commitment, 0, allCommitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
       System.arraycopy(samples, 0, allSamples, i * SAMPLES_PER_BLOB, SAMPLES_PER_BLOB);
     }
 
-    assertTrue(CKZG4844JNI.verifySamples(allCommitments, allSamples));
+    assertTrue(CKZG4844JNI.verifySampleBatch(allCommitments, allSamples));
     CKZG4844JNI.freeTrustedSetup();
   }
 

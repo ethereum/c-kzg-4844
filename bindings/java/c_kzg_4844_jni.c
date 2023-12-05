@@ -448,7 +448,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   return (jboolean)out;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNIEnv *env, jclass thisCls, jbyteArray blob, jint row_index)
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeSamples(JNIEnv *env, jclass thisCls, jbyteArray blob, jint row_index)
 {
   if (settings == NULL)
   {
@@ -471,14 +471,14 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_getSamples(JNI
   Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
   uint32_t row_index_native = (uint32_t)row_index;
 
-  C_KZG_RET ret = get_samples(samples_native, blob_native, row_index_native, settings);
+  C_KZG_RET ret = compute_samples(samples_native, blob_native, row_index_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, samples, (jbyte *)samples_native, 0);
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in getSamples.");
+    throw_c_kzg_exception(env, ret, "There was an error in computeSamples.");
     return NULL;
   }
 
@@ -717,7 +717,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
   return (jboolean)out;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jobjectArray samples)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySampleBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jobjectArray samples)
 {
   if (settings == NULL)
   {
@@ -779,7 +779,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
   size_t num_commitments = (size_t)(*env)->GetArrayLength(env, commitments_bytes) / BYTES_PER_COMMITMENT;
 
   bool out;
-  C_KZG_RET ret = verify_samples(&out, commitments_native, num_commitments, all_samples_native, count, settings);
+  C_KZG_RET ret = verify_sample_batch(&out, commitments_native, num_commitments, all_samples_native, count, settings);
 
   (*env)->DeleteLocalRef(env, sample_obj);
   (*env)->DeleteLocalRef(env, sample_class);
@@ -789,7 +789,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in verifySamples.");
+    throw_c_kzg_exception(env, ret, "There was an error in verifySampleBatch.");
     return 0;
   }
 

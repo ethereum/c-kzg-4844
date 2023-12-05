@@ -213,7 +213,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const KZGSettings *s
 );
 
-C_KZG_RET get_samples(
+C_KZG_RET compute_samples(
     Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
 );
 
@@ -233,7 +233,7 @@ C_KZG_RET verify_sample(
     const KZGSettings *s
 );
 
-C_KZG_RET verify_samples(
+C_KZG_RET verify_sample_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,

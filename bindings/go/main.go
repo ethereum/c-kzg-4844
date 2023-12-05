@@ -347,19 +347,19 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 }
 
 /*
-GetSamples is the binding for:
+ComputeSamples is the binding for:
 
-	C_KZG_RET get_samples(
+	C_KZG_RET compute_samples(
 	    Sample *samples,
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func GetSamples(blob *Blob, rowIndex uint32) (*[SamplesPerBlob]Sample, error) {
+func ComputeSamples(blob *Blob, rowIndex uint32) (*[SamplesPerBlob]Sample, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	samples := &[SamplesPerBlob]Sample{}
-	err := makeErrorFromRet(C.get_samples(
+	err := makeErrorFromRet(C.compute_samples(
 		(*C.Sample)(unsafe.Pointer(samples)),
 		(*C.Blob)(unsafe.Pointer(blob)),
 		(C.uint32_t)(rowIndex),
@@ -430,9 +430,9 @@ func VerifySample(commitment Bytes48, sample *Sample) (bool, error) {
 }
 
 /*
-VerifySamples is the binding for:
+VerifySampleBatch is the binding for:
 
-	C_KZG_RET verify_samples(
+	C_KZG_RET verify_sample_batch(
 	    bool *ok,
 	    const Bytes48 *commitments_bytes,
 	    size_t num_commitments,
@@ -440,12 +440,12 @@ VerifySamples is the binding for:
 	    size_t num_samples,
 	    const KZGSettings *s);
 */
-func VerifySamples(commitments []Bytes48, samples []Sample) (bool, error) {
+func VerifySampleBatch(commitments []Bytes48, samples []Sample) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	var result C.bool
-	err := makeErrorFromRet(C.verify_samples(
+	err := makeErrorFromRet(C.verify_sample_batch(
 		&result,
 		*(**C.Bytes48)(unsafe.Pointer(&commitments)),
 		(C.size_t)(len(commitments)),
