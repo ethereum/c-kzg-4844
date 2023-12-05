@@ -1800,7 +1800,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values);
     c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
-    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
         c_kzg_free(s->x_ext_fft_files[i]);
     }
     c_kzg_free(s->x_ext_fft_files);
@@ -1822,24 +1822,24 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     g1_t *x = NULL;
 
     n = s->max_width / 2;
-    k = n / SAMPLE_SIZE;
+    k = n / FIELD_ELEMENTS_PER_SAMPLE;
 
-    if (SAMPLE_SIZE >= TRUSTED_SETUP_NUM_G2_POINTS) {
+    if (FIELD_ELEMENTS_PER_SAMPLE >= TRUSTED_SETUP_NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Allocate space for array of pointers, this is a 2D array */
     void **tmp = (void **)&s->x_ext_fft_files;
-    ret = c_kzg_calloc(tmp, SAMPLE_SIZE, __SIZEOF_POINTER__);
+    ret = c_kzg_calloc(tmp, FIELD_ELEMENTS_PER_SAMPLE, __SIZEOF_POINTER__);
     if (ret != C_KZG_OK) goto out;
 
     ret = new_g1_array(&x, k);
     if (ret != C_KZG_OK) goto out;
 
-    for (uint64_t offset = 0; offset < SAMPLE_SIZE; offset++) {
-        uint64_t start = n - SAMPLE_SIZE - 1 - offset;
-        for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= SAMPLE_SIZE) {
+    for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_SAMPLE; offset++) {
+        uint64_t start = n - FIELD_ELEMENTS_PER_SAMPLE - 1 - offset;
+        for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= FIELD_ELEMENTS_PER_SAMPLE) {
             x[i] = s->g1_values[j];
         }
         x[k - 1] = G1_IDENTITY;
@@ -2958,7 +2958,7 @@ static C_KZG_RET fk20_multi_da_opt(
     CHECK(is_power_of_two(n));
 
     n = n2 / 2;
-    k = n / SAMPLE_SIZE;
+    k = n / FIELD_ELEMENTS_PER_SAMPLE;
     k2 = k * 2;
 
     ret = new_g1_array(&h_ext_fft, k2);
@@ -2967,12 +2967,12 @@ static C_KZG_RET fk20_multi_da_opt(
         h_ext_fft[i] = G1_IDENTITY;
     }
 
-    ret = new_poly(&toeplitz_coeffs, n2 / SAMPLE_SIZE);
+    ret = new_poly(&toeplitz_coeffs, n2 / FIELD_ELEMENTS_PER_SAMPLE);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length);
     if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < SAMPLE_SIZE; i++) {
-        ret = toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, SAMPLE_SIZE);
+    for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
+        ret = toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_SAMPLE);
         if (ret != C_KZG_OK) goto out;
         ret = toeplitz_part_2(
             h_ext_fft_file, &toeplitz_coeffs, s->x_ext_fft_files[i], s
@@ -3123,9 +3123,9 @@ C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples) {
     /* The first half of sample data is the blob */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         if (samples[i].column_index >= (SAMPLES_PER_BLOB / 2)) continue;
-        size_t offset = samples[i].column_index * SAMPLE_SIZE;
+        size_t offset = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE;
         Bytes32 *field = (Bytes32 *)(blob->bytes) + offset;
-        memcpy(field->bytes, samples[i].data, 32 * SAMPLE_SIZE);
+        memcpy(field->bytes, samples[i].data, 32 * FIELD_ELEMENTS_PER_SAMPLE);
     }
 
     return C_KZG_OK;
@@ -3157,7 +3157,7 @@ C_KZG_RET compute_samples(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_lagrange, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&data_fr, SAMPLES_PER_BLOB * SAMPLE_SIZE);
+    ret = new_fr_array(&data_fr, SAMPLES_PER_BLOB * FIELD_ELEMENTS_PER_SAMPLE);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&proofs_g1, SAMPLES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -3190,8 +3190,8 @@ C_KZG_RET compute_samples(
 
     /* Convert all of the samples to byte-form */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
-            size_t index = i * SAMPLE_SIZE + j;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
             bytes_from_bls_field(&samples[i].data[j], &data_fr[index]);
         }
     }
@@ -3282,8 +3282,8 @@ C_KZG_RET recover_samples(
 
     /* Update with existing samples */
     for (size_t i = 0; i < num_samples; i++) {
-        size_t index = samples[i].column_index * SAMPLE_SIZE;
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+        size_t index = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
             ret = bytes_to_bls_field(
                 &recovered_fr[index + j], &samples[i].data[j]
             );
@@ -3299,8 +3299,8 @@ C_KZG_RET recover_samples(
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         recovered[i].row_index = row_index;
         recovered[i].column_index = i;
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
-            size_t index = i * SAMPLE_SIZE + j;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
             bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
         }
     }
@@ -3344,7 +3344,7 @@ C_KZG_RET verify_sample(
     }
 
     /* Allocate array for fr-form data points */
-    ret = new_fr_array(&ys, SAMPLE_SIZE);
+    ret = new_fr_array(&ys, FIELD_ELEMENTS_PER_SAMPLE);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert untrusted inputs */
@@ -3352,7 +3352,7 @@ C_KZG_RET verify_sample(
     if (ret != C_KZG_OK) goto out;
     ret = bytes_to_kzg_proof(&proof, &sample->proof);
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
         ret = bytes_to_bls_field(&ys[i], &sample->data[i]);
         if (ret != C_KZG_OK) goto out;
     }
@@ -3362,12 +3362,12 @@ C_KZG_RET verify_sample(
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */
-    ret = bit_reversal_permutation(ys, sizeof(ys[0]), SAMPLE_SIZE);
+    ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_SAMPLE);
     if (ret != C_KZG_OK) goto out;
 
     /* Check the proof */
     ret = verify_kzg_proof_multi_impl(
-        ok, &commitment, &proof, &x, ys, SAMPLE_SIZE, s
+        ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_SAMPLE, s
     );
 
 out:
@@ -3384,7 +3384,7 @@ out:
  * @retval  False   The sample is initialized.
  */
 static bool is_sample_uninit(fr_t *sample) {
-    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
         if (!fr_is_zero(&sample[i])) {
             return false;
         }
@@ -3417,15 +3417,15 @@ C_KZG_RET verify_sample_batch(
     fr_t *used_commitment_weights = NULL;
     fr_t *weighted_powers_of_r = NULL;
     fr_t *weights = NULL;
-    fr_t aggregated_interpolation_poly[SAMPLE_SIZE];
-    fr_t column_interpolation_poly[SAMPLE_SIZE];
+    fr_t aggregated_interpolation_poly[FIELD_ELEMENTS_PER_SAMPLE];
+    fr_t column_interpolation_poly[FIELD_ELEMENTS_PER_SAMPLE];
     g1_t *proofs_g1 = NULL;
     g1_t *used_commitments = NULL;
     g1_t evaluation;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
-    g2_t power_of_s = s->g2_values[SAMPLE_SIZE];
+    g2_t power_of_s = s->g2_values[FIELD_ELEMENTS_PER_SAMPLE];
     size_t num_used_commitments = 0;
 
     *ok = false;
@@ -3548,20 +3548,20 @@ C_KZG_RET verify_sample_batch(
 
     /* Start with zeroed out columns */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
-            size_t index = i * SAMPLE_SIZE + j;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
             aggregated_column_samples[index] = FR_ZERO;
         }
     }
 
     /* Scale each sample's data points */
     for (size_t i = 0; i < num_samples; i++) {
-        for (size_t j = 0; j < SAMPLE_SIZE; j++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
             fr_t field, scaled;
             ret = bytes_to_bls_field(&field, &samples[i].data[j]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
-            size_t index = samples[i].column_index * SAMPLE_SIZE + j;
+            size_t index = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE + j;
             blst_fr_add(
                 &aggregated_column_samples[index],
                 &aggregated_column_samples[index],
@@ -3575,21 +3575,21 @@ C_KZG_RET verify_sample_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     /* Start with a zeroed out poly */
-    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
         aggregated_interpolation_poly[i] = FR_ZERO;
     }
 
     /* Interpolate each column */
     for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
         /* Offset to the first sample for this column */
-        size_t index = i * SAMPLE_SIZE;
+        size_t index = i * FIELD_ELEMENTS_PER_SAMPLE;
 
         /* We only care about initialized samples */
         if (is_sample_uninit(&aggregated_column_samples[index])) continue;
 
         /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
-            &aggregated_column_samples[index], sizeof(fr_t), SAMPLE_SIZE
+            &aggregated_column_samples[index], sizeof(fr_t), FIELD_ELEMENTS_PER_SAMPLE
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3602,7 +3602,7 @@ C_KZG_RET verify_sample_batch(
         ret = ifft_fr(
             column_interpolation_poly,
             &aggregated_column_samples[index],
-            SAMPLE_SIZE,
+            FIELD_ELEMENTS_PER_SAMPLE,
             s
         );
         if (ret != C_KZG_OK) goto out;
@@ -3616,7 +3616,7 @@ C_KZG_RET verify_sample_batch(
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         blst_fr_eucl_inverse(&inv_x, &coset_factor);
         inv_x_pow = inv_x;
-        for (uint64_t i = 1; i < SAMPLE_SIZE; i++) {
+        for (uint64_t i = 1; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
             blst_fr_mul(
                 &column_interpolation_poly[i],
                 &column_interpolation_poly[i],
@@ -3626,7 +3626,7 @@ C_KZG_RET verify_sample_batch(
         }
 
         /* Update the aggregated poly */
-        for (size_t k = 0; k < SAMPLE_SIZE; k++) {
+        for (size_t k = 0; k < FIELD_ELEMENTS_PER_SAMPLE; k++) {
             blst_fr_add(
                 &aggregated_interpolation_poly[k],
                 &aggregated_interpolation_poly[k],
@@ -3637,7 +3637,7 @@ C_KZG_RET verify_sample_batch(
 
     /* Commit to the final aggregated interpolation polynomial */
     g1_lincomb_naive(
-        &evaluation, s->g1_values, aggregated_interpolation_poly, SAMPLE_SIZE
+        &evaluation, s->g1_values, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_SAMPLE
     );
     blst_p1_cneg(&evaluation, true);
     blst_p1_add(&final_g1_sum, &final_g1_sum, &evaluation);
@@ -3651,7 +3651,7 @@ C_KZG_RET verify_sample_batch(
             SAMPLES_PER_BLOB, samples[i].column_index
         );
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
-        fr_pow(&weights[i], &coset_factor, SAMPLE_SIZE);
+        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_SAMPLE);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
     }
 

@@ -64,12 +64,12 @@ public class CKZG4844JNI {
   /** The number of data points in an extended blob */
   public static final int DATA_POINTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
   /** The number of data points in a sample. */
-  public static final int SAMPLE_SIZE = 16;
+  public static final int FIELD_ELEMENTS_PER_SAMPLE = 16;
   /** The number of samples in an extended blob. */
-  public static final int SAMPLES_PER_BLOB = DATA_POINTS_PER_BLOB / SAMPLE_SIZE;
+  public static final int SAMPLES_PER_BLOB = DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_SAMPLE;
   /** The number of bytes in a single sample. */
   public static final int BYTES_PER_SAMPLE =
-      (BYTES_PER_FIELD_ELEMENT * SAMPLE_SIZE) + BYTES_PER_PROOF + 8;
+      (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_SAMPLE) + BYTES_PER_PROOF + 8;
 
   private CKZG4844JNI() {}
 

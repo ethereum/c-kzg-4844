@@ -58,7 +58,7 @@ void print_blob(const Blob *blob) {
 void print_sample(const Sample *sample) {
     printf("row: %u, col: %u\n", sample->row_index, sample->column_index);
     print_bytes48(&sample->proof);
-    for (size_t i = 0; i < SAMPLE_SIZE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
         print_bytes32(&sample->data[i]);
     }
 }

@@ -17,13 +17,13 @@ import (
 )
 
 const (
-	BytesPerBlob         = C.BYTES_PER_BLOB
-	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
-	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
-	BytesPerProof        = C.BYTES_PER_PROOF
-	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
-	SampleSize           = C.SAMPLE_SIZE
-	SamplesPerBlob       = C.SAMPLES_PER_BLOB
+	BytesPerBlob           = C.BYTES_PER_BLOB
+	BytesPerCommitment     = C.BYTES_PER_COMMITMENT
+	BytesPerFieldElement   = C.BYTES_PER_FIELD_ELEMENT
+	BytesPerProof          = C.BYTES_PER_PROOF
+	FieldElementsPerBlob   = C.FIELD_ELEMENTS_PER_BLOB
+	FieldElementsPerSample = C.FIELD_ELEMENTS_PER_SAMPLE
+	SamplesPerBlob         = C.SAMPLES_PER_BLOB
 )
 
 type (
@@ -33,7 +33,7 @@ type (
 	KZGProof      Bytes48
 	Blob          [BytesPerBlob]byte
 	Sample        struct {
-		Data        [SampleSize]Bytes32
+		Data        [FieldElementsPerSample]Bytes32
 		Proof       Bytes48
 		RowIndex    uint32
 		ColumnIndex uint32

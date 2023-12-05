@@ -55,14 +55,14 @@ extern "C" {
 #define DATA_POINTS_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
 /** The number of data points in a sample. */
-#define SAMPLE_SIZE 16
+#define FIELD_ELEMENTS_PER_SAMPLE 16
 
 /** The number of samples in an extended blob. */
-#define SAMPLES_PER_BLOB (DATA_POINTS_PER_BLOB / SAMPLE_SIZE)
+#define SAMPLES_PER_BLOB (DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_SAMPLE)
 
 /** The number of bytes in a single sample */
 #define BYTES_PER_SAMPLE \
-    (BYTES_PER_FIELD_ELEMENT * SAMPLE_SIZE + BYTES_PER_PROOF + 8)
+    (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_SAMPLE + BYTES_PER_PROOF + 8)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -109,7 +109,7 @@ typedef Bytes48 KZGProof;
  * A single sample for a blob.
  */
 typedef struct {
-    Bytes32 data[SAMPLE_SIZE];
+    Bytes32 data[FIELD_ELEMENTS_PER_SAMPLE];
     KZGProof proof;
     uint32_t row_index;
     uint32_t column_index;

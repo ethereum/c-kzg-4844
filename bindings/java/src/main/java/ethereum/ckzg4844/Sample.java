@@ -3,8 +3,8 @@ package ethereum.ckzg4844;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_FIELD_ELEMENT;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_PROOF;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_SAMPLE;
+import static ethereum.ckzg4844.CKZG4844JNI.FIELD_ELEMENTS_PER_SAMPLE;
 import static ethereum.ckzg4844.CKZG4844JNI.SAMPLES_PER_BLOB;
-import static ethereum.ckzg4844.CKZG4844JNI.SAMPLE_SIZE;
 
 import java.util.Arrays;
 
@@ -39,7 +39,7 @@ public class Sample {
 
   public static Sample[] of(final byte[] bytes) {
     final Sample[] samples = new Sample[SAMPLES_PER_BLOB];
-    final int dataLength = SAMPLE_SIZE * BYTES_PER_FIELD_ELEMENT;
+    final int dataLength = FIELD_ELEMENTS_PER_SAMPLE * BYTES_PER_FIELD_ELEMENT;
     final int proofLength = BYTES_PER_PROOF;
     final int indexLength = 4;
 
@@ -67,7 +67,7 @@ public class Sample {
   public byte[] toBytes() {
     int offset = 0;
     final byte[] bytes = new byte[BYTES_PER_SAMPLE];
-    final int dataLength = SAMPLE_SIZE * BYTES_PER_FIELD_ELEMENT;
+    final int dataLength = FIELD_ELEMENTS_PER_SAMPLE * BYTES_PER_FIELD_ELEMENT;
     final int proofLength = BYTES_PER_PROOF;
     final int indexLength = 4;
 
