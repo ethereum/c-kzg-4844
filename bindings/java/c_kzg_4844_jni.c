@@ -542,7 +542,9 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_samplesToBlob(JN
     return NULL;
   }
 
-  Sample *total_samples = calloc(sizeof(Sample), count);
+  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
+  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+
   for (size_t i = 0; i < count; i++)
   {
     jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
@@ -559,18 +561,20 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_samplesToBlob(JN
     }
 
     Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&total_samples[i], sample_native, sizeof(Sample));
+    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
     (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
   }
 
   jbyteArray blob = (*env)->NewByteArray(env, BYTES_PER_BLOB);
   Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
 
-  C_KZG_RET ret = samples_to_blob(blob_native, total_samples);
+  C_KZG_RET ret = samples_to_blob(blob_native, all_samples_native);
 
   (*env)->DeleteLocalRef(env, sample_obj);
   (*env)->DeleteLocalRef(env, sample_class);
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, 0);
+  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_samples);
 
   if (ret != C_KZG_OK)
   {
@@ -617,7 +621,9 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples
     return NULL;
   }
 
-  Sample *total_samples = calloc(sizeof(Sample), count);
+  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
+  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+
   for (size_t i = 0; i < count; i++)
   {
     jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
@@ -634,7 +640,7 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples
     }
 
     Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&total_samples[i], sample_native, sizeof(Sample));
+    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
     (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
   }
 
@@ -642,10 +648,12 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples
   Sample *recovered_native = (Sample *)(*env)->GetByteArrayElements(env, recovered, NULL);
   size_t count_native = (size_t)count;
 
-  C_KZG_RET ret = recover_samples(recovered_native, total_samples, count_native, settings);
+  C_KZG_RET ret = recover_samples(recovered_native, all_samples_native, count_native, settings);
 
   (*env)->DeleteLocalRef(env, sample_obj);
   (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
+  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_samples);
 
   if (ret != C_KZG_OK)
   {
@@ -744,7 +752,9 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
     return 0;
   }
 
-  Sample *total_samples = calloc(sizeof(Sample), count);
+  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
+  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+
   for (size_t i = 0; i < count; i++)
   {
     jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
@@ -761,7 +771,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
     }
 
     Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&total_samples[i], sample_native, sizeof(Sample));
+    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
     (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
   }
 
@@ -769,11 +779,13 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySamples(JNIE
   size_t num_commitments = (size_t)(*env)->GetArrayLength(env, commitments_bytes) / BYTES_PER_COMMITMENT;
 
   bool out;
-  C_KZG_RET ret = verify_samples(&out, commitments_native, num_commitments, total_samples, count, settings);
+  C_KZG_RET ret = verify_samples(&out, commitments_native, num_commitments, all_samples_native, count, settings);
 
   (*env)->DeleteLocalRef(env, sample_obj);
   (*env)->DeleteLocalRef(env, sample_class);
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_samples);
 
   if (ret != C_KZG_OK)
   {

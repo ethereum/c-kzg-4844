@@ -234,7 +234,7 @@ public class CKZG4844JNI {
   public static native boolean verifySample(byte[] commitment_bytes, Sample sample);
 
   /**
-   * Verify that a sample's proof is valid.
+   * Verify that multiple samples' proofs are valid.
    *
    * @param commitments_bytes the commitments for all blobs
    * @param samples the samples to verify
