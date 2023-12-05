@@ -238,7 +238,7 @@ public class CKZG4844JNI {
    *
    * @param commitments_bytes the commitments for all blobs
    * @param samples the samples to verify
-   * @return true if the sample is valid with respect to this commitment
+   * @return true if the samples are valid with respect to the given commitments
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifySampleBatch(byte[] commitments_bytes, Sample[] samples);
