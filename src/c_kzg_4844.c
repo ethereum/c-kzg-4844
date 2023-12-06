@@ -1366,7 +1366,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute \sum r^i * Proof_i */
-    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
+    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
@@ -1379,9 +1379,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     }
 
     /* Get \sum r^i z_i Proof_i */
-    g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
+    g1_lincomb_fast(&proof_z_lincomb, proofs_g1, r_times_z, n);
     /* Get \sum r^i (C_i - [y_i]) */
-    g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
+    g1_lincomb_fast(&C_minus_y_lincomb, C_minus_y, r_powers, n);
     /* Get C_minus_y_lincomb + proof_z_lincomb */
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
@@ -3495,7 +3495,7 @@ C_KZG_RET verify_sample_batch(
     }
 
     /* Do the linear combination */
-    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, num_samples);
+    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, num_samples);
 
     ///////////////////////////////////////////////////////////////////////////
     // Compute sum of the commitments
@@ -3535,7 +3535,7 @@ C_KZG_RET verify_sample_batch(
     }
 
     /* Compute commitment sum */
-    g1_lincomb_naive(
+    g1_lincomb_fast(
         &final_g1_sum,
         used_commitments,
         used_commitment_weights,
@@ -3636,7 +3636,7 @@ C_KZG_RET verify_sample_batch(
     }
 
     /* Commit to the final aggregated interpolation polynomial */
-    g1_lincomb_naive(
+    g1_lincomb_fast(
         &evaluation, s->g1_values, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_SAMPLE
     );
     blst_p1_cneg(&evaluation, true);
@@ -3655,7 +3655,7 @@ C_KZG_RET verify_sample_batch(
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
     }
 
-    g1_lincomb_naive(
+    g1_lincomb_fast(
         &weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_samples
     );
     blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
