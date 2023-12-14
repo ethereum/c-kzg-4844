@@ -17,7 +17,7 @@ fn main() {
 
     let mut cc = cc::Build::new();
 
-    #[cfg(windows)]
+    #[cfg(all(windows, target_env = "msvc"))]
     {
         cc.flag("-D_CRT_SECURE_NO_WARNINGS");
 
