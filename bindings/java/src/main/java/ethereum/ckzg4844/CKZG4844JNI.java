@@ -63,13 +63,13 @@ public class CKZG4844JNI {
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
   /** The number of data points in an extended blob */
   public static final int DATA_POINTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
-  /** The number of data points in a sample. */
-  public static final int FIELD_ELEMENTS_PER_SAMPLE = 16;
-  /** The number of samples in an extended blob. */
-  public static final int SAMPLES_PER_BLOB = DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_SAMPLE;
-  /** The number of bytes in a single sample. */
-  public static final int BYTES_PER_SAMPLE =
-      (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_SAMPLE) + BYTES_PER_PROOF + 8;
+  /** The number of data points in a cell. */
+  public static final int FIELD_ELEMENTS_PER_CELL = 64;
+  /** The number of cells in an extended blob. */
+  public static final int CELLS_PER_BLOB = DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
+  /** The number of bytes in a single cell. */
+  public static final int BYTES_PER_CELL =
+      (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL) + BYTES_PER_PROOF + 8;
 
   private CKZG4844JNI() {}
 
@@ -196,50 +196,50 @@ public class CKZG4844JNI {
       byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
 
   /**
-   * Get the samples (data and proofs) for a given blob.
+   * Get the cells (data and proofs) for a given blob.
    *
-   * @param blob the blob to get samples for
+   * @param blob the blob to get cells for
    * @param index the blob index
-   * @return an array of samples
+   * @return an array of cells
    * @throws CKZGException if there is a crypto error
    */
-  public static native Sample[] computeSamples(byte[] blob, int index);
+  public static native Cell[] computeCells(byte[] blob, int index);
 
   /**
-   * Convert an array of samples to a blob.
+   * Convert an array of cells to a blob.
    *
-   * @param samples the samples to convert to a blob
-   * @return the blob for the given samples
+   * @param cells the cells to convert to a blob
+   * @return the blob for the given cells
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] samplesToBlob(Sample[] samples);
+  public static native byte[] cellsToBlob(Cell[] cells);
 
   /**
-   * Given at least 50% of samples, reconstruct the missing ones.
+   * Given at least 50% of cells, reconstruct the missing ones.
    *
-   * @param samples the samples you have
-   * @return all samples for that blob
+   * @param cells the cells you have
+   * @return all cells for that blob
    * @throws CKZGException if there is a crypto error
    */
-  public static native Sample[] recoverSamples(Sample[] samples);
+  public static native Cell[] recoverCells(Cell[] cells);
 
   /**
-   * Verify that a sample's proof is valid.
+   * Verify that a cell's proof is valid.
    *
    * @param commitment_bytes commitment bytes
-   * @param sample the sample to verify
-   * @return true if the sample is valid with respect to this commitment
+   * @param cell the cell to verify
+   * @return true if the cell is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifySample(byte[] commitment_bytes, Sample sample);
+  public static native boolean verifyCell(byte[] commitment_bytes, Cell cell);
 
   /**
-   * Verify that multiple samples' proofs are valid.
+   * Verify that multiple cells' proofs are valid.
    *
    * @param commitments_bytes the commitments for all blobs
-   * @param samples the samples to verify
-   * @return true if the samples are valid with respect to the given commitments
+   * @param cells the cells to verify
+   * @return true if the cells are valid with respect to the given commitments
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifySampleBatch(byte[] commitments_bytes, Sample[] samples);
+  public static native boolean verifyCellBatch(byte[] commitments_bytes, Cell[] cells);
 }

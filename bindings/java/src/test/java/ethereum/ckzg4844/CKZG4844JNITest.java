@@ -1,7 +1,7 @@
 package ethereum.ckzg4844;
 
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_COMMITMENT;
-import static ethereum.ckzg4844.CKZG4844JNI.SAMPLES_PER_BLOB;
+import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_BLOB;
 import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -163,67 +163,67 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void checkSamplesToBlob() {
+  public void checkCellsToBlob() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
+    final Cell[] cells = CKZG4844JNI.computeCells(blob, 0);
 
-    Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
-    List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
-    Collections.shuffle(shuffledSamples);
+    Cell[] copiedCells = Arrays.copyOf(cells, cells.length);
+    List<Cell> shuffledCells = Arrays.asList(copiedCells);
+    Collections.shuffle(shuffledCells);
 
-    final byte[] newBlob = CKZG4844JNI.samplesToBlob(shuffledSamples.toArray(new Sample[0]));
+    final byte[] newBlob = CKZG4844JNI.cellsToBlob(shuffledCells.toArray(new Cell[0]));
     assertArrayEquals(blob, newBlob);
     CKZG4844JNI.freeTrustedSetup();
   }
 
   @Test
-  public void checkRecoverSamples() {
+  public void checkRecoverCells() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
+    final Cell[] cells = CKZG4844JNI.computeCells(blob, 0);
 
-    Sample[] copiedSamples = Arrays.copyOf(samples, samples.length);
-    List<Sample> shuffledSamples = Arrays.asList(copiedSamples);
-    Collections.shuffle(shuffledSamples);
-    final List<Sample> partialSamples = shuffledSamples.subList(0, SAMPLES_PER_BLOB / 2);
-    final Sample[] partial = partialSamples.toArray(new Sample[0]);
+    Cell[] copiedCells = Arrays.copyOf(cells, cells.length);
+    List<Cell> shuffledCells = Arrays.asList(copiedCells);
+    Collections.shuffle(shuffledCells);
+    final List<Cell> partialCells = shuffledCells.subList(0, CELLS_PER_BLOB / 2);
+    final Cell[] partial = partialCells.toArray(new Cell[0]);
 
-    final Sample[] recovered = CKZG4844JNI.recoverSamples(partial);
-    assertArrayEquals(samples, recovered);
+    final Cell[] recovered = CKZG4844JNI.recoverCells(partial);
+    assertArrayEquals(cells, recovered);
     CKZG4844JNI.freeTrustedSetup();
   }
 
   @Test
-  public void checkVerifySample() {
+  public void checkVerifyCell() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-    final Sample[] samples = CKZG4844JNI.computeSamples(blob, 0);
-    for (Sample sample : samples) {
-      assertTrue(CKZG4844JNI.verifySample(commitment, sample));
+    final Cell[] cells = CKZG4844JNI.computeCells(blob, 0);
+    for (Cell cell : cells) {
+      assertTrue(CKZG4844JNI.verifyCell(commitment, cell));
     }
     CKZG4844JNI.freeTrustedSetup();
   }
 
   @Test
-  public void checkVerifySampleBatch() {
+  public void checkVerifyCellBatch() {
     loadTrustedSetup();
 
     int count = 6;
     byte[] allCommitments = new byte[count * BYTES_PER_COMMITMENT];
-    Sample[] allSamples = new Sample[count * SAMPLES_PER_BLOB];
+    Cell[] allCells = new Cell[count * CELLS_PER_BLOB];
 
     for (int i = 0; i < count; i++) {
       final byte[] blob = TestUtils.createRandomBlob();
       final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-      final Sample[] samples = CKZG4844JNI.computeSamples(blob, i);
+      final Cell[] cells = CKZG4844JNI.computeCells(blob, i);
       System.arraycopy(
           commitment, 0, allCommitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
-      System.arraycopy(samples, 0, allSamples, i * SAMPLES_PER_BLOB, SAMPLES_PER_BLOB);
+      System.arraycopy(cells, 0, allCells, i * CELLS_PER_BLOB, CELLS_PER_BLOB);
     }
 
-    assertTrue(CKZG4844JNI.verifySampleBatch(allCommitments, allSamples));
+    assertTrue(CKZG4844JNI.verifyCellBatch(allCommitments, allCells));
     CKZG4844JNI.freeTrustedSetup();
   }
 

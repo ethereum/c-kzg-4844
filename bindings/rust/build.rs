@@ -66,8 +66,8 @@ where
                 | "BYTES_PER_FIELD_ELEMENT"
                 | "BYTES_PER_BLOB"
                 | "DATA_POINTS_PER_BLOB"
-                | "FIELD_ELEMENTS_PER_SAMPLE"
-                | "SAMPLES_PER_BLOB"
+                | "FIELD_ELEMENTS_PER_CELL"
+                | "CELLS_PER_BLOB"
                 | "BLOB_COUNT" => Some(bindgen::callbacks::IntKind::Custom {
                     name: "usize",
                     is_signed: false,

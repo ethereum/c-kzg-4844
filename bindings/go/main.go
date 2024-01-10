@@ -17,13 +17,13 @@ import (
 )
 
 const (
-	BytesPerBlob           = C.BYTES_PER_BLOB
-	BytesPerCommitment     = C.BYTES_PER_COMMITMENT
-	BytesPerFieldElement   = C.BYTES_PER_FIELD_ELEMENT
-	BytesPerProof          = C.BYTES_PER_PROOF
-	FieldElementsPerBlob   = C.FIELD_ELEMENTS_PER_BLOB
-	FieldElementsPerSample = C.FIELD_ELEMENTS_PER_SAMPLE
-	SamplesPerBlob         = C.SAMPLES_PER_BLOB
+	BytesPerBlob         = C.BYTES_PER_BLOB
+	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
+	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
+	BytesPerProof        = C.BYTES_PER_PROOF
+	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
+	FieldElementsPerCell = C.FIELD_ELEMENTS_PER_CELL
+	CellsPerBlob         = C.CELLS_PER_BLOB
 )
 
 type (
@@ -32,8 +32,8 @@ type (
 	KZGCommitment Bytes48
 	KZGProof      Bytes48
 	Blob          [BytesPerBlob]byte
-	Sample        struct {
-		Data        [FieldElementsPerSample]Bytes32
+	Cell          struct {
+		Data        [FieldElementsPerCell]Bytes32
 		Proof       Bytes48
 		RowIndex    uint32
 		ColumnIndex uint32
@@ -347,110 +347,110 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 }
 
 /*
-ComputeSamples is the binding for:
+ComputeCells is the binding for:
 
-	C_KZG_RET compute_samples(
-	    Sample *samples,
+	C_KZG_RET compute_cells(
+	    Cell *cells,
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeSamples(blob *Blob, rowIndex uint32) (*[SamplesPerBlob]Sample, error) {
+func ComputeCells(blob *Blob, rowIndex uint32) (*[CellsPerBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	samples := &[SamplesPerBlob]Sample{}
-	err := makeErrorFromRet(C.compute_samples(
-		(*C.Sample)(unsafe.Pointer(samples)),
+	cells := &[CellsPerBlob]Cell{}
+	err := makeErrorFromRet(C.compute_cells(
+		(*C.Cell)(unsafe.Pointer(cells)),
 		(*C.Blob)(unsafe.Pointer(blob)),
 		(C.uint32_t)(rowIndex),
 		&settings))
-	return samples, err
+	return cells, err
 }
 
 /*
-SamplesToBlob is the binding for:
+CellsToBlob is the binding for:
 
-	C_KZG_RET samples_to_blob(
+	C_KZG_RET cells_to_blob(
 	    Blob *blob,
-	    const Sample *samples);
+	    const Cell *cells);
 */
-func SamplesToBlob(samples *[SamplesPerBlob]Sample) (*Blob, error) {
+func CellsToBlob(cells *[CellsPerBlob]Cell) (*Blob, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	blob := &Blob{}
-	err := makeErrorFromRet(C.samples_to_blob(
+	err := makeErrorFromRet(C.cells_to_blob(
 		(*C.Blob)(unsafe.Pointer(blob)),
-		(*C.Sample)(unsafe.Pointer(samples))))
+		(*C.Cell)(unsafe.Pointer(cells))))
 	return blob, err
 }
 
 /*
-RecoverSamples is the binding for:
+RecoverCells is the binding for:
 
-	C_KZG_RET recover_samples(
-	    Sample *recovered,
-	    const Sample *samples,
-	    size_t num_samples,
+	C_KZG_RET recover_cells(
+	    Cell *recovered,
+	    const Cell *cells,
+	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverSamples(samples []Sample) (*[SamplesPerBlob]Sample, error) {
+func RecoverCells(cells []Cell) (*[CellsPerBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	recovered := &[SamplesPerBlob]Sample{}
-	err := makeErrorFromRet(C.recover_samples(
-		(*C.Sample)(unsafe.Pointer(recovered)),
-		*(**C.Sample)(unsafe.Pointer(&samples)),
-		(C.size_t)(len(samples)),
+	recovered := &[CellsPerBlob]Cell{}
+	err := makeErrorFromRet(C.recover_cells(
+		(*C.Cell)(unsafe.Pointer(recovered)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		(C.size_t)(len(cells)),
 		&settings))
 	return recovered, err
 }
 
 /*
-VerifySample is the binding for:
+VerifyCellProof is the binding for:
 
-	C_KZG_RET verify_sample(
+	C_KZG_RET verify_cell_proof(
 	    bool *ok,
 	    const Bytes48 *commitment_bytes,
-	    const Sample *sample,
+	    const Cell *cell,
 	    const KZGSettings *s);
 */
-func VerifySample(commitment Bytes48, sample *Sample) (bool, error) {
+func VerifyCellProof(commitment Bytes48, cell *Cell) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	var result C.bool
-	err := makeErrorFromRet(C.verify_sample(
+	err := makeErrorFromRet(C.verify_cell_proof(
 		&result,
 		(*C.Bytes48)(unsafe.Pointer(&commitment)),
-		(*C.Sample)(unsafe.Pointer(sample)),
+		(*C.Cell)(unsafe.Pointer(cell)),
 		&settings))
 	return bool(result), err
 }
 
 /*
-VerifySampleBatch is the binding for:
+VerifyCellProofBatch is the binding for:
 
-	C_KZG_RET verify_sample_batch(
+	C_KZG_RET verify_cell_proof_batch(
 	    bool *ok,
 	    const Bytes48 *commitments_bytes,
 	    size_t num_commitments,
-	    const Sample *samples,
-	    size_t num_samples,
+	    const Cell *cells,
+	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func VerifySampleBatch(commitments []Bytes48, samples []Sample) (bool, error) {
+func VerifyCellProofBatch(commitments []Bytes48, cells []Cell) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	var result C.bool
-	err := makeErrorFromRet(C.verify_sample_batch(
+	err := makeErrorFromRet(C.verify_cell_proof_batch(
 		&result,
 		*(**C.Bytes48)(unsafe.Pointer(&commitments)),
 		(C.size_t)(len(commitments)),
-		*(**C.Sample)(unsafe.Pointer(&samples)),
-		(C.size_t)(len(samples)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		(C.size_t)(len(cells)),
 		&settings))
 	return bool(result), err
 }

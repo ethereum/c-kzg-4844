@@ -1800,7 +1800,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values);
     c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         c_kzg_free(s->x_ext_fft_files[i]);
     }
     c_kzg_free(s->x_ext_fft_files);
@@ -1822,24 +1822,25 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     g1_t *x = NULL;
 
     n = s->max_width / 2;
-    k = n / FIELD_ELEMENTS_PER_SAMPLE;
+    k = n / FIELD_ELEMENTS_PER_CELL;
 
-    if (FIELD_ELEMENTS_PER_SAMPLE >= TRUSTED_SETUP_NUM_G2_POINTS) {
+    if (FIELD_ELEMENTS_PER_CELL >= TRUSTED_SETUP_NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Allocate space for array of pointers, this is a 2D array */
     void **tmp = (void **)&s->x_ext_fft_files;
-    ret = c_kzg_calloc(tmp, FIELD_ELEMENTS_PER_SAMPLE, __SIZEOF_POINTER__);
+    ret = c_kzg_calloc(tmp, FIELD_ELEMENTS_PER_CELL, __SIZEOF_POINTER__);
     if (ret != C_KZG_OK) goto out;
 
     ret = new_g1_array(&x, k);
     if (ret != C_KZG_OK) goto out;
 
-    for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_SAMPLE; offset++) {
-        uint64_t start = n - FIELD_ELEMENTS_PER_SAMPLE - 1 - offset;
-        for (uint64_t i = 0, j = start; i + 1 < k; i++, j -= FIELD_ELEMENTS_PER_SAMPLE) {
+    for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
+        uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (uint64_t i = 0, j = start; i + 1 < k;
+             i++, j -= FIELD_ELEMENTS_PER_CELL) {
             x[i] = s->g1_values[j];
         }
         x[k - 1] = G1_IDENTITY;
@@ -1986,7 +1987,7 @@ C_KZG_RET load_trusted_setup(
     ret = bit_reversal_permutation(out->g1_values_lagrange, sizeof(g1_t), n1);
     if (ret != C_KZG_OK) goto out_error;
 
-    /* Stuff for sample proofs */
+    /* Stuff for cell proofs */
     ret = init_fk20_multi_settings(out);
     if (ret != C_KZG_OK) goto out_error;
 
@@ -2524,7 +2525,7 @@ out:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Sample Recovery
+// Cell Recovery
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -2583,16 +2584,16 @@ static void unscale_poly(fr_t *p, uint64_t len_p) {
  * reconstructed original. Assumes that the inverse FFT of the original data
  * has the upper half of its values equal to zero.
  *
- * @param[out]  recovered   A preallocated array for recovered samples
- * @param[in]   samples     The samples that you have
+ * @param[out]  recovered   A preallocated array for recovered cells
+ * @param[in]   cells     The cells that you have
  * @param[in]   s           The trusted setup
  *
- * @remark `recovered` and `samples` can point to the same memory.
- * @remark The array of samples must be 2n length and in the correct order.
- * @remark Missing samples should be equal to FR_NULL.
+ * @remark `recovered` and `cells` can point to the same memory.
+ * @remark The array of cells must be 2n length and in the correct order.
+ * @remark Missing cells should be equal to FR_NULL.
  */
-static C_KZG_RET recover_samples_impl(
-    fr_t *recovered, fr_t *samples, const KZGSettings *s
+static C_KZG_RET recover_cells_impl(
+    fr_t *recovered, fr_t *cells, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     uint64_t *missing = NULL;
@@ -2602,7 +2603,7 @@ static C_KZG_RET recover_samples_impl(
     fr_t *eval_scaled_poly_with_zero = NULL;
     fr_t *eval_scaled_zero_poly = NULL;
     fr_t *scaled_reconstructed_poly = NULL;
-    fr_t *samples_brp = NULL;
+    fr_t *cells_brp = NULL;
 
     poly_t zero_poly = {NULL, 0};
     zero_poly.coeffs = NULL;
@@ -2622,7 +2623,7 @@ static C_KZG_RET recover_samples_impl(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&scaled_reconstructed_poly, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&samples_brp, s->max_width);
+    ret = new_fr_array(&cells_brp, s->max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for the zero poly */
@@ -2631,21 +2632,21 @@ static C_KZG_RET recover_samples_impl(
     zero_poly.length = s->max_width;
 
     /* Bit-reverse the data points */
-    memcpy(samples_brp, samples, s->max_width * sizeof(fr_t));
+    memcpy(cells_brp, cells, s->max_width * sizeof(fr_t));
     ret = bit_reversal_permutation(
-        samples_brp, sizeof(samples_brp[0]), s->max_width
+        cells_brp, sizeof(cells_brp[0]), s->max_width
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Identify missing samples */
+    /* Identify missing cells */
     uint64_t len_missing = 0;
     for (uint64_t i = 0; i < s->max_width; i++) {
-        if (fr_is_null(&samples_brp[i])) {
+        if (fr_is_null(&cells_brp[i])) {
             missing[len_missing++] = i;
         }
     }
 
-    /* Check that we have enough samples */
+    /* Check that we have enough cells */
     if (len_missing > s->max_width / 2) {
         ret = C_KZG_BADARGS;
         goto out;
@@ -2659,11 +2660,11 @@ static C_KZG_RET recover_samples_impl(
 
     // Construct E * Z_r,I: the loop makes the evaluation polynomial
     for (size_t i = 0; i < s->max_width; i++) {
-        if (fr_is_null(&samples_brp[i])) {
+        if (fr_is_null(&cells_brp[i])) {
             poly_evaluations_with_zero[i] = FR_ZERO;
         } else {
             blst_fr_mul(
-                &poly_evaluations_with_zero[i], &samples_brp[i], &zero_eval[i]
+                &poly_evaluations_with_zero[i], &cells_brp[i], &zero_eval[i]
             );
         }
     }
@@ -2734,7 +2735,7 @@ out:
     c_kzg_free(eval_scaled_zero_poly);
     c_kzg_free(scaled_reconstructed_poly);
     c_kzg_free(zero_poly.coeffs);
-    c_kzg_free(samples_brp);
+    c_kzg_free(cells_brp);
     return ret;
 }
 
@@ -2777,7 +2778,7 @@ out:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Sample Proofs
+// Cell Proofs
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -2958,7 +2959,7 @@ static C_KZG_RET fk20_multi_da_opt(
     CHECK(is_power_of_two(n));
 
     n = n2 / 2;
-    k = n / FIELD_ELEMENTS_PER_SAMPLE;
+    k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
     ret = new_g1_array(&h_ext_fft, k2);
@@ -2967,12 +2968,14 @@ static C_KZG_RET fk20_multi_da_opt(
         h_ext_fft[i] = G1_IDENTITY;
     }
 
-    ret = new_poly(&toeplitz_coeffs, n2 / FIELD_ELEMENTS_PER_SAMPLE);
+    ret = new_poly(&toeplitz_coeffs, n2 / FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length);
     if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
-        ret = toeplitz_coeffs_stride(&toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_SAMPLE);
+    for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        ret = toeplitz_coeffs_stride(
+            &toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
+        );
         if (ret != C_KZG_OK) goto out;
         ret = toeplitz_part_2(
             h_ext_fft_file, &toeplitz_coeffs, s->x_ext_fft_files[i], s
@@ -3019,7 +3022,7 @@ static C_KZG_RET da_using_fk20_multi(
 
     ret = fk20_multi_da_opt(out, p, s);
     if (ret != C_KZG_OK) goto out;
-    ret = bit_reversal_permutation(out, sizeof out[0], SAMPLES_PER_BLOB);
+    ret = bit_reversal_permutation(out, sizeof out[0], CELLS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3106,45 +3109,45 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Given SAMPLES_PER_BLOB samples, get a blob.
+ * Given CELLS_PER_BLOB cells, get a blob.
  *
  * @param[out]  blob    The original blob
- * @param[in]   samples An array of SAMPLES_PER_BLOB samples
+ * @param[in]   cells An array of CELLS_PER_BLOB cells
  */
-C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples) {
-    /* Check that all samples have the same row index */
-    uint32_t row_index = samples[0].row_index;
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        if (samples[i].row_index != row_index) {
+C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
+    /* Check that all cells have the same row index */
+    uint32_t row_index = cells[0].row_index;
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        if (cells[i].row_index != row_index) {
             return C_KZG_BADARGS;
         }
     }
 
-    /* The first half of sample data is the blob */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        if (samples[i].column_index >= (SAMPLES_PER_BLOB / 2)) continue;
-        size_t offset = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE;
+    /* The first half of cell data is the blob */
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        if (cells[i].column_index >= (CELLS_PER_BLOB / 2)) continue;
+        size_t offset = cells[i].column_index * FIELD_ELEMENTS_PER_CELL;
         Bytes32 *field = (Bytes32 *)(blob->bytes) + offset;
-        memcpy(field->bytes, samples[i].data, 32 * FIELD_ELEMENTS_PER_SAMPLE);
+        memcpy(field->bytes, cells[i].data, 32 * FIELD_ELEMENTS_PER_CELL);
     }
 
     return C_KZG_OK;
 }
 
 /**
- * Given a blob, get all of its samples.
+ * Given a blob, get all of its cells.
  *
- * @param[out]  samples     An array of SAMPLES_PER_BLOB samples
- * @param[in]   blob        The blob to get samples for
+ * @param[out]  cells     An array of CELLS_PER_BLOB cells
+ * @param[in]   blob        The blob to get cells for
  * @param[in]   row_index   The row index for the blob
  * @param[in]   s           The trusted setup
  *
- * @remark Use samples_to_blob to convert the data points into a blob.
- * @remark Up to half of these samples may be lost.
- * @remark Use recover_samples to recover missing samples.
+ * @remark Use cells_to_blob to convert the data points into a blob.
+ * @remark Up to half of these cells may be lost.
+ * @remark Use recover_cells to recover missing cells.
  */
-C_KZG_RET compute_samples(
-    Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
+C_KZG_RET compute_cells(
+    Cell *cells, const Blob *blob, uint32_t row_index, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *poly_monomial = NULL;
@@ -3157,9 +3160,9 @@ C_KZG_RET compute_samples(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_lagrange, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&data_fr, SAMPLES_PER_BLOB * FIELD_ELEMENTS_PER_SAMPLE);
+    ret = new_fr_array(&data_fr, CELLS_PER_BLOB * FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, SAMPLES_PER_BLOB);
+    ret = new_g1_array(&proofs_g1, CELLS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all of the polynomial fields to zero */
@@ -3188,11 +3191,11 @@ C_KZG_RET compute_samples(
     ret = bit_reversal_permutation(data_fr, sizeof(data_fr[0]), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
-    /* Convert all of the samples to byte-form */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
-            bytes_from_bls_field(&samples[i].data[j], &data_fr[index]);
+    /* Convert all of the cells to byte-form */
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+            bytes_from_bls_field(&cells[i].data[j], &data_fr[index]);
         }
     }
 
@@ -3203,16 +3206,16 @@ C_KZG_RET compute_samples(
     if (ret != C_KZG_OK) goto out;
 
     /* Convert all of the proofs to byte-form */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        bytes_from_g1(&samples[i].proof, &proofs_g1[i]);
-        samples[i].row_index = row_index;
-        samples[i].column_index = i;
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        bytes_from_g1(&cells[i].proof, &proofs_g1[i]);
+        cells[i].row_index = row_index;
+        cells[i].column_index = i;
     }
 
     /* Update index fields */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        samples[i].row_index = row_index;
-        samples[i].column_index = i;
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cells[i].row_index = row_index;
+        cells[i].column_index = i;
     }
 
 out:
@@ -3224,50 +3227,47 @@ out:
 }
 
 /**
- * Given some samples for a blob, try to recover the missing ones.
+ * Given some cells for a blob, try to recover the missing ones.
  *
- * @param[out]  recovered   An array of SAMPLES_PER_BLOB samples
- * @param[in]   samples     An array of samples
- * @param[in]   num_samples How many samples were provided
+ * @param[out]  recovered   An array of CELLS_PER_BLOB cells
+ * @param[in]   cells     An array of cells
+ * @param[in]   num_cells How many cells were provided
  * @param[in]   s           The trusted setup
  *
- * @remark Recovery is faster if there are fewer missing samples.
+ * @remark Recovery is faster if there are fewer missing cells.
  */
-C_KZG_RET recover_samples(
-    Sample *recovered,
-    const Sample *samples,
-    size_t num_samples,
-    const KZGSettings *s
+C_KZG_RET recover_cells(
+    Cell *recovered, const Cell *cells, size_t num_cells, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *recovered_fr = NULL;
     uint32_t row_index;
     Blob blob;
 
-    /* Ensure only one blob's worth of samples was provided */
-    if (num_samples > SAMPLES_PER_BLOB) {
+    /* Ensure only one blob's worth of cells was provided */
+    if (num_cells > CELLS_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Check if it's possible to recover */
-    if (num_samples < SAMPLES_PER_BLOB / 2) {
+    if (num_cells < CELLS_PER_BLOB / 2) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
-    /* Check that samples are for the same blob */
-    row_index = samples[0].row_index;
-    for (size_t i = 0; i < num_samples; i++) {
-        if (samples[i].row_index != row_index) {
+    /* Check that cells are for the same blob */
+    row_index = cells[0].row_index;
+    for (size_t i = 0; i < num_cells; i++) {
+        if (cells[i].row_index != row_index) {
             ret = C_KZG_BADARGS;
             goto out;
         }
     }
 
     /* Check if recovery is necessary */
-    if (num_samples == SAMPLES_PER_BLOB) {
-        memcpy(recovered, samples, SAMPLES_PER_BLOB * sizeof(Sample));
+    if (num_cells == CELLS_PER_BLOB) {
+        memcpy(recovered, cells, CELLS_PER_BLOB * sizeof(Cell));
         return C_KZG_OK;
     }
 
@@ -3275,41 +3275,41 @@ C_KZG_RET recover_samples(
     ret = new_fr_array(&recovered_fr, s->max_width);
     if (ret != C_KZG_OK) goto out;
 
-    /* Initialize all samples as missing */
+    /* Initialize all cells as missing */
     for (size_t i = 0; i < s->max_width; i++) {
         recovered_fr[i] = FR_NULL;
     }
 
-    /* Update with existing samples */
-    for (size_t i = 0; i < num_samples; i++) {
-        size_t index = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE;
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
+    /* Update with existing cells */
+    for (size_t i = 0; i < num_cells; i++) {
+        size_t index = cells[i].column_index * FIELD_ELEMENTS_PER_CELL;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             ret = bytes_to_bls_field(
-                &recovered_fr[index + j], &samples[i].data[j]
+                &recovered_fr[index + j], &cells[i].data[j]
             );
             if (ret != C_KZG_OK) goto out;
         }
     }
 
     /* Call the implementation function to do the bulk of the work */
-    ret = recover_samples_impl(recovered_fr, recovered_fr, s);
+    ret = recover_cells_impl(recovered_fr, recovered_fr, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert the recovered data points to byte-form */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
         recovered[i].row_index = row_index;
         recovered[i].column_index = i;
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
             bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
         }
     }
 
-    /* Get the original blob from the samples */
-    samples_to_blob(&blob, recovered);
+    /* Get the original blob from the cells */
+    cells_to_blob(&blob, recovered);
 
     /* TODO: do this more efficiently */
-    ret = compute_samples(recovered, &blob, row_index, s);
+    ret = compute_cells(recovered, &blob, row_index, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3318,17 +3318,17 @@ out:
 }
 
 /**
- * For a given sample, verify that the proof is valid.
+ * For a given cell, verify that the proof is valid.
  *
  * @param[out]  ok                  True if the proof are valid, otherwise false
- * @param[in]   commitment_bytes    The commitment associated with the sample
- * @param[in]   sample              The sample to check
+ * @param[in]   commitment_bytes    The commitment associated with the cell
+ * @param[in]   cell              The cell to check
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_sample(
+C_KZG_RET verify_cell_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    const Sample *sample,
+    const Cell *cell,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3338,36 +3338,36 @@ C_KZG_RET verify_sample(
     *ok = false;
 
     /* Check that index is a valid value */
-    if (sample->column_index >= SAMPLES_PER_BLOB) {
+    if (cell->column_index >= CELLS_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Allocate array for fr-form data points */
-    ret = new_fr_array(&ys, FIELD_ELEMENTS_PER_SAMPLE);
+    ret = new_fr_array(&ys, FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert untrusted inputs */
     ret = bytes_to_kzg_commitment(&commitment, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_kzg_proof(&proof, &sample->proof);
+    ret = bytes_to_kzg_proof(&proof, &cell->proof);
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
-        ret = bytes_to_bls_field(&ys[i], &sample->data[i]);
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        ret = bytes_to_bls_field(&ys[i], &cell->data[i]);
         if (ret != C_KZG_OK) goto out;
     }
 
     /* Calculate the input value */
-    size_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, sample->column_index);
+    size_t pos = reverse_bits_limited(CELLS_PER_BLOB, cell->column_index);
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */
-    ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_SAMPLE);
+    ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
     /* Check the proof */
     ret = verify_kzg_proof_multi_impl(
-        ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_SAMPLE, s
+        ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_CELL, s
     );
 
 out:
@@ -3376,16 +3376,16 @@ out:
 }
 
 /**
- * Check if a sample is uninitialized (all zeros).
+ * Check if a cell is uninitialized (all zeros).
  *
- * @param[in]   sample  The sample to check
+ * @param[in]   cell  The cell to check
  *
- * @retval  True    The sample is uninitialized.
- * @retval  False   The sample is initialized.
+ * @retval  True    The cell is uninitialized.
+ * @retval  False   The cell is initialized.
  */
-static bool is_sample_uninit(fr_t *sample) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
-        if (!fr_is_zero(&sample[i])) {
+static bool is_cell_uninit(fr_t *cell) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        if (!fr_is_zero(&cell[i])) {
             return false;
         }
     }
@@ -3393,45 +3393,45 @@ static bool is_sample_uninit(fr_t *sample) {
 }
 
 /**
- * Given some samples, verify that all of the proofs are valid.
+ * Given some cells, verify that all of the proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
  * @param[in]   num_commitments     The number of commitments being passed
- * @param[in]   samples             The samples to check
- * @param[in]   num_samples         The number of samples provided
+ * @param[in]   cells             The cells to check
+ * @param[in]   num_cells         The number of cells provided
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_sample_batch(
+C_KZG_RET verify_cell_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
-    const Sample *samples,
-    size_t num_samples,
+    const Cell *cells,
+    size_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *aggregated_column_samples = NULL;
+    fr_t *aggregated_column_cells = NULL;
     fr_t *commitment_weights = NULL;
     fr_t *r_powers = NULL;
     fr_t *used_commitment_weights = NULL;
     fr_t *weighted_powers_of_r = NULL;
     fr_t *weights = NULL;
-    fr_t aggregated_interpolation_poly[FIELD_ELEMENTS_PER_SAMPLE];
-    fr_t column_interpolation_poly[FIELD_ELEMENTS_PER_SAMPLE];
+    fr_t aggregated_interpolation_poly[FIELD_ELEMENTS_PER_CELL];
+    fr_t column_interpolation_poly[FIELD_ELEMENTS_PER_CELL];
     g1_t *proofs_g1 = NULL;
     g1_t *used_commitments = NULL;
     g1_t evaluation;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
-    g2_t power_of_s = s->g2_values[FIELD_ELEMENTS_PER_SAMPLE];
+    g2_t power_of_s = s->g2_values[FIELD_ELEMENTS_PER_CELL];
     size_t num_used_commitments = 0;
 
     *ok = false;
 
-    /* Exit early if we are given zero samples */
-    if (num_samples == 0) {
+    /* Exit early if we are given zero cells */
+    if (num_cells == 0) {
         *ok = true;
         return C_KZG_OK;
     }
@@ -3440,37 +3440,37 @@ C_KZG_RET verify_sample_batch(
     // Sanity checks
     ///////////////////////////////////////////////////////////////////////////
 
-    /* If there are more samples than the matrix allows, error */
-    if (num_samples > SAMPLES_PER_BLOB * SAMPLES_PER_BLOB) {
+    /* If there are more cells than the matrix allows, error */
+    if (num_cells > CELLS_PER_BLOB * CELLS_PER_BLOB) {
         return C_KZG_BADARGS;
     }
 
-    for (size_t i = 0; i < num_samples; i++) {
+    for (size_t i = 0; i < num_cells; i++) {
         /* Make sure column index is valid */
-        if (samples[i].column_index >= SAMPLES_PER_BLOB) return C_KZG_BADARGS;
+        if (cells[i].column_index >= CELLS_PER_BLOB) return C_KZG_BADARGS;
         /* Make sure we can reference all commitments */
-        if (samples[i].row_index >= num_commitments) return C_KZG_BADARGS;
+        if (cells[i].row_index >= num_commitments) return C_KZG_BADARGS;
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Array allocations
     ///////////////////////////////////////////////////////////////////////////
 
-    ret = new_fr_array(&r_powers, num_samples);
+    ret = new_fr_array(&r_powers, num_cells);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, num_samples);
+    ret = new_g1_array(&proofs_g1, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&used_commitments, num_commitments);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weights, num_samples);
+    ret = new_fr_array(&weights, num_cells);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weighted_powers_of_r, num_samples);
+    ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&used_commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&aggregated_column_samples, DATA_POINTS_PER_BLOB);
+    ret = new_fr_array(&aggregated_column_cells, DATA_POINTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3484,18 +3484,18 @@ C_KZG_RET verify_sample_batch(
      * TODO: make this more random.
      */
     fr_from_uint64(&r_powers[0], 27);
-    for (size_t i = 1; i < num_samples; i++) {
+    for (size_t i = 1; i < num_cells; i++) {
         blst_fr_mul(&r_powers[i], &r_powers[i - 1], &r_powers[0]);
     }
 
-    /* There should be a proof for each sample */
-    for (size_t i = 0; i < num_samples; i++) {
-        ret = bytes_to_kzg_proof(&proofs_g1[i], &samples[i].proof);
+    /* There should be a proof for each cell */
+    for (size_t i = 0; i < num_cells; i++) {
+        ret = bytes_to_kzg_proof(&proofs_g1[i], &cells[i].proof);
         if (ret != C_KZG_OK) goto out;
     }
 
     /* Do the linear combination */
-    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, num_samples);
+    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, num_cells);
 
     ///////////////////////////////////////////////////////////////////////////
     // Compute sum of the commitments
@@ -3507,10 +3507,10 @@ C_KZG_RET verify_sample_batch(
     }
 
     /* Update commitment weights */
-    for (size_t i = 0; i < num_samples; i++) {
+    for (size_t i = 0; i < num_cells; i++) {
         blst_fr_add(
-            &commitment_weights[samples[i].row_index],
-            &commitment_weights[samples[i].row_index],
+            &commitment_weights[cells[i].row_index],
+            &commitment_weights[cells[i].row_index],
             &r_powers[i]
         );
     }
@@ -3547,24 +3547,24 @@ C_KZG_RET verify_sample_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     /* Start with zeroed out columns */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_SAMPLE + j;
-            aggregated_column_samples[index] = FR_ZERO;
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+            aggregated_column_cells[index] = FR_ZERO;
         }
     }
 
-    /* Scale each sample's data points */
-    for (size_t i = 0; i < num_samples; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_SAMPLE; j++) {
+    /* Scale each cell's data points */
+    for (size_t i = 0; i < num_cells; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             fr_t field, scaled;
-            ret = bytes_to_bls_field(&field, &samples[i].data[j]);
+            ret = bytes_to_bls_field(&field, &cells[i].data[j]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
-            size_t index = samples[i].column_index * FIELD_ELEMENTS_PER_SAMPLE + j;
+            size_t index = cells[i].column_index * FIELD_ELEMENTS_PER_CELL + j;
             blst_fr_add(
-                &aggregated_column_samples[index],
-                &aggregated_column_samples[index],
+                &aggregated_column_cells[index],
+                &aggregated_column_cells[index],
                 &scaled
             );
         }
@@ -3575,21 +3575,23 @@ C_KZG_RET verify_sample_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     /* Start with a zeroed out poly */
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         aggregated_interpolation_poly[i] = FR_ZERO;
     }
 
     /* Interpolate each column */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        /* Offset to the first sample for this column */
-        size_t index = i * FIELD_ELEMENTS_PER_SAMPLE;
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        /* Offset to the first cell for this column */
+        size_t index = i * FIELD_ELEMENTS_PER_CELL;
 
-        /* We only care about initialized samples */
-        if (is_sample_uninit(&aggregated_column_samples[index])) continue;
+        /* We only care about initialized cells */
+        if (is_cell_uninit(&aggregated_column_cells[index])) continue;
 
         /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
-            &aggregated_column_samples[index], sizeof(fr_t), FIELD_ELEMENTS_PER_SAMPLE
+            &aggregated_column_cells[index],
+            sizeof(fr_t),
+            FIELD_ELEMENTS_PER_CELL
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3601,8 +3603,8 @@ C_KZG_RET verify_sample_batch(
          */
         ret = ifft_fr(
             column_interpolation_poly,
-            &aggregated_column_samples[index],
-            FIELD_ELEMENTS_PER_SAMPLE,
+            &aggregated_column_cells[index],
+            FIELD_ELEMENTS_PER_CELL,
             s
         );
         if (ret != C_KZG_OK) goto out;
@@ -3612,11 +3614,11 @@ C_KZG_RET verify_sample_batch(
          * inverse. We can skip the first iteration because its dividing by one.
          */
         fr_t inv_x, inv_x_pow;
-        uint32_t pos = reverse_bits_limited(SAMPLES_PER_BLOB, i);
+        uint32_t pos = reverse_bits_limited(CELLS_PER_BLOB, i);
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         blst_fr_eucl_inverse(&inv_x, &coset_factor);
         inv_x_pow = inv_x;
-        for (uint64_t i = 1; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
+        for (uint64_t i = 1; i < FIELD_ELEMENTS_PER_CELL; i++) {
             blst_fr_mul(
                 &column_interpolation_poly[i],
                 &column_interpolation_poly[i],
@@ -3626,7 +3628,7 @@ C_KZG_RET verify_sample_batch(
         }
 
         /* Update the aggregated poly */
-        for (size_t k = 0; k < FIELD_ELEMENTS_PER_SAMPLE; k++) {
+        for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
             blst_fr_add(
                 &aggregated_interpolation_poly[k],
                 &aggregated_interpolation_poly[k],
@@ -3637,7 +3639,10 @@ C_KZG_RET verify_sample_batch(
 
     /* Commit to the final aggregated interpolation polynomial */
     g1_lincomb_fast(
-        &evaluation, s->g1_values, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_SAMPLE
+        &evaluation,
+        s->g1_values,
+        aggregated_interpolation_poly,
+        FIELD_ELEMENTS_PER_CELL
     );
     blst_p1_cneg(&evaluation, true);
     blst_p1_add(&final_g1_sum, &final_g1_sum, &evaluation);
@@ -3646,17 +3651,17 @@ C_KZG_RET verify_sample_batch(
     // Compute sum of the proofs scaled by the coset factors
     ///////////////////////////////////////////////////////////////////////////
 
-    for (size_t i = 0; i < num_samples; i++) {
+    for (size_t i = 0; i < num_cells; i++) {
         uint32_t pos = reverse_bits_limited(
-            SAMPLES_PER_BLOB, samples[i].column_index
+            CELLS_PER_BLOB, cells[i].column_index
         );
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
-        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_SAMPLE);
+        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
     }
 
     g1_lincomb_fast(
-        &weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_samples
+        &weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_cells
     );
     blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
 
@@ -3669,7 +3674,7 @@ C_KZG_RET verify_sample_batch(
     );
 
 out:
-    c_kzg_free(aggregated_column_samples);
+    c_kzg_free(aggregated_column_cells);
     c_kzg_free(commitment_weights);
     c_kzg_free(proofs_g1);
     c_kzg_free(r_powers);

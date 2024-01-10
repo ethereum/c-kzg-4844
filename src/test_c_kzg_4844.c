@@ -55,11 +55,11 @@ void print_blob(const Blob *blob) {
     }
 }
 
-void print_sample(const Sample *sample) {
-    printf("row: %u, col: %u\n", sample->row_index, sample->column_index);
-    print_bytes48(&sample->proof);
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_SAMPLE; i++) {
-        print_bytes32(&sample->data[i]);
+void print_cell(const Cell *cell) {
+    printf("row: %u, col: %u\n", cell->row_index, cell->column_index);
+    print_bytes48(&cell->proof);
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        print_bytes32(&cell->data[i]);
     }
 }
 
@@ -1550,18 +1550,18 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    const int n_samples = 16;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
+    const int n_cells = 16;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
     Blob *blobs = NULL;
     bool ok;
 
     /* Allocate blobs because they are big */
-    ret = c_kzg_malloc((void **)&blobs, n_samples * sizeof(Blob));
+    ret = c_kzg_malloc((void **)&blobs, n_cells * sizeof(Blob));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1573,7 +1573,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
     /* Verify batched proofs for 0,1,2..16 blobs */
     /* This should still work with zero blobs */
-    for (int count = 0; count <= n_samples; count++) {
+    for (int count = 0; count <= n_cells; count++) {
         ret = verify_blob_kzg_proof_batch(
             &ok, blobs, commitments, proofs, count, &s
         );
@@ -1587,14 +1587,14 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
 static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1608,7 +1608,7 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     proofs[1] = proofs[0];
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT_EQUALS(ok, false);
@@ -1616,14 +1616,14 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
 
 static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1641,21 +1641,21 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     );
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1673,22 +1673,22 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     );
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     Bytes32 field_element;
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1706,7 +1706,7 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     memcpy(blobs[1].bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -1749,27 +1749,27 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 // Tests for reconstruction
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_compute_samples__succeeds_first_half_is_blob(void) {
+static void test_compute_cells__succeeds_first_half_is_blob(void) {
     C_KZG_RET ret;
     Blob blob, blob2;
-    Sample *samples = NULL;
+    Cell *cells = NULL;
     int diff;
 
-    /* Allocate array of samples */
-    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
+    /* Allocate array of cells */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
     get_rand_blob(&blob);
 
-    /* Get the samples */
-    ret = compute_samples(samples, &blob, 0, &s);
+    /* Get the cells */
+    ret = compute_cells(cells, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Get the original blob from the samples */
-    samples_to_blob(&blob2, samples);
+    /* Get the original blob from the cells */
+    cells_to_blob(&blob2, cells);
 
-    /* Ensure the first half of the samples is the blob */
+    /* Ensure the first half of the cells is the blob */
     diff = memcmp(blob.bytes, blob2.bytes, sizeof(Blob));
     ASSERT_EQUALS(diff, 0);
 }
@@ -1777,45 +1777,45 @@ static void test_compute_samples__succeeds_first_half_is_blob(void) {
 static void test_reconstruct__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
-    Sample *samples = NULL;
-    Sample *partial = NULL;
-    Sample *recovered = NULL;
-    size_t num_partial_samples = SAMPLES_PER_BLOB / 2;
+    Cell *cells = NULL;
+    Cell *partial = NULL;
+    Cell *recovered = NULL;
+    size_t num_partial_cells = CELLS_PER_BLOB / 2;
     int diff;
 
     /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&partial, num_partial_samples, sizeof(Sample));
+    ret = c_kzg_calloc((void **)&partial, num_partial_cells, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&recovered, SAMPLES_PER_BLOB, sizeof(Sample));
+    ret = c_kzg_calloc((void **)&recovered, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
     get_rand_blob(&blob);
 
-    /* Get the samples and proofs */
-    ret = compute_samples(samples, &blob, 0, &s);
+    /* Get the cells and proofs */
+    ret = compute_cells(cells, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Erase half of the samples */
-    for (size_t i = 0; i < num_partial_samples; i++) {
-        memcpy(&partial[i], &samples[i * 2], sizeof(Sample));
+    /* Erase half of the cells */
+    for (size_t i = 0; i < num_partial_cells; i++) {
+        memcpy(&partial[i], &cells[i * 2], sizeof(Cell));
     }
 
-    /* Reconstruct with half of the samples */
-    ret = recover_samples(recovered, partial, num_partial_samples, &s);
+    /* Reconstruct with half of the cells */
+    ret = recover_cells(recovered, partial, num_partial_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Check that all of the samples match */
-    for (size_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        diff = memcmp(&samples[i], &recovered[i], sizeof(Sample));
+    /* Check that all of the cells match */
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        diff = memcmp(&cells[i], &recovered[i], sizeof(Cell));
         ASSERT_EQUALS(diff, 0);
     }
 
-    /* Recover the blob from the recovered samples */
+    /* Recover the blob from the recovered cells */
     Blob recovered_blob;
-    samples_to_blob(&recovered_blob, recovered);
+    cells_to_blob(&recovered_blob, recovered);
 
     /* Ensure the blobs are the same */
     diff = memcmp(blob.bytes, recovered_blob.bytes, sizeof(Blob));
@@ -1823,18 +1823,18 @@ static void test_reconstruct__succeeds_random_blob(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Tests for sample proofs
+// Tests for cell proofs
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_verify_sample_proof__succeeds_random_blob(void) {
+static void test_verify_cell_proof__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
-    Sample *samples = NULL;
+    Cell *cells = NULL;
     KZGCommitment commitment;
     bool ok;
 
-    /* Allocate array of samples */
-    ret = c_kzg_calloc((void **)&samples, SAMPLES_PER_BLOB, sizeof(Sample));
+    /* Allocate array of cells */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
@@ -1844,13 +1844,13 @@ static void test_verify_sample_proof__succeeds_random_blob(void) {
     ret = blob_to_kzg_commitment(&commitment, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Get the samples and proofs */
-    ret = compute_samples(samples, &blob, 0, &s);
+    /* Get the cells and proofs */
+    ret = compute_cells(cells, &blob, 0, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Verify all of the sample proofs */
-    for (uint64_t i = 0; i < SAMPLES_PER_BLOB; i++) {
-        ret = verify_sample(&ok, &commitment, &samples[i], &s);
+    /* Verify all of the cell proofs */
+    for (uint64_t i = 0; i < CELLS_PER_BLOB; i++) {
+        ret = verify_cell_proof(&ok, &commitment, &cells[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
@@ -2104,9 +2104,9 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
-    RUN(test_compute_samples__succeeds_first_half_is_blob);
+    RUN(test_compute_cells__succeeds_first_half_is_blob);
     RUN(test_reconstruct__succeeds_random_blob);
-    RUN(test_verify_sample_proof__succeeds_random_blob);
+    RUN(test_verify_cell_proof__succeeds_random_blob);
     RUN(test_poly_conversion__succeeds_round_trip);
 
     /*

@@ -241,10 +241,10 @@ impl Blob {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
-    pub fn samples_to_blob(samples: &[Sample; SAMPLES_PER_BLOB]) -> Result<Self, Error> {
+    pub fn cells_to_blob(cells: &[Cell; CELLS_PER_BLOB]) -> Result<Self, Error> {
         let mut blob = MaybeUninit::<Self>::uninit();
         unsafe {
-            let res = samples_to_blob(blob.as_mut_ptr(), samples.as_ptr());
+            let res = cells_to_blob(blob.as_mut_ptr(), cells.as_ptr());
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(blob.assume_init())
             } else {
@@ -464,19 +464,15 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_sample(
+    pub fn verify_cell_proof(
         commitment_bytes: &Bytes48,
-        sample: &Sample,
+        cell: &Cell,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_sample(
-                verified.as_mut_ptr(),
-                commitment_bytes,
-                sample,
-                kzg_settings,
-            );
+            let res =
+                verify_cell_proof(verified.as_mut_ptr(), commitment_bytes, cell, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(verified.assume_init())
             } else {
@@ -485,19 +481,19 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_sample_batch(
+    pub fn verify_cell_proof_batch(
         commitments_bytes: &[Bytes48],
-        samples: &[Sample],
+        cells: &[Cell],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_sample_batch(
+            let res = verify_cell_proof_batch(
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
                 commitments_bytes.len(),
-                samples.as_ptr(),
-                samples.len(),
+                cells.as_ptr(),
+                cells.len(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -544,35 +540,35 @@ impl KZGCommitment {
     }
 }
 
-impl Sample {
-    pub fn compute_samples(
+impl Cell {
+    pub fn compute_cells(
         blob: &Blob,
         row_index: u32,
         kzg_settings: &KZGSettings,
-    ) -> Result<Box<[Sample; SAMPLES_PER_BLOB]>, Error> {
-        let mut samples: Box<MaybeUninit<[Sample; SAMPLES_PER_BLOB]>> = Box::new_uninit();
+    ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
+        let mut cells: Box<MaybeUninit<[Cell; CELLS_PER_BLOB]>> = Box::new_uninit();
         unsafe {
-            let res = compute_samples(
-                samples.as_mut_ptr() as *mut Sample,
+            let res = compute_cells(
+                cells.as_mut_ptr() as *mut Cell,
                 blob,
                 row_index,
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(samples.assume_init())
+                Ok(cells.assume_init())
             } else {
                 Err(Error::CError(res))
             }
         }
     }
 
-    pub fn recover_samples(samples: &[Sample], kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn recover_cells(cells: &[Cell], kzg_settings: &KZGSettings) -> Result<Self, Error> {
         let mut recovered = MaybeUninit::<Self>::uninit();
         unsafe {
-            let res = recover_samples(
-                recovered.as_mut_ptr() as *mut Sample,
-                samples.as_ptr(),
-                samples.len(),
+            let res = recover_cells(
+                recovered.as_mut_ptr() as *mut Cell,
+                cells.as_ptr(),
+                cells.len(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -938,7 +934,7 @@ mod tests {
     }
 
     #[test]
-    fn test_get_and_prove_samples() {
+    fn test_get_and_prove_cells() {
         let mut rng = rand::thread_rng();
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
@@ -946,19 +942,19 @@ mod tests {
 
         let blob = generate_random_blob(&mut rng);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
-        let samples = Sample::compute_samples(&blob, 0, &kzg_settings).unwrap();
+        let cells = Cell::compute_cells(&blob, 0, &kzg_settings).unwrap();
 
-        /* Verify samples individually */
-        for i in 0..SAMPLES_PER_BLOB {
-            let ok = KZGProof::verify_sample(&commitment.to_bytes(), &samples[i], &kzg_settings)
+        /* Verify cells individually */
+        for i in 0..CELLS_PER_BLOB {
+            let ok = KZGProof::verify_cell_proof(&commitment.to_bytes(), &cells[i], &kzg_settings)
                 .unwrap();
             assert_eq!(ok, true);
         }
 
-        /* Verify samples in batch */
-        let ok = KZGProof::verify_sample_batch(
+        /* Verify cells in batch */
+        let ok = KZGProof::verify_cell_proof_batch(
             &vec![commitment.to_bytes()],
-            samples.as_slice(),
+            cells.as_slice(),
             &kzg_settings,
         )
         .unwrap();

@@ -54,15 +54,15 @@ extern "C" {
 /** The number of data points in an extended blob */
 #define DATA_POINTS_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
-/** The number of data points in a sample. */
-#define FIELD_ELEMENTS_PER_SAMPLE 16
+/** The number of data points in a cell. */
+#define FIELD_ELEMENTS_PER_CELL 64
 
-/** The number of samples in an extended blob. */
-#define SAMPLES_PER_BLOB (DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_SAMPLE)
+/** The number of cells in an extended blob. */
+#define CELLS_PER_BLOB (DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL)
 
-/** The number of bytes in a single sample */
-#define BYTES_PER_SAMPLE \
-    (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_SAMPLE + BYTES_PER_PROOF + 8)
+/** The number of bytes in a single cell. */
+#define BYTES_PER_CELL \
+    (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL + BYTES_PER_PROOF + 8)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -106,14 +106,14 @@ typedef Bytes48 KZGCommitment;
 typedef Bytes48 KZGProof;
 
 /**
- * A single sample for a blob.
+ * A single cell for a blob.
  */
 typedef struct {
-    Bytes32 data[FIELD_ELEMENTS_PER_SAMPLE];
+    Bytes32 data[FIELD_ELEMENTS_PER_CELL];
     KZGProof proof;
     uint32_t row_index;
     uint32_t column_index;
-} Sample;
+} Cell;
 
 /**
  * The common return type for all routines in which something can go wrong.
@@ -213,32 +213,29 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const KZGSettings *s
 );
 
-C_KZG_RET compute_samples(
-    Sample *samples, const Blob *blob, uint32_t row_index, const KZGSettings *s
+C_KZG_RET compute_cells(
+    Cell *cells, const Blob *blob, uint32_t row_index, const KZGSettings *s
 );
 
-C_KZG_RET samples_to_blob(Blob *blob, const Sample *samples);
+C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells);
 
-C_KZG_RET recover_samples(
-    Sample *recovered,
-    const Sample *samples,
-    size_t num_samples,
-    const KZGSettings *s
+C_KZG_RET recover_cells(
+    Cell *recovered, const Cell *cells, size_t num_cells, const KZGSettings *s
 );
 
-C_KZG_RET verify_sample(
+C_KZG_RET verify_cell_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    const Sample *sample,
+    const Cell *cell,
     const KZGSettings *s
 );
 
-C_KZG_RET verify_sample_batch(
+C_KZG_RET verify_cell_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
-    const Sample *samples,
-    size_t num_samples,
+    const Cell *cells,
+    size_t num_cells,
     const KZGSettings *s
 );
 

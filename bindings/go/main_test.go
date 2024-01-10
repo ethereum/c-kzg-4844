@@ -61,14 +61,14 @@ func getRandPoint(seed int64) Bytes48 {
 	return bytes
 }
 
-func getPartialSamples(samples *[SamplesPerBlob]Sample, i int) []Sample {
-	partialSamples := []Sample{}
-	for j := range samples {
+func getPartialCells(cells *[CellsPerBlob]Cell, i int) []Cell {
+	partialCells := []Cell{}
+	for j := range cells {
 		if j%i != 0 {
-			partialSamples = append(partialSamples, samples[j])
+			partialCells = append(partialCells, cells[j])
 		}
 	}
-	return partialSamples
+	return partialCells
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -410,35 +410,35 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func TestVerifySample(t *testing.T) {
+func TestVerifyCell(t *testing.T) {
 	blob := getRandBlob(0)
 
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	samples, err := ComputeSamples(&blob, 0)
+	cells, err := ComputeCells(&blob, 0)
 	require.NoError(t, err)
 
-	for i := range samples {
-		ok, err := VerifySample(Bytes48(commitment), &samples[i])
+	for i := range cells {
+		ok, err := VerifyCellProof(Bytes48(commitment), &cells[i])
 		require.NoError(t, err)
 		require.True(t, ok)
 	}
 }
 
-func TestVerifySamples(t *testing.T) {
+func TestVerifyCells(t *testing.T) {
 	blob := getRandBlob(0)
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	samples, err := ComputeSamples(&blob, 0)
+	cells, err := ComputeCells(&blob, 0)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment)}
-	ok, err := VerifySampleBatch(commitments, samples[:])
+	ok, err := VerifyCellProofBatch(commitments, cells[:])
 	require.NoError(t, err)
 	require.True(t, ok)
 }
 
-func TestVerifySamplesMultiBlobs(t *testing.T) {
+func TestVerifyCellsMultiBlobs(t *testing.T) {
 	blob1 := getRandBlob(0)
 	blob2 := getRandBlob(1)
 
@@ -447,43 +447,43 @@ func TestVerifySamplesMultiBlobs(t *testing.T) {
 	commitment2, err := BlobToKZGCommitment(blob2)
 	require.NoError(t, err)
 
-	samples1, err := ComputeSamples(&blob1, 0)
+	cells1, err := ComputeCells(&blob1, 0)
 	require.NoError(t, err)
-	samples2, err := ComputeSamples(&blob2, 1)
+	cells2, err := ComputeCells(&blob2, 1)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment1), Bytes48(commitment2)}
 
-	var samples []Sample
-	for _, sample := range samples1 {
-		samples = append(samples, sample)
+	var cells []Cell
+	for _, Cell := range cells1 {
+		cells = append(cells, Cell)
 	}
-	for _, sample := range samples2 {
-		samples = append(samples, sample)
+	for _, Cell := range cells2 {
+		cells = append(cells, Cell)
 	}
 
-	ok, err := VerifySampleBatch(commitments, samples)
+	ok, err := VerifyCellProofBatch(commitments, cells)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
 
 func TestRecoverHalfMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	samples, err := ComputeSamples(&blob, 0)
+	cells, err := ComputeCells(&blob, 0)
 	require.NoError(t, err)
-	partial := getPartialSamples(samples, 2)
-	recovered, err := RecoverSamples(partial)
+	partial := getPartialCells(cells, 2)
+	recovered, err := RecoverCells(partial)
 	require.NoError(t, err)
-	require.Equal(t, recovered, samples)
+	require.Equal(t, recovered, cells)
 }
 
 func TestRecoverNoMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	samples, err := ComputeSamples(&blob, 0)
+	cells, err := ComputeCells(&blob, 0)
 	require.NoError(t, err)
-	recovered, err := RecoverSamples(samples[:])
+	recovered, err := RecoverCells(cells[:])
 	require.NoError(t, err)
-	require.Equal(t, recovered, samples)
+	require.Equal(t, recovered, cells)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -496,7 +496,7 @@ func Benchmark(b *testing.B) {
 	commitments := &[n]Bytes48{}
 	proofs := &[n]Bytes48{}
 	fields := &[n]Bytes32{}
-	blobSamples := &[n]*[SamplesPerBlob]Sample{}
+	blobCells := &[n]*[CellsPerBlob]Cell{}
 
 	for i := int64(0); i < n; i++ {
 		blobs[i] = getRandBlob(i)
@@ -509,7 +509,7 @@ func Benchmark(b *testing.B) {
 		require.NoError(b, err)
 		proofs[i] = Bytes48(proof)
 
-		blobSamples[i], err = ComputeSamples(&blobs[i], uint32(i))
+		blobCells[i], err = ComputeCells(&blobs[i], uint32(i))
 	}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
@@ -556,48 +556,48 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	b.Run("ComputeSamples", func(b *testing.B) {
+	b.Run("ComputeCells", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := ComputeSamples(&blobs[0], 0)
+			_, err := ComputeCells(&blobs[0], 0)
 			require.Nil(b, err)
 		}
 	})
 
-	b.Run("SamplesToBlob", func(b *testing.B) {
+	b.Run("CellsToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := SamplesToBlob(blobSamples[0])
+			_, err := CellsToBlob(blobCells[0])
 			require.Nil(b, err)
 		}
 	})
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		partial := getPartialSamples(blobSamples[0], i)
-		b.Run(fmt.Sprintf("RecoverSamples(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+		partial := getPartialCells(blobCells[0], i)
+		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := RecoverSamples(partial)
+				_, err := RecoverCells(partial)
 				require.Nil(b, err)
 			}
 		})
 	}
 
-	b.Run("VerifySample", func(b *testing.B) {
+	b.Run("VerifyCellProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifySample(commitments[0], &blobSamples[0][0])
+			_, err := VerifyCellProof(commitments[0], &blobCells[0][0])
 			require.Nil(b, err)
 		}
 	})
 
-	b.Run("VerifySampleBatch", func(b *testing.B) {
-		var samples []Sample
-		for _, blobSample := range blobSamples {
-			for _, sample := range blobSample {
-				samples = append(samples, sample)
+	b.Run("VerifyCellProofBatch", func(b *testing.B) {
+		var cells []Cell
+		for _, blobCell := range blobCells {
+			for _, Cell := range blobCell {
+				cells = append(cells, Cell)
 			}
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifySampleBatch(commitments[:], samples)
+			ok, err := VerifyCellProofBatch(commitments[:], cells)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}

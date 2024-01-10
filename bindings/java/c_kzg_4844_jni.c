@@ -448,7 +448,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   return (jboolean)out;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeSamples(JNIEnv *env, jclass thisCls, jbyteArray blob, jint row_index)
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCells(JNIEnv *env, jclass thisCls, jbyteArray blob, jint row_index)
 {
   if (settings == NULL)
   {
@@ -463,50 +463,50 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeSamples
     return NULL;
   }
 
-  /* The output variables, will be combined in a Sample object */
-  jbyteArray samples = (*env)->NewByteArray(env, SAMPLES_PER_BLOB * sizeof(Sample));
+  /* The output variables, will be combined in a Cell object */
+  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_BLOB * sizeof(Cell));
 
   /* The native variables */
-  Sample *samples_native = (Sample *)(*env)->GetByteArrayElements(env, samples, NULL);
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
   Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
   uint32_t row_index_native = (uint32_t)row_index;
 
-  C_KZG_RET ret = compute_samples(samples_native, blob_native, row_index_native, settings);
+  C_KZG_RET ret = compute_cells(cells_native, blob_native, row_index_native, settings);
 
-  (*env)->ReleaseByteArrayElements(env, samples, (jbyte *)samples_native, 0);
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, 0);
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in computeSamples.");
+    throw_c_kzg_exception(env, ret, "There was an error in computeCells.");
     return NULL;
   }
 
-  jclass sample_class = (*env)->FindClass(env, "ethereum/ckzg4844/Sample");
-  if (sample_class == NULL)
+  jclass cell_class = (*env)->FindClass(env, "ethereum/ckzg4844/Cell");
+  if (cell_class == NULL)
   {
-    throw_exception(env, "Failed to find Sample class.");
+    throw_exception(env, "Failed to find Cell class.");
     return NULL;
   }
 
-  jmethodID sample_of = (*env)->GetStaticMethodID(env, sample_class, "of", "([B)[Lethereum/ckzg4844/Sample;");
-  if (sample_of == NULL)
+  jmethodID cell_of = (*env)->GetStaticMethodID(env, cell_class, "of", "([B)[Lethereum/ckzg4844/Cell;");
+  if (cell_of == NULL)
   {
-    throw_exception(env, "Failed to find Sample#of method.");
+    throw_exception(env, "Failed to find Cell#of method.");
     return NULL;
   }
 
-  jobjectArray result = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, samples);
+  jobjectArray result = (jobjectArray)(*env)->CallStaticObjectMethod(env, cell_class, cell_of, cells);
   if (result == NULL)
   {
-    throw_exception(env, "Failed to instantiate samples.");
+    throw_exception(env, "Failed to instantiate cells.");
     return NULL;
   }
 
   return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_samplesToBlob(JNIEnv *env, jclass thisCls, jobjectArray samples)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob(JNIEnv *env, jclass thisCls, jobjectArray cells)
 {
   if (settings == NULL)
   {
@@ -514,78 +514,78 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_samplesToBlob(JN
     return NULL;
   }
 
-  if (samples == NULL)
+  if (cells == NULL)
   {
-    throw_exception(env, "Array of samples is null.");
+    throw_exception(env, "Array of cells is null.");
     return NULL;
   }
 
-  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
-  if (count != SAMPLES_PER_BLOB)
+  size_t count = (size_t)(*env)->GetArrayLength(env, cells);
+  if (count != CELLS_PER_BLOB)
   {
-    throw_exception(env, "Invalid number of samples.");
+    throw_exception(env, "Invalid number of cells.");
     return NULL;
   }
 
-  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
-  if (sample_obj == NULL)
+  jobject cell_obj = (*env)->GetObjectArrayElement(env, cells, 0);
+  if (cell_obj == NULL)
   {
-    throw_exception(env, "Sample is null.");
+    throw_exception(env, "Cell is null.");
     return NULL;
   }
 
-  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
-  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  jclass cell_class = (*env)->GetObjectClass(env, cell_obj);
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, cell_class, "toBytes", "()[B");
   if (to_bytes_method == NULL)
   {
     throw_exception(env, "Failed to find toBytes method");
     return NULL;
   }
 
-  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
-  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+  jbyteArray all_cells = (*env)->NewByteArray(env, count * BYTES_PER_CELL);
+  Cell *all_cells_native = (Cell *)(*env)->GetByteArrayElements(env, all_cells, NULL);
 
   for (size_t i = 0; i < count; i++)
   {
-    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
-    if (sample == NULL)
+    jobject cell = (*env)->GetObjectArrayElement(env, cells, i);
+    if (cell == NULL)
     {
-      throw_exception(env, "Sample is null.");
+      throw_exception(env, "Cell is null.");
       return NULL;
     }
 
-    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    jbyteArray cell_bytes = (jbyteArray)(*env)->CallObjectMethod(env, cell, to_bytes_method);
     if ((*env)->ExceptionCheck(env))
     {
         return NULL;
     }
 
-    Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
-    (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+    Cell *cell_native = (Cell *)(*env)->GetByteArrayElements(env, cell_bytes, NULL);
+    memcpy(&all_cells_native[i], cell_native, sizeof(Cell));
+    (*env)->ReleaseByteArrayElements(env, cell_bytes, (jbyte *)cell_native, 0);
   }
 
   jbyteArray blob = (*env)->NewByteArray(env, BYTES_PER_BLOB);
   Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
 
-  C_KZG_RET ret = samples_to_blob(blob_native, all_samples_native);
+  C_KZG_RET ret = cells_to_blob(blob_native, all_cells_native);
 
-  (*env)->DeleteLocalRef(env, sample_obj);
-  (*env)->DeleteLocalRef(env, sample_class);
+  (*env)->DeleteLocalRef(env, cell_obj);
+  (*env)->DeleteLocalRef(env, cell_class);
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, 0);
-  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
-  (*env)->DeleteLocalRef(env, all_samples);
+  (*env)->ReleaseByteArrayElements(env, all_cells, (jbyte *)all_cells_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_cells);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in samplesToBlob.");
+    throw_c_kzg_exception(env, ret, "There was an error in cellsToBlob.");
     return NULL;
   }
 
   return blob;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples(JNIEnv *env, jclass thisCls, jobjectArray samples)
+JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCells(JNIEnv *env, jclass thisCls, jobjectArray cells)
 {
   if (settings == NULL)
   {
@@ -593,94 +593,94 @@ JNIEXPORT jobjectArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverSamples
     return NULL;
   }
 
-  if (samples == NULL)
+  if (cells == NULL)
   {
-    throw_exception(env, "Array of samples is null.");
+    throw_exception(env, "Array of cells is null.");
     return NULL;
   }
 
-  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
+  size_t count = (size_t)(*env)->GetArrayLength(env, cells);
   if (count == 0)
   {
-    throw_exception(env, "Invalid number of samples.");
+    throw_exception(env, "Invalid number of cells.");
     return NULL;
   }
 
-  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
-  if (sample_obj == NULL)
+  jobject cell_obj = (*env)->GetObjectArrayElement(env, cells, 0);
+  if (cell_obj == NULL)
   {
-    throw_exception(env, "Sample is null.");
+    throw_exception(env, "Cell is null.");
     return NULL;
   }
 
-  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
-  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  jclass cell_class = (*env)->GetObjectClass(env, cell_obj);
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, cell_class, "toBytes", "()[B");
   if (to_bytes_method == NULL)
   {
     throw_exception(env, "Failed to find toBytes method");
     return NULL;
   }
 
-  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
-  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+  jbyteArray all_cells = (*env)->NewByteArray(env, count * BYTES_PER_CELL);
+  Cell *all_cells_native = (Cell *)(*env)->GetByteArrayElements(env, all_cells, NULL);
 
   for (size_t i = 0; i < count; i++)
   {
-    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
-    if (sample == NULL)
+    jobject cell = (*env)->GetObjectArrayElement(env, cells, i);
+    if (cell == NULL)
     {
-      throw_exception(env, "Sample is null.");
+      throw_exception(env, "Cell is null.");
       return NULL;
     }
 
-    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    jbyteArray cell_bytes = (jbyteArray)(*env)->CallObjectMethod(env, cell, to_bytes_method);
     if ((*env)->ExceptionCheck(env))
     {
         return NULL;
     }
 
-    Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
-    (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+    Cell *cell_native = (Cell *)(*env)->GetByteArrayElements(env, cell_bytes, NULL);
+    memcpy(&all_cells_native[i], cell_native, sizeof(Cell));
+    (*env)->ReleaseByteArrayElements(env, cell_bytes, (jbyte *)cell_native, 0);
   }
 
-  jbyteArray recovered = (*env)->NewByteArray(env, SAMPLES_PER_BLOB * sizeof(Sample));
-  Sample *recovered_native = (Sample *)(*env)->GetByteArrayElements(env, recovered, NULL);
+  jbyteArray recovered = (*env)->NewByteArray(env, CELLS_PER_BLOB * sizeof(Cell));
+  Cell *recovered_native = (Cell *)(*env)->GetByteArrayElements(env, recovered, NULL);
   size_t count_native = (size_t)count;
 
-  C_KZG_RET ret = recover_samples(recovered_native, all_samples_native, count_native, settings);
+  C_KZG_RET ret = recover_cells(recovered_native, all_cells_native, count_native, settings);
 
-  (*env)->DeleteLocalRef(env, sample_obj);
+  (*env)->DeleteLocalRef(env, cell_obj);
   (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
-  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
-  (*env)->DeleteLocalRef(env, all_samples);
+  (*env)->ReleaseByteArrayElements(env, all_cells, (jbyte *)all_cells_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_cells);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in samplesToBlob.");
+    throw_c_kzg_exception(env, ret, "There was an error in cellsToBlob.");
     return NULL;
   }
 
-  jmethodID sample_of = (*env)->GetStaticMethodID(env, sample_class, "of", "([B)[Lethereum/ckzg4844/Sample;");
-  if (sample_of == NULL)
+  jmethodID cell_of = (*env)->GetStaticMethodID(env, cell_class, "of", "([B)[Lethereum/ckzg4844/Cell;");
+  if (cell_of == NULL)
   {
-    throw_exception(env, "Failed to find Sample#of method.");
+    throw_exception(env, "Failed to find Cell#of method.");
     return NULL;
   }
 
-  jobjectArray result = (jobjectArray)(*env)->CallStaticObjectMethod(env, sample_class, sample_of, recovered);
+  jobjectArray result = (jobjectArray)(*env)->CallStaticObjectMethod(env, cell_class, cell_of, recovered);
   if (result == NULL)
   {
-    throw_exception(env, "Failed to instantiate samples.");
+    throw_exception(env, "Failed to instantiate cells.");
     return NULL;
   }
 
-  (*env)->DeleteLocalRef(env, sample_class);
+  (*env)->DeleteLocalRef(env, cell_class);
 
   return result;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jobject sample)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCell(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jobject cell)
 {
   if (settings == NULL)
   {
@@ -688,36 +688,36 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySample(JNIEn
     return 0;
   }
 
-  jclass sample_class = (*env)->GetObjectClass(env, sample);
+  jclass cell_class = (*env)->GetObjectClass(env, cell);
 
-  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, cell_class, "toBytes", "()[B");
   if (to_bytes_method == NULL)
   {
     throw_exception(env, "Failed to find toBytes method");
     return 0;
   }
-  jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+  jbyteArray cell_bytes = (jbyteArray)(*env)->CallObjectMethod(env, cell, to_bytes_method);
 
-  Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
+  Cell *cell_native = (Cell *)(*env)->GetByteArrayElements(env, cell_bytes, NULL);
   Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
 
   bool out;
-  C_KZG_RET ret = verify_sample(&out, commitment_native, sample_native, settings);
+  C_KZG_RET ret = verify_cell_proof(&out, commitment_native, cell_native, settings);
 
-  (*env)->DeleteLocalRef(env, sample_class);
-  (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+  (*env)->DeleteLocalRef(env, cell_class);
+  (*env)->ReleaseByteArrayElements(env, cell_bytes, (jbyte *)cell_native, 0);
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in verifySample.");
+    throw_c_kzg_exception(env, ret, "There was an error in verifyCell.");
     return 0;
   }
 
   return (jboolean)out;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySampleBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jobjectArray samples)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jobjectArray cells)
 {
   if (settings == NULL)
   {
@@ -725,71 +725,71 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifySampleBatch(
     return 0;
   }
 
-  if (samples == NULL)
+  if (cells == NULL)
   {
-    throw_exception(env, "Array of samples is null.");
+    throw_exception(env, "Array of cells is null.");
     return 0;
   }
 
-  size_t count = (size_t)(*env)->GetArrayLength(env, samples);
+  size_t count = (size_t)(*env)->GetArrayLength(env, cells);
   if (count == 0)
   {
     return 1;
   }
 
-  jobject sample_obj = (*env)->GetObjectArrayElement(env, samples, 0);
-  if (sample_obj == NULL)
+  jobject cell_obj = (*env)->GetObjectArrayElement(env, cells, 0);
+  if (cell_obj == NULL)
   {
-    throw_exception(env, "Sample is null.");
+    throw_exception(env, "Cell is null.");
     return 0;
   }
 
-  jclass sample_class = (*env)->GetObjectClass(env, sample_obj);
-  jmethodID to_bytes_method = (*env)->GetMethodID(env, sample_class, "toBytes", "()[B");
+  jclass cell_class = (*env)->GetObjectClass(env, cell_obj);
+  jmethodID to_bytes_method = (*env)->GetMethodID(env, cell_class, "toBytes", "()[B");
   if (to_bytes_method == NULL)
   {
     throw_exception(env, "Failed to find toBytes method");
     return 0;
   }
 
-  jbyteArray all_samples = (*env)->NewByteArray(env, count * BYTES_PER_SAMPLE);
-  Sample *all_samples_native = (Sample *)(*env)->GetByteArrayElements(env, all_samples, NULL);
+  jbyteArray all_cells = (*env)->NewByteArray(env, count * BYTES_PER_CELL);
+  Cell *all_cells_native = (Cell *)(*env)->GetByteArrayElements(env, all_cells, NULL);
 
   for (size_t i = 0; i < count; i++)
   {
-    jobject sample = (*env)->GetObjectArrayElement(env, samples, i);
-    if (sample == NULL)
+    jobject cell = (*env)->GetObjectArrayElement(env, cells, i);
+    if (cell == NULL)
     {
-      throw_exception(env, "Sample is null.");
+      throw_exception(env, "Cell is null.");
       return 0;
     }
 
-    jbyteArray sample_bytes = (jbyteArray)(*env)->CallObjectMethod(env, sample, to_bytes_method);
+    jbyteArray cell_bytes = (jbyteArray)(*env)->CallObjectMethod(env, cell, to_bytes_method);
     if ((*env)->ExceptionCheck(env))
     {
         return 0;
     }
 
-    Sample *sample_native = (Sample *)(*env)->GetByteArrayElements(env, sample_bytes, NULL);
-    memcpy(&all_samples_native[i], sample_native, sizeof(Sample));
-    (*env)->ReleaseByteArrayElements(env, sample_bytes, (jbyte *)sample_native, 0);
+    Cell *cell_native = (Cell *)(*env)->GetByteArrayElements(env, cell_bytes, NULL);
+    memcpy(&all_cells_native[i], cell_native, sizeof(Cell));
+    (*env)->ReleaseByteArrayElements(env, cell_bytes, (jbyte *)cell_native, 0);
   }
 
   Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
   size_t num_commitments = (size_t)(*env)->GetArrayLength(env, commitments_bytes) / BYTES_PER_COMMITMENT;
 
   bool out;
-  C_KZG_RET ret = verify_sample_batch(&out, commitments_native, num_commitments, all_samples_native, count, settings);
+  C_KZG_RET ret = verify_cell_proof_batch(&out, commitments_native, num_commitments, all_cells_native, count, settings);
 
-  (*env)->DeleteLocalRef(env, sample_obj);
-  (*env)->DeleteLocalRef(env, sample_class);
+  (*env)->DeleteLocalRef(env, cell_obj);
+  (*env)->DeleteLocalRef(env, cell_class);
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, all_samples, (jbyte *)all_samples_native, JNI_ABORT);
-  (*env)->DeleteLocalRef(env, all_samples);
+  (*env)->ReleaseByteArrayElements(env, all_cells, (jbyte *)all_cells_native, JNI_ABORT);
+  (*env)->DeleteLocalRef(env, all_cells);
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in verifySampleBatch.");
+    throw_c_kzg_exception(env, ret, "There was an error in verifyCellBatch.");
     return 0;
   }
 
