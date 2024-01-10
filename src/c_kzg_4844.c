@@ -2585,7 +2585,7 @@ static void unscale_poly(fr_t *p, uint64_t len_p) {
  * has the upper half of its values equal to zero.
  *
  * @param[out]  recovered   A preallocated array for recovered cells
- * @param[in]   cells     The cells that you have
+ * @param[in]   cells       The cells that you have
  * @param[in]   s           The trusted setup
  *
  * @remark `recovered` and `cells` can point to the same memory.
@@ -3112,7 +3112,7 @@ out:
  * Given CELLS_PER_BLOB cells, get a blob.
  *
  * @param[out]  blob    The original blob
- * @param[in]   cells An array of CELLS_PER_BLOB cells
+ * @param[in]   cells   An array of CELLS_PER_BLOB cells
  */
 C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
     /* Check that all cells have the same row index */
@@ -3137,7 +3137,7 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
 /**
  * Given a blob, get all of its cells.
  *
- * @param[out]  cells     An array of CELLS_PER_BLOB cells
+ * @param[out]  cells       An array of CELLS_PER_BLOB cells
  * @param[in]   blob        The blob to get cells for
  * @param[in]   row_index   The row index for the blob
  * @param[in]   s           The trusted setup
@@ -3230,8 +3230,8 @@ out:
  * Given some cells for a blob, try to recover the missing ones.
  *
  * @param[out]  recovered   An array of CELLS_PER_BLOB cells
- * @param[in]   cells     An array of cells
- * @param[in]   num_cells How many cells were provided
+ * @param[in]   cells       An array of cells
+ * @param[in]   num_cells   How many cells were provided
  * @param[in]   s           The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
@@ -3322,7 +3322,7 @@ out:
  *
  * @param[out]  ok                  True if the proof are valid, otherwise false
  * @param[in]   commitment_bytes    The commitment associated with the cell
- * @param[in]   cell              The cell to check
+ * @param[in]   cell                The cell to check
  * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_cell_proof(
@@ -3378,7 +3378,7 @@ out:
 /**
  * Check if a cell is uninitialized (all zeros).
  *
- * @param[in]   cell  The cell to check
+ * @param[in]   cell    The cell to check
  *
  * @retval  True    The cell is uninitialized.
  * @retval  False   The cell is initialized.
@@ -3398,8 +3398,8 @@ static bool is_cell_uninit(fr_t *cell) {
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
  * @param[in]   num_commitments     The number of commitments being passed
- * @param[in]   cells             The cells to check
- * @param[in]   num_cells         The number of cells provided
+ * @param[in]   cells               The cells to check
+ * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_cell_proof_batch(
