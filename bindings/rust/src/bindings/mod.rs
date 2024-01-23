@@ -541,21 +541,47 @@ impl KZGCommitment {
 }
 
 impl Cell {
+    /// NOTE: Assumes `proof` is valid for `data` and `(row, col)`.
+    pub fn new(
+        data: [Bytes32; FIELD_ELEMENTS_PER_CELL],
+        proof: Bytes48,
+        row: u32,
+        col: u32,
+    ) -> Self {
+        Self {
+            data,
+            proof: KZGProof { bytes: *proof },
+            row_index: row,
+            column_index: col,
+        }
+    }
+
+    pub fn data(&self) -> [Bytes32; FIELD_ELEMENTS_PER_CELL] {
+        self.data
+    }
+
+    pub fn proof(&self) -> &KZGProof {
+        &self.proof
+    }
+
     pub fn compute_cells(
         blob: &Blob,
         row_index: u32,
         kzg_settings: &KZGSettings,
     ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
-        let mut cells: Box<MaybeUninit<[Cell; CELLS_PER_BLOB]>> = Box::new_uninit();
+        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
         unsafe {
-            let res = compute_cells(
-                cells.as_mut_ptr() as *mut Cell,
-                blob,
-                row_index,
-                kzg_settings,
-            );
+            let res = compute_cells(cells.as_mut_ptr(), blob, row_index, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(cells.assume_init())
+                cells.set_len(CELLS_PER_BLOB);
+
+                let boxed_slice = cells.into_boxed_slice();
+                let boxed_array: Box<[Cell; CELLS_PER_BLOB]> = boxed_slice
+                    .try_into()
+                    .map_err(|_err| "invalid len for blob cell array")
+                    .unwrap();
+
+                Ok(boxed_array)
             } else {
                 Err(Error::CError(res))
             }
