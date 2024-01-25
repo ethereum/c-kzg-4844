@@ -1,7 +1,6 @@
 package ckzg4844
 
 import (
-	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"os"
@@ -9,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	blst "github.com/supranational/blst/bindings/go"
 	"gopkg.in/yaml.v3"
 )
 
@@ -51,16 +49,6 @@ func getRandBlob(seed int64) Blob {
 	return blob
 }
 
-func getRandPoint(seed int64) Bytes48 {
-	var ikm [32]byte
-	binary.BigEndian.PutUint64(ikm[0:8], uint64(seed))
-	sk := blst.KeyGen(ikm[:])
-	pk := new(blst.P1Affine).From(sk).Compress()
-	bytes := Bytes48{}
-	copy(bytes[:], pk)
-	return bytes
-}
-
 func getPartialCells(cells *[CellsPerBlob]Cell, i int) []Cell {
 	partialCells := []Cell{}
 	for j := range cells {
@@ -69,6 +57,17 @@ func getPartialCells(cells *[CellsPerBlob]Cell, i int) []Cell {
 		}
 	}
 	return partialCells
+}
+
+func getColumns(rows []*[CellsPerBlob]Cell, numCols int) []Cell {
+	var cells []Cell
+	for i := range rows {
+		for j := 0; j < numCols; j++ {
+			cells = append(cells, rows[i][j])
+
+		}
+	}
+	return cells
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -515,35 +514,35 @@ func Benchmark(b *testing.B) {
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := BlobToKZGCommitment(blobs[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, _, err := ComputeKZGProof(blobs[0], fields[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := ComputeBlobKZGProof(blobs[0], commitments[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
@@ -551,7 +550,7 @@ func Benchmark(b *testing.B) {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, err := VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
-				require.Nil(b, err)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -559,14 +558,14 @@ func Benchmark(b *testing.B) {
 	b.Run("ComputeCells", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := ComputeCells(&blobs[0], 0)
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
 	b.Run("CellsToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := CellsToBlob(blobCells[0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
@@ -576,7 +575,7 @@ func Benchmark(b *testing.B) {
 		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, err := RecoverCells(partial)
-				require.Nil(b, err)
+				require.NoError(b, err)
 			}
 		})
 	}
@@ -584,7 +583,7 @@ func Benchmark(b *testing.B) {
 	b.Run("VerifyCellProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := VerifyCellProof(commitments[0], &blobCells[0][0])
-			require.Nil(b, err)
+			require.NoError(b, err)
 		}
 	})
 
@@ -602,4 +601,15 @@ func Benchmark(b *testing.B) {
 			require.True(b, ok)
 		}
 	})
+
+	for i := 1; i <= 128; i *= 2 {
+		cells := getColumns(blobCells[:], i)
+		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				ok, err := VerifyCellProofBatch(commitments[:], cells)
+				require.NoError(b, err)
+				require.True(b, ok)
+			}
+		})
+	}
 }
