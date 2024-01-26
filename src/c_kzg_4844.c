@@ -3115,39 +3115,29 @@ out:
  * @param[in]   cells   An array of CELLS_PER_BLOB cells
  */
 C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
-    /* Check that all cells have the same row index */
-    uint32_t row_index = cells[0].row_index;
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        if (cells[i].row_index != row_index) {
-            return C_KZG_BADARGS;
-        }
-    }
-
     /* The first half of cell data is the blob */
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        if (cells[i].column_index >= (CELLS_PER_BLOB / 2)) continue;
-        size_t offset = cells[i].column_index * FIELD_ELEMENTS_PER_CELL;
+    for (size_t i = 0; i < CELLS_PER_BLOB / 2; i++) {
+        size_t offset = i * FIELD_ELEMENTS_PER_CELL;
         Bytes32 *field = (Bytes32 *)(blob->bytes) + offset;
         memcpy(field->bytes, cells[i].data, 32 * FIELD_ELEMENTS_PER_CELL);
     }
-
     return C_KZG_OK;
 }
 
 /**
- * Given a blob, get all of its cells.
+ * Given a blob, get all of its cells and proofs.
  *
  * @param[out]  cells       An array of CELLS_PER_BLOB cells
+ * @param[out]  proofs      An array of CELLS_PER_BLOB proofs
  * @param[in]   blob        The blob to get cells for
- * @param[in]   row_index   The row index for the blob
  * @param[in]   s           The trusted setup
  *
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
  * @remark Use recover_cells to recover missing cells.
  */
-C_KZG_RET compute_cells(
-    Cell *cells, const Blob *blob, uint32_t row_index, const KZGSettings *s
+C_KZG_RET compute_cells_and_proofs(
+    Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *poly_monomial = NULL;
@@ -3207,15 +3197,7 @@ C_KZG_RET compute_cells(
 
     /* Convert all of the proofs to byte-form */
     for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        bytes_from_g1(&cells[i].proof, &proofs_g1[i]);
-        cells[i].row_index = row_index;
-        cells[i].column_index = i;
-    }
-
-    /* Update index fields */
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        cells[i].row_index = row_index;
-        cells[i].column_index = i;
+        bytes_from_g1(&proofs[i], &proofs_g1[i]);
     }
 
 out:
@@ -3230,6 +3212,7 @@ out:
  * Given some cells for a blob, try to recover the missing ones.
  *
  * @param[out]  recovered   An array of CELLS_PER_BLOB cells
+ * @param[in]   cell_is     An array of ids for cells that you have
  * @param[in]   cells       An array of cells
  * @param[in]   num_cells   How many cells were provided
  * @param[in]   s           The trusted setup
@@ -3237,12 +3220,14 @@ out:
  * @remark Recovery is faster if there are fewer missing cells.
  */
 C_KZG_RET recover_cells(
-    Cell *recovered, const Cell *cells, size_t num_cells, const KZGSettings *s
+    Cell *recovered,
+    const uint64_t *cell_ids,
+    const Cell *cells,
+    size_t num_cells,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *recovered_fr = NULL;
-    uint32_t row_index;
-    Blob blob;
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_BLOB) {
@@ -3256,19 +3241,18 @@ C_KZG_RET recover_cells(
         goto out;
     }
 
-    /* Check that cells are for the same blob */
-    row_index = cells[0].row_index;
-    for (size_t i = 0; i < num_cells; i++) {
-        if (cells[i].row_index != row_index) {
-            ret = C_KZG_BADARGS;
-            goto out;
-        }
-    }
-
     /* Check if recovery is necessary */
     if (num_cells == CELLS_PER_BLOB) {
         memcpy(recovered, cells, CELLS_PER_BLOB * sizeof(Cell));
         return C_KZG_OK;
+    }
+
+    /* Check that cell ids are valid */
+    for (size_t i = 0; i < num_cells; i++) {
+        if (cell_ids[i] >= CELLS_PER_BLOB) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
     }
 
     /* Allocate space fr-form arrays */
@@ -3282,7 +3266,7 @@ C_KZG_RET recover_cells(
 
     /* Update with existing cells */
     for (size_t i = 0; i < num_cells; i++) {
-        size_t index = cells[i].column_index * FIELD_ELEMENTS_PER_CELL;
+        size_t index = cell_ids[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             ret = bytes_to_bls_field(
                 &recovered_fr[index + j], &cells[i].data[j]
@@ -3297,20 +3281,11 @@ C_KZG_RET recover_cells(
 
     /* Convert the recovered data points to byte-form */
     for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        recovered[i].row_index = row_index;
-        recovered[i].column_index = i;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
             bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
         }
     }
-
-    /* Get the original blob from the cells */
-    cells_to_blob(&blob, recovered);
-
-    /* TODO: do this more efficiently */
-    ret = compute_cells(recovered, &blob, row_index, s);
-    if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(recovered_fr);
@@ -3322,13 +3297,17 @@ out:
  *
  * @param[out]  ok                  True if the proof are valid, otherwise false
  * @param[in]   commitment_bytes    The commitment associated with the cell
+ * @param[in]   cell_id             The cell identifier
  * @param[in]   cell                The cell to check
+ * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_cell_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
+    uint64_t cell_id,
     const Cell *cell,
+    const Bytes48 *proof_bytes,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3337,8 +3316,8 @@ C_KZG_RET verify_cell_proof(
 
     *ok = false;
 
-    /* Check that index is a valid value */
-    if (cell->column_index >= CELLS_PER_BLOB) {
+    /* Check that cell id is a valid value */
+    if (cell_id >= CELLS_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -3350,7 +3329,7 @@ C_KZG_RET verify_cell_proof(
     /* Convert untrusted inputs */
     ret = bytes_to_kzg_commitment(&commitment, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = bytes_to_kzg_proof(&proof, &cell->proof);
+    ret = bytes_to_kzg_proof(&proof, proof_bytes);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         ret = bytes_to_bls_field(&ys[i], &cell->data[i]);
@@ -3358,7 +3337,7 @@ C_KZG_RET verify_cell_proof(
     }
 
     /* Calculate the input value */
-    size_t pos = reverse_bits_limited(CELLS_PER_BLOB, cell->column_index);
+    size_t pos = reverse_bits_limited(CELLS_PER_BLOB, cell_id);
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */
@@ -3406,7 +3385,10 @@ C_KZG_RET verify_cell_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
+    const uint64_t *row_ids,
+    const uint64_t *column_ids,
     const Cell *cells,
+    const Bytes48 *proofs_bytes,
     size_t num_cells,
     const KZGSettings *s
 ) {
@@ -3447,9 +3429,9 @@ C_KZG_RET verify_cell_proof_batch(
 
     for (size_t i = 0; i < num_cells; i++) {
         /* Make sure column index is valid */
-        if (cells[i].column_index >= CELLS_PER_BLOB) return C_KZG_BADARGS;
+        if (column_ids[i] >= CELLS_PER_BLOB) return C_KZG_BADARGS;
         /* Make sure we can reference all commitments */
-        if (cells[i].row_index >= num_commitments) return C_KZG_BADARGS;
+        if (row_ids[i] >= num_commitments) return C_KZG_BADARGS;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3490,7 +3472,7 @@ C_KZG_RET verify_cell_proof_batch(
 
     /* There should be a proof for each cell */
     for (size_t i = 0; i < num_cells; i++) {
-        ret = bytes_to_kzg_proof(&proofs_g1[i], &cells[i].proof);
+        ret = bytes_to_kzg_proof(&proofs_g1[i], &proofs_bytes[i]);
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -3509,8 +3491,8 @@ C_KZG_RET verify_cell_proof_batch(
     /* Update commitment weights */
     for (size_t i = 0; i < num_cells; i++) {
         blst_fr_add(
-            &commitment_weights[cells[i].row_index],
-            &commitment_weights[cells[i].row_index],
+            &commitment_weights[row_ids[i]],
+            &commitment_weights[row_ids[i]],
             &r_powers[i]
         );
     }
@@ -3561,7 +3543,7 @@ C_KZG_RET verify_cell_proof_batch(
             ret = bytes_to_bls_field(&field, &cells[i].data[j]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
-            size_t index = cells[i].column_index * FIELD_ELEMENTS_PER_CELL + j;
+            size_t index = column_ids[i] * FIELD_ELEMENTS_PER_CELL + j;
             blst_fr_add(
                 &aggregated_column_cells[index],
                 &aggregated_column_cells[index],
@@ -3652,9 +3634,7 @@ C_KZG_RET verify_cell_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     for (size_t i = 0; i < num_cells; i++) {
-        uint32_t pos = reverse_bits_limited(
-            CELLS_PER_BLOB, cells[i].column_index
-        );
+        uint32_t pos = reverse_bits_limited(CELLS_PER_BLOB, column_ids[i]);
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);

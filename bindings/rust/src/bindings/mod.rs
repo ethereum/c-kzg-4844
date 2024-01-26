@@ -466,13 +466,21 @@ impl KZGProof {
 
     pub fn verify_cell_proof(
         commitment_bytes: &Bytes48,
+        cell_id: u64,
         cell: &Cell,
+        proof_bytes: &Bytes48,
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res =
-                verify_cell_proof(verified.as_mut_ptr(), commitment_bytes, cell, kzg_settings);
+            let res = verify_cell_proof(
+                verified.as_mut_ptr(),
+                commitment_bytes,
+                cell_id,
+                cell,
+                proof_bytes,
+                kzg_settings,
+            );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(verified.assume_init())
             } else {
@@ -483,7 +491,10 @@ impl KZGProof {
 
     pub fn verify_cell_proof_batch(
         commitments_bytes: &[Bytes48],
+        row_ids: &[u64],
+        column_ids: &[u64],
         cells: &[Cell],
+        proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
@@ -492,7 +503,10 @@ impl KZGProof {
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
                 commitments_bytes.len(),
+                row_ids.as_ptr(),
+                column_ids.as_ptr(),
                 cells.as_ptr(),
+                proofs_bytes.as_ptr(),
                 cells.len(),
                 kzg_settings,
             );
@@ -541,58 +555,58 @@ impl KZGCommitment {
 }
 
 impl Cell {
-    /// NOTE: Assumes `proof` is valid for `data` and `(row, col)`.
-    pub fn new(
-        data: [Bytes32; FIELD_ELEMENTS_PER_CELL],
-        proof: Bytes48,
-        row: u32,
-        col: u32,
-    ) -> Self {
-        Self {
-            data,
-            proof: KZGProof { bytes: *proof },
-            row_index: row,
-            column_index: col,
-        }
-    }
-
-    pub fn data(&self) -> [Bytes32; FIELD_ELEMENTS_PER_CELL] {
-        self.data
-    }
-
-    pub fn proof(&self) -> &KZGProof {
-        &self.proof
-    }
-
-    pub fn compute_cells(
+    pub fn compute_cells_and_proofs(
         blob: &Blob,
-        row_index: u32,
         kzg_settings: &KZGSettings,
-    ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
+    ) -> Result<(Box<[Cell; CELLS_PER_BLOB]>, Box<[KZGProof; CELLS_PER_BLOB]>), Error> {
+        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_BLOB);
         let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
         unsafe {
-            let res = compute_cells(cells.as_mut_ptr(), blob, row_index, kzg_settings);
+            let res = compute_cells_and_proofs(
+                cells.as_mut_ptr(),
+                proofs.as_mut_ptr(),
+                blob,
+                kzg_settings,
+            );
             if let C_KZG_RET::C_KZG_OK = res {
                 cells.set_len(CELLS_PER_BLOB);
-
-                let boxed_slice = cells.into_boxed_slice();
-                let boxed_array: Box<[Cell; CELLS_PER_BLOB]> = boxed_slice
+                let cells_boxed_slice = cells.into_boxed_slice();
+                let cells_boxed_array: Box<[Cell; CELLS_PER_BLOB]> = cells_boxed_slice
                     .try_into()
                     .map_err(|_err| "invalid len for blob cell array")
                     .unwrap();
 
-                Ok(boxed_array)
+                proofs.set_len(CELLS_PER_BLOB);
+                let proofs_boxed_slice = proofs.into_boxed_slice();
+                let proofs_boxed_array: Box<[KZGProof; CELLS_PER_BLOB]> = proofs_boxed_slice
+                    .try_into()
+                    .map_err(|_err| "invalid len for blob proof array")
+                    .unwrap();
+
+                Ok((cells_boxed_array, proofs_boxed_array))
             } else {
                 Err(Error::CError(res))
             }
         }
     }
 
-    pub fn recover_cells(cells: &[Cell], kzg_settings: &KZGSettings) -> Result<Self, Error> {
+    pub fn recover_cells(
+        cell_ids: &[u64],
+        cells: &[Cell],
+        kzg_settings: &KZGSettings,
+    ) -> Result<Self, Error> {
+        if cell_ids.len() != cells.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cell IDs and {} cells",
+                cell_ids.len(),
+                cells.len()
+            )));
+        }
         let mut recovered = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = recover_cells(
-                recovered.as_mut_ptr() as *mut Cell,
+                recovered.as_mut_ptr(),
+                cell_ids.as_ptr(),
                 cells.as_ptr(),
                 cells.len(),
                 kzg_settings,
@@ -968,19 +982,32 @@ mod tests {
 
         let blob = generate_random_blob(&mut rng);
         let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
-        let cells = Cell::compute_cells(&blob, 0, &kzg_settings).unwrap();
+        let (cells, proofs) = Cell::compute_cells_and_proofs(&blob, &kzg_settings).unwrap();
 
         /* Verify cells individually */
         for i in 0..CELLS_PER_BLOB {
-            let ok = KZGProof::verify_cell_proof(&commitment.to_bytes(), &cells[i], &kzg_settings)
-                .unwrap();
+            let ok = KZGProof::verify_cell_proof(
+                &commitment.to_bytes(),
+                i as u64,
+                &cells[i],
+                &proofs[i].to_bytes(),
+                &kzg_settings,
+            )
+            .unwrap();
             assert_eq!(ok, true);
         }
+
+        let row_ids: Vec<u64> = vec![0; CELLS_PER_BLOB];
+        let column_ids: Vec<u64> = (0..CELLS_PER_BLOB as u64).collect();
+        let cell_proofs: Vec<Bytes48> = proofs.iter().map(|proof| proof.to_bytes()).collect();
 
         /* Verify cells in batch */
         let ok = KZGProof::verify_cell_proof_batch(
             &vec![commitment.to_bytes()],
+            row_ids.as_slice(),
+            column_ids.as_slice(),
             cells.as_slice(),
+            cell_proofs.as_slice(),
             &kzg_settings,
         )
         .unwrap();

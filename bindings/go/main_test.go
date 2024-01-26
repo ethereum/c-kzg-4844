@@ -49,25 +49,32 @@ func getRandBlob(seed int64) Blob {
 	return blob
 }
 
-func getPartialCells(cells *[CellsPerBlob]Cell, i int) []Cell {
+func getPartialCells(cells *[CellsPerBlob]Cell, i int) ([]uint64, []Cell) {
+	cellIds := []uint64{}
 	partialCells := []Cell{}
 	for j := range cells {
 		if j%i != 0 {
+			cellIds = append(cellIds, uint64(j))
 			partialCells = append(partialCells, cells[j])
 		}
 	}
-	return partialCells
+	return cellIds, partialCells
 }
 
-func getColumns(rows []*[CellsPerBlob]Cell, numCols int) []Cell {
+func getColumns(cellRows []*[CellsPerBlob]Cell, proofRows []*[CellsPerBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
+	var rowIds []uint64
+	var columnIds []uint64
 	var cells []Cell
-	for i := range rows {
+	var cellProofs []Bytes48
+	for i := range cellRows {
 		for j := 0; j < numCols; j++ {
-			cells = append(cells, rows[i][j])
-
+			rowIds = append(rowIds, uint64(i))
+			columnIds = append(columnIds, uint64(j))
+			cells = append(cells, cellRows[i][j])
+			cellProofs = append(cellProofs, proofRows[i][j])
 		}
 	}
-	return cells
+	return rowIds, columnIds, cells, cellProofs
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -414,11 +421,11 @@ func TestVerifyCell(t *testing.T) {
 
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	cells, err := ComputeCells(&blob, 0)
+	cells, proofs, err := ComputeCellsAndProofs(&blob)
 	require.NoError(t, err)
 
 	for i := range cells {
-		ok, err := VerifyCellProof(Bytes48(commitment), &cells[i])
+		ok, err := VerifyCellProof(Bytes48(commitment), uint64(i), &cells[i], (*Bytes48)(&proofs[i]))
 		require.NoError(t, err)
 		require.True(t, ok)
 	}
@@ -428,11 +435,20 @@ func TestVerifyCells(t *testing.T) {
 	blob := getRandBlob(0)
 	commitment, err := BlobToKZGCommitment(blob)
 	require.NoError(t, err)
-	cells, err := ComputeCells(&blob, 0)
+	cells, proofs, err := ComputeCellsAndProofs(&blob)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment)}
-	ok, err := VerifyCellProofBatch(commitments, cells[:])
+	var rowIds, columnIds []uint64
+	for i := uint64(0); i < CellsPerBlob; i++ {
+		rowIds = append(rowIds, 0)
+		columnIds = append(columnIds, i)
+	}
+	var proofsBytes []Bytes48
+	for i := uint64(0); i < CellsPerBlob; i++ {
+		proofsBytes = append(proofsBytes, Bytes48(proofs[i]))
+	}
+	ok, err := VerifyCellProofBatch(commitments, rowIds, columnIds, cells[:], proofsBytes[:])
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -446,41 +462,63 @@ func TestVerifyCellsMultiBlobs(t *testing.T) {
 	commitment2, err := BlobToKZGCommitment(blob2)
 	require.NoError(t, err)
 
-	cells1, err := ComputeCells(&blob1, 0)
+	cells1, proofs1, err := ComputeCellsAndProofs(&blob1)
 	require.NoError(t, err)
-	cells2, err := ComputeCells(&blob2, 1)
+	cells2, proofs2, err := ComputeCellsAndProofs(&blob2)
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment1), Bytes48(commitment2)}
 
-	var cells []Cell
-	for _, Cell := range cells1 {
-		cells = append(cells, Cell)
+	var rowIds, columnIds []uint64
+	for i := uint64(0); i < CellsPerBlob; i++ {
+		rowIds = append(rowIds, 0)
+		columnIds = append(columnIds, i)
 	}
-	for _, Cell := range cells2 {
-		cells = append(cells, Cell)
+	for i := uint64(0); i < CellsPerBlob; i++ {
+		rowIds = append(rowIds, 1)
+		columnIds = append(columnIds, i)
 	}
 
-	ok, err := VerifyCellProofBatch(commitments, cells)
+	var cells []Cell
+	for _, cell := range cells1 {
+		cells = append(cells, cell)
+	}
+	for _, cell := range cells2 {
+		cells = append(cells, cell)
+	}
+
+	var proofs []Bytes48
+	for _, proof := range proofs1 {
+		proofs = append(proofs, Bytes48(proof))
+	}
+	for _, proof := range proofs2 {
+		proofs = append(proofs, Bytes48(proof))
+	}
+
+	ok, err := VerifyCellProofBatch(commitments, rowIds, columnIds, cells, proofs)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
 
 func TestRecoverHalfMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	cells, err := ComputeCells(&blob, 0)
+	cells, _, err := ComputeCellsAndProofs(&blob)
 	require.NoError(t, err)
-	partial := getPartialCells(cells, 2)
-	recovered, err := RecoverCells(partial)
+	cellIds, partialCells := getPartialCells(cells, 2)
+	recovered, err := RecoverCells(cellIds, partialCells)
 	require.NoError(t, err)
 	require.Equal(t, recovered, cells)
 }
 
 func TestRecoverNoMissing(t *testing.T) {
 	blob := getRandBlob(0)
-	cells, err := ComputeCells(&blob, 0)
+	cells, _, err := ComputeCellsAndProofs(&blob)
 	require.NoError(t, err)
-	recovered, err := RecoverCells(cells[:])
+	var cellIds []uint64
+	for i := uint64(0); i < CellsPerBlob; i++ {
+		cellIds = append(cellIds, i)
+	}
+	recovered, err := RecoverCells(cellIds, cells[:])
 	require.NoError(t, err)
 	require.Equal(t, recovered, cells)
 }
@@ -496,6 +534,7 @@ func Benchmark(b *testing.B) {
 	proofs := &[n]Bytes48{}
 	fields := &[n]Bytes32{}
 	blobCells := &[n]*[CellsPerBlob]Cell{}
+	blobCellProofs := &[n]*[CellsPerBlob]Bytes48{}
 
 	for i := int64(0); i < n; i++ {
 		blobs[i] = getRandBlob(i)
@@ -508,7 +547,13 @@ func Benchmark(b *testing.B) {
 		require.NoError(b, err)
 		proofs[i] = Bytes48(proof)
 
-		blobCells[i], err = ComputeCells(&blobs[i], uint32(i))
+		tProofs := &[CellsPerBlob]KZGProof{}
+		blobCells[i], tProofs, err = ComputeCellsAndProofs(&blobs[i])
+		require.NoError(b, err)
+		blobCellProofs[i] = &[CellsPerBlob]Bytes48{}
+		for j, p := range tProofs {
+			blobCellProofs[i][j] = Bytes48(p)
+		}
 	}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
@@ -555,9 +600,9 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	b.Run("ComputeCells", func(b *testing.B) {
+	b.Run("ComputeCellsAndProofs", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := ComputeCells(&blobs[0], 0)
+			_, _, err := ComputeCellsAndProofs(&blobs[0])
 			require.NoError(b, err)
 		}
 	})
@@ -571,10 +616,10 @@ func Benchmark(b *testing.B) {
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		partial := getPartialCells(blobCells[0], i)
+		cellIds, partial := getPartialCells(blobCells[0], i)
 		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := RecoverCells(partial)
+				_, err := RecoverCells(cellIds, partial)
 				require.NoError(b, err)
 			}
 		})
@@ -582,31 +627,37 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyCellProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifyCellProof(commitments[0], &blobCells[0][0])
+			_, err := VerifyCellProof(commitments[0], 0, &blobCells[0][0], &blobCellProofs[0][0])
 			require.NoError(b, err)
 		}
 	})
 
 	b.Run("VerifyCellProofBatch", func(b *testing.B) {
+		var rowIds []uint64
+		var columnIds []uint64
 		var cells []Cell
-		for _, blobCell := range blobCells {
-			for _, Cell := range blobCell {
-				cells = append(cells, Cell)
+		var cellProofs []Bytes48
+		for rowId, blobCell := range blobCells {
+			for columnId, cell := range blobCell {
+				rowIds = append(rowIds, uint64(rowId))
+				columnIds = append(columnIds, uint64(columnId))
+				cells = append(cells, cell)
+				cellProofs = append(cellProofs, blobCellProofs[rowId][columnId])
 			}
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellProofBatch(commitments[:], cells)
+			ok, err := VerifyCellProofBatch(commitments[:], rowIds, columnIds, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
 	})
 
 	for i := 1; i <= 128; i *= 2 {
-		cells := getColumns(blobCells[:], i)
+		rowIds, columnIds, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellProofBatch(commitments[:], cells)
+				ok, err := VerifyCellProofBatch(commitments[:], rowIds, columnIds, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}

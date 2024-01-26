@@ -56,8 +56,6 @@ void print_blob(const Blob *blob) {
 }
 
 void print_cell(const Cell *cell) {
-    printf("row: %u, col: %u\n", cell->row_index, cell->column_index);
-    print_bytes48(&cell->proof);
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         print_bytes32(&cell->data[i]);
     }
@@ -1753,17 +1751,20 @@ static void test_compute_cells__succeeds_first_half_is_blob(void) {
     C_KZG_RET ret;
     Blob blob, blob2;
     Cell *cells = NULL;
+    KZGProof *proofs = NULL;
     int diff;
 
-    /* Allocate array of cells */
+    /* Allocate arrays */
     ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_BLOB, sizeof(KZGProof));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
     get_rand_blob(&blob);
 
     /* Get the cells */
-    ret = compute_cells(cells, &blob, 0, &s);
+    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the original blob from the cells */
@@ -1778,15 +1779,21 @@ static void test_reconstruct__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
     Cell *cells = NULL;
+    KZGProof *proofs = NULL;
     Cell *partial = NULL;
     Cell *recovered = NULL;
     size_t num_partial_cells = CELLS_PER_BLOB / 2;
+    uint64_t *cell_ids = NULL;
     int diff;
 
     /* Allocate arrays */
     ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc((void **)&partial, num_partial_cells, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&cell_ids, num_partial_cells, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc((void **)&recovered, CELLS_PER_BLOB, sizeof(Cell));
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1795,16 +1802,17 @@ static void test_reconstruct__succeeds_random_blob(void) {
     get_rand_blob(&blob);
 
     /* Get the cells and proofs */
-    ret = compute_cells(cells, &blob, 0, &s);
+    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Erase half of the cells */
     for (size_t i = 0; i < num_partial_cells; i++) {
-        memcpy(&partial[i], &cells[i * 2], sizeof(Cell));
+        cell_ids[i] = i * 2;
+        memcpy(&partial[i], &cells[cell_ids[i]], sizeof(Cell));
     }
 
     /* Reconstruct with half of the cells */
-    ret = recover_cells(recovered, partial, num_partial_cells, &s);
+    ret = recover_cells(recovered, cell_ids, partial, num_partial_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Check that all of the cells match */
@@ -1830,11 +1838,14 @@ static void test_verify_cell_proof__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
     Cell *cells = NULL;
+    KZGProof *proofs = NULL;
     KZGCommitment commitment;
     bool ok;
 
-    /* Allocate array of cells */
+    /* Allocate arrays */
     ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_BLOB, sizeof(KZGProof));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
@@ -1845,12 +1856,12 @@ static void test_verify_cell_proof__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the cells and proofs */
-    ret = compute_cells(cells, &blob, 0, &s);
+    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Verify all of the cell proofs */
     for (uint64_t i = 0; i < CELLS_PER_BLOB; i++) {
-        ret = verify_cell_proof(&ok, &commitment, &cells[i], &s);
+        ret = verify_cell_proof(&ok, &commitment, i, &cells[i], &proofs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }

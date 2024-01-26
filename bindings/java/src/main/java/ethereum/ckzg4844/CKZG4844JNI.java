@@ -68,8 +68,7 @@ public class CKZG4844JNI {
   /** The number of cells in an extended blob. */
   public static final int CELLS_PER_BLOB = DATA_POINTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
   /** The number of bytes in a single cell. */
-  public static final int BYTES_PER_CELL =
-      (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL) + BYTES_PER_PROOF + 8;
+  public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
 
   private CKZG4844JNI() {}
 
@@ -140,70 +139,69 @@ public class CKZG4844JNI {
    * Compute proof at point z for the polynomial represented by blob.
    *
    * @param blob blob bytes
-   * @param z_bytes a point
+   * @param zBytes a point
    * @return an instance of {@link ProofAndY} holding the proof and the value y = f(z)
    * @throws CKZGException if there is a crypto error
    */
-  public static native ProofAndY computeKzgProof(byte[] blob, byte[] z_bytes);
+  public static native ProofAndY computeKzgProof(byte[] blob, byte[] zBytes);
 
   /**
    * Given a blob, return the KZG proof that is used to verify it against the commitment
    *
    * @param blob blob bytes
-   * @param commitment_bytes commitment bytes
+   * @param commitmentBytes commitment bytes
    * @return the proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitment_bytes);
+  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitmentBytes);
 
   /**
    * Verify the proof by point evaluation for the given commitment
    *
-   * @param commitment_bytes commitment bytes
-   * @param z_bytes Z
-   * @param y_bytes Y
-   * @param proof_bytes the proof that needs verifying
+   * @param commitmentBytes commitment bytes
+   * @param zBytes Z
+   * @param yBytes Y
+   * @param proofBytes the proof that needs verifying
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyKzgProof(
-      byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes, byte[] proof_bytes);
+      byte[] commitmentBytes, byte[] zBytes, byte[] yBytes, byte[] proofBytes);
 
   /**
    * Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
    *
    * @param blob blob bytes
-   * @param commitment_bytes commitment bytes
-   * @param proof_bytes proof bytes
+   * @param commitmentBytes commitment bytes
+   * @param proofBytes proof bytes
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyBlobKzgProof(
-      byte[] blob, byte[] commitment_bytes, byte[] proof_bytes);
+      byte[] blob, byte[] commitmentBytes, byte[] proofBytes);
 
   /**
    * Given a list of blobs and blob KZG proofs, verify that they correspond to the provided
    * commitments.
    *
    * @param blobs flattened blobs bytes
-   * @param commitments_bytes flattened commitments bytes
-   * @param proofs_bytes flattened proofs bytes
+   * @param commitmentsBytes flattened commitments bytes
+   * @param proofsBytes flattened proofs bytes
    * @param count the number of blobs (should be same as the number of proofs and commitments)
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyBlobKzgProofBatch(
-      byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
+      byte[] blobs, byte[] commitmentsBytes, byte[] proofsBytes, long count);
 
   /**
    * Get the cells (data and proofs) for a given blob.
    *
    * @param blob the blob to get cells for
-   * @param index the blob index
-   * @return an array of cells
+   * @return an array of cells and proofs
    * @throws CKZGException if there is a crypto error
    */
-  public static native Cell[] computeCells(byte[] blob, int index);
+  public static native CellsAndProofs computeCellsAndProofs(byte[] blob);
 
   /**
    * Convert an array of cells to a blob.
@@ -212,34 +210,40 @@ public class CKZG4844JNI {
    * @return the blob for the given cells
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] cellsToBlob(Cell[] cells);
+  public static native byte[] cellsToBlob(byte[] cells);
 
   /**
    * Given at least 50% of cells, reconstruct the missing ones.
    *
+   * @param cellIds the identifers for the cells you have
    * @param cells the cells you have
    * @return all cells for that blob
    * @throws CKZGException if there is a crypto error
    */
-  public static native Cell[] recoverCells(Cell[] cells);
+  public static native byte[] recoverCells(long[] cellIds, byte[] cells);
 
   /**
    * Verify that a cell's proof is valid.
    *
-   * @param commitment_bytes commitment bytes
+   * @param commitmentBytes commitment bytes
    * @param cell the cell to verify
    * @return true if the cell is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyCell(byte[] commitment_bytes, Cell cell);
+  public static native boolean verifyCellProof(
+      byte[] commitmentBytes, long cellId, byte[] cell, byte[] proofBytes);
 
   /**
    * Verify that multiple cells' proofs are valid.
    *
-   * @param commitments_bytes the commitments for all blobs
+   * @param commitmentsBytes the commitments for all blobs
+   * @param rowIds the row identifier for each cell
+   * @param columnIds the column identifier for each cell
    * @param cells the cells to verify
+   * @param proofsBytes the proof for each cell
    * @return true if the cells are valid with respect to the given commitments
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyCellBatch(byte[] commitments_bytes, Cell[] cells);
+  public static native boolean verifyCellProofBatch(
+      byte[] commitmentsBytes, long[] rowIds, long[] columnIds, byte[] cells, byte[] proofsBytes);
 }

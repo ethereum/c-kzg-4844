@@ -32,12 +32,7 @@ type (
 	KZGCommitment Bytes48
 	KZGProof      Bytes48
 	Blob          [BytesPerBlob]byte
-	Cell          struct {
-		Data        [FieldElementsPerCell]Bytes32
-		Proof       Bytes48
-		RowIndex    uint32
-		ColumnIndex uint32
-	}
+	Cell          [FieldElementsPerCell]Bytes32
 )
 
 var (
@@ -347,24 +342,26 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 }
 
 /*
-ComputeCells is the binding for:
+ComputeCellsAndProofs is the binding for:
 
-	C_KZG_RET compute_cells(
+	C_KZG_RET compute_cells_and_proofs(
 	    Cell *cells,
+	    KZGProof *proofs,
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeCells(blob *Blob, rowIndex uint32) (*[CellsPerBlob]Cell, error) {
+func ComputeCellsAndProofs(blob *Blob) (*[CellsPerBlob]Cell, *[CellsPerBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	cells := &[CellsPerBlob]Cell{}
-	err := makeErrorFromRet(C.compute_cells(
+	proofs := &[CellsPerBlob]KZGProof{}
+	err := makeErrorFromRet(C.compute_cells_and_proofs(
 		(*C.Cell)(unsafe.Pointer(cells)),
+		(*C.KZGProof)(unsafe.Pointer(proofs)),
 		(*C.Blob)(unsafe.Pointer(blob)),
-		(C.uint32_t)(rowIndex),
 		&settings))
-	return cells, err
+	return cells, proofs, err
 }
 
 /*
@@ -390,17 +387,22 @@ RecoverCells is the binding for:
 
 	C_KZG_RET recover_cells(
 	    Cell *recovered,
+	    const uint64_t *cell_ids,
 	    const Cell *cells,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverCells(cells []Cell) (*[CellsPerBlob]Cell, error) {
+func RecoverCells(cellIds []uint64, cells []Cell) (*[CellsPerBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	recovered := &[CellsPerBlob]Cell{}
+	if len(cellIds) != len(cells) {
+		return recovered, ErrBadArgs
+	}
 	err := makeErrorFromRet(C.recover_cells(
 		(*C.Cell)(unsafe.Pointer(recovered)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
 		(C.size_t)(len(cells)),
 		&settings))
@@ -413,18 +415,22 @@ VerifyCellProof is the binding for:
 	C_KZG_RET verify_cell_proof(
 	    bool *ok,
 	    const Bytes48 *commitment_bytes,
+	    uint64_t cell_id,
 	    const Cell *cell,
+	    const KZGProof *proof,
 	    const KZGSettings *s);
 */
-func VerifyCellProof(commitment Bytes48, cell *Cell) (bool, error) {
+func VerifyCellProof(commitmentBytes Bytes48, cellId uint64, cell *Cell, proofBytes *Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	var result C.bool
 	err := makeErrorFromRet(C.verify_cell_proof(
 		&result,
-		(*C.Bytes48)(unsafe.Pointer(&commitment)),
+		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
+		(C.uint64_t)(cellId),
 		(*C.Cell)(unsafe.Pointer(cell)),
+		(*C.Bytes48)(unsafe.Pointer(proofBytes)),
 		&settings))
 	return bool(result), err
 }
@@ -436,20 +442,30 @@ VerifyCellProofBatch is the binding for:
 	    bool *ok,
 	    const Bytes48 *commitments_bytes,
 	    size_t num_commitments,
+	    const uint64_t *row_ids,
+	    const uint64_t *column_ids,
 	    const Cell *cells,
+	    const Bytes48 *proofs_bytes,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func VerifyCellProofBatch(commitments []Bytes48, cells []Cell) (bool, error) {
+func VerifyCellProofBatch(commitmentsBytes []Bytes48, rowIds, columnIds []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
+	}
+	cellCount := len(cells)
+	if len(rowIds) != cellCount || len(columnIds) != cellCount || len(proofsBytes) != cellCount {
+		return false, ErrBadArgs
 	}
 	var result C.bool
 	err := makeErrorFromRet(C.verify_cell_proof_batch(
 		&result,
-		*(**C.Bytes48)(unsafe.Pointer(&commitments)),
-		(C.size_t)(len(commitments)),
+		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
+		(C.size_t)(len(commitmentsBytes)),
+		*(**C.uint64_t)(unsafe.Pointer(&rowIds)),
+		*(**C.uint64_t)(unsafe.Pointer(&columnIds)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
+		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(cells)),
 		&settings))
 	return bool(result), err
