@@ -555,6 +555,34 @@ impl KZGCommitment {
 }
 
 impl Cell {
+    // TODO: make this a const func.
+    pub fn new(bytes: [u8; BYTES_PER_CELL]) -> Self {
+        let mut cell = Cell::default();
+        let mut index = 0;
+        for chunk in bytes.chunks_exact(BYTES_PER_FIELD_ELEMENT) {
+            cell.data[index].bytes.copy_from_slice(chunk);
+            index += 1;
+        }
+        cell
+    }
+
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
+        if bytes.len() != BYTES_PER_CELL {
+            return Err(Error::InvalidBytesLength(format!(
+                "Invalid byte length. Expected {} got {}",
+                48,
+                bytes.len(),
+            )));
+        }
+        let mut new_bytes = [0; BYTES_PER_CELL];
+        new_bytes.copy_from_slice(bytes);
+        Ok(Self::new(new_bytes))
+    }
+
+    pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
+        Self::from_bytes(&hex_to_bytes(hex_str)?)
+    }
+
     pub fn compute_cells_and_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
@@ -700,6 +728,42 @@ impl Deref for KZGCommitment {
     type Target = [u8; BYTES_PER_COMMITMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
+    }
+}
+
+impl Default for Bytes32 {
+    fn default() -> Self {
+        Bytes32 { bytes: [0; 32] }
+    }
+}
+
+impl Default for Bytes48 {
+    fn default() -> Self {
+        Bytes48 { bytes: [0; 48] }
+    }
+}
+
+impl Default for KZGCommitment {
+    fn default() -> Self {
+        KZGCommitment { bytes: [0; BYTES_PER_COMMITMENT] }
+    }
+}
+
+impl Default for KZGProof {
+    fn default() -> Self {
+        KZGProof { bytes: [0; BYTES_PER_PROOF] }
+    }
+}
+
+impl Default for Blob {
+    fn default() -> Self {
+        Blob { bytes: [0; BYTES_PER_BLOB] }
+    }
+}
+
+impl Default for Cell {
+    fn default() -> Self {
+        Cell { data: [Bytes32::default(); FIELD_ELEMENTS_PER_CELL] }
     }
 }
 
