@@ -2995,11 +2995,6 @@ static C_KZG_RET fk20_multi_da_opt(
     ret = toeplitz_part_3(h, h_ext_fft, k2, s);
     if (ret != C_KZG_OK) goto out;
 
-    // Overwrite the second half of `h` with zero
-    for (uint64_t i = k; i < k2; i++) {
-        h[i] = G1_IDENTITY;
-    }
-
     ret = fft_g1(out, h, k2, s);
     if (ret != C_KZG_OK) goto out;
 
@@ -3212,7 +3207,7 @@ out:
  * Given some cells for a blob, try to recover the missing ones.
  *
  * @param[out]  recovered   An array of CELLS_PER_BLOB cells
- * @param[in]   cell_is     An array of ids for cells that you have
+ * @param[in]   cell_ids    An array of ids for cells that you have
  * @param[in]   cells       An array of cells
  * @param[in]   num_cells   How many cells were provided
  * @param[in]   s           The trusted setup
@@ -3372,12 +3367,15 @@ static bool is_cell_uninit(fr_t *cell) {
 }
 
 /**
- * Given some cells, verify that all of the proofs are valid.
+ * Given some cells, verify that the proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
  * @param[in]   num_commitments     The number of commitments being passed
+ * @param[in]   row_ids             Row identifiers for the cells
+ * @param[in]   column_ids          Column identifiers for the cells
  * @param[in]   cells               The cells to check
+ * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  */

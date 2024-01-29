@@ -2005,6 +2005,28 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     }
     ProfilerStop();
 }
+
+static void profile_compute_cells_and_proofs(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ProfilerStart("compute_cells_and_proofs.prof");
+    for (int i = 0; i < 5; i++) {
+        compute_cells_and_proofs(cells, proofs, &blob, &s);
+    }
+    ProfilerStop();
+}
 #endif /* PROFILE */
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2133,6 +2155,7 @@ int main(void) {
     profile_verify_kzg_proof();
     profile_verify_blob_kzg_proof();
     profile_verify_blob_kzg_proof_batch();
+    profile_compute_cells_and_proofs();
 #endif
     teardown();
 
