@@ -588,6 +588,20 @@ impl Cell {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_CELL] {
+        let mut bytes = [0u8; BYTES_PER_CELL];
+        for (i, chunk) in self.data.iter().enumerate() {
+            let start = i * BYTES_PER_FIELD_ELEMENT;
+            let end = start + BYTES_PER_FIELD_ELEMENT;
+            bytes[start..end].copy_from_slice(&chunk.bytes[..]);
+        }
+        bytes
+    }
+
+    pub fn into_inner(self) -> [Bytes32; FIELD_ELEMENTS_PER_CELL] {
+        self.data
+    }
+
     pub fn compute_cells_and_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
