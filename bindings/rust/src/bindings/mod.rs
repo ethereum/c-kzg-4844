@@ -562,8 +562,8 @@ impl Cell {
 
         let mut index = 0;
         while index < BYTES_PER_CELL {
-            let row = index / FIELD_ELEMENTS_PER_CELL;
-            let col = index % FIELD_ELEMENTS_PER_CELL;
+            let row = index / BYTES_PER_FIELD_ELEMENT;
+            let col = index % BYTES_PER_FIELD_ELEMENT;
             data[row].bytes[col] = bytes[index];
             index += 1;
         }
@@ -877,6 +877,16 @@ mod tests {
     fn test_end_to_end() {
         let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
         test_simple(trusted_setup_file);
+    }
+
+    #[test]
+    fn test_cell() {
+        let mut arr = [0u8; BYTES_PER_CELL];
+        rand::thread_rng().fill(&mut arr);
+
+        let cell = Cell::new(arr);
+        let bytes = cell.to_bytes();
+        assert_eq!(bytes, arr);
     }
 
     const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "../../tests/blob_to_kzg_commitment/*/*/*";
