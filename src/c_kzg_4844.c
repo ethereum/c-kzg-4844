@@ -3291,6 +3291,14 @@ C_KZG_RET recover_cells(
         }
     }
 
+    /* Check that the recovered data matches our input cells */
+    for (size_t i = 0; i < num_cells; i++) {
+        if (memcmp(&recovered[cell_ids[i]], &cells[i], sizeof(Cell))) {
+            ret = C_KZG_ERROR;
+            goto out;
+        }
+    }
+
 out:
     c_kzg_free(recovered_fr);
     return ret;
