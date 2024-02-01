@@ -1926,7 +1926,7 @@ C_KZG_RET load_trusted_setup(
 
     /* For DAS reconstruction */
     out->max_width *= 2;
-    CHECK(out->max_width == DATA_POINTS_PER_BLOB);
+    CHECK(out->max_width == FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->roots_of_unity, out->max_width);
@@ -3467,7 +3467,7 @@ C_KZG_RET verify_cell_proof_batch(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&used_commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&aggregated_column_cells, DATA_POINTS_PER_BLOB);
+    ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
