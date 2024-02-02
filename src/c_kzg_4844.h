@@ -45,6 +45,9 @@ extern "C" {
 /** The number of bytes in a BLS scalar field element. */
 #define BYTES_PER_FIELD_ELEMENT 32
 
+/** The number of bits in a BLS scalar field element. */
+#define BITS_PER_FIELD_ELEMENT 255
+
 /** The number of field elements in a blob. */
 #define FIELD_ELEMENTS_PER_BLOB 4096
 

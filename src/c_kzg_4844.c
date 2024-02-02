@@ -418,8 +418,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
-    /* The last argument is the number of bits in the scalar */
-    blst_p1_mult(out, a, s.b, 8 * sizeof(blst_scalar));
+    blst_p1_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
 }
 
 /**
@@ -432,8 +431,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
 static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
-    /* The last argument is the number of bits in the scalar */
-    blst_p2_mult(out, a, s.b, 8 * sizeof(blst_scalar));
+    blst_p2_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
 }
 
 /**
@@ -773,7 +771,7 @@ static C_KZG_RET g1_lincomb_fast(
         const byte *scalars_arg[2] = {(byte *)scalars, NULL};
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
         blst_p1s_mult_pippenger(
-            out, points_arg, len, scalars_arg, 255, scratch
+            out, points_arg, len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch
         );
     }
 
