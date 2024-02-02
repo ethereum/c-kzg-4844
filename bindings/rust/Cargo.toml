@@ -15,7 +15,12 @@ serde = ["dep:serde"]
 # BLST Compilation:
 # Suppress multi-threading.
 # Engaged on wasm32 target architecture automatically.
-no-threads = []
+no-threads = ["blst/no-threads"]
+
+# BLST Compilation:
+# Compile in portable mode, without ISA extensions.
+# Binary can be executed on all systems.
+portable = ["blst/portable"]
 
 [dependencies]
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }
