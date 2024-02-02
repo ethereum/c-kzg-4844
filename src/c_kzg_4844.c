@@ -2827,53 +2827,6 @@ out:
 }
 
 /**
- * The second part of the Toeplitz matrix multiplication algorithm.
- *
- * @param[out] out Array of G1 group elements, length `n`
- * @param[in]  toeplitz_coeffs Toeplitz coefficients, a polynomial length `n`
- * @param[in]  x_ext_fft The Fourier transform of the extended `x` vector,
- * length `n`
- * @param[in]  fs  The FFT settings previously initialised with
- * #new_fft_settings
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- * @retval C_CZK_ERROR   An internal error occurred
- * @retval C_CZK_MALLOC  Memory allocation failed
- */
-static C_KZG_RET toeplitz_part_2(
-    g1_t *out,
-    const poly_t *toeplitz_coeffs,
-    const g1_t *x_ext_fft,
-    const KZGSettings *fs
-) {
-    C_KZG_RET ret;
-
-    fr_t *toeplitz_coeffs_fft;
-
-    // CHECK(toeplitz_coeffs->length == fk->x_ext_fft_len); // TODO: how to
-    // implement?
-
-    ret = new_fr_array(&toeplitz_coeffs_fft, toeplitz_coeffs->length);
-    if (ret != C_KZG_OK) goto out;
-
-    ret = fft_fr(
-        toeplitz_coeffs_fft,
-        toeplitz_coeffs->coeffs,
-        toeplitz_coeffs->length,
-        fs
-    );
-    if (ret != C_KZG_OK) goto out;
-
-    for (uint64_t i = 0; i < toeplitz_coeffs->length; i++) {
-        g1_mul(&out[i], &x_ext_fft[i], &toeplitz_coeffs_fft[i]);
-    }
-
-out:
-    c_kzg_free(toeplitz_coeffs_fft);
-    return ret;
-}
-
-/**
  * The third part of the Toeplitz matrix multiplication algorithm: transform
  * back and zero the top half.
  *
@@ -2961,6 +2914,7 @@ static C_KZG_RET fk20_multi_da_opt(
     uint64_t n = p->length, n2 = n * 2, k, k2;
     g1_t *h_ext_fft = NULL, *h_ext_fft_file = NULL, *h = NULL;
     poly_t toeplitz_coeffs = {NULL, 0};
+    fr_t *toeplitz_coeffs_fft = NULL;
 
     CHECK(n2 <= s->max_width);
     CHECK(is_power_of_two(n));
@@ -2979,15 +2933,26 @@ static C_KZG_RET fk20_multi_da_opt(
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length);
     if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&toeplitz_coeffs_fft, toeplitz_coeffs.length);
+    if (ret != C_KZG_OK) goto out;
+
     for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         ret = toeplitz_coeffs_stride(
             &toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
         );
         if (ret != C_KZG_OK) goto out;
-        ret = toeplitz_part_2(
-            h_ext_fft_file, &toeplitz_coeffs, s->x_ext_fft_files[i], s
+
+        ret = fft_fr(
+            toeplitz_coeffs_fft,
+            toeplitz_coeffs.coeffs,
+            toeplitz_coeffs.length,
+            s
         );
         if (ret != C_KZG_OK) goto out;
+
+        for (uint64_t j = 0; j < toeplitz_coeffs.length; j++) {
+            g1_mul(&h_ext_fft_file[j], &s->x_ext_fft_files[i][j], &toeplitz_coeffs_fft[j]);
+        }
 
         for (uint64_t j = 0; j < k2; j++) {
             blst_p1_add_or_double(
@@ -3007,6 +2972,7 @@ static C_KZG_RET fk20_multi_da_opt(
 
 out:
     free_poly(&toeplitz_coeffs);
+    c_kzg_free(toeplitz_coeffs_fft);
     c_kzg_free(h_ext_fft_file);
     c_kzg_free(h_ext_fft);
     c_kzg_free(h);
