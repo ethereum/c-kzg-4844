@@ -2827,36 +2827,6 @@ out:
 }
 
 /**
- * The third part of the Toeplitz matrix multiplication algorithm: transform
- * back and zero the top half.
- *
- * @param[out] out Array of G1 group elements, length @p n2
- * @param[in]  h_ext_fft FFT of the extended `h` values, length @p n2
- * @param[in]  n2  Size of the arrays
- * @param[in]  fs  The FFT settings previously initialised with
- * #new_fft_settings
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_ERROR   An internal error occurred
- */
-static C_KZG_RET toeplitz_part_3(
-    g1_t *out, const g1_t *h_ext_fft, uint64_t n2, const KZGSettings *fs
-) {
-    C_KZG_RET ret;
-    uint64_t n = n2 / 2;
-
-    ret = ifft_g1(out, h_ext_fft, n2, fs);
-    if (ret != C_KZG_OK) goto out;
-
-    // Zero the second half of h
-    for (uint64_t i = n; i < n2; i++) {
-        out[i] = G1_IDENTITY;
-    }
-
-out:
-    return ret;
-}
-
-/**
  * Reorder and extend polynomial coefficients for the toeplitz method, strided
  * version.
  *
@@ -2872,24 +2842,23 @@ out:
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
 static C_KZG_RET toeplitz_coeffs_stride(
-    poly_t *out, const poly_t *in, uint64_t offset, uint64_t stride
+    fr_t *out, const poly_t *in, uint64_t offset, uint64_t stride
 ) {
-    uint64_t n = in->length, k, k2;
+    uint64_t n, k, k2;
 
-    CHECK(stride > 0);
+    if (stride == 0) return C_KZG_BADARGS;
 
+    n = in->length;
     k = n / stride;
     k2 = k * 2;
 
-    CHECK(out->length >= k2);
-
-    out->coeffs[0] = in->coeffs[n - 1 - offset];
+    out[0] = in->coeffs[n - 1 - offset];
     for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
-        out->coeffs[i] = FR_ZERO;
+        out[i] = FR_ZERO;
     }
     for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2;
          i++, j += stride) {
-        out->coeffs[i] = in->coeffs[j];
+        out[i] = in->coeffs[j];
     }
 
     return C_KZG_OK;
@@ -2902,78 +2871,68 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @remark Only the lower half of the polynomial is supplied; the upper, zero,
  * half is assumed. The #toeplitz_coeffs_stride routine does the right thing.
  *
- * @param[out] out The proofs, array size `2 * n / s->chunk_length`
- * @param[in]  p   The polynomial, length `n`
- * @param[in]  s  FK20 multi settings previously initialised by
- * #new_fk20_multi_settings
+ * @param[out]  out The proofs, array size `2 * n / s->chunk_length`
+ * @param[in]   p   The polynomial, length `n`
+ * @param[in]   s   The trusted setup
  */
 static C_KZG_RET fk20_multi_da_opt(
     g1_t *out, const poly_t *p, const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    uint64_t n = p->length, n2 = n * 2, k, k2;
-    g1_t *h_ext_fft = NULL, *h_ext_fft_file = NULL, *h = NULL;
-    poly_t toeplitz_coeffs = {NULL, 0};
+    uint64_t n, k, k2;
+    g1_t tmp;
+
+    fr_t *toeplitz_coeffs = NULL;
     fr_t *toeplitz_coeffs_fft = NULL;
+    g1_t *h_ext_fft = NULL;
+    g1_t *h = NULL;
 
-    CHECK(n2 <= s->max_width);
-    CHECK(is_power_of_two(n));
-
-    n = n2 / 2;
+    /* Initialize length variables */
+    n = p->length;
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
+    /* Do allocations */
+    ret = new_fr_array(&toeplitz_coeffs, k2);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&toeplitz_coeffs_fft, k2);
+    if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&h_ext_fft, k2);
     if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&h, k2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Initialize values to zero */
     for (uint64_t i = 0; i < k2; i++) {
         h_ext_fft[i] = G1_IDENTITY;
     }
 
-    ret = new_poly(&toeplitz_coeffs, n2 / FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h_ext_fft_file, toeplitz_coeffs.length);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&toeplitz_coeffs_fft, toeplitz_coeffs.length);
-    if (ret != C_KZG_OK) goto out;
-
-    for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        ret = toeplitz_coeffs_stride(
-            &toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
-        );
+    for (uint64_t i = 0; i < k; i++) {
+        ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, i, k);
         if (ret != C_KZG_OK) goto out;
-
-        ret = fft_fr(
-            toeplitz_coeffs_fft,
-            toeplitz_coeffs.coeffs,
-            toeplitz_coeffs.length,
-            s
-        );
+        ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
-
-        for (uint64_t j = 0; j < toeplitz_coeffs.length; j++) {
-            g1_mul(&h_ext_fft_file[j], &s->x_ext_fft_files[i][j], &toeplitz_coeffs_fft[j]);
-        }
 
         for (uint64_t j = 0; j < k2; j++) {
-            blst_p1_add_or_double(
-                &h_ext_fft[j], &h_ext_fft[j], &h_ext_fft_file[j]
-            );
+            g1_mul(&tmp, &s->x_ext_fft_files[i][j], &toeplitz_coeffs_fft[j]);
+            blst_p1_add_or_double(&h_ext_fft[j], &h_ext_fft[j], &tmp);
         }
     }
 
-    // Calculate `h`
-    ret = new_g1_array(&h, k2);
+    ret = ifft_g1(h, h_ext_fft, k2, s);
     if (ret != C_KZG_OK) goto out;
-    ret = toeplitz_part_3(h, h_ext_fft, k2, s);
-    if (ret != C_KZG_OK) goto out;
+
+    /* Zero the second half of h */
+    for (uint64_t i = k; i < k2; i++) {
+        h[i] = G1_IDENTITY;
+    }
 
     ret = fft_g1(out, h, k2, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
-    free_poly(&toeplitz_coeffs);
+    c_kzg_free(toeplitz_coeffs);
     c_kzg_free(toeplitz_coeffs_fft);
-    c_kzg_free(h_ext_fft_file);
     c_kzg_free(h_ext_fft);
     c_kzg_free(h);
     return ret;
@@ -3152,7 +3111,9 @@ C_KZG_RET compute_cells_and_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the data points */
-        ret = bit_reversal_permutation(data_fr, sizeof(data_fr[0]), s->max_width);
+        ret = bit_reversal_permutation(
+            data_fr, sizeof(data_fr[0]), s->max_width
+        );
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the cells to byte-form */
