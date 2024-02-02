@@ -3170,7 +3170,7 @@ C_KZG_RET compute_cells_and_proofs(
     ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
 
-    /* We need to polynomial to be in monomial form */
+    /* We need the polynomial to be in monomial form */
     ret = poly_lagrange_to_monomial(
         poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s
     );
