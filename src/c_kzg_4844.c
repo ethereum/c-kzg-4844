@@ -3133,6 +3133,9 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
  * @remark Use recover_cells to recover missing cells.
+ * @remark If cells is NULL, they won't be computed.
+ * @remark If proofs is NULL, they won't be computed.
+ * @remark
  */
 C_KZG_RET compute_cells_and_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
@@ -3143,14 +3146,15 @@ C_KZG_RET compute_cells_and_proofs(
     fr_t *data_fr = NULL;
     g1_t *proofs_g1 = NULL;
 
+    /* If both of these are null, something is wrong */
+    if (cells == NULL && proofs == NULL) {
+        return C_KZG_BADARGS;
+    }
+
     /* Allocate space fr-form arrays */
     ret = new_fr_array(&poly_monomial, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_lagrange, s->max_width);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&data_fr, CELLS_PER_BLOB * FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, CELLS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all of the polynomial fields to zero */
@@ -3166,36 +3170,51 @@ C_KZG_RET compute_cells_and_proofs(
     ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
 
+    /* We need to polynomial to be in monomial form */
     ret = poly_lagrange_to_monomial(
         poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Get the data points via forward transformation */
-    ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
-    if (ret != C_KZG_OK) goto out;
+    if (cells != NULL) {
+        /* Allocate space for our data points */
+        ret = new_fr_array(&data_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
+        if (ret != C_KZG_OK) goto out;
 
-    /* Bit-reverse the data points */
-    ret = bit_reversal_permutation(data_fr, sizeof(data_fr[0]), s->max_width);
-    if (ret != C_KZG_OK) goto out;
+        /* Get the data points via forward transformation */
+        ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
+        if (ret != C_KZG_OK) goto out;
 
-    /* Convert all of the cells to byte-form */
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
-            bytes_from_bls_field(&cells[i].data[j], &data_fr[index]);
+        /* Bit-reverse the data points */
+        ret = bit_reversal_permutation(data_fr, sizeof(data_fr[0]), s->max_width);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Convert all of the cells to byte-form */
+        for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+            for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+                size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+                bytes_from_bls_field(&cells[i].data[j], &data_fr[index]);
+            }
         }
     }
 
-    poly_t p = {NULL, 0};
-    p.length = s->max_width / 2;
-    p.coeffs = poly_monomial;
-    ret = da_using_fk20_multi(proofs_g1, &p, s);
-    if (ret != C_KZG_OK) goto out;
+    if (proofs != NULL) {
+        /* Allocate space for our proofs in g1-form */
+        ret = new_g1_array(&proofs_g1, CELLS_PER_BLOB);
+        if (ret != C_KZG_OK) goto out;
 
-    /* Convert all of the proofs to byte-form */
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
-        bytes_from_g1(&proofs[i], &proofs_g1[i]);
+        poly_t p = {NULL, 0};
+        p.length = s->max_width / 2;
+        p.coeffs = poly_monomial;
+
+        /* Compute the proofs */
+        ret = da_using_fk20_multi(proofs_g1, &p, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Convert all of the proofs to byte-form */
+        for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+            bytes_from_g1(&proofs[i], &proofs_g1[i]);
+        }
     }
 
 out:

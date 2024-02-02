@@ -64,6 +64,7 @@ where
                 | "BYTES_PER_COMMITMENT"
                 | "BYTES_PER_PROOF"
                 | "BYTES_PER_FIELD_ELEMENT"
+                | "BITS_PER_FIELD_ELEMENT"
                 | "BYTES_PER_BLOB"
                 | "BYTES_PER_CELL"
                 | "FIELD_ELEMENTS_PER_EXT_BLOB"

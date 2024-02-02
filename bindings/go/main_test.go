@@ -600,6 +600,13 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
+	b.Run("ComputeCells", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, err := ComputeCells(&blobs[0])
+			require.NoError(b, err)
+		}
+	})
+
 	b.Run("ComputeCellsAndProofs", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, _, err := ComputeCellsAndProofs(&blobs[0])

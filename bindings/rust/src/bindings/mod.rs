@@ -21,6 +21,7 @@ use core::ops::{Deref, DerefMut};
 use alloc::ffi::CString;
 #[cfg(feature = "std")]
 use std::path::Path;
+use std::ptr::null_mut;
 
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
@@ -602,12 +603,38 @@ impl Cell {
         self.data
     }
 
+    pub fn compute_cells(
+        blob: &Blob,
+        kzg_settings: &KZGSettings,
+    ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
+        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
+        unsafe {
+            let res = compute_cells_and_proofs(
+                cells.as_mut_ptr(),
+                null_mut(),
+                blob,
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                cells.set_len(CELLS_PER_BLOB);
+                let cells_boxed_slice = cells.into_boxed_slice();
+                let cells_boxed_array: Box<[Cell; CELLS_PER_BLOB]> = cells_boxed_slice
+                    .try_into()
+                    .map_err(|_err| "invalid len for blob cell array")
+                    .unwrap();
+                Ok(cells_boxed_array)
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
     pub fn compute_cells_and_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
     ) -> Result<(Box<[Cell; CELLS_PER_BLOB]>, Box<[KZGProof; CELLS_PER_BLOB]>), Error> {
-        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_BLOB);
         let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
+        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_BLOB);
         unsafe {
             let res = compute_cells_and_proofs(
                 cells.as_mut_ptr(),

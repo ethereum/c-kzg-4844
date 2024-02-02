@@ -55,8 +55,10 @@ public class CKZG4844JNI {
   public static final int BYTES_PER_COMMITMENT = 48;
   /** The number of bytes in a KZG proof. */
   public static final int BYTES_PER_PROOF = 48;
-  /** The bytes used to encode a BLS scalar field element. */
+  /** The number of bytes in a BLS scalar field element. */
   public static final int BYTES_PER_FIELD_ELEMENT = 32;
+  /** The number of bits in a BLS scalar field element. */
+  public static final int BITS_PER_FIELD_ELEMENT = 255;
   /** The number of field elements in a blob. */
   public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
   /** The number of field elements in a blob. */
@@ -195,10 +197,19 @@ public class CKZG4844JNI {
       byte[] blobs, byte[] commitmentsBytes, byte[] proofsBytes, long count);
 
   /**
-   * Get the cells (data and proofs) for a given blob.
+   * Get the cells for a given blob.
    *
    * @param blob the blob to get cells for
-   * @return an array of cells and proofs
+   * @return an array of cells
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] computeCells(byte[] blob);
+
+  /**
+   * Get the cells and proofs for a given blob.
+   *
+   * @param blob the blob to get cells/proofs for
+   * @return a CellsAndProofs object
    * @throws CKZGException if there is a crypto error
    */
   public static native CellsAndProofs computeCellsAndProofs(byte[] blob);

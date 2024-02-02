@@ -166,8 +166,8 @@ public class CKZG4844JNITest {
   public void checkCellsToBlob() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(blob);
-    final byte[] newBlob = CKZG4844JNI.cellsToBlob(cellsAndProofs.getCells());
+    final byte[] cells = CKZG4844JNI.computeCells(blob);
+    final byte[] newBlob = CKZG4844JNI.cellsToBlob(cells);
     assertArrayEquals(blob, newBlob);
     CKZG4844JNI.freeTrustedSetup();
   }

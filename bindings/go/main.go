@@ -20,10 +20,12 @@ const (
 	BytesPerBlob         = C.BYTES_PER_BLOB
 	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
 	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
+	BitsPerFieldElement  = C.BITS_PER_FIELD_ELEMENT
 	BytesPerProof        = C.BYTES_PER_PROOF
 	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
 	FieldElementsPerCell = C.FIELD_ELEMENTS_PER_CELL
 	CellsPerBlob         = C.CELLS_PER_BLOB
+	BytesPerCell         = C.BYTES_PER_CELL
 )
 
 type (
@@ -339,6 +341,28 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		(C.size_t)(len(blobs)),
 		&settings)
 	return bool(result), makeErrorFromRet(ret)
+}
+
+/*
+ComputeCells is the binding for:
+
+	C_KZG_RET compute_cells_and_proofs(
+	    Cell *cells,
+	    KZGProof *proofs,
+	    const Blob *blob,
+	    const KZGSettings *s);
+*/
+func ComputeCells(blob *Blob) (*[CellsPerBlob]Cell, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	cells := &[CellsPerBlob]Cell{}
+	err := makeErrorFromRet(C.compute_cells_and_proofs(
+		(*C.Cell)(unsafe.Pointer(cells)),
+		nil, /* Do not generate proofs */
+		(*C.Blob)(unsafe.Pointer(blob)),
+		&settings))
+	return cells, err
 }
 
 /*
