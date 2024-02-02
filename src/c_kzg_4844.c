@@ -3118,11 +3118,7 @@ out:
  */
 C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
     /* The first half of cell data is the blob */
-    for (size_t i = 0; i < CELLS_PER_BLOB / 2; i++) {
-        size_t offset = i * FIELD_ELEMENTS_PER_CELL;
-        Bytes32 *field = (Bytes32 *)(blob->bytes) + offset;
-        memcpy(field->bytes, cells[i].data, 32 * FIELD_ELEMENTS_PER_CELL);
-    }
+    memcpy(blob, cells, BYTES_PER_BLOB);
     return C_KZG_OK;
 }
 
