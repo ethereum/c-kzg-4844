@@ -60,7 +60,7 @@ jobs:
 
       - name: Build and Test
         working-directory: bindings/rust
-        run: cargo test --target ${{ matrix.target }}
+        run: cargo test --target ${{ matrix.target }} --features generate-bindings
       - name: Check that bindings are up to date
         run: git diff --exit-code bindings/rust/src/bindings/generated.rs
       - name: Benchmark
