@@ -34,7 +34,7 @@ fn main() {
 
     cc.try_compile("ckzg").expect("Failed to compile ckzg");
 
-    #[cfg(feature = "generate_bindings")]
+    #[cfg(feature = "generate-bindings")]
     {
         let header_path = c_src_dir.join("c_kzg_4844.h");
         let bindings_out_path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/bindings/generated.rs");
@@ -49,7 +49,7 @@ fn main() {
     println!("cargo:rustc-link-lib=ckzg");
 }
 
-#[cfg(feature = "generate_bindings")]
+#[cfg(feature = "generate-bindings")]
 fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &std::path::Path) {
     use bindgen::Builder;
 

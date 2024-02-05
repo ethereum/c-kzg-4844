@@ -11,7 +11,7 @@ links = "ckzg"
 default = ["std", "blst/portable"]
 std = ["hex/std", "libc/std", "serde?/std"]
 serde = ["dep:serde"]
-generate_bindings = ["dep:bindgen"]
+generate-bindings = ["dep:bindgen"]
 
 # BLST Compilation:
 # Suppress multi-threading.
