@@ -18,6 +18,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: taiki-e/install-action@cargo-hack
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./bindings/rust"
       - name: cargo hack
         working-directory: bindings/rust
         run: cargo hack check --feature-powerset --depth 2
@@ -25,24 +27,42 @@ jobs:
         run: git diff --exit-code bindings/rust/src/bindings/generated.rs
 
   tests:
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.host }}
     strategy:
+      fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          - macos-latest
+        include:
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - host: windows-latest
+            target: x86_64-pc-windows-msvc
+          - host: macos-14
+            target: aarch64-apple-darwin
+          - host: macos-latest
+            target: x86_64-apple-darwin
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./bindings/rust"
+          cache-on-failure: true
+
       - name: Build and Test
         working-directory: bindings/rust
-        run: cargo test --features generate_bindings
+        run: cargo test --target ${{ matrix.target }}
       - name: Check that bindings are up to date
         run: git diff --exit-code bindings/rust/src/bindings/generated.rs
       - name: Benchmark
         working-directory: bindings/rust
-        run: cargo bench
+        run: cargo bench --target ${{ matrix.target }}

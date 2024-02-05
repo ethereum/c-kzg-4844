@@ -8,7 +8,7 @@ links = "ckzg"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["std"]
+default = ["std", "blst/portable"]
 std = ["hex/std", "libc/std", "serde?/std"]
 serde = ["dep:serde"]
 generate_bindings = ["dep:bindgen"]
@@ -16,7 +16,7 @@ generate_bindings = ["dep:bindgen"]
 # BLST Compilation:
 # Suppress multi-threading.
 # Engaged on wasm32 target architecture automatically.
-no-threads = []
+no-threads = ["blst/no-threads"]
 
 [dependencies]
 blst = { version = "0.3.11", default-features = false }
