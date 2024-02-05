@@ -8,14 +8,14 @@ links = "ckzg"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["std"]
+default = ["std", "blst/portable"]
 std = ["hex/std", "libc/std", "serde?/std"]
 serde = ["dep:serde"]
 
 # BLST Compilation:
 # Suppress multi-threading.
 # Engaged on wasm32 target architecture automatically.
-no-threads = []
+no-threads = ["blst/no-threads"]
 
 [dependencies]
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }
