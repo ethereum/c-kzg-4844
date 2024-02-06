@@ -58,7 +58,7 @@ pub struct Bytes48 {
 pub struct Blob {
     bytes: [u8; 131072usize],
 }
-#[repr(u32)]
+#[repr(C)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub enum C_KZG_RET {

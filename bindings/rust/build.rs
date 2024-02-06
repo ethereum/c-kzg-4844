@@ -121,7 +121,41 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
         .generate()
         .unwrap();
 
+    let mut bindings = bindings.to_string();
+    bindings = replace_ckzg_ret_repr(bindings);
+    std::fs::write(bindings_out_path, bindings).expect("Failed to write bindings");
+}
+
+// Here we hardcode the C_KZG_RET enum to use C representation. Bindgen
+// will use repr(u32) on Unix and repr(i32) on Windows. We would like to
+// use the same generated bindings for all platforms. This can be removed
+// if/when bindgen fixes this or allows us to choose our own representation
+// for types. Using repr(C) is equivalent to repr(u*) for fieldless enums,
+// so this should be safe to do. The alternative was to modify C_KZG_RET in
+// C and we decided this was the lesser of two evils. There should be only
+// one instance where repr(C) isn't used: C_KZG_RET.
+// See: https://github.com/rust-lang/rust-bindgen/issues/1907
+#[cfg(feature = "generate-bindings")]
+fn replace_ckzg_ret_repr(mut bindings: String) -> String {
+    let target = env::var("TARGET").unwrap_or_default();
+    let repr_to_replace = if target.contains("windows") {
+        "#[repr(i32)]"
+    } else {
+        "#[repr(u32)]"
+    };
+
+    // Find `repr_to_replace` as an attribute of `enum C_KZG_RET`.
+    let ckzg_ret = bindings
+        .find("enum C_KZG_RET")
+        .expect("Could not find C_KZG_RET in bindings");
+    let repr_start = bindings[..ckzg_ret]
+        .rfind(repr_to_replace)
+        .expect("Could not find repr to replace in bindings");
+
+    // Sanity check that it's an attribute of `C_KZG_RET` and not another type.
+    assert!(repr_start > bindings[..ckzg_ret].rfind('}').unwrap());
+
+    bindings.replace_range(repr_start..repr_start + repr_to_replace.len(), "#[repr(C)]");
+
     bindings
-        .write_to_file(bindings_out_path)
-        .expect("Failed to write bindings");
 }
