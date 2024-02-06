@@ -8,10 +8,14 @@ links = "ckzg"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["std", "blst/portable"]
+default = ["std", "portable"]
 std = ["hex/std", "libc/std", "serde?/std"]
 serde = ["dep:serde"]
 generate-bindings = ["dep:bindgen"]
+
+# This is a standalone feature so that crates that disable default features can
+# enable blst/portable without having to add it as a dependency
+portable = ["blst/portable"]
 
 # BLST Compilation:
 # Suppress multi-threading.
