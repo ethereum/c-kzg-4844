@@ -2880,12 +2880,14 @@ static C_KZG_RET fk20_multi_da_opt(
 ) {
     C_KZG_RET ret;
     uint64_t n, k, k2;
-    g1_t tmp;
 
     fr_t *toeplitz_coeffs = NULL;
     fr_t *toeplitz_coeffs_fft = NULL;
     g1_t *h_ext_fft = NULL;
     g1_t *h = NULL;
+
+    g1_t **points = NULL;
+    fr_t **coeffs_ffts = NULL;
 
     /* Initialize length variables */
     n = p->length;
@@ -2902,6 +2904,22 @@ static C_KZG_RET fk20_multi_da_opt(
     ret = new_g1_array(&h, k2);
     if (ret != C_KZG_OK) goto out;
 
+    /* Allocate 2d array for points */
+    ret = c_kzg_calloc((void **)&points, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        ret = new_g1_array(&points[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    /* Allocate 2d array for coefficients */
+    ret = c_kzg_calloc((void **)&coeffs_ffts, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        ret = new_fr_array(&coeffs_ffts[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
+
     /* Initialize values to zero */
     for (uint64_t i = 0; i < k2; i++) {
         h_ext_fft[i] = G1_IDENTITY;
@@ -2912,11 +2930,15 @@ static C_KZG_RET fk20_multi_da_opt(
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
-
         for (uint64_t j = 0; j < k2; j++) {
-            g1_mul(&tmp, &s->x_ext_fft_files[i][j], &toeplitz_coeffs_fft[j]);
-            blst_p1_add_or_double(&h_ext_fft[j], &h_ext_fft[j], &tmp);
+            coeffs_ffts[j][i] = toeplitz_coeffs_fft[j];
+            /* This is inefficient, re-org during initialization */
+            points[j][i] = s->x_ext_fft_files[i][j];
         }
+    }
+
+    for (uint64_t i = 0; i < k2; i++) {
+        g1_lincomb_fast(&h_ext_fft[i], points[i], coeffs_ffts[i], k);
     }
 
     ret = ifft_g1(h, h_ext_fft, k2, s);
@@ -2933,6 +2955,12 @@ static C_KZG_RET fk20_multi_da_opt(
 out:
     c_kzg_free(toeplitz_coeffs);
     c_kzg_free(toeplitz_coeffs_fft);
+    for (uint64_t i = k2; i < k2; i++) {
+        c_kzg_free(points[i]);
+        c_kzg_free(coeffs_ffts[i]);
+    }
+    c_kzg_free(points);
+    c_kzg_free(coeffs_ffts);
     c_kzg_free(h_ext_fft);
     c_kzg_free(h);
     return ret;
