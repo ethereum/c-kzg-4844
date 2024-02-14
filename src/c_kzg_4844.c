@@ -1798,10 +1798,10 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values);
     c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        c_kzg_free(s->x_ext_fft_files[i]);
+    for (size_t i = 0; i < 2 * FIELD_ELEMENTS_PER_CELL; i++) {
+        c_kzg_free(s->x_ext_ftt_columns[i]);
     }
-    c_kzg_free(s->x_ext_fft_files);
+    c_kzg_free(s->x_ext_ftt_columns);
 }
 
 /* Forward function declaration */
@@ -1816,24 +1816,33 @@ static C_KZG_RET toeplitz_part_1(
  */
 static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     C_KZG_RET ret;
-    uint64_t n, k;
+    uint64_t n, k, k2;
     g1_t *x = NULL;
+    g1_t *points = NULL;
 
     n = s->max_width / 2;
     k = n / FIELD_ELEMENTS_PER_CELL;
+    k2 = 2 * k;
 
     if (FIELD_ELEMENTS_PER_CELL >= TRUSTED_SETUP_NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
-    /* Allocate space for array of pointers, this is a 2D array */
-    void **tmp = (void **)&s->x_ext_fft_files;
-    ret = c_kzg_calloc(tmp, FIELD_ELEMENTS_PER_CELL, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-
+    /* Allocate space for arrays */
     ret = new_g1_array(&x, k);
     if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&points, k2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate space for array of pointers, this is a 2D array */
+    void **tmp = (void **)&s->x_ext_ftt_columns;
+    ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (size_t i = 0; i < k2; i++) {
+        ret = new_g1_array(&s->x_ext_ftt_columns[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
 
     for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
         uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
@@ -1843,14 +1852,18 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         }
         x[k - 1] = G1_IDENTITY;
 
-        ret = new_g1_array(&s->x_ext_fft_files[offset], 2 * k);
+        ret = toeplitz_part_1(points, x, k, s);
         if (ret != C_KZG_OK) goto out;
-        ret = toeplitz_part_1(s->x_ext_fft_files[offset], x, k, s);
-        if (ret != C_KZG_OK) goto out;
+
+        /* Reorganize from rows into columns */
+        for (size_t row = 0; row < k2; row++) {
+            s->x_ext_ftt_columns[row][offset] = points[row];
+        }
     }
 
 out:
     c_kzg_free(x);
+    c_kzg_free(points);
     return ret;
 }
 
@@ -1908,7 +1921,7 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g1_values_lagrange = NULL;
     out->g2_values = NULL;
-    out->x_ext_fft_files = NULL;
+    out->x_ext_ftt_columns = NULL;
 
     /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
@@ -2881,18 +2894,24 @@ static C_KZG_RET fk20_multi_da_opt(
     C_KZG_RET ret;
     uint64_t n, k, k2;
 
+    fr_t **coeffs = NULL;
     fr_t *toeplitz_coeffs = NULL;
     fr_t *toeplitz_coeffs_fft = NULL;
     g1_t *h_ext_fft = NULL;
     g1_t *h = NULL;
 
-    g1_t **points = NULL;
-    fr_t **coeffs_ffts = NULL;
-
     /* Initialize length variables */
     n = p->length;
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
+
+    /* Allocate 2d array for coefficients by column */
+    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        ret = new_fr_array(&coeffs[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
 
     /* Do allocations */
     ret = new_fr_array(&toeplitz_coeffs, k2);
@@ -2904,41 +2923,25 @@ static C_KZG_RET fk20_multi_da_opt(
     ret = new_g1_array(&h, k2);
     if (ret != C_KZG_OK) goto out;
 
-    /* Allocate 2d array for points */
-    ret = c_kzg_calloc((void **)&points, k2, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < k2; i++) {
-        ret = new_g1_array(&points[i], k);
-        if (ret != C_KZG_OK) goto out;
-    }
-
-    /* Allocate 2d array for coefficients */
-    ret = c_kzg_calloc((void **)&coeffs_ffts, k2, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < k2; i++) {
-        ret = new_fr_array(&coeffs_ffts[i], k);
-        if (ret != C_KZG_OK) goto out;
-    }
-
     /* Initialize values to zero */
     for (uint64_t i = 0; i < k2; i++) {
         h_ext_fft[i] = G1_IDENTITY;
     }
 
+    /* Compute toeplitz coefficients and organize by column */
     for (uint64_t i = 0; i < k; i++) {
         ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, i, k);
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
         for (uint64_t j = 0; j < k2; j++) {
-            coeffs_ffts[j][i] = toeplitz_coeffs_fft[j];
-            /* This is inefficient, re-org during initialization */
-            points[j][i] = s->x_ext_fft_files[i][j];
+            coeffs[j][i] = toeplitz_coeffs_fft[j];
         }
     }
 
+    /* Compute h_ext_fft via MSM */
     for (uint64_t i = 0; i < k2; i++) {
-        g1_lincomb_fast(&h_ext_fft[i], points[i], coeffs_ffts[i], k);
+        g1_lincomb_fast(&h_ext_fft[i], s->x_ext_ftt_columns[i], coeffs[i], k);
     }
 
     ret = ifft_g1(h, h_ext_fft, k2, s);
@@ -2955,12 +2958,10 @@ static C_KZG_RET fk20_multi_da_opt(
 out:
     c_kzg_free(toeplitz_coeffs);
     c_kzg_free(toeplitz_coeffs_fft);
-    for (uint64_t i = k2; i < k2; i++) {
-        c_kzg_free(points[i]);
-        c_kzg_free(coeffs_ffts[i]);
+    for (uint64_t i = 0; i < k2; i++) {
+        c_kzg_free(coeffs[i]);
     }
-    c_kzg_free(points);
-    c_kzg_free(coeffs_ffts);
+    c_kzg_free(coeffs);
     c_kzg_free(h_ext_fft);
     c_kzg_free(h);
     return ret;

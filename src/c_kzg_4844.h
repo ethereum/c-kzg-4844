@@ -148,7 +148,7 @@ typedef struct {
      * in monomial form. */
     g2_t *g2_values;
     /** Data used during FK20 proof generation. */
-    g1_t **x_ext_fft_files;
+    g1_t **x_ext_ftt_columns;
 } KZGSettings;
 
 ///////////////////////////////////////////////////////////////////////////////
