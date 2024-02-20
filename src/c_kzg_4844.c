@@ -1798,7 +1798,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values);
     c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
-    for (size_t i = 0; i < 2 * FIELD_ELEMENTS_PER_CELL; i++) {
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
         c_kzg_free(s->x_ext_ftt_columns[i]);
     }
     c_kzg_free(s->x_ext_ftt_columns);
@@ -1840,7 +1840,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < k2; i++) {
-        ret = new_g1_array(&s->x_ext_ftt_columns[i], k);
+        ret = new_g1_array(&s->x_ext_ftt_columns[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -2929,8 +2929,10 @@ static C_KZG_RET fk20_multi_da_opt(
     }
 
     /* Compute toeplitz coefficients and organize by column */
-    for (uint64_t i = 0; i < k; i++) {
-        ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, i, k);
+    for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        ret = toeplitz_coeffs_stride(
+            toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
+        );
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
@@ -2941,7 +2943,12 @@ static C_KZG_RET fk20_multi_da_opt(
 
     /* Compute h_ext_fft via MSM */
     for (uint64_t i = 0; i < k2; i++) {
-        g1_lincomb_fast(&h_ext_fft[i], s->x_ext_ftt_columns[i], coeffs[i], k);
+        g1_lincomb_fast(
+            &h_ext_fft[i],
+            s->x_ext_ftt_columns[i],
+            coeffs[i],
+            FIELD_ELEMENTS_PER_CELL
+        );
     }
 
     ret = ifft_g1(h, h_ext_fft, k2, s);
