@@ -91,7 +91,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				return
 			}
 
-			commitment, err := BlobToKZGCommitment(blob)
+			commitment, err := BlobToKZGCommitment(&blob)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], commitment[:])
@@ -138,7 +138,7 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, y, err := ComputeKZGProof(blob, z)
+			proof, y, err := ComputeKZGProof(&blob, z)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedProof Bytes48
@@ -192,7 +192,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, err := ComputeBlobKZGProof(blob, commitment)
+			proof, err := ComputeBlobKZGProof(&blob, commitment)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], proof[:])
@@ -310,7 +310,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, err := VerifyBlobKZGProof(blob, commitment, proof)
+			valid, err := VerifyBlobKZGProof(&blob, commitment, proof)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -400,9 +400,9 @@ func Benchmark(b *testing.B) {
 	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
 		blob := getRandBlob(int64(i))
-		commitment, err := BlobToKZGCommitment(blob)
+		commitment, err := BlobToKZGCommitment(&blob)
 		require.NoError(b, err)
-		proof, err := ComputeBlobKZGProof(blob, Bytes48(commitment))
+		proof, err := ComputeBlobKZGProof(&blob, Bytes48(commitment))
 		require.NoError(b, err)
 
 		blobs[i] = blob
@@ -413,19 +413,19 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			BlobToKZGCommitment(blobs[0])
+			BlobToKZGCommitment(&blobs[0])
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeKZGProof(blobs[0], fields[0])
+			ComputeKZGProof(&blobs[0], fields[0])
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeBlobKZGProof(blobs[0], commitments[0])
+			ComputeBlobKZGProof(&blobs[0], commitments[0])
 		}
 	})
 
@@ -437,7 +437,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
 		}
 	})
 
