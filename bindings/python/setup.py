@@ -1,10 +1,12 @@
-from distutils.core import setup, Extension
+from setuptools import setup, Extension
+
 
 def main():
     setup(
         name="ckzg",
-        version="1.0.0",
-        description="Python interface for C-KZG-4844",
+        version="1.4.2",
+        author="Ethereum Foundation",
+        description="Python bindings for C-KZG-4844",
         ext_modules=[
             Extension(
                 "ckzg",
@@ -12,6 +14,7 @@ def main():
                 include_dirs=["../../inc", "../../src"],
                 library_dirs=["../../lib"],
                 libraries=["blst"])])
+
 
 if __name__ == "__main__":
     main()
