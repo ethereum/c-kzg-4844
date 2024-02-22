@@ -8,7 +8,7 @@ const bindings = require("bindings")("kzg");
 
 /**
  * Converts JSON formatted trusted setup into the native format that
- * the native library requires.  Returns the absolute file path to the
+ * the native library requires.  Returns the absolute file path to
  * the formatted file.  The path will be the same as the origin
  * file but with a ".txt" extension.
  *
