@@ -49,14 +49,14 @@ var (
 // will return nil.
 func makeErrorFromRet(ret C.C_KZG_RET) error {
 	switch ret {
+	case C.C_KZG_OK:
+		return nil
 	case C.C_KZG_BADARGS:
 		return ErrBadArgs
 	case C.C_KZG_ERROR:
 		return ErrError
 	case C.C_KZG_MALLOC:
 		return ErrMalloc
-	case C.C_KZG_OK:
-		return nil
 	}
 	return fmt.Errorf("unexpected return value from c-library %v", ret)
 }
