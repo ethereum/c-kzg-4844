@@ -140,6 +140,7 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 	if len(g2Bytes)%C.BYTES_PER_G2 != 0 {
 		panic(fmt.Sprintf("len(g2Bytes) is not a multiple of %v", C.BYTES_PER_G2))
 	}
+
 	numG1Elements := len(g1Bytes) / C.BYTES_PER_G1
 	numG2Elements := len(g2Bytes) / C.BYTES_PER_G2
 	ret := C.load_trusted_setup(
@@ -148,6 +149,7 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 		(C.size_t)(numG1Elements),
 		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
 		(C.size_t)(numG2Elements))
+
 	if ret == C.C_KZG_OK {
 		loaded = true
 		return nil
@@ -209,11 +211,16 @@ func BlobToKZGCommitment(blob *Blob) (*KZGCommitment, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if blob == nil {
+		return nil, ErrBadArgs
+	}
+
 	commitment := new(KZGCommitment)
 	ret := C.blob_to_kzg_commitment(
 		(*C.KZGCommitment)(unsafe.Pointer(commitment)),
 		(*C.Blob)(unsafe.Pointer(blob)),
 		&settings)
+
 	if ret != C.C_KZG_OK {
 		return nil, makeErrorFromRet(ret)
 	}
@@ -234,14 +241,18 @@ func ComputeKZGProof(blob *Blob, zBytes *Bytes32) (*KZGProof, *Bytes32, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	proof := new(KZGProof)
-	y := new(Bytes32)
+	if blob == nil || zBytes == nil {
+		return nil, nil, ErrBadArgs
+	}
+
+	proof, y := new(KZGProof), new(Bytes32)
 	ret := C.compute_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(proof)),
 		(*C.Bytes32)(unsafe.Pointer(y)),
 		(*C.Blob)(unsafe.Pointer(blob)),
 		(*C.Bytes32)(unsafe.Pointer(zBytes)),
 		&settings)
+
 	if ret != C.C_KZG_OK {
 		return nil, nil, makeErrorFromRet(ret)
 	}
@@ -261,6 +272,10 @@ func ComputeBlobKZGProof(blob *Blob, commitmentBytes *Bytes48) (*KZGProof, error
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if blob == nil || commitmentBytes == nil {
+		return nil, ErrBadArgs
+	}
+
 	proof := new(KZGProof)
 	ret := C.compute_blob_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(proof)),
@@ -289,6 +304,10 @@ func VerifyKZGProof(commitmentBytes *Bytes48, zBytes, yBytes *Bytes32, proofByte
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if commitmentBytes == nil || zBytes == nil || yBytes == nil || proofBytes == nil {
+		return false, ErrBadArgs
+	}
+
 	var result C.bool
 	ret := C.verify_kzg_proof(
 		&result,
@@ -318,6 +337,10 @@ func VerifyBlobKZGProof(blob *Blob, commitmentBytes, proofBytes *Bytes48) (bool,
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if blob == nil || commitmentBytes == nil || proofBytes == nil {
+		return false, ErrBadArgs
+	}
+
 	var result C.bool
 	ret := C.verify_blob_kzg_proof(
 		&result,
