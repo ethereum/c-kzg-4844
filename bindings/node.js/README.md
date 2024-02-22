@@ -152,7 +152,7 @@ verifyBlobKzgProof(
 
 ```ts
 /**
- * Given an array of blobs and their proofs, verify that they corresponds to
+ * Given an array of blobs and their proofs, verify that they correspond to
  * their provided commitment.
  *
  * Note: blobs[0] relates to commitmentBytes[0] and proofBytes[0]
