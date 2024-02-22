@@ -4,7 +4,7 @@ This directory contains Nim bindings for the c-kzg-4844 library.
 
 ## Requirements
 
-This bindings support Nim compiler version 1.2, 1.4, 1.6, and devel.
+These bindings support Nim compiler version 1.2, 1.4, 1.6, and devel.
 
 You also need to install dependencies:
 
@@ -14,7 +14,7 @@ nimble install stew
 
 ## Tests
 
-Currently reference tests only support Nim compiler version 1.4, and 1.6 because of yaml library limitations.
+Currently, reference tests only support Nim compiler version 1.4, and 1.6 because of yaml library limitations.
 But other tests that are not using yaml can be run by Nim 1.2 - devel.
 
 Dependencies:
@@ -36,7 +36,7 @@ Or from c-kzg-4844 root folder:
 nimble test
 ```
 
-## How to use this bindings in your project
+## How to use these bindings in your project
 
 Install via nimble:
 

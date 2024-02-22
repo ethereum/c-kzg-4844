@@ -66,7 +66,7 @@ publish: build bundle
 	@cd dist
 	@npm publish
 
-# Run ref-tests in linux environment for cross-compatability check
+# Run ref-tests in linux environment for cross-compatibility check
 .PHONY: linux-test
 linux-test: bundle
 	@# Docker cannot copy from outside this dir

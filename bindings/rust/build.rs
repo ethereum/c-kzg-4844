@@ -132,7 +132,7 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
 // if/when bindgen fixes this or allows us to choose our own representation
 // for types. Using repr(C) is equivalent to repr(u*) for fieldless enums,
 // so this should be safe to do. The alternative was to modify C_KZG_RET in
-// C and we decided this was the lesser of two evils. There should be only
+// C, and we decided this was the lesser of two evils. There should be only
 // one instance where repr(C) isn't used: C_KZG_RET.
 // See: https://github.com/rust-lang/rust-bindgen/issues/1907
 #[cfg(feature = "generate-bindings")]
