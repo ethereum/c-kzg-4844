@@ -4,7 +4,7 @@ from setuptools import setup, Extension
 def main():
     setup(
         name="ckzg",
-        version="1.4.2",
+        version="0.4.2",
         author="Ethereum Foundation",
         description="Python bindings for C-KZG-4844",
         ext_modules=[
