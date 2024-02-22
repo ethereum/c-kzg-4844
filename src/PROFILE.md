@@ -6,7 +6,7 @@ Performance Tools) for profiling. Note, we also considered using
 comparison. This will not tell you how long (wall clock time) each function
 took, but it will help you determine which functions are the most expensive.
 
-## Prequisities
+## Prerequisites
 
 On Linux (Debian), you need to install:
 ```
@@ -33,7 +33,7 @@ human-friendly graph that generated from that profiling data.
 
 #### Errors on macOS
 
-Note, on macOS there may a lot of "errors" like:
+Note, on macOS there may be a lot of "errors" like:
 ```
 otool-classic: can't open file: /usr/lib/libc++.1.dylib
 ```
