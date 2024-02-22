@@ -395,7 +395,7 @@ func Benchmark(b *testing.B) {
 	blobs := [length]Blob{}
 	commitments := [length]Bytes48{}
 	proofs := [length]Bytes48{}
-	fields := [length]*Bytes32{}
+	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
 		var blob Blob
 		fillBlobRandom(&blob, int64(i))
@@ -407,8 +407,7 @@ func Benchmark(b *testing.B) {
 		blobs[i] = blob
 		commitments[i] = Bytes48(*commitment)
 		proofs[i] = Bytes48(*proof)
-		field := getRandFieldElement(int64(i))
-		fields[i] = &field
+		fields[i] = getRandFieldElement(int64(i))
 	}
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
@@ -419,7 +418,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeKZGProof(&blobs[0], fields[0])
+			ComputeKZGProof(&blobs[0], &fields[0])
 		}
 	})
 
@@ -431,7 +430,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyKZGProof(&commitments[0], fields[0], fields[1], &proofs[0])
+			VerifyKZGProof(&commitments[0], &fields[0], &fields[1], &proofs[0])
 		}
 	})
 
