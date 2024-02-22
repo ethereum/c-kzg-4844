@@ -45,12 +45,10 @@ var (
 ///////////////////////////////////////////////////////////////////////////////
 
 // makeErrorFromRet translates an (integral) return value, as reported
-// by the C library, into a proper Go error. If there is no error, this
-// will return nil.
+// by the C library, into a proper Go error. This function should only be
+// called when there is an error, not with C_KZG_OK.
 func makeErrorFromRet(ret C.C_KZG_RET) error {
 	switch ret {
-	case C.C_KZG_OK:
-		return nil
 	case C.C_KZG_BADARGS:
 		return ErrBadArgs
 	case C.C_KZG_ERROR:
@@ -58,7 +56,7 @@ func makeErrorFromRet(ret C.C_KZG_RET) error {
 	case C.C_KZG_MALLOC:
 		return ErrMalloc
 	}
-	return fmt.Errorf("unexpected return value from c-library %v", ret)
+	return fmt.Errorf("unexpected error from c-library: %v", ret)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
