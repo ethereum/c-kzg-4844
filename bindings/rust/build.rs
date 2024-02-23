@@ -28,6 +28,12 @@ fn main() {
         cc.flag("/std:c11");
     }
 
+    // Enable __BLST_NO_ASM__ if not x86_64 or aarch64.
+    let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
+    if !["x86_64", "aarch64"].contains(&target_arch.as_str()) {
+        cc.flag("-D__BLST_NO_ASM__");
+    }
+
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
     cc.file(c_src_dir.join("c_kzg_4844.c"));
