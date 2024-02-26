@@ -9,6 +9,7 @@ on:
       - main
 
 jobs:
+  build-wheels:
     name: Build wheels for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -24,11 +25,20 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: all
+
       - name: Build CKZG
         working-directory: src
         run: make
 
-      - uses: actions/setup-python@v4
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel==2.16.5
@@ -36,10 +46,11 @@ jobs:
       - name: Build wheels
         working-directory: bindings/python
         run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_ARCHS_LINUX: auto aarch64
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        working-directory: bindings/python
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
-          packages-dir: wheelhouse
+          packages-dir: bindings/python/wheelhouse
