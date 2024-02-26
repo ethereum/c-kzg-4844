@@ -1,4 +1,4 @@
-name: Upload Python Package
+name: Python Package
 
 on:
   push:
@@ -9,45 +9,37 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: ${{ matrix.host }}
+    name: Build wheels for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          # Linux
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-          # MacOS
-          - host: macos-latest
-            target: x86_64-apple-darwin
-          - host: macos-latest
-            target: aarch64-apple-darwin
-          # Windows
-          - host: windows-latest
-            target: x86_64-pc-windows-msvc
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-13
+          - macos-14
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install setuptools wheel twine
+
       - name: Build CKZG
-        run: |
-          cd src
-          make
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          cd bindings/python
-          python setup.py bdist_wheel
-          twine upload dist/*
+        working-directory: src
+        run: make
+
+      - uses: actions/setup-python@v4
+
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.16.5
+
+      - name: Build wheels
+        working-directory: bindings/python
+        run: python -m cibuildwheel --output-dir wheelhouse
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        working-directory: bindings/python
+        with:
+          password: ${{ secrets.PYPI_PASSWORD }}
+          packages-dir: wheelhouse
