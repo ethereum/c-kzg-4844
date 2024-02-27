@@ -63,8 +63,13 @@ typedef struct {
 /** The domain separator for the Fiat-Shamir protocol. */
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 
-/** The domain separator for a random challenge. */
-static const char *RANDOM_CHALLENGE_KZG_BATCH_DOMAIN = "RCKZGBATCH___V1_";
+/** The domain separator for verify_blob_kzg_proof's random challenge. */
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH =
+    "RCKZGBATCH___V1_";
+
+/** The domain separator for verify_cell_proof_batch's random challenge. */
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH =
+    "RCVCELLBATCH_V1_";
 
 /** Length of the domain strings above. */
 #define DOMAIN_STR_LENGTH 16
@@ -1245,7 +1250,7 @@ C_KZG_RET verify_blob_kzg_proof(
  * @param[in]   ys_fr          The input evaluation results
  * @param[in]   proofs_g1      The input proofs
  */
-static C_KZG_RET compute_r_powers(
+static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     fr_t *r_powers_out,
     const g1_t *commitments_g1,
     const fr_t *zs_fr,
@@ -1269,7 +1274,11 @@ static C_KZG_RET compute_r_powers(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(offset, RANDOM_CHALLENGE_KZG_BATCH_DOMAIN, DOMAIN_STR_LENGTH);
+    memcpy(
+        offset,
+        RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH,
+        DOMAIN_STR_LENGTH
+    );
     offset += DOMAIN_STR_LENGTH;
 
     /* Copy degree of the polynomial */
@@ -1358,7 +1367,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute the random lincomb challenges */
-    ret = compute_r_powers(
+    ret = compute_r_powers_for_verify_kzg_proof_batch(
         r_powers, commitments_g1, zs_fr, ys_fr, proofs_g1, n
     );
     if (ret != C_KZG_OK) goto out;
@@ -3436,6 +3445,112 @@ static bool is_cell_uninit(fr_t *cell) {
 }
 
 /**
+ * Compute random linear combination challenge scalars for
+ * verify_cell_proof_batch. In this, we must hash EVERYTHING that the prover
+ * can control.
+ *
+ * @param[out]  r_powers_out        The output challenges
+ * @param[in]   commitments_bytes   The input commitments
+ * @param[in]   num_commitments     The number of commitments
+ * @param[in]   row_ids             The cell row identifiers
+ * @param[in]   column_ids          The cell column indentifiers
+ * @param[in]   cells               The cell
+ * @param[in]   proofs_bytes        The cell proof
+ * @param[in]   num_cells           The number of cells
+ */
+static C_KZG_RET compute_r_powers_for_verify_cell_proof_batch(
+    fr_t *r_powers_out,
+    const Bytes48 *commitments_bytes,
+    size_t num_commitments,
+    const uint64_t *row_ids,
+    const uint64_t *column_ids,
+    const Cell *cells,
+    const Bytes48 *proofs_bytes,
+    size_t num_cells
+) {
+    C_KZG_RET ret;
+    uint8_t *bytes = NULL;
+    Bytes32 r_bytes;
+    fr_t r;
+
+    /* Calculate the size of the data we're going to hash */
+    size_t input_size = DOMAIN_STR_LENGTH  /* The domain separator */
+                        + sizeof(uint64_t) /* FIELD_ELEMENTS_PER_CELL */
+                        + sizeof(uint64_t) /* num_commitments */
+                        + sizeof(uint64_t) /* num_cells */
+                        + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
+                        + (num_cells * sizeof(uint64_t))           /* row_ids */
+                        + (num_cells * sizeof(uint64_t)) /* column_ids */
+                        + (num_cells * BYTES_PER_CELL)   /* cells */
+                        + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
+
+    /* Allocate space to copy this data into */
+    ret = c_kzg_malloc((void **)&bytes, input_size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Pointer tracking `bytes` for writing on top of it */
+    uint8_t *offset = bytes;
+
+    /* Copy domain separator */
+    memcpy(
+        offset,
+        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH,
+        DOMAIN_STR_LENGTH
+    );
+    offset += DOMAIN_STR_LENGTH;
+
+    /* Copy field elements per cell */
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_CELL);
+    offset += sizeof(uint64_t);
+
+    /* Copy number of commitments */
+    bytes_from_uint64(offset, num_commitments);
+    offset += sizeof(uint64_t);
+
+    /* Copy number of cells */
+    bytes_from_uint64(offset, num_cells);
+    offset += sizeof(uint64_t);
+
+    for (size_t i = 0; i < num_commitments; i++) {
+        /* Copy commitment */
+        memcpy(offset, &commitments_bytes[i], BYTES_PER_COMMITMENT);
+        offset += BYTES_PER_COMMITMENT;
+    }
+
+    for (size_t i = 0; i < num_cells; i++) {
+        /* Copy row id */
+        bytes_from_uint64(offset, row_ids[i]);
+        offset += sizeof(uint64_t);
+
+        /* Copy column id */
+        bytes_from_uint64(offset, column_ids[i]);
+        offset += sizeof(uint64_t);
+
+        /* Copy cell */
+        memcpy(offset, &cells[i], BYTES_PER_CELL);
+        offset += BYTES_PER_CELL;
+
+        /* Copy proof */
+        memcpy(offset, &proofs_bytes[i], BYTES_PER_PROOF);
+        offset += BYTES_PER_PROOF;
+    }
+
+    /* Now let's create the challenge! */
+    blst_sha256(r_bytes.bytes, bytes, input_size);
+    hash_to_bls_field(&r, &r_bytes);
+
+    /* Raise power of r for each cell */
+    compute_powers(r_powers_out, &r, num_cells);
+
+    /* Make sure we wrote the entire buffer */
+    assert(offset == bytes + input_size);
+
+out:
+    c_kzg_free(bytes);
+    return ret;
+}
+
+/**
  * Given some cells, verify that the proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
@@ -3529,13 +3644,18 @@ C_KZG_RET verify_cell_proof_batch(
     /*
      * Derive random factors for the linear combination. The exponents start
      * with 1, for example r^1, r^2, r^3, and so on.
-     *
-     * TODO: make this more random.
      */
-    fr_from_uint64(&r_powers[0], 27);
-    for (size_t i = 1; i < num_cells; i++) {
-        blst_fr_mul(&r_powers[i], &r_powers[i - 1], &r_powers[0]);
-    }
+    ret = compute_r_powers_for_verify_cell_proof_batch(
+        r_powers,
+        commitments_bytes,
+        num_commitments,
+        row_ids,
+        column_ids,
+        cells,
+        proofs_bytes,
+        num_cells
+    );
+    if (ret != C_KZG_OK) goto out;
 
     /* There should be a proof for each cell */
     for (size_t i = 0; i < num_cells; i++) {
