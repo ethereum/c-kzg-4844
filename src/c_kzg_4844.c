@@ -718,7 +718,7 @@ static void g1_lincomb_naive(
  * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
  * where `n` is `len - 1`.
  *
- * @remark This function MUST NOT be called with the point at infinity in `p`.
+ * @remark This function CAN be called with the point at infinity in `p`.
  *
  * @remark While this function is significantly faster than
  * `g1_lincomb_naive()`, we refrain from using it in security-critical places
@@ -747,43 +747,83 @@ static C_KZG_RET g1_lincomb_fast(
 ) {
     C_KZG_RET ret;
     void *scratch = NULL;
+    blst_p1 *p_filtered = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
 
     /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
-    if (len < 8) {
+    const uint64_t min_length_threshold = 8;
+
+    /* Use naive method if it's less than the threshold */
+    if (len < min_length_threshold) {
         g1_lincomb_naive(out, p, coeffs, len);
-    } else {
-        /* blst's implementation of the Pippenger method */
-        size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
-        ret = c_kzg_malloc(&scratch, scratch_size);
-        if (ret != C_KZG_OK) goto out;
-        ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
-        if (ret != C_KZG_OK) goto out;
-        ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
-        if (ret != C_KZG_OK) goto out;
-
-        /* Transform the points to affine representation */
-        const blst_p1 *p_arg[2] = {p, NULL};
-        blst_p1s_to_affine(p_affine, p_arg, len);
-
-        /* Transform the field elements to 256-bit scalars */
-        for (uint64_t i = 0; i < len; i++) {
-            blst_scalar_from_fr(&scalars[i], &coeffs[i]);
-        }
-
-        /* Call the Pippenger implementation */
-        const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-        const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-        blst_p1s_mult_pippenger(
-            out, points_arg, len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch
-        );
+        ret = C_KZG_OK;
+        goto out;
     }
 
+    /* Allocate space for arrays */
+    ret = c_kzg_calloc((void **)&p_filtered, len, sizeof(blst_p1));
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate space for Pippenger scratch */
+    size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
+    ret = c_kzg_malloc(&scratch, scratch_size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate & copy points into new array which can be altered */
+    memcpy(p_filtered, p, len * sizeof(blst_p1));
+
+    /* Transform the field elements to 256-bit scalars */
+    for (uint64_t i = 0; i < len; i++) {
+        blst_scalar_from_fr(&scalars[i], &coeffs[i]);
+    }
+
+    /* Filter out zero points */
+    uint64_t new_len = len;
+    for (uint64_t i = 0; i < new_len; i++) {
+        if (blst_p1_is_inf(&p_filtered[i])) {
+            /* Update the length of our array */
+            new_len = new_len - 1;
+
+            /* Only if it's not the last entry */
+            if (i != new_len) {
+                /* Replace entries with the last entry */
+                p_filtered[i] = p_filtered[new_len];
+                scalars[i] = scalars[new_len];
+
+                /* Recheck this index */
+                i = i - 1;
+            }
+        }
+    }
+
+    /* Check if the new length is fine */
+    if (len < min_length_threshold) {
+        /* We must use the original inputs */
+        g1_lincomb_naive(out, p, coeffs, len);
+        ret = C_KZG_OK;
+        goto out;
+    }
+
+    /* Transform the points to affine representation */
+    const blst_p1 *p_arg[2] = {p_filtered, NULL};
+    blst_p1s_to_affine(p_affine, p_arg, new_len);
+
+    /* Call the Pippenger implementation */
+    const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+    const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+    blst_p1s_mult_pippenger(
+        out, points_arg, new_len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch
+    );
     ret = C_KZG_OK;
 
 out:
     c_kzg_free(scratch);
+    c_kzg_free(p_filtered);
     c_kzg_free(p_affine);
     c_kzg_free(scalars);
     return ret;
