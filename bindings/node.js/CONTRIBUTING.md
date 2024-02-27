@@ -40,6 +40,6 @@ exported by `node.js`. There is also a header-only `C++` implementation of the
 There is mixed usage of the two in this library.
 
 The addon was built to be
-[context-aware](https://nodejs.github.io/node-addon-examples/special-topics/context-awareness/)
+[context-aware](https://nodejs.github.io/node-addon-examples/special-topics/context-awareness/),
 so it will be safe to run on a worker thread. Be sure not to use any
 static/global variables as those are not thread safe.

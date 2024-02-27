@@ -8,7 +8,7 @@ mod serde;
 #[cfg(test)]
 mod test_formats;
 
-include!(concat!(env!("OUT_DIR"), "/generated.rs"));
+include!("./generated.rs");
 
 use alloc::string::String;
 use alloc::vec::Vec;

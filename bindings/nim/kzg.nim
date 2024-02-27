@@ -97,7 +97,7 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
   try:
     let fieldElems = s.readLine().parseInt()
     if fieldElems != FIELD_ELEMENTS_PER_BLOB:
-      return err("invalid field elemments per blob, expect $1, got $2" % [
+      return err("invalid field elements per blob, expect $1, got $2" % [
         $FIELD_ELEMENTS_PER_BLOB, $fieldElems
       ])
     let numG2 = s.readLine().parseInt()

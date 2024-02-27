@@ -11,7 +11,7 @@ means it should be pretty easy.
 ## Dependencies
 
 This is expected to run on Linux/macOS, it is not expected to work on Windows.
-In additional to `build-essentials` and `clang`, this requires `llvm` be
+In addition to `build-essentials` and `clang`, this requires `llvm` to be
 installed:
 
 ### Linux
