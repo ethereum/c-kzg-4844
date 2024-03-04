@@ -81,4 +81,4 @@ jobs:
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: twine upload bindings/python/wheelhouse/*
+        run: twine upload wheelhouse/*
