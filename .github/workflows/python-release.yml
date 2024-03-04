@@ -6,6 +6,8 @@ on:
       - published
     branches:
       - main
+  # Allows us run the action manually.
+  workflow_dispatch:
 
 jobs:
   build-wheels:
