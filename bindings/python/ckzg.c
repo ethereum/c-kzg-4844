@@ -24,13 +24,14 @@ static PyObject* load_trusted_setup_wrap(PyObject *self, PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError, "error reading trusted setup");
   }
 
-  if (load_trusted_setup_file(s, fp) != C_KZG_OK) {
+  C_KZG_RET ret = load_trusted_setup_file(s, fp);
+  fclose(fp);
+
+  if (ret != C_KZG_OK) {
     free(s);
-    fclose(fp);
     return PyErr_Format(PyExc_RuntimeError, "error loading trusted setup");
   }
 
-  fclose(fp);
   return PyCapsule_New(s, "KZGSettings", free_KZGSettings);
 }
 
