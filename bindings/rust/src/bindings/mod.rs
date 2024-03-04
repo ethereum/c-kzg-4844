@@ -193,6 +193,8 @@ impl KZGSettings {
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         let result = unsafe {
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
+            let _unchecked_close_result = libc::fclose(file_ptr);
+
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
             } else {
@@ -201,9 +203,6 @@ impl KZGSettings {
                 )))
             }
         };
-
-        // We don't really care if this fails.
-        let _unchecked_close_result = unsafe { libc::fclose(file_ptr) };
 
         result
     }
