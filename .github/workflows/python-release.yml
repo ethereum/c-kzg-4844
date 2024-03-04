@@ -73,12 +73,24 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: |
             make -C src blst
 
-      - name: Install twine
-        run: python -m pip install twine
+      - name: Upload wheels as artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheels
+          path: wheelhouse/*
 
-      # Cannot use gh-action-pypi-publish as it only works on Linux.
+  publish:
+    needs: [build-wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: wheels
+          path: wheelhouse
+
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: twine upload wheelhouse/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_PASSWORD }}
+          packages-dir: wheelhouse
