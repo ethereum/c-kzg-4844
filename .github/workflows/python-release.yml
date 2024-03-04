@@ -2,6 +2,8 @@ name: Python Package
 
 on:
   release:
+    types:
+      - published
     branches:
       - main
 
@@ -34,7 +36,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      
+
       # Need this to get cl.exe on the path.
       - name: Set up Visual Studio shell
         if: runner.os == 'Windows'
@@ -68,8 +70,24 @@ jobs:
           CIBW_BEFORE_BUILD_MACOS: |
             make -C src blst
 
+      - name: Upload wheels as artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: wheels
+          path: wheelhouse/*
+
+  publish:
+    needs: [build-wheels]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: wheels
+          path: wheelhouse
+
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
-          packages-dir: bindings/python/wheelhouse
+          packages-dir: wheelhouse
