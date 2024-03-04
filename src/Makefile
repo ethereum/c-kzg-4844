@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I../inc -O2 -Wall -Wextra -Wno-missing-braces
+CFLAGS += -I../inc -O2 -Wall -Wextra
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
