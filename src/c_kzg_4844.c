@@ -3488,7 +3488,7 @@ out:
  * @param[in]   commitments_bytes   The input commitments
  * @param[in]   num_commitments     The number of commitments
  * @param[in]   row_ids             The cell row identifiers
- * @param[in]   column_ids          The cell column indentifiers
+ * @param[in]   column_ids          The cell column identifiers
  * @param[in]   cells               The cell
  * @param[in]   proofs_bytes        The cell proof
  * @param[in]   num_cells           The number of cells
