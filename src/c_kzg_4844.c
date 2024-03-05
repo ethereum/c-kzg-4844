@@ -239,6 +239,18 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(fr_t));
 }
 
+/**
+ * Allocate memory for an array of booleans.
+ *
+ * @remark Free the space later using c_kzg_free().
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of booleans to be allocated
+ */
+static C_KZG_RET new_bool_array(bool **x, size_t n) {
+    return c_kzg_calloc((void **)x, n, sizeof(bool));
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -3468,23 +3480,6 @@ out:
 }
 
 /**
- * Check if a cell is uninitialized (all zeros).
- *
- * @param[in]   cell    The cell to check
- *
- * @retval  True    The cell is uninitialized.
- * @retval  False   The cell is initialized.
- */
-static bool is_cell_uninit(fr_t *cell) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        if (!fr_is_zero(&cell[i])) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
  * Compute random linear combination challenge scalars for
  * verify_cell_proof_batch. In this, we must hash EVERYTHING that the prover
  * can control.
@@ -3616,6 +3611,7 @@ C_KZG_RET verify_cell_proof_batch(
 ) {
     C_KZG_RET ret;
     fr_t *aggregated_column_cells = NULL;
+    bool *is_cell_used = NULL;
     fr_t *commitment_weights = NULL;
     fr_t *r_powers = NULL;
     fr_t *used_commitment_weights = NULL;
@@ -3625,6 +3621,7 @@ C_KZG_RET verify_cell_proof_batch(
     fr_t column_interpolation_poly[FIELD_ELEMENTS_PER_CELL];
     g1_t *proofs_g1 = NULL;
     g1_t *used_commitments = NULL;
+    bool *is_commitment_used = NULL;
     g1_t evaluation;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
@@ -3666,6 +3663,8 @@ C_KZG_RET verify_cell_proof_batch(
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&used_commitments, num_commitments);
     if (ret != C_KZG_OK) goto out;
+    ret = new_bool_array(&is_commitment_used, num_commitments);
+    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weights, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
@@ -3675,6 +3674,8 @@ C_KZG_RET verify_cell_proof_batch(
     ret = new_fr_array(&used_commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3722,12 +3723,15 @@ C_KZG_RET verify_cell_proof_batch(
             &commitment_weights[row_ids[i]],
             &r_powers[i]
         );
+
+        /* Mark the commitment as being used */
+        is_commitment_used[row_ids[i]] = true;
     }
 
     /* Generate array of used commitments */
     for (size_t i = 0; i < num_commitments; i++) {
         /* We can ignore unused commitments */
-        if (fr_is_zero(&commitment_weights[i])) continue;
+        if (!is_commitment_used[i]) continue;
 
         /*
          * Convert & validate commitment. Only do this for used
@@ -3776,6 +3780,9 @@ C_KZG_RET verify_cell_proof_batch(
                 &aggregated_column_cells[index],
                 &scaled
             );
+
+            /* Mark the cell as being used */
+            is_cell_used[index] = true;
         }
     }
 
@@ -3794,7 +3801,7 @@ C_KZG_RET verify_cell_proof_batch(
         size_t index = i * FIELD_ELEMENTS_PER_CELL;
 
         /* We only care about initialized cells */
-        if (is_cell_uninit(&aggregated_column_cells[index])) continue;
+        if (!is_cell_used[index]) continue;
 
         /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
@@ -3883,6 +3890,8 @@ C_KZG_RET verify_cell_proof_batch(
 out:
     c_kzg_free(aggregated_column_cells);
     c_kzg_free(commitment_weights);
+    c_kzg_free(is_cell_used);
+    c_kzg_free(is_commitment_used);
     c_kzg_free(proofs_g1);
     c_kzg_free(r_powers);
     c_kzg_free(used_commitment_weights);
