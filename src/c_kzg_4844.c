@@ -3610,24 +3610,26 @@ C_KZG_RET verify_cell_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *aggregated_column_cells = NULL;
-    bool *is_cell_used = NULL;
-    fr_t *commitment_weights = NULL;
-    fr_t *r_powers = NULL;
-    fr_t *used_commitment_weights = NULL;
-    fr_t *weighted_powers_of_r = NULL;
-    fr_t *weights = NULL;
-    fr_t aggregated_interpolation_poly[FIELD_ELEMENTS_PER_CELL];
-    fr_t column_interpolation_poly[FIELD_ELEMENTS_PER_CELL];
-    g1_t *proofs_g1 = NULL;
-    g1_t *used_commitments = NULL;
-    bool *is_commitment_used = NULL;
     g1_t evaluation;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
     g2_t power_of_s = s->g2_values[FIELD_ELEMENTS_PER_CELL];
     size_t num_used_commitments = 0;
+
+    /* Arrays */
+    bool *is_cell_used = NULL;
+    bool *is_commitment_used = NULL;
+    fr_t *aggregated_column_cells = NULL;
+    fr_t *aggregated_interpolation_poly = NULL;
+    fr_t *column_interpolation_poly = NULL;
+    fr_t *commitment_weights = NULL;
+    fr_t *r_powers = NULL;
+    fr_t *used_commitment_weights = NULL;
+    fr_t *weighted_powers_of_r = NULL;
+    fr_t *weights = NULL;
+    g1_t *proofs_g1 = NULL;
+    g1_t *used_commitments = NULL;
 
     *ok = false;
 
@@ -3657,25 +3659,29 @@ C_KZG_RET verify_cell_proof_batch(
     // Array allocations
     ///////////////////////////////////////////////////////////////////////////
 
+    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_bool_array(&is_commitment_used, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&column_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_powers, num_cells);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&used_commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&weighted_powers_of_r, num_cells);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&weights, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&proofs_g1, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&used_commitments, num_commitments);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_bool_array(&is_commitment_used, num_commitments);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weights, num_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weighted_powers_of_r, num_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&commitment_weights, num_commitments);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&used_commitment_weights, num_commitments);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3888,15 +3894,17 @@ C_KZG_RET verify_cell_proof_batch(
     );
 
 out:
-    c_kzg_free(aggregated_column_cells);
-    c_kzg_free(commitment_weights);
     c_kzg_free(is_cell_used);
     c_kzg_free(is_commitment_used);
-    c_kzg_free(proofs_g1);
+    c_kzg_free(aggregated_column_cells);
+    c_kzg_free(aggregated_interpolation_poly);
+    c_kzg_free(column_interpolation_poly);
+    c_kzg_free(commitment_weights);
     c_kzg_free(r_powers);
     c_kzg_free(used_commitment_weights);
-    c_kzg_free(used_commitments);
     c_kzg_free(weighted_powers_of_r);
     c_kzg_free(weights);
+    c_kzg_free(proofs_g1);
+    c_kzg_free(used_commitments);
     return ret;
 }
