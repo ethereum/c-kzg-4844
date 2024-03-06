@@ -129,7 +129,7 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			var z = new(Bytes32)
+			var z Bytes32
 			err = z.UnmarshalText([]byte(test.Input.Z))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -183,7 +183,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			var commitment = new(Bytes48)
+			var commitment Bytes48
 			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -225,28 +225,28 @@ func TestVerifyKZGProof(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var commitment = new(Bytes48)
+			var commitment Bytes48
 			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
 			if err != nil {
 				require.Nil(t, test.Output)
 				return
 			}
 
-			var z = new(Bytes32)
+			var z Bytes32
 			err = z.UnmarshalText([]byte(test.Input.Z))
 			if err != nil {
 				require.Nil(t, test.Output)
 				return
 			}
 
-			var y = new(Bytes32)
+			var y Bytes32
 			err = y.UnmarshalText([]byte(test.Input.Y))
 			if err != nil {
 				require.Nil(t, test.Output)
 				return
 			}
 
-			var proof = new(Bytes48)
+			var proof Bytes48
 			err = proof.UnmarshalText([]byte(test.Input.Proof))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -294,14 +294,14 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			var commitment = new(Bytes48)
+			var commitment Bytes48
 			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
 			if err != nil {
 				require.Nil(t, test.Output)
 				return
 			}
 
-			var proof = new(Bytes48)
+			var proof Bytes48
 			err = proof.UnmarshalText([]byte(test.Input.Proof))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -401,12 +401,12 @@ func Benchmark(b *testing.B) {
 		fillBlobRandom(&blob, int64(i))
 		commitment, err := BlobToKZGCommitment(&blob)
 		require.NoError(b, err)
-		proof, err := ComputeBlobKZGProof(&blob, (*Bytes48)(commitment))
+		proof, err := ComputeBlobKZGProof(&blob, Bytes48(commitment))
 		require.NoError(b, err)
 
 		blobs[i] = blob
-		commitments[i] = Bytes48(*commitment)
-		proofs[i] = Bytes48(*proof)
+		commitments[i] = Bytes48(commitment)
+		proofs[i] = Bytes48(proof)
 		fields[i] = getRandFieldElement(int64(i))
 	}
 
@@ -418,25 +418,25 @@ func Benchmark(b *testing.B) {
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeKZGProof(&blobs[0], &fields[0])
+			ComputeKZGProof(&blobs[0], fields[0])
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeBlobKZGProof(&blobs[0], &commitments[0])
+			ComputeBlobKZGProof(&blobs[0], commitments[0])
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyKZGProof(&commitments[0], &fields[0], &fields[1], &proofs[0])
+			VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyBlobKZGProof(&blobs[0], &commitments[0], &proofs[0])
+			VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
 		}
 	})
 
