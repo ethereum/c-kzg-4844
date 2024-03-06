@@ -12,9 +12,9 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := LoadTrustedSetupFile("../../src/trusted_setup.txt")
-	if err != nil {
-		panic("failed to load trusted setup")
+
+	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt"); err != nil {
+		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
 	defer FreeTrustedSetup()
 	code := m.Run()
@@ -40,13 +40,11 @@ func getRandFieldElement(seed int64) Bytes32 {
 	return fieldElementBytes
 }
 
-func getRandBlob(seed int64) Blob {
-	var blob Blob
+func fillBlobRandom(blob *Blob, seed int64) {
 	for i := 0; i < BytesPerBlob; i += BytesPerFieldElement {
 		fieldElementBytes := getRandFieldElement(seed + int64(i))
 		copy(blob[i:i+BytesPerFieldElement], fieldElementBytes[:])
 	}
-	return blob
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -84,7 +82,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var blob Blob
+			blob := new(Blob)
 			err = blob.UnmarshalText([]byte(test.Input.Blob))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -124,7 +122,7 @@ func TestComputeKZGProof(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var blob Blob
+			blob := new(Blob)
 			err = blob.UnmarshalText([]byte(test.Input.Blob))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -178,7 +176,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var blob Blob
+			blob := new(Blob)
 			err = blob.UnmarshalText([]byte(test.Input.Blob))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -289,7 +287,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var blob Blob
+			var blob = new(Blob)
 			err = blob.UnmarshalText([]byte(test.Input.Blob))
 			if err != nil {
 				require.Nil(t, test.Output)
@@ -399,10 +397,11 @@ func Benchmark(b *testing.B) {
 	proofs := [length]Bytes48{}
 	fields := [length]Bytes32{}
 	for i := 0; i < length; i++ {
-		blob := getRandBlob(int64(i))
-		commitment, err := BlobToKZGCommitment(blob)
+		var blob Blob
+		fillBlobRandom(&blob, int64(i))
+		commitment, err := BlobToKZGCommitment(&blob)
 		require.NoError(b, err)
-		proof, err := ComputeBlobKZGProof(blob, Bytes48(commitment))
+		proof, err := ComputeBlobKZGProof(&blob, Bytes48(commitment))
 		require.NoError(b, err)
 
 		blobs[i] = blob
@@ -413,19 +412,19 @@ func Benchmark(b *testing.B) {
 
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			BlobToKZGCommitment(blobs[0])
+			BlobToKZGCommitment(&blobs[0])
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeKZGProof(blobs[0], fields[0])
+			ComputeKZGProof(&blobs[0], fields[0])
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ComputeBlobKZGProof(blobs[0], commitments[0])
+			ComputeBlobKZGProof(&blobs[0], commitments[0])
 		}
 	})
 
@@ -437,7 +436,7 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			VerifyBlobKZGProof(blobs[0], commitments[0], proofs[0])
+			VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
 		}
 	})
 
