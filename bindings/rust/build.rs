@@ -103,6 +103,8 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
         .parse_callbacks(Box::new(Callbacks))
         // Add PartialEq and Eq impls to types.
         .derive_eq(true)
+        // All types are hashable.
+        .derive_hash(true)
         // Blobs are big, we don't want rust to liberally copy them around.
         .no_copy("Blob")
         // Do not make fields public. If we want to modify them we can create setters/mutable
