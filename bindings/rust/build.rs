@@ -31,7 +31,10 @@ fn main() {
     #[cfg(feature = "generate-bindings")]
     {
         let header_path = c_src_dir.join("c_kzg_4844.h");
-        let bindings_out_path = concat!(env!("CARGO_MANIFEST_DIR"), "/src/bindings/generated.rs");
+        let bindings_out_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "bindings/rust/src/bindings/generated.rs"
+        );
         make_bindings(
             header_path.to_str().expect("valid header path"),
             blst_headers_dir.to_str().expect("valid blst header path"),
