@@ -8,7 +8,7 @@ long_description = (this_directory / "README.md").read_text()
 def main():
     setup(
         name="ckzg",
-        version="0.4.3",
+        version="1.0.0",
         author="Ethereum Foundation",
         author_email="security@ethereum.org",
         url="https://github.com/ethereum/c-kzg-4844",
