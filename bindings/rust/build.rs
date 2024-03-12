@@ -33,7 +33,7 @@ fn main() {
         let header_path = c_src_dir.join("c_kzg_4844.h");
         let bindings_out_path = concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "bindings/rust/src/bindings/generated.rs"
+            "/bindings/rust/src/bindings/generated.rs"
         );
         make_bindings(
             header_path.to_str().expect("valid header path"),
