@@ -21,3 +21,5 @@ build/
 
 # ccls cache dir
 .ccls-cache/
+
+target

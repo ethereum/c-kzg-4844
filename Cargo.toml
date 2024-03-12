@@ -6,6 +6,11 @@ license = "Apache-2.0"
 links = "ckzg"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+include = ["src", "inc", "bindings/rust/src", "bindings/rust/build.rs", "blst/bindings/*.h"]
+build = "bindings/rust/build.rs"
+
+[lib]
+path = "bindings/rust/src/lib.rs"
 
 [features]
 default = ["std", "portable"]
@@ -27,8 +32,8 @@ blst = { version = "0.3.11", default-features = false }
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }
 libc = { version = "0.2", default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = [
-    "alloc",
-    "derive",
+	"alloc",
+	"derive",
 ] }
 
 [dev-dependencies]
@@ -36,8 +41,8 @@ criterion = "0.5.1"
 glob = "0.3.1"
 rand = "0.8.5"
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9.17"
 serde_json = "1.0.105"
+serde_yaml = "0.9.17"
 
 [build-dependencies]
 bindgen = { version = "0.69", optional = true }
@@ -47,5 +52,6 @@ cc = "1.0"
 glob = "0.3"
 
 [[bench]]
+path = "bindings/rust/benches/kzg_benches.rs"
 name = "kzg_benches"
 harness = false
