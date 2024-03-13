@@ -32,8 +32,8 @@ blst = { version = "0.3.11", default-features = false }
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }
 libc = { version = "0.2", default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = [
-	"alloc",
-	"derive",
+    "alloc",
+    "derive",
 ] }
 
 [dev-dependencies]
