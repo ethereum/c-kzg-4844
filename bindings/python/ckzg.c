@@ -10,15 +10,24 @@ static void free_KZGSettings(PyObject *c) {
 
 static PyObject* load_trusted_setup_wrap(PyObject *self, PyObject *args) {
   PyObject *f;
+  FILE *fp;
 
   if (!PyArg_ParseTuple(args, "U", &f))
     return PyErr_Format(PyExc_ValueError, "expected a string");
 
   KZGSettings *s = (KZGSettings*)malloc(sizeof(KZGSettings));
-
   if (s == NULL) return PyErr_NoMemory();
 
-  if (load_trusted_setup_file(s, fopen(PyUnicode_AsUTF8(f), "r")) != C_KZG_OK) {
+  fp = fopen(PyUnicode_AsUTF8(f), "r");
+  if (fp == NULL) {
+    free(s);
+    return PyErr_Format(PyExc_RuntimeError, "error reading trusted setup");
+  }
+
+  C_KZG_RET ret = load_trusted_setup_file(s, fp);
+  fclose(fp);
+
+  if (ret != C_KZG_OK) {
     free(s);
     return PyErr_Format(PyExc_RuntimeError, "error loading trusted setup");
   }

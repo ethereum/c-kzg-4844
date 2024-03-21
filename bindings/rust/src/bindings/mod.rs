@@ -197,6 +197,8 @@ impl KZGSettings {
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         let result = unsafe {
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr);
+            let _unchecked_close_result = libc::fclose(file_ptr);
+
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(kzg_settings.assume_init())
             } else {
@@ -205,9 +207,6 @@ impl KZGSettings {
                 )))
             }
         };
-
-        // We don't really care if this fails.
-        let _unchecked_close_result = unsafe { libc::fclose(file_ptr) };
 
         result
     }
@@ -902,7 +901,7 @@ mod tests {
 
     #[test]
     fn test_end_to_end() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         test_simple(trusted_setup_file);
     }
 
@@ -916,16 +915,16 @@ mod tests {
         assert_eq!(bytes, arr);
     }
 
-    const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "../../tests/blob_to_kzg_commitment/*/*/*";
-    const COMPUTE_KZG_PROOF_TESTS: &str = "../../tests/compute_kzg_proof/*/*/*";
-    const COMPUTE_BLOB_KZG_PROOF_TESTS: &str = "../../tests/compute_blob_kzg_proof/*/*/*";
-    const VERIFY_KZG_PROOF_TESTS: &str = "../../tests/verify_kzg_proof/*/*/*";
-    const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "../../tests/verify_blob_kzg_proof/*/*/*";
-    const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "../../tests/verify_blob_kzg_proof_batch/*/*/*";
+    const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "tests/blob_to_kzg_commitment/*/*/*";
+    const COMPUTE_KZG_PROOF_TESTS: &str = "tests/compute_kzg_proof/*/*/*";
+    const COMPUTE_BLOB_KZG_PROOF_TESTS: &str = "tests/compute_blob_kzg_proof/*/*/*";
+    const VERIFY_KZG_PROOF_TESTS: &str = "tests/verify_kzg_proof/*/*/*";
+    const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "tests/verify_blob_kzg_proof/*/*/*";
+    const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
     #[test]
     fn test_blob_to_kzg_commitment() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(BLOB_TO_KZG_COMMITMENT_TESTS)
@@ -951,7 +950,7 @@ mod tests {
 
     #[test]
     fn test_compute_kzg_proof() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(COMPUTE_KZG_PROOF_TESTS)
@@ -980,7 +979,7 @@ mod tests {
 
     #[test]
     fn test_compute_blob_kzg_proof() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(COMPUTE_BLOB_KZG_PROOF_TESTS)
@@ -1007,7 +1006,7 @@ mod tests {
 
     #[test]
     fn test_verify_kzg_proof() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_KZG_PROOF_TESTS)
@@ -1038,7 +1037,7 @@ mod tests {
 
     #[test]
     fn test_verify_blob_kzg_proof() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_TESTS)
@@ -1068,7 +1067,7 @@ mod tests {
 
     #[test]
     fn test_verify_blob_kzg_proof_batch() {
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS)
@@ -1104,7 +1103,7 @@ mod tests {
     #[test]
     fn test_get_and_prove_cells() {
         let mut rng = rand::thread_rng();
-        let trusted_setup_file = Path::new("../../src/trusted_setup.txt");
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
 

@@ -14,35 +14,35 @@ pub const CELLS_PER_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
 pub type limb_t = u64;
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_fr {
     l: [limb_t; 4usize],
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_fp {
     l: [limb_t; 6usize],
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_fp2 {
     fp: [blst_fp; 2usize],
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_p1 {
     x: blst_fp,
     y: blst_fp,
     z: blst_fp,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_p1_affine {
     x: blst_fp,
     y: blst_fp,
 }
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct blst_p2 {
     x: blst_fp2,
     y: blst_fp2,
@@ -53,19 +53,19 @@ pub type g2_t = blst_p2;
 pub type fr_t = blst_fr;
 #[doc = " An array of 32 bytes. Represents an untrusted\n (potentially invalid) field element."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes32 {
     bytes: [u8; 32usize],
 }
 #[doc = " An array of 48 bytes. Represents an untrusted\n (potentially invalid) commitment/proof."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes48 {
     bytes: [u8; 48usize],
 }
 #[doc = " A basic blob data."]
 #[repr(C)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct Blob {
     bytes: [u8; 131072usize],
 }
@@ -90,7 +90,7 @@ pub enum C_KZG_RET {
 }
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Hash, PartialEq, Eq)]
 pub struct KZGSettings {
     #[doc = " The length of `roots_of_unity`, a power of 2."]
     max_width: u64,
