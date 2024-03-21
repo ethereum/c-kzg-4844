@@ -8,6 +8,8 @@ export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
 export type ProofResult = [KZGProof, Bytes32];
+export type Cell = Uint8Array;
+
 export interface TrustedSetupJson {
   setup_G1: string[];
   setup_G2: string[];
@@ -20,6 +22,10 @@ export const BYTES_PER_COMMITMENT: number;
 export const BYTES_PER_FIELD_ELEMENT: number;
 export const BYTES_PER_PROOF: number;
 export const FIELD_ELEMENTS_PER_BLOB: number;
+export const FIELD_ELEMENTS_PER_EXT_BLOB: number;
+export const FIELD_ELEMENTS_PER_CELL: number;
+export const CELLS_PER_BLOB: number;
+export const BYTES_PER_CELL: number;
 
 /**
  * Factory function that passes trusted setup to the bindings
@@ -116,3 +122,64 @@ export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBy
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
+
+/**
+ * Get the cells for a given blob.
+ *
+ * @param blob the blob to get cells for
+ * @return an array of cells
+ */
+export function computeCells(blob: Blob): Cell[];
+
+/**
+ * Get the cells and proofs for a given blob.
+ *
+ * @param blob the blob to get cells/proofs for
+ * @return a tuple of cells and proofs
+ */
+export function computeCellsAndProofs(blob: Blob): [Cell[], KZGProof[]];
+
+/**
+ * Convert an array of cells to a blob.
+ *
+ * @param cells the cells to convert to a blob
+ * @return the blob for the given cells
+ */
+export function cellsToBlob(cells: Cell[]): Blob;
+
+/**
+ * Given at least 50% of cells, reconstruct the missing ones.
+ *
+ * @param cellIds the identifers for the cells you have
+ * @param cells the cells you have
+ * @return all cells for that blob
+ */
+export function recoverCells(cellIds: number[], cells: Cell[]): Cell[];
+
+/**
+ * Verify that a cell's proof is valid.
+ *
+ * @param commitmentBytes commitment bytes
+ * @param cellId the cell identifier
+ * @param cell the cell to verify
+ * @return true if the cell is valid with respect to this commitment
+ */
+export function verifyCellProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
+
+/**
+ * Verify that multiple cells' proofs are valid.
+ *
+ * @param commitmentsBytes the commitments for all blobs
+ * @param rowIds the row identifier for each cell
+ * @param columnIds the column identifier for each cell
+ * @param cells the cells to verify
+ * @param proofsBytes the proof for each cell
+ * @return true if the cells are valid with respect to the given commitments
+ */
+export function verifyCellProofBatch(
+  commitmentsBytes: Bytes48[],
+  rowIds: number[],
+  columnIds: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
+): boolean;

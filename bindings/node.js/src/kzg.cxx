@@ -160,6 +160,20 @@ inline Bytes48 *get_bytes48(
         get_bytes(env, val, BYTES_PER_COMMITMENT, name)
     );
 }
+inline Cell *get_cell(const Napi::Env &env, const Napi::Value &val) {
+    return reinterpret_cast<Cell *>(get_bytes(env, val, BYTES_PER_CELL, "cell")
+    );
+}
+inline uint64_t get_cell_id(const Napi::Env &env, const Napi::Value &val) {
+    if (!val.IsNumber()) {
+        Napi::TypeError::New(env, "cell id should be a number")
+            .ThrowAsJavaScriptException();
+        /* TODO: how will the caller know there was an error? */
+        return 0;
+    }
+    double number = val.As<Napi::Number>().DoubleValue();
+    return static_cast<uint64_t>(number);
+}
 
 Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
@@ -530,6 +544,446 @@ out:
     return result;
 }
 
+Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    Blob *blob = get_blob(env, info[0]);
+    if (blob == nullptr) {
+        return env.Null();
+    }
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    C_KZG_RET ret;
+    Cell *cells = NULL;
+    Napi::Array cellArray;
+
+    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    if (cells == nullptr) {
+        std::ostringstream msg;
+        msg << "Failed to allocate cells in computeCells";
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    ret = compute_cells_and_proofs(cells, NULL, blob, kzg_settings);
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in computeCells: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cellArray.Set(
+            i,
+            Napi::Buffer<uint8_t>::Copy(
+                env, reinterpret_cast<uint8_t *>(&cells[i]), BYTES_PER_CELL
+            )
+        );
+    }
+
+    result = cellArray;
+
+out:
+    free(cells);
+    return result;
+}
+
+Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    Blob *blob = get_blob(env, info[0]);
+    if (blob == nullptr) {
+        return env.Null();
+    }
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    C_KZG_RET ret;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+    Napi::Array tuple;
+    Napi::Array cellArray;
+    Napi::Array proofArray;
+
+    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    if (cells == nullptr) {
+        std::ostringstream msg;
+        msg << "Failed to allocate cells in computeCellsAndProofs";
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    proofs = (KZGProof *)calloc(CELLS_PER_BLOB, BYTES_PER_PROOF);
+    if (proofs == nullptr) {
+        std::ostringstream msg;
+        msg << "Failed to allocate proofs in computeCellsAndProofs";
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    ret = compute_cells_and_proofs(cells, proofs, blob, kzg_settings);
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in computeCellsAndProofs: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
+    proofArray = Napi::Array::New(env, CELLS_PER_BLOB);
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cellArray.Set(
+            i,
+            Napi::Buffer<uint8_t>::Copy(
+                env, reinterpret_cast<uint8_t *>(&cells[i]), BYTES_PER_CELL
+            )
+        );
+        proofArray.Set(
+            i,
+            Napi::Buffer<uint8_t>::Copy(
+                env, reinterpret_cast<uint8_t *>(&proofs[i]), BYTES_PER_PROOF
+            )
+        );
+    }
+
+    tuple = Napi::Array::New(env, 2);
+    tuple[(uint32_t)0] = cellArray;
+    tuple[(uint32_t)1] = proofArray;
+    result = tuple;
+
+out:
+    free(cells);
+    free(proofs);
+    return result;
+}
+
+Napi::Value CellsToBlob(const Napi::CallbackInfo &info) {
+    C_KZG_RET ret;
+    Cell *cells = NULL;
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    if (!info[0].IsArray()) {
+        Napi::Error::New(env, "Cells must be an array")
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    Napi::Array cells_param = info[0].As<Napi::Array>();
+    if (cells_param.Length() != CELLS_PER_BLOB) {
+        Napi::Error::New(env, "Cells must have CELLS_PER_BLOB cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    if (cells == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        // add HandleScope here to release reference to temp values
+        // after each iteration since data is being memcpy
+        Napi::HandleScope scope{env};
+        Cell *cell = get_cell(env, cells_param[i]);
+        if (cell == nullptr) {
+            goto out;
+        }
+        memcpy(&cells[i], cell, BYTES_PER_CELL);
+    }
+
+    Blob blob;
+    ret = cells_to_blob(&blob, cells);
+
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in cellsToBlob: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    result = Napi::Buffer<uint8_t>::Copy(
+        env, reinterpret_cast<uint8_t *>(&blob), BYTES_PER_BLOB
+    );
+
+out:
+    free(cells);
+    return result;
+}
+
+Napi::Value RecoverCells(const Napi::CallbackInfo &info) {
+    C_KZG_RET ret;
+    uint64_t *cell_ids = NULL;
+    Cell *cells = NULL;
+    Cell *recovered = NULL;
+    Napi::Array cellArray;
+    size_t num_cells;
+
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    if (!info[0].IsArray()) {
+        Napi::Error::New(env, "CellIds must be an array")
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    if (!info[1].IsArray()) {
+        Napi::Error::New(env, "Cells must be an array")
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    Napi::Array cell_ids_param = info[0].As<Napi::Array>();
+    Napi::Array cells_param = info[1].As<Napi::Array>();
+
+    if (cell_ids_param.Length() != cells_param.Length()) {
+        Napi::Error::New(env, "There must equal lengths of cellIds and cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    num_cells = cells_param.Length();
+    cell_ids = (uint64_t *)calloc(num_cells, sizeof(uint64_t));
+    if (cell_ids == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cell_ids")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    cells = (Cell *)calloc(num_cells, BYTES_PER_CELL);
+    if (cells == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    recovered = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    if (recovered == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for recovered")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    for (size_t i = 0; i < num_cells; i++) {
+        // add HandleScope here to release reference to temp values
+        // after each iteration since data is being memcpy
+        Napi::HandleScope scope{env};
+        cell_ids[i] = get_cell_id(env, cell_ids_param[i]);
+        Cell *cell = get_cell(env, cells_param[i]);
+        if (cell == nullptr) {
+            goto out;
+        }
+        memcpy(&cells[i], cell, BYTES_PER_CELL);
+    }
+
+    ret = recover_cells(recovered, cell_ids, cells, num_cells, kzg_settings);
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in recoverCells: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cellArray.Set(
+            i,
+            Napi::Buffer<uint8_t>::Copy(
+                env, reinterpret_cast<uint8_t *>(&cells[i]), BYTES_PER_CELL
+            )
+        );
+    }
+
+    result = cellArray;
+
+out:
+    free(cells);
+    return result;
+}
+
+Napi::Value VerifyCellProof(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
+    if (commitment_bytes == nullptr) {
+        return env.Null();
+    }
+    uint64_t cell_id = get_cell_id(env, info[1]);
+    Cell *cell = get_cell(env, info[2]);
+    if (cell == nullptr) {
+        return env.Null();
+    }
+    Bytes48 *proof_bytes = get_bytes48(env, info[3], "proofBytes");
+    if (proof_bytes == nullptr) {
+        return env.Null();
+    }
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    bool out;
+    C_KZG_RET ret = verify_cell_proof(
+        &out, commitment_bytes, cell_id, cell, proof_bytes, kzg_settings
+    );
+
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in verifyCellProof: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        return env.Undefined();
+    }
+
+    return Napi::Boolean::New(env, out);
+}
+
+Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray() &&
+          info[3].IsArray() && info[4].IsArray())) {
+        Napi::Error::New(
+            env,
+            "commitments, row_ids, column_ids, cells, and proofs must be arrays"
+        )
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    Napi::Array commitments_param = info[0].As<Napi::Array>();
+    Napi::Array row_ids_param = info[1].As<Napi::Array>();
+    Napi::Array column_ids_param = info[2].As<Napi::Array>();
+    Napi::Array cells_param = info[3].As<Napi::Array>();
+    Napi::Array proofs_param = info[4].As<Napi::Array>();
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    C_KZG_RET ret;
+    bool out;
+    Bytes48 *commitments = NULL;
+    uint64_t *row_ids = NULL;
+    uint64_t *column_ids = NULL;
+    Cell *cells = NULL;
+    Bytes48 *proofs = NULL;
+
+    size_t num_cells = cells_param.Length();
+    size_t num_commitments = commitments_param.Length();
+
+    if (row_ids_param.Length() != num_cells ||
+        column_ids_param.Length() != num_cells ||
+        proofs_param.Length() != num_cells) {
+        Napi::Error::New(
+            env,
+            "Must have equal lengths for row_ids, column_ids, cells, and proofs"
+        )
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    commitments = (Bytes48 *)calloc(
+        commitments_param.Length(), sizeof(Bytes48)
+    );
+    if (commitments == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for commitments")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    row_ids = (uint64_t *)calloc(row_ids_param.Length(), sizeof(uint64_t));
+    if (row_ids == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for row_ids")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    column_ids = (uint64_t *)calloc(
+        column_ids_param.Length(), sizeof(uint64_t)
+    );
+    if (column_ids == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for column_ids")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    cells = (Cell *)calloc(cells_param.Length(), sizeof(Cell));
+    if (cells == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    proofs = (Bytes48 *)calloc(proofs_param.Length(), sizeof(Bytes48));
+    if (proofs == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for proofs")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    for (size_t i = 0; i < num_commitments; i++) {
+        // add HandleScope here to release reference to temp values
+        // after each iteration since data is being memcpy
+        Napi::HandleScope scope{env};
+        Bytes48 *commitment = get_bytes48(
+            env, commitments_param[i], "commitmentBytes"
+        );
+        if (commitment == nullptr) {
+            goto out;
+        }
+        memcpy(&commitments[i], commitment, BYTES_PER_COMMITMENT);
+    }
+
+    for (size_t i = 0; i < num_cells; i++) {
+        // add HandleScope here to release reference to temp values
+        // after each iteration since data is being memcpy
+        Napi::HandleScope scope{env};
+        row_ids[i] = get_cell_id(env, row_ids_param[i]);
+        column_ids[i] = get_cell_id(env, column_ids_param[i]);
+        Cell *cell = get_cell(env, cells_param[i]);
+        if (cell == nullptr) {
+            goto out;
+        }
+        memcpy(&cells[i], cell, BYTES_PER_CELL);
+        Bytes48 *proof = get_bytes48(env, proofs_param[i], "proofBytes");
+        if (proof == nullptr) {
+            goto out;
+        }
+        memcpy(&proofs[i], proof, BYTES_PER_PROOF);
+    }
+
+    ret = verify_cell_proof_batch(
+        &out,
+        commitments,
+        num_commitments,
+        row_ids,
+        column_ids,
+        cells,
+        proofs,
+        num_cells,
+        kzg_settings
+    );
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in verifyCellProofBatch: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    result = Napi::Boolean::New(env, out);
+
+out:
+    free(commitments);
+    free(row_ids);
+    free(column_ids);
+    free(cells);
+    free(proofs);
+
+    return result;
+}
+
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     KzgAddonData *data = (KzgAddonData *)malloc(sizeof(KzgAddonData));
     if (data == nullptr) {
@@ -569,6 +1023,24 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["verifyBlobKzgProofBatch"] = Napi::Function::New(
         env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch"
     );
+    exports["computeCells"] = Napi::Function::New(
+        env, ComputeCells, "computeCells"
+    );
+    exports["computeCellsAndProofs"] = Napi::Function::New(
+        env, ComputeCellsAndProofs, "computeCellsAndProofs"
+    );
+    exports["cellsToBlob"] = Napi::Function::New(
+        env, CellsToBlob, "cellsToBlob"
+    );
+    exports["recoverCells"] = Napi::Function::New(
+        env, RecoverCells, "recoverCells"
+    );
+    exports["verifyCellProof"] = Napi::Function::New(
+        env, VerifyCellProof, "verifyCellProof"
+    );
+    exports["verifyCellProofBatch"] = Napi::Function::New(
+        env, VerifyCellProofBatch, "verifyCellProofBatch"
+    );
 
     // Constants
     exports["BYTES_PER_BLOB"] = Napi::Number::New(env, BYTES_PER_BLOB);
@@ -582,6 +1054,18 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
         env, FIELD_ELEMENTS_PER_BLOB
     );
+    exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
+        env, FIELD_ELEMENTS_PER_BLOB
+    );
+    exports["FIELD_ELEMENTS_PER_EXT_BLOB"] = Napi::Number::New(
+        env, FIELD_ELEMENTS_PER_EXT_BLOB
+    );
+    exports["FIELD_ELEMENTS_PER_CELL"] = Napi::Number::New(
+        env, FIELD_ELEMENTS_PER_CELL
+    );
+    exports["CELLS_PER_BLOB"] = Napi::Number::New(env, CELLS_PER_BLOB);
+    exports["BYTES_PER_CELL"] = Napi::Number::New(env, BYTES_PER_CELL);
+
     return exports;
 }
 

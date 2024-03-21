@@ -22,7 +22,13 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
+  CELLS_PER_BLOB,
   ProofResult,
+  computeCellsAndProofs,
+  verifyCellProof,
+  computeCells,
+  cellsToBlob,
+  verifyCellProofBatch,
 } from "../lib/kzg";
 
 const SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
@@ -549,6 +555,49 @@ describe("C-KZG", () => {
       expect(() => verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1))).toThrowError(
         "Requires equal number of blobs/commitments/proofs"
       );
+    });
+  });
+
+  describe("tests for das functions", () => {
+    it("round trip blob to cells to blob", () => {
+      const blob = generateRandomBlob();
+      const cells = computeCells(blob);
+      const newBlob = cellsToBlob(cells);
+      assertBytesEqual(blob, newBlob);
+    });
+
+    it("proofs should verify", () => {
+      const blob = generateRandomBlob();
+      const commitment = blobToKzgCommitment(blob);
+      const [cells, proofs] = computeCellsAndProofs(blob);
+      for (const [i] of cells.entries()) {
+        verifyCellProof(commitment, i, cells[i], proofs[i]);
+      }
+    });
+
+    it("proofs should verify in batch", () => {
+      const count = 3;
+      const blobs = new Array(count);
+      const commitments = new Array(count);
+      const row_ids = new Array(count * CELLS_PER_BLOB);
+      const column_ids = new Array(count * CELLS_PER_BLOB);
+      const cells = new Array(count * CELLS_PER_BLOB);
+      const proofs = new Array(count * CELLS_PER_BLOB);
+
+      for (const [i] of blobs.entries()) {
+        blobs[i] = generateRandomBlob();
+        commitments[i] = blobToKzgCommitment(blobs[i]);
+        const [blobCells, blobCellProofs] = computeCellsAndProofs(blobs[i]);
+        for (let j = 0; j < CELLS_PER_BLOB; j++) {
+          const index = i * CELLS_PER_BLOB + j;
+          row_ids[index] = i;
+          column_ids[index] = j;
+          cells[index] = blobCells[j];
+          proofs[index] = blobCellProofs[j];
+        }
+      }
+
+      verifyCellProofBatch(commitments, row_ids, column_ids, cells, proofs);
     });
   });
 });

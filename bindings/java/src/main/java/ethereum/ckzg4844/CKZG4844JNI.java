@@ -237,6 +237,7 @@ public class CKZG4844JNI {
    * Verify that a cell's proof is valid.
    *
    * @param commitmentBytes commitment bytes
+   * @param cellId the cell identifier
    * @param cell the cell to verify
    * @return true if the cell is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
