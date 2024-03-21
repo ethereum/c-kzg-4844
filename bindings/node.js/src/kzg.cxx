@@ -1054,9 +1054,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
         env, FIELD_ELEMENTS_PER_BLOB
     );
-    exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
-        env, FIELD_ELEMENTS_PER_BLOB
-    );
     exports["FIELD_ELEMENTS_PER_EXT_BLOB"] = Napi::Number::New(
         env, FIELD_ELEMENTS_PER_EXT_BLOB
     );
