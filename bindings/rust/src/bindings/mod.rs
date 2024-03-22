@@ -508,9 +508,21 @@ impl From<[u8; 32]> for Bytes32 {
     }
 }
 
+impl AsRef<[u8; 32]> for Bytes32 {
+    fn as_ref(&self) -> &[u8; 32] {
+        &self.bytes
+    }
+}
+
 impl From<[u8; 48]> for Bytes48 {
     fn from(value: [u8; 48]) -> Self {
         Self { bytes: value }
+    }
+}
+
+impl AsRef<[u8; 48]> for Bytes48 {
+    fn as_ref(&self) -> &[u8; 48] {
+        &self.bytes
     }
 }
 
