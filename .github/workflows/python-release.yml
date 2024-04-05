@@ -79,19 +79,19 @@ jobs:
           path: wheelhouse/*
 
   # Build the source distribution under Linux
-  build_sdist:
+  build-sdist:
     name: Source distribution
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout c-kzg
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          submodules: rescursive
+          submodules: recursive
+
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.9" # update once build dependencies are available
+          python-version: '3.10'
     
       - name: Build source distribution
         run: python setup.py sdist
@@ -103,7 +103,7 @@ jobs:
           name: wheels
 
   publish:
-    needs: [build-wheels, build_sdist]
+    needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
