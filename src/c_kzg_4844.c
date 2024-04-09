@@ -69,7 +69,7 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH =
 
 /** The domain separator for verify_cell_proof_batch's random challenge. */
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH =
-    "RCVCELLBATCH_V1_";
+    "RCKZGCBATCH__V1_";
 
 /** Length of the domain strings above. */
 #define DOMAIN_STR_LENGTH 16
