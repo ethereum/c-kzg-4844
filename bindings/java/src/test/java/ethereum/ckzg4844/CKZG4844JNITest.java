@@ -215,8 +215,8 @@ public class CKZG4844JNITest {
 
     final byte[] commitments = new byte[count * BYTES_PER_COMMITMENT];
     final CellsAndProofs[] data = new CellsAndProofs[count];
-    final long[] rowIds = new long[count * CELLS_PER_BLOB];
-    final long[] columnIds = new long[count * CELLS_PER_BLOB];
+    final long[] rowIndices = new long[count * CELLS_PER_BLOB];
+    final long[] columnIndices = new long[count * CELLS_PER_BLOB];
     final byte[] cells = new byte[count * CELLS_PER_BLOB * BYTES_PER_CELL];
     final byte[] proofs = new byte[count * CELLS_PER_BLOB * BYTES_PER_PROOF];
 
@@ -232,12 +232,12 @@ public class CKZG4844JNITest {
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < CELLS_PER_BLOB; j++) {
         final int index = i * CELLS_PER_BLOB + j;
-        rowIds[index] = i;
-        columnIds[index] = j;
+        rowIndices[index] = i;
+        columnIndices[index] = j;
       }
     }
 
-    assertTrue(CKZG4844JNI.verifyCellProofBatch(commitments, rowIds, columnIds, cells, proofs));
+    assertTrue(CKZG4844JNI.verifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 

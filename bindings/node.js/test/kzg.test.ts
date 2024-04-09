@@ -579,8 +579,8 @@ describe("C-KZG", () => {
       const count = 3;
       const blobs = new Array(count);
       const commitments = new Array(count);
-      const row_ids = new Array(count * CELLS_PER_BLOB);
-      const column_ids = new Array(count * CELLS_PER_BLOB);
+      const row_indices = new Array(count * CELLS_PER_BLOB);
+      const column_indices = new Array(count * CELLS_PER_BLOB);
       const cells = new Array(count * CELLS_PER_BLOB);
       const proofs = new Array(count * CELLS_PER_BLOB);
 
@@ -590,14 +590,14 @@ describe("C-KZG", () => {
         const [blobCells, blobCellProofs] = computeCellsAndProofs(blobs[i]);
         for (let j = 0; j < CELLS_PER_BLOB; j++) {
           const index = i * CELLS_PER_BLOB + j;
-          row_ids[index] = i;
-          column_ids[index] = j;
+          row_indices[index] = i;
+          column_indices[index] = j;
           cells[index] = blobCells[j];
           proofs[index] = blobCellProofs[j];
         }
       }
 
-      verifyCellProofBatch(commitments, row_ids, column_ids, cells, proofs);
+      verifyCellProofBatch(commitments, row_indices, column_indices, cells, proofs);
     });
   });
 });

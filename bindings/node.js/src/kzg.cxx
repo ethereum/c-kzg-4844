@@ -851,14 +851,15 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
           info[3].IsArray() && info[4].IsArray())) {
         Napi::Error::New(
             env,
-            "commitments, row_ids, column_ids, cells, and proofs must be arrays"
+            "commitments, row_indices, column_indices, cells, and proofs must "
+            "be arrays"
         )
             .ThrowAsJavaScriptException();
         return result;
     }
     Napi::Array commitments_param = info[0].As<Napi::Array>();
-    Napi::Array row_ids_param = info[1].As<Napi::Array>();
-    Napi::Array column_ids_param = info[2].As<Napi::Array>();
+    Napi::Array row_indices_param = info[1].As<Napi::Array>();
+    Napi::Array column_indices_param = info[2].As<Napi::Array>();
     Napi::Array cells_param = info[3].As<Napi::Array>();
     Napi::Array proofs_param = info[4].As<Napi::Array>();
     KZGSettings *kzg_settings = get_kzg_settings(env, info);
@@ -869,20 +870,21 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     bool out;
     Bytes48 *commitments = NULL;
-    uint64_t *row_ids = NULL;
-    uint64_t *column_ids = NULL;
+    uint64_t *row_indices = NULL;
+    uint64_t *column_indices = NULL;
     Cell *cells = NULL;
     Bytes48 *proofs = NULL;
 
     size_t num_cells = cells_param.Length();
     size_t num_commitments = commitments_param.Length();
 
-    if (row_ids_param.Length() != num_cells ||
-        column_ids_param.Length() != num_cells ||
+    if (row_indices_param.Length() != num_cells ||
+        column_indices_param.Length() != num_cells ||
         proofs_param.Length() != num_cells) {
         Napi::Error::New(
             env,
-            "Must have equal lengths for row_ids, column_ids, cells, and proofs"
+            "Must have equal lengths for row_indices, column_indices, cells, "
+            "and proofs"
         )
             .ThrowAsJavaScriptException();
         goto out;
@@ -896,17 +898,21 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
             .ThrowAsJavaScriptException();
         goto out;
     }
-    row_ids = (uint64_t *)calloc(row_ids_param.Length(), sizeof(uint64_t));
-    if (row_ids == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for row_ids")
+    row_indices = (uint64_t *)calloc(
+        row_indices_param.Length(), sizeof(uint64_t)
+    );
+    if (row_indices == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for row_indices")
             .ThrowAsJavaScriptException();
         goto out;
     }
-    column_ids = (uint64_t *)calloc(
-        column_ids_param.Length(), sizeof(uint64_t)
+    column_indices = (uint64_t *)calloc(
+        column_indices_param.Length(), sizeof(uint64_t)
     );
-    if (column_ids == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for column_ids")
+    if (column_indices == nullptr) {
+        Napi::Error::New(
+            env, "Error while allocating memory for column_indices"
+        )
             .ThrowAsJavaScriptException();
         goto out;
     }
@@ -940,8 +946,8 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
-        row_ids[i] = get_cell_id(env, row_ids_param[i]);
-        column_ids[i] = get_cell_id(env, column_ids_param[i]);
+        row_indices[i] = get_cell_id(env, row_indices_param[i]);
+        column_indices[i] = get_cell_id(env, column_indices_param[i]);
         Cell *cell = get_cell(env, cells_param[i]);
         if (cell == nullptr) {
             goto out;
@@ -958,8 +964,8 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
         &out,
         commitments,
         num_commitments,
-        row_ids,
-        column_ids,
+        row_indices,
+        column_indices,
         cells,
         proofs,
         num_cells,
@@ -976,8 +982,8 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
 
 out:
     free(commitments);
-    free(row_ids);
-    free(column_ids);
+    free(row_indices);
+    free(column_indices);
     free(cells);
     free(proofs);
 

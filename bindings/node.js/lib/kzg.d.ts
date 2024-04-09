@@ -150,7 +150,7 @@ export function cellsToBlob(cells: Cell[]): Blob;
 /**
  * Given at least 50% of cells, reconstruct the missing ones.
  *
- * @param cellIds the identifers for the cells you have
+ * @param cellIds the identifiers for the cells you have
  * @param cells the cells you have
  * @return all cells for that blob
  */
@@ -162,6 +162,7 @@ export function recoverCells(cellIds: number[], cells: Cell[]): Cell[];
  * @param commitmentBytes commitment bytes
  * @param cellId the cell identifier
  * @param cell the cell to verify
+ * @param proofBytes the proof for the cell
  * @return true if the cell is valid with respect to this commitment
  */
 export function verifyCellProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
@@ -170,16 +171,16 @@ export function verifyCellProof(commitmentBytes: Bytes48, cellId: number, cell: 
  * Verify that multiple cells' proofs are valid.
  *
  * @param commitmentsBytes the commitments for all blobs
- * @param rowIds the row identifier for each cell
- * @param columnIds the column identifier for each cell
+ * @param rowIndices the row index for each cell
+ * @param columnIndices the column index for each cell
  * @param cells the cells to verify
  * @param proofsBytes the proof for each cell
  * @return true if the cells are valid with respect to the given commitments
  */
 export function verifyCellProofBatch(
   commitmentsBytes: Bytes48[],
-  rowIds: number[],
-  columnIds: number[],
+  rowIndices: number[],
+  columnIndices: number[],
   cells: Cell[],
   proofsBytes: Bytes48[]
 ): boolean;

@@ -71,7 +71,7 @@ pub struct Blob {
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Cell {
     data: [Bytes32; 64usize],
 }
@@ -182,8 +182,8 @@ extern "C" {
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
         num_commitments: usize,
-        row_ids: *const u64,
-        column_ids: *const u64,
+        row_indices: *const u64,
+        column_indices: *const u64,
         cells: *const Cell,
         proofs_bytes: *const Bytes48,
         num_cells: usize,

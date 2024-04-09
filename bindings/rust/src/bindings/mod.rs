@@ -491,8 +491,8 @@ impl KZGProof {
 
     pub fn verify_cell_proof_batch(
         commitments_bytes: &[Bytes48],
-        row_ids: &[u64],
-        column_ids: &[u64],
+        row_indices: &[u64],
+        column_indices: &[u64],
         cells: &[Cell],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
@@ -503,8 +503,8 @@ impl KZGProof {
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
                 commitments_bytes.len(),
-                row_ids.as_ptr(),
-                column_ids.as_ptr(),
+                row_indices.as_ptr(),
+                column_indices.as_ptr(),
                 cells.as_ptr(),
                 proofs_bytes.as_ptr(),
                 cells.len(),
@@ -608,12 +608,7 @@ impl Cell {
     ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
         let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
         unsafe {
-            let res = compute_cells_and_proofs(
-                cells.as_mut_ptr(),
-                null_mut(),
-                blob,
-                kzg_settings,
-            );
+            let res = compute_cells_and_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 cells.set_len(CELLS_PER_BLOB);
                 let cells_boxed_slice = cells.into_boxed_slice();
@@ -1124,15 +1119,15 @@ mod tests {
             assert_eq!(ok, true);
         }
 
-        let row_ids: Vec<u64> = vec![0; CELLS_PER_BLOB];
-        let column_ids: Vec<u64> = (0..CELLS_PER_BLOB as u64).collect();
+        let row_indices: Vec<u64> = vec![0; CELLS_PER_BLOB];
+        let column_indices: Vec<u64> = (0..CELLS_PER_BLOB as u64).collect();
         let cell_proofs: Vec<Bytes48> = proofs.iter().map(|proof| proof.to_bytes()).collect();
 
         /* Verify cells in batch */
         let ok = KZGProof::verify_cell_proof_batch(
             &vec![commitment.to_bytes()],
-            row_ids.as_slice(),
-            column_ids.as_slice(),
+            row_indices.as_slice(),
+            column_indices.as_slice(),
             cells.as_slice(),
             cell_proofs.as_slice(),
             &kzg_settings,

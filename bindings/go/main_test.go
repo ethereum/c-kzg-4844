@@ -60,19 +60,19 @@ func getPartialCells(cells [CellsPerBlob]Cell, i int) ([]uint64, []Cell) {
 }
 
 func getColumns(cellRows [][CellsPerBlob]Cell, proofRows [][CellsPerBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
-	var rowIds []uint64
-	var columnIds []uint64
+	var rowIndices []uint64
+	var columnIndices []uint64
 	var cells []Cell
 	var cellProofs []Bytes48
 	for i := range cellRows {
 		for j := 0; j < numCols; j++ {
-			rowIds = append(rowIds, uint64(i))
-			columnIds = append(columnIds, uint64(j))
+			rowIndices = append(rowIndices, uint64(i))
+			columnIndices = append(columnIndices, uint64(j))
 			cells = append(cells, cellRows[i][j])
 			cellProofs = append(cellProofs, proofRows[i][j])
 		}
 	}
-	return rowIds, columnIds, cells, cellProofs
+	return rowIndices, columnIndices, cells, cellProofs
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -439,16 +439,16 @@ func TestVerifyCells(t *testing.T) {
 	require.NoError(t, err)
 
 	commitments := []Bytes48{Bytes48(commitment)}
-	var rowIds, columnIds []uint64
+	var rowIndices, columnIndices []uint64
 	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIds = append(rowIds, 0)
-		columnIds = append(columnIds, i)
+		rowIndices = append(rowIndices, 0)
+		columnIndices = append(columnIndices, i)
 	}
 	var proofsBytes []Bytes48
 	for i := uint64(0); i < CellsPerBlob; i++ {
 		proofsBytes = append(proofsBytes, Bytes48(proofs[i]))
 	}
-	ok, err := VerifyCellProofBatch(commitments, rowIds, columnIds, cells[:], proofsBytes[:])
+	ok, err := VerifyCellProofBatch(commitments, rowIndices, columnIndices, cells[:], proofsBytes[:])
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -470,14 +470,14 @@ func TestVerifyCellsMultiBlobs(t *testing.T) {
 
 	commitments := []Bytes48{Bytes48(commitment1), Bytes48(commitment2)}
 
-	var rowIds, columnIds []uint64
+	var rowIndices, columnIndices []uint64
 	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIds = append(rowIds, 0)
-		columnIds = append(columnIds, i)
+		rowIndices = append(rowIndices, 0)
+		columnIndices = append(columnIndices, i)
 	}
 	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIds = append(rowIds, 1)
-		columnIds = append(columnIds, i)
+		rowIndices = append(rowIndices, 1)
+		columnIndices = append(columnIndices, i)
 	}
 
 	var cells []Cell
@@ -496,7 +496,7 @@ func TestVerifyCellsMultiBlobs(t *testing.T) {
 		proofs = append(proofs, Bytes48(proof))
 	}
 
-	ok, err := VerifyCellProofBatch(commitments, rowIds, columnIds, cells, proofs)
+	ok, err := VerifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs)
 	require.NoError(t, err)
 	require.True(t, ok)
 }
@@ -641,31 +641,31 @@ func Benchmark(b *testing.B) {
 	})
 
 	b.Run("VerifyCellProofBatch", func(b *testing.B) {
-		var rowIds []uint64
-		var columnIds []uint64
+		var rowIndices []uint64
+		var columnIndices []uint64
 		var cells []Cell
 		var cellProofs []Bytes48
-		for rowId, blobCell := range blobCells {
-			for columnId, cell := range blobCell {
-				rowIds = append(rowIds, uint64(rowId))
-				columnIds = append(columnIds, uint64(columnId))
+		for rowIndex, blobCell := range blobCells {
+			for columnIndex, cell := range blobCell {
+				rowIndices = append(rowIndices, uint64(rowIndex))
+				columnIndices = append(columnIndices, uint64(columnIndex))
 				cells = append(cells, cell)
-				cellProofs = append(cellProofs, blobCellProofs[rowId][columnId])
+				cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
 			}
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellProofBatch(commitments[:], rowIds, columnIds, cells, cellProofs)
+			ok, err := VerifyCellProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
 	})
 
 	for i := 1; i <= 128; i *= 2 {
-		rowIds, columnIds, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
+		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellProofBatch(commitments[:], rowIds, columnIds, cells, cellProofs)
+				ok, err := VerifyCellProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
