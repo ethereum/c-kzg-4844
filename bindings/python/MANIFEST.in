@@ -1,0 +1,11 @@
+include ./ckzg.c
+include ./Makefile
+include ./README.md
+include ./setup.py
+include ./tests.py
+recursive-include ../../blst *
+recursive-include ../../lib *
+recursive-include ../../inc *
+recursive-include ../../src *
+include LICENSE
+include README.md
