@@ -21,7 +21,7 @@ class CustomBuild(build_ext):
 def main():
     setup(
         name="ckzg",
-        version="1.0.0",
+        version="1.0.1",
         author="Ethereum Foundation",
         author_email="security@ethereum.org",
         url="https://github.com/ethereum/c-kzg-4844",
