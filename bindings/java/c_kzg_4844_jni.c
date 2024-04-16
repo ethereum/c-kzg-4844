@@ -581,7 +581,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob(JNIE
   return blob;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCells(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverPolynomial(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells)
 {
   if (settings == NULL)
   {
@@ -602,7 +602,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCells(JNI
   uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
 
-  C_KZG_RET ret = recover_cells(recovered_native, cell_ids_native, cells_native, count, settings);
+  C_KZG_RET ret = recover_polynomial(recovered_native, cell_ids_native, cells_native, count, settings);
 
   (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
   (*env)->ReleaseLongArrayElements(env, cell_ids, (jlong *)cell_ids_native, JNI_ABORT);

@@ -189,7 +189,7 @@ extern "C" {
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn recover_cells(
+    pub fn recover_polynomial(
         recovered: *mut Cell,
         cell_ids: *const u64,
         cells: *const Cell,

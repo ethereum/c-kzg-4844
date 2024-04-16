@@ -173,7 +173,7 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void checkRecoverCells() {
+  public void checkRecoverPolynomial() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(blob);
@@ -181,7 +181,7 @@ public class CKZG4844JNITest {
     final byte[] partial = new byte[BYTES_PER_CELL * CELLS_PER_BLOB / 2];
     System.arraycopy(cells, 0, partial, 0, partial.length);
     final long[] cellIds = LongStream.range(0, CELLS_PER_BLOB / 2).toArray();
-    final byte[] recovered = CKZG4844JNI.recoverCells(cellIds, partial);
+    final byte[] recovered = CKZG4844JNI.recoverPolynomial(cellIds, partial);
     assertArrayEquals(cells, recovered);
     CKZG4844JNI.freeTrustedSetup();
   }

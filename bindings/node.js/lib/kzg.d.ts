@@ -154,7 +154,7 @@ export function cellsToBlob(cells: Cell[]): Blob;
  * @param cells the cells you have
  * @return all cells for that blob
  */
-export function recoverCells(cellIds: number[], cells: Cell[]): Cell[];
+export function recoverPolynomial(cellIds: number[], cells: Cell[]): Cell[];
 
 /**
  * Verify that a cell's proof is valid.

@@ -507,7 +507,7 @@ func TestRecoverHalfMissing(t *testing.T) {
 	cells, _, err := ComputeCellsAndProofs(&blob)
 	require.NoError(t, err)
 	cellIds, partialCells := getPartialCells(cells, 2)
-	recovered, err := RecoverCells(cellIds, partialCells)
+	recovered, err := RecoverPolynomial(cellIds, partialCells)
 	require.NoError(t, err)
 	require.Equal(t, recovered, cells)
 }
@@ -521,7 +521,7 @@ func TestRecoverNoMissing(t *testing.T) {
 	for i := uint64(0); i < CellsPerBlob; i++ {
 		cellIds = append(cellIds, i)
 	}
-	recovered, err := RecoverCells(cellIds, cells[:])
+	recovered, err := RecoverPolynomial(cellIds, cells[:])
 	require.NoError(t, err)
 	require.Equal(t, recovered, cells)
 }
@@ -625,9 +625,9 @@ func Benchmark(b *testing.B) {
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
 		cellIds, partial := getPartialCells(blobCells[0], i)
-		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+		b.Run(fmt.Sprintf("RecoverPolynomial(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := RecoverCells(cellIds, partial)
+				_, err := RecoverPolynomial(cellIds, partial)
 				require.NoError(b, err)
 			}
 		})

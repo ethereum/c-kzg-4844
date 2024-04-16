@@ -463,16 +463,16 @@ func CellsToBlob(cells [CellsPerBlob]Cell) (Blob, error) {
 }
 
 /*
-RecoverCells is the binding for:
+RecoverPolynomial is the binding for:
 
-	C_KZG_RET recover_cells(
+	C_KZG_RET recover_polynomial(
 	    Cell *recovered,
 	    const uint64_t *cell_ids,
 	    const Cell *cells,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverCells(cellIds []uint64, cells []Cell) ([CellsPerBlob]Cell, error) {
+func RecoverPolynomial(cellIds []uint64, cells []Cell) ([CellsPerBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -481,7 +481,7 @@ func RecoverCells(cellIds []uint64, cells []Cell) ([CellsPerBlob]Cell, error) {
 	}
 
 	recovered := [CellsPerBlob]Cell{}
-	ret := C.recover_cells(
+	ret := C.recover_polynomial(
 		(*C.Cell)(unsafe.Pointer(&recovered)),
 		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),

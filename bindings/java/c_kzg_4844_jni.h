@@ -129,10 +129,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    recoverCells
+ * Method:    recoverPolynomial
  * Signature: ([J[B)[B
  */
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCells
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverPolynomial
   (JNIEnv *, jclass, jlongArray, jbyteArray);
 
 /*
