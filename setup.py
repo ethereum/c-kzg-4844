@@ -14,25 +14,23 @@ def f(path_str):
 
 class CustomBuild(build_ext):
     def run(self):
-        built = False
-        if system() == "Windows":
-            try:
-                print("Check if MSVC is installed")
-                check_call(["cl.exe"])
-                print("MSVC is installed")
-                check_call([f("blst\\build.bat")])
-                print("a")
-                check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
-                print("b")
-                check_call(["move", f("blst\\bindings\\*.h"), f("inc")])
-                print("c")
-                built = True
-            except Exception:
-                pass
-
-        if not built:
+        try:
+            # Try to build things the normal way first.
             check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
-        super().run()
+            super().run()
+            return
+        except Exception:
+            # If we're on Windows, try the weird way.
+            if system() == "Windows":
+                # This will fail if MSVC is not installed
+                check_call(["cl.exe"])
+                check_call([f("blst\\build.bat")])
+                check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
+                check_call(["move", f("blst\\bindings\\*.h"), f("inc")])
+                super().run()
+                return
+            else:
+                raise
 
 
 def main():
