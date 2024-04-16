@@ -16,9 +16,10 @@ class CustomBuild(build_ext):
     def run(self):
         try:
             # Try to build things the normal way first.
-            check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
-            super().run()
-            return
+            #check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
+            #super().run()
+            #return
+            raise Exception("test")
         except Exception:
             # If we're on Windows, try the weird way.
             if system() == "Windows":
@@ -26,12 +27,12 @@ class CustomBuild(build_ext):
                 check_call(["cl.exe"])
                 check_call([f("blst\\build.bat")])
                 try:
-                    check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
+                    check_call(["cp", f("blst\\build\\blst.lib"), f("lib")])
                 except Exception:
                     raise Exception("failed to move blst.lib")
                 try:
-                    check_call(["move", f("blst\\bindings\\blst.h"), f("inc")])
-                    check_call(["move", f("blst\\bindings\\blst_aux.h"), f("inc")])
+                    check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
+                    check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
                 except Exception:
                     raise Exception("failed to move header files")
                 super().run()
