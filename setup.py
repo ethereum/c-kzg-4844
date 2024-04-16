@@ -15,15 +15,22 @@ def f(path_str):
 class CustomBuild(build_ext):
     def run(self):
         try:
+            # Try the happy path first.
             check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
             super().run()
         except Exception:
             if system() == "Windows":
-                check_call([f("blst\\build.bat")])
-                check_call(["cp", f("blst.lib"), f("lib")])
-                check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
-                check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
-                super().run()
+                try:
+                    # If that failed & we're on Windows, build blst with MSVC.
+                    check_call([f("blst\\build.bat")])
+                    check_call(["cp", f("blst.lib"), f("lib")])
+                    check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
+                    check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
+                    super().run()
+                except Exception:
+                    # Then try building with gcc again. Maybe it'll work.
+                    check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
+                    super().run()
             else:
                 raise
 
