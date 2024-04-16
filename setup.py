@@ -1,5 +1,7 @@
-from setuptools import setup, Extension
 from pathlib import Path
+from setuptools import setup, Extension
+from setuptools.command.build_ext import build_ext
+from subprocess import check_call
 
 this_dir = Path(__file__).parent
 long_description = (this_dir / "bindings/python/README.md").read_text()
@@ -7,6 +9,13 @@ long_description = (this_dir / "bindings/python/README.md").read_text()
 
 def f(path_str):
     return str(this_dir / path_str)
+
+
+class CustomBuild(build_ext):
+    def run(self):
+        print("Running custom build steps")
+        check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
+        super().run()
 
 
 def main():
@@ -26,7 +35,13 @@ def main():
                 sources=[f("bindings/python/ckzg.c"), f("src/c_kzg_4844.c")],
                 include_dirs=[f("inc"), f("src")],
                 library_dirs=[f("lib")],
-                libraries=[f("blst")])])
+                libraries=[f("blst")]
+            )
+        ],
+        cmdclass={
+            "build_ext": CustomBuild,
+        }
+    )
 
 
 if __name__ == "__main__":
