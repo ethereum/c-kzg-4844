@@ -13,7 +13,6 @@ def f(path_str):
 
 class CustomBuild(build_ext):
     def run(self):
-        print("Running custom build steps")
         check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
         super().run()
 
@@ -35,7 +34,7 @@ def main():
                 sources=[f("bindings/python/ckzg.c"), f("src/c_kzg_4844.c")],
                 include_dirs=[f("inc"), f("src")],
                 library_dirs=[f("lib")],
-                libraries=[f("blst")]
+                libraries=["blst"]
             )
         ],
         cmdclass={
