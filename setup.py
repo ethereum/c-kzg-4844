@@ -25,12 +25,15 @@ class CustomBuild(build_ext):
                 # This will fail if MSVC is not installed
                 check_call(["cl.exe"])
                 check_call([f("blst\\build.bat")])
-                check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
                 try:
-                    # These might have already been moved
-                    check_call(["move", f("blst\\bindings\\*.h"), f("inc")])
+                    check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
                 except Exception:
-                    pass
+                    raise Exception("failed to move blst.lib")
+                try:
+                    check_call(["move", f("blst\\bindings\\blst.h"), f("inc")])
+                    check_call(["move", f("blst\\bindings\\blst_aux.h"), f("inc")])
+                except Exception:
+                    raise Exception("failed to move header files")
                 super().run()
                 return
             else:
