@@ -1,4 +1,5 @@
 from pathlib import Path
+from platform import system
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from subprocess import check_call
@@ -13,6 +14,17 @@ def f(path_str):
 
 class CustomBuild(build_ext):
     def run(self):
+        if system() == "Windows":
+            try:
+                # Attempt to run the MSVC compiler and get its version
+                check_call(["cl.exe"])
+                print("MSVC is installed.")
+                # Try to build blst.lib on Windows
+                check_call([f("blst\\build.bat")])
+                # Move the result to the lib directory
+                check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
+            except Exception:
+                pass
         check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
         super().run()
 
