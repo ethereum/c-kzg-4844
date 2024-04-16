@@ -2,7 +2,7 @@ from pathlib import Path
 from platform import system
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from subprocess import check_call, check_output
+from subprocess import check_call
 
 this_dir = Path(__file__).parent
 long_description = (this_dir / "bindings/python/README.md").read_text()
@@ -18,27 +18,16 @@ class CustomBuild(build_ext):
             # Try to build things the normal way first.
             check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
             super().run()
-            return
         except Exception:
             # If we're on Windows, try the weird way.
             if system() == "Windows":
                 # This will fail if MSVC is not installed
                 check_call(["cl.exe"])
-                print(check_output([f("blst\\build.bat")]))
-                print(check_output(["dir"]))
-                print(check_output(["dir", "blst"]))
-                print(check_output(["dir", "blst\\build"]))
-                try:
-                    check_call(["cp", f("blst\\build\\blst.lib"), f("lib")])
-                except Exception:
-                    raise Exception("failed to move blst.lib")
-                try:
-                    check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
-                    check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
-                except Exception:
-                    raise Exception("failed to move header files")
+                check_call([f("blst\\build.bat")])
+                check_call(["cp", f("blst\\blst.lib"), f("lib")])
+                check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
+                check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
                 super().run()
-                return
             else:
                 raise
 
