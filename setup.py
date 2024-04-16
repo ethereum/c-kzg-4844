@@ -1,11 +1,15 @@
 from setuptools import setup, Extension
 from pathlib import Path
 
-this_directory = Path(__file__).parent
-long_description = (this_directory / "README.md").read_text()
+this_dir = Path(__file__).parent
+long_description = (this_dir / "bindings/python/README.md").read_text()
+
+def f(path_str):
+    return str(this_dir / path_str)
 
 
 def main():
+    print(this_dir)
     setup(
         name="ckzg",
         version="1.0.0",
@@ -19,10 +23,10 @@ def main():
         ext_modules=[
             Extension(
                 "ckzg",
-                sources=["ckzg.c", "../../src/c_kzg_4844.c"],
-                include_dirs=["../../inc", "../../src"],
-                library_dirs=["../../lib"],
-                libraries=["blst"])])
+                sources=[f("bindings/python/ckzg.c"), f("src/c_kzg_4844.c")],
+                include_dirs=[f("inc"), f("src")],
+                library_dirs=[f("lib")],
+                libraries=[f("blst")])])
 
 
 if __name__ == "__main__":
