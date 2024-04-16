@@ -58,6 +58,12 @@ jobs:
           pip install PyYAML
       - name: Build sdist
         run: python setup.py sdist
+
+      # Need this to get cl.exe on the path.
+      - name: Set up Visual Studio shell
+        if: runner.os == 'Windows'
+        uses: egor-tensin/vs-shell@v2
+
       - name: Install via sdist
         working-directory: dist
         run: pip install ckzg-*.tar.gz
