@@ -14,6 +14,11 @@ def f(path_str):
 
 class CustomBuild(build_ext):
     def run(self):
+        if system() == "Windows":
+            try:
+                check_call([f("blst\\build.bat")])
+            except Exception:
+                pass
         check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
         super().run()
 

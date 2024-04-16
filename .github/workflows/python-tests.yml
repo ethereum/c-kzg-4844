@@ -63,6 +63,9 @@ jobs:
           pip install PyYAML
       - name: Build sdist
         run: python setup.py sdist
+      - name: Set up Visual Studio shell
+        if: runner.os == 'Windows'
+        uses: egor-tensin/vs-shell@v2
       - name: Install via sdist
         working-directory: dist
         run: pip install ckzg-*.tar.gz
