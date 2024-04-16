@@ -59,7 +59,10 @@ jobs:
           pip install PyYAML
       - name: Build sdist
         run: python setup.py sdist
+      - name: Test listing
+        run: ls -alh
       - name: Install via sdist
-        run: pip install dist/ckzg-*.tar.gz
+        working-directory: dist
+        run: pip install ckzg-1.0.0.tar.gz
       - name: Run tests
         run: make -C bindings/python test
