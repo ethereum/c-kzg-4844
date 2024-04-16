@@ -4,12 +4,12 @@ from pathlib import Path
 this_dir = Path(__file__).parent
 long_description = (this_dir / "bindings/python/README.md").read_text()
 
+
 def f(path_str):
     return str(this_dir / path_str)
 
 
 def main():
-    print(this_dir)
     setup(
         name="ckzg",
         version="1.0.0",
