@@ -60,7 +60,7 @@ jobs:
       - name: Build sdist
         run: python setup.py sdist
       - name: Test listing
-        run: ls -alh
+        run: ls
       - name: Install via sdist
         working-directory: dist
         run: pip install ckzg-1.0.0.tar.gz
