@@ -2,7 +2,7 @@ from pathlib import Path
 from platform import system
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
-from subprocess import check_call
+from subprocess import check_call, check_output
 
 this_dir = Path(__file__).parent
 long_description = (this_dir / "bindings/python/README.md").read_text()
@@ -16,16 +16,18 @@ class CustomBuild(build_ext):
     def run(self):
         try:
             # Try to build things the normal way first.
-            #check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
-            #super().run()
-            #return
-            raise Exception("test")
+            check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
+            super().run()
+            return
         except Exception:
             # If we're on Windows, try the weird way.
             if system() == "Windows":
                 # This will fail if MSVC is not installed
                 check_call(["cl.exe"])
-                check_call([f("blst\\build.bat")])
+                print(check_output([f("blst\\build.bat")]))
+                print(check_output(["dir"]))
+                print(check_output(["dir", "blst"]))
+                print(check_output(["dir", "blst\\build"]))
                 try:
                     check_call(["cp", f("blst\\build\\blst.lib"), f("lib")])
                 except Exception:
