@@ -78,8 +78,32 @@ jobs:
           name: wheels
           path: wheelhouse/*
 
+  # Build the source distribution under Linux
+  build-sdist:
+    name: Source distribution
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+    
+      - name: Build source distribution
+        run: python setup.py sdist
+
+      - name: Store artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          path: dist/*.tar.gz
+          name: wheels
+
   publish:
-    needs: [build-wheels]
+    needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -93,3 +117,4 @@ jobs:
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
           packages-dir: wheelhouse
+

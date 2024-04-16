@@ -1,0 +1,10 @@
+# This is a manifest for the Python bindings
+include bindings/python/ckzg.c
+include bindings/python/README.md
+recursive-include blst *
+recursive-include lib *
+recursive-include inc *
+recursive-include src *
+include setup.py
+include LICENSE
+include README.md
