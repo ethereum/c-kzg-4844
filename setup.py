@@ -26,7 +26,11 @@ class CustomBuild(build_ext):
                 check_call(["cl.exe"])
                 check_call([f("blst\\build.bat")])
                 check_call(["move", f("blst\\build\\blst.lib"), f("lib")])
-                check_call(["move", f("blst\\bindings\\*.h"), f("inc")])
+                try:
+                    # These might have already been moved
+                    check_call(["move", f("blst\\bindings\\*.h"), f("inc")])
+                except Exception:
+                    pass
                 super().run()
                 return
             else:
