@@ -15,16 +15,12 @@ def f(path_str):
 class CustomBuild(build_ext):
     def run(self):
         try:
-            # Try to build things the normal way first.
             check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
             super().run()
         except Exception:
-            # If we're on Windows, try the weird way.
             if system() == "Windows":
-                # This will fail if MSVC is not installed
-                check_call(["cl.exe"])
                 check_call([f("blst\\build.bat")])
-                check_call(["cp", f("blst\\blst.lib"), f("lib")])
+                check_call(["cp", f("blst.lib"), f("lib")])
                 check_call(["cp", f("blst\\bindings\\blst.h"), f("inc")])
                 check_call(["cp", f("blst\\bindings\\blst_aux.h"), f("inc")])
                 super().run()
