@@ -39,7 +39,13 @@ jobs:
           make test
 
   test-sdist:
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
     steps:
       - uses: actions/checkout@v3
         with:
@@ -56,6 +62,4 @@ jobs:
       - name: Install via sdist
         run: pip install dist/ckzg-*.tar.gz
       - name: Run tests
-        run: |
-          cd bindings/python
-          make test
+        run: make -C bindings/python test
