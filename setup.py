@@ -19,7 +19,7 @@ class CustomBuild(build_ext):
                 check_call([f("blst\\build.bat")])
             except Exception:
                 pass
-        check_call(["make", "-C", f("src"), "c_kzg_4844.o"])
+        check_call(["make", "-C", f("src"), "blst"])
         super().run()
 
 
