@@ -119,6 +119,26 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	return nil
 }
 
+func (c *Cell) UnmarshalText(input []byte) error {
+	charsPerCell := 2 * BytesPerCell
+	charsPerFieldElement := 2 * BytesPerFieldElement
+	if bytes.HasPrefix(input, []byte("0x")) {
+		input = input[2:]
+	}
+	if len(input) != charsPerCell {
+		return ErrBadArgs
+	}
+	offset := 0
+	for i := 0; i < FieldElementsPerCell; i++ {
+		err := c[i].UnmarshalText(input[offset : offset+charsPerFieldElement])
+		if err != nil {
+			return err
+		}
+		offset += charsPerFieldElement
+	}
+	return nil
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Interface Functions
 ///////////////////////////////////////////////////////////////////////////////

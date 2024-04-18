@@ -87,6 +87,11 @@ var (
 	verifyKZGProofTests          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
 	verifyBlobKZGProofTests      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
 	verifyBlobKZGProofBatchTests = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsTests            = filepath.Join(testDir, "compute_cells/*/*/*")
+	computeCellsAndProofsTests   = filepath.Join(testDir, "compute_cells_and_proofs/*/*/*")
+	verifyCellProofTests         = filepath.Join(testDir, "verify_cell_proof/*/*/*")
+	verifyCellProofBatchTests    = filepath.Join(testDir, "verify_cell_proof_batch/*/*/*")
+	recoverPolynomialTests       = filepath.Join(testDir, "recover_polynomial/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -414,116 +419,280 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func TestVerifyCell(t *testing.T) {
-	var blob Blob
-	fillBlobRandom(&blob, 0)
+func TestComputeCells(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob string `yaml:"blob"`
+		}
+		Output *[]Cell `yaml:"output"`
+	}
 
-	commitment, err := BlobToKZGCommitment(&blob)
+	tests, err := filepath.Glob(computeCellsTests)
 	require.NoError(t, err)
-	cells, proofs, err := ComputeCellsAndProofs(&blob)
-	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
 
-	for i := range cells {
-		ok, err := VerifyCellProof(Bytes48(commitment), uint64(i), cells[i], Bytes48(proofs[i]))
-		require.NoError(t, err)
-		require.True(t, ok)
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			cells, err := ComputeCells(&blob)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, cells[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
 	}
 }
 
-func TestVerifyCells(t *testing.T) {
-	var blob Blob
-	fillBlobRandom(&blob, 0)
-	commitment, err := BlobToKZGCommitment(&blob)
-	require.NoError(t, err)
-	cells, proofs, err := ComputeCellsAndProofs(&blob)
-	require.NoError(t, err)
+func TestComputeCellsAndProofs(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob string `yaml:"blob"`
+		}
+		Output *[][]string `yaml:"output"`
+	}
 
-	commitments := []Bytes48{Bytes48(commitment)}
-	var rowIndices, columnIndices []uint64
-	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIndices = append(rowIndices, 0)
-		columnIndices = append(columnIndices, i)
-	}
-	var proofsBytes []Bytes48
-	for i := uint64(0); i < CellsPerBlob; i++ {
-		proofsBytes = append(proofsBytes, Bytes48(proofs[i]))
-	}
-	ok, err := VerifyCellProofBatch(commitments, rowIndices, columnIndices, cells[:], proofsBytes[:])
+	tests, err := filepath.Glob(computeCellsAndProofsTests)
 	require.NoError(t, err)
-	require.True(t, ok)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			cells, proofs, err := ComputeCellsAndProofs(&blob)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				var expectedCells []Cell
+				for _, cellStr := range (*test.Output)[0] {
+					var cell Cell
+					err := cell.UnmarshalText([]byte(cellStr))
+					require.NoError(t, err)
+					expectedCells = append(expectedCells, cell)
+				}
+				require.Equal(t, expectedCells, cells[:])
+				var expectedProofs []KZGProof
+				for _, proofStr := range (*test.Output)[1] {
+					var proof Bytes48
+					err := proof.UnmarshalText([]byte(proofStr))
+					require.NoError(t, err)
+					expectedProofs = append(expectedProofs, KZGProof(proof))
+				}
+				require.Equal(t, expectedProofs, proofs[:])
+
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
 }
 
-func TestVerifyCellsMultiBlobs(t *testing.T) {
-	var blob1, blob2 Blob
-	fillBlobRandom(&blob1, 0)
-	fillBlobRandom(&blob2, 0)
+func TestVerifyCellProof(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitment string `yaml:"commitment"`
+			CellId     uint64 `yaml:"cell_id"`
+			Cell       string `yaml:"cell"`
+			Proof      string `yaml:"proof"`
+		}
+		Output *bool `yaml:"output"`
+	}
 
-	commitment1, err := BlobToKZGCommitment(&blob1)
+	tests, err := filepath.Glob(verifyCellProofTests)
 	require.NoError(t, err)
-	commitment2, err := BlobToKZGCommitment(&blob2)
-	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
 
-	cells1, proofs1, err := ComputeCellsAndProofs(&blob1)
-	require.NoError(t, err)
-	cells2, proofs2, err := ComputeCellsAndProofs(&blob2)
-	require.NoError(t, err)
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
 
-	commitments := []Bytes48{Bytes48(commitment1), Bytes48(commitment2)}
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-	var rowIndices, columnIndices []uint64
-	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIndices = append(rowIndices, 0)
-		columnIndices = append(columnIndices, i)
-	}
-	for i := uint64(0); i < CellsPerBlob; i++ {
-		rowIndices = append(rowIndices, 1)
-		columnIndices = append(columnIndices, i)
-	}
+			cellId := test.Input.CellId
 
-	var cells []Cell
-	for _, cell := range cells1 {
-		cells = append(cells, cell)
-	}
-	for _, cell := range cells2 {
-		cells = append(cells, cell)
-	}
+			var cell Cell
+			err = cell.UnmarshalText([]byte(test.Input.Cell))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-	var proofs []Bytes48
-	for _, proof := range proofs1 {
-		proofs = append(proofs, Bytes48(proof))
-	}
-	for _, proof := range proofs2 {
-		proofs = append(proofs, Bytes48(proof))
-	}
+			var proof Bytes48
+			err = proof.UnmarshalText([]byte(test.Input.Proof))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
 
-	ok, err := VerifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs)
-	require.NoError(t, err)
-	require.True(t, ok)
+			valid, err := VerifyCellProof(commitment, cellId, cell, proof)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				t.Log(err)
+				require.Nil(t, test.Output)
+			}
+		})
+	}
 }
 
-func TestRecoverHalfMissing(t *testing.T) {
-	var blob Blob
-	fillBlobRandom(&blob, 0)
-	cells, _, err := ComputeCellsAndProofs(&blob)
+func TestVerifyCellProofBatch(t *testing.T) {
+	type Test struct {
+		Input struct {
+			RowCommitments []string `yaml:"row_commitments"`
+			RowIndices     []uint64 `yaml:"row_indices"`
+			ColumnIndices  []uint64 `yaml:"column_indices"`
+			Cells          []string `yaml:"cells"`
+			Proofs         []string `yaml:"proofs"`
+		}
+		Output *bool `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(verifyCellProofBatchTests)
 	require.NoError(t, err)
-	cellIds, partialCells := getPartialCells(cells, 2)
-	recovered, err := RecoverPolynomial(cellIds, partialCells)
-	require.NoError(t, err)
-	require.Equal(t, recovered, cells)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var rowCommitments []Bytes48
+			for _, c := range test.Input.RowCommitments {
+				var commitment Bytes48
+				err = commitment.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				rowCommitments = append(rowCommitments, commitment)
+			}
+
+			rowIndices := test.Input.RowIndices
+			columnIndices := test.Input.ColumnIndices
+
+			var cells []Cell
+			for _, c := range test.Input.Cells {
+				var cell Cell
+				err = cell.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				cells = append(cells, cell)
+			}
+
+			var proofs []Bytes48
+			for _, p := range test.Input.Proofs {
+				var proof Bytes48
+				err = proof.UnmarshalText([]byte(p))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				proofs = append(proofs, proof)
+			}
+
+			valid, err := VerifyCellProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				require.Equal(t, *test.Output, valid)
+			} else {
+				t.Log(err)
+				require.Nil(t, test.Output)
+			}
+		})
+	}
 }
 
-func TestRecoverNoMissing(t *testing.T) {
-	var blob Blob
-	fillBlobRandom(&blob, 0)
-	cells, _, err := ComputeCellsAndProofs(&blob)
-	require.NoError(t, err)
-	var cellIds []uint64
-	for i := uint64(0); i < CellsPerBlob; i++ {
-		cellIds = append(cellIds, i)
+func TestRecoverPolynomial(t *testing.T) {
+	type Test struct {
+		Input struct {
+			CellIds []uint64 `yaml:"cell_ids"`
+			Cells   []string `yaml:"cells"`
+		}
+		Output *[]Bytes32 `yaml:"output"`
 	}
-	recovered, err := RecoverPolynomial(cellIds, cells[:])
+
+	tests, err := filepath.Glob(recoverPolynomialTests)
 	require.NoError(t, err)
-	require.Equal(t, recovered, cells)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			cellIds := test.Input.CellIds
+
+			var cells []Cell
+			for _, c := range test.Input.Cells {
+				var cell Cell
+				err = cell.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				cells = append(cells, cell)
+			}
+
+			recovered, err := RecoverPolynomial(cellIds, cells)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				for i, field := range *test.Output {
+					j := i / FieldElementsPerCell
+					k := i % FieldElementsPerCell
+					require.Equal(t, recovered[j][k], field)
+				}
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
