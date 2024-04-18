@@ -814,7 +814,7 @@ static C_KZG_RET g1_lincomb_fast(
     }
 
     /* Check if the new length is fine */
-    if (len < min_length_threshold) {
+    if (new_len < min_length_threshold) {
         /* We must use the original inputs */
         g1_lincomb_naive(out, p, coeffs, len);
         ret = C_KZG_OK;
