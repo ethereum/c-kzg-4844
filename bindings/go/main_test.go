@@ -711,7 +711,9 @@ func Benchmark(b *testing.B) {
 	for i := 0; i < length; i++ {
 		var blob Blob
 		fillBlobRandom(&blob, int64(i))
+		blobs[i] = blob
 		commitment, err := BlobToKZGCommitment(&blob)
+		commitments[i] = Bytes48(commitment)
 		require.NoError(b, err)
 		proof, err := ComputeBlobKZGProof(&blob, Bytes48(commitment))
 		require.NoError(b, err)
@@ -804,8 +806,9 @@ func Benchmark(b *testing.B) {
 
 	b.Run("VerifyCellProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifyCellProof(commitments[0], 0, blobCells[0][0], blobCellProofs[0][0])
+			ok, err := VerifyCellProof(commitments[0], 0, blobCells[0][0], blobCellProofs[0][0])
 			require.NoError(b, err)
+			require.True(b, ok)
 		}
 	})
 
