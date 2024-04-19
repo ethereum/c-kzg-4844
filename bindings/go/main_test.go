@@ -833,7 +833,33 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	for i := 1; i <= 128; i *= 2 {
+	for i := 1; i <= length; i *= 2 {
+		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
+			var rowIndices []uint64
+			var columnIndices []uint64
+			var cells []Cell
+			var cellProofs []Bytes48
+			for rowIndex, blobCell := range blobCells {
+				if rowIndex == i {
+					break
+				}
+				for columnIndex, cell := range blobCell {
+					rowIndices = append(rowIndices, uint64(rowIndex))
+					columnIndices = append(columnIndices, uint64(columnIndex))
+					cells = append(cells, cell)
+					cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
+				}
+			}
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				ok, err := VerifyCellProofBatch(commitments[:i], rowIndices, columnIndices, cells, cellProofs)
+				require.NoError(b, err)
+				require.True(b, ok)
+			}
+		})
+	}
+
+	for i := 1; i <= CellsPerBlob; i *= 2 {
 		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
