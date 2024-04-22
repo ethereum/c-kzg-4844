@@ -91,7 +91,7 @@ var (
 	computeCellsAndProofsTests   = filepath.Join(testDir, "compute_cells_and_proofs/*/*/*")
 	verifyCellProofTests         = filepath.Join(testDir, "verify_cell_proof/*/*/*")
 	verifyCellProofBatchTests    = filepath.Join(testDir, "verify_cell_proof_batch/*/*/*")
-	recoverPolynomialTests       = filepath.Join(testDir, "recover_polynomial/*/*/*")
+	recoverAllCellsTests         = filepath.Join(testDir, "recover_all_cells/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -645,7 +645,7 @@ func TestVerifyCellProofBatch(t *testing.T) {
 	}
 }
 
-func TestRecoverPolynomial(t *testing.T) {
+func TestRecoverAllCells(t *testing.T) {
 	type Test struct {
 		Input struct {
 			CellIds []uint64 `yaml:"cell_ids"`
@@ -654,7 +654,7 @@ func TestRecoverPolynomial(t *testing.T) {
 		Output *[]Bytes32 `yaml:"output"`
 	}
 
-	tests, err := filepath.Glob(recoverPolynomialTests)
+	tests, err := filepath.Glob(recoverAllCellsTests)
 	require.NoError(t, err)
 	require.True(t, len(tests) > 0)
 
@@ -680,7 +680,7 @@ func TestRecoverPolynomial(t *testing.T) {
 				cells = append(cells, cell)
 			}
 
-			recovered, err := RecoverPolynomial(cellIds, cells)
+			recovered, err := RecoverAllCells(cellIds, cells)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				for i, field := range *test.Output {
@@ -796,9 +796,9 @@ func Benchmark(b *testing.B) {
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
 		cellIds, partial := getPartialCells(blobCells[0], i)
-		b.Run(fmt.Sprintf("RecoverPolynomial(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+		b.Run(fmt.Sprintf("RecoverAllCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := RecoverPolynomial(cellIds, partial)
+				_, err := RecoverAllCells(cellIds, partial)
 				require.NoError(b, err)
 			}
 		})

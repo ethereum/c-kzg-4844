@@ -231,7 +231,7 @@ public class CKZG4844JNI {
    * @return all cells for that blob
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] recoverPolynomial(long[] cellIds, byte[] cells);
+  public static native byte[] recoverAllCells(long[] cellIds, byte[] cells);
 
   /**
    * Verify that a cell's proof is valid.

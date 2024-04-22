@@ -718,7 +718,7 @@ out:
     return result;
 }
 
-Napi::Value RecoverPolynomial(const Napi::CallbackInfo &info) {
+Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     uint64_t *cell_ids = NULL;
     Cell *cells = NULL;
@@ -784,10 +784,10 @@ Napi::Value RecoverPolynomial(const Napi::CallbackInfo &info) {
         memcpy(&cells[i], cell, BYTES_PER_CELL);
     }
 
-    ret = recover_polynomial(recovered, cell_ids, cells, num_cells, kzg_settings);
+    ret = recover_all_cells(recovered, cell_ids, cells, num_cells, kzg_settings);
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in recoverPolynomial: " << from_c_kzg_ret(ret);
+        msg << "Error in recoverAllCells: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -1038,8 +1038,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["cellsToBlob"] = Napi::Function::New(
         env, CellsToBlob, "cellsToBlob"
     );
-    exports["recoverPolynomial"] = Napi::Function::New(
-        env, RecoverPolynomial, "recoverPolynomial"
+    exports["recoverAllCells"] = Napi::Function::New(
+        env, RecoverAllCells, "recoverAllCells"
     );
     exports["verifyCellProof"] = Napi::Function::New(
         env, VerifyCellProof, "verifyCellProof"

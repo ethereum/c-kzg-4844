@@ -658,7 +658,7 @@ impl Cell {
         }
     }
 
-    pub fn recover_polynomial(
+    pub fn recover_all_cells(
         cell_ids: &[u64],
         cells: &[Cell],
         kzg_settings: &KZGSettings,
@@ -672,7 +672,7 @@ impl Cell {
         }
         let mut recovered = MaybeUninit::<Self>::uninit();
         unsafe {
-            let res = recover_polynomial(
+            let res = recover_all_cells(
                 recovered.as_mut_ptr(),
                 cell_ids.as_ptr(),
                 cells.as_ptr(),

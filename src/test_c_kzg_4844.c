@@ -1812,7 +1812,7 @@ static void test_reconstruct__succeeds_random_blob(void) {
     }
 
     /* Reconstruct with half of the cells */
-    ret = recover_polynomial(recovered, cell_ids, partial, num_partial_cells, &s);
+    ret = recover_all_cells(recovered, cell_ids, partial, num_partial_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Check that all of the cells match */

@@ -241,7 +241,7 @@ C_KZG_RET verify_cell_proof_batch(
     const KZGSettings *s
 );
 
-C_KZG_RET recover_polynomial(
+C_KZG_RET recover_all_cells(
     Cell *recovered,
     const uint64_t *cell_ids,
     const Cell *cells,

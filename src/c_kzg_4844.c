@@ -2722,7 +2722,7 @@ static void unscale_poly(fr_t *p, uint64_t len_p) {
  * @remark The array of cells must be 2n length and in the correct order.
  * @remark Missing cells should be equal to FR_NULL.
  */
-static C_KZG_RET recover_polynomial_impl(
+static C_KZG_RET recover_all_cells_impl(
     fr_t *recovered, fr_t *cells, const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3230,7 +3230,7 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  *
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
- * @remark Use recover_polynomial to recover missing cells.
+ * @remark Use recover_all_cells to recover missing cells.
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
  * @remark
@@ -3336,7 +3336,7 @@ out:
  *
  * @remark Recovery is faster if there are fewer missing cells.
  */
-C_KZG_RET recover_polynomial(
+C_KZG_RET recover_all_cells(
     Cell *recovered,
     const uint64_t *cell_ids,
     const Cell *cells,
@@ -3393,7 +3393,7 @@ C_KZG_RET recover_polynomial(
     }
 
     /* Call the implementation function to do the bulk of the work */
-    ret = recover_polynomial_impl(recovered_fr, recovered_fr, s);
+    ret = recover_all_cells_impl(recovered_fr, recovered_fr, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert the recovered data points to byte-form */
