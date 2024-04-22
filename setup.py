@@ -8,18 +8,24 @@ this_dir = Path(__file__).parent
 long_description = (this_dir / "bindings/python/README.md").read_text()
 
 
-def f(path_str):
-    return str(this_dir / path_str)
+def r(path_str):
+    """
+    For a given path, get the relative path the current working directory.
+    The result will be a string, rather than a Path object.
+    """
+    absolute_path = this_dir / path_str
+    relative_path = absolute_path.relative_to(Path.cwd())
+    return str(relative_path)
 
 
 class CustomBuild(build_ext):
     def run(self):
         if system() == "Windows":
             try:
-                check_call([f("blst\\build.bat")])
+                check_call([r("blst\\build.bat")])
             except Exception:
                 pass
-        check_call(["make", "-C", f("src"), "blst"])
+        check_call(["make", "-C", r("src"), "blst"])
         super().run()
 
 
@@ -37,9 +43,9 @@ def main():
         ext_modules=[
             Extension(
                 "ckzg",
-                sources=[f("bindings/python/ckzg.c"), f("src/c_kzg_4844.c")],
-                include_dirs=[f("inc"), f("src")],
-                library_dirs=[f("lib")],
+                sources=[r("bindings/python/ckzg.c"), r("src/c_kzg_4844.c")],
+                include_dirs=[r("inc"), r("src")],
+                library_dirs=[r("lib")],
                 libraries=["blst"]
             )
         ],
