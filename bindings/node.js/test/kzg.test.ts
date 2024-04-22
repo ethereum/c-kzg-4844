@@ -22,7 +22,7 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  CELLS_PER_BLOB,
+  CELLS_PER_EXT_BLOB,
   ProofResult,
   computeCellsAndProofs,
   verifyCellProof,
@@ -579,17 +579,17 @@ describe("C-KZG", () => {
       const count = 3;
       const blobs = new Array(count);
       const commitments = new Array(count);
-      const row_indices = new Array(count * CELLS_PER_BLOB);
-      const column_indices = new Array(count * CELLS_PER_BLOB);
-      const cells = new Array(count * CELLS_PER_BLOB);
-      const proofs = new Array(count * CELLS_PER_BLOB);
+      const row_indices = new Array(count * CELLS_PER_EXT_BLOB);
+      const column_indices = new Array(count * CELLS_PER_EXT_BLOB);
+      const cells = new Array(count * CELLS_PER_EXT_BLOB);
+      const proofs = new Array(count * CELLS_PER_EXT_BLOB);
 
       for (const [i] of blobs.entries()) {
         blobs[i] = generateRandomBlob();
         commitments[i] = blobToKzgCommitment(blobs[i]);
         const [blobCells, blobCellProofs] = computeCellsAndProofs(blobs[i]);
-        for (let j = 0; j < CELLS_PER_BLOB; j++) {
-          const index = i * CELLS_PER_BLOB + j;
+        for (let j = 0; j < CELLS_PER_EXT_BLOB; j++) {
+          const index = i * CELLS_PER_EXT_BLOB + j;
           row_indices[index] = i;
           column_indices[index] = j;
           cells[index] = blobCells[j];

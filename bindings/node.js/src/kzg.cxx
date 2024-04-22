@@ -560,7 +560,7 @@ Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
     Cell *cells = NULL;
     Napi::Array cellArray;
 
-    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (cells == nullptr) {
         std::ostringstream msg;
         msg << "Failed to allocate cells in computeCells";
@@ -576,8 +576,8 @@ Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         cellArray.Set(
             i,
             Napi::Buffer<uint8_t>::Copy(
@@ -612,7 +612,7 @@ Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
     Napi::Array cellArray;
     Napi::Array proofArray;
 
-    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (cells == nullptr) {
         std::ostringstream msg;
         msg << "Failed to allocate cells in computeCellsAndProofs";
@@ -620,7 +620,7 @@ Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    proofs = (KZGProof *)calloc(CELLS_PER_BLOB, BYTES_PER_PROOF);
+    proofs = (KZGProof *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_PROOF);
     if (proofs == nullptr) {
         std::ostringstream msg;
         msg << "Failed to allocate proofs in computeCellsAndProofs";
@@ -636,9 +636,9 @@ Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
-    proofArray = Napi::Array::New(env, CELLS_PER_BLOB);
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
+    proofArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         cellArray.Set(
             i,
             Napi::Buffer<uint8_t>::Copy(
@@ -675,20 +675,20 @@ Napi::Value CellsToBlob(const Napi::CallbackInfo &info) {
         return result;
     }
     Napi::Array cells_param = info[0].As<Napi::Array>();
-    if (cells_param.Length() != CELLS_PER_BLOB) {
-        Napi::Error::New(env, "Cells must have CELLS_PER_BLOB cells")
+    if (cells_param.Length() != CELLS_PER_EXT_BLOB) {
+        Napi::Error::New(env, "Cells must have CELLS_PER_EXT_BLOB cells")
             .ThrowAsJavaScriptException();
         goto out;
     }
 
-    cells = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (cells == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for cells")
             .ThrowAsJavaScriptException();
         goto out;
     }
 
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
@@ -765,7 +765,7 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
             .ThrowAsJavaScriptException();
         goto out;
     }
-    recovered = (Cell *)calloc(CELLS_PER_BLOB, BYTES_PER_CELL);
+    recovered = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (recovered == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for recovered")
             .ThrowAsJavaScriptException();
@@ -792,8 +792,8 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    cellArray = Napi::Array::New(env, CELLS_PER_BLOB);
-    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         cellArray.Set(
             i,
             Napi::Buffer<uint8_t>::Copy(
@@ -1066,7 +1066,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["FIELD_ELEMENTS_PER_CELL"] = Napi::Number::New(
         env, FIELD_ELEMENTS_PER_CELL
     );
-    exports["CELLS_PER_BLOB"] = Napi::Number::New(env, CELLS_PER_BLOB);
+    exports["CELLS_PER_EXT_BLOB"] = Napi::Number::New(env, CELLS_PER_EXT_BLOB);
     exports["BYTES_PER_CELL"] = Napi::Number::New(env, BYTES_PER_CELL);
 
     return exports;

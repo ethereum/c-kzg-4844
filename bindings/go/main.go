@@ -24,7 +24,7 @@ const (
 	BytesPerProof        = C.BYTES_PER_PROOF
 	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
 	FieldElementsPerCell = C.FIELD_ELEMENTS_PER_CELL
-	CellsPerBlob         = C.CELLS_PER_BLOB
+	CellsPerExtBlob      = C.CELLS_PER_EXT_BLOB
 	BytesPerCell         = C.BYTES_PER_CELL
 )
 
@@ -413,12 +413,12 @@ ComputeCells is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeCells(blob *Blob) ([CellsPerBlob]Cell, error) {
+func ComputeCells(blob *Blob) ([CellsPerExtBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 
-	cells := [CellsPerBlob]Cell{}
+	cells := [CellsPerExtBlob]Cell{}
 	ret := C.compute_cells_and_proofs(
 		(*C.Cell)(unsafe.Pointer(&cells)),
 		nil, /* Do not generate proofs */
@@ -426,7 +426,7 @@ func ComputeCells(blob *Blob) ([CellsPerBlob]Cell, error) {
 		&settings)
 
 	if ret != C.C_KZG_OK {
-		return [CellsPerBlob]Cell{}, makeErrorFromRet(ret)
+		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
 	}
 	return cells, nil
 }
@@ -440,13 +440,13 @@ ComputeCellsAndProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeCellsAndProofs(blob *Blob) ([CellsPerBlob]Cell, [CellsPerBlob]KZGProof, error) {
+func ComputeCellsAndProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 
-	cells := [CellsPerBlob]Cell{}
-	proofs := [CellsPerBlob]KZGProof{}
+	cells := [CellsPerExtBlob]Cell{}
+	proofs := [CellsPerExtBlob]KZGProof{}
 	ret := C.compute_cells_and_proofs(
 		(*C.Cell)(unsafe.Pointer(&cells)),
 		(*C.KZGProof)(unsafe.Pointer(&proofs)),
@@ -454,7 +454,7 @@ func ComputeCellsAndProofs(blob *Blob) ([CellsPerBlob]Cell, [CellsPerBlob]KZGPro
 		&settings)
 
 	if ret != C.C_KZG_OK {
-		return [CellsPerBlob]Cell{}, [CellsPerBlob]KZGProof{}, makeErrorFromRet(ret)
+		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
 	}
 	return cells, proofs, nil
 }
@@ -466,7 +466,7 @@ CellsToBlob is the binding for:
 	    Blob *blob,
 	    const Cell *cells);
 */
-func CellsToBlob(cells [CellsPerBlob]Cell) (Blob, error) {
+func CellsToBlob(cells [CellsPerExtBlob]Cell) (Blob, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -492,15 +492,15 @@ RecoverAllCells is the binding for:
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverAllCells(cellIds []uint64, cells []Cell) ([CellsPerBlob]Cell, error) {
+func RecoverAllCells(cellIds []uint64, cells []Cell) ([CellsPerExtBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	if len(cellIds) != len(cells) {
-		return [CellsPerBlob]Cell{}, ErrBadArgs
+		return [CellsPerExtBlob]Cell{}, ErrBadArgs
 	}
 
-	recovered := [CellsPerBlob]Cell{}
+	recovered := [CellsPerExtBlob]Cell{}
 	ret := C.recover_all_cells(
 		(*C.Cell)(unsafe.Pointer(&recovered)),
 		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
@@ -509,7 +509,7 @@ func RecoverAllCells(cellIds []uint64, cells []Cell) ([CellsPerBlob]Cell, error)
 		&settings)
 
 	if ret != C.C_KZG_OK {
-		return [CellsPerBlob]Cell{}, makeErrorFromRet(ret)
+		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
 	}
 	return recovered, nil
 }

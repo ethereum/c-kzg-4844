@@ -464,7 +464,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCells(JNIEnv
   }
 
   /* Allocate space for the cells */
-  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_BLOB * BYTES_PER_CELL);
+  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
 
   /* The native variables */
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
@@ -501,8 +501,8 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndProo
   }
 
   /* The output variables, will be combined in a CellsAndProofs object */
-  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_BLOB * BYTES_PER_CELL);
-  jbyteArray proofs = (*env)->NewByteArray(env, CELLS_PER_BLOB * BYTES_PER_PROOF);
+  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+  jbyteArray proofs = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
 
   /* The native variables */
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
@@ -557,9 +557,9 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob(JNIE
   }
 
   size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
-  if (cells_size != CELLS_PER_BLOB * BYTES_PER_CELL)
+  if (cells_size != CELLS_PER_EXT_BLOB * BYTES_PER_CELL)
   {
-    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, CELLS_PER_BLOB * BYTES_PER_CELL);
+    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
     return 0;
   }
 
@@ -597,7 +597,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells(
     return 0;
   }
 
-  jbyteArray recovered = (*env)->NewByteArray(env, CELLS_PER_BLOB * BYTES_PER_CELL);
+  jbyteArray recovered = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
   Cell *recovered_native = (Cell *)(*env)->GetByteArrayElements(env, recovered, NULL);
   uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);

@@ -3,7 +3,7 @@ package ethereum.ckzg4844;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_CELL;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_COMMITMENT;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_PROOF;
-import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_BLOB;
+import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_EXT_BLOB;
 import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -178,9 +178,9 @@ public class CKZG4844JNITest {
     final byte[] blob = TestUtils.createRandomBlob();
     final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(blob);
     final byte[] cells = cellsAndProofs.getCells();
-    final byte[] partial = new byte[BYTES_PER_CELL * CELLS_PER_BLOB / 2];
+    final byte[] partial = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
     System.arraycopy(cells, 0, partial, 0, partial.length);
-    final long[] cellIds = LongStream.range(0, CELLS_PER_BLOB / 2).toArray();
+    final long[] cellIds = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
     final byte[] recovered = CKZG4844JNI.recoverAllCells(cellIds, partial);
     assertArrayEquals(cells, recovered);
     CKZG4844JNI.freeTrustedSetup();
@@ -195,7 +195,7 @@ public class CKZG4844JNITest {
     final byte[] cells = cellsAndProofs.getCells();
     final byte[] proofs = cellsAndProofs.getProofs();
 
-    for (int cellId = 0; cellId < CELLS_PER_BLOB; cellId++) {
+    for (int cellId = 0; cellId < CELLS_PER_EXT_BLOB; cellId++) {
       byte[] cell = new byte[BYTES_PER_CELL];
       byte[] proof = new byte[BYTES_PER_PROOF];
       System.arraycopy(cells, cellId * BYTES_PER_CELL, cell, 0, BYTES_PER_CELL);
@@ -210,15 +210,15 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     final int count = 6;
-    final int cellsLength = CELLS_PER_BLOB * BYTES_PER_CELL;
-    final int proofsLength = CELLS_PER_BLOB * BYTES_PER_PROOF;
+    final int cellsLength = CELLS_PER_EXT_BLOB * BYTES_PER_CELL;
+    final int proofsLength = CELLS_PER_EXT_BLOB * BYTES_PER_PROOF;
 
     final byte[] commitments = new byte[count * BYTES_PER_COMMITMENT];
     final CellsAndProofs[] data = new CellsAndProofs[count];
-    final long[] rowIndices = new long[count * CELLS_PER_BLOB];
-    final long[] columnIndices = new long[count * CELLS_PER_BLOB];
-    final byte[] cells = new byte[count * CELLS_PER_BLOB * BYTES_PER_CELL];
-    final byte[] proofs = new byte[count * CELLS_PER_BLOB * BYTES_PER_PROOF];
+    final long[] rowIndices = new long[count * CELLS_PER_EXT_BLOB];
+    final long[] columnIndices = new long[count * CELLS_PER_EXT_BLOB];
+    final byte[] cells = new byte[count * CELLS_PER_EXT_BLOB * BYTES_PER_CELL];
+    final byte[] proofs = new byte[count * CELLS_PER_EXT_BLOB * BYTES_PER_PROOF];
 
     for (int i = 0; i < count; i++) {
       final byte[] blob = TestUtils.createRandomBlob();
@@ -230,8 +230,8 @@ public class CKZG4844JNITest {
     }
 
     for (int i = 0; i < count; i++) {
-      for (int j = 0; j < CELLS_PER_BLOB; j++) {
-        final int index = i * CELLS_PER_BLOB + j;
+      for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
+        final int index = i * CELLS_PER_EXT_BLOB + j;
         rowIndices[index] = i;
         columnIndices[index] = j;
       }

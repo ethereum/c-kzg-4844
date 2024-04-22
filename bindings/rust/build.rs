@@ -64,7 +64,7 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
                 | "BYTES_PER_CELL"
                 | "FIELD_ELEMENTS_PER_EXT_BLOB"
                 | "FIELD_ELEMENTS_PER_CELL"
-                | "CELLS_PER_BLOB" => Some(bindgen::callbacks::IntKind::Custom {
+                | "CELLS_PER_EXT_BLOB" => Some(bindgen::callbacks::IntKind::Custom {
                     name: "usize",
                     is_signed: false,
                 }),

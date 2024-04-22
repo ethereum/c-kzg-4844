@@ -2,7 +2,7 @@ package ethereum.ckzg4844;
 
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_CELL;
 import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_PROOF;
-import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_BLOB;
+import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_EXT_BLOB;
 
 import java.util.Arrays;
 
@@ -30,9 +30,9 @@ public class CellsAndProofs {
   public byte[] toBytes() {
     final byte[] bytes = new byte[BYTES_PER_CELL * (BYTES_PER_CELL + BYTES_PER_PROOF)];
     int offset = 0;
-    System.arraycopy(cells, 0, bytes, offset, CELLS_PER_BLOB * BYTES_PER_CELL);
-    offset += CELLS_PER_BLOB * BYTES_PER_CELL;
-    System.arraycopy(proofs, 0, bytes, offset, CELLS_PER_BLOB * BYTES_PER_PROOF);
+    System.arraycopy(cells, 0, bytes, offset, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+    offset += CELLS_PER_EXT_BLOB * BYTES_PER_CELL;
+    System.arraycopy(proofs, 0, bytes, offset, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
     return bytes;
   }
 

@@ -47,7 +47,7 @@ func fillBlobRandom(blob *Blob, seed int64) {
 	}
 }
 
-func getPartialCells(cells [CellsPerBlob]Cell, i int) ([]uint64, []Cell) {
+func getPartialCells(cells [CellsPerExtBlob]Cell, i int) ([]uint64, []Cell) {
 	cellIds := []uint64{}
 	partialCells := []Cell{}
 	for j := range cells {
@@ -59,7 +59,7 @@ func getPartialCells(cells [CellsPerBlob]Cell, i int) ([]uint64, []Cell) {
 	return cellIds, partialCells
 }
 
-func getColumns(cellRows [][CellsPerBlob]Cell, proofRows [][CellsPerBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
+func getColumns(cellRows [][CellsPerExtBlob]Cell, proofRows [][CellsPerExtBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
 	var rowIndices []uint64
 	var columnIndices []uint64
 	var cells []Cell
@@ -705,8 +705,8 @@ func Benchmark(b *testing.B) {
 	commitments := [length]Bytes48{}
 	proofs := [length]Bytes48{}
 	fields := [length]Bytes32{}
-	blobCells := [length][CellsPerBlob]Cell{}
-	blobCellProofs := [length][CellsPerBlob]Bytes48{}
+	blobCells := [length][CellsPerExtBlob]Cell{}
+	blobCellProofs := [length][CellsPerExtBlob]Bytes48{}
 
 	for i := 0; i < length; i++ {
 		var blob Blob
@@ -719,10 +719,10 @@ func Benchmark(b *testing.B) {
 		require.NoError(b, err)
 		proofs[i] = Bytes48(proof)
 
-		tProofs := [CellsPerBlob]KZGProof{}
+		tProofs := [CellsPerExtBlob]KZGProof{}
 		blobCells[i], tProofs, err = ComputeCellsAndProofs(&blobs[i])
 		require.NoError(b, err)
-		blobCellProofs[i] = [CellsPerBlob]Bytes48{}
+		blobCellProofs[i] = [CellsPerExtBlob]Bytes48{}
 		for j, p := range tProofs {
 			blobCellProofs[i][j] = Bytes48(p)
 		}
@@ -859,7 +859,7 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	for i := 1; i <= CellsPerBlob; i *= 2 {
+	for i := 1; i <= CellsPerExtBlob; i *= 2 {
 		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {

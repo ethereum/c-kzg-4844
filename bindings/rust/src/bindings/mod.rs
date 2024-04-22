@@ -241,7 +241,7 @@ impl Blob {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
-    pub fn cells_to_blob(cells: &[Cell; CELLS_PER_BLOB]) -> Result<Self, Error> {
+    pub fn cells_to_blob(cells: &[Cell; CELLS_PER_EXT_BLOB]) -> Result<Self, Error> {
         let mut blob = MaybeUninit::<Self>::uninit();
         unsafe {
             let res = cells_to_blob(blob.as_mut_ptr(), cells.as_ptr());
@@ -605,14 +605,14 @@ impl Cell {
     pub fn compute_cells(
         blob: &Blob,
         kzg_settings: &KZGSettings,
-    ) -> Result<Box<[Cell; CELLS_PER_BLOB]>, Error> {
-        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
+    ) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
+        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
         unsafe {
             let res = compute_cells_and_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
-                cells.set_len(CELLS_PER_BLOB);
+                cells.set_len(CELLS_PER_EXT_BLOB);
                 let cells_boxed_slice = cells.into_boxed_slice();
-                let cells_boxed_array: Box<[Cell; CELLS_PER_BLOB]> = cells_boxed_slice
+                let cells_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = cells_boxed_slice
                     .try_into()
                     .map_err(|_err| "invalid len for blob cell array")
                     .unwrap();
@@ -626,9 +626,9 @@ impl Cell {
     pub fn compute_cells_and_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
-    ) -> Result<(Box<[Cell; CELLS_PER_BLOB]>, Box<[KZGProof; CELLS_PER_BLOB]>), Error> {
-        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_BLOB);
-        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_BLOB);
+    ) -> Result<(Box<[Cell; CELLS_PER_EXT_BLOB]>, Box<[KZGProof; CELLS_PER_EXT_BLOB]>), Error> {
+        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
         unsafe {
             let res = compute_cells_and_proofs(
                 cells.as_mut_ptr(),
@@ -637,16 +637,16 @@ impl Cell {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                cells.set_len(CELLS_PER_BLOB);
+                cells.set_len(CELLS_PER_EXT_BLOB);
                 let cells_boxed_slice = cells.into_boxed_slice();
-                let cells_boxed_array: Box<[Cell; CELLS_PER_BLOB]> = cells_boxed_slice
+                let cells_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = cells_boxed_slice
                     .try_into()
                     .map_err(|_err| "invalid len for blob cell array")
                     .unwrap();
 
-                proofs.set_len(CELLS_PER_BLOB);
+                proofs.set_len(CELLS_PER_EXT_BLOB);
                 let proofs_boxed_slice = proofs.into_boxed_slice();
-                let proofs_boxed_array: Box<[KZGProof; CELLS_PER_BLOB]> = proofs_boxed_slice
+                let proofs_boxed_array: Box<[KZGProof; CELLS_PER_EXT_BLOB]> = proofs_boxed_slice
                     .try_into()
                     .map_err(|_err| "invalid len for blob proof array")
                     .unwrap();
@@ -1107,7 +1107,7 @@ mod tests {
         let (cells, proofs) = Cell::compute_cells_and_proofs(&blob, &kzg_settings).unwrap();
 
         /* Verify cells individually */
-        for i in 0..CELLS_PER_BLOB {
+        for i in 0..CELLS_PER_EXT_BLOB {
             let ok = KZGProof::verify_cell_proof(
                 &commitment.to_bytes(),
                 i as u64,
@@ -1119,8 +1119,8 @@ mod tests {
             assert_eq!(ok, true);
         }
 
-        let row_indices: Vec<u64> = vec![0; CELLS_PER_BLOB];
-        let column_indices: Vec<u64> = (0..CELLS_PER_BLOB as u64).collect();
+        let row_indices: Vec<u64> = vec![0; CELLS_PER_EXT_BLOB];
+        let column_indices: Vec<u64> = (0..CELLS_PER_EXT_BLOB as u64).collect();
         let cell_proofs: Vec<Bytes48> = proofs.iter().map(|proof| proof.to_bytes()).collect();
 
         /* Verify cells in batch */
