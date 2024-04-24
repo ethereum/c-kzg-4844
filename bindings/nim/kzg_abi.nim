@@ -22,8 +22,8 @@ when not defined(kzgExternalBlst):
 
 {.compile: srcPath & "c_kzg_4844.c"}
 
-{.passc: "-I" & bindingsPath .}
-{.passc: "-I" & srcPath .}
+{.passc: "-I" & escape(bindingsPath) .}
+{.passc: "-I" & escape(srcPath) .}
 
 const
   FIELD_ELEMENTS_PER_BLOB* = 4096
@@ -40,7 +40,7 @@ const
   KZG_ERROR*   = (2).KZG_RET
   KZG_MALLOC*  = (3).KZG_RET
 
-proc `$`*(x: KZG_RET): string =
+func `$`*(x: KZG_RET): string =
   case x
   of KZG_OK: "ok"
   of KZG_BADARGS: "kzg badargs"
@@ -48,7 +48,7 @@ proc `$`*(x: KZG_RET): string =
   of KZG_MALLOC: "kzg malloc error"
   else: "kzg unknown error"
 
-proc `==`*(a, b: KZG_RET): bool =
+func `==`*(a, b: KZG_RET): bool =
   a.cint == b.cint
 
 type
