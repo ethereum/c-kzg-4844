@@ -3233,7 +3233,6 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  * @remark Use recover_all_cells to recover missing cells.
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
- * @remark
  */
 C_KZG_RET compute_cells_and_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
@@ -3586,10 +3585,10 @@ out:
 }
 
 /**
- * Given some cells, verify that the proofs are valid.
+ * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
- * @param[in]   commitments_bytes   Commitments for ALL blobs in the matrix
+ * @param[in]   commitments_bytes   The commitments associated with the cells
  * @param[in]   num_commitments     The number of commitments being passed
  * @param[in]   row_indices         Row indices for the cells
  * @param[in]   column_indices      Column indices for the cells
