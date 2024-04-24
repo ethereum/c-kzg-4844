@@ -864,15 +864,12 @@ unsafe impl Send for KZGSettings {}
 #[allow(unused_imports, dead_code)]
 mod tests {
     use super::*;
-    use crate::bindings::test_formats::{
-        compute_cells, compute_cells_and_proofs, recover_all_cells, verify_cell_proof,
-        verify_cell_proof_batch,
-    };
     use rand::{rngs::ThreadRng, Rng};
     use std::{fs, path::PathBuf};
     use test_formats::{
-        blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_kzg_proof,
-        verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_kzg_proof,
+        blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells,
+        compute_cells_and_proofs, compute_kzg_proof, recover_all_cells, verify_blob_kzg_proof,
+        verify_blob_kzg_proof_batch, verify_cell_proof, verify_cell_proof_batch, verify_kzg_proof,
     };
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
@@ -1298,46 +1295,5 @@ mod tests {
                 _ => assert!(test.get_output().is_none()),
             }
         }
-    }
-
-    #[test]
-    fn test_get_and_prove_cells() {
-        let mut rng = rand::thread_rng();
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-
-        let blob = generate_random_blob(&mut rng);
-        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
-        let (cells, proofs) = Cell::compute_cells_and_proofs(&blob, &kzg_settings).unwrap();
-
-        /* Verify cells individually */
-        for i in 0..CELLS_PER_EXT_BLOB {
-            let ok = KZGProof::verify_cell_proof(
-                &commitment.to_bytes(),
-                i as u64,
-                &cells[i],
-                &proofs[i].to_bytes(),
-                &kzg_settings,
-            )
-            .unwrap();
-            assert_eq!(ok, true);
-        }
-
-        let row_indices: Vec<u64> = vec![0; CELLS_PER_EXT_BLOB];
-        let column_indices: Vec<u64> = (0..CELLS_PER_EXT_BLOB as u64).collect();
-        let cell_proofs: Vec<Bytes48> = proofs.iter().map(|proof| proof.to_bytes()).collect();
-
-        /* Verify cells in batch */
-        let ok = KZGProof::verify_cell_proof_batch(
-            &vec![commitment.to_bytes()],
-            row_indices.as_slice(),
-            column_indices.as_slice(),
-            cells.as_slice(),
-            cell_proofs.as_slice(),
-            &kzg_settings,
-        )
-        .unwrap();
-        assert_eq!(ok, true);
     }
 }
