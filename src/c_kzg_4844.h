@@ -61,7 +61,8 @@ extern "C" {
 #define FIELD_ELEMENTS_PER_CELL 64
 
 /** The number of cells in an extended blob. */
-#define CELLS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
+#define CELLS_PER_EXT_BLOB \
+    (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
 
 /** The number of bytes in a single cell. */
 #define BYTES_PER_CELL (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL)

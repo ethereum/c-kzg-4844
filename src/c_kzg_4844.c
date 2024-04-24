@@ -3130,77 +3130,81 @@ out:
 }
 
 /**
- * Check a proof for a KZG commitment for evaluations `f(x * w^i) = y_i`.
+ * Helper function that verifies a KZG multiproof @p proof for the polynomial
+ * in @p commitment.
  *
- * Given a @p commitment to a polynomial, a @p proof for @p x, and the claimed
- * values @p y at values @p x `* w^i`, verify the claim. Here, `w` is an `n`th
- * root of unity.
- *
- * @param[out] out        `true` if the proof is valid, `false` if not
- * @param[in]  commitment The commitment to a polynomial
- * @param[in]  proof      A proof of the value of the polynomial at the points
- * @p x * w^i
- * @param[in]  x          The generator x-value for the evaluation points
- * @param[in]  ys         The claimed value of the polynomial at the points @p x
- * * w^i
- * @param[in]  n          The number of points at which to evaluate the
- * polynomial, must be a power of two
- * @param[in]  ks         The settings containing the secrets, previously
- * initialised with #new_kzg_settings
+ * @param[out]  out         `true` if the proof is valid, otherwise `false`
+ * @param[in]   commitment  The commitment to the polynomial
+ * @param[in]   proof       The KZG multiproof for the polynomial
+ * @param[in]   h           The evaluation domain of the multiproof
+ * @param[in]   ys          The evaluations points of the polynomial
+ * @param[in]   n           The number of evaluation points, a power of two
+ * @param[in]   s           The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_multi_impl(
     bool *out,
     const g1_t *commitment,
     const g1_t *proof,
-    const fr_t *x,
+    const fr_t *h,
     const fr_t *ys,
     size_t n,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    poly_t interp = {NULL, 0};
-    fr_t inv_x, inv_x_pow, x_pow;
-    g2_t xn2, xn_minus_yn;
-    g1_t is1, commit_minus_interp;
+    poly_t interpolation_poly = {NULL, 0};
+    fr_t inv_h, inv_h_pow, h_pow;
+    g2_t h_pow_g2, s_pow_minus_h_pow;
+    g1_t interpolated_poly, commit_minus_interp;
 
-    CHECK(is_power_of_two(n));
-
-    // Interpolate at a coset.
-    ret = new_poly(&interp, n);
-    if (ret != C_KZG_OK) goto out;
-    ret = ifft_fr(interp.coeffs, ys, n, s);
-    if (ret != C_KZG_OK) goto out;
-
-    // Because it is a coset, not the subgroup, we have to multiply the
-    // polynomial coefficients by x^-i
-    blst_fr_eucl_inverse(&inv_x, x);
-    inv_x_pow = inv_x;
-    for (uint64_t i = 1; i < n; i++) {
-        blst_fr_mul(&interp.coeffs[i], &interp.coeffs[i], &inv_x_pow);
-        blst_fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
+    /* Ensure n is a power of two */
+    if (!is_power_of_two(n)) {
+        return C_KZG_BADARGS;
     }
 
-    // [x^n]_2
-    blst_fr_eucl_inverse(&x_pow, &inv_x_pow);
-    g2_mul(&xn2, blst_p2_generator(), &x_pow);
+    /* Interpolate the values ys over the roots of unity */
+    ret = new_poly(&interpolation_poly, n);
+    if (ret != C_KZG_OK) goto out;
+    ret = ifft_fr(interpolation_poly.coeffs, ys, n, s);
+    if (ret != C_KZG_OK) goto out;
 
-    // [s^n - x^n]_2
-    g2_sub(&xn_minus_yn, &s->g2_values[n], &xn2);
+    /*
+     * Shift the domain of the interpolation poly to be over the coset, and
+     * not the regular roots of unity.
+     */
+    blst_fr_eucl_inverse(&inv_h, h);
+    inv_h_pow = inv_h;
+    for (uint64_t i = 1; i < n; i++) {
+        blst_fr_mul(
+            &interpolation_poly.coeffs[i],
+            &interpolation_poly.coeffs[i],
+            &inv_h_pow
+        );
+        blst_fr_mul(&inv_h_pow, &inv_h_pow, &inv_h);
+    }
 
-    // [interpolation_polynomial(s)]_1
-    ret = poly_to_kzg_commitment_monomial(&is1, interp.coeffs, n, s);
-    if (ret != C_KZG_OK) return ret;
+    /* Compute [x^n] in G_2 */
+    blst_fr_eucl_inverse(&h_pow, &inv_h_pow);
+    g2_mul(&h_pow_g2, blst_p2_generator(), &h_pow);
 
-    // [commitment - interpolation_polynomial(s)]_1 = [commit]_1 -
-    // [interpolation_polynomial(s)]_1
-    g1_sub(&commit_minus_interp, commitment, &is1);
+    /* Compute [s^n - h^n] in G_2 */
+    g2_sub(&s_pow_minus_h_pow, &s->g2_values[n], &h_pow_g2);
 
+    /* Commit to the interpolation polynomial */
+    ret = poly_to_kzg_commitment_monomial(
+        &interpolated_poly, interpolation_poly.coeffs, n, s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    /* Compute [commitment - interpolated_poly] in G_1 */
+    g1_sub(&commit_minus_interp, commitment, &interpolated_poly);
+
+    /* e(\pi, [s^n - h^n]) =?= e([p(x) - I(x)], [1]) */
     *out = pairings_verify(
-        &commit_minus_interp, blst_p2_generator(), proof, &xn_minus_yn
+        &commit_minus_interp, blst_p2_generator(), proof, &s_pow_minus_h_pow
     );
 
 out:
-    free_poly(&interp);
+    free_poly(&interpolation_poly);
     return ret;
 }
 
@@ -3873,7 +3877,9 @@ C_KZG_RET verify_cell_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     for (size_t i = 0; i < num_cells; i++) {
-        uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, column_indices[i]);
+        uint32_t pos = reverse_bits_limited(
+            CELLS_PER_EXT_BLOB, column_indices[i]
+        );
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
