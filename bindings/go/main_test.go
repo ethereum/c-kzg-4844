@@ -651,7 +651,7 @@ func TestRecoverAllCells(t *testing.T) {
 			CellIds []uint64 `yaml:"cell_ids"`
 			Cells   []string `yaml:"cells"`
 		}
-		Output *[]Bytes32 `yaml:"output"`
+		Output *[]Cell `yaml:"output"`
 	}
 
 	tests, err := filepath.Glob(recoverAllCellsTests)
@@ -683,11 +683,7 @@ func TestRecoverAllCells(t *testing.T) {
 			recovered, err := RecoverAllCells(cellIds, cells)
 			if err == nil {
 				require.NotNil(t, test.Output)
-				for i, field := range *test.Output {
-					j := i / FieldElementsPerCell
-					k := i % FieldElementsPerCell
-					require.Equal(t, recovered[j][k], field)
-				}
+				require.Equal(t, *test.Output, recovered[:])
 			} else {
 				require.Nil(t, test.Output)
 			}
