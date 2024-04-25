@@ -29,6 +29,7 @@ import {
   computeCells,
   cellsToBlob,
   verifyCellProofBatch,
+  recoverAllCells,
 } from "../lib/kzg";
 
 const SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
@@ -42,12 +43,27 @@ const VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
+const COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml";
+const COMPUTE_CELLS_AND_PROOFS_TESTS = "../../tests/compute_cells_and_proofs/*/*/data.yaml";
+const VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_proof/*/*/data.yaml";
+const VERIFY_CELL_PROOF_BATCH_TESTS = "../../tests/verify_cell_proof_batch/*/*/data.yaml";
+const RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml";
+
 type BlobToKzgCommitmentTest = TestMeta<{blob: string}, string>;
 type ComputeKzgProofTest = TestMeta<{blob: string; z: string}, string[]>;
 type ComputeBlobKzgProofTest = TestMeta<{blob: string; commitment: string}, string>;
 type VerifyKzgProofTest = TestMeta<{commitment: string; y: string; z: string; proof: string}, boolean>;
 type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof: string}, boolean>;
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
+
+type ComputeCellsTest = TestMeta<{blob: string}, string[]>;
+type ComputeCellsAndProofsTest = TestMeta<{blob: string}, string[][]>;
+type VerifyCellProofTest = TestMeta<{commitment: string; cell_id: number; cell: string; proof: string}, boolean>;
+type VerifyCellProofBatchTest = TestMeta<
+  {row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[]},
+  boolean
+>;
+type RecoverAllCellsTest = TestMeta<{cell_ids: number[]; cells: string[]}, string[]>;
 
 const blobValidLength = randomBytes(BYTES_PER_BLOB);
 const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
@@ -318,6 +334,141 @@ describe("C-KZG", () => {
         }
 
         expect(valid).toEqual(test.output);
+      });
+    });
+
+    it("reference tests for computeCells should pass", () => {
+      const tests = globSync(COMPUTE_CELLS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: ComputeCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let cells;
+        const blob = bytesFromHex(test.input.blob);
+
+        try {
+          cells = computeCells(blob);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        const expectedCells = test.output.map(bytesFromHex);
+        expect(cells.length).toBe(expectedCells.length);
+        for (let i = 0; i < cells.length; i++) {
+          assertBytesEqual(cells[i], expectedCells[i]);
+        }
+      });
+    });
+
+    it("reference tests for computeCellsAndProofs should pass", () => {
+      const tests = globSync(COMPUTE_CELLS_AND_PROOFS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: ComputeCellsAndProofsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let cells;
+        let proofs;
+        const blob = bytesFromHex(test.input.blob);
+
+        try {
+          [cells, proofs] = computeCellsAndProofs(blob);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        expect(test.output.length).toBe(2);
+        const expectedCells = test.output[0].map(bytesFromHex);
+        const expectedProofs = test.output[1].map(bytesFromHex);
+        expect(cells.length).toBe(expectedCells.length);
+        for (let i = 0; i < cells.length; i++) {
+          assertBytesEqual(cells[i], expectedCells[i]);
+        }
+        expect(proofs.length).toBe(expectedProofs.length);
+        for (let i = 0; i < proofs.length; i++) {
+          assertBytesEqual(proofs[i], expectedProofs[i]);
+        }
+      });
+    });
+
+    it("reference tests for verifyCellProof should pass", () => {
+      const tests = globSync(VERIFY_CELL_PROOF_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: VerifyCellProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        const commitment = bytesFromHex(test.input.commitment);
+        const cellId = test.input.cell_id;
+        const cell = bytesFromHex(test.input.cell);
+        const proof = bytesFromHex(test.input.proof);
+
+        try {
+          valid = verifyCellProof(commitment, cellId, cell, proof);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(valid).toEqual(test.output);
+      });
+    });
+
+    it("reference tests for verifyCellProofBatch should pass", () => {
+      const tests = globSync(VERIFY_CELL_PROOF_BATCH_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: VerifyCellProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        const rowCommitments = test.input.row_commitments.map(bytesFromHex);
+        const rowIndices = test.input.row_indices;
+        const columnIndices = test.input.column_indices;
+        const cells = test.input.cells.map(bytesFromHex);
+        const proofs = test.input.proofs.map(bytesFromHex);
+
+        try {
+          valid = verifyCellProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(valid).toEqual(test.output);
+      });
+    });
+
+    it("reference tests for recoverAllCells should pass", () => {
+      const tests = globSync(RECOVER_ALL_CELLS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: RecoverAllCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let recovered;
+        const cellIds = test.input.cell_ids;
+        const cells = test.input.cells.map(bytesFromHex);
+
+        try {
+          recovered = recoverAllCells(cellIds, cells);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        const expectedCells = test.output.map(bytesFromHex);
+        expect(recovered.length).toBe(expectedCells.length);
+        for (let i = 0; i < cells.length; i++) {
+          assertBytesEqual(recovered[i], expectedCells[i]);
+        }
       });
     });
   });

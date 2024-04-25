@@ -784,7 +784,9 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
         memcpy(&cells[i], cell, BYTES_PER_CELL);
     }
 
-    ret = recover_all_cells(recovered, cell_ids, cells, num_cells, kzg_settings);
+    ret = recover_all_cells(
+        recovered, cell_ids, cells, num_cells, kzg_settings
+    );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
         msg << "Error in recoverAllCells: " << from_c_kzg_ret(ret);
@@ -797,7 +799,7 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
         cellArray.Set(
             i,
             Napi::Buffer<uint8_t>::Copy(
-                env, reinterpret_cast<uint8_t *>(&cells[i]), BYTES_PER_CELL
+                env, reinterpret_cast<uint8_t *>(&recovered[i]), BYTES_PER_CELL
             )
         );
     }
