@@ -36,6 +36,13 @@ public class TestUtils {
   private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_blob_kzg_proof_batch/";
+  private static final String COMPUTE_CELLS_TESTS = "../../tests/compute_cells/";
+  private static final String COMPUTE_CELLS_AND_PROOFS_TESTS =
+      "../../tests/compute_cells_and_proofs/";
+  private static final String VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_proof/";
+  private static final String VERIFY_CELL_PROOF_BATCH_TESTS =
+      "../../tests/verify_cell_proof_batch/";
+  private static final String RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
@@ -190,6 +197,98 @@ public class TestUtils {
         String jsonData = Files.readString(Path.of(testFile));
         VerifyBlobKzgProofBatchTest test =
             OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofBatchTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<ComputeCellsTest> getComputeCellsTests() {
+    final Stream.Builder<ComputeCellsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(COMPUTE_CELLS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        ComputeCellsTest test = OBJECT_MAPPER.readValue(jsonData, ComputeCellsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<ComputeCellsAndProofsTest> getComputeCellsAndProofsTests() {
+    final Stream.Builder<ComputeCellsAndProofsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(COMPUTE_CELLS_AND_PROOFS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        ComputeCellsAndProofsTest test =
+            OBJECT_MAPPER.readValue(jsonData, ComputeCellsAndProofsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<VerifyCellProofTest> getVerifyCellProofTests() {
+    final Stream.Builder<VerifyCellProofTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_CELL_PROOF_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        VerifyCellProofTest test = OBJECT_MAPPER.readValue(jsonData, VerifyCellProofTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<VerifyCellProofBatchTest> getVerifyCellProofBatchTests() {
+    final Stream.Builder<VerifyCellProofBatchTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_CELL_PROOF_BATCH_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        VerifyCellProofBatchTest test =
+            OBJECT_MAPPER.readValue(jsonData, VerifyCellProofBatchTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<RecoverAllCellsTest> getRecoverAllCellsTests() {
+    final Stream.Builder<RecoverAllCellsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(RECOVER_ALL_CELLS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        RecoverAllCellsTest test = OBJECT_MAPPER.readValue(jsonData, RecoverAllCellsTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {

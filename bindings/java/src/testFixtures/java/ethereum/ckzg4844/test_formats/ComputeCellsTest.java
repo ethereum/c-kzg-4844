@@ -1,20 +1,16 @@
 package ethereum.ckzg4844.test_formats;
 
-import ethereum.ckzg4844.ProofAndY;
+import ethereum.ckzg4844.TestUtils;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 
-public class ComputeKzgProofTest {
+public class ComputeCellsTest {
   public static class Input {
     private String blob;
-    private String z;
 
     public byte[] getBlob() {
       return Bytes.fromHexString(blob).toArrayUnsafe();
-    }
-
-    public byte[] getZ() {
-      return Bytes.fromHexString(z).toArray();
     }
   }
 
@@ -25,13 +21,15 @@ public class ComputeKzgProofTest {
     return input;
   }
 
-  public ProofAndY getOutput() {
+  public byte[] getOutput() {
     if (output == null) {
       return null;
     }
-    assert output.size() == 2;
-    byte[] proof = Bytes.fromHexString(output.get(0)).toArray();
-    byte[] y = Bytes.fromHexString(output.get(1)).toArray();
-    return ProofAndY.of(proof, y);
+    return TestUtils.flatten(
+        output.stream()
+            .map(Bytes::fromHexString)
+            .map(Bytes::toArrayUnsafe)
+            .collect(Collectors.toList())
+            .toArray(byte[][]::new));
   }
 }

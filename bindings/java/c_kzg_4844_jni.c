@@ -677,7 +677,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellProofBat
   size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments_bytes);
   if (commitments_size % BYTES_PER_COMMITMENT != 0)
   {
-    throw_exception(env, "Invalid commitments size.");
+    throw_invalid_size_exception(env, "Invalid commitments size.", commitments_size % BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
     return 0;
   }
   size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;

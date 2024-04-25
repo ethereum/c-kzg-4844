@@ -68,7 +68,8 @@ public class CKZG4844JNI {
   /** The number of field elements in a cell. */
   public static final int FIELD_ELEMENTS_PER_CELL = 64;
   /** The number of cells in an extended blob. */
-  public static final int CELLS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
+  public static final int CELLS_PER_EXT_BLOB =
+      FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
   /** The number of bytes in a single cell. */
   public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
 
@@ -258,5 +259,9 @@ public class CKZG4844JNI {
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyCellProofBatch(
-      byte[] commitmentsBytes, long[] rowIndices, long[] columnIndices, byte[] cells, byte[] proofsBytes);
+      byte[] commitmentsBytes,
+      long[] rowIndices,
+      long[] columnIndices,
+      byte[] cells,
+      byte[] proofsBytes);
 }

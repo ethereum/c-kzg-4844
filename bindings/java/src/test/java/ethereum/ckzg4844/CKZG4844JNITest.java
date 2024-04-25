@@ -121,6 +121,74 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
+  @MethodSource("getComputeCellsTests")
+  public void verifyComputeCellsTests(final ComputeCellsTest test) {
+    try {
+      byte[] cells = CKZG4844JNI.computeCells(test.getInput().getBlob());
+      assertArrayEquals(test.getOutput(), cells);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getComputeCellsAndProofsTests")
+  public void verifyComputeCellsAndProofsTests(final ComputeCellsAndProofsTest test) {
+    try {
+      CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(test.getInput().getBlob());
+      assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
+      assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getVerifyCellProofTests")
+  public void verifyCellProofTests(final VerifyCellProofTest test) {
+    try {
+      boolean valid =
+          CKZG4844JNI.verifyCellProof(
+              test.getInput().getCommitment(),
+              test.getInput().getCellId(),
+              test.getInput().getCell(),
+              test.getInput().getProof());
+      assertEquals(test.getOutput(), valid);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getVerifyCellProofBatchTests")
+  public void verifyCellProofBatchTests(final VerifyCellProofBatchTest test) {
+    try {
+      boolean valid =
+          CKZG4844JNI.verifyCellProofBatch(
+              test.getInput().getRowCommitments(),
+              test.getInput().getRowIndices(),
+              test.getInput().getColumnIndices(),
+              test.getInput().getCells(),
+              test.getInput().getProofs());
+      assertEquals(test.getOutput(), valid);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getRecoverAllCellsTests")
+  public void recoverAllCellsTests(final RecoverAllCellsTest test) {
+    try {
+      byte[] cells =
+          CKZG4844JNI.recoverAllCells(test.getInput().getCellIds(), test.getInput().getCells());
+      assertArrayEquals(test.getOutput(), cells);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
   @EnumSource(TrustedSetupSource.class)
   public void testVerifyBlobKzgProofBatch(final TrustedSetupSource trustedSetupSource) {
     loadTrustedSetup(trustedSetupSource);
@@ -237,7 +305,8 @@ public class CKZG4844JNITest {
       }
     }
 
-    assertTrue(CKZG4844JNI.verifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
+    assertTrue(
+        CKZG4844JNI.verifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -472,5 +541,31 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     return TestUtils.getVerifyBlobKzgProofBatchTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeCellsTest> getComputeCellsTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeCellsTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeCellsAndProofsTest> getComputeCellsAndProofsTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeCellsAndProofsTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyCellProofTest> getVerifyCellProofTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyCellProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyCellProofBatchTest> getVerifyCellProofBatchTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyCellProofBatchTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<RecoverAllCellsTest> getRecoverAllCellsTests() {
+    loadTrustedSetup();
+    return TestUtils.getRecoverAllCellsTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 }
