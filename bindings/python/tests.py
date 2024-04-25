@@ -167,6 +167,48 @@ def test_verify_blob_kzg_proof_batch(ts):
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
+def test_compute_cells(ts):
+    test_files = glob.glob(COMPUTE_CELLS_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+
+        try:
+            cells = ckzg.compute_cells(blob, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_cells = list(map(bytes_from_hex, test["output"]))
+        assert cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
+
+
+def test_compute_cells_and_proofs(ts):
+    test_files = glob.glob(COMPUTE_CELLS_AND_PROOFS_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+
+        try:
+            cells, proofs = ckzg.compute_cells_and_proofs(blob, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_cells = list(map(bytes_from_hex, test["output"][0]))
+        assert cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
+        expected_proofs = list(map(bytes_from_hex, test["output"][1]))
+        assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
+
+
 def test_recover_all_cells(ts):
     test_files = glob.glob(RECOVER_ALL_CELLS_TESTS)
     assert len(test_files) > 0
@@ -179,13 +221,13 @@ def test_recover_all_cells(ts):
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
 
         try:
-            valid = ckzg.recover_all_cells(cell_ids, cells, ts)
+            recovered = ckzg.recover_all_cells(cell_ids, cells, ts)
         except:
             assert test["output"] is None
             continue
 
-        expected_valid = list(map(bytes_from_hex, test["output"]))
-        assert valid == expected_valid, f"{test_file}\n{valid[:4]=}\n{expected_valid[:4]=}"
+        expected_recovered = list(map(bytes_from_hex, test["output"]))
+        assert recovered == expected_recovered, f"{test_file}\n{recovered[:4]=}\n{expected_recovered[:4]=}"
 
 
 ###############################################################################
@@ -201,6 +243,8 @@ if __name__ == "__main__":
     #test_verify_kzg_proof(ts)
     #test_verify_blob_kzg_proof(ts)
     #test_verify_blob_kzg_proof_batch(ts)
+    test_compute_cells(ts)
+    test_compute_cells_and_proofs(ts)
     test_recover_all_cells(ts)
 
     print("tests passed")
