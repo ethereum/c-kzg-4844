@@ -234,6 +234,118 @@ static PyObject* verify_blob_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   if (ok) Py_RETURN_TRUE; else Py_RETURN_FALSE;
 }
 
+static PyObject* recover_all_cells_wrap(PyObject *self, PyObject *args) {
+  PyObject *input_cell_ids, *input_cells, *s;
+  PyObject *ret = NULL;
+  uint64_t *cell_ids = NULL;
+  Cell *cells = NULL;
+  Cell *recovered = NULL;
+
+  /* Ensure inputs are the right types */
+  if (!PyArg_UnpackTuple(args, "recover_all_cells", 3, 3, &input_cell_ids, &input_cells, &s) ||
+      !PyList_Check(input_cell_ids) ||
+      !PyList_Check(input_cells) ||
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+    ret = PyErr_Format(PyExc_ValueError, "expected list, list, trusted setup");
+    goto out;
+  }
+
+  /* Ensure cell ids and cells are the same length */
+  Py_ssize_t cell_ids_count = PyList_Size(input_cell_ids);
+  Py_ssize_t cells_count = PyList_Size(input_cells);
+  if (cell_ids_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of cell_ids and cells");
+    goto out;
+  }
+
+  /* Allocate space for the cell ids */
+  cell_ids = (uint64_t *)calloc(cells_count, sizeof(uint64_t));
+  if (cell_ids == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell ids");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < cell_ids_count; i++) {
+    /* Ensure each cell id is an integer */
+    PyObject *cell_id = PyList_GetItem(input_cell_ids, i);
+    if (!PyLong_Check(cell_id)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell id to be an integer");
+      goto out;
+    }
+    /* Convert the cell id to a cell id type (uint64_t) */
+    uint64_t value = PyLong_AsUnsignedLongLong(cell_id);
+    if (PyErr_Occurred()) {
+      ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
+      goto out;
+    }
+    /* The cell id is good, add it to our array */
+    memcpy(&cell_ids[i], &value, 8);
+  }
+
+  /* Allocate space for the cells */
+  cells = (Cell *)calloc(cells_count, BYTES_PER_CELL);
+  if (cells == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cells");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < cells_count; i++) {
+    /* Ensure each cell is bytes */
+    PyObject *cell = PyList_GetItem(input_cells, i);
+    if (!PyBytes_Check(cell)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell to be bytes");
+      goto out;
+    }
+    /* Ensure each cell is the right size */
+    Py_ssize_t cell_size = PyBytes_Size(cell);
+    if (cell_size != BYTES_PER_CELL) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell to be BYTES_PER_CELL bytes");
+      goto out;
+    }
+    /* The cell is good, copy it to our array */
+    memcpy(&cells[i], PyBytes_AsString(cell), BYTES_PER_CELL);
+  }
+
+  /* Allocate space for the recovered cells */
+  recovered = calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
+  if (recovered == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for recovered cells");
+    goto out;
+  }
+
+  /* Call our C function with our inputs */
+  if (recover_all_cells(recovered, cell_ids, cells, cells_count,
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    ret = PyErr_Format(PyExc_RuntimeError, "recover_all_cells failed");
+    goto out;
+  }
+
+  /* Convert our result to a list of bytes objects */
+  PyObject *recovered_cells = PyList_New(CELLS_PER_EXT_BLOB);
+  if (recovered_cells == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for return list");
+    goto out;
+  }
+  for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+    /* Convert cell to a bytes object */
+    PyObject *cell_bytes = PyBytes_FromStringAndSize((const char *)&recovered[i], BYTES_PER_CELL);
+    if (cell_bytes == NULL) {
+      Py_DECREF(cell_bytes);
+      ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell bytes");
+      goto out;
+    }
+    /* Add it to our list */
+    PyList_SetItem(recovered_cells, i, cell_bytes);
+  }
+
+  /* Success! */
+  ret = recovered_cells;
+
+out:
+  free(cell_ids);
+  free(cells);
+  free(recovered);
+  return ret;
+}
+
 static PyMethodDef ckzgmethods[] = {
   {"load_trusted_setup",          load_trusted_setup_wrap,          METH_VARARGS, "Load trusted setup from file path"},
   {"blob_to_kzg_commitment",      blob_to_kzg_commitment_wrap,      METH_VARARGS, "Create a commitment from a blob"},
@@ -242,6 +354,11 @@ static PyMethodDef ckzgmethods[] = {
   {"verify_kzg_proof",            verify_kzg_proof_wrap,            METH_VARARGS, "Verify a proof for the given inputs"},
   {"verify_blob_kzg_proof",       verify_blob_kzg_proof_wrap,       METH_VARARGS, "Verify a blob/commitment/proof combo"},
   {"verify_blob_kzg_proof_batch", verify_blob_kzg_proof_batch_wrap, METH_VARARGS, "Verify multiple blob/commitment/proof combos"},
+  //{"compute_cells",               compute_cells_wrap,               METH_VARARGS, "Compute cells for a blob"},
+  //{"compute_cells_and_proofs",    compute_cells_and_proofs_wrap,    METH_VARARGS, "Compute cells and proofs for a blob"},
+  //{"verify_cell_proof",           verify_cell_proof_wrap,           METH_VARARGS, "Verify a cell proof"},
+  //{"verify_cell_proof_batch",     verify_cell_proof_batch_wrap,     METH_VARARGS, "Verify multiple cell proofs"},
+  {"recover_all_cells",           recover_all_cells_wrap,           METH_VARARGS, "Recover missing cells"},
   {NULL, NULL, 0, NULL}
 };
 

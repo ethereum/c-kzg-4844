@@ -7,12 +7,20 @@ import ckzg
 # Constants
 ###############################################################################
 
+# EIP-4844
 BLOB_TO_KZG_COMMITMENT_TESTS = "../../tests/blob_to_kzg_commitment/*/*/data.yaml"
 COMPUTE_KZG_PROOF_TESTS = "../../tests/compute_kzg_proof/*/*/data.yaml"
 COMPUTE_BLOB_KZG_PROOF_TESTS = "../../tests/compute_blob_kzg_proof/*/*/data.yaml"
 VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml"
 VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml"
 VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml"
+
+# EIP-7594
+COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml"
+COMPUTE_CELLS_AND_PROOFS_TESTS = "../../tests/compute_cells_and_proofs/*/*/data.yaml"
+VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_proof/*/*/data.yaml"
+VERIFY_CELL_PROOF_BATCH_TESTS = "../../tests/verify_cell_proof_batch/*/*/data.yaml"
+RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml"
 
 
 ###############################################################################
@@ -159,6 +167,27 @@ def test_verify_blob_kzg_proof_batch(ts):
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
+def test_recover_all_cells(ts):
+    test_files = glob.glob(RECOVER_ALL_CELLS_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        cell_ids = test["input"]["cell_ids"]
+        cells = list(map(bytes_from_hex, test["input"]["cells"]))
+
+        try:
+            valid = ckzg.recover_all_cells(cell_ids, cells, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_valid = list(map(bytes_from_hex, test["output"]))
+        assert valid == expected_valid, f"{test_file}\n{valid[:4]=}\n{expected_valid[:4]=}"
+
+
 ###############################################################################
 # Main Logic
 ###############################################################################
@@ -166,11 +195,12 @@ def test_verify_blob_kzg_proof_batch(ts):
 if __name__ == "__main__":
     ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
 
-    test_blob_to_kzg_commitment(ts)
-    test_compute_kzg_proof(ts)
-    test_compute_blob_kzg_proof(ts)
-    test_verify_kzg_proof(ts)
-    test_verify_blob_kzg_proof(ts)
-    test_verify_blob_kzg_proof_batch(ts)
+    #test_blob_to_kzg_commitment(ts)
+    #test_compute_kzg_proof(ts)
+    #test_compute_blob_kzg_proof(ts)
+    #test_verify_kzg_proof(ts)
+    #test_verify_blob_kzg_proof(ts)
+    #test_verify_blob_kzg_proof_batch(ts)
+    test_recover_all_cells(ts)
 
     print("tests passed")
