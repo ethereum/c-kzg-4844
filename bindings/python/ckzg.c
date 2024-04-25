@@ -470,8 +470,9 @@ static PyObject* verify_cell_proof_batch_wrap(PyObject *self, PyObject *args) {
     goto out;
   }
 
+  /* The length of the commitments is independent */
   Py_ssize_t row_commitments_count = PyList_Size(input_row_commitments);
-  /* Ensure cell ids and cells are the same length */
+  /* Ensure input lists are the same length */
   Py_ssize_t row_indices_count = PyList_Size(input_row_indices);
   Py_ssize_t column_indices_count = PyList_Size(input_column_indices);
   Py_ssize_t cells_count = PyList_Size(input_cells);
@@ -605,7 +606,8 @@ static PyObject* verify_cell_proof_batch_wrap(PyObject *self, PyObject *args) {
   }
 
   /* Call our C function with our inputs */
-  if (verify_cell_proof_batch(&ok, commitments, row_commitments_count, row_indices, column_indices, cells, proofs, cells_count,
+  if (verify_cell_proof_batch(&ok, commitments, row_commitments_count,
+        row_indices, column_indices, cells, proofs, cells_count,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_proof_batch failed");
     goto out;
