@@ -261,7 +261,7 @@ static PyObject* compute_cells_wrap(PyObject *self, PyObject *args) {
   }
 
   /* Call our C function with our inputs */
-  Blob *blob = (Blob *)PyBytes_AsString(input_blob);
+  const Blob *blob = (Blob *)PyBytes_AsString(input_blob);
   if (compute_cells_and_proofs(cells, NULL, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "compute_cells failed");
     goto out;
@@ -328,7 +328,7 @@ static PyObject* compute_cells_and_proofs_wrap(PyObject *self, PyObject *args) {
   }
 
   /* Call our C function with our inputs */
-  Blob *blob = (Blob *)PyBytes_AsString(input_blob);
+  const Blob *blob = (Blob *)PyBytes_AsString(input_blob);
   if (compute_cells_and_proofs(cells, proofs, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "compute_cells_and_proofs failed");
     goto out;
@@ -385,6 +385,250 @@ out:
   return ret;
 }
 
+static PyObject* verify_cell_proof_wrap(PyObject *self, PyObject *args) {
+  PyObject *input_commitment, *input_cell_id, *input_cell, *input_proof, *s;
+  PyObject *ret = NULL;
+  bool ok = false;
+
+  /* Ensure inputs are the right types */
+  if (!PyArg_UnpackTuple(args, "verify_cell_proof", 5, 5, &input_commitment, &input_cell_id, &input_cell, &input_proof, &s) ||
+      !PyBytes_Check(input_commitment) ||
+      !PyLong_Check(input_cell_id) ||
+      !PyBytes_Check(input_cell) ||
+      !PyBytes_Check(input_proof) ||
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+    ret = PyErr_Format(PyExc_ValueError, "expected bytes, int, bytes, bytes, trusted setup");
+    goto out;
+  }
+
+  /* Ensure commitment is the right size */
+  if (PyBytes_Size(input_commitment) != BYTES_PER_COMMITMENT) {
+    ret = PyErr_Format(PyExc_ValueError, "expected commitment to be BYTES_PER_COMMITMENT bytes");
+    goto out;
+  }
+  /* Convert the cell id to a cell id type (uint64_t) */
+  uint64_t cell_id = PyLong_AsUnsignedLongLong(input_cell_id);
+  if (PyErr_Occurred()) {
+    ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
+    goto out;
+  }
+  /* Ensure cell is the right size */
+  if (PyBytes_Size(input_cell) != BYTES_PER_CELL) {
+    ret = PyErr_Format(PyExc_ValueError, "expected cell to be BYTES_PER_CELL bytes");
+    goto out;
+  }
+  /* Ensure proof is the right size */
+  if (PyBytes_Size(input_proof) != BYTES_PER_PROOF) {
+    ret = PyErr_Format(PyExc_ValueError, "expected proof to be BYTES_PER_PROOF bytes");
+    goto out;
+  }
+
+  const Bytes48 *commitment = (Bytes48 *)PyBytes_AsString(input_commitment);
+  const Cell *cell = (Cell *)PyBytes_AsString(input_cell);
+  const Bytes48 *proof = (Bytes48 *)PyBytes_AsString(input_proof);
+
+  /* Call our C function with our inputs */
+  if (verify_cell_proof(&ok, commitment, cell_id, cell, proof,
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_proof failed");
+    goto out;
+  }
+
+  /* Success! */
+  if (ok) {
+    Py_INCREF(Py_True);
+    ret = Py_True;
+  } else {
+    Py_INCREF(Py_False);
+    ret = Py_False;
+  }
+
+out:
+  return ret;
+}
+
+static PyObject* verify_cell_proof_batch_wrap(PyObject *self, PyObject *args) {
+  PyObject *input_row_commitments, *input_row_indices, *input_column_indices, *input_cells, *input_proofs, *s;
+  PyObject *ret = NULL;
+  Bytes48 *commitments = NULL;
+  uint64_t *row_indices = NULL;
+  uint64_t *column_indices = NULL;
+  Cell *cells = NULL;
+  Bytes48 *proofs = NULL;
+  bool ok = false;
+
+  /* Ensure inputs are the right types */
+  if (!PyArg_UnpackTuple(args, "verify_cell_proof_batch", 6, 6, &input_row_commitments,
+          &input_row_indices, &input_column_indices, &input_cells, &input_proofs, &s) ||
+      !PyList_Check(input_row_commitments) ||
+      !PyList_Check(input_row_indices) ||
+      !PyList_Check(input_column_indices) ||
+      !PyList_Check(input_cells) ||
+      !PyList_Check(input_proofs) ||
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+    ret = PyErr_Format(PyExc_ValueError, "expected list, list, list, list, list, trusted setup");
+    goto out;
+  }
+
+  Py_ssize_t row_commitments_count = PyList_Size(input_row_commitments);
+  /* Ensure cell ids and cells are the same length */
+  Py_ssize_t row_indices_count = PyList_Size(input_row_indices);
+  Py_ssize_t column_indices_count = PyList_Size(input_column_indices);
+  Py_ssize_t cells_count = PyList_Size(input_cells);
+  Py_ssize_t proofs_count = PyList_Size(input_proofs);
+  if (row_indices_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of row indices and cells");
+    goto out;
+  }
+  if (column_indices_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of column indices and cells");
+    goto out;
+  }
+  if (proofs_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of proofs and cells");
+    goto out;
+  }
+
+  /* Allocate space for the row commitments */
+  commitments = (Bytes48 *)calloc(row_commitments_count, BYTES_PER_COMMITMENT);
+  if (commitments == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for row commitments");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < row_commitments_count; i++) {
+    /* Ensure each commitment is bytes */
+    PyObject *commitment = PyList_GetItem(input_row_commitments, i);
+    if (!PyBytes_Check(commitment)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected commitment to be bytes");
+      goto out;
+    }
+    /* Ensure each commitment is the right size */
+    Py_ssize_t commitment_size = PyBytes_Size(commitment);
+    if (commitment_size != BYTES_PER_COMMITMENT) {
+      ret = PyErr_Format(PyExc_ValueError, "expected commitment to be BYTES_PER_COMMITMENT bytes");
+      goto out;
+    }
+    /* The commitment is good, copy it to our array */
+    memcpy(&commitments[i], PyBytes_AsString(commitment), BYTES_PER_COMMITMENT);
+  }
+
+  /* Allocate space for the row indices */
+  row_indices = (uint64_t *)calloc(row_indices_count, sizeof(uint64_t));
+  if (row_indices == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for row indices");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < row_indices_count; i++) {
+    /* Ensure each row index is an integer */
+    PyObject *row_index = PyList_GetItem(input_row_indices, i);
+    if (!PyLong_Check(row_index)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected row index to be an integer");
+      goto out;
+    }
+    /* Convert the row index to a uint64_t */
+    uint64_t value = PyLong_AsUnsignedLongLong(row_index);
+    if (PyErr_Occurred()) {
+      ret = PyErr_Format(PyExc_ValueError, "failed to convert row index to uint64_t");
+      goto out;
+    }
+    /* The row index is good, add it to our array */
+    memcpy(&row_indices[i], &value, sizeof(uint64_t));
+  }
+
+  /* Allocate space for the column indices */
+  column_indices = (uint64_t *)calloc(column_indices_count, sizeof(uint64_t));
+  if (column_indices == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for column indices");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < column_indices_count; i++) {
+    /* Ensure each column index is an integer */
+    PyObject *column_index = PyList_GetItem(input_column_indices, i);
+    if (!PyLong_Check(column_index)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected column index to be an integer");
+      goto out;
+    }
+    /* Convert the column index to a uint64_t */
+    uint64_t value = PyLong_AsUnsignedLongLong(column_index);
+    if (PyErr_Occurred()) {
+      ret = PyErr_Format(PyExc_ValueError, "failed to convert column index to uint64_t");
+      goto out;
+    }
+    /* The column is good, add it to our array */
+    memcpy(&column_indices[i], &value, sizeof(uint64_t));
+  }
+
+  /* Allocate space for the cells */
+  cells = (Cell *)calloc(cells_count, BYTES_PER_CELL);
+  if (cells == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cells");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < cells_count; i++) {
+    /* Ensure each cell is bytes */
+    PyObject *cell = PyList_GetItem(input_cells, i);
+    if (!PyBytes_Check(cell)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell to be bytes");
+      goto out;
+    }
+    /* Ensure each cell is the right size */
+    Py_ssize_t cell_size = PyBytes_Size(cell);
+    if (cell_size != BYTES_PER_CELL) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell to be BYTES_PER_CELL bytes");
+      goto out;
+    }
+    /* The cell is good, copy it to our array */
+    memcpy(&cells[i], PyBytes_AsString(cell), BYTES_PER_CELL);
+  }
+
+  /* Allocate space for the proofs */
+  proofs = (Bytes48 *)calloc(proofs_count, BYTES_PER_PROOF);
+  if (proofs == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for proofs");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < proofs_count; i++) {
+    /* Ensure each proof is bytes */
+    PyObject *proof = PyList_GetItem(input_proofs, i);
+    if (!PyBytes_Check(proof)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected proof to be bytes");
+      goto out;
+    }
+    /* Ensure each proof is the right size */
+    Py_ssize_t proof_size = PyBytes_Size(proof);
+    if (proof_size != BYTES_PER_PROOF) {
+      ret = PyErr_Format(PyExc_ValueError, "expected proof to be BYTES_PER_PROOF bytes");
+      goto out;
+    }
+    /* The proof is good, copy it to our array */
+    memcpy(&proofs[i], PyBytes_AsString(proof), BYTES_PER_PROOF);
+  }
+
+  /* Call our C function with our inputs */
+  if (verify_cell_proof_batch(&ok, commitments, row_commitments_count, row_indices, column_indices, cells, proofs, cells_count,
+        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_proof_batch failed");
+    goto out;
+  }
+
+  /* Success! */
+  if (ok) {
+    Py_INCREF(Py_True);
+    ret = Py_True;
+  } else {
+    Py_INCREF(Py_False);
+    ret = Py_False;
+  }
+
+out:
+  free(commitments);
+  free(row_indices);
+  free(column_indices);
+  free(cells);
+  free(proofs);
+  return ret;
+}
+
 static PyObject* recover_all_cells_wrap(PyObject *self, PyObject *args) {
   PyObject *input_cell_ids, *input_cells, *s;
   PyObject *ret = NULL;
@@ -429,7 +673,7 @@ static PyObject* recover_all_cells_wrap(PyObject *self, PyObject *args) {
       goto out;
     }
     /* The cell id is good, add it to our array */
-    memcpy(&cell_ids[i], &value, 8);
+    memcpy(&cell_ids[i], &value, sizeof(uint64_t));
   }
 
   /* Allocate space for the cells */
@@ -507,8 +751,8 @@ static PyMethodDef ckzgmethods[] = {
   {"verify_blob_kzg_proof_batch", verify_blob_kzg_proof_batch_wrap, METH_VARARGS, "Verify multiple blob/commitment/proof combos"},
   {"compute_cells",               compute_cells_wrap,               METH_VARARGS, "Compute cells for a blob"},
   {"compute_cells_and_proofs",    compute_cells_and_proofs_wrap,    METH_VARARGS, "Compute cells and proofs for a blob"},
-  //{"verify_cell_proof",           verify_cell_proof_wrap,           METH_VARARGS, "Verify a cell proof"},
-  //{"verify_cell_proof_batch",     verify_cell_proof_batch_wrap,     METH_VARARGS, "Verify multiple cell proofs"},
+  {"verify_cell_proof",           verify_cell_proof_wrap,           METH_VARARGS, "Verify a cell proof"},
+  {"verify_cell_proof_batch",     verify_cell_proof_batch_wrap,     METH_VARARGS, "Verify multiple cell proofs"},
   {"recover_all_cells",           recover_all_cells_wrap,           METH_VARARGS, "Recover missing cells"},
   {NULL, NULL, 0, NULL}
 };

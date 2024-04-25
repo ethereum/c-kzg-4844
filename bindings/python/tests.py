@@ -74,7 +74,6 @@ def test_compute_kzg_proof(ts):
 
         expected_proof = bytes_from_hex(test["output"][0])
         assert proof == expected_proof, f"{test_file}\n{proof.hex()=}\n{expected_proof.hex()=}"
-
         expected_y = bytes_from_hex(test["output"][1])
         assert y == expected_y, f"{test_file}\n{y.hex()=}\n{expected_y.hex()=}"
 
@@ -209,6 +208,53 @@ def test_compute_cells_and_proofs(ts):
         assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
+def test_verify_cell_proof(ts):
+    test_files = glob.glob(VERIFY_CELL_PROOF_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        commitment = bytes_from_hex(test["input"]["commitment"])
+        cell_id = test["input"]["cell_id"]
+        cell = bytes_from_hex(test["input"]["cell"])
+        proof = bytes_from_hex(test["input"]["proof"])
+
+        try:
+            valid = ckzg.verify_cell_proof(commitment, cell_id, cell, proof, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
+
+
+def test_verify_cell_proof_batch(ts):
+    test_files = glob.glob(VERIFY_CELL_PROOF_BATCH_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        row_commitments = list(map(bytes_from_hex, test["input"]["row_commitments"]))
+        row_indices = test["input"]["row_indices"]
+        column_indices = test["input"]["column_indices"]
+        cells = list(map(bytes_from_hex, test["input"]["cells"]))
+        proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
+
+        try:
+            valid = ckzg.verify_cell_proof_batch(row_commitments, row_indices, column_indices, cells, proofs, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
+
+
 def test_recover_all_cells(ts):
     test_files = glob.glob(RECOVER_ALL_CELLS_TESTS)
     assert len(test_files) > 0
@@ -237,14 +283,14 @@ def test_recover_all_cells(ts):
 if __name__ == "__main__":
     ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
 
-    #test_blob_to_kzg_commitment(ts)
-    #test_compute_kzg_proof(ts)
-    #test_compute_blob_kzg_proof(ts)
-    #test_verify_kzg_proof(ts)
-    #test_verify_blob_kzg_proof(ts)
-    #test_verify_blob_kzg_proof_batch(ts)
+    test_blob_to_kzg_commitment(ts)
+    test_compute_kzg_proof(ts)
+    test_compute_blob_kzg_proof(ts)
+    test_verify_kzg_proof(ts)
     test_compute_cells(ts)
     test_compute_cells_and_proofs(ts)
+    test_verify_blob_kzg_proof(ts)
+    test_verify_blob_kzg_proof_batch(ts)
     test_recover_all_cells(ts)
 
     print("tests passed")
