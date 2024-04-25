@@ -12,7 +12,7 @@ public class ReferenceTests
     public void Setup()
     {
         _ts = Ckzg.LoadTrustedSetup("trusted_setup.txt");
-        _deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+        _deserializer = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
     }
 
     [OneTimeTearDown]
@@ -35,6 +35,8 @@ public class ReferenceTests
     private readonly string _verifyKzgProofTests = Path.Join(TestDir, "verify_kzg_proof");
     private readonly string _verifyBlobKzgProofTests = Path.Join(TestDir, "verify_blob_kzg_proof");
     private readonly string _verifyBlobKzgProofBatchTests = Path.Join(TestDir, "verify_blob_kzg_proof_batch");
+    private readonly string _verifyCellProofTests = Path.Join(TestDir, "verify_cell_proof");
+    private readonly string _verifyCellProofBatchTests = Path.Join(TestDir, "verify_cell_proof_batch");
     private IDeserializer _deserializer;
 
     #region Helper Functions
@@ -344,6 +346,109 @@ public class ReferenceTests
             try
             {
                 bool isCorrect = Ckzg.VerifyBlobKzgProofBatch(blobs, commitments, proofs, count, _ts);
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
+
+    #region VerifyCellProof
+
+    private class VerifyCellProofInput
+    {
+        public string Commitment { get; set; } = null!;
+        public ulong CellId { get; set; } = 0!;
+        public string Cell { get; set; } = null!;
+        public string Proof { get; set; } = null!;
+    }
+
+    private class VerifyCellProofTest
+    {
+        public VerifyCellProofInput Input { get; set; } = null!;
+        public bool? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestVerifyCellProof()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyCellProofTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            VerifyCellProofTest test = _deserializer.Deserialize<VerifyCellProofTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] commitment = GetBytes(test.Input.Commitment);
+            ulong cellId = test.Input.CellId;
+            byte[] cell = GetBytes(test.Input.Cell);
+            byte[] proof = GetBytes(test.Input.Proof);
+            try
+            {
+                bool isCorrect = Ckzg.VerifyCellProof(commitment, cellId, cell, proof, _ts);
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
+
+    #region VerifyCellProofBatch
+
+    private class VerifyCellProofBatchInput
+    {
+        public List<string> RowCommitments { get; set; } = null!;
+        public List<ulong> RowIndices { get; set; } = null!;
+        public List<ulong> ColumnIndices { get; set; } = null!;
+        public List<string> Cells { get; set; } = null!;
+        public List<string> Proofs { get; set; } = null!;
+    }
+
+    private class VerifyCellProofBatchTest
+    {
+        public VerifyCellProofBatchInput Input { get; set; } = null!;
+        public bool? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestVerifyCellProofBatch()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyCellProofBatchTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            VerifyCellProofBatchTest test = _deserializer.Deserialize<VerifyCellProofBatchTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] rowCommitments = GetFlatBytes(test.Input.RowCommitments);
+            ulong[] rowIndices = test.Input.RowIndices.ToArray();
+            ulong[] columnIndices = test.Input.ColumnIndices.ToArray();
+            byte[] cells = GetFlatBytes(test.Input.Cells);
+            byte[] proofs = GetFlatBytes(test.Input.Proofs);
+            int numCommitments = rowCommitments.Length / Ckzg.BytesPerCommitment;
+            int numCells = cells.Length / Ckzg.BytesPerCell;
+
+            try
+            {
+                bool isCorrect = Ckzg.VerifyCellProofBatch(rowCommitments, numCommitments, rowIndices, columnIndices, cells, proofs, numCells, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch

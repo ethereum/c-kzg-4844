@@ -7,6 +7,8 @@ public static partial class Ckzg
     public const int BytesPerBlob = BytesPerFieldElement * FieldElementsPerBlob;
     public const int BytesPerCommitment = 48;
     public const int BytesPerProof = 48;
+    public const int FieldElementsPerCell = 64;
+    public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
 
     /// <summary>
     ///     Loads trusted setup settings from file.
@@ -197,6 +199,45 @@ public static partial class Ckzg
         }
     }
 
+    public static unsafe bool VerifyCellProof(ReadOnlySpan<byte> commitment, ulong cellId, ReadOnlySpan<byte> cell,
+            ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
+        ThrowOnInvalidLength(cell, nameof(cell), BytesPerCell);
+        ThrowOnInvalidLength(proof, nameof(proof), BytesPerProof);
+
+        fixed (byte* commitmentPtr = commitment, cellPtr = cell, proofPtr = proof)
+        {
+            KzgResult kzgResult = VerifyCellProof(out var result, commitmentPtr, cellId, cellPtr, proofPtr, ckzgSetup);
+            ThrowOnError(kzgResult);
+            return result;
+        }
+    }
+
+    public static unsafe bool VerifyCellProofBatch(ReadOnlySpan<byte> rowCommitments, int numRowCommitments,
+            ReadOnlySpan<ulong> rowIndices, ReadOnlySpan<ulong> columnIndices, ReadOnlySpan<byte> cells,
+            ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(rowCommitments, nameof(rowCommitments), BytesPerCommitment * numRowCommitments);
+        ThrowOnInvalidLength(rowIndices, nameof(rowIndices), numCells);
+        ThrowOnInvalidLength(columnIndices, nameof(columnIndices), numCells);
+        ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
+        ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * numCells);
+
+        fixed (byte* rowCommitmentPtr = rowCommitments, cellsPtr = cells, proofsPtr = proofs)
+        {
+            fixed (ulong* rowIndicesPtr = rowIndices, columnIndicesPtr = columnIndices)
+            {
+                KzgResult kzgResult = VerifyCellProofBatch(out var result, rowCommitmentPtr, numRowCommitments,
+                    rowIndicesPtr, columnIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
+                ThrowOnError(kzgResult);
+                return result;
+            }
+        }
+    }
+
     #region Argument verification helpers
     private static void ThrowOnError(KzgResult result)
     {
@@ -218,6 +259,12 @@ public static partial class Ckzg
     }
 
     private static void ThrowOnInvalidLength(ReadOnlySpan<byte> data, string fieldName, int expectedLength)
+    {
+        if (data.Length != expectedLength)
+            throw new ArgumentException("Invalid data size", fieldName);
+    }
+
+    private static void ThrowOnInvalidLength(ReadOnlySpan<ulong> data, string fieldName, int expectedLength)
     {
         if (data.Length != expectedLength)
             throw new ArgumentException("Invalid data size", fieldName);
