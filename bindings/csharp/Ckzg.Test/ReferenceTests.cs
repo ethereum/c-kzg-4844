@@ -35,8 +35,11 @@ public class ReferenceTests
     private readonly string _verifyKzgProofTests = Path.Join(TestDir, "verify_kzg_proof");
     private readonly string _verifyBlobKzgProofTests = Path.Join(TestDir, "verify_blob_kzg_proof");
     private readonly string _verifyBlobKzgProofBatchTests = Path.Join(TestDir, "verify_blob_kzg_proof_batch");
+    private readonly string _computeCellsTests = Path.Join(TestDir, "compute_cells");
+    private readonly string _computeCellsAndProofsTests = Path.Join(TestDir, "compute_cells_and_proofs");
     private readonly string _verifyCellProofTests = Path.Join(TestDir, "verify_cell_proof");
     private readonly string _verifyCellProofBatchTests = Path.Join(TestDir, "verify_cell_proof_batch");
+    private readonly string _recoverAllCellsTests = Path.Join(TestDir, "recover_all_cells");
     private IDeserializer _deserializer;
 
     #region Helper Functions
@@ -347,6 +350,103 @@ public class ReferenceTests
             {
                 bool isCorrect = Ckzg.VerifyBlobKzgProofBatch(blobs, commitments, proofs, count, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
+
+    #region ComputeCells
+
+    private class ComputeCellsInput
+    {
+        public string Blob { get; set; } = null!;
+    }
+
+    private class ComputeCellsTest
+    {
+        public ComputeCellsInput Input { get; set; } = null!;
+        public List<string>? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestComputeCells()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeCellsTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            ComputeCellsTest test = _deserializer.Deserialize<ComputeCellsTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] cells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] blob = GetBytes(test.Input.Blob);
+
+            try
+            {
+                Ckzg.ComputeCells(cells, blob, _ts);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedCells = GetFlatBytes(test.Output);
+                Assert.That(cells, Is.EqualTo(expectedCells));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
+
+    #region ComputeCellsAndProofs
+
+    private class ComputeCellsAndProofsInput
+    {
+        public string Blob { get; set; } = null!;
+    }
+
+    private class ComputeCellsAndProofsTest
+    {
+        public ComputeCellsAndProofsInput Input { get; set; } = null!;
+        public List<List<string>>? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestComputeCellsAndProofs()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeCellsAndProofsTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            ComputeCellsAndProofsTest test = _deserializer.Deserialize<ComputeCellsAndProofsTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] cells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] proofs = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerProof];
+            byte[] blob = GetBytes(test.Input.Blob);
+
+            try
+            {
+                Ckzg.ComputeCellsAndProofs(cells, proofs, blob, _ts);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
+                Assert.That(cells, Is.EqualTo(expectedCells));
+                byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
+                Assert.That(proofs, Is.EqualTo(expectedProofs));
             }
             catch
             {

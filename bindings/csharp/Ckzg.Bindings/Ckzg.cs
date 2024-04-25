@@ -4,11 +4,13 @@ public static partial class Ckzg
 {
     public const int BytesPerFieldElement = 32;
     public const int FieldElementsPerBlob = 4096;
+    public const int FieldElementsPerExtBlob = 2 * FieldElementsPerBlob;
     public const int BytesPerBlob = BytesPerFieldElement * FieldElementsPerBlob;
     public const int BytesPerCommitment = 48;
     public const int BytesPerProof = 48;
     public const int FieldElementsPerCell = 64;
     public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
+    public const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
 
     /// <summary>
     ///     Loads trusted setup settings from file.
@@ -196,6 +198,31 @@ public static partial class Ckzg
                 VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, count, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
+        }
+    }
+
+    public static unsafe void ComputeCells(Span<byte> cells, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+
+        fixed (byte* cellsPtr = cells, blobPtr = blob)
+        {
+            KzgResult result = ComputeCellsAndProofs(cellsPtr, null, blobPtr, ckzgSetup);
+            ThrowOnError(result);
+        }
+    }
+
+    public static unsafe void ComputeCellsAndProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
+            IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+
+        fixed (byte* cellsPtr = cells, proofsPtr = proofs, blobPtr = blob)
+        {
+            KzgResult result = ComputeCellsAndProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
+            ThrowOnError(result);
         }
     }
 
