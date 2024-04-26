@@ -149,7 +149,7 @@ typedef struct {
      * in monomial form. */
     g2_t *g2_values;
     /** Data used during FK20 proof generation. */
-    g1_t **x_ext_ftt_columns;
+    g1_t **x_ext_fft_columns;
     /** The precomputed tables for fixed-base MSM */
     blst_p1_affine **tables;
     /** The window size for the fixed-based MSM */

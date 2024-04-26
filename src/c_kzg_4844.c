@@ -1866,9 +1866,9 @@ void free_trusted_setup(KZGSettings *s) {
      * Without these NULL checks, it's possible for there to be a segmentation
      * fault via null pointer dereference.
      */
-    if (s->x_ext_ftt_columns != NULL) {
+    if (s->x_ext_fft_columns != NULL) {
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-            c_kzg_free(s->x_ext_ftt_columns[i]);
+            c_kzg_free(s->x_ext_fft_columns[i]);
         }
     }
     if (s->tables != NULL) {
@@ -1876,7 +1876,7 @@ void free_trusted_setup(KZGSettings *s) {
             c_kzg_free(s->tables[i]);
         }
     }
-    c_kzg_free(s->x_ext_ftt_columns);
+    c_kzg_free(s->x_ext_fft_columns);
     c_kzg_free(s->tables);
     s->wbits = 0;
 }
@@ -1915,11 +1915,11 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for array of pointers, this is a 2D array */
-    tmp = (void **)&s->x_ext_ftt_columns;
+    tmp = (void **)&s->x_ext_fft_columns;
     ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < k2; i++) {
-        ret = new_g1_array(&s->x_ext_ftt_columns[i], FIELD_ELEMENTS_PER_CELL);
+        ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -1947,7 +1947,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
 
         /* Reorganize from rows into columns */
         for (size_t row = 0; row < k2; row++) {
-            s->x_ext_ftt_columns[row][offset] = points[row];
+            s->x_ext_fft_columns[row][offset] = points[row];
         }
     }
 
@@ -1958,7 +1958,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
 
     for (size_t i = 0; i < k2; i++) {
         /* Transform the points to affine representation */
-        const blst_p1 *p_arg[2] = {s->x_ext_ftt_columns[i], NULL};
+        const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
         blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
         const blst_p1_affine *points_arg[2] = {p_affine, NULL};
 
@@ -2034,7 +2034,7 @@ C_KZG_RET load_trusted_setup(
     out->g1_values = NULL;
     out->g1_values_lagrange = NULL;
     out->g2_values = NULL;
-    out->x_ext_ftt_columns = NULL;
+    out->x_ext_fft_columns = NULL;
     out->tables = NULL;
 
     /*
