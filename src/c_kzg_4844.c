@@ -68,7 +68,7 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH =
     "RCKZGBATCH___V1_";
 
 /** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
-static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH =
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH =
     "RCKZGCBATCH__V1_";
 
 /** Length of the domain strings above. */
@@ -3545,7 +3545,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     /* Copy domain separator */
     memcpy(
         offset,
-        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH,
+        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH,
         DOMAIN_STR_LENGTH
     );
     offset += DOMAIN_STR_LENGTH;

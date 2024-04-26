@@ -37,10 +37,10 @@ public class TestUtils {
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_blob_kzg_proof_batch/";
   private static final String COMPUTE_CELLS_TESTS = "../../tests/compute_cells/";
-  private static final String COMPUTE_CELLS_AND_PROOFS_TESTS =
+  private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
       "../../tests/compute_cells_and_kzg_proofs/";
-  private static final String VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/";
-  private static final String VERIFY_CELL_PROOF_BATCH_TESTS =
+  private static final String VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/";
+  private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_cell_kzg_proof_batch/";
   private static final String RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/";
 
@@ -226,7 +226,7 @@ public class TestUtils {
 
   public static List<ComputeCellsAndKzgProofsTest> getComputeCellsAndKzgProofsTests() {
     final Stream.Builder<ComputeCellsAndKzgProofsTest> tests = Stream.builder();
-    List<String> testFiles = getTestFiles(COMPUTE_CELLS_AND_PROOFS_TESTS);
+    List<String> testFiles = getTestFiles(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS);
     assert !testFiles.isEmpty();
 
     try {
@@ -245,7 +245,7 @@ public class TestUtils {
 
   public static List<VerifyCellKzgProofTest> getVerifyCellKzgProofTests() {
     final Stream.Builder<VerifyCellKzgProofTest> tests = Stream.builder();
-    List<String> testFiles = getTestFiles(VERIFY_CELL_PROOF_TESTS);
+    List<String> testFiles = getTestFiles(VERIFY_CELL_KZG_PROOF_TESTS);
     assert !testFiles.isEmpty();
 
     try {
@@ -264,7 +264,7 @@ public class TestUtils {
 
   public static List<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
     final Stream.Builder<VerifyCellKzgProofBatchTest> tests = Stream.builder();
-    List<String> testFiles = getTestFiles(VERIFY_CELL_PROOF_BATCH_TESTS);
+    List<String> testFiles = getTestFiles(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
     assert !testFiles.isEmpty();
 
     try {

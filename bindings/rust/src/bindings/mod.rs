@@ -959,9 +959,9 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
     const COMPUTE_CELLS_TESTS: &str = "tests/compute_cells/*/*/*";
-    const COMPUTE_CELLS_AND_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
-    const VERIFY_CELL_PROOF_TESTS: &str = "tests/verify_cell_kzg_proof/*/*/*";
-    const VERIFY_CELL_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
+    const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
+    const VERIFY_CELL_KZG_PROOF_TESTS: &str = "tests/verify_cell_kzg_proof/*/*/*";
+    const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
     const RECOVER_ALL_CELLS_TESTS: &str = "tests/recover_all_cells/*/*/*";
 
     #[test]
@@ -1173,7 +1173,7 @@ mod tests {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(COMPUTE_CELLS_AND_PROOFS_TESTS)
+        let test_files: Vec<PathBuf> = glob::glob(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS)
             .unwrap()
             .map(Result::unwrap)
             .collect();
@@ -1205,7 +1205,7 @@ mod tests {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(VERIFY_CELL_PROOF_TESTS)
+        let test_files: Vec<PathBuf> = glob::glob(VERIFY_CELL_KZG_PROOF_TESTS)
             .unwrap()
             .map(Result::unwrap)
             .collect();
@@ -1236,7 +1236,7 @@ mod tests {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(VERIFY_CELL_PROOF_BATCH_TESTS)
+        let test_files: Vec<PathBuf> = glob::glob(VERIFY_CELL_KZG_PROOF_BATCH_TESTS)
             .unwrap()
             .map(Result::unwrap)
             .collect();

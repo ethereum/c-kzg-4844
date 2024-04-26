@@ -44,9 +44,9 @@ const VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
 const COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml";
-const COMPUTE_CELLS_AND_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
-const VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml";
-const VERIFY_CELL_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
+const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
 const RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml";
 
 type BlobToKzgCommitmentTest = TestMeta<{blob: string}, string>;
@@ -364,7 +364,7 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for computeCellsAndKzgProofs should pass", () => {
-      const tests = globSync(COMPUTE_CELLS_AND_PROOFS_TESTS);
+      const tests = globSync(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS);
       expect(tests.length).toBeGreaterThan(0);
 
       tests.forEach((testFile: string) => {
@@ -397,7 +397,7 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for verifyCellKzgProof should pass", () => {
-      const tests = globSync(VERIFY_CELL_PROOF_TESTS);
+      const tests = globSync(VERIFY_CELL_KZG_PROOF_TESTS);
       expect(tests.length).toBeGreaterThan(0);
 
       tests.forEach((testFile: string) => {
@@ -421,7 +421,7 @@ describe("C-KZG", () => {
     });
 
     it("reference tests for verifyCellKzgProofBatch should pass", () => {
-      const tests = globSync(VERIFY_CELL_PROOF_BATCH_TESTS);
+      const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
       expect(tests.length).toBeGreaterThan(0);
 
       tests.forEach((testFile: string) => {
