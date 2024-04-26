@@ -2292,17 +2292,6 @@ typedef struct {
     size_t length;
 } poly_t;
 
-static C_KZG_RET new_poly(poly_t *out, uint64_t length) {
-    out->length = length;
-    return new_fr_array(&out->coeffs, length);
-}
-
-static void free_poly(poly_t *p) {
-    if (p->coeffs != NULL) {
-        c_kzg_free(p->coeffs);
-    }
-}
-
 /**
  * Return the next highest power of two.
  *
@@ -3165,7 +3154,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    poly_t interpolation_poly = {NULL, 0};
+    fr_t *interpolation_poly = NULL;
     fr_t inv_h, inv_h_pow, h_pow;
     g2_t h_pow_g2, s_pow_minus_h_pow;
     g1_t interpolated_poly, commit_minus_interp;
@@ -3176,9 +3165,9 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     }
 
     /* Interpolate the values ys over the roots of unity */
-    ret = new_poly(&interpolation_poly, n);
+    ret = new_fr_array(&interpolation_poly, n);
     if (ret != C_KZG_OK) goto out;
-    ret = ifft_fr(interpolation_poly.coeffs, ys, n, s);
+    ret = ifft_fr(interpolation_poly, ys, n, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
@@ -3188,11 +3177,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     blst_fr_eucl_inverse(&inv_h, h);
     inv_h_pow = inv_h;
     for (uint64_t i = 1; i < n; i++) {
-        blst_fr_mul(
-            &interpolation_poly.coeffs[i],
-            &interpolation_poly.coeffs[i],
-            &inv_h_pow
-        );
+        blst_fr_mul(&interpolation_poly[i], &interpolation_poly[i], &inv_h_pow);
         blst_fr_mul(&inv_h_pow, &inv_h_pow, &inv_h);
     }
 
@@ -3205,7 +3190,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
 
     /* Commit to the interpolation polynomial */
     ret = poly_to_kzg_commitment_monomial(
-        &interpolated_poly, interpolation_poly.coeffs, n, s
+        &interpolated_poly, interpolation_poly, n, s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -3218,7 +3203,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     );
 
 out:
-    free_poly(&interpolation_poly);
+    c_kzg_free(interpolation_poly);
     return ret;
 }
 
