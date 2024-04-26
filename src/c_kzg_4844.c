@@ -2886,33 +2886,33 @@ out:
 // Polynomial Conversion Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET poly_monomial_to_lagrange(
-    fr_t *monomial, const fr_t *lagrange, size_t len, const KZGSettings *s
-) {
-    C_KZG_RET ret;
-
-    ret = fft_fr(monomial, lagrange, len, s);
-    if (ret != C_KZG_OK) goto out;
-    ret = bit_reversal_permutation(monomial, sizeof(fr_t), len);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    return ret;
-}
-
-C_KZG_RET poly_lagrange_to_monomial(
+/*
+ * Convert a polynomial in monomial form to Lagrange form.
+ *
+ * @param[out]  monomial    The result, an array of @p len fields
+ * @param[in]   lagrange    The input poly, an array of @p len fields
+ * @param[in]   len         The length of both polynomials
+ * @param[in]   s           The trusted setup
+ *
+ * @remark To convert a monomial-form polynomial to a Lagrange-form polynomial,
+ * you must inverse FFT the bit-reverse-permuated monomial polynomial.
+ */
+static C_KZG_RET poly_lagrange_to_monomial(
     fr_t *lagrange, const fr_t *monomial, size_t len, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *monomial_brp = NULL;
 
+    /* Allocate space for the intermediate BRP poly */
     ret = new_fr_array(&monomial_brp, len);
     if (ret != C_KZG_OK) goto out;
 
+    /* Copy the values and perform a bit reverse permutation */
     memcpy(monomial_brp, monomial, sizeof(fr_t) * len);
-
     ret = bit_reversal_permutation(monomial_brp, sizeof(fr_t), len);
     if (ret != C_KZG_OK) goto out;
+
+    /* Perform an inverse FFT on the BRP'd polynomial */
     ret = ifft_fr(lagrange, monomial_brp, len, s);
     if (ret != C_KZG_OK) goto out;
 

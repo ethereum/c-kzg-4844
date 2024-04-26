@@ -1863,48 +1863,12 @@ static void test_verify_cell_kzg_proof__succeeds_random_blob(void) {
 
     /* Verify all of the cell proofs */
     for (uint64_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        ret = verify_cell_kzg_proof(&ok, &commitment, i, &cells[i], &proofs[i], &s);
+        ret = verify_cell_kzg_proof(
+            &ok, &commitment, i, &cells[i], &proofs[i], &s
+        );
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Tests for polynomial conversions
-///////////////////////////////////////////////////////////////////////////////
-
-static void test_poly_conversion__succeeds_round_trip(void) {
-    C_KZG_RET ret;
-    Blob blob;
-    fr_t *a = NULL;
-    fr_t *b = NULL;
-    fr_t *c = NULL;
-    int diff;
-
-    ret = new_fr_array(&a, FIELD_ELEMENTS_PER_BLOB);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = new_fr_array(&b, FIELD_ELEMENTS_PER_BLOB);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = new_fr_array(&c, FIELD_ELEMENTS_PER_BLOB);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    get_rand_blob(&blob);
-
-    /* Convert the blob to a polynomial */
-    ret = blob_to_polynomial((Polynomial *)a, &blob);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Make B a polynomial in monomial form */
-    ret = poly_lagrange_to_monomial(b, a, FIELD_ELEMENTS_PER_BLOB, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Make C a polynomial in lagrange form */
-    ret = poly_monomial_to_lagrange(c, b, FIELD_ELEMENTS_PER_BLOB, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* The result should match the first polynomial */
-    diff = memcmp(a, c, sizeof(fr_t) * FIELD_ELEMENTS_PER_BLOB);
-    ASSERT_EQUALS(diff, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2142,7 +2106,6 @@ int main(void) {
     RUN(test_compute_cells__succeeds_first_half_is_blob);
     RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_verify_cell_kzg_proof__succeeds_random_blob);
-    RUN(test_poly_conversion__succeeds_round_trip);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
