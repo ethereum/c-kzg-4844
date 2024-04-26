@@ -2917,6 +2917,7 @@ C_KZG_RET poly_lagrange_to_monomial(
     if (ret != C_KZG_OK) goto out;
 
 out:
+    c_kzg_free(monomial_brp);
     return ret;
 }
 
