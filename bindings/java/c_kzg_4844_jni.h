@@ -113,10 +113,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCells
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    computeCellsAndProofs
+ * Method:    computeCellsAndKzgProofs
  * Signature: ([B)Lethereum/ckzg4844/CellsAndProofs;
  */
-JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndProofs
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs
   (JNIEnv *, jclass, jbyteArray);
 
 /*
@@ -137,18 +137,18 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyCellProof
+ * Method:    verifyCellKzgProof
  * Signature: ([BJ[B[B)Z
  */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellProof
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   (JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyCellProofBatch
+ * Method:    verifyCellKzgProofBatch
  * Signature: ([B[J[J[B[B)Z
  */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellProofBatch
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch
   (JNIEnv *, jclass, jbyteArray, jlongArray, jlongArray, jbyteArray, jbyteArray);
 
 #ifdef __cplusplus

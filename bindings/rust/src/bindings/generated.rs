@@ -164,13 +164,13 @@ extern "C" {
         n: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn compute_cells_and_proofs(
+    pub fn compute_cells_and_kzg_proofs(
         cells: *mut Cell,
         proofs: *mut KZGProof,
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn verify_cell_proof(
+    pub fn verify_cell_kzg_proof(
         ok: *mut bool,
         commitment_bytes: *const Bytes48,
         cell_id: u64,
@@ -178,7 +178,7 @@ extern "C" {
         proof_bytes: *const Bytes48,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn verify_cell_proof_batch(
+    pub fn verify_cell_kzg_proof_batch(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
         num_commitments: usize,

@@ -80,18 +80,18 @@ func getColumns(cellRows [][CellsPerExtBlob]Cell, proofRows [][CellsPerExtBlob]B
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
-	testDir                      = "../../tests"
-	blobToKZGCommitmentTests     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
-	computeKZGProofTests         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
-	computeBlobKZGProofTests     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
-	verifyKZGProofTests          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
-	verifyBlobKZGProofTests      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
-	verifyBlobKZGProofBatchTests = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
-	computeCellsTests            = filepath.Join(testDir, "compute_cells/*/*/*")
-	computeCellsAndProofsTests   = filepath.Join(testDir, "compute_cells_and_proofs/*/*/*")
-	verifyCellProofTests         = filepath.Join(testDir, "verify_cell_proof/*/*/*")
-	verifyCellProofBatchTests    = filepath.Join(testDir, "verify_cell_proof_batch/*/*/*")
-	recoverAllCellsTests         = filepath.Join(testDir, "recover_all_cells/*/*/*")
+	testDir                       = "../../tests"
+	blobToKZGCommitmentTests      = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
+	computeKZGProofTests          = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
+	computeBlobKZGProofTests      = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
+	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
+	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
+	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsTests             = filepath.Join(testDir, "compute_cells/*/*/*")
+	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
+	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
+	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
+	recoverAllCellsTests          = filepath.Join(testDir, "recover_all_cells/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -458,7 +458,7 @@ func TestComputeCells(t *testing.T) {
 	}
 }
 
-func TestComputeCellsAndProofs(t *testing.T) {
+func TestComputeCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {
 			Blob string `yaml:"blob"`
@@ -466,7 +466,7 @@ func TestComputeCellsAndProofs(t *testing.T) {
 		Output *[][]string `yaml:"output"`
 	}
 
-	tests, err := filepath.Glob(computeCellsAndProofsTests)
+	tests, err := filepath.Glob(computeCellsAndKZGProofsTests)
 	require.NoError(t, err)
 	require.True(t, len(tests) > 0)
 
@@ -486,7 +486,7 @@ func TestComputeCellsAndProofs(t *testing.T) {
 				return
 			}
 
-			cells, proofs, err := ComputeCellsAndProofs(&blob)
+			cells, proofs, err := ComputeCellsAndKZGProofs(&blob)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -513,7 +513,7 @@ func TestComputeCellsAndProofs(t *testing.T) {
 	}
 }
 
-func TestVerifyCellProof(t *testing.T) {
+func TestVerifyCellKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
 			Commitment string `yaml:"commitment"`
@@ -524,7 +524,7 @@ func TestVerifyCellProof(t *testing.T) {
 		Output *bool `yaml:"output"`
 	}
 
-	tests, err := filepath.Glob(verifyCellProofTests)
+	tests, err := filepath.Glob(verifyCellKZGProofTests)
 	require.NoError(t, err)
 	require.True(t, len(tests) > 0)
 
@@ -560,7 +560,7 @@ func TestVerifyCellProof(t *testing.T) {
 				return
 			}
 
-			valid, err := VerifyCellProof(commitment, cellId, cell, proof)
+			valid, err := VerifyCellKZGProof(commitment, cellId, cell, proof)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -572,7 +572,7 @@ func TestVerifyCellProof(t *testing.T) {
 	}
 }
 
-func TestVerifyCellProofBatch(t *testing.T) {
+func TestVerifyCellKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
 			RowCommitments []string `yaml:"row_commitments"`
@@ -584,7 +584,7 @@ func TestVerifyCellProofBatch(t *testing.T) {
 		Output *bool `yaml:"output"`
 	}
 
-	tests, err := filepath.Glob(verifyCellProofBatchTests)
+	tests, err := filepath.Glob(verifyCellKZGProofBatchTests)
 	require.NoError(t, err)
 	require.True(t, len(tests) > 0)
 
@@ -633,7 +633,7 @@ func TestVerifyCellProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyCellProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			valid, err := VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -716,7 +716,7 @@ func Benchmark(b *testing.B) {
 		proofs[i] = Bytes48(proof)
 
 		tProofs := [CellsPerExtBlob]KZGProof{}
-		blobCells[i], tProofs, err = ComputeCellsAndProofs(&blobs[i])
+		blobCells[i], tProofs, err = ComputeCellsAndKZGProofs(&blobs[i])
 		require.NoError(b, err)
 		blobCellProofs[i] = [CellsPerExtBlob]Bytes48{}
 		for j, p := range tProofs {
@@ -775,9 +775,9 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	b.Run("ComputeCellsAndProofs", func(b *testing.B) {
+	b.Run("ComputeCellsAndKZGProofs", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, err := ComputeCellsAndProofs(&blobs[0])
+			_, _, err := ComputeCellsAndKZGProofs(&blobs[0])
 			require.NoError(b, err)
 		}
 	})
@@ -800,15 +800,15 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
-	b.Run("VerifyCellProof", func(b *testing.B) {
+	b.Run("VerifyCellKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellProof(commitments[0], 0, blobCells[0][0], blobCellProofs[0][0])
+			ok, err := VerifyCellKZGProof(commitments[0], 0, blobCells[0][0], blobCellProofs[0][0])
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
 	})
 
-	b.Run("VerifyCellProofBatch", func(b *testing.B) {
+	b.Run("VerifyCellKZGProofBatch", func(b *testing.B) {
 		var rowIndices []uint64
 		var columnIndices []uint64
 		var cells []Cell
@@ -823,7 +823,7 @@ func Benchmark(b *testing.B) {
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+			ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
@@ -848,7 +848,7 @@ func Benchmark(b *testing.B) {
 			}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellProofBatch(commitments[:i], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(commitments[:i], rowIndices, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
@@ -859,7 +859,7 @@ func Benchmark(b *testing.B) {
 		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}

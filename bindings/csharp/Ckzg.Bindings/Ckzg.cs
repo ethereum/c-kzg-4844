@@ -208,12 +208,12 @@ public static partial class Ckzg
 
         fixed (byte* cellsPtr = cells, blobPtr = blob)
         {
-            KzgResult result = ComputeCellsAndProofs(cellsPtr, null, blobPtr, ckzgSetup);
+            KzgResult result = ComputeCellsAndKzgProofs(cellsPtr, null, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
 
-    public static unsafe void ComputeCellsAndProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
+    public static unsafe void ComputeCellsAndKzgProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
             IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -221,12 +221,12 @@ public static partial class Ckzg
 
         fixed (byte* cellsPtr = cells, proofsPtr = proofs, blobPtr = blob)
         {
-            KzgResult result = ComputeCellsAndProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
+            KzgResult result = ComputeCellsAndKzgProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
 
-    public static unsafe bool VerifyCellProof(ReadOnlySpan<byte> commitment, ulong cellId, ReadOnlySpan<byte> cell,
+    public static unsafe bool VerifyCellKzgProof(ReadOnlySpan<byte> commitment, ulong cellId, ReadOnlySpan<byte> cell,
             ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -236,13 +236,13 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, cellPtr = cell, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyCellProof(out var result, commitmentPtr, cellId, cellPtr, proofPtr, ckzgSetup);
+            KzgResult kzgResult = VerifyCellKzgProof(out var result, commitmentPtr, cellId, cellPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
     }
 
-    public static unsafe bool VerifyCellProofBatch(ReadOnlySpan<byte> rowCommitments, int numRowCommitments,
+    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> rowCommitments, int numRowCommitments,
             ReadOnlySpan<ulong> rowIndices, ReadOnlySpan<ulong> columnIndices, ReadOnlySpan<byte> cells,
             ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
@@ -257,7 +257,7 @@ public static partial class Ckzg
         {
             fixed (ulong* rowIndicesPtr = rowIndices, columnIndicesPtr = columnIndices)
             {
-                KzgResult kzgResult = VerifyCellProofBatch(out var result, rowCommitmentPtr, numRowCommitments,
+                KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, rowCommitmentPtr, numRowCommitments,
                     rowIndicesPtr, columnIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;

@@ -217,11 +217,11 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const KZGSettings *s
 );
 
-C_KZG_RET compute_cells_and_proofs(
+C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
 );
 
-C_KZG_RET verify_cell_proof(
+C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     uint64_t cell_id,
@@ -230,7 +230,7 @@ C_KZG_RET verify_cell_proof(
     const KZGSettings *s
 );
 
-C_KZG_RET verify_cell_proof_batch(
+C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,

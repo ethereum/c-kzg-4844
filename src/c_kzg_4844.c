@@ -67,7 +67,7 @@ static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH =
     "RCKZGBATCH___V1_";
 
-/** The domain separator for verify_cell_proof_batch's random challenge. */
+/** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_PROOF_BATCH =
     "RCKZGCBATCH__V1_";
 
@@ -3238,7 +3238,7 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
  */
-C_KZG_RET compute_cells_and_proofs(
+C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3430,7 +3430,7 @@ out:
  * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_cell_proof(
+C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
     uint64_t cell_id,
@@ -3484,7 +3484,7 @@ out:
 
 /**
  * Compute random linear combination challenge scalars for
- * verify_cell_proof_batch. In this, we must hash EVERYTHING that the prover
+ * verify_cell_kzg_proof_batch. In this, we must hash EVERYTHING that the prover
  * can control.
  *
  * @param[out]  r_powers_out        The output challenges
@@ -3496,7 +3496,7 @@ out:
  * @param[in]   proofs_bytes        The cell proof
  * @param[in]   num_cells           The number of cells
  */
-static C_KZG_RET compute_r_powers_for_verify_cell_proof_batch(
+static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     fr_t *r_powers_out,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
@@ -3601,7 +3601,7 @@ out:
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  */
-C_KZG_RET verify_cell_proof_batch(
+C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
@@ -3695,7 +3695,7 @@ C_KZG_RET verify_cell_proof_batch(
      * Derive random factors for the linear combination. The exponents start
      * with 1, for example r^1, r^2, r^3, and so on.
      */
-    ret = compute_r_powers_for_verify_cell_proof_batch(
+    ret = compute_r_powers_for_verify_cell_kzg_proof_batch(
         r_powers,
         commitments_bytes,
         num_commitments,

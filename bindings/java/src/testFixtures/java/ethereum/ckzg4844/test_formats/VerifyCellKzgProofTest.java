@@ -3,7 +3,7 @@ package ethereum.ckzg4844.test_formats;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.tuweni.bytes.Bytes;
 
-public class VerifyCellProofTest {
+public class VerifyCellKzgProofTest {
   public static class Input {
     private String commitment;
 

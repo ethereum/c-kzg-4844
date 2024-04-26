@@ -132,10 +132,11 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
-  @MethodSource("getComputeCellsAndProofsTests")
-  public void verifyComputeCellsAndProofsTests(final ComputeCellsAndProofsTest test) {
+  @MethodSource("getComputeCellsAndKzgProofsTests")
+  public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
     try {
-      CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(test.getInput().getBlob());
+      CellsAndProofs cellsAndProofs =
+          CKZG4844JNI.computeCellsAndKzgProofs(test.getInput().getBlob());
       assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
       assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
     } catch (CKZGException ex) {
@@ -144,11 +145,11 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
-  @MethodSource("getVerifyCellProofTests")
-  public void verifyCellProofTests(final VerifyCellProofTest test) {
+  @MethodSource("getVerifyCellKzgProofTests")
+  public void verifyCellKzgProofTests(final VerifyCellKzgProofTest test) {
     try {
       boolean valid =
-          CKZG4844JNI.verifyCellProof(
+          CKZG4844JNI.verifyCellKzgProof(
               test.getInput().getCommitment(),
               test.getInput().getCellId(),
               test.getInput().getCell(),
@@ -160,11 +161,11 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
-  @MethodSource("getVerifyCellProofBatchTests")
-  public void verifyCellProofBatchTests(final VerifyCellProofBatchTest test) {
+  @MethodSource("getVerifyCellKzgProofBatchTests")
+  public void verifyCellKzgProofBatchTests(final VerifyCellKzgProofBatchTest test) {
     try {
       boolean valid =
-          CKZG4844JNI.verifyCellProofBatch(
+          CKZG4844JNI.verifyCellKzgProofBatch(
               test.getInput().getRowCommitments(),
               test.getInput().getRowIndices(),
               test.getInput().getColumnIndices(),
@@ -244,7 +245,7 @@ public class CKZG4844JNITest {
   public void checkRecoverAllCells() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
-    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(blob);
+    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndKzgProofs(blob);
     final byte[] cells = cellsAndProofs.getCells();
     final byte[] partial = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
     System.arraycopy(cells, 0, partial, 0, partial.length);
@@ -259,7 +260,7 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndProofs(blob);
+    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndKzgProofs(blob);
     final byte[] cells = cellsAndProofs.getCells();
     final byte[] proofs = cellsAndProofs.getProofs();
 
@@ -268,7 +269,7 @@ public class CKZG4844JNITest {
       byte[] proof = new byte[BYTES_PER_PROOF];
       System.arraycopy(cells, cellId * BYTES_PER_CELL, cell, 0, BYTES_PER_CELL);
       System.arraycopy(proofs, cellId * BYTES_PER_PROOF, proof, 0, BYTES_PER_PROOF);
-      assertTrue(CKZG4844JNI.verifyCellProof(commitment, cellId, cell, proof));
+      assertTrue(CKZG4844JNI.verifyCellKzgProof(commitment, cellId, cell, proof));
     }
     CKZG4844JNI.freeTrustedSetup();
   }
@@ -292,7 +293,7 @@ public class CKZG4844JNITest {
       final byte[] blob = TestUtils.createRandomBlob();
       final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
       System.arraycopy(commitment, 0, commitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
-      data[i] = CKZG4844JNI.computeCellsAndProofs(blob);
+      data[i] = CKZG4844JNI.computeCellsAndKzgProofs(blob);
       System.arraycopy(data[i].getCells(), 0, cells, i * cellsLength, cellsLength);
       System.arraycopy(data[i].getProofs(), 0, proofs, i * proofsLength, proofsLength);
     }
@@ -306,7 +307,7 @@ public class CKZG4844JNITest {
     }
 
     assertTrue(
-        CKZG4844JNI.verifyCellProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
+        CKZG4844JNI.verifyCellKzgProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -548,20 +549,21 @@ public class CKZG4844JNITest {
     return TestUtils.getComputeCellsTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
-  private static Stream<ComputeCellsAndProofsTest> getComputeCellsAndProofsTests() {
+  private static Stream<ComputeCellsAndKzgProofsTest> getComputeCellsAndKzgProofsTests() {
     loadTrustedSetup();
-    return TestUtils.getComputeCellsAndProofsTests().stream()
+    return TestUtils.getComputeCellsAndKzgProofsTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
-  private static Stream<VerifyCellProofTest> getVerifyCellProofTests() {
+  private static Stream<VerifyCellKzgProofTest> getVerifyCellKzgProofTests() {
     loadTrustedSetup();
-    return TestUtils.getVerifyCellProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+    return TestUtils.getVerifyCellKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
-  private static Stream<VerifyCellProofBatchTest> getVerifyCellProofBatchTests() {
+  private static Stream<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
     loadTrustedSetup();
-    return TestUtils.getVerifyCellProofBatchTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
+    return TestUtils.getVerifyCellKzgProofBatchTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<RecoverAllCellsTest> getRecoverAllCellsTests() {

@@ -568,7 +568,7 @@ Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    ret = compute_cells_and_proofs(cells, NULL, blob, kzg_settings);
+    ret = compute_cells_and_kzg_proofs(cells, NULL, blob, kzg_settings);
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
         msg << "Error in computeCells: " << from_c_kzg_ret(ret);
@@ -593,7 +593,7 @@ out:
     return result;
 }
 
-Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
+Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
     Blob *blob = get_blob(env, info[0]);
@@ -615,7 +615,7 @@ Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
     cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (cells == nullptr) {
         std::ostringstream msg;
-        msg << "Failed to allocate cells in computeCellsAndProofs";
+        msg << "Failed to allocate cells in computeCellsAndKzgProofs";
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -623,15 +623,15 @@ Napi::Value ComputeCellsAndProofs(const Napi::CallbackInfo &info) {
     proofs = (KZGProof *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_PROOF);
     if (proofs == nullptr) {
         std::ostringstream msg;
-        msg << "Failed to allocate proofs in computeCellsAndProofs";
+        msg << "Failed to allocate proofs in computeCellsAndKzgProofs";
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
 
-    ret = compute_cells_and_proofs(cells, proofs, blob, kzg_settings);
+    ret = compute_cells_and_kzg_proofs(cells, proofs, blob, kzg_settings);
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in computeCellsAndProofs: " << from_c_kzg_ret(ret);
+        msg << "Error in computeCellsAndKzgProofs: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -811,7 +811,7 @@ out:
     return result;
 }
 
-Napi::Value VerifyCellProof(const Napi::CallbackInfo &info) {
+Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
     if (commitment_bytes == nullptr) {
@@ -832,13 +832,13 @@ Napi::Value VerifyCellProof(const Napi::CallbackInfo &info) {
     }
 
     bool out;
-    C_KZG_RET ret = verify_cell_proof(
+    C_KZG_RET ret = verify_cell_kzg_proof(
         &out, commitment_bytes, cell_id, cell, proof_bytes, kzg_settings
     );
 
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in verifyCellProof: " << from_c_kzg_ret(ret);
+        msg << "Error in verifyCellKzgProof: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         return env.Undefined();
     }
@@ -846,7 +846,7 @@ Napi::Value VerifyCellProof(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, out);
 }
 
-Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
+Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
     if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray() &&
@@ -962,7 +962,7 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
         memcpy(&proofs[i], proof, BYTES_PER_PROOF);
     }
 
-    ret = verify_cell_proof_batch(
+    ret = verify_cell_kzg_proof_batch(
         &out,
         commitments,
         num_commitments,
@@ -975,7 +975,7 @@ Napi::Value VerifyCellProofBatch(const Napi::CallbackInfo &info) {
     );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in verifyCellProofBatch: " << from_c_kzg_ret(ret);
+        msg << "Error in verifyCellKzgProofBatch: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -1034,8 +1034,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["computeCells"] = Napi::Function::New(
         env, ComputeCells, "computeCells"
     );
-    exports["computeCellsAndProofs"] = Napi::Function::New(
-        env, ComputeCellsAndProofs, "computeCellsAndProofs"
+    exports["computeCellsAndKzgProofs"] = Napi::Function::New(
+        env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"
     );
     exports["cellsToBlob"] = Napi::Function::New(
         env, CellsToBlob, "cellsToBlob"
@@ -1043,11 +1043,11 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["recoverAllCells"] = Napi::Function::New(
         env, RecoverAllCells, "recoverAllCells"
     );
-    exports["verifyCellProof"] = Napi::Function::New(
-        env, VerifyCellProof, "verifyCellProof"
+    exports["verifyCellKzgProof"] = Napi::Function::New(
+        env, VerifyCellKzgProof, "verifyCellKzgProof"
     );
-    exports["verifyCellProofBatch"] = Napi::Function::New(
-        env, VerifyCellProofBatch, "verifyCellProofBatch"
+    exports["verifyCellKzgProofBatch"] = Napi::Function::New(
+        env, VerifyCellKzgProofBatch, "verifyCellKzgProofBatch"
     );
 
     // Constants

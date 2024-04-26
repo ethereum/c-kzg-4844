@@ -17,9 +17,9 @@ VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*
 
 # EIP-7594
 COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml"
-COMPUTE_CELLS_AND_PROOFS_TESTS = "../../tests/compute_cells_and_proofs/*/*/data.yaml"
-VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_proof/*/*/data.yaml"
-VERIFY_CELL_PROOF_BATCH_TESTS = "../../tests/verify_cell_proof_batch/*/*/data.yaml"
+COMPUTE_CELLS_AND_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml"
+VERIFY_CELL_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml"
+VERIFY_CELL_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml"
 RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml"
 
 
@@ -186,7 +186,7 @@ def test_compute_cells(ts):
         assert cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
 
 
-def test_compute_cells_and_proofs(ts):
+def test_compute_cells_and_kzg_proofs(ts):
     test_files = glob.glob(COMPUTE_CELLS_AND_PROOFS_TESTS)
     assert len(test_files) > 0
 
@@ -197,7 +197,7 @@ def test_compute_cells_and_proofs(ts):
         blob = bytes_from_hex(test["input"]["blob"])
 
         try:
-            cells, proofs = ckzg.compute_cells_and_proofs(blob, ts)
+            cells, proofs = ckzg.compute_cells_and_kzg_proofs(blob, ts)
         except:
             assert test["output"] is None
             continue
@@ -208,7 +208,7 @@ def test_compute_cells_and_proofs(ts):
         assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
-def test_verify_cell_proof(ts):
+def test_verify_cell_kzg_proof(ts):
     test_files = glob.glob(VERIFY_CELL_PROOF_TESTS)
     assert len(test_files) > 0
 
@@ -222,7 +222,7 @@ def test_verify_cell_proof(ts):
         proof = bytes_from_hex(test["input"]["proof"])
 
         try:
-            valid = ckzg.verify_cell_proof(commitment, cell_id, cell, proof, ts)
+            valid = ckzg.verify_cell_kzg_proof(commitment, cell_id, cell, proof, ts)
         except:
             assert test["output"] is None
             continue
@@ -231,7 +231,7 @@ def test_verify_cell_proof(ts):
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
-def test_verify_cell_proof_batch(ts):
+def test_verify_cell_kzg_proof_batch(ts):
     test_files = glob.glob(VERIFY_CELL_PROOF_BATCH_TESTS)
     assert len(test_files) > 0
 
@@ -246,7 +246,7 @@ def test_verify_cell_proof_batch(ts):
         proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            valid = ckzg.verify_cell_proof_batch(row_commitments, row_indices, column_indices, cells, proofs, ts)
+            valid = ckzg.verify_cell_kzg_proof_batch(row_commitments, row_indices, column_indices, cells, proofs, ts)
         except:
             assert test["output"] is None
             continue
@@ -288,7 +288,7 @@ if __name__ == "__main__":
     test_compute_blob_kzg_proof(ts)
     test_verify_kzg_proof(ts)
     test_compute_cells(ts)
-    test_compute_cells_and_proofs(ts)
+    test_compute_cells_and_kzg_proofs(ts)
     test_verify_blob_kzg_proof(ts)
     test_verify_blob_kzg_proof_batch(ts)
     test_recover_all_cells(ts)

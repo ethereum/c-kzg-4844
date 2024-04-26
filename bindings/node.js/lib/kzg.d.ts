@@ -137,7 +137,7 @@ export function computeCells(blob: Blob): Cell[];
  * @param blob the blob to get cells/proofs for
  * @return a tuple of cells and proofs
  */
-export function computeCellsAndProofs(blob: Blob): [Cell[], KZGProof[]];
+export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 
 /**
  * Convert an array of cells to a blob.
@@ -165,7 +165,7 @@ export function recoverAllCells(cellIds: number[], cells: Cell[]): Cell[];
  * @param proofBytes the proof for the cell
  * @return true if the cell is valid with respect to this commitment
  */
-export function verifyCellProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
+export function verifyCellKzgProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
 
 /**
  * Verify that multiple cells' proofs are valid.
@@ -177,7 +177,7 @@ export function verifyCellProof(commitmentBytes: Bytes48, cellId: number, cell: 
  * @param proofsBytes the proof for each cell
  * @return true if the cells are valid with respect to the given commitments
  */
-export function verifyCellProofBatch(
+export function verifyCellKzgProofBatch(
   commitmentsBytes: Bytes48[],
   rowIndices: number[],
   columnIndices: number[],

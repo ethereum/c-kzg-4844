@@ -60,15 +60,15 @@ public static partial class Ckzg
     private static extern unsafe KzgResult VerifyBlobKzgProofBatch(out bool result, byte* blobs, byte* commitments,
         byte* proofs, int count, IntPtr ts);
 
-    [DllImport("ckzg", EntryPoint = "compute_cells_and_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeCellsAndProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
+    [DllImport("ckzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
+    private static extern unsafe KzgResult ComputeCellsAndKzgProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
 
-    [DllImport("ckzg", EntryPoint = "verify_cell_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyCellProof(out bool result, byte* commitment, ulong cell_id,
+    [DllImport("ckzg", EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    private static extern unsafe KzgResult VerifyCellKzgProof(out bool result, byte* commitment, ulong cell_id,
         byte* cell, byte* proof, IntPtr ts);
 
-    [DllImport("ckzg", EntryPoint = "verify_cell_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyCellProofBatch(out bool result, byte* row_commitments,
+    [DllImport("ckzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
+    private static extern unsafe KzgResult VerifyCellKzgProofBatch(out bool result, byte* row_commitments,
         int num_commitments, ulong* row_indices, ulong* column_indices, byte* cells, byte* proofs,
         int num_cells, IntPtr ts);
 

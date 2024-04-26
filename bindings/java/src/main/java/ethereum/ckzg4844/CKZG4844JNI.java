@@ -213,7 +213,7 @@ public class CKZG4844JNI {
    * @return a CellsAndProofs object
    * @throws CKZGException if there is a crypto error
    */
-  public static native CellsAndProofs computeCellsAndProofs(byte[] blob);
+  public static native CellsAndProofs computeCellsAndKzgProofs(byte[] blob);
 
   /**
    * Convert an array of cells to a blob.
@@ -244,7 +244,7 @@ public class CKZG4844JNI {
    * @return true if the cell is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyCellProof(
+  public static native boolean verifyCellKzgProof(
       byte[] commitmentBytes, long cellId, byte[] cell, byte[] proofBytes);
 
   /**
@@ -258,7 +258,7 @@ public class CKZG4844JNI {
    * @return true if the cells are valid with respect to the given commitments
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyCellProofBatch(
+  public static native boolean verifyCellKzgProofBatch(
       byte[] commitmentsBytes,
       long[] rowIndices,
       long[] columnIndices,

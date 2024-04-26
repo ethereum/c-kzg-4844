@@ -464,7 +464,7 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_cell_proof(
+    pub fn verify_cell_kzg_proof(
         commitment_bytes: &Bytes48,
         cell_id: u64,
         cell: &Cell,
@@ -473,7 +473,7 @@ impl KZGProof {
     ) -> Result<bool, Error> {
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_cell_proof(
+            let res = verify_cell_kzg_proof(
                 verified.as_mut_ptr(),
                 commitment_bytes,
                 cell_id,
@@ -489,7 +489,7 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_cell_proof_batch(
+    pub fn verify_cell_kzg_proof_batch(
         commitments_bytes: &[Bytes48],
         row_indices: &[u64],
         column_indices: &[u64],
@@ -520,7 +520,7 @@ impl KZGProof {
         }
         let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
         unsafe {
-            let res = verify_cell_proof_batch(
+            let res = verify_cell_kzg_proof_batch(
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
                 commitments_bytes.len(),
@@ -629,7 +629,7 @@ impl Cell {
     ) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
         let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
         unsafe {
-            let res = compute_cells_and_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
+            let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
                 cells.set_len(CELLS_PER_EXT_BLOB);
                 let cells_boxed_slice = cells.into_boxed_slice();
@@ -644,7 +644,7 @@ impl Cell {
         }
     }
 
-    pub fn compute_cells_and_proofs(
+    pub fn compute_cells_and_kzg_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
     ) -> Result<
@@ -657,7 +657,7 @@ impl Cell {
         let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
         let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
         unsafe {
-            let res = compute_cells_and_proofs(
+            let res = compute_cells_and_kzg_proofs(
                 cells.as_mut_ptr(),
                 proofs.as_mut_ptr(),
                 blob,
@@ -868,8 +868,8 @@ mod tests {
     use std::{fs, path::PathBuf};
     use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells,
-        compute_cells_and_proofs, compute_kzg_proof, recover_all_cells, verify_blob_kzg_proof,
-        verify_blob_kzg_proof_batch, verify_cell_proof, verify_cell_proof_batch, verify_kzg_proof,
+        compute_cells_and_kzg_proofs, compute_kzg_proof, recover_all_cells, verify_blob_kzg_proof,
+        verify_blob_kzg_proof_batch, verify_cell_kzg_proof, verify_cell_kzg_proof_batch, verify_kzg_proof,
     };
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
@@ -959,9 +959,9 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
     const COMPUTE_CELLS_TESTS: &str = "tests/compute_cells/*/*/*";
-    const COMPUTE_CELLS_AND_PROOFS_TESTS: &str = "tests/compute_cells_and_proofs/*/*/*";
-    const VERIFY_CELL_PROOF_TESTS: &str = "tests/verify_cell_proof/*/*/*";
-    const VERIFY_CELL_PROOF_BATCH_TESTS: &str = "tests/verify_cell_proof_batch/*/*/*";
+    const COMPUTE_CELLS_AND_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
+    const VERIFY_CELL_PROOF_TESTS: &str = "tests/verify_cell_kzg_proof/*/*/*";
+    const VERIFY_CELL_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
     const RECOVER_ALL_CELLS_TESTS: &str = "tests/recover_all_cells/*/*/*";
 
     #[test]
@@ -1169,7 +1169,7 @@ mod tests {
     }
 
     #[test]
-    fn test_compute_cells_and_proofs() {
+    fn test_compute_cells_and_kzg_proofs() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
@@ -1181,13 +1181,13 @@ mod tests {
 
         for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: compute_cells_and_proofs::Test = serde_yaml::from_str(&yaml_data).unwrap();
+            let test: compute_cells_and_kzg_proofs::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
                 continue;
             };
 
-            match Cell::compute_cells_and_proofs(&blob, &kzg_settings) {
+            match Cell::compute_cells_and_kzg_proofs(&blob, &kzg_settings) {
                 Ok((cells, proofs)) => {
                     let (expected_cells, expected_proofs) = test.get_output().unwrap();
                     assert_eq!(cells.as_slice(), expected_cells);
@@ -1201,7 +1201,7 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_cell_proof() {
+    fn test_verify_cell_kzg_proof() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
@@ -1213,7 +1213,7 @@ mod tests {
 
         for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: verify_cell_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
+            let test: verify_cell_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(commitment), Ok(cell_id), Ok(cell), Ok(proof)) = (
                 test.input.get_commitment(),
                 test.input.get_cell_id(),
@@ -1224,7 +1224,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_cell_proof(&commitment, cell_id, &cell, &proof, &kzg_settings) {
+            match KZGProof::verify_cell_kzg_proof(&commitment, cell_id, &cell, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1232,7 +1232,7 @@ mod tests {
     }
 
     #[test]
-    fn test_verify_cell_proof_batch() {
+    fn test_verify_cell_kzg_proof_batch() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
@@ -1244,7 +1244,7 @@ mod tests {
 
         for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: verify_cell_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
+            let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(row_commitments), Ok(row_indices), Ok(column_indices), Ok(cells), Ok(proofs)) = (
                 test.input.get_row_commitments(),
                 test.input.get_row_indices(),
@@ -1256,7 +1256,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_cell_proof_batch(
+            match KZGProof::verify_cell_kzg_proof_batch(
                 &row_commitments,
                 &row_indices,
                 &column_indices,

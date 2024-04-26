@@ -20,7 +20,6 @@ const (
 	BytesPerBlob         = C.BYTES_PER_BLOB
 	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
 	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
-	BitsPerFieldElement  = C.BITS_PER_FIELD_ELEMENT
 	BytesPerProof        = C.BYTES_PER_PROOF
 	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
 	FieldElementsPerCell = C.FIELD_ELEMENTS_PER_CELL
@@ -407,7 +406,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 /*
 ComputeCells is the binding for:
 
-	C_KZG_RET compute_cells_and_proofs(
+	C_KZG_RET compute_cells_and_kzg_proofs(
 	    Cell *cells,
 	    KZGProof *proofs,
 	    const Blob *blob,
@@ -419,7 +418,7 @@ func ComputeCells(blob *Blob) ([CellsPerExtBlob]Cell, error) {
 	}
 
 	cells := [CellsPerExtBlob]Cell{}
-	ret := C.compute_cells_and_proofs(
+	ret := C.compute_cells_and_kzg_proofs(
 		(*C.Cell)(unsafe.Pointer(&cells)),
 		nil, /* Do not generate proofs */
 		(*C.Blob)(unsafe.Pointer(blob)),
@@ -432,22 +431,22 @@ func ComputeCells(blob *Blob) ([CellsPerExtBlob]Cell, error) {
 }
 
 /*
-ComputeCellsAndProofs is the binding for:
+ComputeCellsAndKZGProofs is the binding for:
 
-	C_KZG_RET compute_cells_and_proofs(
+	C_KZG_RET compute_cells_and_kzg_proofs(
 	    Cell *cells,
 	    KZGProof *proofs,
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeCellsAndProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
+func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 
 	cells := [CellsPerExtBlob]Cell{}
 	proofs := [CellsPerExtBlob]KZGProof{}
-	ret := C.compute_cells_and_proofs(
+	ret := C.compute_cells_and_kzg_proofs(
 		(*C.Cell)(unsafe.Pointer(&cells)),
 		(*C.KZGProof)(unsafe.Pointer(&proofs)),
 		(*C.Blob)(unsafe.Pointer(blob)),
@@ -515,9 +514,9 @@ func RecoverAllCells(cellIds []uint64, cells []Cell) ([CellsPerExtBlob]Cell, err
 }
 
 /*
-VerifyCellProof is the binding for:
+VerifyCellKZGProof is the binding for:
 
-	C_KZG_RET verify_cell_proof(
+	C_KZG_RET verify_cell_kzg_proof(
 	    bool *ok,
 	    const Bytes48 *commitment_bytes,
 	    uint64_t cell_id,
@@ -525,13 +524,13 @@ VerifyCellProof is the binding for:
 	    const KZGProof *proof,
 	    const KZGSettings *s);
 */
-func VerifyCellProof(commitmentBytes Bytes48, cellId uint64, cell Cell, proofBytes Bytes48) (bool, error) {
+func VerifyCellKZGProof(commitmentBytes Bytes48, cellId uint64, cell Cell, proofBytes Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 
 	var result C.bool
-	ret := C.verify_cell_proof(
+	ret := C.verify_cell_kzg_proof(
 		&result,
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
 		(C.uint64_t)(cellId),
@@ -546,9 +545,9 @@ func VerifyCellProof(commitmentBytes Bytes48, cellId uint64, cell Cell, proofByt
 }
 
 /*
-VerifyCellProofBatch is the binding for:
+VerifyCellKZGProofBatch is the binding for:
 
-	C_KZG_RET verify_cell_proof_batch(
+	C_KZG_RET verify_cell_kzg_proof_batch(
 	    bool *ok,
 	    const Bytes48 *commitments_bytes,
 	    size_t num_commitments,
@@ -559,7 +558,7 @@ VerifyCellProofBatch is the binding for:
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func VerifyCellProofBatch(commitmentsBytes []Bytes48, rowIndices, columnIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
+func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, rowIndices, columnIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -569,7 +568,7 @@ func VerifyCellProofBatch(commitmentsBytes []Bytes48, rowIndices, columnIndices 
 	}
 
 	var result C.bool
-	ret := C.verify_cell_proof_batch(
+	ret := C.verify_cell_kzg_proof_batch(
 		&result,
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
 		(C.size_t)(len(commitmentsBytes)),

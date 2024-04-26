@@ -116,7 +116,7 @@ profile: \
 	profile_verify_kzg_proof \
 	profile_verify_blob_kzg_proof \
 	profile_verify_blob_kzg_proof_batch \
-	profile_compute_cells_and_proofs
+	profile_compute_cells_and_kzg_proofs
 
 ###############################################################################
 # Sanitize

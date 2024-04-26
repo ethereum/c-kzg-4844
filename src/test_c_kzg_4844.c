@@ -1764,7 +1764,7 @@ static void test_compute_cells__succeeds_first_half_is_blob(void) {
     get_rand_blob(&blob);
 
     /* Get the cells */
-    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the original blob from the cells */
@@ -1802,7 +1802,7 @@ static void test_reconstruct__succeeds_random_blob(void) {
     get_rand_blob(&blob);
 
     /* Get the cells and proofs */
-    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Erase half of the cells */
@@ -1836,7 +1836,7 @@ static void test_reconstruct__succeeds_random_blob(void) {
 // Tests for cell proofs
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_verify_cell_proof__succeeds_random_blob(void) {
+static void test_verify_cell_kzg_proof__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
     Cell *cells = NULL;
@@ -1858,12 +1858,12 @@ static void test_verify_cell_proof__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get the cells and proofs */
-    ret = compute_cells_and_proofs(cells, proofs, &blob, &s);
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Verify all of the cell proofs */
     for (uint64_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        ret = verify_cell_proof(&ok, &commitment, i, &cells[i], &proofs[i], &s);
+        ret = verify_cell_kzg_proof(&ok, &commitment, i, &cells[i], &proofs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
@@ -2008,7 +2008,7 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     ProfilerStop();
 }
 
-static void profile_compute_cells_and_proofs(void) {
+static void profile_compute_cells_and_kzg_proofs(void) {
     C_KZG_RET ret;
     Blob blob;
     Cell *cells = NULL;
@@ -2023,9 +2023,9 @@ static void profile_compute_cells_and_proofs(void) {
     ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    ProfilerStart("compute_cells_and_proofs.prof");
+    ProfilerStart("compute_cells_and_kzg_proofs.prof");
     for (int i = 0; i < 5; i++) {
-        compute_cells_and_proofs(cells, proofs, &blob, &s);
+        compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     }
     ProfilerStop();
 }
@@ -2141,7 +2141,7 @@ int main(void) {
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
     RUN(test_compute_cells__succeeds_first_half_is_blob);
     RUN(test_reconstruct__succeeds_random_blob);
-    RUN(test_verify_cell_proof__succeeds_random_blob);
+    RUN(test_verify_cell_kzg_proof__succeeds_random_blob);
     RUN(test_poly_conversion__succeeds_round_trip);
 
     /*
@@ -2157,7 +2157,7 @@ int main(void) {
     profile_verify_kzg_proof();
     profile_verify_blob_kzg_proof();
     profile_verify_blob_kzg_proof_batch();
-    profile_compute_cells_and_proofs();
+    profile_compute_cells_and_kzg_proofs();
 #endif
     teardown();
 

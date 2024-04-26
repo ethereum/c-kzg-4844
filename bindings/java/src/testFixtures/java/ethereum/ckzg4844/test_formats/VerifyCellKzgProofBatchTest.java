@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 
-public class VerifyCellProofBatchTest {
+public class VerifyCellKzgProofBatchTest {
   public static class Input {
     @JsonProperty("row_commitments")
     private List<String> rowCommitments;
