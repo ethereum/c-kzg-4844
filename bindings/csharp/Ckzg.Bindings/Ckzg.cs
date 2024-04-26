@@ -265,6 +265,23 @@ public static partial class Ckzg
         }
     }
 
+    public static unsafe void RecoverAllCells(Span<byte> recovered, ReadOnlySpan<ulong> cellIds,
+            ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(cellIds, nameof(cellIds), numCells);
+        ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
+
+        fixed (byte* recoveredPtr = recovered, cellsPtr = cells)
+        {
+            fixed(ulong *cellIdsPtr = cellIds)
+            {
+                KzgResult result = RecoverAllCells(recoveredPtr, cellIdsPtr, cellsPtr, numCells, ckzgSetup);
+                ThrowOnError(result);
+            }
+        }
+    }
+
     #region Argument verification helpers
     private static void ThrowOnError(KzgResult result)
     {

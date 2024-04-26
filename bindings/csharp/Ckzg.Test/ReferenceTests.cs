@@ -559,4 +559,54 @@ public class ReferenceTests
     }
 
     #endregion
+
+    #region RecoverAllCells
+
+    private class RecoverAllCellsInput
+    {
+        public List<ulong> CellIds { get; set; } = null!;
+        public List<string> Cells { get; set; } = null!;
+    }
+
+    private class RecoverAllCellsTest
+    {
+        public RecoverAllCellsInput Input { get; set; } = null!;
+        public List<string>? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestRecoverAllCells()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_recoverAllCellsTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            RecoverAllCellsTest test = _deserializer.Deserialize<RecoverAllCellsTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] recovered = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            ulong[] cellIds = test.Input.CellIds.ToArray();
+            byte[] cells = GetFlatBytes(test.Input.Cells);
+            int numCells = cells.Length / Ckzg.BytesPerCell;
+
+            try
+            {
+                Ckzg.RecoverAllCells(recovered, cellIds, cells, numCells, _ts);
+                Assert.That(test.Output, Is.Not.EqualTo(null));
+                byte[] expectedRecovered = GetFlatBytes(test.Output);
+                Assert.That(recovered, Is.EqualTo(expectedRecovered));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
 }
