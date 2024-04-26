@@ -1859,9 +1859,22 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values);
     c_kzg_free(s->g1_values_lagrange);
     c_kzg_free(s->g2_values);
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        c_kzg_free(s->x_ext_ftt_columns[i]);
-        c_kzg_free(s->tables[i]);
+
+    /*
+     * If for whatever reason we accidentally call free_trusted_setup() on an
+     * uninitialized structure, we don't want to deference these 2d arrays.
+     * Without these NULL checks, it's possible for there to be a segmentation
+     * fault via null pointer dereference.
+     */
+    if (s->x_ext_ftt_columns != NULL) {
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            c_kzg_free(s->x_ext_ftt_columns[i]);
+        }
+    }
+    if (s->tables != NULL) {
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            c_kzg_free(s->tables[i]);
+        }
     }
     c_kzg_free(s->x_ext_ftt_columns);
     c_kzg_free(s->tables);
