@@ -19,6 +19,11 @@ type
     proof*: KzgProof
     y*: KzgBytes32
 
+  KzgCells* = array[CELLS_PER_EXT_BLOB, KzgCell]
+  KzgCellsAndKzgProofs* = object
+    cells*: array[CELLS_PER_EXT_BLOB, KzgCell]
+    proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
+
   G1Data* = array[48, byte]
   G2Data* = array[96, byte]
 
@@ -150,6 +155,28 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, proof)
 
+proc computeCells*(ctx: KzgCtx,
+                   blob: KzgBlob): Result[KzgCells, string] {.gcsafe.} =
+  var ret: KzgCells
+  let res = compute_cells_and_kzg_proofs(
+    ret[0].getPtr,
+    cast[ptr KzgProof](nil), # Don't compute proofs
+    blob,
+    ctx.val)
+  verify(res, ret)
+
+proc computeCellsAndProofs*(ctx: KzgCtx,
+                   blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+  var ret: KzgCellsAndKzgProofs
+  var cellsPtr: ptr KzgCell = ret.cells[0].getPtr
+  var proofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  let res = compute_cells_and_kzg_proofs(
+    cellsPtr,
+    proofsPtr,
+    blob,
+    ctx.val)
+  verify(res, ret)
+
 proc verifyProof*(ctx: KzgCtx,
                   commitment: KzgBytes48,
                   z: KzgBytes32, # Input Point
@@ -250,6 +277,23 @@ proc verifyProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
+proc recoverCells*(ctx: KzgCtx,
+                   cellIds: openArray[uint64],
+                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
+  if cells.len != cellIds.len:
+    return err($KZG_BADARGS)
+
+  if cells.len == 0:
+    return err($KZG_BADARGS)
+
+  var ret: KzgCells
+  let res = recover_all_cells(
+    ret[0].getPtr,
+    cellIds[0].getPtr,
+    cells[0].getPtr,
+    cells.len.csize_t,
+    ctx.val)
+  verify(res, ret)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -266,7 +310,8 @@ template blobToKzgCommitment*(ctx: KzgCtx,
   toCommitment(ctx, blob)
 
 template computeKzgProof*(ctx: KzgCtx,
-                   blob: KzgBlob, z: KzgBytes32): untyped =
+                   blob: KzgBlob,
+                   z: KzgBytes32): untyped =
   computeProof(ctx, blob, z)
 
 template computeBlobKzgProof*(ctx: KzgCtx,
@@ -293,6 +338,10 @@ template verifyBlobKzgProofBatch*(ctx: KzgCtx,
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, blobs, commitments, proofs)
 
+template computeCellsAndKzgProofs*(ctx: KzgCtx,
+                       blob: KzgBlob): untyped =
+  computeCellsAndProofs(ctx, blob)
+
 template verifyCellKzgProof*(ctx: KzgCtx,
                    commitment: KzgBytes48,
                    cellId: uint64,
@@ -307,5 +356,10 @@ template verifyCellKzgProofBatch*(ctx: KzgCtx,
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, rowCommitments, rowIndices, columnIndices, cells, proofs)
+
+template recoverAllCells*(ctx: KzgCtx,
+                   cellIds: openArray[uint64],
+                   cells: openArray[KzgCell]): untyped =
+  recoverCells(ctx, cellIds, cells)
 
 {. pop .}

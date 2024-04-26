@@ -45,6 +45,10 @@ proc fromHexList(T: type, xList: YamlNode): seq[T] =
   for x in xList:
     result.add(T.fromHex(x.content))
 
+proc fromIntList(T: type, xList: YamlNode): seq[T] =
+  for x in xList:
+    result.add(x.content.parseInt().T)
+
 template runTests(folder: string, body: untyped) =
   let test_files = walkDirRec(folder).toSeq()
   check test_files.len > 0
@@ -131,6 +135,26 @@ suite "yaml tests":
       res = ctx.verifyProofs(blobs, commitments, proofs)
     checkBool(res)
 
+  runTests(COMPUTE_CELLS_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      res = ctx.computeCells(blob)
+
+    checkRes(res):
+      let cells = KzgCell.fromHexList(n["output"])
+      check cells == res.get
+
+  runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      res = ctx.computeCellsAndProofs(blob)
+
+    checkRes(res):
+      let cells = KzgCell.fromHexList(n["output"][0])
+      check cells == res.get.cells
+      let proofs = KzgProof.fromHexList(n["output"][1])
+      check proofs == res.get.proofs
+
   runTests(VERIFY_CELL_KZG_PROOF_TESTS):
     let
       commitment = KzgCommitment.fromHex(n["input"]["commitment"])
@@ -141,15 +165,21 @@ suite "yaml tests":
     checkBool(res)
 
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
-    var rowIndices: seq[uint64] = @[]
-    for item in n["input"]["row_indices"].elems:
-      rowIndices.add(item.content.parseInt().uint64)
-    var columnIndices: seq[uint64] = @[]
-    for item in n["input"]["column_indices"].elems:
-      columnIndices.add(item.content.parseInt().uint64)
     let
       rowCommitments = KzgCommitment.fromHexList(n["input"]["row_commitments"])
+      rowIndices = uint64.fromIntList(n["input"]["row_indices"])
+      columnIndices = uint64.fromIntList(n["input"]["column_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)
+
+  runTests(RECOVER_ALL_CELLS_TESTS):
+    let
+      cellIds = uint64.fromIntList(n["input"]["cell_ids"])
+      cells = KzgCell.fromHexList(n["input"]["cells"])
+      res = ctx.recoverCells(cellIds, cells)
+
+    checkRes(res):
+      let recovered = KzgCell.fromHexList(n["output"])
+      check recovered == res.get

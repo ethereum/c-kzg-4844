@@ -158,6 +158,9 @@ template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(blobs, commitments, proofs)
 
+template computeCellsAndKzgProofs*(blob: KzgBlob): untyped =
+  computeCellsAndProofs(blob)
+
 template verifyCellKzgProof*(commitment: KzgBytes48,
                    cellId: uint64,
                    cell: KzgCell,
@@ -170,5 +173,9 @@ template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
+
+template recoverAllCells*(cellIds: openArray[uint64],
+                   cells: openArray[KzgCell]): untyped =
+  recoverCells(cellIds, cells)
 
 {. pop .}

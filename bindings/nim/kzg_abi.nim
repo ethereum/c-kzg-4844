@@ -134,6 +134,11 @@ proc verify_cell_kzg_proof*(res: var bool,
                          proof: KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
+proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
+                         proofsOut: ptr KzgProof,
+                         blob: KzgBlob,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
 proc verify_cell_kzg_proof_batch*(res: var bool,
                          rowCommitments: ptr KzgBytes48,
                          numRowCommitments: csize_t,
@@ -141,5 +146,11 @@ proc verify_cell_kzg_proof_batch*(res: var bool,
                          columnIndices: ptr uint64,
                          cells: ptr KzgCell,
                          proofs: ptr KzgBytes48,
+                         numCells: csize_t,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc recover_all_cells*(recoveredOut: ptr KzgCell,
+                         cellIds: ptr uint64,
+                         cells: ptr KzgCell,
                          numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
