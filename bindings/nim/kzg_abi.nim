@@ -27,8 +27,11 @@ when not defined(kzgExternalBlst):
 
 const
   FIELD_ELEMENTS_PER_BLOB* = 4096
+  FIELD_ELEMENTS_PER_CELL* = 64
   BYTES_PER_FIELD_ELEMENT* = 32
+  CELLS_PER_EXT_BLOB* = 128
   KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+  KzgCellSize* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
 
 type
   KZG_RET* = distinct cint
@@ -72,6 +75,9 @@ type
 
   # A trusted (valid) KZG proof.
   KzgProof* = KzgBytes48
+
+  # A single cell for a blob.
+  KzgCell* = array[KzgCellSize, byte]
 
 {.pragma: kzg_abi, importc, cdecl, header: "c_kzg_4844.h".}
 
@@ -119,4 +125,21 @@ proc verify_blob_kzg_proof_batch*(res: var bool,
                          commitmentsBytes: ptr KzgBytes48,
                          proofBytes: ptr KzgBytes48,
                          n: csize_t,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc verify_cell_kzg_proof*(res: var bool,
+                         commitment: KzgBytes48,
+                         cellId: uint64,
+                         cell: KzgCell,
+                         proof: KzgBytes48,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc verify_cell_kzg_proof_batch*(res: var bool,
+                         rowCommitments: ptr KzgBytes48,
+                         numRowCommitments: csize_t,
+                         rowIndices: ptr uint64,
+                         columnIndices: ptr uint64,
+                         cells: ptr KzgCell,
+                         proofs: ptr KzgBytes48,
+                         numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

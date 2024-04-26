@@ -178,6 +178,21 @@ proc verifyProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
+proc verifyProof*(ctx: KzgCtx,
+                  commitment: KzgBytes48,
+                  cellId: uint64,
+                  cell: KzgCell,
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
+  var valid: bool
+  let res = verify_cell_kzg_proof(
+    valid,
+    commitment,
+    cellId,
+    cell,
+    proof,
+    ctx.val)
+  verify(res, valid)
+
 proc verifyProofs*(ctx: KzgCtx,
                   blobs: openArray[KzgBlob],
                   commitments: openArray[KzgBytes48],
@@ -200,6 +215,41 @@ proc verifyProofs*(ctx: KzgCtx,
     blobs.len.csize_t,
     ctx.val)
   verify(res, valid)
+
+proc verifyProofs*(ctx: KzgCtx,
+                   rowCommitments: openArray[KzgBytes48],
+                   rowIndices: openArray[uint64],
+                   columnIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+  if cells.len != rowIndices.len:
+    return err($KZG_BADARGS)
+
+  if cells.len != columnIndices.len:
+    return err($KZG_BADARGS)
+
+  if cells.len != proofs.len:
+    return err($KZG_BADARGS)
+
+  if cells.len == 0:
+    return ok(true)
+
+  if rowCommitments.len == 0:
+    return err($KZG_BADARGS)
+
+  var valid: bool
+  let res = verify_cell_kzg_proof_batch(
+    valid,
+    rowCommitments[0].getPtr,
+    rowCommitments.len.csize_t,
+    rowIndices[0].getPtr,
+    columnIndices[0].getPtr,
+    cells[0].getPtr,
+    proofs[0].getPtr,
+    cells.len.csize_t,
+    ctx.val)
+  verify(res, valid)
+
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -242,5 +292,20 @@ template verifyBlobKzgProofBatch*(ctx: KzgCtx,
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, blobs, commitments, proofs)
+
+template verifyCellKzgProof*(ctx: KzgCtx,
+                   commitment: KzgBytes48,
+                   cellId: uint64,
+                   cell: KzgCell,
+                   proof: KzgBytes48): untyped =
+  verifyProof(ctx, commitment, cell, proof)
+
+template verifyCellKzgProofBatch*(ctx: KzgCtx,
+                   rowCommitments: openArray[KzgBytes48],
+                   rowIndices: openArray[uint64],
+                   columnIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): untyped =
+  verifyProofs(ctx, rowCommitments, rowIndices, columnIndices, cells, proofs)
 
 {. pop .}

@@ -12,12 +12,17 @@ import
 
 const
   testBase = kzgPath & "tests/"
-  BLOB_TO_KZG_COMMITMENT_TESTS = testBase & "blob_to_kzg_commitment"
-  COMPUTE_KZG_PROOF_TESTS      = testBase & "compute_kzg_proof"
-  COMPUTE_BLOB_KZG_PROOF_TESTS = testBase & "compute_blob_kzg_proof"
-  VERIFY_KZG_PROOF_TESTS       = testBase & "verify_kzg_proof"
-  VERIFY_BLOB_KZG_PROOF_TESTS  = testBase & "verify_blob_kzg_proof"
-  VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = testBase & "verify_blob_kzg_proof_batch"
+  BLOB_TO_KZG_COMMITMENT_TESTS       = testBase & "blob_to_kzg_commitment"
+  COMPUTE_KZG_PROOF_TESTS            = testBase & "compute_kzg_proof"
+  COMPUTE_BLOB_KZG_PROOF_TESTS       = testBase & "compute_blob_kzg_proof"
+  VERIFY_KZG_PROOF_TESTS             = testBase & "verify_kzg_proof"
+  VERIFY_BLOB_KZG_PROOF_TESTS        = testBase & "verify_blob_kzg_proof"
+  VERIFY_BLOB_KZG_PROOF_BATCH_TESTS  = testBase & "verify_blob_kzg_proof_batch"
+  COMPUTE_CELLS_TESTS                = testBase & "compute_cells"
+  COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
+  VERIFY_CELL_KZG_PROOF_TESTS        = testBase & "verify_cell_kzg_proof"
+  VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
+  RECOVER_ALL_CELLS_TESTS            = testBase & "recover_all_cells"
 
 proc toTestName(x: string): string =
   let parts = x.split(DirSep)
@@ -124,4 +129,27 @@ suite "yaml tests":
       commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyProofs(blobs, commitments, proofs)
+    checkBool(res)
+
+  runTests(VERIFY_CELL_KZG_PROOF_TESTS):
+    let
+      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+      cellId = n["input"]["cell_id"].content.parseInt().uint64
+      cell = KzgCell.fromHex(n["input"]["cell"])
+      proof = KzgProof.fromHex(n["input"]["proof"])
+      res = ctx.verifyProof(commitment, cellId, cell, proof)
+    checkBool(res)
+
+  runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
+    var rowIndices: seq[uint64] = @[]
+    for item in n["input"]["row_indices"].elems:
+      rowIndices.add(item.content.parseInt().uint64)
+    var columnIndices: seq[uint64] = @[]
+    for item in n["input"]["column_indices"].elems:
+      columnIndices.add(item.content.parseInt().uint64)
+    let
+      rowCommitments = KzgCommitment.fromHexList(n["input"]["row_commitments"])
+      cells = KzgCell.fromHexList(n["input"]["cells"])
+      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      res = ctx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)

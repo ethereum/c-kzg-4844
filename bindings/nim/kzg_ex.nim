@@ -104,11 +104,26 @@ proc verifyProof*(blob: KzgBlob,
   verifyCtx:
     gCtx.verifyProof(blob, commitment, proof)
 
+proc verifyProof*(commitment: KzgBytes48,
+                  cellId: uint64,
+                  cell: KzgCell,
+                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
+  verifyCtx:
+    gCtx.verifyProof(commitment, cellId, cell, proof)
+
 proc verifyProofs*(blobs: openArray[KzgBlob],
                   commitments: openArray[KzgBytes48],
                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
+
+proc verifyProofs*(rowCommitments: openArray[KzgBytes48],
+                   rowIndices: openArray[uint64],
+                   columnIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+  verifyCtx:
+    gCtx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -142,5 +157,18 @@ template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(blobs, commitments, proofs)
+
+template verifyCellKzgProof*(commitment: KzgBytes48,
+                   cellId: uint64,
+                   cell: KzgCell,
+                   proof: KzgBytes48): untyped =
+  verifyProof(commitment, cell, proof)
+
+template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
+                   rowIndices: openArray[uint64],
+                   columnIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): untyped =
+  verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
 {. pop .}
