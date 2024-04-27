@@ -2689,7 +2689,7 @@ static const fr_t INV_SCALE_FACTOR = {
 static void scale_poly(fr_t *p, size_t len) {
     fr_t factor_power = FR_ONE;
     for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
+        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
 }
@@ -2706,7 +2706,7 @@ static void scale_poly(fr_t *p, size_t len) {
 static void unscale_poly(fr_t *p, size_t len) {
     fr_t factor_power = FR_ONE;
     for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
+        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
 }
