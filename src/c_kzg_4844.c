@@ -3387,9 +3387,20 @@ C_KZG_RET recover_all_cells(
     for (size_t i = 0; i < num_cells; i++) {
         size_t index = cell_ids[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            ret = bytes_to_bls_field(
-                &recovered_fr[index + j], &cells[i].data[j]
-            );
+            fr_t *field = &recovered_fr[index + j];
+
+            /*
+             * Check if the field has already been set. If it has, there was a
+             * duplicate cell id and we can return an error. The compiler will
+             * optimize this and the overhead is practically zero.
+             */
+            if (!fr_is_null(field)) {
+                ret = C_KZG_BADARGS;
+                goto out;
+            }
+
+            /* Convert the untrusted bytes to a field element */
+            ret = bytes_to_bls_field(field, &cells[i].data[j]);
             if (ret != C_KZG_OK) goto out;
         }
     }
