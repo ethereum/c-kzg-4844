@@ -2683,13 +2683,13 @@ static const fr_t INV_SCALE_FACTOR = {
  * Multiplies each coefficient by `1 / scale_factor ^ i`. Equivalent to
  * creating a polynomial that evaluates at `x * k` rather than `x`.
  *
- * @param[out,in]   p       The polynomial coefficients to be scaled
- * @param[in]       len_p   Length of the polynomial coefficients
+ * @param[in,out]   p       The polynomial coefficients to be scaled
+ * @param[in]       len     Length of the polynomial coefficients
  */
-static void scale_poly(fr_t *p, uint64_t len_p) {
+static void scale_poly(fr_t *p, size_t len) {
     fr_t factor_power = FR_ONE;
-    for (uint64_t i = 1; i < len_p; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
+    for (size_t i = 1; i < len; i++) {
+        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
 }
@@ -2700,13 +2700,13 @@ static void scale_poly(fr_t *p, uint64_t len_p) {
  * Multiplies each coefficient by `scale_factor ^ i`. Equivalent to creating a
  * polynomial that evaluates at `x / k` rather than `x`.
  *
- * @param[out,in]   p       The polynomial coefficients to be unscaled
- * @param[in]       len_p   Length of the polynomial coefficients
+ * @param[in,out]   p       The polynomial coefficients to be unscaled
+ * @param[in]       len     Length of the polynomial coefficients
  */
-static void unscale_poly(fr_t *p, uint64_t len_p) {
+static void unscale_poly(fr_t *p, size_t len) {
     fr_t factor_power = FR_ONE;
-    for (uint64_t i = 1; i < len_p; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
+    for (size_t i = 1; i < len; i++) {
+        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
 }
