@@ -544,6 +544,15 @@ out:
     return result;
 }
 
+/**
+ * Get the cells for a given blob.
+ *
+ * @param[in] {Blob}    blob - The blob to get cells for
+ *
+ * @return {Cell[]} - An array of cells
+ *
+ * @throws {Error} - Failure to allocate or compute cells
+ */
 Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
@@ -593,6 +602,15 @@ out:
     return result;
 }
 
+/**
+ * Get the cells and proofs for a given blob.
+ *
+ * @param[in] {Blob}    blob - the blob to get cells/proofs for
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Failure to allocate or compute cells and proofs
+ */
 Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
@@ -664,6 +682,15 @@ out:
     return result;
 }
 
+/**
+ * Convert an array of cells to a blob.
+ *
+ * @param[in] {Cell[]}  cells - The cells to convert to a blob
+ *
+ * @return {Blob} - The blob for the given cells
+ *
+ * @throws {Error} - Invalid input, failure to allocate, or invalid conversion
+ */
 Napi::Value CellsToBlob(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     Cell *cells = NULL;
@@ -718,6 +745,17 @@ out:
     return result;
 }
 
+/**
+ * Given at least 50% of cells, reconstruct the missing ones.
+ *
+ * @param[in] {number[]}  cellIds - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ *
+ * @return {Cell[]} - All cells for that blob
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells
+ */
 Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     uint64_t *cell_ids = NULL;
@@ -811,6 +849,18 @@ out:
     return result;
 }
 
+/**
+ * Verify that a cell's proof is valid.
+ *
+ * @param[in] {Bytes48}   commitmentBytes - Commitment bytes
+ * @param[in] {number}    cellId - The cell identifier
+ * @param[in] {Cell}      cell - The cell to verify
+ * @param[in] {Bytes48}   proofBytes - The proof for the cell
+ *
+ * @return {boolean} - True if the cell is valid with respect to this commitment
+ *
+ * @throws {Error} - Errors validating cell's proof
+ */
 Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
@@ -846,6 +896,21 @@ Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
     return Napi::Boolean::New(env, out);
 }
 
+/**
+ * Verify that multiple cells' proofs are valid.
+ *
+ * @param[in] {Bytes48[]} commitmentsBytes - The commitments for all blobs
+ * @param[in] {number[]}  rowIndices - The row index for each cell
+ * @param[in] {number[]}  columnIndices - The column index for each cell
+ * @param[in] {Cell[]}    cells - The cells to verify
+ * @param[in] {Bytes48[]} proofsBytes - The proof for each cell
+ *
+ * @return {boolean} - True if the cells are valid with respect to the given
+ * commitments
+ *
+ * @throws {Error} - Invalid input, failure to allocate memory, or errors
+ * verifying batch
+ */
 Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
