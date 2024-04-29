@@ -87,7 +87,9 @@ jobs:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
     - name: Test
-      run: dotnet test -c release bindings/csharp/Ckzg.sln
+      run: |
+        find bindings/csharp/Ckzg.Bindings/runtimes
+        dotnet test -c release bindings/csharp/Ckzg.sln
 
   build-ckzg-dotnet:
     name: Build .NET wrapper
@@ -118,9 +120,7 @@ jobs:
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
     - name: Install dependencies
-      run: |
-        cd bindings/csharp && dotnet restore
-        find Ckzg.Bindings/runtimes
+      run: cd bindings/csharp && dotnet restore
     - name: Build
       run: cd bindings/csharp && dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
