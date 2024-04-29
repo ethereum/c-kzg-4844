@@ -87,9 +87,7 @@ jobs:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
     - name: Test
-      run: |
-        find bindings/csharp/Ckzg.Bindings/runtimes
-        dotnet test -c release bindings/csharp/Ckzg.sln
+      run: dotnet test -c release bindings/csharp/Ckzg.sln
 
   build-ckzg-dotnet:
     name: Build .NET wrapper
