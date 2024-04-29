@@ -118,7 +118,9 @@ jobs:
     - name: Set up .NET
       uses: actions/setup-dotnet@v3
     - name: Install dependencies
-      run: cd bindings/csharp && dotnet restore
+      run: |
+        cd bindings/csharp && dotnet restore
+        find Ckzg.Bindings/runtimes
     - name: Build
       run: cd bindings/csharp && dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
