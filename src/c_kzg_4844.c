@@ -1425,7 +1425,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute \sum r^i * Proof_i */
-    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, n);
+    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
@@ -1438,9 +1438,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     }
 
     /* Get \sum r^i z_i Proof_i */
-    g1_lincomb_fast(&proof_z_lincomb, proofs_g1, r_times_z, n);
+    g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
     /* Get \sum r^i (C_i - [y_i]) */
-    g1_lincomb_fast(&C_minus_y_lincomb, C_minus_y, r_powers, n);
+    g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
     /* Get C_minus_y_lincomb + proof_z_lincomb */
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
