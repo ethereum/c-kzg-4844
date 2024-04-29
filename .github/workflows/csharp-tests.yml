@@ -71,7 +71,7 @@ jobs:
           - host: ubuntu-22.04
             location: linux-x64
           - host: macos-latest
-            location: osx-x64
+            location: osx-arm64
           - host: windows-latest
             location: win-x64
     steps:
