@@ -31,7 +31,7 @@ bindings.TRUSTED_SETUP_PATH_IN_SRC = path.resolve(__dirname, "..", "..", "..", "
 /**
  * Looks in the default locations for the trusted setup file.  This is for cases
  * where the library is loaded without passing a trusted setup.  Should only be
- * used for cases where the Ethereum official mainnet kzg setup is acceptable.
+ * used for cases where the Ethereum official mainnet KZG setup is acceptable.
  *
  * @returns {string | undefined} - Filepath for trusted_setup.txt if found
  */
@@ -78,7 +78,7 @@ function transformTrustedSetupJson(filePath) {
 /**
  * Gets location for trusted setup file. Uses user provided location first. If
  * one is not provided then defaults to the official Ethereum mainnet setup from
- * the kzg ceremony.
+ * the KZG ceremony.
  *
  * @param {string} filePath - User provided filePath to check for trusted setup
  *
