@@ -30,8 +30,8 @@ const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePat
 const TRUSTED_SETUP_PATH_IN_DIST = (kzg as any).TRUSTED_SETUP_PATH_IN_DIST as string;
 const TRUSTED_SETUP_PATH_IN_SRC = (kzg as any).TRUSTED_SETUP_PATH_IN_SRC as string;
 
-const JSON_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
-const TXT_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.txt");
+const TEST_SETUP_FILE_PATH_JSON = resolve(__dirname, "__fixtures__", "trusted_setup.json");
+const TEST_SETUP_FILE_PATH_TXT = resolve(__dirname, "__fixtures__", "trusted_setup.txt");
 
 const MAX_TOP_BYTE = 114;
 
@@ -172,12 +172,12 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    loadTrustedSetup(JSON_SETUP_FILE_PATH);
+    loadTrustedSetup(TEST_SETUP_FILE_PATH_JSON);
   });
 
   describe("locating trusted setup file", () => {
     it("should return a txt path if a json file is provided and exists", () => {
-      expect(getTrustedSetupFilepath(JSON_SETUP_FILE_PATH)).toEqual(TXT_SETUP_FILE_PATH);
+      expect(getTrustedSetupFilepath(TEST_SETUP_FILE_PATH_JSON)).toEqual(TEST_SETUP_FILE_PATH_TXT);
     });
     /**
      * No guarantee that the test above runs first, however the json file should
@@ -185,7 +185,7 @@ describe("C-KZG", () => {
      * should be available to expect
      */
     it("should return the same txt path if provided and exists", () => {
-      expect(getTrustedSetupFilepath(TXT_SETUP_FILE_PATH)).toEqual(TXT_SETUP_FILE_PATH);
+      expect(getTrustedSetupFilepath(TEST_SETUP_FILE_PATH_TXT)).toEqual(TEST_SETUP_FILE_PATH_TXT);
     });
     describe("default setups", () => {
       beforeEach(() => {
