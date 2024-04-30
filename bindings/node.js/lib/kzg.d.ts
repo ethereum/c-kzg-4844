@@ -30,11 +30,11 @@ export const FIELD_ELEMENTS_PER_BLOB: number;
  * ".txt" extension.
  *
  * Uses user provided location first. If one is not provided then defaults to
- * the official Ethereum mainnet setup from the kzg ceremony. Should only be
- * used for cases where the Ethereum official mainnet kzg setup is acceptable.
+ * the official Ethereum mainnet setup from the KZG ceremony. Should only be
+ * used for cases where the Ethereum official mainnet KZG setup is acceptable.
  *
  * @param {string | undefined} filePath
- * @default - If no string is passed the default trusted setup from the Ethereum kzg ceremony is used
+ * @default - If no string is passed the default trusted setup from the Ethereum KZG ceremony is used
  *
  * @throws {TypeError} - Non-String input
  * @throws {Error} - For all other errors. See error message for more info

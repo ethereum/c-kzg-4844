@@ -66,7 +66,7 @@ function transformTrustedSetupJson(filePath) {
  * @throws {TypeError} - Invalid file type
  * @throws {Error} - Invalid location or no default trusted setup found
  *
- * @remarks - This function is only exported for testing purposes.  It should
+ * @remarks - This function is only exported for testing purposes. It should
  *            not be used directly. Not included in the kzg.d.ts types for that
  *            reason.
  */
