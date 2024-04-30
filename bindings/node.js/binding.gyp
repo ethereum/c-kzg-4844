@@ -33,7 +33,7 @@
           ],
           "msbuild_settings": {
             "ClCompile": {
-              "ExceptionHandling": "/EHsc",
+              "ExceptionHandling": 1,
               "AdditionalOptions": ["/std:c++17"]
             }
           }
