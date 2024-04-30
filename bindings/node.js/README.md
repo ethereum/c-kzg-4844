@@ -1,5 +1,7 @@
 # C-KZG-4844
 
+**Note: This is an alpha release with peerDas functionality.  For the current stable release use v3**
+
 This is a TypeScript library for EIP-4844 that implements the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
@@ -7,7 +9,9 @@ API. The core functionality was originally a stripped-down copy of
 since then. This package wraps that native `c-kzg` C code in C/C++ NAPI
 bindings for use in node.js applications.
 
-Spec: <https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md>
+Important Links:
+[Deneb - Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+[EIP-7594 - Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/polynomial-commitments-sampling.md)
 
 ## Prerequisites
 
