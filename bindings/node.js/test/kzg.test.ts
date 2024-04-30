@@ -27,12 +27,11 @@ const {
 } = kzg;
 // not exported by types, only exported for testing purposes
 const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePath?: string) => string;
+const TRUSTED_SETUP_PATH_IN_DIST = (kzg as any).TRUSTED_SETUP_PATH_IN_DIST as string;
+const TRUSTED_SETUP_PATH_IN_SRC = (kzg as any).TRUSTED_SETUP_PATH_IN_SRC as string;
 
 const JSON_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
 const TXT_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.txt");
-// this is the path as seen from the dist kzg.js. its actually inside the "dist folder though"
-const DIST_SETUP_FILE_PATH = resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
-const SRC_SETUP_FILE_PATH = resolve(__dirname, "..", "..", "..", "src", "trusted_setup.txt");
 
 const MAX_TOP_BYTE = 114;
 
@@ -190,19 +189,19 @@ describe("C-KZG", () => {
     });
     describe("default setups", () => {
       beforeEach(() => {
-        if (!existsSync(DIST_SETUP_FILE_PATH)) {
-          cpSync(SRC_SETUP_FILE_PATH, DIST_SETUP_FILE_PATH);
+        if (!existsSync(TRUSTED_SETUP_PATH_IN_DIST)) {
+          cpSync(TRUSTED_SETUP_PATH_IN_SRC, TRUSTED_SETUP_PATH_IN_DIST);
         }
       });
       it("should return dist setup first", () => {
         // both files should be preset right now
-        expect(getTrustedSetupFilepath()).toEqual(DIST_SETUP_FILE_PATH);
+        expect(getTrustedSetupFilepath()).toEqual(TRUSTED_SETUP_PATH_IN_DIST);
       });
       it("should return src setup if dist is missing", () => {
         // both files should be preset right now
-        rmSync(DIST_SETUP_FILE_PATH);
-        expect(getTrustedSetupFilepath()).toEqual(SRC_SETUP_FILE_PATH);
-        cpSync(SRC_SETUP_FILE_PATH, DIST_SETUP_FILE_PATH);
+        rmSync(TRUSTED_SETUP_PATH_IN_DIST);
+        expect(getTrustedSetupFilepath()).toEqual(TRUSTED_SETUP_PATH_IN_SRC);
+        cpSync(TRUSTED_SETUP_PATH_IN_SRC, TRUSTED_SETUP_PATH_IN_DIST);
       });
     });
   });

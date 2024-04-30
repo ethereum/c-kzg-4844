@@ -7,6 +7,28 @@ const path = require("path");
 const bindings = require("bindings")("kzg");
 
 /**
+ * NOTE: These two paths are only exported for testing purposes. They are not
+ * announced in the type file.
+ * 
+ * It is critical that these paths are kept in sync with where the trusted setup
+ * files will be found. The root setup is in the base src directory with the
+ * primary library code. The dist version is dictated by the `build` command in
+ * the Makefile in the bindings/node.js folder.
+ */
+/**
+ * Check the production bundle case first.
+ * - this file in BUNDLE_ROOT/dist/lib/kzg.js
+ * - trusted_setup in BUNDLE_ROOT/dist/deps/c-kzg/trusted_setup.txt
+ */
+bindings.TRUSTED_SETUP_PATH_IN_DIST = path.resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
+/**
+ * Check the development case second.
+ * - this file in REPO_ROOT/bindings/node.js/lib/kzg.js
+ * - trusted_setup in REPO_ROOT/src/trusted_setup.txt
+ */
+bindings.TRUSTED_SETUP_PATH_IN_SRC = path.resolve(__dirname, "..", "..", "..", "src", "trusted_setup.txt");
+
+/**
  * Looks in the default locations for the trusted setup file.  This is for cases
  * where the library is loaded without passing a trusted setup.  Should only be
  * used for cases where the Ethereum official mainnet kzg setup is acceptable.
@@ -15,10 +37,10 @@ const bindings = require("bindings")("kzg");
  */
 function getDefaultTrustedSetupFilepath() {
   const locationsToSearch = [
-    // check the production bundle case first (this file in lib)
-    path.resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt"),
-    // check the development in-repo case second (this file in bindings/node.js/lib)
-    path.resolve(__dirname, "..", "..", "..", "src", "trusted_setup.txt"),
+    // check the production case first
+    bindings.TRUSTED_SETUP_PATH_IN_DIST,
+    // check the development in-repo case second
+    bindings.TRUSTED_SETUP_PATH_IN_SRC,    
   ];
 
   for (const filepath of locationsToSearch) {
