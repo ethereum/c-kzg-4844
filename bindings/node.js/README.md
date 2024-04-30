@@ -7,7 +7,7 @@ API. The core functionality was originally a stripped-down copy of
 since then. This package wraps that native `c-kzg` C code in C/C++ NAPI
 bindings for use in node.js applications.
 
-Spec: https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md
+Spec: <https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md>
 
 ## Prerequisites
 
@@ -56,14 +56,22 @@ const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
 
 ```ts
 /**
- * Sets up the c-kzg library. Pass in a properly formatted trusted setup file
- * to configure the library.  File must be in json format, see TrustedSetupJson
- * interface for more details, or as a properly formatted utf-8 encoded file.
+ * Initialize the library with a trusted setup file.
  *
- * @remark This function must be run before any other functions in this
- *         library can be run.
+ * Can pass either a .txt or a .json file with setup configuration. Converts
+ * JSON formatted trusted setup into the native format that the base library
+ * requires. The created file will be in the same as the origin file but with a
+ * ".txt" extension.
  *
- * @param {string} filePath - The absolute path of the trusted setup
+ * Uses user provided location first. If one is not provided then defaults to
+ * the official Ethereum mainnet setup from the kzg ceremony. Should only be
+ * used for cases where the Ethereum official mainnet kzg setup is acceptable.
+ *
+ * @param {string | undefined} filePath - .txt/.json file with setup configuration
+ * @default - If no string is passed the default trusted setup from the Ethereum kzg ceremony is used
+ *
+ * @throws {TypeError} - Non-String input
+ * @throws {Error} - For all other errors. See error message for more info
  */
 loadTrustedSetup(filePath: string): void;
 ```

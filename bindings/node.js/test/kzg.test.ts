@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto";
-import {readFileSync} from "fs";
+import {readFileSync, existsSync, cpSync, rmSync} from "fs";
 import {resolve} from "path";
 import {globSync} from "glob";
 
@@ -10,7 +10,9 @@ interface TestMeta<I extends Record<string, any>, O extends boolean | string | s
   output: O;
 }
 
-import {
+import kzg from "../lib/kzg";
+import type {ProofResult} from "../lib/kzg";
+const {
   loadTrustedSetup,
   blobToKzgCommitment,
   computeKzgProof,
@@ -22,10 +24,15 @@ import {
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
   BYTES_PER_FIELD_ELEMENT,
-  ProofResult,
-} from "../lib/kzg";
+} = kzg;
+// not exported by types, only exported for testing purposes
+const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePath?: string) => string;
 
-const SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
+const JSON_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.json");
+const TXT_SETUP_FILE_PATH = resolve(__dirname, "__fixtures__", "trusted_setup.txt");
+// this is the path as seen from the dist kzg.js. its actually inside the "dist folder though"
+const DIST_SETUP_FILE_PATH = resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
+const SRC_SETUP_FILE_PATH = resolve(__dirname, "..", "..", "..", "src", "trusted_setup.txt");
 
 const MAX_TOP_BYTE = 114;
 
@@ -166,7 +173,38 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    loadTrustedSetup(SETUP_FILE_PATH);
+    loadTrustedSetup(JSON_SETUP_FILE_PATH);
+  });
+
+  describe("locating trusted setup file", () => {
+    it("should return a txt path if a json file is provided and exists", () => {
+      expect(getTrustedSetupFilepath(JSON_SETUP_FILE_PATH)).toEqual(TXT_SETUP_FILE_PATH);
+    });
+    /**
+     * No guarantee that the test above runs first, however the json file should
+     * have already been loaded by the beforeAll so a valid .txt test setup
+     * should be available to expect
+     */
+    it("should return the same txt path if provided and exists", () => {
+      expect(getTrustedSetupFilepath(TXT_SETUP_FILE_PATH)).toEqual(TXT_SETUP_FILE_PATH);
+    });
+    describe("default setups", () => {
+      beforeEach(() => {
+        if (!existsSync(DIST_SETUP_FILE_PATH)) {
+          cpSync(SRC_SETUP_FILE_PATH, DIST_SETUP_FILE_PATH);
+        }
+      });
+      it("should return dist setup first", () => {
+        // both files should be preset right now
+        expect(getTrustedSetupFilepath()).toEqual(DIST_SETUP_FILE_PATH);
+      });
+      it("should return src setup if dist is missing", () => {
+        // both files should be preset right now
+        rmSync(DIST_SETUP_FILE_PATH);
+        expect(getTrustedSetupFilepath()).toEqual(SRC_SETUP_FILE_PATH);
+        cpSync(SRC_SETUP_FILE_PATH, DIST_SETUP_FILE_PATH);
+      });
+    });
   });
 
   describe("reference tests should pass", () => {

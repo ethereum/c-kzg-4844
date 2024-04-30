@@ -33,6 +33,7 @@ build: install clean
 	@cp -r ../../blst deps
 	@cp ../../src/c_kzg_4844.c deps/c-kzg
 	@cp ../../src/c_kzg_4844.h deps/c-kzg
+	@cp ../../src/trusted_setup.txt deps/c-kzg
 	@# Build the bindings
 	@$(YARN) node-gyp --loglevel=warn configure
 	@$(YARN) node-gyp --loglevel=warn build
