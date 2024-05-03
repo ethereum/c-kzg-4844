@@ -1,5 +1,5 @@
 import {randomBytes} from "crypto";
-import {readFileSync, existsSync, cpSync, rmSync} from "fs";
+import {readFileSync, existsSync} from "fs";
 import {resolve} from "path";
 import {globSync} from "glob";
 
@@ -27,8 +27,7 @@ const {
 } = kzg;
 // not exported by types, only exported for testing purposes
 const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePath?: string) => string;
-const TRUSTED_SETUP_PATH_IN_DIST = (kzg as any).TRUSTED_SETUP_PATH_IN_DIST as string;
-const TRUSTED_SETUP_PATH_IN_SRC = (kzg as any).TRUSTED_SETUP_PATH_IN_SRC as string;
+const DEFAULT_TRUSTED_SETUP_PATH = (kzg as any).DEFAULT_TRUSTED_SETUP_PATH as string;
 
 const TEST_SETUP_FILE_PATH_JSON = resolve(__dirname, "__fixtures__", "trusted_setup.json");
 const TEST_SETUP_FILE_PATH_TXT = resolve(__dirname, "__fixtures__", "trusted_setup.txt");
@@ -188,20 +187,13 @@ describe("C-KZG", () => {
       expect(getTrustedSetupFilepath(TEST_SETUP_FILE_PATH_TXT)).toEqual(TEST_SETUP_FILE_PATH_TXT);
     });
     describe("default setups", () => {
-      beforeEach(() => {
-        if (!existsSync(TRUSTED_SETUP_PATH_IN_DIST)) {
-          cpSync(TRUSTED_SETUP_PATH_IN_SRC, TRUSTED_SETUP_PATH_IN_DIST);
+      beforeAll(() => {
+        if (!existsSync(DEFAULT_TRUSTED_SETUP_PATH)) {
+          throw new Error("Default deps/c-kzg/trusted_setup.txt not found for testing");
         }
       });
-      it("should return dist setup first", () => {
-        // both files should be preset right now
-        expect(getTrustedSetupFilepath()).toEqual(TRUSTED_SETUP_PATH_IN_DIST);
-      });
-      it("should return src setup if dist is missing", () => {
-        // both files should be preset right now
-        rmSync(TRUSTED_SETUP_PATH_IN_DIST);
-        expect(getTrustedSetupFilepath()).toEqual(TRUSTED_SETUP_PATH_IN_SRC);
-        cpSync(TRUSTED_SETUP_PATH_IN_SRC, TRUSTED_SETUP_PATH_IN_DIST);
+      it("should return default trusted_setup filepath", () => {
+        expect(getTrustedSetupFilepath()).toEqual(DEFAULT_TRUSTED_SETUP_PATH);
       });
     });
   });

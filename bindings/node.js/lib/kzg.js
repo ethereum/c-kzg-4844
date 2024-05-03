@@ -7,48 +7,23 @@ const path = require("path");
 const bindings = require("bindings")("kzg");
 
 /**
- * NOTE: These two paths are only exported for testing purposes. They are not
- * announced in the type file.
+ * NOTE: This path is only exported for testing purposes. It is not announced in
+ * the type file.
  * 
- * It is critical that these paths are kept in sync with where the trusted setup
- * files will be found. The root setup is in the base src directory with the
- * primary library code. The dist version is dictated by the `build` command in
- * the Makefile in the bindings/node.js folder.
- */
-/**
- * Check the production bundle case first.
+ * It is critical that this path is kept in sync with where the trusted setup
+ * file will be found. The path is dictated by the `build` command in the
+ * Makefile in the bindings/node.js folder.
+ * 
+ * This path works for two situations:
+ * 1) Production case
  * - this file in BUNDLE_ROOT/dist/lib/kzg.js
  * - trusted_setup in BUNDLE_ROOT/dist/deps/c-kzg/trusted_setup.txt
+ * 
+ *  2) Post `build` state before `bundle` command works
+ * - this file in bindings/node.js/lib/kzg.js
+ * - trusted_setup in bindings/node.js/deps/c-kzg/trusted_setup.txt
  */
-bindings.TRUSTED_SETUP_PATH_IN_DIST = path.resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
-/**
- * Check the development case second.
- * - this file in REPO_ROOT/bindings/node.js/lib/kzg.js
- * - trusted_setup in REPO_ROOT/src/trusted_setup.txt
- */
-bindings.TRUSTED_SETUP_PATH_IN_SRC = path.resolve(__dirname, "..", "..", "..", "src", "trusted_setup.txt");
-
-/**
- * Looks in the default locations for the trusted setup file.  This is for cases
- * where the library is loaded without passing a trusted setup.  Should only be
- * used for cases where the Ethereum official mainnet KZG setup is acceptable.
- *
- * @returns {string | undefined} - Filepath for trusted_setup.txt if found
- */
-function getDefaultTrustedSetupFilepath() {
-  const locationsToSearch = [
-    // check the production case first
-    bindings.TRUSTED_SETUP_PATH_IN_DIST,
-    // check the development in-repo case second
-    bindings.TRUSTED_SETUP_PATH_IN_SRC,    
-  ];
-
-  for (const filepath of locationsToSearch) {
-    if (fs.existsSync(filepath)) {
-      return filepath;
-    }
-  }
-}
+bindings.DEFAULT_TRUSTED_SETUP_PATH = path.resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
 
 /**
  * Converts JSON formatted trusted setup into the native format that
@@ -101,8 +76,8 @@ bindings.getTrustedSetupFilepath = function getTrustedSetupFilepath(filePath) {
       throw new Error(`No trusted setup found: ${filePath}`);
     }
   } else {
-    filePath = getDefaultTrustedSetupFilepath();
-    if (!filePath) {
+    filePath = bindings.DEFAULT_TRUSTED_SETUP_PATH;
+    if (!fs.existsSync(filePath)) {
       throw new Error("Default trusted setup not found. Must pass a valid filepath to load c-kzg library");
     }
   }
