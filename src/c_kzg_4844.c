@@ -2961,6 +2961,7 @@ out:
  *
  * @param[out] out The reordered polynomial, size `n * 2 / stride`
  * @param[in]  in  The input polynomial, size `n`
+ * @param[in]  n   The size of the input polynomial
  * @param[in]  offset The offset
  * @param[in]  stride The stride
  * @retval C_CZK_OK      All is well
@@ -2968,23 +2969,22 @@ out:
  * @retval C_CZK_MALLOC  Memory allocation failed
  */
 static C_KZG_RET toeplitz_coeffs_stride(
-    fr_t *out, const poly_t *in, uint64_t offset, uint64_t stride
+    fr_t *out, const fr_t *in, size_t n, uint64_t offset, uint64_t stride
 ) {
-    uint64_t n, k, k2;
+    uint64_t k, k2;
 
     if (stride == 0) return C_KZG_BADARGS;
 
-    n = in->length;
     k = n / stride;
     k2 = k * 2;
 
-    out[0] = in->coeffs[n - 1 - offset];
+    out[0] = in[n - 1 - offset];
     for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
         out[i] = FR_ZERO;
     }
     for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2;
          i++, j += stride) {
-        out[i] = in->coeffs[j];
+        out[i] = in[j];
     }
 
     return C_KZG_OK;
@@ -2997,15 +2997,16 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @remark Only the lower half of the polynomial is supplied; the upper, zero,
  * half is assumed. The #toeplitz_coeffs_stride routine does the right thing.
  *
- * @param[out]  out The proofs, array size `2 * n / s->chunk_length`
- * @param[in]   p   The polynomial, length `n`
+ * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   p   The polynomial, an array of coefficients
+ * @param[in]   n   The length of the polynomial
  * @param[in]   s   The trusted setup
  */
-static C_KZG_RET fk20_multi_da_opt(
-    g1_t *out, const poly_t *p, const KZGSettings *s
+static C_KZG_RET compute_fk20_proofs(
+    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    uint64_t n, k, k2;
+    uint64_t k, k2;
 
     fr_t **coeffs = NULL;
     fr_t *toeplitz_coeffs = NULL;
@@ -3016,7 +3017,6 @@ static C_KZG_RET fk20_multi_da_opt(
     void *scratch = NULL;
 
     /* Initialize length variables */
-    n = p->length;
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
@@ -3057,7 +3057,7 @@ static C_KZG_RET fk20_multi_da_opt(
     /* Compute toeplitz coefficients and organize by column */
     for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         ret = toeplitz_coeffs_stride(
-            toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
+            toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL
         );
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
@@ -3111,24 +3111,6 @@ out:
     c_kzg_free(h);
     c_kzg_free(scalars);
     c_kzg_free(scratch);
-    return ret;
-}
-
-/**
- * Computes all the KZG proofs for data availability checks. This involves
- * sampling on the double domain and reordering according to reverse bit order.
- */
-static C_KZG_RET da_using_fk20_multi(
-    g1_t *out, const poly_t *p, const KZGSettings *s
-) {
-    C_KZG_RET ret;
-
-    ret = fk20_multi_da_opt(out, p, s);
-    if (ret != C_KZG_OK) goto out;
-    ret = bit_reversal_permutation(out, sizeof out[0], CELLS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-
-out:
     return ret;
 }
 
@@ -3305,12 +3287,16 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = new_g1_array(&proofs_g1, CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        poly_t p = {NULL, 0};
-        p.length = s->max_width / 2;
-        p.coeffs = poly_monomial;
+        /* Compute the proofs, provide only the first half */
+        ret = compute_fk20_proofs(
+            proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s
+        );
+        if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs */
-        ret = da_using_fk20_multi(proofs_g1, &p, s);
+        /* Bit-reverse the proofs */
+        ret = bit_reversal_permutation(
+            proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
+        );
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
