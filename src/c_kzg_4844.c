@@ -3208,10 +3208,10 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
 /**
  * Given a blob, get all of its cells and proofs.
  *
- * @param[out]  cells       An array of CELLS_PER_EXT_BLOB cells
- * @param[out]  proofs      An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   blob        The blob to get cells for
- * @param[in]   s           The trusted setup
+ * @param[out]  cells   An array of CELLS_PER_EXT_BLOB cells
+ * @param[out]  proofs  An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   blob    The blob to get cells for
+ * @param[in]   s       The trusted setup
  *
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
@@ -3234,14 +3234,14 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     }
 
     /* Allocate space fr-form arrays */
-    ret = new_fr_array(&poly_monomial, s->max_width);
+    ret = new_fr_array(&poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&poly_lagrange, s->max_width);
+    ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all of the polynomial fields to zero */
-    memset(poly_monomial, 0, sizeof(fr_t) * s->max_width);
-    memset(poly_lagrange, 0, sizeof(fr_t) * s->max_width);
+    memset(poly_monomial, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
+    memset(poly_lagrange, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /*
      * Convert the blob to a polynomial. Note that only the first 4096 fields
@@ -3264,12 +3264,12 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Get the data points via forward transformation */
-        ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
+        ret = fft_fr(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the data points */
         ret = bit_reversal_permutation(
-            data_fr, sizeof(data_fr[0]), s->max_width
+            data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB
         );
         if (ret != C_KZG_OK) goto out;
 
