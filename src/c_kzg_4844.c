@@ -2964,17 +2964,11 @@ out:
  * Reorder and extend polynomial coefficients for the toeplitz method, strided
  * version.
  *
- * @remark The upper half of the input polynomial coefficients is treated as
- * being zero.
- *
- * @param[out] out The reordered polynomial, size `n * 2 / stride`
- * @param[in]  in  The input polynomial, size `n`
- * @param[in]  n   The size of the input polynomial
- * @param[in]  offset The offset
- * @param[in]  stride The stride
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- * @retval C_CZK_MALLOC  Memory allocation failed
+ * @param[out]  out     The reordered polynomial, size `n * 2 / stride`
+ * @param[in]   in      The input polynomial, size `n`
+ * @param[in]   n       The size of the input polynomial
+ * @param[in]   offset  The offset
+ * @param[in]   stride  The stride
  */
 static C_KZG_RET toeplitz_coeffs_stride(
     fr_t *out, const fr_t *in, size_t n, uint64_t offset, uint64_t stride
@@ -2999,16 +2993,16 @@ static C_KZG_RET toeplitz_coeffs_stride(
 }
 
 /**
- * FK20 multi-proof method, optimized for data availability where the top half
- * of polynomial coefficients is zero.
- *
- * @remark Only the lower half of the polynomial is supplied; the upper, zero,
- * half is assumed. The #toeplitz_coeffs_stride routine does the right thing.
+ * Compute FK20 cell-proofs for a polynomial.
  *
  * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
  * @param[in]   p   The polynomial, an array of coefficients
  * @param[in]   n   The length of the polynomial
  * @param[in]   s   The trusted setup
+ * 
+ * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only
+ * the lower half of the extended polynomial is supplied because the upper half
+ * is assumed to be zero.
  */
 static C_KZG_RET compute_fk20_proofs(
     g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
@@ -3016,12 +3010,12 @@ static C_KZG_RET compute_fk20_proofs(
     C_KZG_RET ret;
     uint64_t k, k2;
 
+    blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
     fr_t *toeplitz_coeffs = NULL;
     fr_t *toeplitz_coeffs_fft = NULL;
-    g1_t *h_ext_fft = NULL;
     g1_t *h = NULL;
-    blst_scalar *scalars = NULL;
+    g1_t *h_ext_fft = NULL;
     void *scratch = NULL;
 
     /* Initialize length variables */
@@ -3106,15 +3100,15 @@ static C_KZG_RET compute_fk20_proofs(
     if (ret != C_KZG_OK) goto out;
 
 out:
-    c_kzg_free(toeplitz_coeffs);
-    c_kzg_free(toeplitz_coeffs_fft);
+    c_kzg_free(scalars);
     for (uint64_t i = 0; i < k2; i++) {
         c_kzg_free(coeffs[i]);
     }
     c_kzg_free(coeffs);
-    c_kzg_free(h_ext_fft);
+    c_kzg_free(toeplitz_coeffs);
+    c_kzg_free(toeplitz_coeffs_fft);
     c_kzg_free(h);
-    c_kzg_free(scalars);
+    c_kzg_free(h_ext_fft);
     c_kzg_free(scratch);
     return ret;
 }
