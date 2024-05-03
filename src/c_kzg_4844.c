@@ -1590,6 +1590,7 @@ static void fft_g1_fast(
     uint64_t roots_stride,
     uint64_t n
 ) {
+    g1_t y_times_root;
     uint64_t half = n / 2;
     if (half > 0) { /* Tunable parameter */
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
@@ -1597,15 +1598,19 @@ static void fft_g1_fast(
             out + half, in + stride, stride * 2, roots, roots_stride * 2, half
         );
         for (uint64_t i = 0; i < half; i++) {
-            g1_t y_times_root;
-            if (fr_is_one(&roots[i * roots_stride])) {
-                /* Don't do the scalar multiplication if the scalar is one */
-                y_times_root = out[i + half];
+            /* If the point is infinity, we can skip the calculation */
+            if (blst_p1_is_inf(&out[i + half])) {
+                out[i + half] = out[i];
             } else {
-                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+                /* If the scalar is one, we can skip the multiplication */
+                if (fr_is_one(&roots[i * roots_stride])) {
+                    y_times_root = out[i + half];
+                } else {
+                    g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+                }
+                g1_sub(&out[i + half], &out[i], &y_times_root);
+                blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
             }
-            g1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;
