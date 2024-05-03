@@ -47,6 +47,9 @@
         (p) = NULL; \
     } while (0)
 
+/** The window bits to use in the fixed-base MSM operation. */
+#define FIXED_BASE_MSM_WINDOW_BITS 8
+
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
@@ -1879,6 +1882,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->x_ext_fft_columns);
     c_kzg_free(s->tables);
     s->wbits = 0;
+    s->scratch_size = 0;
 }
 
 /* Forward function declaration */
@@ -1973,6 +1977,10 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         );
     }
 
+    /* Calculate the size of the scratch */
+    s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL
+    );
+
 out:
     c_kzg_free(x);
     c_kzg_free(points);
@@ -2044,7 +2052,7 @@ C_KZG_RET load_trusted_setup(
      * tables are 96 MiB; with 9 bits, the tables are 192 MiB and so forth.
      * From our testing, there are diminishing returns after 8 bits.
      */
-    out->wbits = 8;
+    out->wbits = FIXED_BASE_MSM_WINDOW_BITS;
 
     /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
@@ -3020,14 +3028,6 @@ static C_KZG_RET compute_fk20_proofs(
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
-    /* Allocate 2d array for coefficients by column */
-    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < k2; i++) {
-        ret = new_fr_array(&coeffs[i], k);
-        if (ret != C_KZG_OK) goto out;
-    }
-
     /* Do allocations */
     ret = new_fr_array(&toeplitz_coeffs, k2);
     if (ret != C_KZG_OK) goto out;
@@ -3038,16 +3038,21 @@ static C_KZG_RET compute_fk20_proofs(
     ret = new_g1_array(&h, k2);
     if (ret != C_KZG_OK) goto out;
 
-    /* For windowed multiplication */
-    size_t scratch_size = blst_p1s_mult_wbits_scratch_sizeof(
-        FIELD_ELEMENTS_PER_CELL
-    );
-    ret = c_kzg_malloc(&scratch, scratch_size);
+    /* Allocations for fixed-base MSM */
+    ret = c_kzg_malloc(&scratch, s->scratch_size);
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc(
         (void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar)
     );
     if (ret != C_KZG_OK) goto out;
+
+    /* Allocate 2d array for coefficients by column */
+    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        ret = new_fr_array(&coeffs[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
 
     /* Initialize values to zero */
     for (uint64_t i = 0; i < k2; i++) {
