@@ -152,8 +152,10 @@ typedef struct {
     g1_t **x_ext_fft_columns;
     /** The precomputed tables for fixed-base MSM */
     blst_p1_affine **tables;
-    /** The window size for the fixed-based MSM */
+    /** The window size for the fixed-base MSM */
     size_t wbits;
+    /** The scratch size for the fixed-base MSM */
+    size_t scratch_size;
 } KZGSettings;
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -13,6 +13,7 @@ export
 
 type
   KzgCtx* = ref object
+    valFreed: bool
     val: KzgSettings
 
   KzgProofAndY* = object
@@ -37,7 +38,12 @@ else:
 ##############################################################
 
 proc destroy*(x: KzgCtx) =
-  free_trusted_setup(x.val)
+  # Prevent Nim GC to call free_trusted_setup
+  # if user already done it before.
+  # Otherwise, the program will crash with segfault.
+  if not x.valFreed:
+    free_trusted_setup(x.val)
+  x.valFreed = true
 
 proc newKzgCtx(): KzgCtx =
   # Nim finalizer is still broken(v1.6)
@@ -303,8 +309,8 @@ template loadTrustedSetupFile*(input: File | string): untyped =
   loadTrustedSetup(input)
 
 template freeTrustedSetup*(ctx: KzgCtx) =
-  free_trusted_setup(ctx.val)
-  
+  destroy(ctx)
+
 template blobToKzgCommitment*(ctx: KzgCtx,
                    blob: KzgBlob): untyped =
   toCommitment(ctx, blob)

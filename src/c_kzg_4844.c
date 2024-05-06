@@ -47,6 +47,9 @@
         (p) = NULL; \
     } while (0)
 
+/** The window bits to use in the fixed-base MSM operation. */
+#define FIXED_BASE_MSM_WINDOW_BITS 8
+
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
@@ -1425,7 +1428,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute \sum r^i * Proof_i */
-    g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, n);
+    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
     for (size_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
@@ -1438,9 +1441,9 @@ static C_KZG_RET verify_kzg_proof_batch(
     }
 
     /* Get \sum r^i z_i Proof_i */
-    g1_lincomb_fast(&proof_z_lincomb, proofs_g1, r_times_z, n);
+    g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
     /* Get \sum r^i (C_i - [y_i]) */
-    g1_lincomb_fast(&C_minus_y_lincomb, C_minus_y, r_powers, n);
+    g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
     /* Get C_minus_y_lincomb + proof_z_lincomb */
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
@@ -1587,6 +1590,7 @@ static void fft_g1_fast(
     uint64_t roots_stride,
     uint64_t n
 ) {
+    g1_t y_times_root;
     uint64_t half = n / 2;
     if (half > 0) { /* Tunable parameter */
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
@@ -1594,15 +1598,19 @@ static void fft_g1_fast(
             out + half, in + stride, stride * 2, roots, roots_stride * 2, half
         );
         for (uint64_t i = 0; i < half; i++) {
-            g1_t y_times_root;
-            if (fr_is_one(&roots[i * roots_stride])) {
-                /* Don't do the scalar multiplication if the scalar is one */
-                y_times_root = out[i + half];
+            /* If the point is infinity, we can skip the calculation */
+            if (blst_p1_is_inf(&out[i + half])) {
+                out[i + half] = out[i];
             } else {
-                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+                /* If the scalar is one, we can skip the multiplication */
+                if (fr_is_one(&roots[i * roots_stride])) {
+                    y_times_root = out[i + half];
+                } else {
+                    g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+                }
+                g1_sub(&out[i + half], &out[i], &y_times_root);
+                blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
             }
-            g1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;
@@ -1879,6 +1887,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->x_ext_fft_columns);
     c_kzg_free(s->tables);
     s->wbits = 0;
+    s->scratch_size = 0;
 }
 
 /* Forward function declaration */
@@ -1973,6 +1982,10 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         );
     }
 
+    /* Calculate the size of the scratch */
+    s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL
+    );
+
 out:
     c_kzg_free(x);
     c_kzg_free(points);
@@ -2044,7 +2057,7 @@ C_KZG_RET load_trusted_setup(
      * tables are 96 MiB; with 9 bits, the tables are 192 MiB and so forth.
      * From our testing, there are diminishing returns after 8 bits.
      */
-    out->wbits = 8;
+    out->wbits = FIXED_BASE_MSM_WINDOW_BITS;
 
     /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
@@ -2956,77 +2969,63 @@ out:
  * Reorder and extend polynomial coefficients for the toeplitz method, strided
  * version.
  *
- * @remark The upper half of the input polynomial coefficients is treated as
- * being zero.
- *
- * @param[out] out The reordered polynomial, size `n * 2 / stride`
- * @param[in]  in  The input polynomial, size `n`
- * @param[in]  offset The offset
- * @param[in]  stride The stride
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_BADARGS Invalid parameters were supplied
- * @retval C_CZK_MALLOC  Memory allocation failed
+ * @param[out]  out     The reordered polynomial, size `n * 2 / stride`
+ * @param[in]   in      The input polynomial, size `n`
+ * @param[in]   n       The size of the input polynomial
+ * @param[in]   offset  The offset
+ * @param[in]   stride  The stride
  */
 static C_KZG_RET toeplitz_coeffs_stride(
-    fr_t *out, const poly_t *in, uint64_t offset, uint64_t stride
+    fr_t *out, const fr_t *in, size_t n, uint64_t offset, uint64_t stride
 ) {
-    uint64_t n, k, k2;
+    uint64_t k, k2;
 
     if (stride == 0) return C_KZG_BADARGS;
 
-    n = in->length;
     k = n / stride;
     k2 = k * 2;
 
-    out[0] = in->coeffs[n - 1 - offset];
+    out[0] = in[n - 1 - offset];
     for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
         out[i] = FR_ZERO;
     }
     for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2;
          i++, j += stride) {
-        out[i] = in->coeffs[j];
+        out[i] = in[j];
     }
 
     return C_KZG_OK;
 }
 
 /**
- * FK20 multi-proof method, optimized for data availability where the top half
- * of polynomial coefficients is zero.
+ * Compute FK20 cell-proofs for a polynomial.
  *
- * @remark Only the lower half of the polynomial is supplied; the upper, zero,
- * half is assumed. The #toeplitz_coeffs_stride routine does the right thing.
- *
- * @param[out]  out The proofs, array size `2 * n / s->chunk_length`
- * @param[in]   p   The polynomial, length `n`
+ * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   p   The polynomial, an array of coefficients
+ * @param[in]   n   The length of the polynomial
  * @param[in]   s   The trusted setup
+ * 
+ * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only
+ * the lower half of the extended polynomial is supplied because the upper half
+ * is assumed to be zero.
  */
-static C_KZG_RET fk20_multi_da_opt(
-    g1_t *out, const poly_t *p, const KZGSettings *s
+static C_KZG_RET compute_fk20_proofs(
+    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    uint64_t n, k, k2;
+    uint64_t k, k2;
 
+    blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
     fr_t *toeplitz_coeffs = NULL;
     fr_t *toeplitz_coeffs_fft = NULL;
-    g1_t *h_ext_fft = NULL;
     g1_t *h = NULL;
-    blst_scalar *scalars = NULL;
+    g1_t *h_ext_fft = NULL;
     void *scratch = NULL;
 
     /* Initialize length variables */
-    n = p->length;
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
-
-    /* Allocate 2d array for coefficients by column */
-    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-    for (uint64_t i = 0; i < k2; i++) {
-        ret = new_fr_array(&coeffs[i], k);
-        if (ret != C_KZG_OK) goto out;
-    }
 
     /* Do allocations */
     ret = new_fr_array(&toeplitz_coeffs, k2);
@@ -3038,16 +3037,21 @@ static C_KZG_RET fk20_multi_da_opt(
     ret = new_g1_array(&h, k2);
     if (ret != C_KZG_OK) goto out;
 
-    /* For windowed multiplication */
-    size_t scratch_size = blst_p1s_mult_wbits_scratch_sizeof(
-        FIELD_ELEMENTS_PER_CELL
-    );
-    ret = c_kzg_malloc(&scratch, scratch_size);
+    /* Allocations for fixed-base MSM */
+    ret = c_kzg_malloc(&scratch, s->scratch_size);
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc(
         (void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar)
     );
     if (ret != C_KZG_OK) goto out;
+
+    /* Allocate 2d array for coefficients by column */
+    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
+    if (ret != C_KZG_OK) goto out;
+    for (uint64_t i = 0; i < k2; i++) {
+        ret = new_fr_array(&coeffs[i], k);
+        if (ret != C_KZG_OK) goto out;
+    }
 
     /* Initialize values to zero */
     for (uint64_t i = 0; i < k2; i++) {
@@ -3057,7 +3061,7 @@ static C_KZG_RET fk20_multi_da_opt(
     /* Compute toeplitz coefficients and organize by column */
     for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         ret = toeplitz_coeffs_stride(
-            toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL
+            toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL
         );
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
@@ -3101,34 +3105,16 @@ static C_KZG_RET fk20_multi_da_opt(
     if (ret != C_KZG_OK) goto out;
 
 out:
-    c_kzg_free(toeplitz_coeffs);
-    c_kzg_free(toeplitz_coeffs_fft);
+    c_kzg_free(scalars);
     for (uint64_t i = 0; i < k2; i++) {
         c_kzg_free(coeffs[i]);
     }
     c_kzg_free(coeffs);
-    c_kzg_free(h_ext_fft);
+    c_kzg_free(toeplitz_coeffs);
+    c_kzg_free(toeplitz_coeffs_fft);
     c_kzg_free(h);
-    c_kzg_free(scalars);
+    c_kzg_free(h_ext_fft);
     c_kzg_free(scratch);
-    return ret;
-}
-
-/**
- * Computes all the KZG proofs for data availability checks. This involves
- * sampling on the double domain and reordering according to reverse bit order.
- */
-static C_KZG_RET da_using_fk20_multi(
-    g1_t *out, const poly_t *p, const KZGSettings *s
-) {
-    C_KZG_RET ret;
-
-    ret = fk20_multi_da_opt(out, p, s);
-    if (ret != C_KZG_OK) goto out;
-    ret = bit_reversal_permutation(out, sizeof out[0], CELLS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-
-out:
     return ret;
 }
 
@@ -3226,10 +3212,10 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
 /**
  * Given a blob, get all of its cells and proofs.
  *
- * @param[out]  cells       An array of CELLS_PER_EXT_BLOB cells
- * @param[out]  proofs      An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   blob        The blob to get cells for
- * @param[in]   s           The trusted setup
+ * @param[out]  cells   An array of CELLS_PER_EXT_BLOB cells
+ * @param[out]  proofs  An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   blob    The blob to get cells for
+ * @param[in]   s       The trusted setup
  *
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
@@ -3252,14 +3238,14 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     }
 
     /* Allocate space fr-form arrays */
-    ret = new_fr_array(&poly_monomial, s->max_width);
+    ret = new_fr_array(&poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&poly_lagrange, s->max_width);
+    ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all of the polynomial fields to zero */
-    memset(poly_monomial, 0, sizeof(fr_t) * s->max_width);
-    memset(poly_lagrange, 0, sizeof(fr_t) * s->max_width);
+    memset(poly_monomial, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
+    memset(poly_lagrange, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /*
      * Convert the blob to a polynomial. Note that only the first 4096 fields
@@ -3282,12 +3268,12 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Get the data points via forward transformation */
-        ret = fft_fr(data_fr, poly_monomial, s->max_width, s);
+        ret = fft_fr(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the data points */
         ret = bit_reversal_permutation(
-            data_fr, sizeof(data_fr[0]), s->max_width
+            data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3305,12 +3291,16 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = new_g1_array(&proofs_g1, CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        poly_t p = {NULL, 0};
-        p.length = s->max_width / 2;
-        p.coeffs = poly_monomial;
+        /* Compute the proofs, provide only the first half */
+        ret = compute_fk20_proofs(
+            proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s
+        );
+        if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs */
-        ret = da_using_fk20_multi(proofs_g1, &p, s);
+        /* Bit-reverse the proofs */
+        ret = bit_reversal_permutation(
+            proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
+        );
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */

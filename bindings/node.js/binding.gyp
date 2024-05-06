@@ -33,7 +33,7 @@
           ],
           "msbuild_settings": {
             "ClCompile": {
-              "ExceptionHandling": 1,
+              "ExceptionHandling": "Sync",
               "AdditionalOptions": ["/std:c++17"]
             }
           }
