@@ -1,5 +1,7 @@
 # C-KZG-4844
 
+**Note: This is an alpha release with peerDas functionality.  For the current stable release use v3**
+
 This is a TypeScript library for EIP-4844 that implements the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
@@ -7,7 +9,9 @@ API. The core functionality was originally a stripped-down copy of
 since then. This package wraps that native `c-kzg` C code in C/C++ NAPI
 bindings for use in node.js applications.
 
-Spec: <https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md>
+Important Links:
+[EIP-4844 - Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+[EIP-7594 - Polynomial Commitments Sampling](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/polynomial-commitments-sampling.md)
 
 ## Prerequisites
 
@@ -175,5 +179,109 @@ verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
+): boolean;
+```
+
+### `computeCells`
+
+```ts
+/**
+ * Get the cells for a given blob.
+ *
+ * @param {Blob}    blob - The blob to get cells for
+ *
+ * @return {Cell[]} - An array of cells
+ *
+ * @throws {Error} - Failure to allocate or compute cells
+ */
+export function computeCells(blob: Blob): Cell[];
+```
+
+### `computeCellsAndKzgProofs`
+
+```ts
+/**
+ * Get the cells and proofs for a given blob.
+ *
+ * @param {Blob}    blob - the blob to get cells/proofs for
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Failure to allocate or compute cells and proofs
+ */
+export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
+```
+
+### `cellsToBlob`
+
+```ts
+/**
+ * Convert an array of cells to a blob.
+ *
+ * @param {Cell[]}  cells - The cells to convert to a blob
+ *
+ * @return {Blob} - The blob for the given cells
+ *
+ * @throws {Error} - Invalid input, failure to allocate, or invalid conversion
+ */
+export function cellsToBlob(cells: Cell[]): Blob;
+```
+
+### `recoverAllCells`
+
+```ts
+/**
+ * Given at least 50% of cells, reconstruct the missing ones.
+ *
+ * @param {number[]}  cellIds - The identifiers for the cells you have
+ * @param {Cell[]}    cells - The cells you have
+ *
+ * @return {Cell[]} - All cells for that blob
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering cells
+ */
+export function recoverAllCells(cellIds: number[], cells: Cell[]): Cell[];
+```
+
+### `verifyCellKzgProof`
+
+```ts
+/**
+ * Verify that a cell's proof is valid.
+ *
+ * @param {Bytes48}   commitmentBytes - Commitment bytes
+ * @param {number}    cellId - The cell identifier
+ * @param {Cell}      cell - The cell to verify
+ * @param {Bytes48}   proofBytes - The proof for the cell
+ *
+ * @return {boolean} - True if the cell is valid with respect to this commitment
+ *
+ * @throws {Error} - Errors validating cell's proof
+ */
+export function verifyCellKzgProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
+```
+
+### `verifyCellKzgProofBatch`
+
+```ts
+/**
+ * Verify that multiple cells' proofs are valid.
+ *
+ * @param {Bytes48[]} commitmentsBytes - The commitments for all blobs
+ * @param {number[]}  rowIndices - The row index for each cell
+ * @param {number[]}  columnIndices - The column index for each cell
+ * @param {Cell[]}    cells - The cells to verify
+ * @param {Bytes48[]} proofsBytes - The proof for each cell
+ *
+ * @return {boolean} - True if the cells are valid with respect to the given commitments
+ *
+ * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
+ */
+export function verifyCellKzgProofBatch(
+  commitmentsBytes: Bytes48[],
+  rowIndices: number[],
+  columnIndices: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
 ): boolean;
 ```
