@@ -7,6 +7,25 @@ const path = require("path");
 const bindings = require("bindings")("kzg");
 
 /**
+ * NOTE: This path is only exported for testing purposes. It is not announced in
+ * the type file.
+ * 
+ * It is critical that this path is kept in sync with where the trusted setup
+ * file will be found. The path is dictated by the `build` command in the
+ * Makefile in the bindings/node.js folder.
+ * 
+ * This path works for two situations:
+ * 1) Production case
+ * - this file in BUNDLE_ROOT/dist/lib/kzg.js
+ * - trusted_setup in BUNDLE_ROOT/dist/deps/c-kzg/trusted_setup.txt
+ * 
+ *  2) Post `build` state before `bundle` command works
+ * - this file in bindings/node.js/lib/kzg.js
+ * - trusted_setup in bindings/node.js/deps/c-kzg/trusted_setup.txt
+ */
+bindings.DEFAULT_TRUSTED_SETUP_PATH = path.resolve(__dirname, "..", "deps", "c-kzg", "trusted_setup.txt");
+
+/**
  * Converts JSON formatted trusted setup into the native format that
  * the native library requires.  Returns the absolute file path to
  * the formatted file.  The path will be the same as the origin
@@ -31,19 +50,49 @@ function transformTrustedSetupJson(filePath) {
   return outputPath;
 }
 
-const originalLoadTrustedSetup = bindings.loadTrustedSetup;
-// docstring in ./kzg.d.ts with exported definition
-bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
-  if (!(filePath && typeof filePath === "string")) {
-    throw new TypeError("must initialize kzg with the filePath to a txt/json trusted setup");
+/**
+ * Gets location for trusted setup file. Uses user provided location first. If
+ * one is not provided then defaults to the official Ethereum mainnet setup from
+ * the KZG ceremony.
+ *
+ * @param {string} filePath - User provided filePath to check for trusted setup
+ *
+ * @returns {string} - Location of a trusted setup file. Validity is checked by
+ *                     the native bindings.loadTrustedSetup
+ *
+ * @throws {TypeError} - Invalid file type
+ * @throws {Error} - Invalid location or no default trusted setup found
+ *
+ * @remarks - This function is only exported for testing purposes. It should
+ *            not be used directly. Not included in the kzg.d.ts types for that
+ *            reason.
+ */
+bindings.getTrustedSetupFilepath = function getTrustedSetupFilepath(filePath) {
+  if (filePath) {
+    if (typeof filePath !== "string") {
+      throw new TypeError("Must initialize kzg with the filePath to a txt/json trusted setup");
+    }
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`No trusted setup found: ${filePath}`);
+    }
+  } else {
+    filePath = bindings.DEFAULT_TRUSTED_SETUP_PATH;
+    if (!fs.existsSync(filePath)) {
+      throw new Error("Default trusted setup not found. Must pass a valid filepath to load c-kzg library");
+    }
   }
-  if (!fs.existsSync(filePath)) {
-    throw new Error(`no trusted setup found: ${filePath}`);
-  }
+
   if (path.parse(filePath).ext === ".json") {
     filePath = transformTrustedSetupJson(filePath);
   }
-  originalLoadTrustedSetup(filePath);
+
+  return filePath;
+};
+
+const originalLoadTrustedSetup = bindings.loadTrustedSetup;
+// docstring in ./kzg.d.ts with exported definition
+bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
+  originalLoadTrustedSetup(bindings.getTrustedSetupFilepath(filePath));
 };
 
 module.exports = exports = bindings;

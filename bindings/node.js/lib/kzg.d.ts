@@ -28,14 +28,24 @@ export const CELLS_PER_EXT_BLOB: number;
 export const BYTES_PER_CELL: number;
 
 /**
- * Factory function that passes trusted setup to the bindings
+ * Initialize the library with a trusted setup file.
  *
- * @param {string} filePath
+ * Can pass either a .txt or a .json file with setup configuration. Converts
+ * JSON formatted trusted setup into the native format that the base library
+ * requires. The created file will be in the same as the origin file but with a
+ * ".txt" extension.
+ *
+ * Uses user provided location first. If one is not provided then defaults to
+ * the official Ethereum mainnet setup from the KZG ceremony. Should only be
+ * used for cases where the Ethereum official mainnet KZG setup is acceptable.
+ *
+ * @param {string | undefined} filePath
+ * @default - If no string is passed the default trusted setup from the Ethereum KZG ceremony is used
  *
  * @throws {TypeError} - Non-String input
  * @throws {Error} - For all other errors. See error message for more info
  */
-export function loadTrustedSetup(filePath: string): void;
+export function loadTrustedSetup(filePath?: string): void;
 
 /**
  * Convert a blob to a KZG commitment.
