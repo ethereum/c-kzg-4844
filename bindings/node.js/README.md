@@ -1,7 +1,5 @@
 # C-KZG-4844
 
-**Note: This is an alpha release with peerDas functionality.  For the current stable release use v3**
-
 This is a TypeScript library for EIP-4844 that implements the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
