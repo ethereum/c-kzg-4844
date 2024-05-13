@@ -47,9 +47,6 @@
         (p) = NULL; \
     } while (0)
 
-/** The window bits to use in the fixed-base MSM operation. */
-#define FIXED_BASE_MSM_WINDOW_BITS 8
-
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
@@ -1606,7 +1603,9 @@ static void fft_g1_fast(
                 if (fr_is_one(&roots[i * roots_stride])) {
                     y_times_root = out[i + half];
                 } else {
-                    g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+                    g1_mul(
+                        &y_times_root, &out[i + half], &roots[i * roots_stride]
+                    );
                 }
                 g1_sub(&out[i + half], &out[i], &y_times_root);
                 blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
@@ -1907,6 +1906,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     g1_t *points = NULL;
     blst_p1_affine *p_affine = NULL;
     void **tmp = NULL;
+    bool precompute = s->wbits != 0;
 
     n = s->max_width / 2;
     k = n / FIELD_ELEMENTS_PER_CELL;
@@ -1932,17 +1932,6 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
     }
 
-    /* Allocate space for precomputed tables */
-    tmp = (void **)&s->tables;
-    ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Allocate space for points in affine representation */
-    ret = c_kzg_calloc(
-        (void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine)
-    );
-    if (ret != C_KZG_OK) goto out;
-
     for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
         uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
         for (uint64_t i = 0, j = start; i + 1 < k;
@@ -1960,31 +1949,45 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         }
     }
 
-    /* Calculate the size of each table, this can be re-used */
-    size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
-        s->wbits, FIELD_ELEMENTS_PER_CELL
-    );
-
-    for (size_t i = 0; i < k2; i++) {
-        /* Transform the points to affine representation */
-        const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
-        blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
-        const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-
-        /* Allocate space for the table */
-        tmp = (void **)&s->tables[i];
-        ret = c_kzg_malloc(tmp, table_size);
+    if (precompute) {
+        /* Allocate space for precomputed tables */
+        tmp = (void **)&s->tables;
+        ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
         if (ret != C_KZG_OK) goto out;
 
-        /* Compute table for fixed-base MSM */
-        blst_p1s_mult_wbits_precompute(
-            s->tables[i], s->wbits, points_arg, FIELD_ELEMENTS_PER_CELL
+        /* Allocate space for points in affine representation */
+        ret = c_kzg_calloc(
+            (void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine)
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Calculate the size of each table, this can be re-used */
+        size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
+            s->wbits, FIELD_ELEMENTS_PER_CELL
+        );
+
+        for (size_t i = 0; i < k2; i++) {
+            /* Transform the points to affine representation */
+            const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
+            blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
+            const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+
+            /* Allocate space for the table */
+            tmp = (void **)&s->tables[i];
+            ret = c_kzg_malloc(tmp, table_size);
+            if (ret != C_KZG_OK) goto out;
+
+            /* Compute table for fixed-base MSM */
+            blst_p1s_mult_wbits_precompute(
+                s->tables[i], s->wbits, points_arg, FIELD_ELEMENTS_PER_CELL
+            );
+        }
+
+        /* Calculate the size of the scratch */
+        s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(
+            FIELD_ELEMENTS_PER_CELL
         );
     }
-
-    /* Calculate the size of the scratch */
-    s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL
-    );
 
 out:
     c_kzg_free(x);
@@ -2030,13 +2033,15 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * @param[in]  n1       Number of `g1` points in g1_bytes
  * @param[in]  g2_bytes Array of G2 points in monomial form
  * @param[in]  n2       Number of `g2` points in g2_bytes
+ * @param[in]   precompute  Configurable value between 0-15
  */
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_bytes,
     size_t n1,
     const uint8_t *g2_bytes,
-    size_t n2
+    size_t n2,
+    size_t precompute
 ) {
     C_KZG_RET ret;
 
@@ -2050,6 +2055,12 @@ C_KZG_RET load_trusted_setup(
     out->x_ext_fft_columns = NULL;
     out->tables = NULL;
 
+    /* It seems that blst limits the input to 15 */
+    if (precompute > 15) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
+
     /*
      * This is the window size for the windowed multiplication in proof
      * generation. The larger wbits is, the faster the MSM will be, but the
@@ -2057,7 +2068,7 @@ C_KZG_RET load_trusted_setup(
      * tables are 96 MiB; with 9 bits, the tables are 192 MiB and so forth.
      * From our testing, there are diminishing returns after 8 bits.
      */
-    out->wbits = FIXED_BASE_MSM_WINDOW_BITS;
+    out->wbits = precompute;
 
     /* Sanity check in case this is called directly */
     CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
@@ -2161,10 +2172,13 @@ out_success:
  * @remark See also load_trusted_setup().
  * @remark The input file will not be closed.
  *
- * @param[out] out Pointer to the loaded trusted setup data
- * @param[in]  in  File handle for input
+ * @param[out]  out         Pointer to the loaded trusted setup data
+ * @param[in]   in          File handle for input
+ * @param[in]   precompute  Configurable value between 0-15
  */
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
+C_KZG_RET load_trusted_setup_file(
+    KZGSettings *out, FILE *in, size_t precompute
+) {
     int num_matches;
     uint64_t i;
     uint8_t g1_bytes[TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1];
@@ -2197,7 +2211,8 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in) {
         g1_bytes,
         TRUSTED_SETUP_NUM_G1_POINTS,
         g2_bytes,
-        TRUSTED_SETUP_NUM_G2_POINTS
+        TRUSTED_SETUP_NUM_G2_POINTS,
+        precompute
     );
 }
 
@@ -3004,7 +3019,7 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @param[in]   p   The polynomial, an array of coefficients
  * @param[in]   n   The length of the polynomial
  * @param[in]   s   The trusted setup
- * 
+ *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only
  * the lower half of the extended polynomial is supplied because the upper half
  * is assumed to be zero.
@@ -3022,6 +3037,7 @@ static C_KZG_RET compute_fk20_proofs(
     g1_t *h = NULL;
     g1_t *h_ext_fft = NULL;
     void *scratch = NULL;
+    bool precompute = s->wbits != 0;
 
     /* Initialize length variables */
     k = n / FIELD_ELEMENTS_PER_CELL;
@@ -3037,13 +3053,15 @@ static C_KZG_RET compute_fk20_proofs(
     ret = new_g1_array(&h, k2);
     if (ret != C_KZG_OK) goto out;
 
-    /* Allocations for fixed-base MSM */
-    ret = c_kzg_malloc(&scratch, s->scratch_size);
-    if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc(
-        (void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar)
-    );
-    if (ret != C_KZG_OK) goto out;
+    if (precompute) {
+        /* Allocations for fixed-base MSM */
+        ret = c_kzg_malloc(&scratch, s->scratch_size);
+        if (ret != C_KZG_OK) goto out;
+        ret = c_kzg_calloc(
+            (void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar)
+        );
+        if (ret != C_KZG_OK) goto out;
+    }
 
     /* Allocate 2d array for coefficients by column */
     ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
@@ -3073,24 +3091,30 @@ static C_KZG_RET compute_fk20_proofs(
 
     /* Compute h_ext_fft via MSM */
     for (uint64_t i = 0; i < k2; i++) {
-        /* Transform the field elements to 256-bit scalars */
-        for (uint64_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            blst_scalar_from_fr(&scalars[j], &coeffs[i][j]);
-        }
-        const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+        if (precompute) {
+            /* Transform the field elements to 255-bit scalars */
+            for (uint64_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+                blst_scalar_from_fr(&scalars[j], &coeffs[i][j]);
+            }
+            const byte *scalars_arg[2] = {(byte *)scalars, NULL};
 
-        /*
-         * This is a fixed-base MSM with a precomputed table.
-         */
-        blst_p1s_mult_wbits(
-            &h_ext_fft[i],
-            s->tables[i],
-            s->wbits,
-            FIELD_ELEMENTS_PER_CELL,
-            scalars_arg,
-            BITS_PER_FIELD_ELEMENT,
-            scratch
-        );
+            /*
+             * This is a fixed-base MSM with a precomputed table.
+             */
+            blst_p1s_mult_wbits(
+                &h_ext_fft[i],
+                s->tables[i],
+                s->wbits,
+                FIELD_ELEMENTS_PER_CELL,
+                scalars_arg,
+                BITS_PER_FIELD_ELEMENT,
+                scratch
+            );
+        } else {
+            g1_lincomb_fast(
+                &h_ext_fft[i], s->x_ext_fft_columns[i], coeffs[i], k
+            );
+        }
     }
 
     ret = ifft_g1(h, h_ext_fft, k2, s);

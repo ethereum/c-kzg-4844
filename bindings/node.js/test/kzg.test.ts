@@ -196,7 +196,7 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    loadTrustedSetup(TEST_SETUP_FILE_PATH_JSON);
+    loadTrustedSetup(0, TEST_SETUP_FILE_PATH_JSON);
   });
 
   describe("locating trusted setup file", () => {

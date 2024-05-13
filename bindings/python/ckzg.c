@@ -10,10 +10,18 @@ static void free_KZGSettings(PyObject *c) {
 
 static PyObject* load_trusted_setup_wrap(PyObject *self, PyObject *args) {
   PyObject *f;
+  PyObject *precompute;
   FILE *fp;
 
-  if (!PyArg_ParseTuple(args, "U", &f))
-    return PyErr_Format(PyExc_ValueError, "expected a string");
+  if (!PyArg_UnpackTuple(args, "load_trusted_setup", 2, 2, &f, &precompute) ||
+      !PyUnicode_Check(f)) {
+    return PyErr_Format(PyExc_ValueError, "expected string and int");
+  }
+
+  long precompute_value = PyLong_AsLong(precompute);
+  if (precompute_value == -1 && PyErr_Occurred()) {
+    return PyErr_Format(PyExc_ValueError, "invalid precompute value");
+  }
 
   KZGSettings *s = (KZGSettings*)malloc(sizeof(KZGSettings));
   if (s == NULL) return PyErr_NoMemory();
@@ -24,7 +32,7 @@ static PyObject* load_trusted_setup_wrap(PyObject *self, PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError, "error reading trusted setup");
   }
 
-  C_KZG_RET ret = load_trusted_setup_file(s, fp);
+  C_KZG_RET ret = load_trusted_setup_file(s, fp, precompute_value);
   fclose(fp);
 
   if (ret != C_KZG_OK) {

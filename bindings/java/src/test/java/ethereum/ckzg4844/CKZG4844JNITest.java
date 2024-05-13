@@ -462,7 +462,8 @@ public class CKZG4844JNITest {
                     parameters.getG1(),
                     parameters.getG1Count() + 1,
                     parameters.getG2(),
-                    parameters.getG2Count()));
+                    parameters.getG2Count(),
+                    0));
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertTrue(exception.getErrorMessage().contains("Invalid g1 size."));
 
@@ -475,7 +476,8 @@ public class CKZG4844JNITest {
                     parameters.getG1(),
                     parameters.getG1Count(),
                     parameters.getG2(),
-                    parameters.getG2Count() + 1));
+                    parameters.getG2Count() + 1,
+                    0));
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertTrue(exception.getErrorMessage().contains("Invalid g2 size."));
   }
@@ -499,18 +501,22 @@ public class CKZG4844JNITest {
   }
 
   private static void loadTrustedSetup() {
-    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE);
+    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE, 0);
   }
 
   private static void loadTrustedSetupFromParameters() {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
     CKZG4844JNI.loadTrustedSetup(
-        parameters.getG1(), parameters.getG1Count(), parameters.getG2(), parameters.getG2Count());
+        parameters.getG1(),
+        parameters.getG1Count(),
+        parameters.getG2(),
+        parameters.getG2Count(),
+        0);
   }
 
   public static void loadTrustedSetupFromResource() {
-    CKZG4844JNI.loadTrustedSetupFromResource(TRUSTED_SETUP_RESOURCE, CKZG4844JNITest.class);
+    CKZG4844JNI.loadTrustedSetupFromResource(TRUSTED_SETUP_RESOURCE, CKZG4844JNITest.class, 0);
   }
 
   private static Stream<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {

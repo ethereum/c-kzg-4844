@@ -49,25 +49,29 @@ template verifyCtx(body: untyped): untyped =
 ##############################################################
 
 proc loadTrustedSetup*(_: type Kzg,
-                       input: File): Result[void, string] =
+                       input: File,
+                       precompute: Natural): Result[void, string] =
   setupCtx:
-    kzg.loadTrustedSetup(input)
+    kzg.loadTrustedSetup(input, precompute)
 
 proc loadTrustedSetup*(_: type Kzg,
-                       fileName: string): Result[void, string] =
+                       fileName: string,
+                       precompute: Natural): Result[void, string] =
   setupCtx:
-    kzg.loadTrustedSetup(fileName)
+    kzg.loadTrustedSetup(fileName, precompute)
 
 proc loadTrustedSetup*(_: type Kzg, g1: openArray[G1Data],
-                       g2: openArray[G2Data]):
+                       g2: openArray[G2Data],
+                       precompute: Natural):
                            Result[void, string] =
   setupCtx:
-    kzg.loadTrustedSetup(g1, g2)
+    kzg.loadTrustedSetup(g1, g2, precompute)
 
 proc loadTrustedSetupFromString*(_: type Kzg,
-                                 input: string): Result[void, string] =
+                                 input: string,
+                                 precompute: Natural): Result[void, string] =
   setupCtx:
-    kzg.loadTrustedSetupFromString(input)
+    kzg.loadTrustedSetupFromString(input, precompute)
 
 proc freeTrustedSetup*(_: type Kzg): Result[void, string] =
   verifyCtx:
@@ -129,8 +133,8 @@ proc verifyProofs*(rowCommitments: openArray[KzgBytes48],
 # Zero overhead aliases that match the spec
 ##############################################################
 
-template loadTrustedSetupFile*(T: type Kzg, input: File | string): untyped =
-  loadTrustedSetup(T, input)
+template loadTrustedSetupFile*(T: type Kzg, input: File | string, precompute: Natural): untyped =
+  loadTrustedSetup(T, input, precompute)
 
 template blobToKzgCommitment*(blob: KzgBlob): untyped =
   toCommitment(blob)

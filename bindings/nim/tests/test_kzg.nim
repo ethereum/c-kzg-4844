@@ -24,7 +24,7 @@ suite "verify proof (high-level)":
   var ctx: KzgCtx
 
   test "load trusted setup from string":
-    let res = loadTrustedSetupFromString(trustedSetup)
+    let res = loadTrustedSetupFromString(trustedSetup, 0)
     check res.isOk
     ctx = res.get
 
@@ -78,7 +78,7 @@ suite "verify proof (high-level)":
   test "template aliases":
     # no need to check return value
     # only test if those templates can be compiled successfully
-    let res = loadTrustedSetupFile(trustedSetupFile)
+    let res = loadTrustedSetupFile(trustedSetupFile, 0)
     check res.isOk
     ctx = res.get
 

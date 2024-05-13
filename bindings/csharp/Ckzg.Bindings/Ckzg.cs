@@ -16,14 +16,15 @@ public static partial class Ckzg
     ///     Loads trusted setup settings from file.
     /// </summary>
     /// <param name="filename">Settings file path</param>
+    /// <param name="precompute">Configurable value between 0-15</param>
     /// <exception cref="ArgumentException">Thrown when the file path is not correct</exception>
     /// <exception cref="InvalidOperationException">Thrown when unable to load the setup</exception>
     /// <returns>Trusted setup settings as a pointer</returns>
-    public static IntPtr LoadTrustedSetup(string filepath)
+    public static IntPtr LoadTrustedSetup(string filepath, int precompute)
     {
         if (!File.Exists(filepath)) throw new ArgumentException("Trusted setup file does not exist", nameof(filepath));
 
-        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath);
+        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath, precompute);
 
         if (ckzgSetup == IntPtr.Zero) throw new InvalidOperationException("Unable to load trusted setup");
         return ckzgSetup;

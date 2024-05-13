@@ -82,32 +82,38 @@ public class CKZG4844JNI {
    * crypto native calls will throw a {@link RuntimeException}.
    *
    * @param file a path to a trusted setup file
+   * @param precompute configurable value between 0-15
    * @throws CKZGException if there is a crypto error
    */
-  public static native void loadTrustedSetup(String file);
+  public static native void loadTrustedSetup(String file, long precompute);
 
   /**
-   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from method
+   * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from method
    * parameters instead of a file.
    *
    * @param g1 g1 values as bytes
    * @param g1Count the count of the g1 values
    * @param g2 g2 values as bytes
    * @param g2Count the count of the g2 values
+   * @param precompute configurable value between 0-15
    * @throws CKZGException if there is a crypto error
    */
-  public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2, long g2Count);
+  public static native void loadTrustedSetup(
+      byte[] g1, long g1Count, byte[] g2, long g2Count, long precompute);
 
   /**
-   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from a resource.
+   * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from a
+   * resource.
    *
-   * @param resource the resource name that contains the trusted setup
    * @param clazz the class to use to get the resource
+   * @param resource the resource name that contains the trusted setup
+   * @param precompute configurable value between 0-15
    * @param <T> the type of the class
    * @throws CKZGException if there is a crypto error
    * @throws IllegalArgumentException if the resource does not exist
    */
-  public static <T> void loadTrustedSetupFromResource(String resource, Class<T> clazz) {
+  public static <T> void loadTrustedSetupFromResource(
+      String resource, Class<T> clazz, long precompute) {
     InputStream is = clazz.getResourceAsStream(resource);
     if (is == null) {
       throw new IllegalArgumentException("Resource " + resource + " does not exist.");
@@ -117,7 +123,7 @@ public class CKZG4844JNI {
       Path jniWillLoadFrom = Files.createTempFile("kzg-trusted-setup", ".txt");
       jniWillLoadFrom.toFile().deleteOnExit();
       Files.copy(is, jniWillLoadFrom, StandardCopyOption.REPLACE_EXISTING);
-      loadTrustedSetup(jniWillLoadFrom.toString());
+      loadTrustedSetup(jniWillLoadFrom.toString(), precompute);
     } catch (IOException ex) {
       throw new UncheckedIOException("Error loading trusted setup from resource " + resource, ex);
     }

@@ -11,7 +11,7 @@ public class ReferenceTests
     [OneTimeSetUp]
     public void Setup()
     {
-        _ts = Ckzg.LoadTrustedSetup("trusted_setup.txt");
+        _ts = Ckzg.LoadTrustedSetup("trusted_setup.txt", 0);
         _deserializer = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
     }
 

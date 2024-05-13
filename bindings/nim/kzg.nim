@@ -65,22 +65,23 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 # Public functions
 ##############################################################
 
-proc loadTrustedSetup*(input: File): Result[KzgCtx, string] =
+proc loadTrustedSetup*(input: File, precompute: Natural): Result[KzgCtx, string] =
   let
     ctx = newKzgCtx()
-    res = load_trusted_setup_file(ctx.val, input)
+    res = load_trusted_setup_file(ctx.val, input, precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetup*(fileName: string): Result[KzgCtx, string] =
+proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, string] =
   try:
     let file = open(fileName)
-    result = file.loadTrustedSetup()
+    result = file.loadTrustedSetup(precompute)
     file.close()
   except IOError as ex:
     return err(ex.msg)
 
 proc loadTrustedSetup*(g1: openArray[G1Data],
-                       g2: openArray[G2Data]):
+                       g2: openArray[G2Data],
+                       precompute: Natural):
                          Result[KzgCtx, string] =
   if g1.len == 0 or g2.len == 0:
     return err($KZG_BADARGS)
@@ -91,10 +92,11 @@ proc loadTrustedSetup*(g1: openArray[G1Data],
       g1[0][0].getPtr,
       g1.len.csize_t,
       g2[0][0].getPtr,
-      g2.len.csize_t)
+      g2.len.csize_t,
+      precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
+proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KzgCtx, string] =
   const
     NumG2 = 65
     G1Len = G1Data.len
@@ -129,7 +131,7 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
   except IOError as ex:
     return err(ex.msg)
 
-  loadTrustedSetup(g1, g2)
+  loadTrustedSetup(g1, g2, precompute)
 
 proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):
@@ -305,8 +307,8 @@ proc recoverCells*(ctx: KzgCtx,
 # Zero overhead aliases that match the spec
 ##############################################################
 
-template loadTrustedSetupFile*(input: File | string): untyped =
-  loadTrustedSetup(input)
+template loadTrustedSetupFile*(input: File | string, precompute: Natural): untyped =
+  loadTrustedSetup(input, precompute)
 
 template freeTrustedSetup*(ctx: KzgCtx) =
   destroy(ctx)

@@ -85,10 +85,12 @@ proc load_trusted_setup*(res: KzgSettings,
                          g1Bytes: ptr byte, # n1 * 48 bytes
                          n1: csize_t,
                          g2Bytes: ptr byte, # n2 * 96 bytes
-                         n2: csize_t): KZG_RET {.kzg_abi.}
+                         n2: csize_t,
+                         precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc load_trusted_setup_file*(res: KzgSettings,
-                         input: File): KZG_RET {.kzg_abi.}
+                         input: File,
+                         precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc free_trusted_setup*(s: KzgSettings) {.kzg_abi.}
 

@@ -39,13 +39,14 @@ export const BYTES_PER_CELL: number;
  * the official Ethereum mainnet setup from the KZG ceremony. Should only be
  * used for cases where the Ethereum official mainnet KZG setup is acceptable.
  *
+ * @param {number} precompute
  * @param {string | undefined} filePath
  * @default - If no string is passed the default trusted setup from the Ethereum KZG ceremony is used
  *
  * @throws {TypeError} - Non-String input
  * @throws {Error} - For all other errors. See error message for more info
  */
-export function loadTrustedSetup(filePath?: string): void;
+export function loadTrustedSetup(precompute: number, filePath?: string): void;
 
 /**
  * Convert a blob to a KZG commitment.

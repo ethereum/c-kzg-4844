@@ -57,7 +57,7 @@ KZGSettings *allocate_settings(JNIEnv *env)
   return s;
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2J(JNIEnv *env, jclass thisCls, jstring file, jlong precompute)
 {
   if (settings)
   {
@@ -79,7 +79,8 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
     return;
   }
 
-  C_KZG_RET ret = load_trusted_setup_file(settings, f);
+  size_t precompute_native = (size_t)precompute;
+  C_KZG_RET ret = load_trusted_setup_file(settings, f, precompute_native);
 
   (*env)->ReleaseStringUTFChars(env, file, file_native);
   fclose(f);
@@ -92,7 +93,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   }
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count, jlong precompute)
 {
   if (settings)
   {
@@ -122,8 +123,9 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
 
   jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
   jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
+  size_t precompute_native = (size_t)precompute;
 
-  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_native, (size_t)g1Count, (uint8_t *)g2_native, (size_t)g2Count);
+  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_native, (size_t)g1Count, (uint8_t *)g2_native, (size_t)g2Count, precompute_native);
 
   (*env)->ReleaseByteArrayElements(env, g1, g1_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, g2, g2_native, JNI_ABORT);

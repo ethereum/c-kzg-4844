@@ -2008,7 +2008,7 @@ static void setup(void) {
     assert(fp != NULL);
 
     /* Load that trusted setup file */
-    ret = load_trusted_setup_file(&s, fp);
+    ret = load_trusted_setup_file(&s, fp, 0);
     assert(ret == C_KZG_OK);
 
     fclose(fp);

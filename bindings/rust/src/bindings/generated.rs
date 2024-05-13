@@ -107,11 +107,13 @@ pub struct KZGSettings {
     #[doc = " G2 group elements from the trusted setup,\n in monomial form."]
     g2_values: *mut g2_t,
     #[doc = " Data used during FK20 proof generation."]
-    x_ext_ftt_columns: *mut *mut g1_t,
+    x_ext_fft_columns: *mut *mut g1_t,
     #[doc = " The precomputed tables for fixed-base MSM"]
     tables: *mut *mut blst_p1_affine,
-    #[doc = " The window size for the fixed-based MSM"]
+    #[doc = " The window size for the fixed-base MSM"]
     wbits: usize,
+    #[doc = " The scratch size for the fixed-base MSM"]
+    scratch_size: usize,
 }
 extern "C" {
     pub fn load_trusted_setup(
@@ -120,8 +122,13 @@ extern "C" {
         n1: usize,
         g2_bytes: *const u8,
         n2: usize,
+        precompute: usize,
     ) -> C_KZG_RET;
-    pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
+    pub fn load_trusted_setup_file(
+        out: *mut KZGSettings,
+        in_: *mut FILE,
+        precompute: usize,
+    ) -> C_KZG_RET;
     pub fn free_trusted_setup(s: *mut KZGSettings);
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,

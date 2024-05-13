@@ -13,7 +13,7 @@ import (
 
 func TestMain(m *testing.M) {
 
-	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt"); err != nil {
+	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 0); err != nil {
 		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
 	defer FreeTrustedSetup()
@@ -724,6 +724,24 @@ func Benchmark(b *testing.B) {
 		}
 	}
 
+	FreeTrustedSetup()
+	for i := 0; i <= 8; i++ {
+		b.Run(fmt.Sprintf("LoadTrustedSetupFile(precompute=%d)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				b.StartTimer()
+				err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i))
+				b.StopTimer()
+				require.NoError(b, err)
+				FreeTrustedSetup()
+			}
+		})
+	}
+
+	/* Reload the trusted setup */
+	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 0); err != nil {
+		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
+	}
+
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			_, err := BlobToKZGCommitment(&blobs[0])
@@ -775,12 +793,24 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	b.Run("ComputeCellsAndKZGProofs", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			_, _, err := ComputeCellsAndKZGProofs(&blobs[0])
-			require.NoError(b, err)
+	FreeTrustedSetup()
+	for i := 0; i <= 8; i++ {
+		if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i)); err != nil {
+			panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 		}
-	})
+		b.Run(fmt.Sprintf("ComputeCellsAndKZGProofs(precompute=%d)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, _, err := ComputeCellsAndKZGProofs(&blobs[0])
+				require.NoError(b, err)
+			}
+		})
+		FreeTrustedSetup()
+	}
+
+	/* Reload the trusted setup */
+	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 0); err != nil {
+		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
+	}
 
 	b.Run("CellsToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {

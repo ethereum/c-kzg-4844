@@ -167,10 +167,13 @@ C_KZG_RET load_trusted_setup(
     const uint8_t *g1_bytes, /* n1 * 48 bytes */
     size_t n1,
     const uint8_t *g2_bytes, /* n2 * 96 bytes */
-    size_t n2
+    size_t n2,
+    size_t precompute
 );
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup_file(
+    KZGSettings *out, FILE *in, size_t precompute
+);
 
 void free_trusted_setup(KZGSettings *s);
 

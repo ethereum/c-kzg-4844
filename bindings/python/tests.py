@@ -281,7 +281,7 @@ def test_recover_all_cells(ts):
 ###############################################################################
 
 if __name__ == "__main__":
-    ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt")
+    ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt", 0)
 
     test_blob_to_kzg_commitment(ts)
     test_compute_kzg_proof(ts)

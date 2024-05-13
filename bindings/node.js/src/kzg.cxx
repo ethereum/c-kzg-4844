@@ -186,8 +186,13 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
         return env.Undefined();
     }
 
+    // Parse the precompute value
+    size_t precompute = static_cast<size_t>(
+        info[0].As<Napi::Number>().Int64Value()
+    );
+
     // Open the trusted setup file
-    std::string file_path = info[0].As<Napi::String>().Utf8Value();
+    std::string file_path = info[1].As<Napi::String>().Utf8Value();
     FILE *file_handle = fopen(file_path.c_str(), "r");
     if (file_handle == nullptr) {
         Napi::Error::New(env, "Error opening trusted setup file: " + file_path)
@@ -196,7 +201,9 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
     }
 
     // Load the trusted setup from that file
-    C_KZG_RET ret = load_trusted_setup_file(&(data->settings), file_handle);
+    C_KZG_RET ret = load_trusted_setup_file(
+        &(data->settings), file_handle, precompute
+    );
     // Close the trusted setup file
     fclose(file_handle);
 

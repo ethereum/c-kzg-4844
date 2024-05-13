@@ -31,14 +31,15 @@ proc readSetup(): KzgSettings =
 
   let res = load_trusted_setup(result,
     g1Bytes[0].addr, FIELD_ELEMENTS_PER_BLOB,
-    g2Bytes[0].addr, 65)
+    g2Bytes[0].addr, 65,
+    0)
 
   doAssert(res == KZG_OK,
     "ERROR: " & $res)
 
 proc readSetup(filename: string): KzgSettings =
   var file = open(filename)
-  let ret =  load_trusted_setup_file(result, file)
+  let ret =  load_trusted_setup_file(result, file, 0)
   doAssert ret == KZG_OK
   file.close()
 

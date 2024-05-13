@@ -91,8 +91,8 @@ bindings.getTrustedSetupFilepath = function getTrustedSetupFilepath(filePath) {
 
 const originalLoadTrustedSetup = bindings.loadTrustedSetup;
 // docstring in ./kzg.d.ts with exported definition
-bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
-  originalLoadTrustedSetup(bindings.getTrustedSetupFilepath(filePath));
+bindings.loadTrustedSetup = function loadTrustedSetup(precompute, filePath) {
+  originalLoadTrustedSetup(precompute, bindings.getTrustedSetupFilepath(filePath));
 };
 
 module.exports = exports = bindings;

@@ -34,7 +34,7 @@ public static partial class Ckzg
     }
 
     [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")]
-    private static extern IntPtr InternalLoadTrustedSetup(string filename);
+    private static extern IntPtr InternalLoadTrustedSetup(string filename, int precompute);
 
     [DllImport("ckzg", EntryPoint = "free_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)]
     private static extern void InternalFreeTrustedSetup(IntPtr ts);

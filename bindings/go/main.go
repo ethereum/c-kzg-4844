@@ -150,9 +150,10 @@ LoadTrustedSetup is the binding for:
 	    const uint8_t *g1_bytes,
 	    size_t n1,
 	    const uint8_t *g2_bytes,
-	    size_t n2);
+	    size_t n2,
+	    size_t precompute);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
+func LoadTrustedSetup(g1Bytes, g2Bytes []byte, precompute uint) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -169,7 +170,8 @@ func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
 		*(**C.uint8_t)(unsafe.Pointer(&g1Bytes)),
 		(C.size_t)(numG1Elements),
 		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
-		(C.size_t)(numG2Elements))
+		(C.size_t)(numG2Elements),
+		(C.size_t)(precompute))
 	if ret == C.C_KZG_OK {
 		loaded = true
 		return nil
@@ -182,9 +184,10 @@ LoadTrustedSetupFile is the binding for:
 
 	C_KZG_RET load_trusted_setup_file(
 	    KZGSettings *out,
-	    FILE *in);
+	    FILE *in,
+	    size_t precompute);
 */
-func LoadTrustedSetupFile(trustedSetupFile string) error {
+func LoadTrustedSetupFile(trustedSetupFile string, precompute uint) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -196,7 +199,7 @@ func LoadTrustedSetupFile(trustedSetupFile string) error {
 	if fp == nil {
 		panic("error reading trusted setup")
 	}
-	ret := C.load_trusted_setup_file(&settings, fp)
+	ret := C.load_trusted_setup_file(&settings, fp, (C.size_t)(precompute))
 	C.fclose(fp)
 	if ret == C.C_KZG_OK {
 		loaded = true
