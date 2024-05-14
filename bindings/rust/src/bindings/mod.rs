@@ -695,7 +695,7 @@ impl Cell {
         cell_ids: &[u64],
         cells: &[Cell],
         kzg_settings: &KZGSettings,
-    ) -> Result<[Self; CELLS_PER_EXT_BLOB], Error> {
+    ) -> Result<Box<[Self; CELLS_PER_EXT_BLOB]>, Error> {
         if cell_ids.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cell IDs and {} cells",
@@ -714,7 +714,12 @@ impl Cell {
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 recovered.set_len(CELLS_PER_EXT_BLOB);
-                Ok(<[Cell; CELLS_PER_EXT_BLOB]>::try_from(recovered).unwrap())
+                let recovered_boxed_slice = recovered.into_boxed_slice();
+                let recovered_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = recovered_boxed_slice
+                    .try_into()
+                    .map_err(|_err| "invalid len for blob cell array")
+                    .unwrap();
+                Ok(recovered_boxed_array)
             } else {
                 Err(Error::CError(res))
             }
