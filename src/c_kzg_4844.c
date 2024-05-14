@@ -2807,10 +2807,7 @@ static C_KZG_RET recover_all_cells_impl(
     }
 
     /* Check that we have enough cells */
-    if (len_missing > s->max_width / 2) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
+    assert(len_missing <= s->max_width / 2);
 
     // Calculate `Z_r,I`
     ret = zero_polynomial_via_multiplication(
@@ -3669,11 +3666,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
     // Sanity checks
     ///////////////////////////////////////////////////////////////////////////
-
-    /* If there are more cells than the matrix allows, error */
-    if (num_cells > CELLS_PER_EXT_BLOB * CELLS_PER_EXT_BLOB) {
-        return C_KZG_BADARGS;
-    }
 
     for (size_t i = 0; i < num_cells; i++) {
         /* Make sure column index is valid */
