@@ -695,7 +695,7 @@ impl Cell {
         cell_ids: &[u64],
         cells: &[Cell],
         kzg_settings: &KZGSettings,
-    ) -> Result<Vec<Self>, Error> {
+    ) -> Result<[Self; CELLS_PER_EXT_BLOB], Error> {
         if cell_ids.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cell IDs and {} cells",
@@ -714,7 +714,7 @@ impl Cell {
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 recovered.set_len(CELLS_PER_EXT_BLOB);
-                Ok(recovered)
+                Ok(<[Cell; CELLS_PER_EXT_BLOB]>::try_from(recovered).unwrap())
             } else {
                 Err(Error::CError(res))
             }
