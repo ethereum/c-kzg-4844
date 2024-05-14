@@ -44,6 +44,7 @@ pub struct KZGCommitment {
 //       files. To facilitate type safety: proofs and commitments should not be interchangeable, we
 //       use a custom implementation.
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }
@@ -632,18 +633,12 @@ impl Cell {
         blob: &Blob,
         kzg_settings: &KZGSettings,
     ) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
-        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
             let res =
                 compute_cells_and_kzg_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
             if let C_KZG_RET::C_KZG_OK = res {
-                cells.set_len(CELLS_PER_EXT_BLOB);
-                let cells_boxed_slice = cells.into_boxed_slice();
-                let cells_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = cells_boxed_slice
-                    .try_into()
-                    .map_err(|_err| "invalid len for blob cell array")
-                    .unwrap();
-                Ok(cells_boxed_array)
+                Ok(Box::new(cells))
             } else {
                 Err(Error::CError(res))
             }
@@ -660,8 +655,8 @@ impl Cell {
         ),
         Error,
     > {
-        let mut cells: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
-        let mut proofs: Vec<KZGProof> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
         unsafe {
             let res = compute_cells_and_kzg_proofs(
                 cells.as_mut_ptr(),
@@ -670,21 +665,7 @@ impl Cell {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                cells.set_len(CELLS_PER_EXT_BLOB);
-                let cells_boxed_slice = cells.into_boxed_slice();
-                let cells_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = cells_boxed_slice
-                    .try_into()
-                    .map_err(|_err| "invalid len for blob cell array")
-                    .unwrap();
-
-                proofs.set_len(CELLS_PER_EXT_BLOB);
-                let proofs_boxed_slice = proofs.into_boxed_slice();
-                let proofs_boxed_array: Box<[KZGProof; CELLS_PER_EXT_BLOB]> = proofs_boxed_slice
-                    .try_into()
-                    .map_err(|_err| "invalid len for blob proof array")
-                    .unwrap();
-
-                Ok((cells_boxed_array, proofs_boxed_array))
+                Ok((Box::new(cells), Box::new(proofs)))
             } else {
                 Err(Error::CError(res))
             }
@@ -703,7 +684,7 @@ impl Cell {
                 cells.len()
             )));
         }
-        let mut recovered: Vec<Cell> = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+        let mut recovered = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
             let res = recover_all_cells(
                 recovered.as_mut_ptr(),
@@ -713,13 +694,7 @@ impl Cell {
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                recovered.set_len(CELLS_PER_EXT_BLOB);
-                let recovered_boxed_slice = recovered.into_boxed_slice();
-                let recovered_boxed_array: Box<[Cell; CELLS_PER_EXT_BLOB]> = recovered_boxed_slice
-                    .try_into()
-                    .map_err(|_err| "invalid len for blob cell array")
-                    .unwrap();
-                Ok(recovered_boxed_array)
+                Ok(Box::new(recovered))
             } else {
                 Err(Error::CError(res))
             }
