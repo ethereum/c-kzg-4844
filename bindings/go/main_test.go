@@ -5,6 +5,8 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -808,9 +810,28 @@ func Benchmark(b *testing.B) {
 	}
 
 	/* Reload the trusted setup */
-	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 0); err != nil {
+	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 8); err != nil {
 		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
+
+	b.Run("ComputeCellsAndKZGProofs-Parallel", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			var wg sync.WaitGroup
+			count := runtime.NumCPU()
+			if count > length {
+				count = length
+			}
+			for i := 0; i < count; i++ {
+				wg.Add(1)
+				go func(x *Blob) {
+					defer wg.Done()
+					_, _, err := ComputeCellsAndKZGProofs(x)
+					require.NoError(b, err)
+				}(&blobs[i])
+			}
+			wg.Wait()
+		}
+	})
 
 	b.Run("CellsToBlob", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
