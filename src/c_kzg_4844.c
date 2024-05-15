@@ -3127,10 +3127,12 @@ static C_KZG_RET compute_fk20_proofs(
 
 out:
     c_kzg_free(scalars);
-    for (uint64_t i = 0; i < k2; i++) {
-        c_kzg_free(coeffs[i]);
+    if (coeffs != NULL) {
+        for (uint64_t i = 0; i < k2; i++) {
+            c_kzg_free(coeffs[i]);
+        }
+        c_kzg_free(coeffs);
     }
-    c_kzg_free(coeffs);
     c_kzg_free(toeplitz_coeffs);
     c_kzg_free(toeplitz_coeffs_fft);
     c_kzg_free(h);
