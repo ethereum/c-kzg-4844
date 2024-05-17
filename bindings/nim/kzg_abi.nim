@@ -136,6 +136,13 @@ proc verify_cell_kzg_proof*(res: var bool,
                          proof: KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
+proc cells_to_blob*(blobOut: KzgBlob,
+                         cells: ptr KzgCell): KZG_RET {.kzg_abi.}
+
+proc compute_cells*(cellsOut: ptr KzgCell,
+                         blob: KzgBlob,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
 proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
                          proofsOut: ptr KzgProof,
                          blob: KzgBlob,

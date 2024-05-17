@@ -129,6 +129,14 @@ proc verifyProofs*(rowCommitments: openArray[KzgBytes48],
   verifyCtx:
     gCtx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
+proc cellsToBlob*(cells: openArray[KzgCell]): Result[KzgBlob, string] {.gcsafe.} =
+  verifyCtx:
+    gCtx.cellsToBlob(cells)
+
+proc computeCells*(blob: KzgBlob): Result[KzgCells, string] {.gcsafe.} =
+  verifyCtx:
+    gCtx.computeCells(blob)
+
 ##############################################################
 # Zero overhead aliases that match the spec
 ##############################################################

@@ -163,6 +163,14 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, proof)
 
+proc cellsToBlob*(ctx: KzgCtx,
+                   cells: openArray[KzgCell]): Result[KzgBlob, string] {.gcsafe.} =
+  var blob: KzgBlob
+  let res = cells_to_blob(
+    blob,
+    cells[0].getPtr)
+  verify(res, blob)
+
 proc computeCells*(ctx: KzgCtx,
                    blob: KzgBlob): Result[KzgCells, string] {.gcsafe.} =
   var ret: KzgCells
@@ -347,7 +355,7 @@ template verifyBlobKzgProofBatch*(ctx: KzgCtx,
   verifyProofs(ctx, blobs, commitments, proofs)
 
 template computeCellsAndKzgProofs*(ctx: KzgCtx,
-                       blob: KzgBlob): untyped =
+                   blob: KzgBlob): untyped =
   computeCellsAndProofs(ctx, blob)
 
 template verifyCellKzgProof*(ctx: KzgCtx,
