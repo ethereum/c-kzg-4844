@@ -2028,11 +2028,11 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  *
  * @remark Free after use with free_trusted_setup().
  *
- * @param[out] out      Pointer to the stored trusted setup data
- * @param[in]  g1_bytes Array of G1 points in Lagrange form
- * @param[in]  n1       Number of `g1` points in g1_bytes
- * @param[in]  g2_bytes Array of G2 points in monomial form
- * @param[in]  n2       Number of `g2` points in g2_bytes
+ * @param[out]  out         Pointer to the stored trusted setup data
+ * @param[in]   g1_bytes    Array of G1 points in Lagrange form
+ * @param[in]   n1          Number of `g1` points in g1_bytes
+ * @param[in]   g2_bytes    Array of G2 points in monomial form
+ * @param[in]   n2          Number of `g2` points in g2_bytes
  * @param[in]   precompute  Configurable value between 0-15
  */
 C_KZG_RET load_trusted_setup(
@@ -2262,10 +2262,10 @@ static void fft_fr_fast(
 /**
  * The entry point for forward FFT over field elements.
  *
- * @param[out]  out     The results (array of length n)
- * @param[in]   in      The input data (array of length n)
- * @param[in]   n       Length of the arrays
- * @param[in]   s       The trusted setup
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
  * @remark Use ifft_fr for inverse transformation.
@@ -2352,9 +2352,9 @@ static inline uint64_t next_power_of_two(uint64_t v) {
  * @param[in,out] dst      The zero polynomial for @p indices. The space
  * allocated for coefficients must be at least @p len_indices + 1, as indicated
  * by the `length` value on entry.
- * @param[in]  indices     Array of missing indices of length @p len_indices
- * @param[in]  len_indices Length of the missing indices array, @p indices
- * @param[in]  stride      Stride length through the powers of the root of unity
+ * @param[in]   indices     Array of missing indices of length @p len_indices
+ * @param[in]   len_indices Length of the missing indices array, @p indices
+ * @param[in]   stride      Stride length through the powers of the root of unity
  * @param[in]   s           The trusted setup
  */
 static C_KZG_RET do_zero_poly_mul_partial(
@@ -2428,17 +2428,16 @@ static C_KZG_RET pad_p(
 /**
  * Calculate the product of the input polynomials via convolution.
  *
- * Pad the polynomials in @p ps, perform FFTs, point-wise multiply the results
- * together, and apply an inverse FFT to the result.
+ * @remark This will pad the polynomials, perform FFTs, point-wise multiply the
+ * results together, and apply an inverse FFT to the result.
  *
- * @param[out] out         Polynomial with @p len_out space allocated. The
- * length will be set on return.
- * @param[in]  len_out     Length of the domain of evaluation, a power of two
- * @param      scratch     Scratch space of size at least 3 times the @p len_out
- * @param[in]  len_scratch Length of @p scratch, at least 3 times @p len_out
- * @param[in]  partials    Array of polynomials to be multiplied together
- * @param[in]  partial_count The number of polynomials to be multiplied together
- * @param[in]   s           The trusted setup
+ * @param[out]  out             Polynomial with len_out fields allocated
+ * @param[in]   len_out         Domain evaluation length, a power of two
+ * @param[in]   scratch         Scratch space, at least 3x len_out
+ * @param[in]   len_scratch     Scratch size, at least 3x len_out
+ * @param[in]   partials        Array of polys to be multiplied together
+ * @param[in]   partial_count   The number of polys to be multiplied together
+ * @param[in]   s               The trusted setup
  */
 static C_KZG_RET reduce_partials(
     poly_t *out,
