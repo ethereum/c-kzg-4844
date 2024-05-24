@@ -141,13 +141,13 @@ typedef struct {
     fr_t *reverse_roots_of_unity;
     /** G1 group elements from the trusted setup,
      * in monomial form. */
-    g1_t *g1_values;
+    g1_t *g1_values_monomial;
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
-    g1_t *g1_values_lagrange;
+    g1_t *g1_values_lagrange_brp;
     /** G2 group elements from the trusted setup,
      * in monomial form. */
-    g2_t *g2_values;
+    g2_t *g2_values_monomial;
     /** Data used during FK20 proof generation. */
     g1_t **x_ext_fft_columns;
     /** The precomputed tables for fixed-base MSM */
@@ -166,9 +166,9 @@ C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t n1,
+    size_t num_g1_points,
     const uint8_t *g2_monomial_bytes,
-    size_t n2,
+    size_t num_g2_points,
     size_t precompute
 );
 

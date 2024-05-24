@@ -936,7 +936,7 @@ out:
 static C_KZG_RET poly_to_kzg_commitment_monomial(
     g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(out, s->g1_values, p, n);
+    return g1_lincomb_fast(out, s->g1_values_monomial, p, n);
 }
 
 /**
@@ -950,7 +950,7 @@ static C_KZG_RET poly_to_kzg_commitment_monomial(
 C_KZG_RET poly_to_kzg_commitment_lagrange(
     g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(out, s->g1_values_lagrange, p, n);
+    return g1_lincomb_fast(out, s->g1_values_lagrange_brp, p, n);
 }
 
 /**
@@ -1055,7 +1055,7 @@ static C_KZG_RET verify_kzg_proof_impl(
 
     /* Calculate: X_minus_z */
     g2_mul(&x_g2, blst_p2_generator(), z);
-    g2_sub(&X_minus_z, &s->g2_values[1], &x_g2);
+    g2_sub(&X_minus_z, &s->g2_values_monomial[1], &x_g2);
 
     /* Calculate: P_minus_y */
     g1_mul(&y_g1, blst_p1_generator(), y);
@@ -1191,7 +1191,7 @@ static C_KZG_RET compute_kzg_proof_impl(
     g1_t out_g1;
     ret = g1_lincomb_fast(
         &out_g1,
-        s->g1_values_lagrange,
+        s->g1_values_lagrange_brp,
         (const fr_t *)(&q.evals),
         FIELD_ELEMENTS_PER_BLOB
     );
@@ -1446,7 +1446,7 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     /* Do the pairing check! */
     *ok = pairings_verify(
-        &proof_lincomb, &s->g2_values[1], &rhs_g1, blst_p2_generator()
+        &proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator()
     );
 
 out:
@@ -1863,9 +1863,9 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->roots_of_unity);
     c_kzg_free(s->expanded_roots_of_unity);
     c_kzg_free(s->reverse_roots_of_unity);
-    c_kzg_free(s->g1_values);
-    c_kzg_free(s->g1_values_lagrange);
-    c_kzg_free(s->g2_values);
+    c_kzg_free(s->g1_values_monomial);
+    c_kzg_free(s->g1_values_lagrange_brp);
+    c_kzg_free(s->g2_values_monomial);
 
     /*
      * If for whatever reason we accidentally call free_trusted_setup() on an
@@ -1936,7 +1936,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
         for (uint64_t i = 0, j = start; i + 1 < k;
              i++, j -= FIELD_ELEMENTS_PER_CELL) {
-            x[i] = s->g1_values[j];
+            x[i] = s->g1_values_monomial[j];
         }
         x[k - 1] = G1_IDENTITY;
 
@@ -2018,10 +2018,10 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
      * If so, error out since we want the trusted setup in Lagrange form.
      */
     bool is_monomial_form = pairings_verify(
-        &s->g1_values_lagrange[1],
-        &s->g2_values[0],
-        &s->g1_values_lagrange[0],
-        &s->g2_values[1]
+        &s->g1_values_lagrange_brp[1],
+        &s->g2_values_monomial[0],
+        &s->g1_values_lagrange_brp[0],
+        &s->g2_values_monomial[1]
     );
     return is_monomial_form ? C_KZG_BADARGS : C_KZG_OK;
 }
@@ -2054,9 +2054,9 @@ C_KZG_RET load_trusted_setup(
     out->roots_of_unity = NULL;
     out->expanded_roots_of_unity = NULL;
     out->reverse_roots_of_unity = NULL;
-    out->g1_values = NULL;
-    out->g1_values_lagrange = NULL;
-    out->g2_values = NULL;
+    out->g1_values_monomial = NULL;
+    out->g1_values_lagrange_brp = NULL;
+    out->g2_values_monomial = NULL;
     out->x_ext_fft_columns = NULL;
     out->tables = NULL;
 
@@ -2101,11 +2101,11 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values, num_g1_points);
+    ret = new_g1_array(&out->g1_values_monomial, num_g1_points);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values_lagrange, num_g1_points);
+    ret = new_g1_array(&out->g1_values_lagrange_brp, num_g1_points);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g2_array(&out->g2_values, num_g2_points);
+    ret = new_g2_array(&out->g2_values_monomial, num_g2_points);
     if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 monomial bytes to g1 points */
@@ -2118,7 +2118,7 @@ C_KZG_RET load_trusted_setup(
             ret = C_KZG_BADARGS;
             goto out_error;
         }
-        blst_p1_from_affine(&out->g1_values[i], &g1_affine);
+        blst_p1_from_affine(&out->g1_values_monomial[i], &g1_affine);
     }
 
     /* Convert all g1 Lagrange bytes to g1 points */
@@ -2131,7 +2131,7 @@ C_KZG_RET load_trusted_setup(
             ret = C_KZG_BADARGS;
             goto out_error;
         }
-        blst_p1_from_affine(&out->g1_values_lagrange[i], &g1_affine);
+        blst_p1_from_affine(&out->g1_values_lagrange_brp[i], &g1_affine);
     }
 
     /* Convert all g2 bytes to g2 points */
@@ -2144,7 +2144,7 @@ C_KZG_RET load_trusted_setup(
             ret = C_KZG_BADARGS;
             goto out_error;
         }
-        blst_p2_from_affine(&out->g2_values[i], &g2_affine);
+        blst_p2_from_affine(&out->g2_values_monomial[i], &g2_affine);
     }
 
     /* Make sure the trusted setup was loaded in Lagrange form */
@@ -2157,7 +2157,7 @@ C_KZG_RET load_trusted_setup(
 
     /* Bit reverse the Lagrange form points */
     ret = bit_reversal_permutation(
-        out->g1_values_lagrange, sizeof(g1_t), num_g1_points
+        out->g1_values_lagrange_brp, sizeof(g1_t), num_g1_points
     );
     if (ret != C_KZG_OK) goto out_error;
 
@@ -3254,7 +3254,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     g2_mul(&h_pow_g2, blst_p2_generator(), &h_pow);
 
     /* Compute [s^n - h^n] in G_2 */
-    g2_sub(&s_pow_minus_h_pow, &s->g2_values[n], &h_pow_g2);
+    g2_sub(&s_pow_minus_h_pow, &s->g2_values_monomial[n], &h_pow_g2);
 
     /* Commit to the interpolation polynomial */
     ret = poly_to_kzg_commitment_monomial(
@@ -3699,7 +3699,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     g1_t final_g1_sum;
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
-    g2_t power_of_s = s->g2_values[FIELD_ELEMENTS_PER_CELL];
+    g2_t power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
     size_t num_used_commitments = 0;
 
     /* Arrays */
@@ -3942,7 +3942,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Commit to the final aggregated interpolation polynomial */
     g1_lincomb_fast(
         &evaluation,
-        s->g1_values,
+        s->g1_values_monomial,
         aggregated_interpolation_poly,
         FIELD_ELEMENTS_PER_CELL
     );

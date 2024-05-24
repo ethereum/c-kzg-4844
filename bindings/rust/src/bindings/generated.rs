@@ -101,11 +101,11 @@ pub struct KZGSettings {
     #[doc = " The bit-reversal permuted roots of unity."]
     reverse_roots_of_unity: *mut fr_t,
     #[doc = " G1 group elements from the trusted setup,\n in monomial form."]
-    g1_values: *mut g1_t,
+    g1_values_monomial: *mut g1_t,
     #[doc = " G1 group elements from the trusted setup,\n in Lagrange form bit-reversal permutation."]
-    g1_values_lagrange: *mut g1_t,
+    g1_values_lagrange_brp: *mut g1_t,
     #[doc = " G2 group elements from the trusted setup,\n in monomial form."]
-    g2_values: *mut g2_t,
+    g2_values_monomial: *mut g2_t,
     #[doc = " Data used during FK20 proof generation."]
     x_ext_fft_columns: *mut *mut g1_t,
     #[doc = " The precomputed tables for fixed-base MSM"]
@@ -120,9 +120,9 @@ extern "C" {
         out: *mut KZGSettings,
         g1_monomial_bytes: *const u8,
         g1_lagrange_bytes: *const u8,
-        n1: usize,
+        num_g1_points: usize,
         g2_monomial_bytes: *const u8,
-        n2: usize,
+        num_g2_points: usize,
         precompute: usize,
     ) -> C_KZG_RET;
     pub fn load_trusted_setup_file(
