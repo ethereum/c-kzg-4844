@@ -3432,12 +3432,6 @@ C_KZG_RET recover_all_cells(
         goto out;
     }
 
-    /* Check if recovery is necessary */
-    if (num_cells == CELLS_PER_EXT_BLOB) {
-        memcpy(recovered, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
-        return C_KZG_OK;
-    }
-
     /* Check that cell ids are valid */
     for (size_t i = 0; i < num_cells; i++) {
         if (cell_ids[i] >= CELLS_PER_EXT_BLOB) {
@@ -3475,6 +3469,12 @@ C_KZG_RET recover_all_cells(
             ret = bytes_to_bls_field(field, &cells[i].data[j]);
             if (ret != C_KZG_OK) goto out;
         }
+    }
+
+    /* Check if recovery is necessary */
+    if (num_cells == CELLS_PER_EXT_BLOB) {
+        memcpy(recovered, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+        return C_KZG_OK;
     }
 
     /* Call the implementation function to do the bulk of the work */
