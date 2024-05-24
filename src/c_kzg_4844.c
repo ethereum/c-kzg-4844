@@ -3154,9 +3154,7 @@ static C_KZG_RET compute_fk20_proofs(
             }
             const byte *scalars_arg[2] = {(byte *)scalars, NULL};
 
-            /*
-             * This is a fixed-base MSM with a precomputed table.
-             */
+            /* A fixed-base MSM with precomputation */
             blst_p1s_mult_wbits(
                 &h_ext_fft[i],
                 s->tables[i],
@@ -3167,8 +3165,12 @@ static C_KZG_RET compute_fk20_proofs(
                 scratch
             );
         } else {
+            /* A pretty fast MSM without precomputation */
             g1_lincomb_fast(
-                &h_ext_fft[i], s->x_ext_fft_columns[i], coeffs[i], k
+                &h_ext_fft[i],
+                s->x_ext_fft_columns[i],
+                coeffs[i],
+                FIELD_ELEMENTS_PER_CELL
             );
         }
     }
