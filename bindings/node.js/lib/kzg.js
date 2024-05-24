@@ -44,7 +44,9 @@ function transformTrustedSetupJson(filePath) {
     "\n65\n" +
     trustedSetup.g1_lagrange.map((p) => p.substring(2)).join("\n") +
     "\n" +
-    trustedSetup.g2_monomial.map((p) => p.substring(2)).join("\n");
+    trustedSetup.g2_monomial.map((p) => p.substring(2)).join("\n") +
+    "\n" +
+    trustedSetup.g1_monomial.map((p) => p.substring(2)).join("\n");
   const outputPath = filePath.replace(".json", ".txt");
   fs.writeFileSync(outputPath, setupText);
   return outputPath;

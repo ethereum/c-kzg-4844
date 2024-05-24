@@ -93,7 +93,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   }
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count, jlong precompute)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3BJ_3BJJ(JNIEnv *env, jclass thisCls, jbyteArray g1Monomial, jbyteArray g1Lagrange, jlong g1Count, jbyteArray g2Monomial, jlong g2Count, jlong precompute)
 {
   if (settings)
   {
@@ -101,34 +101,51 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
     return;
   }
 
-  size_t g1_bytes = (size_t)(*env)->GetArrayLength(env, g1);
-  size_t g1_expected_bytes = (size_t)g1Count * 48;
+  size_t g1_monomial_bytes = (size_t)(*env)->GetArrayLength(env, g1Monomial);
+  size_t g1_monomial_expected_bytes = (size_t)g1Count * 48;
 
-  if (g1_bytes != g1_expected_bytes)
+  if (g1_monomial_bytes != g1_monomial_expected_bytes)
   {
-    throw_invalid_size_exception(env, "Invalid g1 size.", g1_bytes, g1_expected_bytes);
+    throw_invalid_size_exception(env, "Invalid g1 monomial size.", g1_monomial_bytes, g1_monomial_expected_bytes);
     return;
   }
 
-  size_t g2_bytes = (size_t)(*env)->GetArrayLength(env, g2);
-  size_t g2_expected_bytes = (size_t)g2Count * 96;
+  size_t g1_lagrange_bytes = (size_t)(*env)->GetArrayLength(env, g1Lagrange);
+  size_t g1_lagrange_expected_bytes = (size_t)g1Count * 48;
 
-  if (g2_bytes != g2_expected_bytes)
+  if (g1_lagrange_bytes != g1_lagrange_expected_bytes)
   {
-    throw_invalid_size_exception(env, "Invalid g2 size.", g2_bytes, g2_expected_bytes);
+    throw_invalid_size_exception(env, "Invalid g1 lagrange size.", g1_lagrange_bytes, g1_lagrange_expected_bytes);
+    return;
+  }
+
+  /* Ensure the number of monomial/lagrange bytes is the same */
+  if (g1_monomial_bytes != g1_lagrange_bytes) {
+    throw_invalid_size_exception(env, "Invalid g1 lagrange size.", g1_lagrange_bytes, g1_monomial_bytes);
+    return;
+  }
+
+  size_t g2_monomial_bytes = (size_t)(*env)->GetArrayLength(env, g2Monomial);
+  size_t g2_monomial_expected_bytes = (size_t)g2Count * 96;
+
+  if (g2_monomial_bytes != g2_monomial_expected_bytes)
+  {
+    throw_invalid_size_exception(env, "Invalid g2 monomial size.", g2_monomial_bytes, g2_monomial_expected_bytes);
     return;
   }
 
   settings = allocate_settings(env);
 
-  jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
-  jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
+  jbyte *g1_monomial_native = (*env)->GetByteArrayElements(env, g1Monomial, NULL);
+  jbyte *g1_lagrange_native = (*env)->GetByteArrayElements(env, g1Lagrange, NULL);
+  jbyte *g2_monomial_native = (*env)->GetByteArrayElements(env, g2Monomial, NULL);
   size_t precompute_native = (size_t)precompute;
 
-  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_native, (size_t)g1Count, (uint8_t *)g2_native, (size_t)g2Count, precompute_native);
+  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_monomial_native, (uint8_t *)g1_lagrange_native, (size_t)g1Count, (uint8_t *)g2_monomial_native, (size_t)g2Count, precompute_native);
 
-  (*env)->ReleaseByteArrayElements(env, g1, g1_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, g2, g2_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g1Monomial, g1_monomial_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g1Lagrange, g1_lagrange_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g2Monomial, g2_monomial_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {

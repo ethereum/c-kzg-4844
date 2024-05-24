@@ -42,10 +42,10 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    loadTrustedSetup
- * Signature: ([BJ[BJJ)V
+ * Signature: ([B[BJ[BJJ)V
  */
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJJ
-  (JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jlong, jlong);
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3BJ_3BJJ
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jlong, jbyteArray, jlong, jlong);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI

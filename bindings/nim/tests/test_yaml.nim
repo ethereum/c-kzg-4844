@@ -81,7 +81,7 @@ suite "yaml tests":
   var ctx: KzgCtx
 
   test "load trusted setup from string":
-    let res = loadTrustedSetupFromString(trustedSetup)
+    let res = loadTrustedSetupFromString(trustedSetup, 8)
     check res.isOk
     ctx = res.get
 

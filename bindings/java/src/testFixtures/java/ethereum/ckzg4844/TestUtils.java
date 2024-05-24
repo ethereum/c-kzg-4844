@@ -305,17 +305,22 @@ public class TestUtils {
       final int g1Count = Integer.parseInt(reader.readLine());
       final int g2Count = Integer.parseInt(reader.readLine());
 
-      final ByteBuffer g1 = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
-      final ByteBuffer g2 = ByteBuffer.allocate(g2Count * CKZG4844JNI.BYTES_PER_G2);
+      final ByteBuffer g1Monomial = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
+      final ByteBuffer g1Lagrange = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
+      final ByteBuffer g2Monomial = ByteBuffer.allocate(g2Count * CKZG4844JNI.BYTES_PER_G2);
 
       for (int i = 0; i < g1Count; i++) {
-        g1.put(Bytes.fromHexString(reader.readLine()).toArray());
+        g1Lagrange.put(Bytes.fromHexString(reader.readLine()).toArray());
       }
       for (int i = 0; i < g2Count; i++) {
-        g2.put(Bytes.fromHexString(reader.readLine()).toArray());
+        g2Monomial.put(Bytes.fromHexString(reader.readLine()).toArray());
+      }
+      for (int i = 0; i < g1Count; i++) {
+        g1Monomial.put(Bytes.fromHexString(reader.readLine()).toArray());
       }
 
-      return new LoadTrustedSetupParameters(g1.array(), g1Count, g2.array(), g2Count);
+      return new LoadTrustedSetupParameters(
+          g1Monomial.array(), g1Lagrange.array(), g1Count, g2Monomial.array(), g2Count);
     } catch (final IOException ex) {
       throw new UncheckedIOException(ex);
     }

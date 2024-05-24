@@ -79,20 +79,24 @@ proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, st
   except IOError as ex:
     return err(ex.msg)
 
-proc loadTrustedSetup*(g1: openArray[G1Data],
-                       g2: openArray[G2Data],
+proc loadTrustedSetup*(g1Monomial: openArray[G1Data],
+                       g1Lagrange: openArray[G1Data],
+                       g2Monomial: openArray[G2Data],
                        precompute: Natural):
                          Result[KzgCtx, string] =
-  if g1.len == 0 or g2.len == 0:
+  if g1Monomial.len == 0 or g1Lagrange.len == 0 or g2Monomial.len == 0:
+    return err($KZG_BADARGS)
+  if g1Monomial.len != g1Lagrange.len:
     return err($KZG_BADARGS)
 
   let
     ctx = newKzgCtx()
     res = load_trusted_setup(ctx.val,
-      g1[0][0].getPtr,
-      g1.len.csize_t,
-      g2[0][0].getPtr,
-      g2.len.csize_t,
+      g1Monomial[0][0].getPtr,
+      g1Lagrange[0][0].getPtr,
+      g1Monomial.len.csize_t,
+      g2Monomial[0][0].getPtr,
+      g2Monomial.len.csize_t,
       precompute.csize_t)
   verify(res, ctx)
 
@@ -104,8 +108,9 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
 
   var
     s = newStringStream(input)
-    g1: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
-    g2: array[NumG2, G2Data]
+    g1Monomial: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
+    g1Lagrange: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
+    g2Monomial: array[NumG2, G2Data]
 
   try:
     let fieldElems = s.readLine().parseInt()
@@ -120,10 +125,13 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
       ])
 
     for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
-      g1[i] = hexToByteArray[G1Len](s.readLine())
+      g1Lagrange[i] = hexToByteArray[G1Len](s.readLine())
 
     for i in 0 ..< NumG2:
-      g2[i] = hexToByteArray[G2Len](s.readLine())
+      g2Monomial[i] = hexToByteArray[G2Len](s.readLine())
+
+    for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
+      g1Monomial[i] = hexToByteArray[G1Len](s.readLine())
   except ValueError as ex:
     return err(ex.msg)
   except OSError as ex:
@@ -131,7 +139,7 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
   except IOError as ex:
     return err(ex.msg)
 
-  loadTrustedSetup(g1, g2, precompute)
+  loadTrustedSetup(g1Monomial, g1Lagrange, g2Monomial, precompute)
 
 proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):

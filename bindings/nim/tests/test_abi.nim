@@ -10,8 +10,9 @@ import
 proc readSetup(): KzgSettings =
   var
     s = newFileStream(trustedSetupFile)
-    g1Bytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
-    g2Bytes: array[65 * 96, byte]
+    g1MonomialBytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
+    g1LagrangeBytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
+    g2MonomialBytes: array[65 * 96, byte]
 
   doAssert(s.isNil.not,
     "FAILED TO OPEN: " & trustedSetupFile)
@@ -23,15 +24,22 @@ proc readSetup(): KzgSettings =
 
   for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
     let z = hexToByteArray[48](s.readLine())
-    g1Bytes[i*48 ..< i*48+48] = z[0..<48]
+    g1LagrangeBytes[i*48 ..< i*48+48] = z[0..<48]
 
   for i in 0 ..< 65:
     let z = hexToByteArray[96](s.readLine())
-    g2Bytes[i*96 ..< i*96+96] = z[0..<96]
+    g2MonomialBytes[i*96 ..< i*96+96] = z[0..<96]
+
+  for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
+    let z = hexToByteArray[48](s.readLine())
+    g1MonomialBytes[i*48 ..< i*48+48] = z[0..<48]
 
   let res = load_trusted_setup(result,
-    g1Bytes[0].addr, FIELD_ELEMENTS_PER_BLOB,
-    g2Bytes[0].addr, 65,
+    g1MonomialBytes[0].addr,
+    g1LagrangeBytes[0].addr,
+    FIELD_ELEMENTS_PER_BLOB,
+    g2MonomialBytes[0].addr,
+    65,
     0)
 
   doAssert(res == KZG_OK,

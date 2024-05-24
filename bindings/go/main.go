@@ -147,30 +147,39 @@ LoadTrustedSetup is the binding for:
 
 	C_KZG_RET load_trusted_setup(
 	    KZGSettings *out,
-	    const uint8_t *g1_bytes,
-	    size_t n1,
-	    const uint8_t *g2_bytes,
-	    size_t n2,
+	    const uint8_t *g1_monomial_bytes,
+	    const uint8_t *g1_lagrange_bytes,
+	    size_t num_g1_points,
+	    const uint8_t *g2_monomial_bytes,
+	    size_t num_g2_points,
 	    size_t precompute);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte, precompute uint) error {
+func LoadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes []byte, precompute uint) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
-	if len(g1Bytes)%C.BYTES_PER_G1 != 0 {
-		panic(fmt.Sprintf("len(g1Bytes) is not a multiple of %v", C.BYTES_PER_G1))
+	if len(g1MonomialBytes)%C.BYTES_PER_G1 != 0 {
+		panic(fmt.Sprintf("len(g1MonomialBytes) (%v) is not a multiple of %v", len(g1MonomialBytes), C.BYTES_PER_G1))
 	}
-	if len(g2Bytes)%C.BYTES_PER_G2 != 0 {
-		panic(fmt.Sprintf("len(g2Bytes) is not a multiple of %v", C.BYTES_PER_G2))
+	if len(g1LagrangeBytes)%C.BYTES_PER_G1 != 0 {
+		panic(fmt.Sprintf("len(g1LagrangeBytes) (%v) is not a multiple of %v", len(g1LagrangeBytes), C.BYTES_PER_G1))
 	}
-	numG1Elements := len(g1Bytes) / C.BYTES_PER_G1
-	numG2Elements := len(g2Bytes) / C.BYTES_PER_G2
+	if len(g2MonomialBytes)%C.BYTES_PER_G2 != 0 {
+		panic(fmt.Sprintf("len(g2MonomialBytes) (%v) is not a multiple of %v", len(g2MonomialBytes), C.BYTES_PER_G2))
+	}
+	numG1Monomial := len(g1MonomialBytes) / C.BYTES_PER_G1
+	numG1Lagrange := len(g1LagrangeBytes) / C.BYTES_PER_G1
+	numG2Monomial := len(g2MonomialBytes) / C.BYTES_PER_G2
+	if numG1Monomial != numG1Lagrange {
+		panic(fmt.Sprintf("numG1Monomial (%v) != numG1Lagrange (%v)", numG1Monomial, numG1Lagrange))
+	}
 	ret := C.load_trusted_setup(
 		&settings,
-		*(**C.uint8_t)(unsafe.Pointer(&g1Bytes)),
-		(C.size_t)(numG1Elements),
-		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
-		(C.size_t)(numG2Elements),
+		*(**C.uint8_t)(unsafe.Pointer(&g1MonomialBytes)),
+		*(**C.uint8_t)(unsafe.Pointer(&g1LagrangeBytes)),
+		(C.size_t)(numG1Monomial),
+		*(**C.uint8_t)(unsafe.Pointer(&g2MonomialBytes)),
+		(C.size_t)(numG2Monomial),
 		(C.size_t)(precompute))
 	if ret == C.C_KZG_OK {
 		loaded = true

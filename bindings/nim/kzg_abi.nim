@@ -82,10 +82,11 @@ type
 {.pragma: kzg_abi, importc, cdecl, header: "c_kzg_4844.h".}
 
 proc load_trusted_setup*(res: KzgSettings,
-                         g1Bytes: ptr byte, # n1 * 48 bytes
-                         n1: csize_t,
-                         g2Bytes: ptr byte, # n2 * 96 bytes
-                         n2: csize_t,
+                         g1MonomialBytes: ptr byte,
+                         g1LagrangeBytes: ptr byte,
+                         numG1Points: csize_t,
+                         g2MonomialBytes: ptr byte,
+                         numG2Points: csize_t,
                          precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc load_trusted_setup_file*(res: KzgSettings,

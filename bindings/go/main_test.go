@@ -814,13 +814,13 @@ func Benchmark(b *testing.B) {
 		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
 
-	b.Run("ComputeCellsAndKZGProofs-Parallel", func(b *testing.B) {
+	count := runtime.NumCPU()
+	if count > length {
+		count = length
+	}
+	b.Run(fmt.Sprintf("ComputeCellsAndKZGProofsParallel(count=%v)", count), func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			var wg sync.WaitGroup
-			count := runtime.NumCPU()
-			if count > length {
-				count = length
-			}
 			for i := 0; i < count; i++ {
 				wg.Add(1)
 				go func(x *Blob) {

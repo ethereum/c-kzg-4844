@@ -2018,7 +2018,10 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
      * If so, error out since we want the trusted setup in Lagrange form.
      */
     bool is_monomial_form = pairings_verify(
-        &s->g1_values[1], &s->g2_values[0], &s->g1_values[0], &s->g2_values[1]
+        &s->g1_values_lagrange[1],
+        &s->g2_values[0],
+        &s->g1_values_lagrange[0],
+        &s->g2_values[1]
     );
     return is_monomial_form ? C_KZG_BADARGS : C_KZG_OK;
 }
@@ -2028,19 +2031,21 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  *
  * @remark Free after use with free_trusted_setup().
  *
- * @param[out]  out         Pointer to the stored trusted setup data
- * @param[in]   g1_bytes    Array of G1 points in Lagrange form
- * @param[in]   n1          Number of `g1` points in g1_bytes
- * @param[in]   g2_bytes    Array of G2 points in monomial form
- * @param[in]   n2          Number of `g2` points in g2_bytes
- * @param[in]   precompute  Configurable value between 0-15
+ * @param[out]  out                 Pointer to the stored trusted setup data
+ * @param[in]   g1_monomial_bytes   Array of G1 points in monomial form
+ * @param[in]   g1_lagrange_bytes   Array of G1 points in Lagrange form
+ * @param[in]   num_g1_points       Number of points in g1_bytes
+ * @param[in]   g2_monomial_bytes   Array of G2 points in monomial form
+ * @param[in]   num_g2_points       Number of points in g2_bytes
+ * @param[in]   precompute          Configurable value between 0-15
  */
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
-    const uint8_t *g1_bytes,
-    size_t n1,
-    const uint8_t *g2_bytes,
-    size_t n2,
+    const uint8_t *g1_monomial_bytes,
+    const uint8_t *g1_lagrange_bytes,
+    size_t num_g1_points,
+    const uint8_t *g2_monomial_bytes,
+    size_t num_g2_points,
     size_t precompute
 ) {
     C_KZG_RET ret;
@@ -2071,12 +2076,15 @@ C_KZG_RET load_trusted_setup(
     out->wbits = precompute;
 
     /* Sanity check in case this is called directly */
-    CHECK(n1 == TRUSTED_SETUP_NUM_G1_POINTS);
-    CHECK(n2 == TRUSTED_SETUP_NUM_G2_POINTS);
+    if (num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS ||
+        num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
 
     /* 1<<max_scale is the smallest power of 2 >= n1 */
     uint32_t max_scale = 0;
-    while ((1ULL << max_scale) < n1)
+    while ((1ULL << max_scale) < num_g1_points)
         max_scale++;
 
     /* Set the max_width */
@@ -2093,34 +2101,44 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values, n1);
+    ret = new_g1_array(&out->g1_values, num_g1_points);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values_lagrange, n1);
+    ret = new_g1_array(&out->g1_values_lagrange, num_g1_points);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g2_array(&out->g2_values, n2);
+    ret = new_g2_array(&out->g2_values, num_g2_points);
     if (ret != C_KZG_OK) goto out_error;
 
-    /* Convert all g1 bytes to g1 points */
-    for (uint64_t i = 0; i < n1; i++) {
+    /* Convert all g1 monomial bytes to g1 points */
+    for (uint64_t i = 0; i < num_g1_points; i++) {
         blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(
-            &g1_affine, &g1_bytes[BYTES_PER_G1 * i]
+            &g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]
+        );
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p1_from_affine(&out->g1_values[i], &g1_affine);
+    }
+
+    /* Convert all g1 Lagrange bytes to g1 points */
+    for (uint64_t i = 0; i < num_g1_points; i++) {
+        blst_p1_affine g1_affine;
+        BLST_ERROR err = blst_p1_uncompress(
+            &g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]
         );
         if (err != BLST_SUCCESS) {
             ret = C_KZG_BADARGS;
             goto out_error;
         }
         blst_p1_from_affine(&out->g1_values_lagrange[i], &g1_affine);
-
-        /* Copying, will modify later */
-        out->g1_values[i] = out->g1_values_lagrange[i];
     }
 
     /* Convert all g2 bytes to g2 points */
-    for (uint64_t i = 0; i < n2; i++) {
+    for (uint64_t i = 0; i < num_g2_points; i++) {
         blst_p2_affine g2_affine;
         BLST_ERROR err = blst_p2_uncompress(
-            &g2_affine, &g2_bytes[BYTES_PER_G2 * i]
+            &g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]
         );
         if (err != BLST_SUCCESS) {
             ret = C_KZG_BADARGS;
@@ -2130,19 +2148,17 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Make sure the trusted setup was loaded in Lagrange form */
-    ret = is_trusted_setup_in_lagrange_form(out, n1, n2);
+    ret = is_trusted_setup_in_lagrange_form(out, num_g1_points, num_g2_points);
     if (ret != C_KZG_OK) goto out_error;
 
     /* Compute roots of unity and permute the G1 trusted setup */
     ret = compute_roots_of_unity(out);
     if (ret != C_KZG_OK) goto out_error;
 
-    /* Get monomial, non-bit-reversed form */
-    ret = fft_g1(out->g1_values, out->g1_values_lagrange, n1, out);
-    if (ret != C_KZG_OK) goto out_error;
-
     /* Bit reverse the Lagrange form points */
-    ret = bit_reversal_permutation(out->g1_values_lagrange, sizeof(g1_t), n1);
+    ret = bit_reversal_permutation(
+        out->g1_values_lagrange, sizeof(g1_t), num_g1_points
+    );
     if (ret != C_KZG_OK) goto out_error;
 
     /* Stuff for cell proofs */
@@ -2179,41 +2195,84 @@ out_success:
 C_KZG_RET load_trusted_setup_file(
     KZGSettings *out, FILE *in, size_t precompute
 ) {
+    C_KZG_RET ret;
     int num_matches;
     uint64_t i;
-    uint8_t g1_bytes[TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1];
-    uint8_t g2_bytes[TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2];
+    uint8_t *g1_monomial_bytes = NULL;
+    uint8_t *g1_lagrange_bytes = NULL;
+    uint8_t *g2_monomial_bytes = NULL;
+
+    /* Allocate space for points */
+    ret = c_kzg_calloc(
+        (void **)&g1_monomial_bytes, TRUSTED_SETUP_NUM_G1_POINTS, BYTES_PER_G1
+    );
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc(
+        (void **)&g1_lagrange_bytes, TRUSTED_SETUP_NUM_G1_POINTS, BYTES_PER_G1
+    );
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc(
+        (void **)&g2_monomial_bytes, TRUSTED_SETUP_NUM_G2_POINTS, BYTES_PER_G2
+    );
+    if (ret != C_KZG_OK) goto out;
 
     /* Read the number of g1 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
-    CHECK(num_matches == 1);
-    CHECK(i == TRUSTED_SETUP_NUM_G1_POINTS);
+    if (num_matches != 1 || i != TRUSTED_SETUP_NUM_G1_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
     /* Read the number of g2 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
-    CHECK(num_matches == 1);
-    CHECK(i == TRUSTED_SETUP_NUM_G2_POINTS);
+    if (num_matches != 1 || i != TRUSTED_SETUP_NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
-    /* Read all of the g1 points, byte by byte */
+    /* Read all of the g1 points in Lagrange form, byte by byte */
     for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
-        num_matches = fscanf(in, "%2hhx", &g1_bytes[i]);
-        CHECK(num_matches == 1);
+        num_matches = fscanf(in, "%2hhx", &g1_lagrange_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
     }
 
-    /* Read all of the g2 points, byte by byte */
+    /* Read all of the g2 points in monomial form, byte by byte */
     for (i = 0; i < TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2; i++) {
-        num_matches = fscanf(in, "%2hhx", &g2_bytes[i]);
-        CHECK(num_matches == 1);
+        num_matches = fscanf(in, "%2hhx", &g2_monomial_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
     }
 
-    return load_trusted_setup(
+    /* Read all of the g1 points in monomial form, byte by byte */
+    /* Note: this is last because it is an extension for EIP-7594 */
+    for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
+        num_matches = fscanf(in, "%2hhx", &g1_monomial_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
+    }
+
+    ret = load_trusted_setup(
         out,
-        g1_bytes,
+        g1_monomial_bytes,
+        g1_lagrange_bytes,
         TRUSTED_SETUP_NUM_G1_POINTS,
-        g2_bytes,
+        g2_monomial_bytes,
         TRUSTED_SETUP_NUM_G2_POINTS,
         precompute
     );
+
+out:
+    c_kzg_free(g1_monomial_bytes);
+    c_kzg_free(g1_lagrange_bytes);
+    c_kzg_free(g2_monomial_bytes);
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2354,7 +2413,8 @@ static inline uint64_t next_power_of_two(uint64_t v) {
  * by the `length` value on entry.
  * @param[in]   indices     Array of missing indices of length @p len_indices
  * @param[in]   len_indices Length of the missing indices array, @p indices
- * @param[in]   stride      Stride length through the powers of the root of unity
+ * @param[in]   stride      Stride length through the powers of the root of
+ * unity
  * @param[in]   s           The trusted setup
  */
 static C_KZG_RET do_zero_poly_mul_partial(

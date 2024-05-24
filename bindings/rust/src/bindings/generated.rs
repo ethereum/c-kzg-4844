@@ -118,9 +118,10 @@ pub struct KZGSettings {
 extern "C" {
     pub fn load_trusted_setup(
         out: *mut KZGSettings,
-        g1_bytes: *const u8,
+        g1_monomial_bytes: *const u8,
+        g1_lagrange_bytes: *const u8,
         n1: usize,
-        g2_bytes: *const u8,
+        g2_monomial_bytes: *const u8,
         n2: usize,
         precompute: usize,
     ) -> C_KZG_RET;

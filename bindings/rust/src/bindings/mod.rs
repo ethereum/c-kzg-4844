@@ -93,35 +93,52 @@ pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
 
 /// Holds the parameters of a kzg trusted setup ceremony.
 impl KZGSettings {
-    /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points
-    /// and 65 g2 points in byte format.
+    /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points in
+    /// Lagrange form, 65 g2 points in monomial form, and
+    /// `FIELD_ELEMENTS_PER_BLOB` g1 points in monomial form.
     pub fn load_trusted_setup(
-        g1_bytes: &[[u8; BYTES_PER_G1_POINT]],
-        g2_bytes: &[[u8; BYTES_PER_G2_POINT]],
+        g1_monomial_bytes: &[[u8; BYTES_PER_G1_POINT]],
+        g1_lagrange_bytes: &[[u8; BYTES_PER_G1_POINT]],
+        g2_monomial_bytes: &[[u8; BYTES_PER_G2_POINT]],
         precompute: usize,
     ) -> Result<Self, Error> {
-        if g1_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
+        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
             return Err(Error::InvalidTrustedSetup(format!(
-                "Invalid number of g1 points in trusted setup. Expected {} got {}",
+                "Invalid number of g1 monomial points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
-                g1_bytes.len()
+                g1_monomial_bytes.len()
             )));
         }
-        if g2_bytes.len() != NUM_G2_POINTS {
+        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
             return Err(Error::InvalidTrustedSetup(format!(
-                "Invalid number of g2 points in trusted setup. Expected {} got {}",
+                "Invalid number of g1 Lagrange points in trusted setup. Expected {} got {}",
+                FIELD_ELEMENTS_PER_BLOB,
+                g1_lagrange_bytes.len()
+            )));
+        }
+        if g1_monomial_bytes.len() != g1_lagrange_bytes.len() {
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Different number of g1 monomial ({}) and Lagrange ({}) points in trusted setup",
+                g1_monomial_bytes.len(),
+                g1_lagrange_bytes.len()
+            )));
+        }
+        if g2_monomial_bytes.len() != NUM_G2_POINTS {
+            return Err(Error::InvalidTrustedSetup(format!(
+                "Invalid number of g2 monomial points in trusted setup. Expected {} got {}",
                 NUM_G2_POINTS,
-                g2_bytes.len()
+                g2_monomial_bytes.len()
             )));
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
-                g1_bytes.as_ptr().cast(),
-                g1_bytes.len(),
-                g2_bytes.as_ptr().cast(),
-                g2_bytes.len(),
+                g1_monomial_bytes.as_ptr().cast(),
+                g1_lagrange_bytes.as_ptr().cast(),
+                g1_monomial_bytes.len(),
+                g2_monomial_bytes.as_ptr().cast(),
+                g2_monomial_bytes.len(),
                 precompute,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -138,8 +155,9 @@ impl KZGSettings {
     ///
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
-    /// FIELD_ELEMENT_PER_BLOB g1 byte values
-    /// 65 g2 byte values
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values in Lagrange form
+    /// 65 g2 byte values in monomial form
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values in monomial form
     #[cfg(feature = "std")]
     pub fn load_trusted_setup_file(file_path: &Path, precompute: usize) -> Result<Self, Error> {
         #[cfg(unix)]
@@ -165,8 +183,9 @@ impl KZGSettings {
     ///
     /// FIELD_ELEMENTS_PER_BLOB
     /// 65 # This is fixed and is used for providing multiproofs up to 64 field elements.
-    /// FIELD_ELEMENT_PER_BLOB g1 byte values
-    /// 65 g2 byte values
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values in Lagrange form
+    /// 65 g2 byte values in monomial form
+    /// FIELD_ELEMENT_PER_BLOB g1 byte values in monomial form
     #[cfg(not(feature = "std"))]
     pub fn load_trusted_setup_file(file_path: &CStr, precompute: usize) -> Result<Self, Error> {
         Self::load_trusted_setup_file_inner(file_path, precompute)
