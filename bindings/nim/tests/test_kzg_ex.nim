@@ -5,6 +5,11 @@ import
   ../kzg_ex,
   ./types
 
+type
+  KateBlobs = object
+    kates: seq[KzgCommitment]
+    blobs: seq[KzgBlob]
+
 proc createKateBlobs(n: int): KateBlobs =
   var blob: KzgBlob
   for i in 0..<n:
@@ -21,6 +26,12 @@ proc createKateBlobs(n: int): KateBlobs =
     result.kates.add(res.get)
 
 suite "verify proof (extended version)":
+  template blob: auto = blobBytes
+  template commitment: auto = commitmentBytes
+  template proof: auto = proofBytes
+  template claimedValue: auto = claimedValueBytes
+  template inputPoint: auto = inputPointBytes
+
   test "load trusted setup from string":
     let res = Kzg.loadTrustedSetupFromString(trustedSetup)
     check res.isOk

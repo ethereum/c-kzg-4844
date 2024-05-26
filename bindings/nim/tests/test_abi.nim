@@ -7,7 +7,12 @@ import
   ../kzg_abi,
   ./types
 
-proc readSetup(): KzgSettings =
+type
+  CKateBlobs* = object
+    kates*: seq[CKzgCommitment]
+    blobs*: seq[CKzgBlob]
+    
+proc readSetup(): CKzgSettings =
   var
     s = newFileStream(trustedSetupFile)
     g1Bytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
@@ -36,25 +41,25 @@ proc readSetup(): KzgSettings =
   doAssert(res == KZG_OK,
     "ERROR: " & $res)
 
-proc readSetup(filename: string): KzgSettings =
+proc readSetup(filename: string): CKzgSettings =
   var file = open(filename)
   let ret =  load_trusted_setup_file(result, file)
   doAssert ret == KZG_OK
   file.close()
 
-proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
+proc createKateBlobs(s: CKzgSettings, n: int): CKateBlobs =
   for i in 0..<n:
-    var blob: KzgBlob
-    discard urandom(blob)
-    for i in 0..<len(blob):
+    var blob: CKzgBlob
+    discard urandom(blob.bytes)
+    for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
-        blob[i] = MAX_TOP_BYTE
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+        blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
   for i in 0..<n:
-    var kate: KzgCommitment
-    doAssert blob_to_kzg_commitment(kate, result.blobs[i], s) == KZG_OK
+    var kate: CKzgCommitment
+    doAssert blob_to_kzg_commitment(kate.addr, result.blobs[i].addr, s) == KZG_OK
     result.kates.add(kate)
 
 let
@@ -64,12 +69,19 @@ suite "verify proof (abi)":
   let
     settings = readSetup(trustedSetupFile)
 
+  var
+    blob = CKzgBlob(bytes: blobBytes)
+    commitment = CKzgCommitment(bytes: commitmentBytes)
+    proof = CKzgProof(bytes: proofBytes)
+    inputPoint = CKzgBytes32(bytes: inputPointBytes)
+    claimedValue = CKzgBytes32(bytes: claimedValueBytes)
+
   test "verify batch proof success":
     var kb = kzgs.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, CKzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kb.kates[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i].addr, kb.blobs[i].addr, kb.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -84,15 +96,15 @@ suite "verify proof (abi)":
 
   test "verify batch proof failure":
     var kb = kzgs.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, CKzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i], kb.kates[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i].addr, kb.blobs[i].addr, kb.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var other = kzgs.createKateBlobs(nblobs)
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i], other.blobs[i], other.kates[i], kzgs)
+      let res = compute_blob_kzg_proof(kp[i].addr, other.blobs[i].addr, other.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -106,25 +118,25 @@ suite "verify proof (abi)":
     check ok == false
 
   test "verify blob proof":
-    var kp: KzgProof
-    var res = compute_blob_kzg_proof(kp, blob, commitment, kzgs)
+    var kp: CKzgProof
+    var res = compute_blob_kzg_proof(kp.addr, blob.addr, commitment.addr, kzgs)
     check res == KZG_OK
 
     var ok: bool
-    res = verify_blob_kzg_proof(ok, blob, commitment, kp, kzgs)
+    res = verify_blob_kzg_proof(ok, blob.addr, commitment.addr, kp.addr, kzgs)
     check res == KZG_OK
     check ok
 
   test "verify proof":
-    var kp: KzgProof
-    var ky: KzgBytes32
-    var res = compute_kzg_proof(kp, ky, blob, inputPoint, kzgs)
+    var kp: CKzgProof
+    var ky: CKzgBytes32
+    var res = compute_kzg_proof(kp.addr, ky.addr, blob.addr, inputPoint.addr, kzgs)
     check res == KZG_OK
     check kp == proof
     check ky == claimedValue
 
     var ok: bool
-    res = verify_kzg_proof(ok, commitment, inputPoint, claimedValue, kp, kzgs)
+    res = verify_kzg_proof(ok, commitment.addr, inputPoint.addr, claimedValue.addr, kp.addr, kzgs)
     check res == KZG_OK
     check ok
 
