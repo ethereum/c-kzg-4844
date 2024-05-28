@@ -5,19 +5,14 @@ import
   ../kzg,
   ./types
 
-type
-  KateBlobs = object
-    kates: seq[KzgCommitment]
-    blobs: seq[KzgBlob]
-
 proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
   var blob: KzgBlob
   for i in 0..<n:
-    discard urandom(blob)
-    for i in 0..<len(blob):
+    discard urandom(blob.bytes)
+    for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
-        blob[i] = MAX_TOP_BYTE
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+        blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
   for i in 0..<n:
@@ -27,12 +22,6 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
 
 suite "verify proof (high-level)":
   var ctx: KzgCtx
-
-  template blob: auto = blobBytes
-  template commitment: auto = commitmentBytes
-  template proof: auto = proofBytes
-  template claimedValue: auto = claimedValueBytes
-  template inputPoint: auto = inputPointBytes
 
   test "load trusted setup from string":
     let res = loadTrustedSetupFromString(trustedSetup)

@@ -14,25 +14,8 @@ export
 type
   KzgCtx* = ref object
     valFreed: bool
-    val: CKzgSettings
+    val: KzgSettings
 
-  # A basic blob data.
-  KzgBlob* = array[KzgBlobSize, byte]
-
-  # An array of 48 bytes. Represents an untrusted
-  # (potentially invalid) commitment/proof.
-  KzgBytes48* = array[48, byte]
-
-  # An array of 32 bytes. Represents an untrusted
-  # (potentially invalid) field element.
-  KzgBytes32* = array[32, byte]
-
-  # A trusted (valid) KZG commitment.
-  KzgCommitment* = KzgBytes48
-
-  # A trusted (valid) KZG proof.
-  KzgProof* = KzgBytes48
-  
   KzgProofAndY* = object
     proof*: KzgProof
     y*: KzgBytes32
@@ -73,21 +56,6 @@ template verify(res: KZG_RET, ret: untyped): untyped =
     return err($res)
   ok(ret)
 
-template `&`(x: KzgBytes32): auto =
-  cast[ptr CKzgBytes32](x[0].getPtr)
-
-template `&`(x: KzgBytes48): auto =
-  cast[ptr CKzgBytes48](x[0].getPtr)
-
-template `&`(x: KzgBlob): auto =
-  cast[ptr CKzgBlob](x[0].getPtr)
-
-template `&`(x: openArray[KzgBytes48]): auto =
-  cast[ptr CKzgBytes48](x[0].getPtr)
-
-template `&`(x: openArray[KzgBlob]): auto =
-  cast[ptr CKzgBlob](x[0].getPtr)
-  
 ##############################################################
 # Public functions
 ##############################################################
@@ -162,7 +130,7 @@ proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):
                      Result[KzgCommitment, string] {.gcsafe.} =
   var ret: KzgCommitment
-  let res = blob_to_kzg_commitment(&ret, &blob, ctx.val)
+  let res = blob_to_kzg_commitment(ret.getPtr, blob.getPtr, ctx.val)
   verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
@@ -170,10 +138,10 @@ proc computeProof*(ctx: KzgCtx,
                    z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
   var ret: KzgProofAndY
   let res = compute_kzg_proof(
-    &ret.proof,
-    &ret.y,
-    &blob,
-    &z,
+    ret.proof.getPtr,
+    ret.y.getPtr,
+    blob.getPtr,
+    z.getPtr,
     ctx.val)
   verify(res, ret)
 
@@ -182,9 +150,9 @@ proc computeProof*(ctx: KzgCtx,
                    commitmentBytes: KzgBytes48): Result[KzgProof, string] {.gcsafe.} =
   var proof: KzgProof
   let res = compute_blob_kzg_proof(
-    &proof,
-    &blob,
-    &commitmentBytes,
+    proof.getPtr,
+    blob.getPtr,
+    commitmentBytes.getPtr,
     ctx.val)
   verify(res, proof)
 
@@ -196,10 +164,10 @@ proc verifyProof*(ctx: KzgCtx,
   var valid: bool
   let res = verify_kzg_proof(
     valid,
-    &commitment,
-    &z,
-    &y,
-    &proof,
+    commitment.getPtr,
+    z.getPtr,
+    y.getPtr,
+    proof.getPtr,
     ctx.val)
   verify(res, valid)
 
@@ -210,9 +178,9 @@ proc verifyProof*(ctx: KzgCtx,
   var valid: bool
   let res = verify_blob_kzg_proof(
     valid,
-    &blob,
-    &commitment,
-    &proof,
+    blob.getPtr,
+    commitment.getPtr,
+    proof.getPtr,
     ctx.val)
   verify(res, valid)
 
@@ -232,9 +200,9 @@ proc verifyProofs*(ctx: KzgCtx,
   var valid: bool
   let res = verify_blob_kzg_proof_batch(
     valid,
-    &blobs,
-    &commitments,
-    &proofs,
+    blobs[0].getPtr,
+    commitments[0].getPtr,
+    proofs[0].getPtr,
     blobs.len.csize_t,
     ctx.val)
   verify(res, valid)

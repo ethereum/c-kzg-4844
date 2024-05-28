@@ -5,6 +5,11 @@ import
 
 from os import DirSep
 
+type
+  KateBlobs* = object
+    kates*: seq[KzgCommitment]
+    blobs*: seq[KzgBlob]
+
 const
   kzgPath* = currentSourcePath.rsplit(DirSep, 4)[0] & "/"
   trustedSetupFile* = kzgPath & "src/trusted_setup.txt"
@@ -16,6 +21,13 @@ const
   claimedValueBytes* = hexToByteArray[32]("365DBB557F9A257F7867005585001D7B6D220E38260615E49478FC7B3E0BF117")
   nblobs* = 5
   trustedSetup* = staticRead(trustedSetupFile)
+
+var
+  blob* = KzgBlob(bytes: blobBytes)
+  commitment* = KzgCommitment(bytes: commitmentBytes)
+  proof* = KzgProof(bytes: proofBytes)
+  inputPoint* = KzgBytes32(bytes: inputPointBytes)
+  claimedValue* = KzgBytes32(bytes: claimedValueBytes)
 
 when (NimMajor, NimMinor) > (1, 4):
   import std/sysrand

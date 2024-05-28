@@ -29,9 +29,9 @@ proc loadYaml(filename: string): YamlNode =
   s.close()
 
 proc fromHex(T: type, x: string): T =
-  if (x.len - 2) div 2 > sizeof(T):
+  if (x.len - 2) div 2 > sizeof(result.bytes):
     raise newException(ValueError, "invalid hex")
-  hexToByteArray(x, sizeof(T))
+  result.bytes = hexToByteArray(x, sizeof(result.bytes))
 
 proc fromHex(T: type, x: YamlNode): T =
   T.fromHex(x.content)
