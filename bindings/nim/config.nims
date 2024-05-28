@@ -1,6 +1,6 @@
 when fileExists("nimble.paths"):
   include "nimble.paths"
-  
+
 import strutils
 from os import DirSep
 
