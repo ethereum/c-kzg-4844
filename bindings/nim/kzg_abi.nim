@@ -92,17 +92,17 @@ proc load_trusted_setup_file*(res: KzgSettings,
 
 proc free_trusted_setup*(s: KzgSettings) {.kzg_abi.}
 
-proc blob_to_kzg_commitment*(res: ptr KzgCommitment,
+proc blob_to_kzg_commitment*(res: var KzgCommitment,
                          blob: ptr KzgBlob,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
-proc compute_kzg_proof*(res: ptr KzgProof,
-                         yOut: ptr KzgBytes32,
+proc compute_kzg_proof*(res: var KzgProof,
+                         yOut: var KzgBytes32,
                          blob: ptr KzgBlob,
                          zBytes: ptr KzgBytes32,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
-proc compute_blob_kzg_proof*(res: ptr KzgProof,
+proc compute_blob_kzg_proof*(res: var KzgProof,
                          blob: ptr KzgBlob,
                          commitmentBytes: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

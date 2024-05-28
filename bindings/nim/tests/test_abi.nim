@@ -54,7 +54,7 @@ proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
 
   for i in 0..<n:
     var kate: KzgCommitment
-    doAssert blob_to_kzg_commitment(kate.addr, result.blobs[i].addr, s) == KZG_OK
+    doAssert blob_to_kzg_commitment(kate, result.blobs[i].addr, s) == KZG_OK
     result.kates.add(kate)
 
 let
@@ -69,7 +69,7 @@ suite "verify proof (abi)":
     var kp: array[nblobs, KzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i].addr, kb.blobs[i].addr, kb.kates[i].addr, kzgs)
+      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i].addr, kb.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -87,12 +87,12 @@ suite "verify proof (abi)":
     var kp: array[nblobs, KzgProof]
 
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i].addr, kb.blobs[i].addr, kb.kates[i].addr, kzgs)
+      let res = compute_blob_kzg_proof(kp[i], kb.blobs[i].addr, kb.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var other = kzgs.createKateBlobs(nblobs)
     for i in 0..<nblobs:
-      let res = compute_blob_kzg_proof(kp[i].addr, other.blobs[i].addr, other.kates[i].addr, kzgs)
+      let res = compute_blob_kzg_proof(kp[i], other.blobs[i].addr, other.kates[i].addr, kzgs)
       check res == KZG_OK
 
     var ok: bool
@@ -107,7 +107,7 @@ suite "verify proof (abi)":
 
   test "verify blob proof":
     var kp: KzgProof
-    var res = compute_blob_kzg_proof(kp.addr, blob.addr, commitment.addr, kzgs)
+    var res = compute_blob_kzg_proof(kp, blob.addr, commitment.addr, kzgs)
     check res == KZG_OK
 
     var ok: bool
@@ -118,7 +118,7 @@ suite "verify proof (abi)":
   test "verify proof":
     var kp: KzgProof
     var ky: KzgBytes32
-    var res = compute_kzg_proof(kp.addr, ky.addr, blob.addr, inputPoint.addr, kzgs)
+    var res = compute_kzg_proof(kp, ky, blob.addr, inputPoint.addr, kzgs)
     check res == KZG_OK
     check kp == proof
     check ky == claimedValue
