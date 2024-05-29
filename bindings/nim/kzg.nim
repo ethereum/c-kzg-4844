@@ -130,7 +130,7 @@ proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):
                      Result[KzgCommitment, string] {.gcsafe.} =
   var ret: KzgCommitment
-  let res = blob_to_kzg_commitment(ret, blob, ctx.val)
+  let res = blob_to_kzg_commitment(ret, blob.getPtr, ctx.val)
   verify(res, ret)
 
 proc computeProof*(ctx: KzgCtx,
@@ -140,8 +140,8 @@ proc computeProof*(ctx: KzgCtx,
   let res = compute_kzg_proof(
     ret.proof,
     ret.y,
-    blob,
-    z,
+    blob.getPtr,
+    z.getPtr,
     ctx.val)
   verify(res, ret)
 
@@ -151,8 +151,8 @@ proc computeProof*(ctx: KzgCtx,
   var proof: KzgProof
   let res = compute_blob_kzg_proof(
     proof,
-    blob,
-    commitmentBytes,
+    blob.getPtr,
+    commitmentBytes.getPtr,
     ctx.val)
   verify(res, proof)
 
@@ -164,10 +164,10 @@ proc verifyProof*(ctx: KzgCtx,
   var valid: bool
   let res = verify_kzg_proof(
     valid,
-    commitment,
-    z,
-    y,
-    proof,
+    commitment.getPtr,
+    z.getPtr,
+    y.getPtr,
+    proof.getPtr,
     ctx.val)
   verify(res, valid)
 
@@ -178,9 +178,9 @@ proc verifyProof*(ctx: KzgCtx,
   var valid: bool
   let res = verify_blob_kzg_proof(
     valid,
-    blob,
-    commitment,
-    proof,
+    blob.getPtr,
+    commitment.getPtr,
+    proof.getPtr,
     ctx.val)
   verify(res, valid)
 
