@@ -1,0 +1,30 @@
+[package]
+name = "c-kzg-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[build-dependencies]
+cc = "1.0"
+
+[dependencies]
+arbitrary = "1.0"
+lazy_static = "1.4"
+libfuzzer-sys = "0.4"
+
+[dependencies.c-kzg]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_compute_cells"
+path = "fuzz_targets/fuzz_compute_cells.rs"
+test = false
+doc = false

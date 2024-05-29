@@ -23,6 +23,8 @@ use alloc::ffi::CString;
 use std::path::Path;
 use std::ptr::null_mut;
 
+use arbitrary::Arbitrary;
+
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
 
@@ -860,6 +862,14 @@ impl Default for Cell {
     }
 }
 
+impl Arbitrary<'_> for Blob {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let mut bytes = [0u8; BYTES_PER_BLOB];
+        u.fill_buffer(&mut bytes)?;
+        Ok(Blob::from(bytes))
+    }
+}
+
 /// Safety: The memory for `roots_of_unity` and `g1_values` and `g2_values` are only freed on
 /// calling `free_trusted_setup` which only happens when we drop the struct.
 unsafe impl Sync for KZGSettings {}
@@ -1159,13 +1169,22 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let file_path = root_dir.join("rustfuzz").join("corpus").join("fuzz_compute_cells").join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&blob.bytes).unwrap();
+            }
 
             match Cell::compute_cells(&blob, &kzg_settings) {
                 Ok(res) => assert_eq!(res.as_slice(), test.get_output().unwrap()),
