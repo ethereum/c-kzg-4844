@@ -1197,11 +1197,12 @@ mod tests {
             {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let file_path = root_dir
+                let dir_path = root_dir
                     .join("rustfuzz")
                     .join("corpus")
-                    .join("fuzz_compute_cells")
-                    .join(format!("data_{}.bin", index));
+                    .join("fuzz_compute_cells");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
             }
@@ -1237,11 +1238,12 @@ mod tests {
             {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let file_path = root_dir
+                let dir_path = root_dir
                     .join("rustfuzz")
                     .join("corpus")
-                    .join("fuzz_compute_cells_and_kzg_proofs")
-                    .join(format!("data_{}.bin", index));
+                    .join("fuzz_compute_cells_and_kzg_proofs");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
             }
@@ -1287,11 +1289,12 @@ mod tests {
             {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let file_path = root_dir
+                let dir_path = root_dir
                     .join("rustfuzz")
                     .join("corpus")
-                    .join("fuzz_verify_cell_kzg_proof")
-                    .join(format!("data_{}.bin", index));
+                    .join("verify_cell_kzg_proof");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&commitment.bytes).unwrap();
                 file.write_all(&cell_id.to_le_bytes()).unwrap();
