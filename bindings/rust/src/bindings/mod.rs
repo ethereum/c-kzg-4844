@@ -1292,7 +1292,7 @@ mod tests {
                 let dir_path = root_dir
                     .join("rustfuzz")
                     .join("corpus")
-                    .join("verify_cell_kzg_proof");
+                    .join("fuzz_verify_cell_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
                 let file_path = dir_path.join(format!("data_{}.bin", index));
                 let mut file = File::create(&file_path).unwrap();
