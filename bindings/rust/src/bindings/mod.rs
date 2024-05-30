@@ -1326,7 +1326,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(row_commitments), Ok(row_indices), Ok(column_indices), Ok(cells), Ok(proofs)) = (
@@ -1339,6 +1339,34 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_verify_cell_kzg_proof_batch");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                for row_commitment in &row_commitments {
+                    file.write_all(&row_commitment.bytes).unwrap();
+                }
+                for row_index in &row_indices {
+                    file.write_all(&row_index.to_le_bytes()).unwrap();
+                }
+                for column_index in &column_indices {
+                    file.write_all(&column_index.to_le_bytes()).unwrap();
+                }
+                for cell in &cells {
+                    file.write_all(&cell.to_bytes()).unwrap();
+                }
+                for proof in &proofs {
+                    file.write_all(&proof.bytes).unwrap();
+                }
+            }
 
             match KZGProof::verify_cell_kzg_proof_batch(
                 &row_commitments,
@@ -1365,7 +1393,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: recover_all_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(cell_ids), Ok(cells)) = (test.input.get_cell_ids(), test.input.get_cells())
@@ -1373,6 +1401,25 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_recover_all_cells");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                for cell_id in &cell_ids {
+                    file.write_all(&cell_id.to_le_bytes()).unwrap();
+                }
+                for cell in &cells {
+                    file.write_all(&cell.to_bytes()).unwrap();
+                }
+            }
 
             match Cell::recover_all_cells(&cell_ids, &cells, &kzg_settings) {
                 Ok(res) => assert_eq!(res.as_slice(), test.get_output().unwrap()),

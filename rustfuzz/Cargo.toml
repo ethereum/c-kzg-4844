@@ -41,3 +41,15 @@ name = "fuzz_verify_cell_kzg_proof"
 path = "fuzz_targets/fuzz_verify_cell_kzg_proof.rs"
 test = false
 doc = false
+
+[[bin]]
+name = "fuzz_verify_cell_kzg_proof_batch"
+path = "fuzz_targets/fuzz_verify_cell_kzg_proof_batch.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_recover_all_cells"
+path = "fuzz_targets/fuzz_recover_all_cells.rs"
+test = false
+doc = false
