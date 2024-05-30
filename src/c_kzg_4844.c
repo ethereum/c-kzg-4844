@@ -1813,14 +1813,6 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
-    /*
-     * Allocate an array to store the expanded roots of unity. We do this
-     * instead of re-using roots_of_unity_out because the expansion requires
-     * max_width+1 elements.
-     */
-    ret = new_fr_array(&s->expanded_roots_of_unity, s->max_width + 1);
-    if (ret != C_KZG_OK) goto out;
-
     /* Populate the roots of unity */
     ret = expand_root_of_unity(
         s->expanded_roots_of_unity, &root_of_unity, s->max_width
