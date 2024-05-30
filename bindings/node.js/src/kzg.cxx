@@ -767,7 +767,7 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     uint64_t *cell_ids = NULL;
     Cell *cells = NULL;
-    Cell *recovered = NULL;
+    Cell *recovered_cells = NULL;
     Napi::Array cellArray;
     size_t num_cells;
 
@@ -810,8 +810,8 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
             .ThrowAsJavaScriptException();
         goto out;
     }
-    recovered = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-    if (recovered == nullptr) {
+    recovered_cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
+    if (recovered_cells == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for recovered")
             .ThrowAsJavaScriptException();
         goto out;
@@ -829,8 +829,8 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
         memcpy(&cells[i], cell, BYTES_PER_CELL);
     }
 
-    ret = recover_all_cells(
-        recovered, cell_ids, cells, num_cells, kzg_settings
+    ret = recover_cells_and_kzg_proofs(
+        recovered_cells, NULL, cell_ids, cells, NULL, num_cells, kzg_settings
     );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
@@ -844,7 +844,9 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
         cellArray.Set(
             i,
             Napi::Buffer<uint8_t>::Copy(
-                env, reinterpret_cast<uint8_t *>(&recovered[i]), BYTES_PER_CELL
+                env,
+                reinterpret_cast<uint8_t *>(&recovered_cells[i]),
+                BYTES_PER_CELL
             )
         );
     }
@@ -853,6 +855,7 @@ Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
 
 out:
     free(cells);
+    free(recovered_cells);
     return result;
 }
 

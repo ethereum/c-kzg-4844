@@ -644,7 +644,7 @@ static PyObject* recover_all_cells_wrap(PyObject *self, PyObject *args) {
   PyObject *ret = NULL;
   uint64_t *cell_ids = NULL;
   Cell *cells = NULL;
-  Cell *recovered = NULL;
+  Cell *recovered_cells = NULL;
 
   /* Ensure inputs are the right types */
   if (!PyArg_UnpackTuple(args, "recover_all_cells", 3, 3, &input_cell_ids, &input_cells, &s) ||
@@ -710,44 +710,44 @@ static PyObject* recover_all_cells_wrap(PyObject *self, PyObject *args) {
   }
 
   /* Allocate space for the recovered cells */
-  recovered = calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-  if (recovered == NULL) {
+  recovered_cells = calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
+  if (recovered_cells == NULL) {
     ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for recovered cells");
     goto out;
   }
 
   /* Call our C function with our inputs */
-  if (recover_all_cells(recovered, cell_ids, cells, cells_count,
+  if (recover_cells_and_kzg_proofs(recovered_cells, NULL, cell_ids, cells, NULL, cells_count,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "recover_all_cells failed");
     goto out;
   }
 
   /* Convert our result to a list of bytes objects */
-  PyObject *recovered_cells = PyList_New(CELLS_PER_EXT_BLOB);
-  if (recovered_cells == NULL) {
+  PyObject *recovered_cells_list = PyList_New(CELLS_PER_EXT_BLOB);
+  if (recovered_cells_list == NULL) {
     ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for return list");
     goto out;
   }
   for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
     /* Convert cell to a bytes object */
-    PyObject *cell_bytes = PyBytes_FromStringAndSize((const char *)&recovered[i], BYTES_PER_CELL);
+    PyObject *cell_bytes = PyBytes_FromStringAndSize((const char *)&recovered_cells[i], BYTES_PER_CELL);
     if (cell_bytes == NULL) {
       Py_DECREF(cell_bytes);
       ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell bytes");
       goto out;
     }
     /* Add it to our list */
-    PyList_SetItem(recovered_cells, i, cell_bytes);
+    PyList_SetItem(recovered_cells_list, i, cell_bytes);
   }
 
   /* Success! */
-  ret = recovered_cells;
+  ret = recovered_cells_list;
 
 out:
   free(cell_ids);
   free(cells);
-  free(recovered);
+  free(recovered_cells);
   return ret;
 }
 

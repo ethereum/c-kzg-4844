@@ -311,10 +311,12 @@ proc recoverCells*(ctx: KzgCtx,
     return err($KZG_BADARGS)
 
   var ret: KzgCells
-  let res = recover_all_cells(
+  let res = recover_cells_and_kzg_proofs(
     ret[0].getPtr,
+    cast[ptr KzgProof](nil), # No proofs
     cellIds[0].getPtr,
     cells[0].getPtr,
+    cast[ptr KzgBytes48](nil), # No proofs
     cells.len.csize_t,
     ctx.val)
   verify(res, ret)

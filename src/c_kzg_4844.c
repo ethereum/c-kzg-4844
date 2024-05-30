@@ -3270,7 +3270,7 @@ out:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Data Availability Sampling Functions
+// Functions for EIP-7594
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -3394,25 +3394,32 @@ out:
 }
 
 /**
- * Given some cells for a blob, try to recover the missing ones.
+ * Given some cells/proofs for a blob, recover the missing ones.
  *
- * @param[out]  recovered   An array of CELLS_PER_EXT_BLOB cells
- * @param[in]   cell_ids    An array of ids for cells that you have
- * @param[in]   cells       An array of cells
- * @param[in]   num_cells   How many cells were provided
- * @param[in]   s           The trusted setup
+ * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
+ * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   cell_ids            An array of ids for cells that you have
+ * @param[in]   cells               An array of cells
+ * @param[in]   proofs_bytes        An array of proofs
+ * @param[in]   num_cells           How many cells were provided
+ * @param[in]   s                   The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
+ * @remark If recovered_proofs is NULL, they won't be recovered.
  */
-C_KZG_RET recover_all_cells(
-    Cell *recovered,
+C_KZG_RET recover_cells_and_kzg_proofs(
+    Cell *recovered_cells,
+    KZGProof *recovered_proofs,
     const uint64_t *cell_ids,
     const Cell *cells,
+    const Bytes48 *proofs_bytes,
     size_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *recovered_fr = NULL;
+    fr_t *recovered_cells_fr = NULL;
+    g1_t *recovered_proofs_g1 = NULL;
+    Blob *blob = NULL;
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
@@ -3434,20 +3441,24 @@ C_KZG_RET recover_all_cells(
         }
     }
 
-    /* Allocate space fr-form arrays */
-    ret = new_fr_array(&recovered_fr, s->max_width);
+    /* Do allocations */
+    ret = new_fr_array(&recovered_cells_fr, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&recovered_proofs_g1, CELLS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all cells as missing */
     for (size_t i = 0; i < s->max_width; i++) {
-        recovered_fr[i] = FR_NULL;
+        recovered_cells_fr[i] = FR_NULL;
     }
 
     /* Update with existing cells */
     for (size_t i = 0; i < num_cells; i++) {
         size_t index = cell_ids[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t *field = &recovered_fr[index + j];
+            fr_t *field = &recovered_cells_fr[index + j];
 
             /*
              * Check if the field has already been set. If it has, there was a
@@ -3467,32 +3478,51 @@ C_KZG_RET recover_all_cells(
 
     /* Check if recovery is necessary */
     if (num_cells == CELLS_PER_EXT_BLOB) {
-        memcpy(recovered, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+        memcpy(recovered_cells, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
         return C_KZG_OK;
     }
 
-    /* Call the implementation function to do the bulk of the work */
-    ret = recover_all_cells_impl(recovered_fr, recovered_fr, s);
+    /* Perform cell recovery */
+    ret = recover_all_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert the recovered data points to byte-form */
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
-            bytes_from_bls_field(&recovered[i].data[j], &recovered_fr[index]);
+            bytes_from_bls_field(
+                &recovered_cells[i].data[j], &recovered_cells_fr[index]
+            );
         }
     }
 
-    /* Check that the recovered data matches our input cells */
-    for (size_t i = 0; i < num_cells; i++) {
-        if (memcmp(&recovered[cell_ids[i]], &cells[i], sizeof(Cell))) {
-            ret = C_KZG_ERROR;
-            goto out;
+    if (recovered_proofs != NULL) {
+        /* TODO: Currently, recovered_proofs_g1 isn't really used. If we add the
+         * ability to do individual cell proof computation, we could compute the
+         * missing ones instead of all of them. In that situation, we'd just
+         * fill in the missing spots.
+         */
+        for (size_t i = 0; i < num_cells; i++) {
+            /* Convert the untrusted proofs to trusted proofs */
+            ret = bytes_to_kzg_proof(
+                &recovered_proofs_g1[cell_ids[i]], &proofs_bytes[i]
+            );
+            if (ret != C_KZG_OK) goto out;
         }
+
+        /* Convert cells to a blob, so we can re-compute proofs */
+        ret = cells_to_blob(blob, recovered_cells);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Compute proofs and skip cell computation */
+        ret = compute_cells_and_kzg_proofs(NULL, recovered_proofs, blob, s);
+        if (ret != C_KZG_OK) goto out;
     }
 
 out:
-    c_kzg_free(recovered_fr);
+    c_kzg_free(recovered_cells_fr);
+    c_kzg_free(recovered_proofs_g1);
+    c_kzg_free(blob);
     return ret;
 }
 

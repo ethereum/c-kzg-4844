@@ -496,10 +496,12 @@ func CellsToBlob(cells [CellsPerExtBlob]Cell) (Blob, error) {
 /*
 RecoverAllCells is the binding for:
 
-	C_KZG_RET recover_all_cells(
-	    Cell *recovered,
+	C_KZG_RET recover_cells_and_kzg_proofs(
+	    Cell *recovered_cells,
+	    KZGProof *recovered_proofs,
 	    const uint64_t *cell_ids,
 	    const Cell *cells,
+	    const Bytes48 *proofs_bytes,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
@@ -511,18 +513,20 @@ func RecoverAllCells(cellIds []uint64, cells []Cell) ([CellsPerExtBlob]Cell, err
 		return [CellsPerExtBlob]Cell{}, ErrBadArgs
 	}
 
-	recovered := [CellsPerExtBlob]Cell{}
-	ret := C.recover_all_cells(
-		(*C.Cell)(unsafe.Pointer(&recovered)),
+	recoveredCells := [CellsPerExtBlob]Cell{}
+	ret := C.recover_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
+		nil, /* No proofs */
 		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
+		nil, /* No proofs */
 		(C.size_t)(len(cells)),
 		&settings)
 
 	if ret != C.C_KZG_OK {
 		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
 	}
-	return recovered, nil
+	return recoveredCells, nil
 }
 
 /*

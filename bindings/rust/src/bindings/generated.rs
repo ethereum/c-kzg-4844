@@ -197,10 +197,12 @@ extern "C" {
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn recover_all_cells(
-        recovered: *mut Cell,
+    pub fn recover_cells_and_kzg_proofs(
+        recovered_cells: *mut Cell,
+        recovered_proofs: *mut KZGProof,
         cell_ids: *const u64,
         cells: *const Cell,
+        proofs_bytes: *const Bytes48,
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;

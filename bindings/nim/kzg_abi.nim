@@ -159,8 +159,10 @@ proc verify_cell_kzg_proof_batch*(res: var bool,
                          numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
-proc recover_all_cells*(recoveredOut: ptr KzgCell,
+proc recover_cells_and_kzg_proofs*(recoveredOut: ptr KzgCell,
+                         recoveredProofsOut: ptr KzgProof,
                          cellIds: ptr uint64,
                          cells: ptr KzgCell,
+                         proofs: ptr KzgBytes48,
                          numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

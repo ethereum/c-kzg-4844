@@ -589,17 +589,17 @@ public class ReferenceTests
             RecoverAllCellsTest test = _deserializer.Deserialize<RecoverAllCellsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] recovered = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] recoveredCells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
             ulong[] cellIds = test.Input.CellIds.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                Ckzg.RecoverAllCells(recovered, cellIds, cells, numCells, _ts);
+                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, null, cellIds, cells, null, numCells, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedRecovered = GetFlatBytes(test.Output);
-                Assert.That(recovered, Is.EqualTo(expectedRecovered));
+                byte[] expectedRecoveredCells = GetFlatBytes(test.Output);
+                Assert.That(recoveredCells, Is.EqualTo(expectedRecoveredCells));
             }
             catch
             {

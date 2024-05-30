@@ -705,17 +705,19 @@ impl Cell {
                 cells.len()
             )));
         }
-        let mut recovered = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
-            let res = recover_all_cells(
-                recovered.as_mut_ptr(),
+            let res = recover_cells_and_kzg_proofs(
+                recovered_cells.as_mut_ptr(),
+                null_mut(),
                 cell_ids.as_ptr(),
                 cells.as_ptr(),
+                null_mut(),
                 cells.len(),
                 kzg_settings,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(Box::new(recovered))
+                Ok(Box::new(recovered_cells))
             } else {
                 Err(Error::CError(res))
             }

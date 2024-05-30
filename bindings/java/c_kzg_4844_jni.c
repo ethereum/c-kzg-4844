@@ -614,7 +614,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells(
   uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
 
-  C_KZG_RET ret = recover_all_cells(recovered_native, cell_ids_native, cells_native, count, settings);
+  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_native, NULL, cell_ids_native, cells_native, NULL, count, settings);
 
   (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
   (*env)->ReleaseLongArrayElements(env, cell_ids, (jlong *)cell_ids_native, JNI_ABORT);

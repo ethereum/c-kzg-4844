@@ -1780,8 +1780,10 @@ static void test_reconstruct__succeeds_random_blob(void) {
     Blob blob;
     Cell *cells = NULL;
     KZGProof *proofs = NULL;
-    Cell *partial = NULL;
-    Cell *recovered = NULL;
+    Cell *partial_cells = NULL;
+    Bytes48 *partial_proofs = NULL;
+    Cell *recovered_cells = NULL;
+    KZGProof *recovered_proofs = NULL;
     size_t num_partial_cells = CELLS_PER_EXT_BLOB / 2;
     uint64_t *cell_ids = NULL;
     int diff;
@@ -1791,11 +1793,23 @@ static void test_reconstruct__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&partial, num_partial_cells, sizeof(Cell));
+    ret = c_kzg_calloc(
+        (void **)&partial_cells, num_partial_cells, sizeof(Cell)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc(
+        (void **)&partial_proofs, num_partial_cells, sizeof(Bytes48)
+    );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc((void **)&cell_ids, num_partial_cells, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&recovered, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ret = c_kzg_calloc(
+        (void **)&recovered_cells, CELLS_PER_EXT_BLOB, sizeof(Cell)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc(
+        (void **)&recovered_proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof)
+    );
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Get a random blob */
@@ -1808,28 +1822,29 @@ static void test_reconstruct__succeeds_random_blob(void) {
     /* Erase half of the cells */
     for (size_t i = 0; i < num_partial_cells; i++) {
         cell_ids[i] = i * 2;
-        memcpy(&partial[i], &cells[cell_ids[i]], sizeof(Cell));
+        memcpy(&partial_cells[i], &cells[cell_ids[i]], sizeof(Cell));
+        memcpy(&partial_proofs[i], &proofs[cell_ids[i]], sizeof(Bytes48));
     }
 
     /* Reconstruct with half of the cells */
-    ret = recover_all_cells(
-        recovered, cell_ids, partial, num_partial_cells, &s
+    ret = recover_cells_and_kzg_proofs(
+        recovered_cells,
+        recovered_proofs,
+        cell_ids,
+        partial_cells,
+        partial_proofs,
+        num_partial_cells,
+        &s
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Check that all of the cells match */
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        diff = memcmp(&cells[i], &recovered[i], sizeof(Cell));
+        diff = memcmp(&cells[i], &recovered_cells[i], sizeof(Cell));
+        ASSERT_EQUALS(diff, 0);
+        diff = memcmp(&proofs[i], &recovered_proofs[i], sizeof(KZGProof));
         ASSERT_EQUALS(diff, 0);
     }
-
-    /* Recover the blob from the recovered cells */
-    Blob recovered_blob;
-    cells_to_blob(&recovered_blob, recovered);
-
-    /* Ensure the blobs are the same */
-    diff = memcmp(blob.bytes, recovered_blob.bytes, sizeof(Blob));
-    ASSERT_EQUALS(diff, 0);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
