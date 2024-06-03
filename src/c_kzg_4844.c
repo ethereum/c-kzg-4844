@@ -3329,9 +3329,6 @@ C_KZG_RET compute_kzg_proof_multi_impl(
     fr_t *denominator = NULL;
     fr_t *quotient = NULL;
 
-    void *scratch = NULL;
-    blst_scalar *scalars = NULL;
-
     size_t quotient_len = poly_quotient_length(
         len, FIELD_ELEMENTS_PER_CELL + 1
     );
@@ -3348,8 +3345,6 @@ C_KZG_RET compute_kzg_proof_multi_impl(
     if (ret != C_KZG_OK) goto out;
 
 out:
-    c_kzg_free(scratch);
-    c_kzg_free(scalars);
     c_kzg_free(denominator);
     c_kzg_free(quotient);
     return ret;
