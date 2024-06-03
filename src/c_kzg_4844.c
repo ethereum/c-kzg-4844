@@ -2593,18 +2593,19 @@ out:
  */
 static C_KZG_RET zero_polynomial_via_multiplication(
     fr_t *zero_eval,
-    poly_t *zero_poly,
-    uint64_t length,
+    fr_t *zero_poly,
+    size_t *zero_poly_len,
+    size_t length,
     const uint64_t *missing_indices,
-    uint64_t len_missing,
+    size_t len_missing,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
     if (len_missing == 0) {
-        zero_poly->length = 0;
-        for (uint64_t i = 0; i < length; i++) {
+        zero_poly_len = 0;
+        for (size_t i = 0; i < length; i++) {
             zero_eval[i] = FR_ZERO;
-            zero_poly->coeffs[i] = FR_ZERO;
+            zero_poly[i] = FR_ZERO;
         }
         return C_KZG_OK;
     }
@@ -2624,15 +2625,15 @@ static C_KZG_RET zero_polynomial_via_multiplication(
 
     if (len_missing <= missing_per_partial) {
         ret = do_zero_poly_mul_partial(
-            zero_poly->coeffs,
-            &zero_poly->length,
+            zero_poly,
+            zero_poly_len,
             missing_indices,
             len_missing,
             domain_stride,
             s
         );
         if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(zero_eval, zero_poly->coeffs, length, s);
+        ret = fft_fr(zero_eval, zero_poly, length, s);
         if (ret != C_KZG_OK) goto out;
     } else {
 
@@ -2716,14 +2717,12 @@ static C_KZG_RET zero_polynomial_via_multiplication(
         }
 
         // Process final output
-        ret = pad_p(
-            zero_poly->coeffs, length, partials[0].coeffs, partials[0].length
-        );
+        ret = pad_p(zero_poly, length, partials[0].coeffs, partials[0].length);
         if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(zero_eval, zero_poly->coeffs, length, s);
+        ret = fft_fr(zero_eval, zero_poly, length, s);
         if (ret != C_KZG_OK) goto out;
 
-        zero_poly->length = partials[0].length;
+        *zero_poly_len = partials[0].length;
 
         c_kzg_free(work);
         c_kzg_free(partials);
@@ -2817,38 +2816,34 @@ static C_KZG_RET recover_all_cells_impl(
     C_KZG_RET ret;
     uint64_t *missing = NULL;
     fr_t *zero_eval = NULL;
+    fr_t *zero_poly = NULL;
+    size_t zero_poly_len = 0;
     fr_t *poly_evaluations_with_zero = NULL;
     fr_t *poly_with_zero = NULL;
-    fr_t *eval_scaled_poly_with_zero = NULL;
-    fr_t *eval_scaled_zero_poly = NULL;
-    fr_t *scaled_reconstructed_poly = NULL;
+    fr_t *eval_poly_with_zero = NULL;
+    fr_t *eval_zero_poly = NULL;
+    fr_t *reconstructed_poly = NULL;
     fr_t *cells_brp = NULL;
-
-    poly_t zero_poly = {NULL, 0};
-    zero_poly.coeffs = NULL;
 
     /* Allocate space for arrays */
     ret = c_kzg_calloc((void **)&missing, s->max_width, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&zero_eval, s->max_width);
     if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&zero_poly, s->max_width);
+    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_evaluations_with_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&poly_with_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&eval_scaled_poly_with_zero, s->max_width);
+    ret = new_fr_array(&eval_poly_with_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&eval_scaled_zero_poly, s->max_width);
+    ret = new_fr_array(&eval_zero_poly, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&scaled_reconstructed_poly, s->max_width);
+    ret = new_fr_array(&reconstructed_poly, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&cells_brp, s->max_width);
     if (ret != C_KZG_OK) goto out;
-
-    /* Allocate space for the zero poly */
-    ret = new_fr_array(&zero_poly.coeffs, s->max_width);
-    if (ret != C_KZG_OK) goto out;
-    zero_poly.length = s->max_width;
 
     /* Bit-reverse the data points */
     memcpy(cells_brp, cells, s->max_width * sizeof(fr_t));
@@ -2858,8 +2853,8 @@ static C_KZG_RET recover_all_cells_impl(
     if (ret != C_KZG_OK) goto out;
 
     /* Identify missing cells */
-    uint64_t len_missing = 0;
-    for (uint64_t i = 0; i < s->max_width; i++) {
+    size_t len_missing = 0;
+    for (size_t i = 0; i < s->max_width; i++) {
         if (fr_is_null(&cells_brp[i])) {
             missing[len_missing++] = i;
         }
@@ -2868,13 +2863,19 @@ static C_KZG_RET recover_all_cells_impl(
     /* Check that we have enough cells */
     assert(len_missing <= s->max_width / 2);
 
-    // Calculate `Z_r,I`
+    /* Calculate Z_r,I */
     ret = zero_polynomial_via_multiplication(
-        zero_eval, &zero_poly, s->max_width, missing, len_missing, s
+        zero_eval,
+        zero_poly,
+        &zero_poly_len,
+        s->max_width,
+        missing,
+        len_missing,
+        s
     );
     if (ret != C_KZG_OK) goto out;
 
-    // Construct E * Z_r,I: the loop makes the evaluation polynomial
+    /* Construct E * Z_r,I: the loop makes the evaluation polynomial */
     for (size_t i = 0; i < s->max_width; i++) {
         if (fr_is_null(&cells_brp[i])) {
             poly_evaluations_with_zero[i] = FR_ZERO;
@@ -2885,61 +2886,59 @@ static C_KZG_RET recover_all_cells_impl(
         }
     }
 
-    // Now inverse FFT so that poly_with_zero is (E * Z_r,I)(x) = (D * Z_r,I)(x)
+    /* Now inverse FFT so that poly_with_zero is (D * Z_r,I)(x) */
     ret = ifft_fr(poly_with_zero, poly_evaluations_with_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    // x -> k * x
+    /* Scale both polynomials */
     scale_poly(poly_with_zero, s->max_width);
-    scale_poly(zero_poly.coeffs, zero_poly.length);
+    scale_poly(zero_poly, zero_poly_len);
 
-    // Q1 = (D * Z_r,I)(k * x)
-    fr_t *scaled_poly_with_zero = poly_with_zero; // Renaming
-    // Q2 = Z_r,I(k * x)
-    fr_t *scaled_zero_poly = zero_poly.coeffs; // Renaming
-
-    // Polynomial division by convolution: Q3 = Q1 / Q2
-    ret = fft_fr(
-        eval_scaled_poly_with_zero, scaled_poly_with_zero, s->max_width, s
-    );
+    /*
+     * Polynomial division by convolution: Q3 = Q1 / Q2 where
+     *   Q1 = (D * Z_r,I)(k * x)
+     *   Q2 = Z_r,I(k * x)
+     *   Q3 = D(k * x)
+     */
+    ret = fft_fr(eval_poly_with_zero, poly_with_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    ret = fft_fr(eval_scaled_zero_poly, scaled_zero_poly, s->max_width, s);
+    /*
+     * To be safe, set unused elements of zero_poly to zero. In the next step,
+     * we evaluate at max_width instead zero_poly_len, so these values matter.
+     */
+    for (size_t i = zero_poly_len; i < s->max_width; i++) {
+        zero_poly[i] = FR_ZERO;
+    }
+
+    /* We use max_width here (not zero_poly_len) intentionally */
+    ret = fft_fr(eval_zero_poly, zero_poly, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    fr_t *eval_scaled_reconstructed_poly = eval_scaled_poly_with_zero;
-    for (uint64_t i = 0; i < s->max_width; i++) {
+    /* The result of the division is Q3 */
+    for (size_t i = 0; i < s->max_width; i++) {
         fr_div(
-            &eval_scaled_reconstructed_poly[i],
-            &eval_scaled_poly_with_zero[i],
-            &eval_scaled_zero_poly[i]
+            &eval_poly_with_zero[i], &eval_poly_with_zero[i], &eval_zero_poly[i]
         );
     }
 
-    // The result of the division is D(k * x):
-    ret = ifft_fr(
-        scaled_reconstructed_poly,
-        eval_scaled_reconstructed_poly,
-        s->max_width,
-        s
-    );
+    /* Convert the evaluations back to coefficents */
+    ret = ifft_fr(reconstructed_poly, eval_poly_with_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    // k * x -> x
-    unscale_poly(scaled_reconstructed_poly, s->max_width);
+    /* Unscale our reconstructed polynomial to get D(x) */
+    unscale_poly(reconstructed_poly, s->max_width);
 
-    // Finally we have D(x) which evaluates to our original data at the powers
-    // of roots of unity
-    fr_t *reconstructed_poly = scaled_reconstructed_poly; // Renaming
-
-    // The evaluation polynomial for D(x) is the reconstructed data:
+    /*
+     * After unscaling the reconstructed polynomial, we have D(x) which
+     * evaluates to our original data at the roots of unity. Next, we evaluate
+     * the polynomial to get the original data.
+     */
     ret = fft_fr(recovered, reconstructed_poly, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
-    ret = bit_reversal_permutation(
-        recovered, sizeof(recovered[0]), s->max_width
-    );
+    ret = bit_reversal_permutation(recovered, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -2947,10 +2946,10 @@ out:
     c_kzg_free(zero_eval);
     c_kzg_free(poly_evaluations_with_zero);
     c_kzg_free(poly_with_zero);
-    c_kzg_free(eval_scaled_poly_with_zero);
-    c_kzg_free(eval_scaled_zero_poly);
-    c_kzg_free(scaled_reconstructed_poly);
-    c_kzg_free(zero_poly.coeffs);
+    c_kzg_free(eval_poly_with_zero);
+    c_kzg_free(eval_zero_poly);
+    c_kzg_free(reconstructed_poly);
+    c_kzg_free(zero_poly);
     c_kzg_free(cells_brp);
     return ret;
 }
