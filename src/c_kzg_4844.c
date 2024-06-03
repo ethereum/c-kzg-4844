@@ -40,11 +40,6 @@
 /** Returns number of elements in a statically defined array. */
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-/** Returns the larger value. */
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
-
 /**
  * Helper macro to release memory allocated on the heap. Unlike free(),
  * c_kzg_free() macro sets the pointer value to NULL after freeing it.
@@ -273,6 +268,18 @@ static C_KZG_RET new_bool_array(bool **x, size_t n) {
  */
 static inline size_t min(size_t a, size_t b) {
     return a < b ? a : b;
+}
+
+/**
+ * Get the maximum of two unsigned integers.
+ *
+ * @param[in]   a   An unsigned integer
+ * @param[in]   b   An unsigned integer
+ *
+ * @return Whichever value is bigger.
+ */
+static inline size_t max(size_t a, size_t b) {
+    return a > b ? a : b;
 }
 
 /**
@@ -2300,7 +2307,7 @@ static void fft_fr_fast(
     size_t n
 ) {
     size_t half = n / 2;
-    if (half > 0) { // Tunable parameter
+    if (half > 0) {
         fr_t y_times_root;
         fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fft_fr_fast(
@@ -2404,40 +2411,34 @@ static inline uint64_t next_power_of_two(uint64_t v) {
  * Calculates the minimal polynomial that evaluates to zero for powers of roots
  * of unity at the given indices.
  *
- * Uses straightforward long multiplication to calculate the product of `(x -
- * r^i)` where `r` is a root of unity and the `i`s are the indices at which it
- * must evaluate to zero. This results in a polynomial of degree @p len_indices.
+ * Uses straightforward long multiplication to calculate the product of
+ * `(x - * r^i)` where `r` is a root of unity and the `i`s are the indices at
+ * which it must evaluate to zero. This results in a poly of degree indices_len.
  *
- * @param[in,out] dst      The zero polynomial for @p indices. The space
- * allocated for coefficients must be at least @p len_indices + 1, as indicated
- * by the `length` value on entry.
- * @param[in]   indices     Array of missing indices of length @p len_indices
- * @param[in]   len_indices Length of the missing indices array, @p indices
- * @param[in]   stride      Stride length through the powers of the root of
- * unity
- * @param[in]   s           The trusted setup
+ * @param[in,out]   dst         The zero polynomial for indices
+ * @param[in,out]   dst_len     The length of dst
+ * @param[in]       indices     The array of missing indices
+ * @param[in]       indices_len The number of missing indices
+ * @param[in]       s           The trusted setup
+ *
+ * @remark dst_len must be at least indices_len + 1 in length.
  */
 static C_KZG_RET do_zero_poly_mul_partial(
     fr_t *dst,
     size_t *dst_len,
     const uint64_t *indices,
-    uint64_t len_indices,
-    uint64_t stride,
+    uint64_t indices_len,
     const KZGSettings *s
 ) {
-    if (len_indices == 0) {
+    fr_t neg_di;
+
+    if (indices_len == 0) {
         return C_KZG_BADARGS;
     }
 
-    blst_fr_cneg(
-        &dst[0], &s->expanded_roots_of_unity[indices[0] * stride], true
-    );
-
-    for (size_t i = 1; i < len_indices; i++) {
-        fr_t neg_di;
-        blst_fr_cneg(
-            &neg_di, &s->expanded_roots_of_unity[indices[i] * stride], true
-        );
+    blst_fr_cneg(&dst[0], &s->expanded_roots_of_unity[indices[0]], true);
+    for (size_t i = 1; i < indices_len; i++) {
+        blst_fr_cneg(&neg_di, &s->expanded_roots_of_unity[indices[i]], true);
         dst[i] = neg_di;
         blst_fr_add(&dst[i], &dst[i], &dst[i - 1]);
         for (size_t j = i - 1; j > 0; j--) {
@@ -2447,11 +2448,11 @@ static C_KZG_RET do_zero_poly_mul_partial(
         blst_fr_mul(&dst[0], &dst[0], &neg_di);
     }
 
-    dst[len_indices] = FR_ONE;
-    for (size_t i = len_indices + 1; i < *dst_len; i++) {
+    dst[indices_len] = FR_ONE;
+    for (size_t i = indices_len + 1; i < *dst_len; i++) {
         dst[i] = FR_ZERO;
     }
-    *dst_len = len_indices + 1;
+    *dst_len = indices_len + 1;
 
     return C_KZG_OK;
 }
@@ -2462,7 +2463,7 @@ static C_KZG_RET do_zero_poly_mul_partial(
  * @param[out]  out     The output polynomial with padded zeros
  * @param[out]  out_len The length of the output polynomial
  * @param[in]   in      The input polynomial to be copied
- * @param[in]   out_len The length of the input polynomial
+ * @param[in]   in_len  The length of the input polynomial
  */
 static C_KZG_RET pad_p(
     fr_t *out, size_t out_len, const fr_t *in, size_t in_len
@@ -2501,34 +2502,51 @@ static C_KZG_RET pad_p(
  */
 static C_KZG_RET reduce_partials(
     poly_t *out,
-    uint64_t len_out,
+    size_t len_out,
     fr_t *scratch,
-    uint64_t len_scratch,
+    size_t len_scratch,
     const poly_t *partials,
-    uint64_t partial_count,
+    size_t partial_count,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
 
-    CHECK(is_power_of_two(len_out));
-    CHECK(len_scratch >= 3 * len_out);
-    CHECK(partial_count > 0);
+    /* Some sanity checks */
+    if (!is_power_of_two(len_out)) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+    if (len_scratch < len_out * 3) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+    if (partial_count == 0) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
-    // The degree of the output polynomial is the sum of the degrees of the
-    // input polynomials.
-    uint64_t out_degree = 0;
+    /*
+     * The degree of the output polynomial is the sum of the degrees of the
+     * input polynomials.
+     */
+    size_t out_degree = 0;
     for (size_t i = 0; i < partial_count; i++) {
         out_degree += partials[i].length - 1;
     }
-    CHECK(out_degree + 1 <= len_out);
+    if (out_degree + 1 > len_out) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
-    // Split `scratch` up into three equally sized working arrays
-    fr_t *p_padded = scratch;
-    fr_t *mul_eval_ps = scratch + len_out;
-    fr_t *p_eval = scratch + 2 * len_out;
+    /* Split scratch up into three equally sized working arrays */
+    fr_t *p_padded = scratch + len_out * 0;
+    fr_t *mul_eval_ps = scratch + len_out * 1;
+    fr_t *p_eval = scratch + len_out * 2;
 
-    // Do the last partial first: it is no longer than the others and the
-    // padding can remain in place for the rest.
+    /*
+     * Do the last partial first: it is no longer than the others and the
+     * padding can remain in place for the rest.
+     */
     ret = pad_p(
         p_padded,
         len_out,
@@ -2536,17 +2554,18 @@ static C_KZG_RET reduce_partials(
         partials[partial_count - 1].length
     );
     if (ret != C_KZG_OK) goto out;
+
     ret = fft_fr(mul_eval_ps, p_padded, len_out, s);
     if (ret != C_KZG_OK) goto out;
 
-    for (uint64_t i = 0; i < partial_count - 1; i++) {
+    for (size_t i = 0; i < partial_count - 1; i++) {
         ret = pad_p(
             p_padded, partials[i].length, partials[i].coeffs, partials[i].length
         );
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(p_eval, p_padded, len_out, s);
         if (ret != C_KZG_OK) goto out;
-        for (uint64_t j = 0; j < len_out; j++) {
+        for (size_t j = 0; j < len_out; j++) {
             blst_fr_mul(&mul_eval_ps[j], &mul_eval_ps[j], &p_eval[j]);
         }
     }
@@ -2561,145 +2580,112 @@ out:
 }
 
 /**
- * Calculate the minimal polynomial that evaluates to zero for powers of roots
- * of unity that correspond to missing indices.
+ * Calculate the minimal polynomial that evaluates to zero for the powers of
+ * roots of unity that correspond to missing indices.
  *
  * This is done simply by multiplying together `(x - r^i)` for all the `i` that
  * are missing indices, using a combination of direct multiplication
  * (#do_zero_poly_mul_partial) and iterated multiplication via convolution
  * (#reduce_partials).
  *
- * Also calculates the FFT (the "evaluation polynomial").
+ * @param[out]  zero_poly       The zero polynomial
+ * @param[out]  zero_poly_len   The zero polynomial length
+ * @param[in]   missing_indices The indices of the missing coefficients
+ * @param[in]   len_missing     The number of missing indices
+ * @param[in]   s               The trusted setup
  *
- * @remark This fails when all the indices in our domain are missing (@p
- * len_missing == @p length), since the resulting polynomial exceeds the size
- * allocated. But we know that the answer is `x^length - 1` in that case if we
- * ever need it.
- *
- * @param[out] zero_eval The "evaluation polynomial": the coefficients are the
- * values of @p zero_poly for each power of `r`. Space required is @p length.
- * @param[out] zero_poly The zero polynomial. On return the length will be set
- * to `len_missing + 1` and the remaining coefficients set to zero.  Space
- * required is @p length.
- * @param[in]  length    Size of the domain of evaluation (number of powers of
- * `r`)
- * @param[in]  missing_indices Array length @p len_missing containing the
- * indices of the missing coefficients
- * @param[in]  len_missing     Length of @p missing_indices
- * @param[in]   s           The trusted setup
- *
- * @todo What is the performance impact of tuning `degree_of_partial` and
- * `reduction factor`?
+ * @remark This does not work if all indices are missing.
+ * @remark Unused coeffecients are set to zero.
  */
 static C_KZG_RET zero_polynomial_via_multiplication(
-    fr_t *zero_eval,
     fr_t *zero_poly,
     size_t *zero_poly_len,
-    size_t length,
     const uint64_t *missing_indices,
     size_t len_missing,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    fr_t *work = NULL;
+    fr_t *scratch = NULL;
+    poly_t *partials = NULL;
+
+    /* If nothing is missing, return all zeros */
     if (len_missing == 0) {
-        zero_poly_len = 0;
-        for (size_t i = 0; i < length; i++) {
-            zero_eval[i] = FR_ZERO;
+        for (size_t i = 0; i < s->max_width; i++) {
             zero_poly[i] = FR_ZERO;
         }
-        return C_KZG_OK;
+        *zero_poly_len = 0;
+        ret = C_KZG_OK;
+        goto out;
     }
-    CHECK(len_missing < length);
-    CHECK(length <= s->max_width);
-    CHECK(is_power_of_two(length));
 
-    // Tunable parameter. Must be a power of two.
-    uint64_t degree_of_partial = 32;
-    uint64_t missing_per_partial = degree_of_partial - 1;
-    uint64_t domain_stride = s->max_width / length;
-    uint64_t partial_count = (len_missing + missing_per_partial - 1) /
-                             missing_per_partial;
-    uint64_t n = min(
-        next_power_of_two(partial_count * degree_of_partial), length
-    );
+    /* Tunable parameter. Must be a power of two */
+    const size_t reduction_factor = 4;
+    /* Tunable parameter. Must be a power of two */
+    const size_t degree_of_partial = 32;
+
+    const size_t missing_per_partial = degree_of_partial - 1;
+    size_t partial_count = (len_missing + missing_per_partial - 1) /
+                           missing_per_partial;
+    size_t n = next_power_of_two(partial_count * degree_of_partial);
 
     if (len_missing <= missing_per_partial) {
         ret = do_zero_poly_mul_partial(
-            zero_poly,
-            zero_poly_len,
-            missing_indices,
-            len_missing,
-            domain_stride,
-            s
+            zero_poly, zero_poly_len, missing_indices, len_missing, s
         );
-        if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(zero_eval, zero_poly, length, s);
         if (ret != C_KZG_OK) goto out;
     } else {
-
-        // Work space for building and reducing the partials
-        fr_t *work;
-        ret = new_fr_array(
-            &work, next_power_of_two(partial_count * degree_of_partial)
-        );
+        ret = new_fr_array(&work, n);
         if (ret != C_KZG_OK) goto out;
-
-        // Build the partials from the missing indices
-
-        // Just allocate pointers here since we're re-using `work` for the
-        // partial processing Combining partials can be done mostly in-place,
-        // using a scratchpad.
-        poly_t *partials;
+        ret = new_fr_array(&scratch, n * 3);
+        if (ret != C_KZG_OK) goto out;
         ret = c_kzg_calloc((void **)&partials, partial_count, sizeof(poly_t));
         if (ret != C_KZG_OK) goto out;
 
-        uint64_t offset = 0, out_offset = 0, max = len_missing;
+        /* Build the partials from the missing indices */
+        size_t offset = 0, out_offset = 0, max = len_missing;
         for (size_t i = 0; i < partial_count; i++) {
-            uint64_t end = min(offset + missing_per_partial, max);
+            size_t end = min(offset + missing_per_partial, max);
             partials[i].coeffs = &work[out_offset];
             partials[i].length = degree_of_partial;
-            do_zero_poly_mul_partial(
+
+            ret = do_zero_poly_mul_partial(
                 partials[i].coeffs,
                 &partials[i].length,
                 &missing_indices[offset],
                 end - offset,
-                domain_stride,
                 s
             );
             if (ret != C_KZG_OK) goto out;
+
             offset += missing_per_partial;
             out_offset += degree_of_partial;
         }
-        // Adjust the length of the last partial
+
+        /* Adjust the length of the last partial */
         partials[partial_count - 1].length = 1 + len_missing -
                                              (partial_count - 1) *
                                                  missing_per_partial;
 
-        // Reduce all the partials to a single polynomial
-        int reduction_factor =
-            4; // must be a power of 2 (for sake of the FFTs in reduce_partials)
-        fr_t *scratch;
-        new_fr_array(&scratch, n * 3);
-        if (ret != C_KZG_OK) goto out;
-
+        /* Reduce all the partials to a single polynomial */
         while (partial_count > 1) {
-            uint64_t reduced_count = (partial_count + reduction_factor - 1) /
-                                     reduction_factor;
-            uint64_t partial_size = next_power_of_two(partials[0].length);
-            for (uint64_t i = 0; i < reduced_count; i++) {
-                uint64_t start = i * reduction_factor;
-                uint64_t out_end = min(
+            size_t reduced_count = (partial_count + reduction_factor - 1) /
+                                   reduction_factor;
+            size_t partial_size = next_power_of_two(partials[0].length);
+            for (size_t i = 0; i < reduced_count; i++) {
+                size_t start = i * reduction_factor;
+                size_t out_end = min(
                     (start + reduction_factor) * partial_size, n
                 );
-                uint64_t reduced_len = min(
-                    out_end - start * partial_size, length
+                size_t reduced_len = min(
+                    out_end - start * partial_size, s->max_width
                 );
-                uint64_t partials_num = min(
+                size_t partials_num = min(
                     reduction_factor, partial_count - start
                 );
                 partials[i].coeffs = work + start * partial_size;
                 if (partials_num > 1) {
-                    reduce_partials(
+                    ret = reduce_partials(
                         &partials[i],
                         reduced_len,
                         scratch,
@@ -2716,21 +2702,20 @@ static C_KZG_RET zero_polynomial_via_multiplication(
             partial_count = reduced_count;
         }
 
-        // Process final output
-        ret = pad_p(zero_poly, length, partials[0].coeffs, partials[0].length);
-        if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(zero_eval, zero_poly, length, s);
+        /* Pad the output with zeros */
+        ret = pad_p(
+            zero_poly, s->max_width, partials[0].coeffs, partials[0].length
+        );
         if (ret != C_KZG_OK) goto out;
 
         *zero_poly_len = partials[0].length;
-
-        c_kzg_free(work);
-        c_kzg_free(partials);
-        c_kzg_free(scratch);
     }
 
 out:
-    return C_KZG_OK;
+    c_kzg_free(work);
+    c_kzg_free(partials);
+    c_kzg_free(scratch);
+    return ret;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2738,14 +2723,10 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * This is the PRIMITIVE_ROOT_OF_UNITY (7).
+ * The scale factor.
  *
- *   printf("scale factor:\n");
+ *   fr_t a;
  *   fr_from_uint64(&a, 7);
- *   for (size_t i = 0; i < 4; i++)
- *       printf("%#018llxL,\n", a.l[i]);
- *   printf("inverse scale factor:\n");
- *   fr_div(&a, &FR_ONE, &a);
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
  *
@@ -2756,6 +2737,17 @@ static const fr_t SCALE_FACTOR = {
     0xff9c57876f8457b0L,
     0x351332208fc5a8c4L,
 };
+
+/**
+ * The inverse scale factor.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   fr_div(&a, &FR_ONE, &a);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ *
+ */
 static const fr_t INV_SCALE_FACTOR = {
     0xdb6db6dadb6db6dcL,
     0xe6b5824adb6cc6daL,
@@ -2845,11 +2837,9 @@ static C_KZG_RET recover_all_cells_impl(
     ret = new_fr_array(&cells_brp, s->max_width);
     if (ret != C_KZG_OK) goto out;
 
-    /* Bit-reverse the data points */
+    /* Bit-reverse the data points, stored in new array */
     memcpy(cells_brp, cells, s->max_width * sizeof(fr_t));
-    ret = bit_reversal_permutation(
-        cells_brp, sizeof(cells_brp[0]), s->max_width
-    );
+    ret = bit_reversal_permutation(cells_brp, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Identify missing cells */
@@ -2865,14 +2855,12 @@ static C_KZG_RET recover_all_cells_impl(
 
     /* Calculate Z_r,I */
     ret = zero_polynomial_via_multiplication(
-        zero_eval,
-        zero_poly,
-        &zero_poly_len,
-        s->max_width,
-        missing,
-        len_missing,
-        s
+        zero_poly, &zero_poly_len, missing, len_missing, s
     );
+    if (ret != C_KZG_OK) goto out;
+
+    /* Evaluate the zero poly */
+    ret = fft_fr(zero_eval, zero_poly, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Construct E * Z_r,I: the loop makes the evaluation polynomial */
@@ -2902,14 +2890,6 @@ static C_KZG_RET recover_all_cells_impl(
      */
     ret = fft_fr(eval_poly_with_zero, poly_with_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
-
-    /*
-     * To be safe, set unused elements of zero_poly to zero. In the next step,
-     * we evaluate at max_width instead zero_poly_len, so these values matter.
-     */
-    for (size_t i = zero_poly_len; i < s->max_width; i++) {
-        zero_poly[i] = FR_ZERO;
-    }
 
     /* We use max_width here (not zero_poly_len) intentionally */
     ret = fft_fr(eval_zero_poly, zero_poly, s->max_width, s);
@@ -3207,7 +3187,7 @@ out:
 void poly_add(
     fr_t *result, const fr_t *a, size_t a_len, const fr_t *b, size_t b_len
 ) {
-    size_t length = MAX(a_len, b_len);
+    size_t length = max(a_len, b_len);
     for (size_t i = 0; i < length; i++) {
         if (length < a_len) {
             result[i] = b[i];
