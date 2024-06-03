@@ -1896,10 +1896,42 @@ void free_trusted_setup(KZGSettings *s) {
     s->scratch_size = 0;
 }
 
-/* Forward function declaration */
+/**
+ * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
+ * transform of the vector x extended.
+ *
+ * @param[out]  out The FFT of the extension of x, size n * 2
+ * @param[in]   x   The input vector, size n
+ * @param[in]   n   The length of the input vector x
+ * @param[in]   s   The trusted setup
+ */
 static C_KZG_RET toeplitz_part_1(
-    g1_t *out, const g1_t *x, uint64_t n, const KZGSettings *s
-);
+    g1_t *out, const g1_t *x, size_t n, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    size_t n2 = n * 2;
+    g1_t *x_ext;
+
+    /* Create extended array of points */
+    ret = new_g1_array(&x_ext, n2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Copy x & extend with zero */
+    for (size_t i = 0; i < n; i++) {
+        x_ext[i] = x[i];
+    }
+    for (size_t i = n; i < n2; i++) {
+        x_ext[i] = G1_IDENTITY;
+    }
+
+    /* Peform forward transformation */
+    ret = fft_g1(out, x_ext, n2, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(x_ext);
+    return ret;
+}
 
 /**
  * Initialize fields for FK20 multi-proof computations.
@@ -1939,14 +1971,16 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
     }
 
-    for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
-        uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-        for (uint64_t i = 0, j = start; i + 1 < k;
-             i++, j -= FIELD_ELEMENTS_PER_CELL) {
+    for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
+        /* Compute x, sections of the g1 values */
+        size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (size_t i = 0; i < k - 1; i++) {
+            size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
             x[i] = s->g1_values_monomial[j];
         }
         x[k - 1] = G1_IDENTITY;
 
+        /* Compute points, the fft of an extended x */
         ret = toeplitz_part_1(points, x, k, s);
         if (ret != C_KZG_OK) goto out;
 
@@ -2168,7 +2202,7 @@ C_KZG_RET load_trusted_setup(
     );
     if (ret != C_KZG_OK) goto out_error;
 
-    /* Stuff for cell proofs */
+    /* Setup for FK20 proof computation */
     ret = init_fk20_multi_settings(out);
     if (ret != C_KZG_OK) goto out_error;
 
@@ -2978,44 +3012,6 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
- * transform of the vector @p x extended.
- *
- * @param[out] out The FFT of the extension of @p x, size @p n * 2
- * @param[in]  x   The input vector, size @p n
- * @param[in]  n   The length of the input vector @p x
- * @param[in]  fs  The FFT settings previously initialised with
- * #new_fft_settings
- * @retval C_CZK_OK      All is well
- * @retval C_CZK_ERROR   An internal error occurred
- * @retval C_CZK_MALLOC  Memory allocation failed
- */
-static C_KZG_RET toeplitz_part_1(
-    g1_t *out, const g1_t *x, uint64_t n, const KZGSettings *s
-) {
-    C_KZG_RET ret;
-    uint64_t n2 = n * 2;
-    g1_t *x_ext;
-
-    ret = new_g1_array(&x_ext, n2);
-    if (ret != C_KZG_OK) goto out;
-
-    for (uint64_t i = 0; i < n; i++) {
-        x_ext[i] = x[i];
-    }
-    for (uint64_t i = n; i < n2; i++) {
-        x_ext[i] = G1_IDENTITY;
-    }
-
-    ret = fft_g1(out, x_ext, n2, s);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    c_kzg_free(x_ext);
-    return ret;
-}
-
-/**
  * Reorder and extend polynomial coefficients for the toeplitz method, strided
  * version.
  *
@@ -3651,7 +3647,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
                 CELLS_PER_EXT_BLOB * sizeof(KZGProof)
             );
         }
-        return C_KZG_OK;
+        ret = C_KZG_OK;
+        goto out;
     }
 
     /* Perform cell recovery */
