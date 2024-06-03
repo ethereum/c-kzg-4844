@@ -5,7 +5,7 @@ mode = ScriptMode.Verbose
 ##################################################
 
 packageName   = "kzg4844"
-version       = "0.1.0"
+version       = "1.0.1"
 author        = "Andri Lim"
 description   = "Nim wrapper of c-kzg-4844"
 license       = "Apache License 2.0"
@@ -24,7 +24,8 @@ installDirs   = @[
   "bindings/nim"
   ]
 
-requires "nim >= 1.2.0",
+requires "nim >= 1.6.0",
+         "results",
          "stew"
 
 ##################################################

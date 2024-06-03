@@ -4,7 +4,8 @@
 
 import
   std/[streams, strutils],
-  stew/[results, byteutils],
+  stew/byteutils,
+  results,
   ./kzg_abi
 
 export
