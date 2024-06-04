@@ -2763,7 +2763,6 @@ out:
  *   fr_from_uint64(&a, 7);
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
- *
  */
 static const fr_t SCALE_FACTOR = {
     0x0000000efffffff1L,
@@ -2780,7 +2779,6 @@ static const fr_t SCALE_FACTOR = {
  *   fr_div(&a, &FR_ONE, &a);
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
- *
  */
 static const fr_t INV_SCALE_FACTOR = {
     0xdb6db6dadb6db6dcL,
@@ -3324,6 +3322,14 @@ out:
     c_kzg_free(quotient);
     return ret;
 }
+
+void coset_for_cell(fr_t *coset, uint64_t cell_id, const KZGSettings *s) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        size_t field = cell_id * FIELD_ELEMENTS_PER_CELL + i;
+        size_t pos = reverse_bits_limited(FIELD_ELEMENTS_PER_EXT_BLOB, field);
+        coset[i] = s->expanded_roots_of_unity[pos];
+    }
+}
 #endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
 /**
@@ -3416,16 +3422,6 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
     memcpy(blob, cells, BYTES_PER_BLOB);
     return C_KZG_OK;
 }
-
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-void coset_for_cell(fr_t *coset, uint64_t cell_id, const KZGSettings *s) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        size_t field = cell_id * FIELD_ELEMENTS_PER_CELL + i;
-        size_t pos = reverse_bits_limited(FIELD_ELEMENTS_PER_EXT_BLOB, field);
-        coset[i] = s->expanded_roots_of_unity[pos];
-    }
-}
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
 /**
  * Given a blob, get all of its cells and proofs.
