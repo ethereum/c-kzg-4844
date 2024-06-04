@@ -770,7 +770,7 @@ static void g1_lincomb_naive(
  * We do the second of these to save memory here.
  */
 static C_KZG_RET g1_lincomb_fast(
-    g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
+    g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len
 ) {
     C_KZG_RET ret;
     void *scratch = NULL;
@@ -779,7 +779,7 @@ static C_KZG_RET g1_lincomb_fast(
     blst_scalar *scalars = NULL;
 
     /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
-    const uint64_t min_length_threshold = 8;
+    const size_t min_length_threshold = 8;
 
     /* Use naive method if it's less than the threshold */
     if (len < min_length_threshold) {
@@ -801,17 +801,17 @@ static C_KZG_RET g1_lincomb_fast(
     ret = c_kzg_malloc(&scratch, scratch_size);
     if (ret != C_KZG_OK) goto out;
 
-    /* Allocate & copy points into new array which can be altered */
+    /* Copy points into new array which can be altered */
     memcpy(p_filtered, p, len * sizeof(blst_p1));
 
     /* Transform the field elements to 256-bit scalars */
-    for (uint64_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         blst_scalar_from_fr(&scalars[i], &coeffs[i]);
     }
 
     /* Filter out zero points */
-    uint64_t new_len = len;
-    for (uint64_t i = 0; i < new_len; i++) {
+    size_t new_len = len;
+    for (size_t i = 0; i < new_len; i++) {
         if (blst_p1_is_inf(&p_filtered[i])) {
             /* Update the length of our array */
             new_len = new_len - 1;
