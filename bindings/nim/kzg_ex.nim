@@ -188,7 +188,7 @@ template verifyCellKzgProof*(commitment: KzgBytes48,
                    cellId: uint64,
                    cell: KzgCell,
                    proof: KzgBytes48): untyped =
-  verifyProof(commitment, cell, proof)
+  verifyProof(commitment, cellId, cell, proof)
 
 template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
                    rowIndices: openArray[uint64],
