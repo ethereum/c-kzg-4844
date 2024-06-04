@@ -697,7 +697,7 @@ impl Cell {
         cell_ids: &[u64],
         cells: &[Cell],
         kzg_settings: &KZGSettings,
-    ) -> Result<Box<[Self; CELLS_PER_EXT_BLOB]>, Error> {
+    ) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
         if cell_ids.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cell IDs and {} cells",
@@ -718,6 +718,52 @@ impl Cell {
             );
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(Box::new(recovered_cells))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn recover_cells_and_kzg_proofs(
+        cell_ids: &[u64],
+        cells: &[Cell],
+        proofs_bytes: &[Bytes48],
+        kzg_settings: &KZGSettings,
+    ) -> Result<
+        (
+            Box<[Cell; CELLS_PER_EXT_BLOB]>,
+            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
+        ),
+        Error,
+    > {
+        if cell_ids.len() != cells.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cell IDs and {} cells",
+                cell_ids.len(),
+                cells.len()
+            )));
+        }
+        if cell_ids.len() != proofs_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cell IDs and {} proofs",
+                cell_ids.len(),
+                proofs_bytes.len()
+            )));
+        }
+        let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut recovered_proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
+        unsafe {
+            let res = recover_cells_and_kzg_proofs(
+                recovered_cells.as_mut_ptr(),
+                recovered_proofs.as_mut_ptr(),
+                cell_ids.as_ptr(),
+                cells.as_ptr(),
+                proofs_bytes.as_ptr(),
+                cells.len(),
+                kzg_settings,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((Box::new(recovered_cells), Box::new(recovered_proofs)))
             } else {
                 Err(Error::CError(res))
             }
