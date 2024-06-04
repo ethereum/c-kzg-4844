@@ -622,11 +622,82 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells(
 
   if (ret != C_KZG_OK)
   {
-    throw_c_kzg_exception(env, ret, "There was an error in cellsToBlob.");
+    throw_c_kzg_exception(env, ret, "There was an error in recoverAllCells.");
     return NULL;
   }
 
   return recovered;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells, jbyteArray proofs_bytes)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, cell_ids);
+  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  size_t proofs_size = (size_t)(*env)->GetArrayLength(env, proofs_bytes);
+  if (cells_size != count * BYTES_PER_CELL)
+  {
+    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, count * BYTES_PER_CELL);
+    return 0;
+  }
+  if (proofs_size != count * BYTES_PER_PROOF)
+  {
+    throw_invalid_size_exception(env, "Invalid proofs size.", proofs_size, count * BYTES_PER_PROOF);
+    return 0;
+  }
+
+  jbyteArray recovered_cells = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+  Cell *recovered_cells_native = (Cell *)(*env)->GetByteArrayElements(env, recovered_cells, NULL);
+  jbyteArray recovered_proofs = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
+  KZGProof *recovered_proofs_native = (KZGProof *)(*env)->GetByteArrayElements(env, recovered_proofs, NULL);
+  uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+  Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
+
+  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_cells_native, recovered_proofs_native, cell_ids_native, cells_native, proofs_native, count, settings);
+
+  (*env)->ReleaseByteArrayElements(env, recovered_cells, (jbyte *)recovered_cells_native, 0);
+  (*env)->ReleaseByteArrayElements(env, recovered_proofs, (jbyte *)recovered_proofs_native, 0);
+  (*env)->ReleaseLongArrayElements(env, cell_ids, (jlong *)cell_ids_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in recoverCellsAndKzgProofs.");
+    return NULL;
+  }
+
+  jclass cas_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
+  if (cas_class == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs class.");
+    return NULL;
+  }
+
+  jmethodID cas_constructor = (*env)->GetMethodID(env, cas_class, "<init>", "([B[B)V");
+  if (cas_constructor == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs constructor.");
+    return NULL;
+  }
+
+  jobject result = (*env)->NewObject(env, cas_class, cas_constructor, recovered_cells, recovered_proofs);
+  if (result == NULL)
+  {
+    throw_exception(env, "Failed to instantiate cells.");
+    return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, recovered_cells);
+  (*env)->DeleteLocalRef(env, recovered_proofs);
+
+  return result;
 }
 
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jlong cell_id, jbyteArray cell, jbyteArray proof_bytes)

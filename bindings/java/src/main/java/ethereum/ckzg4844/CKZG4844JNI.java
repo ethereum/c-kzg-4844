@@ -247,6 +247,18 @@ public class CKZG4844JNI {
   public static native byte[] recoverAllCells(long[] cellIds, byte[] cells);
 
   /**
+   * Given at least 50% of cells/proofs, reconstruct the missing ones.
+   *
+   * @param cellIds the identifiers for the cells you have
+   * @param cells the cells you have
+   * @param proofsBytes the proofs you have
+   * @return all cells/proofs for that blob
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] recoverCellsAndKzgProofs(
+      long[] cellIds, byte[] cells, byte[] proofsBytes);
+
+  /**
    * Verify that a cell's proof is valid.
    *
    * @param commitmentBytes commitment bytes
