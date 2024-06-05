@@ -8,11 +8,11 @@ import
 proc createKateBlobs(n: int): KateBlobs =
   var blob: KzgBlob
   for i in 0..<n:
-    discard urandom(blob)
-    for i in 0..<len(blob):
+    discard urandom(blob.bytes)
+    for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
-        blob[i] = MAX_TOP_BYTE
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+        blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
   for i in 0..<n:

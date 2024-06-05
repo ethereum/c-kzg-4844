@@ -60,15 +60,21 @@ type
     header: "c_kzg_4844.h", byref.} = object
 
   # A basic blob data.
-  KzgBlob* = array[KzgBlobSize, byte]
+  KzgBlob* {.importc: "Blob",
+    header: "c_kzg_4844.h".} = object
+    bytes*: array[KzgBlobSize, uint8]
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
-  KzgBytes48* = array[48, byte]
+  KzgBytes48* {.importc: "Bytes48",
+    header: "c_kzg_4844.h".} = object
+    bytes*: array[48, uint8]
 
   # An array of 32 bytes. Represents an untrusted
   # (potentially invalid) field element.
-  KzgBytes32* = array[32, byte]
+  KzgBytes32* {.importc: "Bytes32",
+    header: "c_kzg_4844.h".} = object
+    bytes*: array[32, uint8]
 
   # A trusted (valid) KZG commitment.
   KzgCommitment* = KzgBytes48
@@ -96,31 +102,31 @@ proc load_trusted_setup_file*(res: KzgSettings,
 proc free_trusted_setup*(s: KzgSettings) {.kzg_abi.}
 
 proc blob_to_kzg_commitment*(res: var KzgCommitment,
-                         blob: KzgBlob,
+                         blob: ptr KzgBlob,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc compute_kzg_proof*(res: var KzgProof,
                          yOut: var KzgBytes32,
-                         blob: KzgBlob,
-                         zBytes: KzgBytes32,
+                         blob: ptr KzgBlob,
+                         zBytes: ptr KzgBytes32,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc compute_blob_kzg_proof*(res: var KzgProof,
-                         blob: KzgBlob,
-                         commitmentBytes: KzgBytes48,
+                         blob: ptr KzgBlob,
+                         commitmentBytes: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_kzg_proof*(res: var bool,
-                         commitmentBytes: KzgBytes48,
-                         zBytes: KzgBytes32,
-                         yBytes: KzgBytes32,
-                         proofBytes: KzgBytes48,
+                         commitmentBytes: ptr KzgBytes48,
+                         zBytes: ptr KzgBytes32,
+                         yBytes: ptr KzgBytes32,
+                         proofBytes: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_blob_kzg_proof*(res: var bool,
-                         blob: KzgBlob,
-                         commitmentsBytes: KzgBytes48,
-                         proofBytes: KzgBytes48,
+                         blob: ptr KzgBlob,
+                         commitmentsBytes: ptr KzgBytes48,
+                         proofBytes: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_blob_kzg_proof_batch*(res: var bool,
