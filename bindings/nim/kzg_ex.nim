@@ -187,6 +187,9 @@ template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(blobs, commitments, proofs)
 
+template computeCells*(blob: KzgBlob): untyped =
+  computeCells(blob)
+
 template computeCellsAndKzgProofs*(blob: KzgBlob): untyped =
   computeCellsAndProofs(blob)
 
