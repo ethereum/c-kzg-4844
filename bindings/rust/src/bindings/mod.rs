@@ -1373,7 +1373,7 @@ mod tests {
                     file.write_all(&column_index.to_le_bytes()).unwrap();
                 }
                 for cell in &cells {
-                    file.write_all(&cell.to_bytes()).unwrap();
+                    file.write_all(&cell.bytes).unwrap();
                 }
                 for proof in &proofs {
                     file.write_all(&proof.bytes).unwrap();
@@ -1429,7 +1429,7 @@ mod tests {
                     file.write_all(&cell_id.to_le_bytes()).unwrap();
                 }
                 for cell in &cells {
-                    file.write_all(&cell.to_bytes()).unwrap();
+                    file.write_all(&cell.bytes).unwrap();
                 }
             }
 
