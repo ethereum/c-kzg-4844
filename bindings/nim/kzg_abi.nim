@@ -83,7 +83,10 @@ type
   KzgProof* = KzgBytes48
 
   # A single cell for a blob.
-  KzgCell* = array[KzgCellSize, byte]
+  KzgCell* {.importc: "Cell",
+    header: "c_kzg_4844.h".} = object
+    #bytes*: array[KzgCellSize, uint8]
+    data*: array[FIELD_ELEMENTS_PER_CELL, KzgBytes32]
 
 {.pragma: kzg_abi, importc, cdecl, header: "c_kzg_4844.h".}
 
@@ -137,22 +140,22 @@ proc verify_blob_kzg_proof_batch*(res: var bool,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_cell_kzg_proof*(res: var bool,
-                         commitment: KzgBytes48,
+                         commitment: ptr KzgBytes48,
                          cellId: uint64,
-                         cell: KzgCell,
-                         proof: KzgBytes48,
+                         cell: ptr KzgCell,
+                         proof: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc cells_to_blob*(blobOut: KzgBlob,
                          cells: ptr KzgCell): KZG_RET {.kzg_abi.}
 
 proc compute_cells*(cellsOut: ptr KzgCell,
-                         blob: KzgBlob,
+                         blob: ptr KzgBlob,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
                          proofsOut: ptr KzgProof,
-                         blob: KzgBlob,
+                         blob: ptr KzgBlob,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
 proc verify_cell_kzg_proof_batch*(res: var bool,

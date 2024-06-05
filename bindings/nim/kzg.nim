@@ -186,7 +186,7 @@ proc computeCells*(ctx: KzgCtx,
   let res = compute_cells_and_kzg_proofs(
     ret[0].getPtr,
     cast[ptr KzgProof](nil), # Don't compute proofs
-    blob,
+    blob.getPtr,
     ctx.val)
   verify(res, ret)
 
@@ -198,7 +198,7 @@ proc computeCellsAndProofs*(ctx: KzgCtx,
   let res = compute_cells_and_kzg_proofs(
     cellsPtr,
     proofsPtr,
-    blob,
+    blob.getPtr,
     ctx.val)
   verify(res, ret)
 
@@ -238,10 +238,10 @@ proc verifyProof*(ctx: KzgCtx,
   var valid: bool
   let res = verify_cell_kzg_proof(
     valid,
-    commitment,
+    commitment.getPtr,
     cellId,
-    cell,
-    proof,
+    cell.getPtr,
+    proof.getPtr,
     ctx.val)
   verify(res, valid)
 

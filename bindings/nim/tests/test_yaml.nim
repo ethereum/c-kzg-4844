@@ -33,6 +33,15 @@ proc loadYaml(filename: string): YamlNode =
   load(s, result)
   s.close()
 
+proc cellFromHex(x: string): KzgCell =
+  if (x.len - 2) div 2 != KzgCellSize:
+    raise newException(ValueError, "invalid hex")
+  for i in 0..<FIELD_ELEMENTS_PER_CELL:
+    let s = 2 + i * 2 * BYTES_PER_FIELD_ELEMENT
+    let e = 2 + (i + 1) * 2 * BYTES_PER_FIELD_ELEMENT
+    let fieldHex = "0x" & x[s..e-1]
+    result.data[i].bytes = hexToByteArray(fieldHex, BYTES_PER_FIELD_ELEMENT)
+
 proc fromHex(T: type, x: string): T =
   if (x.len - 2) div 2 > sizeof(result.bytes):
     raise newException(ValueError, "invalid hex")
@@ -40,6 +49,10 @@ proc fromHex(T: type, x: string): T =
 
 proc fromHex(T: type, x: YamlNode): T =
   T.fromHex(x.content)
+
+proc cellFromHexList(xList: YamlNode): seq[KzgCell] =
+  for x in xList:
+    result.add(cellFromHex(x.content))
 
 proc fromHexList(T: type, xList: YamlNode): seq[T] =
   for x in xList:
@@ -141,7 +154,7 @@ suite "yaml tests":
       res = ctx.computeCells(blob)
 
     checkRes(res):
-      let cells = KzgCell.fromHexList(n["output"])
+      let cells = cellFromHexList(n["output"])
       check cells == res.get
 
   runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
@@ -150,7 +163,7 @@ suite "yaml tests":
       res = ctx.computeCellsAndProofs(blob)
 
     checkRes(res):
-      let cells = KzgCell.fromHexList(n["output"][0])
+      let cells = cellFromHexList(n["output"][0])
       check cells == res.get.cells
       let proofs = KzgProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
@@ -159,7 +172,7 @@ suite "yaml tests":
     let
       commitment = KzgCommitment.fromHex(n["input"]["commitment"])
       cellId = n["input"]["cell_id"].content.parseInt().uint64
-      cell = KzgCell.fromHex(n["input"]["cell"])
+      cell = cellFromHex(n["input"]["cell"].content)
       proof = KzgProof.fromHex(n["input"]["proof"])
       res = ctx.verifyProof(commitment, cellId, cell, proof)
     checkBool(res)
@@ -169,7 +182,7 @@ suite "yaml tests":
       rowCommitments = KzgCommitment.fromHexList(n["input"]["row_commitments"])
       rowIndices = uint64.fromIntList(n["input"]["row_indices"])
       columnIndices = uint64.fromIntList(n["input"]["column_indices"])
-      cells = KzgCell.fromHexList(n["input"]["cells"])
+      cells = cellFromHexList(n["input"]["cells"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)
@@ -177,9 +190,9 @@ suite "yaml tests":
   runTests(RECOVER_ALL_CELLS_TESTS):
     let
       cellIds = uint64.fromIntList(n["input"]["cell_ids"])
-      cells = KzgCell.fromHexList(n["input"]["cells"])
+      cells = cellFromHexList(n["input"]["cells"])
       res = ctx.recoverCells(cellIds, cells)
 
     checkRes(res):
-      let recovered = KzgCell.fromHexList(n["output"])
+      let recovered = cellFromHexList(n["output"])
       check recovered == res.get
