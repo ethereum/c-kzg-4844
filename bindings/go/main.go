@@ -33,7 +33,7 @@ type (
 	KZGCommitment Bytes48
 	KZGProof      Bytes48
 	Blob          [BytesPerBlob]byte
-	Cell          [FieldElementsPerCell]Bytes32
+	Cell          [BytesPerCell]byte
 )
 
 var (

@@ -73,7 +73,7 @@ pub struct Blob {
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Cell {
-    data: [Bytes32; 64usize],
+    bytes: [u8; 2048usize],
 }
 #[repr(C)]
 #[doc = " The common return type for all routines in which something can go wrong."]

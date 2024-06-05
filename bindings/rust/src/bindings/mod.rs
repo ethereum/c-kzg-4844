@@ -604,19 +604,7 @@ impl KZGCommitment {
 
 impl Cell {
     pub const fn new(bytes: [u8; BYTES_PER_CELL]) -> Self {
-        let mut data = [Bytes32 {
-            bytes: [0; BYTES_PER_FIELD_ELEMENT],
-        }; FIELD_ELEMENTS_PER_CELL];
-
-        let mut index = 0;
-        while index < BYTES_PER_CELL {
-            let row = index / BYTES_PER_FIELD_ELEMENT;
-            let col = index % BYTES_PER_FIELD_ELEMENT;
-            data[row].bytes[col] = bytes[index];
-            index += 1;
-        }
-
-        Self { data }
+        Self { bytes }
     }
 
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
@@ -634,20 +622,6 @@ impl Cell {
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
-    }
-
-    pub fn to_bytes(&self) -> [u8; BYTES_PER_CELL] {
-        let mut bytes = [0u8; BYTES_PER_CELL];
-        for (i, chunk) in self.data.iter().enumerate() {
-            let start = i * BYTES_PER_FIELD_ELEMENT;
-            let end = start + BYTES_PER_FIELD_ELEMENT;
-            bytes[start..end].copy_from_slice(&chunk.bytes[..]);
-        }
-        bytes
-    }
-
-    pub fn into_inner(self) -> [Bytes32; FIELD_ELEMENTS_PER_CELL] {
-        self.data
     }
 
     pub fn compute_cells(
@@ -905,7 +879,7 @@ impl Default for Blob {
 impl Default for Cell {
     fn default() -> Self {
         Cell {
-            data: [Bytes32::default(); FIELD_ELEMENTS_PER_CELL],
+            bytes: [0; BYTES_PER_CELL],
         }
     }
 }
@@ -1019,16 +993,6 @@ mod tests {
     fn test_end_to_end() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         test_simple(trusted_setup_file);
-    }
-
-    #[test]
-    fn test_cell() {
-        let mut arr = [0u8; BYTES_PER_CELL];
-        rand::thread_rng().fill(&mut arr);
-
-        let cell = Cell::new(arr);
-        let bytes = cell.to_bytes();
-        assert_eq!(bytes, arr);
     }
 
     const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "tests/blob_to_kzg_commitment/*/*/*";
@@ -1346,7 +1310,7 @@ mod tests {
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&commitment.bytes).unwrap();
                 file.write_all(&cell_id.to_le_bytes()).unwrap();
-                file.write_all(&cell.to_bytes()).unwrap();
+                file.write_all(&cell.bytes).unwrap();
                 file.write_all(&proof.bytes).unwrap();
             }
 

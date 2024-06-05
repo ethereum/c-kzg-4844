@@ -3495,7 +3495,10 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
             for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
                 size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
-                bytes_from_bls_field(&cells[i].data[j], &data_fr[index]);
+                size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+                bytes_from_bls_field(
+                    (Bytes32 *)&cells[i].bytes[offset], &data_fr[index]
+                );
             }
         }
     }
@@ -3624,7 +3627,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             }
 
             /* Convert the untrusted bytes to a field element */
-            ret = bytes_to_bls_field(field, &cells[i].data[j]);
+            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+            ret = bytes_to_bls_field(field, (Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
         }
 
@@ -3655,8 +3659,10 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
             bytes_from_bls_field(
-                &recovered_cells[i].data[j], &recovered_cells_fr[index]
+                (Bytes32 *)&recovered_cells[i].bytes[offset],
+                &recovered_cells_fr[index]
             );
         }
     }
@@ -3776,7 +3782,8 @@ C_KZG_RET verify_cell_kzg_proof(
     ret = bytes_to_kzg_proof(&proof, proof_bytes);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        ret = bytes_to_bls_field(&ys[i], &cell->data[i]);
+        size_t offset = i * BYTES_PER_FIELD_ELEMENT;
+        ret = bytes_to_bls_field(&ys[i], (Bytes32 *)&cell->bytes[offset]);
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -4093,7 +4100,10 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     for (size_t i = 0; i < num_cells; i++) {
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             fr_t field, scaled;
-            ret = bytes_to_bls_field(&field, &cells[i].data[j]);
+            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+            ret = bytes_to_bls_field(
+                &field, (Bytes32 *)&cells[i].bytes[offset]
+            );
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
             size_t index = column_indices[i] * FIELD_ELEMENTS_PER_CELL + j;

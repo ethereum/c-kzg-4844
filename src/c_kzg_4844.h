@@ -65,7 +65,7 @@ extern "C" {
     (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
 
 /** The number of bytes in a single cell. */
-#define BYTES_PER_CELL (BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL)
+#define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -112,7 +112,7 @@ typedef Bytes48 KZGProof;
  * A single cell for a blob.
  */
 typedef struct {
-    Bytes32 data[FIELD_ELEMENTS_PER_CELL];
+    uint8_t bytes[BYTES_PER_CELL];
 } Cell;
 
 /**
