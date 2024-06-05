@@ -119,21 +119,18 @@ func (b *Blob) UnmarshalText(input []byte) error {
 }
 
 func (c *Cell) UnmarshalText(input []byte) error {
-	charsPerCell := 2 * BytesPerCell
-	charsPerFieldElement := 2 * BytesPerFieldElement
 	if bytes.HasPrefix(input, []byte("0x")) {
 		input = input[2:]
 	}
-	if len(input) != charsPerCell {
+	if len(input) != 2*len(c) {
 		return ErrBadArgs
 	}
-	offset := 0
-	for i := 0; i < FieldElementsPerCell; i++ {
-		err := c[i].UnmarshalText(input[offset : offset+charsPerFieldElement])
-		if err != nil {
-			return err
-		}
-		offset += charsPerFieldElement
+	l, err := hex.Decode(c[:], input)
+	if err != nil {
+		return err
+	}
+	if l != len(c) {
+		return ErrBadArgs
 	}
 	return nil
 }
