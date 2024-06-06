@@ -44,34 +44,35 @@ public class CKZG4844JNI {
   }
 
   /** Scalar field modulus of BLS12-381. */
-  public static final BigInteger BLS_MODULUS =
+  protected static final BigInteger BLS_MODULUS =
       new BigInteger(
           "52435875175126190479447740508185965837690552500527637822603658699938581184513");
   /** The number of bytes in a g1 point. */
-  public static final int BYTES_PER_G1 = 48;
+  protected static final int BYTES_PER_G1 = 48;
   /** The number of bytes in a g2 point. */
-  public static final int BYTES_PER_G2 = 96;
+  protected static final int BYTES_PER_G2 = 96;
+  /** The number of bytes in a BLS scalar field element. */
+  protected static final int BYTES_PER_FIELD_ELEMENT = 32;
+  /** The number of bits in a BLS scalar field element. */
+  protected static final int BITS_PER_FIELD_ELEMENT = 255;
+  /** The number of field elements in a blob. */
+  protected static final int FIELD_ELEMENTS_PER_BLOB = 4096;
+  /** The number of field elements in an extended blob. */
+  protected static final int FIELD_ELEMENTS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
+  /** The number of field elements in a cell. */
+  protected static final int FIELD_ELEMENTS_PER_CELL = 64;
+
   /** The number of bytes in a KZG commitment. */
   public static final int BYTES_PER_COMMITMENT = 48;
   /** The number of bytes in a KZG proof. */
   public static final int BYTES_PER_PROOF = 48;
-  /** The number of bytes in a BLS scalar field element. */
-  public static final int BYTES_PER_FIELD_ELEMENT = 32;
-  /** The number of bits in a BLS scalar field element. */
-  public static final int BITS_PER_FIELD_ELEMENT = 255;
-  /** The number of field elements in a blob. */
-  public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
   /** The number of field elements in a blob. */
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
-  /** The number of field elements in an extended blob. */
-  public static final int FIELD_ELEMENTS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
-  /** The number of field elements in a cell. */
-  public static final int FIELD_ELEMENTS_PER_CELL = 64;
+  /** The number of bytes in a single cell. */
+  public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
   /** The number of cells in an extended blob. */
   public static final int CELLS_PER_EXT_BLOB =
       FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
-  /** The number of bytes in a single cell. */
-  public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
 
   private CKZG4844JNI() {}
 

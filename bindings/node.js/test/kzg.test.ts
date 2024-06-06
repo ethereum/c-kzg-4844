@@ -24,10 +24,8 @@ const {
   BYTES_PER_BLOB,
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
-  BYTES_PER_FIELD_ELEMENT,
 
   // EIP-7594
-  CELLS_PER_EXT_BLOB,
   computeCellsAndKzgProofs,
   verifyCellKzgProof,
   computeCells,
@@ -35,6 +33,7 @@ const {
   verifyCellKzgProofBatch,
   recoverAllCells,
 } = kzg;
+
 // not exported by types, only exported for testing purposes
 const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePath?: string) => string;
 const DEFAULT_TRUSTED_SETUP_PATH = (kzg as any).DEFAULT_TRUSTED_SETUP_PATH as string;
@@ -56,6 +55,9 @@ const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_pr
 const VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
 const RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml";
+
+const BYTES_PER_FIELD_ELEMENT = 32;
+const CELLS_PER_EXT_BLOB = 128;
 
 type BlobToKzgCommitmentTest = TestMeta<{blob: string}, string>;
 type ComputeKzgProofTest = TestMeta<{blob: string; z: string}, string[]>;

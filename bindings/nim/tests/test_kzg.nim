@@ -11,7 +11,7 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% 32 == 0:
         blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 

@@ -8,38 +8,37 @@ import
   ./types
 
 proc readSetup(): KzgSettings =
-  var
-    s = newFileStream(trustedSetupFile)
-    g1MonomialBytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
-    g1LagrangeBytes: array[FIELD_ELEMENTS_PER_BLOB * 48, byte]
-    g2MonomialBytes: array[65 * 96, byte]
+  var s = newFileStream(trustedSetupFile)
 
   doAssert(s.isNil.not,
     "FAILED TO OPEN: " & trustedSetupFile)
 
-  let fieldElems = s.readLine().parseInt()
-  doAssert fieldElems == FIELD_ELEMENTS_PER_BLOB
-  let numG2 = s.readLine().parseInt()
-  doAssert numG2 == 65
+  let n1 = s.readLine().parseInt()
+  let n2 = s.readLine().parseInt()
 
-  for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
+  var
+    g1MonomialBytes: seq[byte] = newSeq[byte](n1 * 48)
+    g1LagrangeBytes: seq[byte] = newSeq[byte](n1 * 48)
+    g2MonomialBytes: seq[byte] = newSeq[byte](n2 * 96)
+
+  for i in 0 ..< n1:
     let z = hexToByteArray[48](s.readLine())
     g1LagrangeBytes[i*48 ..< i*48+48] = z[0..<48]
 
-  for i in 0 ..< 65:
+  for i in 0 ..< n2:
     let z = hexToByteArray[96](s.readLine())
     g2MonomialBytes[i*96 ..< i*96+96] = z[0..<96]
 
-  for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
+  for i in 0 ..< n1:
     let z = hexToByteArray[48](s.readLine())
     g1MonomialBytes[i*48 ..< i*48+48] = z[0..<48]
 
   let res = load_trusted_setup(result,
     g1MonomialBytes[0].addr,
     g1LagrangeBytes[0].addr,
-    FIELD_ELEMENTS_PER_BLOB,
+    n1.csize_t,
     g2MonomialBytes[0].addr,
-    65,
+    n2.csize_t,
     0)
 
   doAssert(res == KZG_OK,
@@ -57,7 +56,7 @@ proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% 32 == 0:
         blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 

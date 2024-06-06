@@ -25,13 +25,16 @@ when not defined(kzgExternalBlst):
 {.passc: "-I" & escape(bindingsPath) .}
 {.passc: "-I" & escape(srcPath) .}
 
+# Private constants
 const
-  FIELD_ELEMENTS_PER_BLOB* = 4096
-  FIELD_ELEMENTS_PER_CELL* = 64
-  BYTES_PER_FIELD_ELEMENT* = 32
-  CELLS_PER_EXT_BLOB* = 128
-  KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
-  KzgCellSize* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
+  FIELD_ELEMENTS_PER_BLOB = 4096
+  FIELD_ELEMENTS_PER_CELL = 64
+  BYTES_PER_FIELD_ELEMENT = 32
+
+# Public constants
+const
+  BYTES_PER_BLOB* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+  BYTES_PER_CELL* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
 
 type
   KZG_RET* = distinct cint
@@ -62,7 +65,7 @@ type
   # A basic blob data.
   KzgBlob* {.importc: "Blob",
     header: "c_kzg_4844.h".} = object
-    bytes*: array[KzgBlobSize, uint8]
+    bytes*: array[BYTES_PER_BLOB, uint8]
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
@@ -85,7 +88,7 @@ type
   # A single cell for a blob.
   KzgCell* {.importc: "Cell",
     header: "c_kzg_4844.h".} = object
-    bytes*: array[KzgCellSize, uint8]
+    bytes*: array[BYTES_PER_CELL, uint8]
 
 {.pragma: kzg_abi, importc, cdecl, header: "c_kzg_4844.h".}
 

@@ -8,6 +8,9 @@ namespace Ckzg.Test;
 [TestFixture]
 public class ReferenceTests
 {
+    // Clients should use NUMBER_OF_COLUMNS from the consensus specs.
+    private const int CellsPerExtBlob = 128;
+
     [OneTimeSetUp]
     public void Setup()
     {
@@ -388,7 +391,7 @@ public class ReferenceTests
             ComputeCellsTest test = _deserializer.Deserialize<ComputeCellsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] cells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] cells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
             byte[] blob = GetBytes(test.Input.Blob);
 
             try
@@ -435,8 +438,8 @@ public class ReferenceTests
             ComputeCellsAndKzgProofsTest test = _deserializer.Deserialize<ComputeCellsAndKzgProofsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] cells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
-            byte[] proofs = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerProof];
+            byte[] cells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] proofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
             byte[] blob = GetBytes(test.Input.Blob);
 
             try
@@ -589,7 +592,7 @@ public class ReferenceTests
             RecoverAllCellsTest test = _deserializer.Deserialize<RecoverAllCellsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] recoveredCells = new byte[Ckzg.CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
             ulong[] cellIds = test.Input.CellIds.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
             int numCells = cells.Length / Ckzg.BytesPerCell;

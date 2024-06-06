@@ -2,15 +2,13 @@ namespace Ckzg;
 
 public static partial class Ckzg
 {
-    public const int BytesPerFieldElement = 32;
-    public const int FieldElementsPerBlob = 4096;
-    public const int FieldElementsPerExtBlob = 2 * FieldElementsPerBlob;
-    public const int BytesPerBlob = BytesPerFieldElement * FieldElementsPerBlob;
+    public const int BytesPerBlob = 131072;
     public const int BytesPerCommitment = 48;
     public const int BytesPerProof = 48;
-    public const int FieldElementsPerCell = 64;
-    public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
-    public const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
+    public const int BytesPerCell = 2048;
+
+    // Should only be used in internal checks.
+    private const int BytesPerFieldElement = 32;
 
     /// <summary>
     ///     Loads trusted setup settings from file.
@@ -35,7 +33,6 @@ public static partial class Ckzg
     /// </summary>
     /// <param name="ckzgSetup">Trusted setup settings</param>
     /// <exception cref="ArgumentException">Thrown when settings are not correct</exception>
-
     public static void FreeTrustedSetup(IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);

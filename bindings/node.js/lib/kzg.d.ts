@@ -19,12 +19,7 @@ export interface TrustedSetupJson {
 
 export const BYTES_PER_BLOB: number;
 export const BYTES_PER_COMMITMENT: number;
-export const BYTES_PER_FIELD_ELEMENT: number;
 export const BYTES_PER_PROOF: number;
-export const FIELD_ELEMENTS_PER_BLOB: number;
-export const FIELD_ELEMENTS_PER_EXT_BLOB: number;
-export const FIELD_ELEMENTS_PER_CELL: number;
-export const CELLS_PER_EXT_BLOB: number;
 export const BYTES_PER_CELL: number;
 
 /**

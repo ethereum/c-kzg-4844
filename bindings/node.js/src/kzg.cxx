@@ -1299,20 +1299,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["BYTES_PER_COMMITMENT"] = Napi::Number::New(
         env, BYTES_PER_COMMITMENT
     );
-    exports["BYTES_PER_FIELD_ELEMENT"] = Napi::Number::New(
-        env, BYTES_PER_FIELD_ELEMENT
-    );
     exports["BYTES_PER_PROOF"] = Napi::Number::New(env, BYTES_PER_PROOF);
-    exports["FIELD_ELEMENTS_PER_BLOB"] = Napi::Number::New(
-        env, FIELD_ELEMENTS_PER_BLOB
-    );
-    exports["FIELD_ELEMENTS_PER_EXT_BLOB"] = Napi::Number::New(
-        env, FIELD_ELEMENTS_PER_EXT_BLOB
-    );
-    exports["FIELD_ELEMENTS_PER_CELL"] = Napi::Number::New(
-        env, FIELD_ELEMENTS_PER_CELL
-    );
-    exports["CELLS_PER_EXT_BLOB"] = Napi::Number::New(env, CELLS_PER_EXT_BLOB);
     exports["BYTES_PER_CELL"] = Napi::Number::New(env, BYTES_PER_CELL);
 
     return exports;
