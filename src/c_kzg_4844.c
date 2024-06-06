@@ -2834,7 +2834,7 @@ static void unscale_poly(fr_t *p, size_t len) {
  * @remark The array of cells must be 2n length and in the correct order.
  * @remark Missing cells should be equal to FR_NULL.
  */
-static C_KZG_RET recover_all_cells_impl(
+static C_KZG_RET recover_cells_impl(
     fr_t *recovered, fr_t *cells, const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -3433,7 +3433,7 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  *
  * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
- * @remark Use recover_all_cells to recover missing cells.
+ * @remark Use recover_cells_and_kzg_proofs for recovery.
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
  */
@@ -3652,7 +3652,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     }
 
     /* Perform cell recovery */
-    ret = recover_all_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
+    ret = recover_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Convert the recovered data points to byte-form */
