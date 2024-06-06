@@ -620,6 +620,10 @@ impl Cell {
         Ok(Self::new(new_bytes))
     }
 
+    pub fn to_bytes(&self) -> [u8; BYTES_PER_CELL] {
+         self.bytes
+    }
+
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }

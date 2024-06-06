@@ -95,9 +95,9 @@ dependencies = [
 
 [[package]]
 name = "blst"
-version = "0.3.11"
+version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c94087b935a822949d3291a9989ad2b2051ea141eda0fd4e478a75f6aa3e604b"
+checksum = "62dc83a094a71d43eeadd254b1ec2d24cb6a0bb6cadce00df51f0db594711a32"
 dependencies = [
  "cc",
  "glob",
@@ -166,7 +166,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_bls12_381"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#83a5e2fe9dd95ba4622e3daf78c7ad3bd53ef34e"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#3313f1450eb2b0e0e0af0cde2dee9413b8a1039f"
 dependencies = [
  "ark-ff",
  "blst",
@@ -180,7 +180,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_erasure_codes"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#83a5e2fe9dd95ba4622e3daf78c7ad3bd53ef34e"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#3313f1450eb2b0e0e0af0cde2dee9413b8a1039f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -189,7 +189,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#83a5e2fe9dd95ba4622e3daf78c7ad3bd53ef34e"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#3313f1450eb2b0e0e0af0cde2dee9413b8a1039f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
 ]
@@ -197,7 +197,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#83a5e2fe9dd95ba4622e3daf78c7ad3bd53ef34e"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#3313f1450eb2b0e0e0af0cde2dee9413b8a1039f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -274,7 +274,7 @@ dependencies = [
 [[package]]
 name = "eip7594"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#83a5e2fe9dd95ba4622e3daf78c7ad3bd53ef34e"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#3313f1450eb2b0e0e0af0cde2dee9413b8a1039f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_erasure_codes",
@@ -454,9 +454,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.84"
+version = "1.0.85"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec96c6a92621310b51366f1e28d05ef11489516e93be030060e5fc12024a49d6"
+checksum = "22244ce15aa966053a896d1accb3a6e68469b97c7f33f284b99f0d576879fc23"
 dependencies = [
  "unicode-ident",
 ]
