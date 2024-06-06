@@ -10,18 +10,19 @@ mod test_formats;
 
 include!("./generated.rs");
 
+use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::ffi::CStr;
 use core::fmt;
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
+use core::ptr::null_mut;
 
 #[cfg(feature = "std")]
 use alloc::ffi::CString;
 #[cfg(feature = "std")]
 use std::path::Path;
-use std::ptr::null_mut;
 
 use arbitrary::Arbitrary;
 
@@ -621,7 +622,7 @@ impl Cell {
     }
 
     pub fn to_bytes(&self) -> [u8; BYTES_PER_CELL] {
-         self.bytes
+        self.bytes
     }
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
@@ -1201,6 +1202,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();
@@ -1241,6 +1243,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_cells_and_kzg_proofs::Test =
@@ -1288,6 +1291,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
@@ -1342,6 +1346,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
@@ -1409,6 +1414,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: recover_all_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();

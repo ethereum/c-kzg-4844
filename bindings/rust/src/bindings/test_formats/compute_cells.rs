@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
-use crate::{Blob, Bytes32, Bytes48, Cell, Error};
+use crate::{Blob, Cell, Error};
+use alloc::string::String;
+use alloc::vec::Vec;
 use serde::Deserialize;
 
 #[derive(Deserialize)]

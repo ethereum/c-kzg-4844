@@ -1,7 +1,8 @@
 #![allow(dead_code)]
 
-use crate::bindings::hex_to_bytes;
-use crate::{Blob, Bytes48, Cell, Error, KzgProof};
+use crate::{Blob, Bytes48, Cell, Error};
+use alloc::string::String;
+use alloc::vec::Vec;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
