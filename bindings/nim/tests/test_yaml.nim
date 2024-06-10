@@ -22,7 +22,7 @@ const
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
   VERIFY_CELL_KZG_PROOF_TESTS        = testBase & "verify_cell_kzg_proof"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
-  RECOVER_ALL_CELLS_TESTS            = testBase & "recover_all_cells"
+  RECOVER_CELLS_AND_KZG_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
 
 proc toTestName(x: string): string =
   let parts = x.split(DirSep)
@@ -174,12 +174,15 @@ suite "yaml tests":
       res = ctx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)
 
-  runTests(RECOVER_ALL_CELLS_TESTS):
+  runTests(RECOVER_CELLS_AND_KZG_PROOFS_TESTS):
     let
       cellIds = uint64.fromIntList(n["input"]["cell_ids"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
-      res = ctx.recoverCells(cellIds, cells)
+      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      res = ctx.recoverCellsAndProofs(cellIds, cells, proofs)
 
     checkRes(res):
-      let recovered = KzgCell.fromHexList(n["output"])
-      check recovered == res.get
+      let expectedCells = KzgCell.fromHexList(n["output"][0])
+      check expectedCells == res.get.cells
+      let expectedProofs = KzgProof.fromHexList(n["output"][1])
+      check expectedProofs == res.get.proofs
