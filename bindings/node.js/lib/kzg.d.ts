@@ -175,7 +175,11 @@ export function recoverAllCells(cellIds: number[], cells: Cell[]): Cell[];
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-export function recoverCellsAndKzgProofs(cellIds: number[], cells: Cell[], proofsBytes: Bytes48[]): Cell[];
+export function recoverCellsAndKzgProofs(
+  cellIds: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
+): [Cell[], KZGProof[]];
 
 /**
  * Verify that a cell's proof is valid.

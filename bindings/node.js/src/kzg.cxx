@@ -1219,7 +1219,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
         env, RecoverAllCells, "recoverAllCells"
     );
     exports["recoverCellsAndKzgProofs"] = Napi::Function::New(
-        env, RecoverAllCells, "recoverCellsAndKzgProofs"
+        env, RecoverCellsAndKzgProofs, "recoverCellsAndKzgProofs"
     );
     exports["verifyCellKzgProof"] = Napi::Function::New(
         env, VerifyCellKzgProof, "verifyCellKzgProof"

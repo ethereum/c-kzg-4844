@@ -30,7 +30,7 @@ const {
   verifyCellKzgProof,
   computeCells,
   verifyCellKzgProofBatch,
-  recoverAllCells,
+  recoverCellsAndKzgProofs,
 } = kzg;
 
 // not exported by types, only exported for testing purposes
@@ -53,7 +53,7 @@ const COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml";
 const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
-const RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml";
+const RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml";
 
 const BYTES_PER_FIELD_ELEMENT = 32;
 const CELLS_PER_EXT_BLOB = 128;
@@ -72,7 +72,7 @@ type VerifyCellKzgProofBatchTest = TestMeta<
   {row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[]},
   boolean
 >;
-type RecoverAllCellsTest = TestMeta<{cell_ids: number[]; cells: string[]}, string[]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{cell_ids: number[]; cells: string[]; proofs: string[]}, string[][]>;
 
 const blobValidLength = randomBytes(BYTES_PER_BLOB);
 const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
@@ -478,29 +478,37 @@ describe("C-KZG", () => {
       });
     });
 
-    it("reference tests for recoverAllCells should pass", () => {
-      const tests = globSync(RECOVER_ALL_CELLS_TESTS);
+    it("reference tests for recoverCellsAndKzgProofs should pass", () => {
+      const tests = globSync(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
       expect(tests.length).toBeGreaterThan(0);
 
       tests.forEach((testFile: string) => {
-        const test: RecoverAllCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+        const test: RecoverCellsAndKzgProofsTest = yaml.load(readFileSync(testFile, "ascii"));
 
-        let recovered;
+        let recoveredCells;
+        let recoveredProofs;
         const cellIds = test.input.cell_ids;
         const cells = test.input.cells.map(bytesFromHex);
+        const proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          recovered = recoverAllCells(cellIds, cells);
+          [recoveredCells, recoveredProofs] = recoverCellsAndKzgProofs(cellIds, cells, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
         }
 
         expect(test.output).not.toBeNull();
-        const expectedCells = test.output.map(bytesFromHex);
-        expect(recovered.length).toBe(expectedCells.length);
-        for (let i = 0; i < cells.length; i++) {
-          assertBytesEqual(recovered[i], expectedCells[i]);
+        expect(test.output.length).toBe(2);
+        const expectedCells = test.output[0].map(bytesFromHex);
+        const expectedProofs = test.output[1].map(bytesFromHex);
+        expect(recoveredCells.length).toBe(expectedCells.length);
+        for (let i = 0; i < recoveredCells.length; i++) {
+          assertBytesEqual(recoveredCells[i], expectedCells[i]);
+        }
+        expect(recoveredProofs.length).toBe(expectedProofs.length);
+        for (let i = 0; i < recoveredProofs.length; i++) {
+          assertBytesEqual(recoveredProofs[i], expectedProofs[i]);
         }
       });
     });
