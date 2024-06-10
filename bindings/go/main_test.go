@@ -102,7 +102,7 @@ var (
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
 	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
 	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
-	recoverAllCellsTests          = filepath.Join(testDir, "recover_all_cells/*/*/*")
+	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -656,16 +656,17 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 	}
 }
 
-func TestRecoverAllCells(t *testing.T) {
+func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {
 			CellIds []uint64 `yaml:"cell_ids"`
 			Cells   []string `yaml:"cells"`
+			Proofs  []string `yaml:"proofs"`
 		}
-		Output *[]Cell `yaml:"output"`
+		Output *[][]string `yaml:"output"`
 	}
 
-	tests, err := filepath.Glob(recoverAllCellsTests)
+	tests, err := filepath.Glob(recoverCellsAndKZGProofsTests)
 	require.NoError(t, err)
 	require.True(t, len(tests) > 0)
 
@@ -691,10 +692,37 @@ func TestRecoverAllCells(t *testing.T) {
 				cells = append(cells, cell)
 			}
 
-			recovered, err := RecoverAllCells(cellIds, cells)
+			var proofs []Bytes48
+			for _, p := range test.Input.Proofs {
+				var proof Bytes48
+				err = proof.UnmarshalText([]byte(p))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				proofs = append(proofs, proof)
+			}
+
+			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
-				require.Equal(t, *test.Output, recovered[:])
+				var expectedCells []Cell
+				for _, cellStr := range (*test.Output)[0] {
+					var cell Cell
+					err := cell.UnmarshalText([]byte(cellStr))
+					require.NoError(t, err)
+					expectedCells = append(expectedCells, cell)
+				}
+				require.Equal(t, expectedCells, recoveredCells[:])
+				var expectedProofs []KZGProof
+				for _, proofStr := range (*test.Output)[1] {
+					var proof Bytes48
+					err := proof.UnmarshalText([]byte(proofStr))
+					require.NoError(t, err)
+					expectedProofs = append(expectedProofs, KZGProof(proof))
+				}
+				require.Equal(t, expectedProofs, recoveredProofs[:])
+
 			} else {
 				require.Nil(t, test.Output)
 			}
@@ -862,19 +890,12 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	b.Run("CellsToBlob", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			_, err := CellsToBlob(blobCells[0])
-			require.NoError(b, err)
-		}
-	})
-
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		cellIds, partialCells, _ := getPartialCellsAndProofs(blobCells[0], blobCellProofs[0], i)
-		b.Run(fmt.Sprintf("RecoverAllCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+		cellIds, partialCells, partialProofs := getPartialCellsAndProofs(blobCells[0], blobCellProofs[0], i)
+		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := RecoverAllCells(cellIds, partialCells)
+				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells, partialProofs)
 				require.NoError(b, err)
 			}
 		})

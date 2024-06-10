@@ -1404,7 +1404,7 @@ mod tests {
     }
 
     #[test]
-    fn test_recover_all_cells() {
+    fn test_recover_cells() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();

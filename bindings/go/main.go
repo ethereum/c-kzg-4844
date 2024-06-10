@@ -471,65 +471,6 @@ func ComputeCellsAndKZGProofs(blob *Blob) ([cellsPerExtBlob]Cell, [cellsPerExtBl
 }
 
 /*
-CellsToBlob is the binding for:
-
-	C_KZG_RET cells_to_blob(
-	    Blob *blob,
-	    const Cell *cells);
-*/
-func CellsToBlob(cells [cellsPerExtBlob]Cell) (Blob, error) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-
-	blob := Blob{}
-	ret := C.cells_to_blob(
-		(*C.Blob)(unsafe.Pointer(&blob)),
-		(*C.Cell)(unsafe.Pointer(&cells)))
-
-	if ret != C.C_KZG_OK {
-		return Blob{}, makeErrorFromRet(ret)
-	}
-	return blob, nil
-}
-
-/*
-RecoverAllCells is the binding for:
-
-	C_KZG_RET recover_cells_and_kzg_proofs(
-	    Cell *recovered_cells,
-	    KZGProof *recovered_proofs,
-	    const uint64_t *cell_ids,
-	    const Cell *cells,
-	    const Bytes48 *proofs_bytes,
-	    size_t num_cells,
-	    const KZGSettings *s);
-*/
-func RecoverAllCells(cellIds []uint64, cells []Cell) ([cellsPerExtBlob]Cell, error) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-	if len(cellIds) != len(cells) {
-		return [cellsPerExtBlob]Cell{}, ErrBadArgs
-	}
-
-	recoveredCells := [cellsPerExtBlob]Cell{}
-	ret := C.recover_cells_and_kzg_proofs(
-		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
-		nil, /* No proofs */
-		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
-		*(**C.Cell)(unsafe.Pointer(&cells)),
-		nil, /* No proofs */
-		(C.size_t)(len(cells)),
-		&settings)
-
-	if ret != C.C_KZG_OK {
-		return [cellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
-	}
-	return recoveredCells, nil
-}
-
-/*
 RecoverCellsAndKZGProofs is the binding for:
 
 	C_KZG_RET recover_cells_and_kzg_proofs(

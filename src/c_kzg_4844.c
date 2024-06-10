@@ -26,9 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/** Remove this to disable individual cell proof computations. */
-#define COMPUTE_INDIVIDUAL_PROOFS
-
 ///////////////////////////////////////////////////////////////////////////////
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,6 +46,9 @@
         free(p); \
         (p) = NULL; \
     } while (0)
+
+/** Remove this to disable individual cell proof computations. */
+#define COMPUTE_INDIVIDUAL_PROOFS
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -270,6 +270,7 @@ static inline size_t min(size_t a, size_t b) {
     return a < b ? a : b;
 }
 
+#if defined(COMPUTE_INDIVIDUAL_PROOFS)
 /**
  * Get the maximum of two unsigned integers.
  *
@@ -281,6 +282,7 @@ static inline size_t min(size_t a, size_t b) {
 static inline size_t max(size_t a, size_t b) {
     return a > b ? a : b;
 }
+#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
 /**
  * Test whether the operand is one in the finite field.
@@ -3668,6 +3670,19 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     }
 
     if (recovered_proofs != NULL && proofs_bytes != NULL) {
+        /*
+         * Instead of converting the cells to a blob and back, we can just treat
+         * the cells as a polynomial. We are done with the fr-form recovered
+         * cells and we can safely mutate the array.
+         */
+        ret = poly_lagrange_to_monomial(
+            recovered_cells_fr,
+            recovered_cells_fr,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            s
+        );
+        if (ret != C_KZG_OK) goto out;
+
 #if defined(COMPUTE_INDIVIDUAL_PROOFS)
         for (size_t i = 0; i < num_cells; i++) {
             /* Convert the untrusted proofs to trusted proofs */
@@ -3685,19 +3700,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
          * single proof or ~200ms to compute all proofs.
          */
         if (CELLS_PER_EXT_BLOB - num_cells <= 3) {
-            /*
-             * Instead of converting the cells to a blob and back, we can just
-             * treat the cells as a polynomial. We are done with the fr-form
-             * recovered cells and we can safely mutate the array.
-             */
-            ret = poly_lagrange_to_monomial(
-                recovered_cells_fr,
-                recovered_cells_fr,
-                FIELD_ELEMENTS_PER_EXT_BLOB,
-                s
-            );
-            if (ret != C_KZG_OK) goto out;
-
             /* Re-compute missing proofs */
             for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
                 if (!have_cell[i]) {
@@ -3719,16 +3721,28 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             }
         } else {
 #endif /* COMPUTE_INDIVIDUAL_PROOFS */
-            /* Convert cells to a blob, so we can re-compute proofs */
-            ret = cells_to_blob(blob, recovered_cells);
+            /* Compute the proofs, provide only the first half */
+            ret = compute_fk20_proofs(
+                recovered_proofs_g1,
+                recovered_cells_fr,
+                FIELD_ELEMENTS_PER_BLOB,
+                s
+            );
             if (ret != C_KZG_OK) goto out;
 
-            /* Compute proofs and skip cell computation */
-            ret = compute_cells_and_kzg_proofs(NULL, recovered_proofs, blob, s);
+            /* Bit-reverse the proofs */
+            ret = bit_reversal_permutation(
+                recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
+            );
             if (ret != C_KZG_OK) goto out;
 #if defined(COMPUTE_INDIVIDUAL_PROOFS)
         }
 #endif /* COMPUTE_INDIVIDUAL_PROOFS */
+
+        /* Convert all of the proofs to byte-form */
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            bytes_from_g1(&recovered_proofs[i], &recovered_proofs_g1[i]);
+        }
     }
 
 out:
