@@ -363,53 +363,6 @@ public class ReferenceTests
 
     #endregion
 
-    #region ComputeCells
-
-    private class ComputeCellsInput
-    {
-        public string Blob { get; set; } = null!;
-    }
-
-    private class ComputeCellsTest
-    {
-        public ComputeCellsInput Input { get; set; } = null!;
-        public List<string>? Output { get; set; } = null!;
-    }
-
-    [TestCase]
-    public void TestComputeCells()
-    {
-        Matcher matcher = new();
-        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
-
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeCellsTests);
-        Assert.That(testFiles.Count(), Is.GreaterThan(0));
-
-        foreach (string testFile in testFiles)
-        {
-            string yaml = File.ReadAllText(testFile);
-            ComputeCellsTest test = _deserializer.Deserialize<ComputeCellsTest>(yaml);
-            Assert.That(test, Is.Not.EqualTo(null));
-
-            byte[] cells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
-            byte[] blob = GetBytes(test.Input.Blob);
-
-            try
-            {
-                Ckzg.ComputeCells(cells, blob, _ts);
-                Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedCells = GetFlatBytes(test.Output);
-                Assert.That(cells, Is.EqualTo(expectedCells));
-            }
-            catch
-            {
-                Assert.That(test.Output, Is.EqualTo(null));
-            }
-        }
-    }
-
-    #endregion
-
     #region ComputeCellsAndKzgProofs
 
     private class ComputeCellsAndKzgProofsInput

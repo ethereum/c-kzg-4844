@@ -130,17 +130,6 @@ export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBy
 export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
 
 /**
- * Get the cells for a given blob.
- *
- * @param {Blob}    blob - The blob to get cells for
- *
- * @return {Cell[]} - An array of cells
- *
- * @throws {Error} - Failure to allocate or compute cells
- */
-export function computeCells(blob: Blob): Cell[];
-
-/**
  * Get the cells and proofs for a given blob.
  *
  * @param {Blob}    blob - the blob to get cells/proofs for

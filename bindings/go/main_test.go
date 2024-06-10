@@ -430,45 +430,6 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 	}
 }
 
-func TestComputeCells(t *testing.T) {
-	type Test struct {
-		Input struct {
-			Blob string `yaml:"blob"`
-		}
-		Output *[]Cell `yaml:"output"`
-	}
-
-	tests, err := filepath.Glob(computeCellsTests)
-	require.NoError(t, err)
-	require.True(t, len(tests) > 0)
-
-	for _, testPath := range tests {
-		t.Run(testPath, func(t *testing.T) {
-			testFile, err := os.Open(testPath)
-			require.NoError(t, err)
-			test := Test{}
-			err = yaml.NewDecoder(testFile).Decode(&test)
-			require.NoError(t, testFile.Close())
-			require.NoError(t, err)
-
-			var blob Blob
-			err = blob.UnmarshalText([]byte(test.Input.Blob))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			cells, err := ComputeCells(&blob)
-			if err == nil {
-				require.NotNil(t, test.Output)
-				require.Equal(t, *test.Output, cells[:])
-			} else {
-				require.Nil(t, test.Output)
-			}
-		})
-	}
-}
-
 func TestComputeCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {
@@ -844,13 +805,6 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
-
-	b.Run("ComputeCells", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			_, err := ComputeCells(&blobs[0])
-			require.NoError(b, err)
-		}
-	})
 
 	FreeTrustedSetup()
 	for i := 0; i <= 8; i++ {

@@ -182,21 +182,6 @@ verifyBlobKzgProofBatch(
 ): boolean;
 ```
 
-### `computeCells`
-
-```ts
-/**
- * Get the cells for a given blob.
- *
- * @param {Blob}    blob - The blob to get cells for
- *
- * @return {Cell[]} - An array of cells
- *
- * @throws {Error} - Failure to allocate or compute cells
- */
-export function computeCells(blob: Blob): Cell[];
-```
-
 ### `computeCellsAndKzgProofs`
 
 ```ts

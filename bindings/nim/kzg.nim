@@ -299,26 +299,6 @@ proc verifyProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
-proc recoverCells*(ctx: KzgCtx,
-                   cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
-  if cells.len != cellIds.len:
-    return err($KZG_BADARGS)
-
-  if cells.len == 0:
-    return err($KZG_BADARGS)
-
-  var ret: KzgCells
-  let res = recover_cells_and_kzg_proofs(
-    ret[0].getPtr,
-    cast[ptr KzgProof](nil), # No proofs
-    cellIds[0].getPtr,
-    cells[0].getPtr,
-    cast[ptr KzgBytes48](nil), # No proofs
-    cells.len.csize_t,
-    ctx.val)
-  verify(res, ret)
-
 proc recoverCellsAndProofs*(ctx: KzgCtx,
                    cellIds: openArray[uint64],
                    cells: openArray[KzgCell],

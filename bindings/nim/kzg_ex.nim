@@ -131,18 +131,9 @@ proc verifyProofs*(rowCommitments: openArray[KzgBytes48],
   verifyCtx:
     gCtx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
-proc computeCells*(blob: KzgBlob): Result[KzgCells, string] {.gcsafe.} =
-  verifyCtx:
-    gCtx.computeCells(blob)
-
 proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
     gCtx.computeCellsAndProofs(blob)
-
-proc recoverCells*(cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
-  verifyCtx:
-    gCtx.recoverCells(cellIds, cells)
 
 proc recoverCellsAndProofs*(cellIds: openArray[uint64],
                    cells: openArray[KzgCell],

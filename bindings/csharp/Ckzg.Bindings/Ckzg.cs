@@ -199,18 +199,6 @@ public static partial class Ckzg
         }
     }
 
-    public static unsafe void ComputeCells(Span<byte> cells, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
-    {
-        ThrowOnUninitializedTrustedSetup(ckzgSetup);
-        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
-
-        fixed (byte* cellsPtr = cells, blobPtr = blob)
-        {
-            KzgResult result = ComputeCellsAndKzgProofs(cellsPtr, null, blobPtr, ckzgSetup);
-            ThrowOnError(result);
-        }
-    }
-
     public static unsafe void ComputeCellsAndKzgProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
             IntPtr ckzgSetup)
     {

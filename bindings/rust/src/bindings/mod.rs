@@ -17,7 +17,6 @@ use core::ffi::CStr;
 use core::fmt;
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
-use core::ptr::null_mut;
 
 #[cfg(feature = "std")]
 use alloc::ffi::CString;
@@ -617,22 +616,6 @@ impl Cell {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
 
-    pub fn compute_cells(
-        blob: &Blob,
-        kzg_settings: &KZGSettings,
-    ) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
-        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
-        unsafe {
-            let res =
-                compute_cells_and_kzg_proofs(cells.as_mut_ptr(), null_mut(), blob, kzg_settings);
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(Box::new(cells))
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
     pub fn compute_cells_and_kzg_proofs(
         blob: &Blob,
         kzg_settings: &KZGSettings,
@@ -964,7 +947,6 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
-    const COMPUTE_CELLS_TESTS: &str = "tests/compute_cells/*/*/*";
     const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
     const VERIFY_CELL_KZG_PROOF_TESTS: &str = "tests/verify_cell_kzg_proof/*/*/*";
     const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
@@ -1143,47 +1125,6 @@ mod tests {
                 &kzg_settings,
             ) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
-                _ => assert!(test.get_output().is_none()),
-            }
-        }
-    }
-
-    #[test]
-    fn test_compute_cells() {
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(COMPUTE_CELLS_TESTS)
-            .unwrap()
-            .map(Result::unwrap)
-            .collect();
-        assert!(!test_files.is_empty());
-
-        #[allow(unused_variables)]
-        for (index, test_file) in test_files.iter().enumerate() {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: compute_cells::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let Ok(blob) = test.input.get_blob() else {
-                assert!(test.get_output().is_none());
-                continue;
-            };
-
-            #[cfg(feature = "generate-fuzz-corpus")]
-            {
-                use std::{env, fs::File, io::Write};
-                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let dir_path = root_dir
-                    .join("rustfuzz")
-                    .join("corpus")
-                    .join("fuzz_compute_cells");
-                fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
-                let mut file = File::create(&file_path).unwrap();
-                file.write_all(&blob.bytes).unwrap();
-            }
-
-            match Cell::compute_cells(&blob, &kzg_settings) {
-                Ok(res) => assert_eq!(res.as_slice(), test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
         }

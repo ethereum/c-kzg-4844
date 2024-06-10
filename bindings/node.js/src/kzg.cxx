@@ -552,64 +552,6 @@ out:
 }
 
 /**
- * Get the cells for a given blob.
- *
- * @param[in] {Blob}    blob - The blob to get cells for
- *
- * @return {Cell[]} - An array of cells
- *
- * @throws {Error} - Failure to allocate or compute cells
- */
-Napi::Value ComputeCells(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    Napi::Value result = env.Null();
-    Blob *blob = get_blob(env, info[0]);
-    if (blob == nullptr) {
-        return env.Null();
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
-        return env.Null();
-    }
-
-    C_KZG_RET ret;
-    Cell *cells = NULL;
-    Napi::Array cellArray;
-
-    cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-    if (cells == nullptr) {
-        std::ostringstream msg;
-        msg << "Failed to allocate cells in computeCells";
-        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    ret = compute_cells_and_kzg_proofs(cells, NULL, blob, kzg_settings);
-    if (ret != C_KZG_OK) {
-        std::ostringstream msg;
-        msg << "Error in computeCells: " << from_c_kzg_ret(ret);
-        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        cellArray.Set(
-            i,
-            Napi::Buffer<uint8_t>::Copy(
-                env, reinterpret_cast<uint8_t *>(&cells[i]), BYTES_PER_CELL
-            )
-        );
-    }
-
-    result = cellArray;
-
-out:
-    free(cells);
-    return result;
-}
-
-/**
  * Get the cells and proofs for a given blob.
  *
  * @param[in] {Blob}    blob - the blob to get cells/proofs for
@@ -1101,9 +1043,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
     exports["verifyBlobKzgProofBatch"] = Napi::Function::New(
         env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch"
-    );
-    exports["computeCells"] = Napi::Function::New(
-        env, ComputeCells, "computeCells"
     );
     exports["computeCellsAndKzgProofs"] = Napi::Function::New(
         env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"

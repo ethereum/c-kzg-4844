@@ -416,33 +416,6 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 }
 
 /*
-ComputeCells is the binding for:
-
-	C_KZG_RET compute_cells_and_kzg_proofs(
-	    Cell *cells,
-	    KZGProof *proofs,
-	    const Blob *blob,
-	    const KZGSettings *s);
-*/
-func ComputeCells(blob *Blob) ([cellsPerExtBlob]Cell, error) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-
-	cells := [cellsPerExtBlob]Cell{}
-	ret := C.compute_cells_and_kzg_proofs(
-		(*C.Cell)(unsafe.Pointer(&cells)),
-		nil, /* Do not generate proofs */
-		(*C.Blob)(unsafe.Pointer(blob)),
-		&settings)
-
-	if ret != C.C_KZG_OK {
-		return [cellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
-	}
-	return cells, nil
-}
-
-/*
 ComputeCellsAndKZGProofs is the binding for:
 
 	C_KZG_RET compute_cells_and_kzg_proofs(

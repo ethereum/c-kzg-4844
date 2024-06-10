@@ -36,7 +36,6 @@ public class TestUtils {
   private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_blob_kzg_proof_batch/";
-  private static final String COMPUTE_CELLS_TESTS = "../../tests/compute_cells/";
   private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
       "../../tests/compute_cells_and_kzg_proofs/";
   private static final String VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/";
@@ -198,24 +197,6 @@ public class TestUtils {
         String jsonData = Files.readString(Path.of(testFile));
         VerifyBlobKzgProofBatchTest test =
             OBJECT_MAPPER.readValue(jsonData, VerifyBlobKzgProofBatchTest.class);
-        tests.add(test);
-      }
-    } catch (IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-
-    return tests.build().collect(Collectors.toList());
-  }
-
-  public static List<ComputeCellsTest> getComputeCellsTests() {
-    final Stream.Builder<ComputeCellsTest> tests = Stream.builder();
-    List<String> testFiles = getTestFiles(COMPUTE_CELLS_TESTS);
-    assert !testFiles.isEmpty();
-
-    try {
-      for (String testFile : testFiles) {
-        String jsonData = Files.readString(Path.of(testFile));
-        ComputeCellsTest test = OBJECT_MAPPER.readValue(jsonData, ComputeCellsTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {
