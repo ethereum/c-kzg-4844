@@ -42,7 +42,7 @@ public class ReferenceTests
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");
     private readonly string _verifyCellKzgProofTests = Path.Join(TestDir, "verify_cell_kzg_proof");
     private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
-    private readonly string _recoverAllCellsTests = Path.Join(TestDir, "recover_all_cells");
+    private readonly string _recoverCellsAndKzgProofsTests = Path.Join(TestDir, "recover_cells_and_kzg_proofs");
     private IDeserializer _deserializer;
 
     #region Helper Functions
@@ -563,18 +563,19 @@ public class ReferenceTests
 
     #endregion
 
-    #region RecoverAllCells
+    #region RecoverCellsAndKzgProofs
 
-    private class RecoverAllCellsInput
+    private class RecoverCellsAndKzgProofsInput
     {
         public List<ulong> CellIds { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
+        public List<string> Proofs { get; set; } = null!;
     }
 
-    private class RecoverAllCellsTest
+    private class RecoverCellsAndKzgProofsTest
     {
-        public RecoverAllCellsInput Input { get; set; } = null!;
-        public List<string>? Output { get; set; } = null!;
+        public RecoverCellsAndKzgProofsInput Input { get; set; } = null!;
+        public List<List<string>>? Output { get; set; } = null!;
     }
 
     [TestCase]
@@ -583,26 +584,30 @@ public class ReferenceTests
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
 
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_recoverAllCellsTests);
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_recoverCellsAndKzgProofsTests);
         Assert.That(testFiles.Count(), Is.GreaterThan(0));
 
         foreach (string testFile in testFiles)
         {
             string yaml = File.ReadAllText(testFile);
-            RecoverAllCellsTest test = _deserializer.Deserialize<RecoverAllCellsTest>(yaml);
+            RecoverCellsAndKzgProofsTest test = _deserializer.Deserialize<RecoverCellsAndKzgProofsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
+            byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
             ulong[] cellIds = test.Input.CellIds.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
+            byte[] proofs = GetFlatBytes(test.Input.Proofs);
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, null, cellIds, cells, null, numCells, _ts);
+                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, recoveredProofs, cellIds, cells, proofs, numCells, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedRecoveredCells = GetFlatBytes(test.Output);
-                Assert.That(recoveredCells, Is.EqualTo(expectedRecoveredCells));
+                byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
+                Assert.That(recoveredCells, Is.EqualTo(expectedCells));
+                byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
+                Assert.That(recoveredProofs, Is.EqualTo(expectedProofs));
             }
             catch
             {
