@@ -268,18 +268,6 @@ impl Blob {
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
-
-    pub fn cells_to_blob(cells: &[Cell; CELLS_PER_EXT_BLOB]) -> Result<Self, Error> {
-        let mut blob = MaybeUninit::<Self>::uninit();
-        unsafe {
-            let res = cells_to_blob(blob.as_mut_ptr(), cells.as_ptr());
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(blob.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
 }
 
 impl AsRef<[u8]> for Blob {

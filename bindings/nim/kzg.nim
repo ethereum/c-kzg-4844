@@ -177,14 +177,6 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, proof)
 
-proc cellsToBlob*(ctx: KzgCtx,
-                   cells: openArray[KzgCell]): Result[KzgBlob, string] {.gcsafe.} =
-  var blob: KzgBlob
-  let res = cells_to_blob(
-    blob,
-    cells[0].getPtr)
-  verify(res, blob)
-
 proc computeCells*(ctx: KzgCtx,
                    blob: KzgBlob): Result[KzgCells, string] {.gcsafe.} =
   var ret: KzgCells

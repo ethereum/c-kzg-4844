@@ -212,21 +212,6 @@ export function computeCells(blob: Blob): Cell[];
 export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 ```
 
-### `cellsToBlob`
-
-```ts
-/**
- * Convert an array of cells to a blob.
- *
- * @param {Cell[]}  cells - The cells to convert to a blob
- *
- * @return {Blob} - The blob for the given cells
- *
- * @throws {Error} - Invalid input, failure to allocate, or invalid conversion
- */
-export function cellsToBlob(cells: Cell[]): Blob;
-```
-
 ### `recoverAllCells`
 
 ```ts

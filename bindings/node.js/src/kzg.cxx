@@ -690,69 +690,6 @@ out:
 }
 
 /**
- * Convert an array of cells to a blob.
- *
- * @param[in] {Cell[]}  cells - The cells to convert to a blob
- *
- * @return {Blob} - The blob for the given cells
- *
- * @throws {Error} - Invalid input, failure to allocate, or invalid conversion
- */
-Napi::Value CellsToBlob(const Napi::CallbackInfo &info) {
-    C_KZG_RET ret;
-    Cell *cells = NULL;
-    Napi::Env env = info.Env();
-    Napi::Value result = env.Null();
-    if (!info[0].IsArray()) {
-        Napi::Error::New(env, "Cells must be an array")
-            .ThrowAsJavaScriptException();
-        return result;
-    }
-    Napi::Array cells_param = info[0].As<Napi::Array>();
-    if (cells_param.Length() != CELLS_PER_EXT_BLOB) {
-        Napi::Error::New(env, "Cells must have CELLS_PER_EXT_BLOB cells")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-    if (cells == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for cells")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        // add HandleScope here to release reference to temp values
-        // after each iteration since data is being memcpy
-        Napi::HandleScope scope{env};
-        Cell *cell = get_cell(env, cells_param[i]);
-        if (cell == nullptr) {
-            goto out;
-        }
-        memcpy(&cells[i], cell, BYTES_PER_CELL);
-    }
-
-    Blob blob;
-    ret = cells_to_blob(&blob, cells);
-
-    if (ret != C_KZG_OK) {
-        std::ostringstream msg;
-        msg << "Error in cellsToBlob: " << from_c_kzg_ret(ret);
-        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    result = Napi::Buffer<uint8_t>::Copy(
-        env, reinterpret_cast<uint8_t *>(&blob), BYTES_PER_BLOB
-    );
-
-out:
-    free(cells);
-    return result;
-}
-
-/**
  * Given at least 50% of cells, reconstruct the missing ones.
  *
  * @param[in] {number[]}  cellIds - The identifiers for the cells you have
@@ -1277,9 +1214,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
     exports["computeCellsAndKzgProofs"] = Napi::Function::New(
         env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"
-    );
-    exports["cellsToBlob"] = Napi::Function::New(
-        env, CellsToBlob, "cellsToBlob"
     );
     exports["recoverAllCells"] = Napi::Function::New(
         env, RecoverAllCells, "recoverAllCells"

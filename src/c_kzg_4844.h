@@ -258,8 +258,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     const KZGSettings *s
 );
 
-C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells);
-
 #ifdef __cplusplus
 }
 #endif

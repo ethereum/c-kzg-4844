@@ -29,7 +29,6 @@ const {
   computeCellsAndKzgProofs,
   verifyCellKzgProof,
   computeCells,
-  cellsToBlob,
   verifyCellKzgProofBatch,
   recoverAllCells,
 } = kzg;
@@ -744,13 +743,6 @@ describe("C-KZG", () => {
   });
 
   describe("tests for das functions", () => {
-    it("round trip blob to cells to blob", () => {
-      const blob = generateRandomBlob();
-      const cells = computeCells(blob);
-      const newBlob = cellsToBlob(cells);
-      assertBytesEqual(blob, newBlob);
-    });
-
     it("proofs should verify", () => {
       const blob = generateRandomBlob();
       const commitment = blobToKzgCommitment(blob);

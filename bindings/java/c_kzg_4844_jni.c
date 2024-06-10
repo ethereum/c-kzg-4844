@@ -560,39 +560,6 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
   return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob(JNIEnv *env, jclass thisCls, jbyteArray cells)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return NULL;
-  }
-
-  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
-  if (cells_size != CELLS_PER_EXT_BLOB * BYTES_PER_CELL)
-  {
-    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
-    return 0;
-  }
-
-  jbyteArray blob = (*env)->NewByteArray(env, BYTES_PER_BLOB);
-  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
-  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
-
-  C_KZG_RET ret = cells_to_blob(blob_native, cells_native);
-
-  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, 0);
-  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in cellsToBlob.");
-    return NULL;
-  }
-
-  return blob;
-}
-
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells)
 {
   if (settings == NULL)

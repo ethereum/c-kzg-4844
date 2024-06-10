@@ -206,5 +206,4 @@ extern "C" {
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn cells_to_blob(blob: *mut Blob, cells: *const Cell) -> C_KZG_RET;
 }

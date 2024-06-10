@@ -229,15 +229,6 @@ public class CKZG4844JNI {
   public static native CellsAndProofs computeCellsAndKzgProofs(byte[] blob);
 
   /**
-   * Convert an array of cells to a blob.
-   *
-   * @param cells the cells to convert to a blob
-   * @return the blob for the given cells
-   * @throws CKZGException if there is a crypto error
-   */
-  public static native byte[] cellsToBlob(byte[] cells);
-
-  /**
    * Given at least 50% of cells, reconstruct the missing ones.
    *
    * @param cellIds the identifiers for the cells you have

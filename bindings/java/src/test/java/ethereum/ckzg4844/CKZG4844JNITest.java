@@ -232,16 +232,6 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void checkCellsToBlob() {
-    loadTrustedSetup();
-    final byte[] blob = TestUtils.createRandomBlob();
-    final byte[] cells = CKZG4844JNI.computeCells(blob);
-    final byte[] newBlob = CKZG4844JNI.cellsToBlob(cells);
-    assertArrayEquals(blob, newBlob);
-    CKZG4844JNI.freeTrustedSetup();
-  }
-
-  @Test
   public void checkRecoverAllCells() {
     loadTrustedSetup();
     final byte[] blob = TestUtils.createRandomBlob();

@@ -152,17 +152,6 @@ export function computeCells(blob: Blob): Cell[];
 export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 
 /**
- * Convert an array of cells to a blob.
- *
- * @param {Cell[]}  cells - The cells to convert to a blob
- *
- * @return {Blob} - The blob for the given cells
- *
- * @throws {Error} - Invalid input, failure to allocate, or invalid conversion
- */
-export function cellsToBlob(cells: Cell[]): Blob;
-
-/**
  * Given at least 50% of cells, reconstruct the missing ones.
  *
  * @param {number[]}  cellIds - The identifiers for the cells you have

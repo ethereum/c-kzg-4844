@@ -121,14 +121,6 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    cellsToBlob
- * Signature: ([B)[B
- */
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_cellsToBlob
-  (JNIEnv *, jclass, jbyteArray);
-
-/*
- * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    recoverAllCells
  * Signature: ([J[B)[B
  */

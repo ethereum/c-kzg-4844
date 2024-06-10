@@ -3414,18 +3414,6 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Given CELLS_PER_EXT_BLOB cells, get a blob.
- *
- * @param[out]  blob    The original blob
- * @param[in]   cells   An array of CELLS_PER_EXT_BLOB cells
- */
-C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
-    /* The first half of cell data is the blob */
-    memcpy(blob, cells, BYTES_PER_BLOB);
-    return C_KZG_OK;
-}
-
-/**
  * Given a blob, get all of its cells and proofs.
  *
  * @param[out]  cells   An array of CELLS_PER_EXT_BLOB cells
@@ -3433,7 +3421,6 @@ C_KZG_RET cells_to_blob(Blob *blob, const Cell *cells) {
  * @param[in]   blob    The blob to get cells for
  * @param[in]   s       The trusted setup
  *
- * @remark Use cells_to_blob to convert the data points into a blob.
  * @remark Up to half of these cells may be lost.
  * @remark Use recover_cells_and_kzg_proofs for recovery.
  * @remark If cells is NULL, they won't be computed.

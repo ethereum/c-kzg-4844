@@ -1750,34 +1750,6 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 // Tests for reconstruction
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_compute_cells__succeeds_first_half_is_blob(void) {
-    C_KZG_RET ret;
-    Blob blob, blob2;
-    Cell *cells = NULL;
-    KZGProof *proofs = NULL;
-    int diff;
-
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Get a random blob */
-    get_rand_blob(&blob);
-
-    /* Get the cells */
-    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Get the original blob from the cells */
-    cells_to_blob(&blob2, cells);
-
-    /* Ensure the first half of the cells is the blob */
-    diff = memcmp(blob.bytes, blob2.bytes, sizeof(Blob));
-    ASSERT_EQUALS(diff, 0);
-}
-
 static void test_reconstruct__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
@@ -2121,7 +2093,6 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
-    RUN(test_compute_cells__succeeds_first_half_is_blob);
     RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_verify_cell_kzg_proof__succeeds_random_blob);
 
