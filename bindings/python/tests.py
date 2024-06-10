@@ -20,7 +20,7 @@ COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml"
 COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml"
 VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml"
 VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml"
-RECOVER_ALL_CELLS_TESTS = "../../tests/recover_all_cells/*/*/data.yaml"
+RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml"
 
 
 ###############################################################################
@@ -255,8 +255,8 @@ def test_verify_cell_kzg_proof_batch(ts):
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
-def test_recover_all_cells(ts):
-    test_files = glob.glob(RECOVER_ALL_CELLS_TESTS)
+def test_recover_cells_and_kzg_proofs(ts):
+    test_files = glob.glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
     assert len(test_files) > 0
 
     for test_file in test_files:
@@ -265,15 +265,18 @@ def test_recover_all_cells(ts):
 
         cell_ids = test["input"]["cell_ids"]
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
+        proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            recovered = ckzg.recover_all_cells(cell_ids, cells, ts)
+            recovered_cells, recovered_proofs = ckzg.recover_cells_and_kzg_proofs(cell_ids, cells, proofs, ts)
         except:
             assert test["output"] is None
             continue
 
-        expected_recovered = list(map(bytes_from_hex, test["output"]))
-        assert recovered == expected_recovered, f"{test_file}\n{recovered[:4]=}\n{expected_recovered[:4]=}"
+        expected_cells = list(map(bytes_from_hex, test["output"][0]))
+        assert recovered_cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
+        expected_proofs = list(map(bytes_from_hex, test["output"][1]))
+        assert recovered_proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
 ###############################################################################
@@ -291,6 +294,6 @@ if __name__ == "__main__":
     test_compute_cells_and_kzg_proofs(ts)
     test_verify_blob_kzg_proof(ts)
     test_verify_blob_kzg_proof_batch(ts)
-    test_recover_all_cells(ts)
+    test_recover_cells_and_kzg_proofs(ts)
 
     print("tests passed")
