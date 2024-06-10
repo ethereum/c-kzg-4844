@@ -212,20 +212,26 @@ export function computeCells(blob: Blob): Cell[];
 export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 ```
 
-### `recoverAllCells`
+### `recoverCellsAndKzgProofs`
 
 ```ts
 /**
- * Given at least 50% of cells, reconstruct the missing ones.
+ * Given at least 50% of cells/proofs, reconstruct the missing ones.
  *
- * @param {number[]}  cellIds - The identifiers for the cells you have
- * @param {Cell[]}    cells - The cells you have
+ * @param[in] {number[]}  cellIds - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ * @param[in] {Bytes48[]} proofsBytes - The proofs you have
  *
- * @return {Cell[]} - All cells for that blob
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
  *
- * @throws {Error} - Invalid input, failure to allocate or error recovering cells
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells and proofs
  */
-export function recoverAllCells(cellIds: number[], cells: Cell[]): Cell[];
+export function recoverCellsAndKzgProofs(
+  cellIds: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
+): [Cell[], KZGProof[]];
 ```
 
 ### `verifyCellKzgProof`

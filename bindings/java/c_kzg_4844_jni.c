@@ -560,42 +560,6 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
   return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverAllCells(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return NULL;
-  }
-
-  size_t count = (size_t)(*env)->GetArrayLength(env, cell_ids);
-  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
-  if (cells_size != count * BYTES_PER_CELL)
-  {
-    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, count * BYTES_PER_CELL);
-    return 0;
-  }
-
-  jbyteArray recovered = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
-  Cell *recovered_native = (Cell *)(*env)->GetByteArrayElements(env, recovered, NULL);
-  uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
-  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
-
-  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_native, NULL, cell_ids_native, cells_native, NULL, count, settings);
-
-  (*env)->ReleaseByteArrayElements(env, recovered, (jbyte *)recovered_native, 0);
-  (*env)->ReleaseLongArrayElements(env, cell_ids, (jlong *)cell_ids_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in recoverAllCells.");
-    return NULL;
-  }
-
-  return recovered;
-}
-
 JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells, jbyteArray proofs_bytes)
 {
   if (settings == NULL)

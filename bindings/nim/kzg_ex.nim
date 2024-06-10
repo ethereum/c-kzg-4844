@@ -199,10 +199,6 @@ template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
-template recoverAllCells*(cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): untyped =
-  recoverCells(cellIds, cells)
-
 template recoverCellsAndKzgProofs*(cellIds: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =

@@ -407,9 +407,4 @@ template verifyCellKzgProofBatch*(ctx: KzgCtx,
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, rowCommitments, rowIndices, columnIndices, cells, proofs)
 
-template recoverAllCells*(ctx: KzgCtx,
-                   cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): untyped =
-  recoverCells(ctx, cellIds, cells)
-
 {. pop .}

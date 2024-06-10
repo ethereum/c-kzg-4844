@@ -690,113 +690,6 @@ out:
 }
 
 /**
- * Given at least 50% of cells, reconstruct the missing ones.
- *
- * @param[in] {number[]}  cellIds - The identifiers for the cells you have
- * @param[in] {Cell[]}    cells - The cells you have
- *
- * @return {Cell[]} - All cells for that blob
- *
- * @throws {Error} - Invalid input, failure to allocate or error recovering
- * cells
- */
-Napi::Value RecoverAllCells(const Napi::CallbackInfo &info) {
-    C_KZG_RET ret;
-    uint64_t *cell_ids = NULL;
-    Cell *cells = NULL;
-    Cell *recovered_cells = NULL;
-    Napi::Array cellArray;
-    size_t num_cells;
-
-    Napi::Env env = info.Env();
-    Napi::Value result = env.Null();
-    if (!info[0].IsArray()) {
-        Napi::Error::New(env, "CellIds must be an array")
-            .ThrowAsJavaScriptException();
-        return result;
-    }
-    if (!info[1].IsArray()) {
-        Napi::Error::New(env, "Cells must be an array")
-            .ThrowAsJavaScriptException();
-        return result;
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
-        return env.Null();
-    }
-
-    Napi::Array cell_ids_param = info[0].As<Napi::Array>();
-    Napi::Array cells_param = info[1].As<Napi::Array>();
-
-    if (cell_ids_param.Length() != cells_param.Length()) {
-        Napi::Error::New(env, "There must equal lengths of cellIds and cells")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    num_cells = cells_param.Length();
-    cell_ids = (uint64_t *)calloc(num_cells, sizeof(uint64_t));
-    if (cell_ids == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for cell_ids")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-    cells = (Cell *)calloc(num_cells, BYTES_PER_CELL);
-    if (cells == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for cells")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-    recovered_cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-    if (recovered_cells == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for recovered")
-            .ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    for (size_t i = 0; i < num_cells; i++) {
-        // add HandleScope here to release reference to temp values
-        // after each iteration since data is being memcpy
-        Napi::HandleScope scope{env};
-        cell_ids[i] = get_cell_id(env, cell_ids_param[i]);
-        Cell *cell = get_cell(env, cells_param[i]);
-        if (cell == nullptr) {
-            goto out;
-        }
-        memcpy(&cells[i], cell, BYTES_PER_CELL);
-    }
-
-    ret = recover_cells_and_kzg_proofs(
-        recovered_cells, NULL, cell_ids, cells, NULL, num_cells, kzg_settings
-    );
-    if (ret != C_KZG_OK) {
-        std::ostringstream msg;
-        msg << "Error in recoverAllCells: " << from_c_kzg_ret(ret);
-        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-        goto out;
-    }
-
-    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        cellArray.Set(
-            i,
-            Napi::Buffer<uint8_t>::Copy(
-                env,
-                reinterpret_cast<uint8_t *>(&recovered_cells[i]),
-                BYTES_PER_CELL
-            )
-        );
-    }
-
-    result = cellArray;
-
-out:
-    free(cells);
-    free(recovered_cells);
-    return result;
-}
-
-/**
  * Given at least 50% of cells/proofs, reconstruct the missing ones.
  *
  * @param[in] {number[]}  cellIds - The identifiers for the cells you have
@@ -1214,9 +1107,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
     exports["computeCellsAndKzgProofs"] = Napi::Function::New(
         env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"
-    );
-    exports["recoverAllCells"] = Napi::Function::New(
-        env, RecoverAllCells, "recoverAllCells"
     );
     exports["recoverCellsAndKzgProofs"] = Napi::Function::New(
         env, RecoverCellsAndKzgProofs, "recoverCellsAndKzgProofs"

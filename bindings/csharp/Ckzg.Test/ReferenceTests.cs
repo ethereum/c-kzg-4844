@@ -579,7 +579,7 @@ public class ReferenceTests
     }
 
     [TestCase]
-    public void TestRecoverAllCells()
+    public void TestRecoverCellsAndKzgProofs()
     {
         Matcher matcher = new();
         matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
