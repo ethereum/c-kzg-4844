@@ -61,6 +61,9 @@ public class CKZG4844JNI {
   protected static final int FIELD_ELEMENTS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
   /** The number of field elements in a cell. */
   protected static final int FIELD_ELEMENTS_PER_CELL = 64;
+  /** The number of cells in an extended blob. */
+  protected static final int CELLS_PER_EXT_BLOB =
+      FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
 
   /** The number of bytes in a KZG commitment. */
   public static final int BYTES_PER_COMMITMENT = 48;
@@ -70,9 +73,6 @@ public class CKZG4844JNI {
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
   /** The number of bytes in a single cell. */
   public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
-  /** The number of cells in an extended blob. */
-  public static final int CELLS_PER_EXT_BLOB =
-      FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
 
   private CKZG4844JNI() {}
 
