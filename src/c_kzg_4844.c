@@ -165,21 +165,6 @@ static const fr_t FR_NULL = {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Wrapped malloc() that reports failures to allocate.
- *
- * @param[out] out  Pointer to the allocated space
- * @param[in]  size The number of bytes to be allocated
- *
- * @remark Will return C_KZG_BADARGS if the requested size is zero.
- */
-static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
-    *out = NULL;
-    if (size == 0) return C_KZG_BADARGS;
-    *out = malloc(size);
-    return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
-}
-
-/**
  * Wrapped calloc() that reports failures to allocate.
  *
  * @param[out] out   Pointer to the allocated space
@@ -1941,8 +1926,6 @@ C_KZG_RET load_trusted_setup(
     size_t precompute
 ) {
     C_KZG_RET ret;
-
-    dummy_function();
 
     out->max_width = 0;
     out->roots_of_unity = NULL;
