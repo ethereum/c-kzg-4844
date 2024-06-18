@@ -3399,7 +3399,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     /* Compute [commitment - interpolated_poly] in G_1 */
     g1_sub(&commit_minus_interp, commitment, &interpolated_poly);
 
-    /* e(\pi, [s^n - h^n]) =?= e([p(x) - I(x)], [1]) */
+    /* Check e([p(x) - I(x)], [1]) =?= e(proof, [s^n - h^n])  */
     *out = pairings_verify(
         &commit_minus_interp, blst_p2_generator(), proof, &s_pow_minus_h_pow
     );
@@ -4012,7 +4012,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     /*
      * Derive random factors for the linear combination. The exponents start
-     * with 1, for example r^1, r^2, r^3, and so on.
+     * with 0. That is, they are r^0, r^1, r^2, r^3, and so on.
      */
     ret = compute_r_powers_for_verify_cell_kzg_proof_batch(
         r_powers,
