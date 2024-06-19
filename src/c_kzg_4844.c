@@ -3398,22 +3398,22 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
-    // STEP 2: Compute the vanishing polynomial V(X) (as a commitment in G_2).
-    //         It is zero over the coset. In our case: V(X) = X^n - h^n
+    // STEP 2: Compute the vanishing polynomial Z(X) (as a commitment in G_2).
+    //         It is zero over the coset. In our case: Z(X) = X^n - h^n
     ///////////////////////////////////////////////////////////////////////////
 
     /* Compute [h^n] in G_2 */
     blst_fr_eucl_inverse(&h_pow, &inv_h_pow);
     g2_mul(&h_pow_g2, blst_p2_generator(), &h_pow);
 
-    /* Compute [V(tau)] = [tau^n - h^n] in G_2 */
+    /* Compute [Z(tau)] = [tau^n - h^n] in G_2 */
     g2_sub(&vanishing_poly_g2, &s->g2_values_monomial[n], &h_pow_g2);
 
     ///////////////////////////////////////////////////////////////////////////
     // STEP 3: Check validity of the proof using the pairing. Conceptually, we
-    //         check (p(X) - I(X)) / V(X) is a polynomial (given by the proof)
+    //         check (p(X) - I(X)) / Z(X) is a polynomial (given by the proof)
     //         We check this in the exponent using the pairing by checking
-    //              e([p(tau) - I(tau)], [1]) =?= e(proof, [V(tau)])
+    //              e([p(tau) - I(tau)], [1]) =?= e(proof, [Z(tau)])
     ///////////////////////////////////////////////////////////////////////////
 
     /* Compute [p(tau) - I(tau)] in G_1 */
@@ -3810,9 +3810,8 @@ C_KZG_RET verify_cell_kzg_proof(
         if (ret != C_KZG_OK) goto out;
     }
 
-    /* Calculate the value x that identifies the coset
-     * associated to that cell. This gives us the evaluation
-     * domain that we need for verifying the proof */
+    /* Calculate the value x that identifies the coset associated to the cell.
+     * This defines the evaluation domain we need for verifying the proof */
     size_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_id);
     x = s->expanded_roots_of_unity[pos];
 
@@ -3820,9 +3819,8 @@ C_KZG_RET verify_cell_kzg_proof(
     ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
-    /* Check the proof: the prover claims that if
-     * we evaluate the committed polynomial over
-     * the coset defined by x, then we get the ys */
+    /* Check the proof: the prover claims that if we evaluate the committed
+     * polynomial over the coset defined by x, then we get the ys */
     ret = verify_kzg_proof_multi_impl(
         ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_CELL, s
     );
