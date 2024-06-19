@@ -3339,11 +3339,13 @@ void coset_for_cell(fr_t *coset, uint64_t cell_id, const KZGSettings *s) {
  * in @p commitment.
  *
  * @param[out]  out         `true` if the proof is valid, otherwise `false`
- * @param[in]   commitment  The commitment to the polynomial
- * @param[in]   proof       The KZG multiproof for the polynomial
- * @param[in]   h           The evaluation domain of the multiproof
- * @param[in]   ys          The evaluations points of the polynomial
- * @param[in]   n           The number of evaluation points, a power of two
+ * @param[in]   commitment  The commitment to the polynomial (single group element)
+ * @param[in]   proof       The KZG multiproof for the polynomial (single group element)
+ * @param[in]   h           The shift identifying the coset (single field element)
+ *                          This shift specifies the evaluation domain of the multiproof
+ * @param[in]   ys          The claimed evaluations of the polynomial over the evaluation domain
+ *                          This has to be an array of size n
+ * @param[in]   n           The size of the evaluation domain, a power of two
  * @param[in]   s           The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_multi_impl(
@@ -3358,23 +3360,29 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     C_KZG_RET ret;
     fr_t *interpolation_poly = NULL;
     fr_t inv_h, inv_h_pow, h_pow;
-    g2_t h_pow_g2, s_pow_minus_h_pow;
-    g1_t interpolated_poly, commit_minus_interp;
+    g2_t h_pow_g2, vanishing_poly_g2;
+    g1_t interpolation_poly_g1, p_minus_interpolation_g1;
 
     /* Ensure n is a power of two */
     if (!is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    /* Interpolate the values ys over the roots of unity */
+    ///////////////////////////////////////////////////////////////////////////
+    // STEP 1: Compute the commitment of the interpolation polynomial I(X)
+    //         via IFFT + Shift. It has the ys as evaluations over the coset
+    ///////////////////////////////////////////////////////////////////////////
+
+    /* Interpolate the ys over the roots of unity */
     ret = new_fr_array(&interpolation_poly, n);
     if (ret != C_KZG_OK) goto out;
     ret = ifft_fr(interpolation_poly, ys, n, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * Shift the domain of the interpolation poly to be over the coset, and
-     * not the regular roots of unity.
+     * So far, the interpolation polynomial evaluates to the ys over the
+     * regular roots of unity. We need that it evaluates to the ys over the coset.
+     * To obtain the correct interpolation polynomial I(X), we shift it.
      */
     blst_fr_eucl_inverse(&inv_h, h);
     inv_h_pow = inv_h;
@@ -3383,25 +3391,37 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
         blst_fr_mul(&inv_h_pow, &inv_h_pow, &inv_h);
     }
 
-    /* Compute [x^n] in G_2 */
-    blst_fr_eucl_inverse(&h_pow, &inv_h_pow);
-    g2_mul(&h_pow_g2, blst_p2_generator(), &h_pow);
-
-    /* Compute [s^n - h^n] in G_2 */
-    g2_sub(&s_pow_minus_h_pow, &s->g2_values_monomial[n], &h_pow_g2);
-
-    /* Commit to the interpolation polynomial */
+    /* Commit to the interpolation polynomial, i.e., get [I(tau)] in G_1 */
     ret = poly_to_kzg_commitment_monomial(
-        &interpolated_poly, interpolation_poly, n, s
+        &interpolation_poly_g1, interpolation_poly, n, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Compute [commitment - interpolated_poly] in G_1 */
-    g1_sub(&commit_minus_interp, commitment, &interpolated_poly);
+    ///////////////////////////////////////////////////////////////////////////
+    // STEP 2: Compute the vanishing polynomial V(X) (as a commitment in G_2).
+    //         It is zero over the coset. In our case: V(X) = X^n - h^n
+    ///////////////////////////////////////////////////////////////////////////
 
-    /* Check e([p(x) - I(x)], [1]) =?= e(proof, [s^n - h^n])  */
+    /* Compute [h^n] in G_2 */
+    blst_fr_eucl_inverse(&h_pow, &inv_h_pow);
+    g2_mul(&h_pow_g2, blst_p2_generator(), &h_pow);
+
+    /* Compute [V(tau)] = [tau^n - h^n] in G_2 */
+    g2_sub(&vanishing_poly_g2, &s->g2_values_monomial[n], &h_pow_g2);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // STEP 3: Check validity of the proof using the pairing. Conceptually, we
+    //         check (p(X) - I(X)) / V(X) is a polynomial (given by the proof)
+    //         We check this in the exponent using the pairing by checking
+    //              e([p(tau) - I(tau)], [1]) =?= e(proof, [V(tau)])
+    ///////////////////////////////////////////////////////////////////////////
+
+    /* Compute [p(tau) - I(tau)] in G_1 */
+    g1_sub(&p_minus_interpolation_g1, commitment, &interpolation_poly_g1);
+
+    /* Do the pairing check */
     *out = pairings_verify(
-        &commit_minus_interp, blst_p2_generator(), proof, &s_pow_minus_h_pow
+        &p_minus_interpolation_g1, blst_p2_generator(), proof, &vanishing_poly_g2
     );
 
 out:
