@@ -3746,9 +3746,10 @@ out:
 /**
  * For a given cell, verify that the proof is valid.
  *
- * @param[out]  ok                  True if the proof are valid, otherwise false
- * @param[in]   commitment_bytes    The commitment associated with the cell
- * @param[in]   cell_id             The cell identifier
+ * @param[out]  ok                  True if the proof is valid, otherwise false
+ * @param[in]   commitment_bytes    The commitment associated with the extended blob that contains the cell
+ * @param[in]   cell_id             The cell identifier (index of the cell within the extended blob)
+ *                                  @p cell_id has to be smaller than CELLS_PER_EXT_BLOB
  * @param[in]   cell                The cell to check
  * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
@@ -3774,6 +3775,7 @@ C_KZG_RET verify_cell_kzg_proof(
     }
 
     /* Allocate array for fr-form data points */
+    /* It will later store the evaluations contained in the cell */
     ret = new_fr_array(&ys, FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
@@ -3788,7 +3790,9 @@ C_KZG_RET verify_cell_kzg_proof(
         if (ret != C_KZG_OK) goto out;
     }
 
-    /* Calculate the input value */
+    /* Calculate the value x that identifies the coset
+     * associated to that cell. This gives us the evaluation
+     * domain that we need for verifying the proof */
     size_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_id);
     x = s->expanded_roots_of_unity[pos];
 
@@ -3796,7 +3800,9 @@ C_KZG_RET verify_cell_kzg_proof(
     ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
-    /* Check the proof */
+    /* Check the proof: the prover claims that if
+     * we evaluate the committed polynomial over
+     * the coset defined by x, then we get the ys */
     ret = verify_kzg_proof_multi_impl(
         ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_CELL, s
     );
