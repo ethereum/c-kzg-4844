@@ -3479,20 +3479,20 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         );
         if (ret != C_KZG_OK) goto out;
 
-            /* Compute the proofs, provide only the first half */
-            ret = compute_fk20_proofs(
-                recovered_proofs_g1,
-                recovered_cells_fr,
-                FIELD_ELEMENTS_PER_BLOB,
-                s
-            );
-            if (ret != C_KZG_OK) goto out;
+        /* Compute the proofs, provide only the first half */
+        ret = compute_fk20_proofs(
+            recovered_proofs_g1,
+            recovered_cells_fr,
+            FIELD_ELEMENTS_PER_BLOB,
+            s
+        );
+        if (ret != C_KZG_OK) goto out;
 
-            /* Bit-reverse the proofs */
-            ret = bit_reversal_permutation(
-                recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
-            );
-            if (ret != C_KZG_OK) goto out;
+        /* Bit-reverse the proofs */
+        ret = bit_reversal_permutation(
+            recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
+        );
+        if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
