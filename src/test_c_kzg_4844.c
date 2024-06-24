@@ -159,6 +159,14 @@ static void eval_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
     }
 }
 
+static void eval_extended_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
+    *out = poly_coefficients[FIELD_ELEMENTS_PER_EXT_BLOB - 1];
+    for (size_t i = FIELD_ELEMENTS_PER_EXT_BLOB - 1; i > 0; i--) {
+        blst_fr_mul(out, out, x);
+        blst_fr_add(out, out, &poly_coefficients[i - 1]);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for memory allocation functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -1750,6 +1758,44 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 // Tests for reconstruction
 ///////////////////////////////////////////////////////////////////////////////
 
+static void test_fft(void) {
+    // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
+    // issue 444)
+    const size_t N = 8192;
+    fr_t poly_eval[N];
+    fr_t poly_coeff[N];
+    fr_t recovered_poly_coeff[N];
+
+    // Generate poly in coeff form
+    for (size_t i = 0; i < N; i++) {
+        get_rand_fr(&poly_coeff[i]);
+    }
+
+    /* Evaluate poly using FFT */
+    fft_fr(poly_eval, poly_coeff, N, &s);
+
+    /* check: result of FFT are really the evaluations of the poly */
+    for (size_t i = 0; i < N; i++) {
+      fr_t individual_evaluation;
+
+      eval_extended_poly(&individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]);
+
+      bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
+      ASSERT_EQUALS(ok, true);
+    }
+
+    /* Turn the eval poly back into a coeff poly */
+    ifft_fr(
+        recovered_poly_coeff, poly_eval, N, &s
+    );
+
+    /* Check the end-to-end journey */
+    for (size_t i = 0; i < N; i++) {
+      bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+      ASSERT_EQUALS(ok, true);
+    }
+}
+
 static void test_reconstruct__succeeds_random_blob(void) {
     C_KZG_RET ret;
     Blob blob;
@@ -2136,6 +2182,7 @@ static void teardown(void) {
 
 int main(void) {
     setup();
+    RUN(test_fft);
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);
