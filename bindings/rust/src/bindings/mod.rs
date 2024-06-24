@@ -95,9 +95,9 @@ pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
 
 /// Holds the parameters of a kzg trusted setup ceremony.
 impl KZGSettings {
-    /// Initializes a trusted setup from a flat array of `FIELD_ELEMENTS_PER_BLOB` G1 points in
-    /// Lagrange form, a flat array of 65 G2 points in monomial form, and a flat array of
-    /// `FIELD_ELEMENTS_PER_BLOB` G1 points in monomial form.
+    /// Initializes a trusted setup from a flat array of `FIELD_ELEMENTS_PER_BLOB` G1 points in monomial form, a flat
+    /// array of `FIELD_ELEMENTS_PER_BLOB` G1 points in Lagrange form, and a flat array of 65 G2 points in monomial
+    /// form.
     pub fn load_trusted_setup(
         g1_monomial_bytes: &[u8],
         g1_lagrange_bytes: &[u8],
