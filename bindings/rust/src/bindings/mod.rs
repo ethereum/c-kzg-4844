@@ -104,14 +104,14 @@ impl KZGSettings {
         g2_monomial_bytes: &[u8],
         precompute: usize,
     ) -> Result<Self, Error> {
-        if g1_monomial_bytes.len() != BYTES_PER_BLOB {
+        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 monomial points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
                 g1_monomial_bytes.len()
             )));
         }
-        if g1_lagrange_bytes.len() != BYTES_PER_BLOB {
+        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 Lagrange points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
