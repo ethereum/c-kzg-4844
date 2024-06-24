@@ -1776,23 +1776,62 @@ static void test_fft(void) {
 
     /* check: result of FFT are really the evaluations of the poly */
     for (size_t i = 0; i < N; i++) {
-      fr_t individual_evaluation;
+        fr_t individual_evaluation;
 
-      eval_extended_poly(&individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]);
+        eval_extended_poly(
+            &individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]
+        );
 
-      bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
-      ASSERT_EQUALS(ok, true);
+        bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
+        ASSERT_EQUALS(ok, true);
     }
 
     /* Turn the eval poly back into a coeff poly */
-    ifft_fr(
-        recovered_poly_coeff, poly_eval, N, &s
-    );
+    ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
-      bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
-      ASSERT_EQUALS(ok, true);
+        bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+static void test_coset_fft(void) {
+    // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
+    // issue 444)
+    const size_t N = 8192;
+    fr_t poly_eval[N];
+    fr_t poly_coeff[N];
+    fr_t recovered_poly_coeff[N];
+
+    // Generate poly in coeff form
+    for (size_t i = 0; i < N; i++) {
+        get_rand_fr(&poly_coeff[i]);
+    }
+
+    /* Evaluate poly using coset FFT */
+    coset_fft_fr(poly_eval, poly_coeff, N, &s);
+
+    // check: result of coset FFT are really the evaluations over the coset
+    for (size_t i = 0; i < N; i++) {
+        fr_t shifted_w;
+        fr_t individual_evaluation;
+
+        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &SCALE_FACTOR);
+
+        eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
+
+        bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+
+    /* Turn the eval poly back into a coeff poly */
+    coset_ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+
+    /* Check the end-to-end journey */
+    for (size_t i = 0; i < N; i++) {
+        bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+        ASSERT_EQUALS(ok, true);
     }
 }
 
@@ -2183,6 +2222,7 @@ static void teardown(void) {
 int main(void) {
     setup();
     RUN(test_fft);
+    RUN(test_coset_fft);
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);

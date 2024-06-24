@@ -2806,6 +2806,63 @@ static void unscale_poly(fr_t *p, size_t len) {
     }
 }
 
+/** Do an FFT over a coset of the roots of unity.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The coset shift factor is SCALE_FACTOR
+ */
+static C_KZG_RET coset_fft_fr(
+    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *in_shifted = NULL;
+
+    /* Create some room to shift the polynomial */
+    ret = new_fr_array(&in_shifted, n);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Shift the poly */
+    memcpy(in_shifted, in, n*sizeof(fr_t));
+    unscale_poly(in_shifted, n);
+
+    ret = fft_fr(out, in_shifted, n, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(in_shifted);
+
+    return ret;
+}
+
+
+/** Do an inverse FFT over a coset of the roots of unity.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The coset shift factor is SCALE_FACTOR
+ */
+static C_KZG_RET coset_ifft_fr(
+    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+
+    ret = ifft_fr(out, in, n, s);
+    if (ret != C_KZG_OK) goto out;
+
+    // TODO: rename func
+    scale_poly(out, n);
+
+out:
+    return ret;
+}
+
 /**
  * Given a dataset with up to half the entries missing, return the
  * reconstructed original. Assumes that the inverse FFT of the original data
