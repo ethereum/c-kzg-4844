@@ -24,7 +24,7 @@ default = ["std", "portable", "ethereum_kzg_settings"]
 std = ["hex/std", "libc/std", "serde?/std", "once_cell?/std"]
 serde = ["dep:serde"]
 generate-bindings = ["dep:bindgen"]
-ethereum_kzg_settings = ["once_cell"]
+ethereum_kzg_settings = ["dep:once_cell"]
 
 # This is a standalone feature so that crates that disable default features can
 # enable blst/portable without having to add it as a dependency
@@ -43,7 +43,9 @@ serde = { version = "1.0", optional = true, default-features = false, features =
     "alloc",
     "derive",
 ] }
-once_cell = { version = "1.19", default-features = false, optional = true }
+once_cell = { version = "1.19", default-features = false, features = [
+    "alloc",
+], optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
