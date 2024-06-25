@@ -8,8 +8,9 @@ use arbitrary::Arbitrary;
 use c_kzg::Bytes48;
 use c_kzg::Cell;
 use c_kzg::KzgSettings;
-use eip7594::constants::BYTES_PER_CELL;
-use eip7594::verifier::VerifierContext;
+use c_kzg::BYTES_PER_CELL;
+use c_kzg::BYTES_PER_PROOF;
+use eip7594::prover::ProverContext;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
 use std::path::PathBuf;
@@ -20,7 +21,7 @@ lazy_static! {
         let trusted_setup_file = root_dir.join("..").join("src").join("trusted_setup.txt");
         KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
-    static ref VERIFIER_CONTEXT: VerifierContext = VerifierContext::new();
+    static ref PROVER_CONTEXT: ProverContext = ProverContext::default();
 }
 
 #[derive(Arbitrary, Debug)]
@@ -31,8 +32,11 @@ struct Input {
 }
 
 fuzz_target!(|input: Input| {
-    let cell_bytes: Vec<[u8; BYTES_PER_CELL]> = input.cells.iter().map(Cell::to_bytes).collect();
-    let cell_slices: Vec<&[u8]> = cell_bytes.iter().map(|b| b.as_slice()).collect();
+    let cells_bytes_owned: Vec<[u8; BYTES_PER_CELL]> = input.cells.iter().map(Cell::to_bytes).collect();
+    let cells_bytes: Vec<&[u8; BYTES_PER_CELL]> = cells_bytes_owned.iter().collect();
+
+    let proofs_bytes_owned: Vec<[u8; BYTES_PER_PROOF]> = input.proofs.iter().map(|p| Bytes48::into_inner(*p)).collect();
+    let proofs_bytes: Vec<&[u8; BYTES_PER_PROOF]> = proofs_bytes_owned.iter().collect();
 
     let ckzg_result = c_kzg::Cell::recover_cells_and_kzg_proofs(
         input.cell_ids.as_slice(),
@@ -40,20 +44,17 @@ fuzz_target!(|input: Input| {
         input.proofs.as_slice(),
         &KZG_SETTINGS,
     );
-    let rkzg_result = VERIFIER_CONTEXT.recover_all_cells(input.cell_ids, cell_slices);
+    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_ids, cells_bytes, proofs_bytes);
 
     match (&ckzg_result, &rkzg_result) {
-        /* TODO: Compare proofs when peerdas-kzg updates */
-        (Ok((ckzg_cells, _ckzg_proofs)), Ok(rkzg_cells)) => {
+        (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {
             // Ensure the results are the same.
             for (ckzg_cell, rkzg_cell) in ckzg_cells.iter().zip(rkzg_cells.iter()) {
                 assert_eq!(ckzg_cell.to_bytes().as_slice(), rkzg_cell.as_slice())
             }
-            /*
             for (ckzg_proof, rkzg_proof) in ckzg_proofs.iter().zip(rkzg_proofs.iter()) {
                 assert_eq!(ckzg_proof.as_slice(), rkzg_proof.as_slice())
             }
-            */
         }
         (Err(_), Err(_)) => {
             // Cannot compare errors, they are unique.

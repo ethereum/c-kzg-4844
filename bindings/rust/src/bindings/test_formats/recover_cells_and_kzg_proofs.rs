@@ -1,10 +1,10 @@
 #![allow(dead_code)]
 
+use crate::Bytes48;
 use crate::{Cell, Error};
 use alloc::string::String;
 use alloc::vec::Vec;
 use serde::Deserialize;
-use crate::Bytes48;
 
 #[derive(Deserialize)]
 pub struct Input {

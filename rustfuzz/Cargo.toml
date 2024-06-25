@@ -25,6 +25,42 @@ path = ".."
 members = ["."]
 
 [[bin]]
+name = "fuzz_blob_to_kzg_commitment"
+path = "fuzz_targets/fuzz_blob_to_kzg_commitment.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_compute_kzg_proof"
+path = "fuzz_targets/fuzz_compute_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_compute_blob_kzg_proof"
+path = "fuzz_targets/fuzz_compute_blob_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_kzg_proof"
+path = "fuzz_targets/fuzz_verify_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_blob_kzg_proof"
+path = "fuzz_targets/fuzz_verify_blob_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_blob_kzg_proof_batch"
+path = "fuzz_targets/fuzz_verify_blob_kzg_proof_batch.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "fuzz_compute_cells_and_kzg_proofs"
 path = "fuzz_targets/fuzz_compute_cells_and_kzg_proofs.rs"
 test = false

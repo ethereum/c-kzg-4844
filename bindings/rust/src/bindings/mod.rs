@@ -104,14 +104,14 @@ impl KZGSettings {
         g2_monomial_bytes: &[u8],
         precompute: usize,
     ) -> Result<Self, Error> {
-        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
+        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 monomial points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
                 g1_monomial_bytes.len()
             )));
         }
-        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
+        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 Lagrange points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
@@ -125,7 +125,7 @@ impl KZGSettings {
                 g1_lagrange_bytes.len()
             )));
         }
-        if g2_monomial_bytes.len() != NUM_G2_POINTS*BYTES_PER_G2_POINT {
+        if g2_monomial_bytes.len() != NUM_G2_POINTS * BYTES_PER_G2_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g2 monomial points in trusted setup. Expected {} got {}",
                 NUM_G2_POINTS,
@@ -829,6 +829,14 @@ impl Default for Cell {
     }
 }
 
+impl Arbitrary<'_> for Bytes32 {
+    fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
+        let mut bytes = [0u8; 32];
+        u.fill_buffer(&mut bytes)?;
+        Ok(Bytes32::from(bytes))
+    }
+}
+
 impl Arbitrary<'_> for Bytes48 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let mut bytes = [0u8; 48];
@@ -866,9 +874,9 @@ mod tests {
     use std::{fs, path::PathBuf};
     use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells,
-        compute_cells_and_kzg_proofs, compute_kzg_proof, recover_cells_and_kzg_proofs, verify_blob_kzg_proof,
-        verify_blob_kzg_proof_batch, verify_cell_kzg_proof, verify_cell_kzg_proof_batch,
-        verify_kzg_proof,
+        compute_cells_and_kzg_proofs, compute_kzg_proof, recover_cells_and_kzg_proofs,
+        verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_cell_kzg_proof,
+        verify_cell_kzg_proof_batch, verify_kzg_proof,
     };
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
@@ -963,13 +971,28 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: blob_to_kzg_commitment_test::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_blob_to_kzg_commitment");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&blob.bytes).unwrap();
+            }
 
             match KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
@@ -989,13 +1012,29 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(z)) = (test.input.get_blob(), test.input.get_z()) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_compute_kzg_proof");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&blob.bytes).unwrap();
+                file.write_all(&z.bytes).unwrap();
+            }
 
             match KZGProof::compute_kzg_proof(&blob, &z, &kzg_settings) {
                 Ok((proof, y)) => {
@@ -1018,7 +1057,8 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(commitment)) = (test.input.get_blob(), test.input.get_commitment())
@@ -1026,6 +1066,21 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_compute_blob_kzg_proof");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&blob.bytes).unwrap();
+                file.write_all(&commitment.bytes).unwrap();
+            }
 
             match KZGProof::compute_blob_kzg_proof(&blob, &commitment, &kzg_settings) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
@@ -1045,7 +1100,8 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (
@@ -1057,6 +1113,23 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_verify_cell_kzg_proof");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&commitment.bytes).unwrap();
+                file.write_all(&z.bytes).unwrap();
+                file.write_all(&y.bytes).unwrap();
+                file.write_all(&proof.bytes).unwrap();
+            }
 
             match KZGProof::verify_kzg_proof(&commitment, &z, &y, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
@@ -1076,7 +1149,8 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(commitment), Ok(proof)) = (
@@ -1087,6 +1161,22 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_verify_cell_kzg_proof");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                file.write_all(&blob.bytes).unwrap();
+                file.write_all(&commitment.bytes).unwrap();
+                file.write_all(&proof.bytes).unwrap();
+            }
 
             match KZGProof::verify_blob_kzg_proof(&blob, &commitment, &proof, &kzg_settings) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
@@ -1106,7 +1196,8 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files {
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blobs), Ok(commitments), Ok(proofs)) = (
@@ -1117,6 +1208,28 @@ mod tests {
                 assert!(test.get_output().is_none());
                 continue;
             };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("rustfuzz")
+                    .join("corpus")
+                    .join("fuzz_verify_blob_kzg_proof_batch");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                for blob in &blobs {
+                    file.write_all(&blob.bytes).unwrap();
+                }
+                for commitment in &commitments {
+                    file.write_all(&commitment.bytes).unwrap();
+                }
+                for proof in &proofs {
+                    file.write_all(&proof.bytes).unwrap();
+                }
+            }
 
             match KZGProof::verify_blob_kzg_proof_batch(
                 &blobs,
@@ -1315,9 +1428,13 @@ mod tests {
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: recover_cells_and_kzg_proofs::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(cell_ids), Ok(cells), Ok(proofs)) = (test.input.get_cell_ids(), test.input.get_cells(), test.input.get_proofs())
-            else {
+            let test: recover_cells_and_kzg_proofs::Test =
+                serde_yaml::from_str(&yaml_data).unwrap();
+            let (Ok(cell_ids), Ok(cells), Ok(proofs)) = (
+                test.input.get_cell_ids(),
+                test.input.get_cells(),
+                test.input.get_proofs(),
+            ) else {
                 assert!(test.get_output().is_none());
                 continue;
             };
@@ -1357,4 +1474,3 @@ mod tests {
         }
     }
 }
-
