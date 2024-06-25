@@ -95,23 +95,23 @@ pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
 
 /// Holds the parameters of a kzg trusted setup ceremony.
 impl KZGSettings {
-    /// Initializes a trusted setup from `FIELD_ELEMENTS_PER_BLOB` g1 points in
-    /// Lagrange form, 65 g2 points in monomial form, and
-    /// `FIELD_ELEMENTS_PER_BLOB` g1 points in monomial form.
+    /// Initializes a trusted setup from a flat array of `FIELD_ELEMENTS_PER_BLOB` G1 points in monomial form, a flat
+    /// array of `FIELD_ELEMENTS_PER_BLOB` G1 points in Lagrange form, and a flat array of 65 G2 points in monomial
+    /// form.
     pub fn load_trusted_setup(
-        g1_monomial_bytes: &[[u8; BYTES_PER_G1_POINT]],
-        g1_lagrange_bytes: &[[u8; BYTES_PER_G1_POINT]],
-        g2_monomial_bytes: &[[u8; BYTES_PER_G2_POINT]],
+        g1_monomial_bytes: &[u8],
+        g1_lagrange_bytes: &[u8],
+        g2_monomial_bytes: &[u8],
         precompute: usize,
     ) -> Result<Self, Error> {
-        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
+        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 monomial points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
                 g1_monomial_bytes.len()
             )));
         }
-        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB {
+        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB*BYTES_PER_G1_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g1 Lagrange points in trusted setup. Expected {} got {}",
                 FIELD_ELEMENTS_PER_BLOB,
@@ -125,7 +125,7 @@ impl KZGSettings {
                 g1_lagrange_bytes.len()
             )));
         }
-        if g2_monomial_bytes.len() != NUM_G2_POINTS {
+        if g2_monomial_bytes.len() != NUM_G2_POINTS*BYTES_PER_G2_POINT {
             return Err(Error::InvalidTrustedSetup(format!(
                 "Invalid number of g2 monomial points in trusted setup. Expected {} got {}",
                 NUM_G2_POINTS,
@@ -138,9 +138,9 @@ impl KZGSettings {
                 kzg_settings.as_mut_ptr(),
                 g1_monomial_bytes.as_ptr().cast(),
                 g1_lagrange_bytes.as_ptr().cast(),
-                g1_monomial_bytes.len(),
+                FIELD_ELEMENTS_PER_BLOB,
                 g2_monomial_bytes.as_ptr().cast(),
-                g2_monomial_bytes.len(),
+                NUM_G2_POINTS,
                 precompute,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -1357,3 +1357,4 @@ mod tests {
         }
     }
 }
+
