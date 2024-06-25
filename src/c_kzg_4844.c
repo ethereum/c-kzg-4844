@@ -3161,18 +3161,20 @@ out:
     return ret;
 }
 
-
 /**
  * Helper function that verifies a KZG multiproof @p proof for the polynomial
  * in @p commitment.
  *
  * @param[out]  out         `true` if the proof is valid, otherwise `false`
- * @param[in]   commitment  The commitment to the polynomial (single group element)
- * @param[in]   proof       The KZG multiproof for the polynomial (single group element)
- * @param[in]   h           The shift identifying the coset (single field element)
- *                          This shift specifies the evaluation domain of the multiproof
- * @param[in]   ys          The claimed evaluations of the polynomial over the evaluation domain
- *                          This has to be an array of size n
+ * @param[in]   commitment  The commitment to the polynomial (single group
+ *                          element)
+ * @param[in]   proof       The KZG multiproof for the polynomial (single group
+ *                          element)
+ * @param[in]   h           The shift identifying the coset (single field
+ *                          element) This shift specifies the evaluation domain
+ *                          of the multiproof
+ * @param[in]   ys          The claimed evaluations of the polynomial over the
+ *                          evaluation domain This has to be an array of size n
  * @param[in]   n           The size of the evaluation domain, a power of two
  * @param[in]   s           The trusted setup
  */
@@ -3197,8 +3199,8 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     }
 
     ///////////////////////////////////////////////////////////////////////////
-    // STEP 1: Compute the commitment of the interpolation polynomial I(X)
-    //         via IFFT + Shift. It has the ys as evaluations over the coset
+    // STEP 1: Compute the commitment of the interpolation polynomial I(X) via
+    //         IFFT + Shift. It has the ys as evaluations over the coset.
     ///////////////////////////////////////////////////////////////////////////
 
     /* Interpolate the ys over the roots of unity */
@@ -3208,9 +3210,9 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * So far, the interpolation polynomial evaluates to the ys over the
-     * regular roots of unity. We need that it evaluates to the ys over the coset.
-     * To obtain the correct interpolation polynomial I(X), we shift it.
+     * So far, the interpolation polynomial evaluates to the ys over the regular
+     * roots of unity. We need that it evaluates to the ys over the coset. To
+     * obtain the correct interpolation polynomial I(X), we shift it.
      */
     blst_fr_eucl_inverse(&inv_h, h);
     inv_h_pow = inv_h;
@@ -3239,7 +3241,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
 
     ///////////////////////////////////////////////////////////////////////////
     // STEP 3: Check validity of the proof using the pairing. Conceptually, we
-    //         check (p(X) - I(X)) / Z(X) is a polynomial (given by the proof)
+    //         check (p(X) - I(X)) / Z(X) is a polynomial (given by the proof).
     //         We check this in the exponent using the pairing by checking
     //              e([p(tau) - I(tau)], [1]) =?= e(proof, [Z(tau)])
     ///////////////////////////////////////////////////////////////////////////
@@ -3249,7 +3251,10 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
 
     /* Do the pairing check */
     *out = pairings_verify(
-        &p_minus_interpolation_g1, blst_p2_generator(), proof, &vanishing_poly_g2
+        &p_minus_interpolation_g1,
+        blst_p2_generator(),
+        proof,
+        &vanishing_poly_g2
     );
 
 out:
@@ -3501,10 +3506,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
         /* Compute the proofs, provide only the first half */
         ret = compute_fk20_proofs(
-            recovered_proofs_g1,
-            recovered_cells_fr,
-            FIELD_ELEMENTS_PER_BLOB,
-            s
+            recovered_proofs_g1, recovered_cells_fr, FIELD_ELEMENTS_PER_BLOB, s
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3531,9 +3533,12 @@ out:
  * For a given cell, verify that the proof is valid.
  *
  * @param[out]  ok                  True if the proof is valid, otherwise false
- * @param[in]   commitment_bytes    The commitment associated with the extended blob that contains the cell
- * @param[in]   cell_id             The cell identifier (index of the cell within the extended blob)
- *                                  @p cell_id has to be smaller than CELLS_PER_EXT_BLOB
+ * @param[in]   commitment_bytes    The commitment associated with the extended
+ *                                  blob that contains the cell
+ * @param[in]   cell_id             The cell identifier (index of the cell
+ *                                  within the extended blob)
+ *                                  @p cell_id has to be smaller than
+ *                                  CELLS_PER_EXT_BLOB
  * @param[in]   cell                The cell to check
  * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
@@ -3558,8 +3563,10 @@ C_KZG_RET verify_cell_kzg_proof(
         goto out;
     }
 
-    /* Allocate array for fr-form data points */
-    /* It will later store the evaluations contained in the cell */
+    /*
+     * Allocate array for fr-form data points.
+     * It will later store the evaluations contained in the cell.
+     */
     ret = new_fr_array(&ys, FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
@@ -3574,8 +3581,10 @@ C_KZG_RET verify_cell_kzg_proof(
         if (ret != C_KZG_OK) goto out;
     }
 
-    /* Calculate the value x that identifies the coset associated to the cell.
-     * This defines the evaluation domain we need for verifying the proof */
+    /*
+     * Calculate the value x that identifies the coset associated to the cell.
+     * This defines the evaluation domain we need for verifying the proof.
+     */
     size_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_id);
     x = s->expanded_roots_of_unity[pos];
 
@@ -3583,8 +3592,10 @@ C_KZG_RET verify_cell_kzg_proof(
     ret = bit_reversal_permutation(ys, sizeof(ys[0]), FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
 
-    /* Check the proof: the prover claims that if we evaluate the committed
-     * polynomial over the coset defined by x, then we get the ys */
+    /*
+     * Check the proof: the prover claims that if we evaluate the committed
+     * polynomial over the coset defined by x, then we get the ys.
+     */
     ret = verify_kzg_proof_multi_impl(
         ok, &commitment, &proof, &x, ys, FIELD_ELEMENTS_PER_CELL, s
     );
