@@ -47,9 +47,6 @@
         (p) = NULL; \
     } while (0)
 
-/** Remove this to disable individual cell proof computations. */
-#define COMPUTE_INDIVIDUAL_PROOFS
-
 ///////////////////////////////////////////////////////////////////////////////
 // Types
 ///////////////////////////////////////////////////////////////////////////////
@@ -269,20 +266,6 @@ static C_KZG_RET new_bool_array(bool **x, size_t n) {
 static inline size_t min(size_t a, size_t b) {
     return a < b ? a : b;
 }
-
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-/**
- * Get the maximum of two unsigned integers.
- *
- * @param[in]   a   An unsigned integer
- * @param[in]   b   An unsigned integer
- *
- * @return Whichever value is bigger.
- */
-static inline size_t max(size_t a, size_t b) {
-    return a > b ? a : b;
-}
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
 /**
  * Test whether the operand is one in the finite field.
@@ -3178,161 +3161,6 @@ out:
     return ret;
 }
 
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-/* Pointers can point to the same memory */
-void poly_add(
-    fr_t *result, const fr_t *a, size_t a_len, const fr_t *b, size_t b_len
-) {
-    size_t length = max(a_len, b_len);
-    for (size_t i = 0; i < length; i++) {
-        if (length < a_len) {
-            result[i] = b[i];
-        } else if (length < b_len) {
-            result[i] = a[i];
-        } else {
-            blst_fr_add(&result[i], &a[i], &b[i]);
-        }
-    }
-}
-
-/* Pointers cannot point to the same memory */
-void poly_mul(
-    fr_t *result,
-    size_t out_len,
-    const fr_t *a,
-    size_t a_len,
-    const fr_t *b,
-    size_t b_len
-) {
-    fr_t tmp;
-    for (size_t k = 0; k < out_len; k++) {
-        result[k] = FR_ZERO;
-    }
-    for (size_t i = 0; i < a_len; i++) {
-        for (size_t j = 0; j < b_len && i + j < out_len; j++) {
-            blst_fr_mul(&tmp, &a[i], &b[j]);
-            blst_fr_add(&result[i + j], &result[i + j], &tmp);
-        }
-    }
-}
-
-/* Use once to determine the length of the quotient */
-size_t poly_quotient_length(size_t dividend_len, size_t divisor_len) {
-    return dividend_len >= divisor_len ? dividend_len - divisor_len + 1 : 0;
-}
-
-/* Use poly_quotient_length() to determine expected length */
-C_KZG_RET poly_div(
-    fr_t *quotient,
-    const fr_t *dividend,
-    size_t dividend_len,
-    const fr_t *divisor,
-    size_t divisor_len
-) {
-    C_KZG_RET ret;
-    size_t a_pos = dividend_len - 1;
-    size_t b_pos = divisor_len - 1;
-    size_t diff = a_pos - b_pos;
-    fr_t *a = NULL;
-    fr_t tmp;
-
-    assert(divisor_len != 0);
-    assert(!fr_is_zero(&divisor[divisor_len - 1]));
-
-    /* Make a copy of the dividend which we can mutate */
-    ret = new_fr_array(&a, dividend_len);
-    if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < dividend_len; i++) {
-        a[i] = dividend[i];
-    }
-
-    while (diff > 0) {
-        fr_div(&quotient[diff], &a[a_pos], &divisor[b_pos]);
-        for (size_t i = 0; i <= b_pos; i++) {
-            blst_fr_mul(&tmp, &quotient[diff], &divisor[i]);
-            blst_fr_sub(&a[diff + i], &a[diff + i], &tmp);
-        }
-        --diff;
-        --a_pos;
-    }
-    fr_div(&quotient[0], &a[a_pos], &divisor[b_pos]);
-
-out:
-    c_kzg_free(a);
-    return ret;
-}
-
-static const fr_t FR_NEG_ONE = {
-    0xfffffffd00000003L,
-    0xfb38ec08fffb13fcL,
-    0x99ad88181ce5880fL,
-    0x5bc8f5f97cd877d8L,
-};
-
-C_KZG_RET compute_vanishing_poly(fr_t *result, const fr_t *xs, size_t len) {
-    C_KZG_RET ret;
-    fr_t b[] = {FR_ZERO, FR_ONE};
-    fr_t *tmp = NULL;
-
-    ret = new_fr_array(&tmp, len + 1);
-    if (ret != C_KZG_OK) goto out;
-
-    result[0] = FR_ONE;
-    size_t result_len = 1;
-    for (size_t i = 0; i < len; i++) {
-        blst_fr_mul(&b[0], &xs[i], &FR_NEG_ONE);
-        result_len += 1;
-        poly_mul(tmp, result_len, result, result_len - 1, b, 2);
-        for (size_t j = 0; j < result_len; j++) {
-            result[j] = tmp[j];
-        }
-    }
-
-out:
-    c_kzg_free(tmp);
-    return ret;
-}
-
-C_KZG_RET compute_kzg_proof_multi_impl(
-    g1_t *proof,
-    const fr_t *poly,
-    size_t len,
-    const fr_t *zs,
-    const KZGSettings *s
-) {
-    C_KZG_RET ret;
-    fr_t *denominator = NULL;
-    fr_t *quotient = NULL;
-
-    size_t quotient_len = poly_quotient_length(
-        len, FIELD_ELEMENTS_PER_CELL + 1
-    );
-
-    ret = new_fr_array(&denominator, FIELD_ELEMENTS_PER_CELL + 1);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&quotient, quotient_len);
-    if (ret != C_KZG_OK) goto out;
-
-    compute_vanishing_poly(denominator, zs, FIELD_ELEMENTS_PER_CELL);
-    poly_div(quotient, poly, len, denominator, FIELD_ELEMENTS_PER_CELL + 1);
-
-    ret = g1_lincomb_fast(proof, s->g1_values_monomial, quotient, quotient_len);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    c_kzg_free(denominator);
-    c_kzg_free(quotient);
-    return ret;
-}
-
-void coset_for_cell(fr_t *coset, uint64_t cell_id, const KZGSettings *s) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        size_t field = cell_id * FIELD_ELEMENTS_PER_CELL + i;
-        size_t pos = reverse_bits_limited(FIELD_ELEMENTS_PER_EXT_BLOB, field);
-        coset[i] = s->expanded_roots_of_unity[pos];
-    }
-}
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
 /**
  * Helper function that verifies a KZG multiproof @p proof for the polynomial
@@ -3570,10 +3398,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     fr_t *recovered_cells_fr = NULL;
     g1_t *recovered_proofs_g1 = NULL;
     Blob *blob = NULL;
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-    fr_t *coset = NULL;
-    bool *have_cell = NULL;
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
@@ -3602,17 +3426,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-    ret = new_fr_array(&coset, FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_bool_array(&have_cell, CELLS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Initialize each as missing */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        have_cell[i] = false;
-    }
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
 
     /* Initialize all cells as missing */
     for (size_t i = 0; i < s->max_width; i++) {
@@ -3640,10 +3453,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             ret = bytes_to_bls_field(field, (Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
         }
-
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-        have_cell[cell_ids[i]] = true;
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
     }
 
     /* Check if recovery is necessary */
@@ -3690,61 +3499,20 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         );
         if (ret != C_KZG_OK) goto out;
 
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-        for (size_t i = 0; i < num_cells; i++) {
-            /* Convert the untrusted proofs to trusted proofs */
-            ret = bytes_to_kzg_proof(
-                &recovered_proofs_g1[cell_ids[i]], &proofs_bytes[i]
-            );
-            if (ret != C_KZG_OK) goto out;
-        }
+        /* Compute the proofs, provide only the first half */
+        ret = compute_fk20_proofs(
+            recovered_proofs_g1,
+            recovered_cells_fr,
+            FIELD_ELEMENTS_PER_BLOB,
+            s
+        );
+        if (ret != C_KZG_OK) goto out;
 
-        /*
-         * Computing proofs individually is very slow compared to computing them
-         * all at once, which is a heavily optimized implementation. Therefore,
-         * it only makes sense to do individual proof computation if there are
-         * only a few missing. In our experience, it takes ~75ms to compute a
-         * single proof or ~200ms to compute all proofs.
-         */
-        if (CELLS_PER_EXT_BLOB - num_cells <= 3) {
-            /* Re-compute missing proofs */
-            for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-                if (!have_cell[i]) {
-                    coset_for_cell(coset, i, s);
-                    ret = compute_kzg_proof_multi_impl(
-                        &recovered_proofs_g1[i],
-                        recovered_cells_fr,
-                        FIELD_ELEMENTS_PER_BLOB,
-                        coset,
-                        s
-                    );
-                    if (ret != C_KZG_OK) goto out;
-                }
-            }
-
-            /* Convert the recovered proofs to byte-form */
-            for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-                bytes_from_g1(&recovered_proofs[i], &recovered_proofs_g1[i]);
-            }
-        } else {
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
-            /* Compute the proofs, provide only the first half */
-            ret = compute_fk20_proofs(
-                recovered_proofs_g1,
-                recovered_cells_fr,
-                FIELD_ELEMENTS_PER_BLOB,
-                s
-            );
-            if (ret != C_KZG_OK) goto out;
-
-            /* Bit-reverse the proofs */
-            ret = bit_reversal_permutation(
-                recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
-            );
-            if (ret != C_KZG_OK) goto out;
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-        }
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
+        /* Bit-reverse the proofs */
+        ret = bit_reversal_permutation(
+            recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
+        );
+        if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -3756,10 +3524,6 @@ out:
     c_kzg_free(recovered_cells_fr);
     c_kzg_free(recovered_proofs_g1);
     c_kzg_free(blob);
-#if defined(COMPUTE_INDIVIDUAL_PROOFS)
-    c_kzg_free(coset);
-    c_kzg_free(have_cell);
-#endif /* COMPUTE_INDIVIDUAL_PROOFS */
     return ret;
 }
 
