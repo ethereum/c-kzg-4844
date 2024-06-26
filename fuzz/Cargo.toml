@@ -1,0 +1,85 @@
+[package]
+name = "c-kzg-fuzz"
+version = "0.0.0"
+authors = ["Automatically generated"]
+publish = false
+edition = "2018"
+
+[package.metadata]
+cargo-fuzz = true
+
+[build-dependencies]
+cc = "1.0"
+
+[dependencies]
+arbitrary = "1.0"
+eip7594 = { git = "https://github.com/crate-crypto/peerdas-kzg"}
+lazy_static = "1.4"
+libfuzzer-sys = "0.4"
+
+[dependencies.c-kzg]
+path = ".."
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "fuzz_blob_to_kzg_commitment"
+path = "fuzz_targets/fuzz_blob_to_kzg_commitment.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_compute_kzg_proof"
+path = "fuzz_targets/fuzz_compute_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_compute_blob_kzg_proof"
+path = "fuzz_targets/fuzz_compute_blob_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_kzg_proof"
+path = "fuzz_targets/fuzz_verify_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_blob_kzg_proof"
+path = "fuzz_targets/fuzz_verify_blob_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_blob_kzg_proof_batch"
+path = "fuzz_targets/fuzz_verify_blob_kzg_proof_batch.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_compute_cells_and_kzg_proofs"
+path = "fuzz_targets/fuzz_compute_cells_and_kzg_proofs.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_cell_kzg_proof"
+path = "fuzz_targets/fuzz_verify_cell_kzg_proof.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_verify_cell_kzg_proof_batch"
+path = "fuzz_targets/fuzz_verify_cell_kzg_proof_batch.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_recover_cells_and_kzg_proofs"
+path = "fuzz_targets/fuzz_recover_cells_and_kzg_proofs.rs"
+test = false
+doc = false
