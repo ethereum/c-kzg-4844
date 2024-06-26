@@ -2614,7 +2614,7 @@ out:
  * @param[in]   s               The trusted setup
  *
  * @remark This does not work if all indices are missing.
- * @remark Unused coeffecients are set to zero.
+ * @remark Unused coefficients are set to zero.
  */
 static C_KZG_RET zero_polynomial_via_multiplication(
     fr_t *zero_poly,
@@ -3166,17 +3166,18 @@ out:
  * in @p commitment.
  *
  * @param[out]  out         `true` if the proof is valid, otherwise `false`
- * @param[in]   commitment  The commitment to the polynomial (single group
- *                          element)
- * @param[in]   proof       The KZG multiproof for the polynomial (single group
- *                          element)
- * @param[in]   h           The shift identifying the coset (single field
- *                          element) This shift specifies the evaluation domain
- *                          of the multiproof
- * @param[in]   ys          The claimed evaluations of the polynomial over the
- *                          evaluation domain This has to be an array of size n
+ * @param[in]   commitment  The commitment to the polynomial
+ * @param[in]   proof       The KZG multiproof for the polynomial
+ * @param[in]   h           The shift identifying the evaluation domain
+ * @param[in]   ys          The claimed evaluations over the evaluation domain
  * @param[in]   n           The size of the evaluation domain, a power of two
  * @param[in]   s           The trusted setup
+ *
+ * @remark commitment is assumed to be a single group element.
+ * @remark proof is assumed to be a single group element.
+ * @remark h has to be a single element. It specifies the coset which is the
+ * evaluation domain of the multiproof.
+ * @remark ys has to be an array of size n.
  */
 static C_KZG_RET verify_kzg_proof_multi_impl(
     bool *out,
@@ -3533,15 +3534,14 @@ out:
  * For a given cell, verify that the proof is valid.
  *
  * @param[out]  ok                  True if the proof is valid, otherwise false
- * @param[in]   commitment_bytes    The commitment associated with the extended
- *                                  blob that contains the cell
- * @param[in]   cell_id             The cell identifier (index of the cell
- *                                  within the extended blob)
- *                                  @p cell_id has to be smaller than
- *                                  CELLS_PER_EXT_BLOB
+ * @param[in]   commitment_bytes    The commitment for the extended blob
+ * @param[in]   cell_id             The cell identifier
  * @param[in]   cell                The cell to check
  * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
+ *
+ * @remark cell_id is the index of the cell within the extended blob.
+ * @remark cell_id has to be smaller than CELLS_PER_EXT_BLOB
  */
 C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
@@ -3715,7 +3715,7 @@ out:
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
- * @param[in]   commitments_bytes   The commitments associated with the cells
+ * @param[in]   commitments_bytes   The commitments associated with the rows
  * @param[in]   num_commitments     The number of commitments being passed
  * @param[in]   row_indices         Row indices for the cells
  * @param[in]   column_indices      Column indices for the cells
@@ -3723,6 +3723,9 @@ out:
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
+ *
+ * @remark cells[i] is in column = column_indices[i] and row = row_indices[i].
+ * @remark cells[i] is associated with commitments_bytes[row_indices[i]].
  */
 C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
