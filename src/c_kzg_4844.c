@@ -3541,7 +3541,7 @@ out:
  * @param[in]   s                   The trusted setup
  *
  * @remark cell_id is the index of the cell within the extended blob.
- * @remark cell_id has to be smaller than CELLS_PER_EXT_BLOB
+ * @remark cell_id must be less than CELLS_PER_EXT_BLOB.
  */
 C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
