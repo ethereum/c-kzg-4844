@@ -67,7 +67,7 @@ systems.
 
 When processing multiple blobs, `verify_blob_kzg_proof_batch` is more efficient
 than calling `verify_blob_kzg_proof` individually. In CI tests, verifying 64
-blobs in batch is 53% faster per blob than verifying them individually. For a
+blobs in batch are 53% faster per blob than verifying them individually. For a
 single blob, `verify_blob_kzg_proof_batch` calls `verify_blob_kzg_proof`, and
 the overhead is negligible.
 
