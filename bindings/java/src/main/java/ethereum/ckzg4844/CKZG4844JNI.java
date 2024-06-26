@@ -90,7 +90,7 @@ public class CKZG4844JNI {
   /**
    * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from a resource.
    *
-   * @param resource the resource name that contains the trusted setup
+   * @param resource is the resource name that contains the trusted setup
    * @param clazz the class to use to get the resource
    * @param <T> the type of the class
    * @throws CKZGException if there is a crypto error
