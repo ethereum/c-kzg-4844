@@ -136,10 +136,9 @@ proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string]
     gCtx.computeCellsAndProofs(blob)
 
 proc recoverCellsAndProofs*(cellIds: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
-    gCtx.recoverCellsAndProofs(cellIds, cells, proofs)
+    gCtx.recoverCellsAndProofs(cellIds, cells)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -191,8 +190,7 @@ template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
   verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
 template recoverCellsAndKzgProofs*(cellIds: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): untyped =
-  recoverCellsAndProofs(cellIds, cells, proofs)
+                   cells: openArray[KzgCell]): untyped =
+  recoverCellsAndProofs(cellIds, cells)
 
 {. pop .}

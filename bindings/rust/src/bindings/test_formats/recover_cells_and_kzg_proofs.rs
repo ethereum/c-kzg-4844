@@ -10,7 +10,6 @@ use serde::Deserialize;
 pub struct Input {
     cell_ids: Vec<u64>,
     cells: Vec<String>,
-    proofs: Vec<String>,
 }
 
 impl Input {
@@ -23,13 +22,6 @@ impl Input {
             .iter()
             .map(|s| Cell::from_hex(s))
             .collect::<Result<Vec<Cell>, Error>>()
-    }
-
-    pub fn get_proofs(&self) -> Result<Vec<Bytes48>, Error> {
-        self.proofs
-            .iter()
-            .map(|s| Bytes48::from_hex(s))
-            .collect::<Result<Vec<Bytes48>, Error>>()
     }
 }
 

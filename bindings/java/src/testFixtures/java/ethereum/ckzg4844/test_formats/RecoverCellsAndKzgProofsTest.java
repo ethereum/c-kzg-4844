@@ -14,8 +14,6 @@ public class RecoverCellsAndKzgProofsTest {
 
     private List<String> cells;
 
-    private List<String> proofs;
-
     public long[] getCellIds() {
       return cellIds.stream().mapToLong(Long::longValue).toArray();
     }
@@ -23,15 +21,6 @@ public class RecoverCellsAndKzgProofsTest {
     public byte[] getCells() {
       return TestUtils.flatten(
           cells.stream()
-              .map(Bytes::fromHexString)
-              .map(Bytes::toArrayUnsafe)
-              .collect(Collectors.toList())
-              .toArray(byte[][]::new));
-    }
-
-    public byte[] getProofs() {
-      return TestUtils.flatten(
-          proofs.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArrayUnsafe)
               .collect(Collectors.toList())

@@ -646,7 +646,6 @@ impl Cell {
     pub fn recover_cells_and_kzg_proofs(
         cell_ids: &[u64],
         cells: &[Cell],
-        proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
     ) -> Result<
         (
@@ -662,13 +661,6 @@ impl Cell {
                 cells.len()
             )));
         }
-        if cell_ids.len() != proofs_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} cell IDs and {} proofs",
-                cell_ids.len(),
-                proofs_bytes.len()
-            )));
-        }
         let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         let mut recovered_proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
         unsafe {
@@ -677,7 +669,6 @@ impl Cell {
                 recovered_proofs.as_mut_ptr(),
                 cell_ids.as_ptr(),
                 cells.as_ptr(),
-                proofs_bytes.as_ptr(),
                 cells.len(),
                 kzg_settings,
             );
@@ -1430,11 +1421,8 @@ mod tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: recover_cells_and_kzg_proofs::Test =
                 serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(cell_ids), Ok(cells), Ok(proofs)) = (
-                test.input.get_cell_ids(),
-                test.input.get_cells(),
-                test.input.get_proofs(),
-            ) else {
+            let (Ok(cell_ids), Ok(cells)) = (test.input.get_cell_ids(), test.input.get_cells())
+            else {
                 assert!(test.get_output().is_none());
                 continue;
             };
@@ -1456,12 +1444,9 @@ mod tests {
                 for cell in &cells {
                     file.write_all(&cell.bytes).unwrap();
                 }
-                for proof in &proofs {
-                    file.write_all(&proof.bytes).unwrap();
-                }
             }
 
-            match Cell::recover_cells_and_kzg_proofs(&cell_ids, &cells, &proofs, &kzg_settings) {
+            match Cell::recover_cells_and_kzg_proofs(&cell_ids, &cells, &kzg_settings) {
                 Ok((recovered_cells, recovered_proofs)) => {
                     let (expected_cells, expected_proofs) = test.get_output().unwrap();
                     assert_eq!(recovered_cells.as_slice(), expected_cells);

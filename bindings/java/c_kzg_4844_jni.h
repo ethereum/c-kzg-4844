@@ -114,10 +114,10 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    recoverCellsAndKzgProofs
- * Signature: ([J[B[B)Lethereum/ckzg4844/CellsAndProofs;
+ * Signature: ([J[B)Lethereum/ckzg4844/CellsAndProofs;
  */
 JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs
-  (JNIEnv *, jclass, jlongArray, jbyteArray, jbyteArray);
+  (JNIEnv *, jclass, jlongArray, jbyteArray);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI

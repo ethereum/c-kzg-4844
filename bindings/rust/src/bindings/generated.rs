@@ -202,7 +202,6 @@ extern "C" {
         recovered_proofs: *mut KZGProof,
         cell_ids: *const u64,
         cells: *const Cell,
-        proofs_bytes: *const Bytes48,
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;

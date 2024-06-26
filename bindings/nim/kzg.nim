@@ -301,12 +301,8 @@ proc verifyProofs*(ctx: KzgCtx,
 
 proc recoverCellsAndProofs*(ctx: KzgCtx,
                    cellIds: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   if cells.len != cellIds.len:
-    return err($KZG_BADARGS)
-
-  if proofs.len != cellIds.len:
     return err($KZG_BADARGS)
 
   if cells.len == 0:
@@ -320,7 +316,6 @@ proc recoverCellsAndProofs*(ctx: KzgCtx,
     recoveredProofsPtr,
     cellIds[0].getPtr,
     cells[0].getPtr,
-    proofs[0].getPtr,
     cells.len.csize_t,
     ctx.val)
   verify(res, ret)

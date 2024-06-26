@@ -74,7 +74,7 @@ public static partial class Ckzg
 
     [DllImport("ckzg", EntryPoint = "recover_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult RecoverCellsAndKzgProofs(byte *recovered_cells, byte *recovered_proofs,
-        ulong *cell_ids, byte *cells, byte *proofs, int num_cells, IntPtr ts);
+        ulong *cell_ids, byte *cells, int num_cells, IntPtr ts);
 
     private enum KzgResult
     {

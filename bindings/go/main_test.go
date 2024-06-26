@@ -49,18 +49,16 @@ func fillBlobRandom(blob *Blob, seed int64) {
 	}
 }
 
-func getPartialCellsAndProofs(cells [cellsPerExtBlob]Cell, proofs [cellsPerExtBlob]Bytes48, i int) ([]uint64, []Cell, []Bytes48) {
+func getPartialCells(cells [cellsPerExtBlob]Cell, i int) ([]uint64, []Cell) {
 	cellIds := []uint64{}
 	partialCells := []Cell{}
-	partialProofs := []Bytes48{}
 	for j := range cells {
 		if j%i != 0 {
 			cellIds = append(cellIds, uint64(j))
 			partialCells = append(partialCells, cells[j])
-			partialProofs = append(partialProofs, proofs[j])
 		}
 	}
-	return cellIds, partialCells, partialProofs
+	return cellIds, partialCells
 }
 
 func getColumns(cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
@@ -622,7 +620,6 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 		Input struct {
 			CellIds []uint64 `yaml:"cell_ids"`
 			Cells   []string `yaml:"cells"`
-			Proofs  []string `yaml:"proofs"`
 		}
 		Output *[][]string `yaml:"output"`
 	}
@@ -653,18 +650,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 				cells = append(cells, cell)
 			}
 
-			var proofs []Bytes48
-			for _, p := range test.Input.Proofs {
-				var proof Bytes48
-				err = proof.UnmarshalText([]byte(p))
-				if err != nil {
-					require.Nil(t, test.Output)
-					return
-				}
-				proofs = append(proofs, proof)
-			}
-
-			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, cells, proofs)
+			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, cells)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -696,15 +682,11 @@ func TestPartialRecover(t *testing.T) {
 	fillBlobRandom(&blob, 27)
 	cells, proofs, err := ComputeCellsAndKZGProofs(&blob)
 	require.NoError(t, err)
-	proofsBytes := [cellsPerExtBlob]Bytes48{}
-	for i, proof := range proofs {
-		proofsBytes[i] = Bytes48(proof)
-	}
 
 	for i := 1; i <= 5; i++ {
 		mod := divideRoundUp(cellsPerExtBlob, i)
-		cellIds, partialCells, partialProofs := getPartialCellsAndProofs(cells, proofsBytes, mod)
-		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, partialCells, partialProofs)
+		cellIds, partialCells := getPartialCells(cells, mod)
+		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
 		require.NoError(t, err)
 		require.EqualValues(t, cells, recoveredCells)
 		require.EqualValues(t, proofs, recoveredProofs)
@@ -846,10 +828,10 @@ func Benchmark(b *testing.B) {
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		cellIds, partialCells, partialProofs := getPartialCellsAndProofs(blobCells[0], blobCellProofs[0], i)
+		cellIds, partialCells := getPartialCells(blobCells[0], i)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells, partialProofs)
+				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
 				require.NoError(b, err)
 			}
 		})
@@ -857,10 +839,10 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= 5; i++ {
 		mod := divideRoundUp(cellsPerExtBlob, i)
-		cellIds, partialCells, partialProofs := getPartialCellsAndProofs(blobCells[0], blobCellProofs[0], mod)
+		cellIds, partialCells := getPartialCells(blobCells[0], mod)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells, partialProofs)
+				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
 				require.NoError(b, err)
 			}
 		})

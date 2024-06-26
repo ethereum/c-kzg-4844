@@ -5,11 +5,9 @@
 extern crate core;
 
 use arbitrary::Arbitrary;
-use c_kzg::Bytes48;
 use c_kzg::Cell;
 use c_kzg::KzgSettings;
 use c_kzg::BYTES_PER_CELL;
-use c_kzg::BYTES_PER_PROOF;
 use eip7594::prover::ProverContext;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
@@ -28,23 +26,18 @@ lazy_static! {
 struct Input {
     cell_ids: Vec<u64>,
     cells: Vec<Cell>,
-    proofs: Vec<Bytes48>,
 }
 
 fuzz_target!(|input: Input| {
     let cells_bytes_owned: Vec<[u8; BYTES_PER_CELL]> = input.cells.iter().map(Cell::to_bytes).collect();
     let cells_bytes: Vec<&[u8; BYTES_PER_CELL]> = cells_bytes_owned.iter().collect();
 
-    let proofs_bytes_owned: Vec<[u8; BYTES_PER_PROOF]> = input.proofs.iter().map(|p| Bytes48::into_inner(*p)).collect();
-    let proofs_bytes: Vec<&[u8; BYTES_PER_PROOF]> = proofs_bytes_owned.iter().collect();
-
     let ckzg_result = c_kzg::Cell::recover_cells_and_kzg_proofs(
         input.cell_ids.as_slice(),
         input.cells.as_slice(),
-        input.proofs.as_slice(),
         &KZG_SETTINGS,
     );
-    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_ids, cells_bytes, proofs_bytes);
+    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_ids, cells_bytes, vec![]);
 
     match (&ckzg_result, &rkzg_result) {
         (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {

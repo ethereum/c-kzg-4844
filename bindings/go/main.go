@@ -451,15 +451,14 @@ RecoverCellsAndKZGProofs is the binding for:
 	    KZGProof *recovered_proofs,
 	    const uint64_t *cell_ids,
 	    const Cell *cells,
-	    const Bytes48 *proofs_bytes,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverCellsAndKZGProofs(cellIds []uint64, cells []Cell, proofsBytes []Bytes48) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
+func RecoverCellsAndKZGProofs(cellIds []uint64, cells []Cell) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	if len(cellIds) != len(cells) || len(cellIds) != len(proofsBytes) {
+	if len(cellIds) != len(cells) {
 		return [cellsPerExtBlob]Cell{}, [cellsPerExtBlob]KZGProof{}, ErrBadArgs
 	}
 
@@ -470,7 +469,6 @@ func RecoverCellsAndKZGProofs(cellIds []uint64, cells []Cell, proofsBytes []Byte
 		(*C.KZGProof)(unsafe.Pointer(&recoveredProofs)),
 		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
-		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(cells)),
 		&settings)
 

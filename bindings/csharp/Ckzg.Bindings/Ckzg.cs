@@ -252,24 +252,18 @@ public static partial class Ckzg
     }
 
     public static unsafe void RecoverCellsAndKzgProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
-            ReadOnlySpan<ulong> cellIds, ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs,
-            int numCells, IntPtr ckzgSetup)
+            ReadOnlySpan<ulong> cellIds, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(cellIds, nameof(cellIds), numCells);
         ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
-        if (proofs != null)
-        {
-            ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * numCells);
-        }
 
-        fixed (byte* recoveredCellsPtr = recoveredCells, recoveredProofsPtr = recoveredProofs,
-            cellsPtr = cells, proofsPtr = proofs)
+        fixed (byte* recoveredCellsPtr = recoveredCells, recoveredProofsPtr = recoveredProofs, cellsPtr = cells)
         {
             fixed(ulong *cellIdsPtr = cellIds)
             {
                 KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIdsPtr,
-                    cellsPtr, proofsPtr, numCells, ckzgSetup);
+                    cellsPtr, numCells, ckzgSetup);
                 ThrowOnError(result);
             }
         }

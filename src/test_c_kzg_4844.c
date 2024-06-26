@@ -1756,7 +1756,6 @@ static void test_reconstruct__succeeds_random_blob(void) {
     Cell *cells = NULL;
     KZGProof *proofs = NULL;
     Cell *partial_cells = NULL;
-    Bytes48 *partial_proofs = NULL;
     Cell *recovered_cells = NULL;
     KZGProof *recovered_proofs = NULL;
     size_t num_partial_cells = CELLS_PER_EXT_BLOB / 2;
@@ -1770,10 +1769,6 @@ static void test_reconstruct__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc(
         (void **)&partial_cells, num_partial_cells, sizeof(Cell)
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&partial_proofs, num_partial_cells, sizeof(Bytes48)
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc((void **)&cell_ids, num_partial_cells, sizeof(uint64_t));
@@ -1798,7 +1793,6 @@ static void test_reconstruct__succeeds_random_blob(void) {
     for (size_t i = 0; i < num_partial_cells; i++) {
         cell_ids[i] = i * 2;
         memcpy(&partial_cells[i], &cells[cell_ids[i]], sizeof(Cell));
-        memcpy(&partial_proofs[i], &proofs[cell_ids[i]], sizeof(Bytes48));
     }
 
     /* Reconstruct with half of the cells */
@@ -1807,7 +1801,6 @@ static void test_reconstruct__succeeds_random_blob(void) {
         recovered_proofs,
         cell_ids,
         partial_cells,
-        partial_proofs,
         num_partial_cells,
         &s
     );

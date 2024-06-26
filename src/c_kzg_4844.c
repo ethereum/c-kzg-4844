@@ -3396,7 +3396,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     KZGProof *recovered_proofs,
     const uint64_t *cell_ids,
     const Cell *cells,
-    const Bytes48 *proofs_bytes,
     size_t num_cells,
     const KZGSettings *s
 ) {
@@ -3461,37 +3460,28 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         }
     }
 
-    /* Check if recovery is necessary */
     if (num_cells == CELLS_PER_EXT_BLOB) {
+        /* Nothing to recover, copy the cells */
         memcpy(recovered_cells, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
-        if (recovered_proofs != NULL && proofs_bytes != NULL) {
-            memcpy(
-                recovered_proofs,
-                proofs_bytes,
-                CELLS_PER_EXT_BLOB * sizeof(KZGProof)
-            );
-        }
-        ret = C_KZG_OK;
-        goto out;
-    }
+    } else {
+        /* Perform cell recovery */
+        ret = recover_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
+        if (ret != C_KZG_OK) goto out;
 
-    /* Perform cell recovery */
-    ret = recover_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Convert the recovered data points to byte-form */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
-            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            bytes_from_bls_field(
-                (Bytes32 *)&recovered_cells[i].bytes[offset],
-                &recovered_cells_fr[index]
-            );
+        /* Convert the recovered data points to byte-form */
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+                size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+                size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+                bytes_from_bls_field(
+                    (Bytes32 *)&recovered_cells[i].bytes[offset],
+                    &recovered_cells_fr[index]
+                );
+            }
         }
     }
 
-    if (recovered_proofs != NULL && proofs_bytes != NULL) {
+    if (recovered_proofs != NULL) {
         /*
          * Instead of converting the cells to a blob and back, we can just treat
          * the cells as a polynomial. We are done with the fr-form recovered

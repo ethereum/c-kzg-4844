@@ -172,9 +172,7 @@ public class CKZG4844JNITest {
     try {
       final CellsAndProofs recoveredCellsAndProofs =
           CKZG4844JNI.recoverCellsAndKzgProofs(
-              test.getInput().getCellIds(),
-              test.getInput().getCells(),
-              test.getInput().getProofs());
+              test.getInput().getCellIds(), test.getInput().getCells());
       assertArrayEquals(test.getOutput().getCells(), recoveredCellsAndProofs.getCells());
       assertArrayEquals(test.getOutput().getProofs(), recoveredCellsAndProofs.getProofs());
     } catch (CKZGException ex) {
@@ -233,11 +231,9 @@ public class CKZG4844JNITest {
     final byte[] proofs = cellsAndProofs.getProofs();
     final byte[] partialCells = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
     System.arraycopy(cells, 0, partialCells, 0, partialCells.length);
-    final byte[] partialProofs = new byte[BYTES_PER_PROOF * CELLS_PER_EXT_BLOB / 2];
-    System.arraycopy(proofs, 0, partialProofs, 0, partialProofs.length);
     final long[] cellIds = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
     final CellsAndProofs recoveredCellsAndProofs =
-        CKZG4844JNI.recoverCellsAndKzgProofs(cellIds, partialCells, partialProofs);
+        CKZG4844JNI.recoverCellsAndKzgProofs(cellIds, partialCells);
     assertArrayEquals(cells, recoveredCellsAndProofs.getCells());
     assertArrayEquals(proofs, recoveredCellsAndProofs.getProofs());
     CKZG4844JNI.freeTrustedSetup();

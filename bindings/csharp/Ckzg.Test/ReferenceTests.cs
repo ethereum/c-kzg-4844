@@ -522,7 +522,6 @@ public class ReferenceTests
     {
         public List<ulong> CellIds { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
-        public List<string> Proofs { get; set; } = null!;
     }
 
     private class RecoverCellsAndKzgProofsTest
@@ -550,12 +549,11 @@ public class ReferenceTests
             byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
             ulong[] cellIds = test.Input.CellIds.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
-            byte[] proofs = GetFlatBytes(test.Input.Proofs);
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, recoveredProofs, cellIds, cells, proofs, numCells, _ts);
+                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, recoveredProofs, cellIds, cells, numCells, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
                 Assert.That(recoveredCells, Is.EqualTo(expectedCells));

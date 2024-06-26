@@ -244,10 +244,9 @@ def test_recover_cells_and_kzg_proofs(ts):
 
         cell_ids = test["input"]["cell_ids"]
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
-        proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            recovered_cells, recovered_proofs = ckzg.recover_cells_and_kzg_proofs(cell_ids, cells, proofs, ts)
+            recovered_cells, recovered_proofs = ckzg.recover_cells_and_kzg_proofs(cell_ids, cells, ts)
         except:
             assert test["output"] is None
             continue
