@@ -9,7 +9,7 @@ public static partial class Ckzg
     public const int BytesPerProof = 48;
 
     /// <summary>
-    ///     Loads trusted setup settings from file.
+    ///     Loads trusted setup settings from the file.
     /// </summary>
     /// <param name="filename">Settings file path</param>
     /// <exception cref="ArgumentException">Thrown when the file path is not correct</exception>
