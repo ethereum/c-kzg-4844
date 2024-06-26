@@ -32,7 +32,7 @@ void blst_p2_from_jacobian(blst_p2 *out, const blst_p2 *in);
  * Below functions produce both point and deserialized outcome of
  * SkToPk and Sign. However, deserialized outputs are pre-decorated
  * with sign and infinity bits. This means that you have to bring the
- * output into compliance prior returning to application. If you want
+ * output into compliance prior to returning to the application. If you want
  * compressed point value, then do [equivalent of]
  *
  *  byte temp[96];
