@@ -1,7 +1,7 @@
 # Profiling
 
 We use [`gperftools`](https://github.com/gperftools/gperftools) (Google
-Performance Tools) for profiling. Note, we also considered using
+Performance Tools) for profiling. Note, that we also considered using
 [`llvm-xray`](https://llvm.org/docs/XRay.html) but found it lacking in
 comparison. This will not tell you how long (wall clock time) each function
 took, but it will help you determine which functions are the most expensive.
