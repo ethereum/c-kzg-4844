@@ -267,6 +267,10 @@ impl Blob {
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
     }
+
+    pub fn into_inner(self) -> [u8; BYTES_PER_BLOB] {
+        self.bytes
+    }
 }
 
 impl AsRef<[u8]> for Blob {
