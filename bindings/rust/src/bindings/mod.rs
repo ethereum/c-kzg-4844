@@ -22,7 +22,7 @@ use std::path::Path;
 pub const BYTES_PER_G1_POINT: usize = 48;
 pub const BYTES_PER_G2_POINT: usize = 96;
 
-/// Number of G1 Points required for the kzg trusted setup..
+/// Number of G1 Points required for the kzg trusted setup.
 pub const NUM_G1_POINTS: usize = 4096;
 
 /// Number of G2 points required for the kzg trusted setup.
