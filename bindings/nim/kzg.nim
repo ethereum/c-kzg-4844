@@ -229,14 +229,14 @@ proc verifyProof*(ctx: KzgCtx,
 
 proc verifyProof*(ctx: KzgCtx,
                   commitment: KzgBytes48,
-                  cellId: uint64,
+                  cellIndex: uint64,
                   cell: KzgCell,
                   proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   var valid: bool
   let res = verify_cell_kzg_proof(
     valid,
     commitment.getPtr,
-    cellId,
+    cellIndex,
     cell.getPtr,
     proof.getPtr,
     ctx.val)
@@ -300,9 +300,9 @@ proc verifyProofs*(ctx: KzgCtx,
   verify(res, valid)
 
 proc recoverCellsAndProofs*(ctx: KzgCtx,
-                   cellIds: openArray[uint64],
+                   cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
-  if cells.len != cellIds.len:
+  if cells.len != cellIndices.len:
     return err($KZG_BADARGS)
 
   if cells.len == 0:
@@ -314,7 +314,7 @@ proc recoverCellsAndProofs*(ctx: KzgCtx,
   let res = recover_cells_and_kzg_proofs(
     recoveredCellsPtr,
     recoveredProofsPtr,
-    cellIds[0].getPtr,
+    cellIndices[0].getPtr,
     cells[0].getPtr,
     cells.len.csize_t,
     ctx.val)
@@ -369,7 +369,7 @@ template computeCellsAndKzgProofs*(ctx: KzgCtx,
 
 template verifyCellKzgProof*(ctx: KzgCtx,
                    commitment: KzgBytes48,
-                   cellId: uint64,
+                   cellIndex: uint64,
                    cell: KzgCell,
                    proof: KzgBytes48): untyped =
   verifyProof(ctx, commitment, cell, proof)

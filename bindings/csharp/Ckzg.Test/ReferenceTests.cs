@@ -418,7 +418,7 @@ public class ReferenceTests
     private class VerifyCellKzgProofInput
     {
         public string Commitment { get; set; } = null!;
-        public ulong CellId { get; set; } = 0!;
+        public ulong CellIndex { get; set; } = 0!;
         public string Cell { get; set; } = null!;
         public string Proof { get; set; } = null!;
     }
@@ -445,12 +445,12 @@ public class ReferenceTests
             Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] commitment = GetBytes(test.Input.Commitment);
-            ulong cellId = test.Input.CellId;
+            ulong cellIndex = test.Input.CellIndex;
             byte[] cell = GetBytes(test.Input.Cell);
             byte[] proof = GetBytes(test.Input.Proof);
             try
             {
-                bool isCorrect = Ckzg.VerifyCellKzgProof(commitment, cellId, cell, proof, _ts);
+                bool isCorrect = Ckzg.VerifyCellKzgProof(commitment, cellIndex, cell, proof, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -520,7 +520,7 @@ public class ReferenceTests
 
     private class RecoverCellsAndKzgProofsInput
     {
-        public List<ulong> CellIds { get; set; } = null!;
+        public List<ulong> CellIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
     }
 
@@ -547,13 +547,13 @@ public class ReferenceTests
 
             byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
             byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
-            ulong[] cellIds = test.Input.CellIds.ToArray();
+            ulong[] cellIndices = test.Input.CellIndices.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, recoveredProofs, cellIds, cells, numCells, _ts);
+                Ckzg.RecoverCellsAndKzgProofs(recoveredCells, recoveredProofs, cellIndices, cells, numCells, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
                 Assert.That(recoveredCells, Is.EqualTo(expectedCells));

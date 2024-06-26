@@ -24,7 +24,7 @@ lazy_static! {
 #[derive(Arbitrary, Debug)]
 struct Input {
     commitment: Bytes48,
-    cell_id: u64,
+    cell_index: u64,
     cell: Cell,
     proof: Bytes48,
 }
@@ -32,14 +32,14 @@ struct Input {
 fuzz_target!(|input: Input| {
     let ckzg_result = c_kzg::KzgProof::verify_cell_kzg_proof(
         &input.commitment,
-        input.cell_id,
+        input.cell_index,
         &input.cell,
         &input.proof,
         &KZG_SETTINGS,
     );
     let rkzg_result = VERIFIER_CONTEXT.verify_cell_kzg_proof(
         &input.commitment.into_inner(),
-        input.cell_id,
+        input.cell_index,
         &input.cell.to_bytes(),
         &input.proof.into_inner(),
     );

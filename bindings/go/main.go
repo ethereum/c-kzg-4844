@@ -449,16 +449,16 @@ RecoverCellsAndKZGProofs is the binding for:
 	C_KZG_RET recover_cells_and_kzg_proofs(
 	    Cell *recovered_cells,
 	    KZGProof *recovered_proofs,
-	    const uint64_t *cell_ids,
+	    const uint64_t *cell_indices,
 	    const Cell *cells,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverCellsAndKZGProofs(cellIds []uint64, cells []Cell) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
+func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	if len(cellIds) != len(cells) {
+	if len(cellIndices) != len(cells) {
 		return [cellsPerExtBlob]Cell{}, [cellsPerExtBlob]KZGProof{}, ErrBadArgs
 	}
 
@@ -467,7 +467,7 @@ func RecoverCellsAndKZGProofs(cellIds []uint64, cells []Cell) ([cellsPerExtBlob]
 	ret := C.recover_cells_and_kzg_proofs(
 		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
 		(*C.KZGProof)(unsafe.Pointer(&recoveredProofs)),
-		*(**C.uint64_t)(unsafe.Pointer(&cellIds)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
 		(C.size_t)(len(cells)),
 		&settings)
@@ -484,12 +484,12 @@ VerifyCellKZGProof is the binding for:
 	C_KZG_RET verify_cell_kzg_proof(
 	    bool *ok,
 	    const Bytes48 *commitment_bytes,
-	    uint64_t cell_id,
+	    uint64_t cell_index,
 	    const Cell *cell,
 	    const KZGProof *proof,
 	    const KZGSettings *s);
 */
-func VerifyCellKZGProof(commitmentBytes Bytes48, cellId uint64, cell Cell, proofBytes Bytes48) (bool, error) {
+func VerifyCellKZGProof(commitmentBytes Bytes48, cellIndex uint64, cell Cell, proofBytes Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
@@ -498,7 +498,7 @@ func VerifyCellKZGProof(commitmentBytes Bytes48, cellId uint64, cell Cell, proof
 	ret := C.verify_cell_kzg_proof(
 		&result,
 		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
-		(C.uint64_t)(cellId),
+		(C.uint64_t)(cellIndex),
 		(*C.Cell)(unsafe.Pointer(&cell)),
 		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
 		&settings)

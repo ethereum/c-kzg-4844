@@ -196,12 +196,12 @@ def test_verify_cell_kzg_proof(ts):
             test = yaml.safe_load(f)
 
         commitment = bytes_from_hex(test["input"]["commitment"])
-        cell_id = test["input"]["cell_id"]
+        cell_index = test["input"]["cell_index"]
         cell = bytes_from_hex(test["input"]["cell"])
         proof = bytes_from_hex(test["input"]["proof"])
 
         try:
-            valid = ckzg.verify_cell_kzg_proof(commitment, cell_id, cell, proof, ts)
+            valid = ckzg.verify_cell_kzg_proof(commitment, cell_index, cell, proof, ts)
         except:
             assert test["output"] is None
             continue
@@ -242,11 +242,11 @@ def test_recover_cells_and_kzg_proofs(ts):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
-        cell_ids = test["input"]["cell_ids"]
+        cell_indices = test["input"]["cell_indices"]
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
 
         try:
-            recovered_cells, recovered_proofs = ckzg.recover_cells_and_kzg_proofs(cell_ids, cells, ts)
+            recovered_cells, recovered_proofs = ckzg.recover_cells_and_kzg_proofs(cell_indices, cells, ts)
         except:
             assert test["output"] is None
             continue

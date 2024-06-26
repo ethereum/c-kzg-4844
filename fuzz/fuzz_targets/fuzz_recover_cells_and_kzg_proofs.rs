@@ -24,7 +24,7 @@ lazy_static! {
 
 #[derive(Arbitrary, Debug)]
 struct Input {
-    cell_ids: Vec<u64>,
+    cell_indices: Vec<u64>,
     cells: Vec<Cell>,
 }
 
@@ -34,11 +34,11 @@ fuzz_target!(|input: Input| {
     let cells_bytes: Vec<&[u8; BYTES_PER_CELL]> = cells_bytes_owned.iter().collect();
 
     let ckzg_result = c_kzg::Cell::recover_cells_and_kzg_proofs(
-        input.cell_ids.as_slice(),
+        input.cell_indices.as_slice(),
         input.cells.as_slice(),
         &KZG_SETTINGS,
     );
-    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_ids, cells_bytes, vec![]);
+    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes, vec![]);
 
     match (&ckzg_result, &rkzg_result) {
         (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {

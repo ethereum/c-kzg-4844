@@ -6,7 +6,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Input<'a> {
     commitment: &'a str,
-    cell_id: u64,
+    cell_index: u64,
     cell: &'a str,
     proof: &'a str,
 }
@@ -16,8 +16,8 @@ impl Input<'_> {
         Bytes48::from_hex(self.commitment)
     }
 
-    pub fn get_cell_id(&self) -> Result<u64, Error> {
-        Ok(self.cell_id)
+    pub fn get_cell_index(&self) -> Result<u64, Error> {
+        Ok(self.cell_index)
     }
 
     pub fn get_cell(&self) -> Result<Cell, Error> {

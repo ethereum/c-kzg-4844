@@ -9,13 +9,13 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class RecoverCellsAndKzgProofsTest {
   public static class Input {
-    @JsonProperty("cell_ids")
-    private List<Long> cellIds;
+    @JsonProperty("cell_indices")
+    private List<Long> cellIndices;
 
     private List<String> cells;
 
-    public long[] getCellIds() {
-      return cellIds.stream().mapToLong(Long::longValue).toArray();
+    public long[] getCellIndices() {
+      return cellIndices.stream().mapToLong(Long::longValue).toArray();
     }
 
     public byte[] getCells() {

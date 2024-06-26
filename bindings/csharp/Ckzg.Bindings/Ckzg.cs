@@ -212,7 +212,7 @@ public static partial class Ckzg
         }
     }
 
-    public static unsafe bool VerifyCellKzgProof(ReadOnlySpan<byte> commitment, ulong cellId, ReadOnlySpan<byte> cell,
+    public static unsafe bool VerifyCellKzgProof(ReadOnlySpan<byte> commitment, ulong cellIndex, ReadOnlySpan<byte> cell,
             ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -222,7 +222,7 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, cellPtr = cell, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyCellKzgProof(out var result, commitmentPtr, cellId, cellPtr, proofPtr, ckzgSetup);
+            KzgResult kzgResult = VerifyCellKzgProof(out var result, commitmentPtr, cellIndex, cellPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -252,17 +252,17 @@ public static partial class Ckzg
     }
 
     public static unsafe void RecoverCellsAndKzgProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
-            ReadOnlySpan<ulong> cellIds, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
+            ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
-        ThrowOnInvalidLength(cellIds, nameof(cellIds), numCells);
+        ThrowOnInvalidLength(cellIndices, nameof(cellIndices), numCells);
         ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
 
         fixed (byte* recoveredCellsPtr = recoveredCells, recoveredProofsPtr = recoveredProofs, cellsPtr = cells)
         {
-            fixed(ulong *cellIdsPtr = cellIds)
+            fixed(ulong *cellIndicesPtr = cellIndices)
             {
-                KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIdsPtr,
+                KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
                     cellsPtr, numCells, ckzgSetup);
                 ThrowOnError(result);
             }

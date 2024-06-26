@@ -143,7 +143,7 @@ proc verify_blob_kzg_proof_batch*(res: var bool,
 
 proc verify_cell_kzg_proof*(res: var bool,
                          commitment: ptr KzgBytes48,
-                         cellId: uint64,
+                         cellIndex: uint64,
                          cell: ptr KzgCell,
                          proof: ptr KzgBytes48,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
@@ -165,7 +165,7 @@ proc verify_cell_kzg_proof_batch*(res: var bool,
 
 proc recover_cells_and_kzg_proofs*(recoveredOut: ptr KzgCell,
                          recoveredProofsOut: ptr KzgProof,
-                         cellIds: ptr uint64,
+                         cellIndices: ptr uint64,
                          cells: ptr KzgCell,
                          numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

@@ -222,25 +222,25 @@ public class CKZG4844JNI {
   /**
    * Given at least 50% of cells, reconstruct the missing cells/proofs.
    *
-   * @param cellIds the identifiers for the cells you have
+   * @param cellIndices the identifiers for the cells you have
    * @param cells the cells you have
    * @return all cells/proofs for that blob
    * @throws CKZGException if there is a crypto error
    */
-  public static native CellsAndProofs recoverCellsAndKzgProofs(long[] cellIds, byte[] cells);
+  public static native CellsAndProofs recoverCellsAndKzgProofs(long[] cellIndices, byte[] cells);
 
   /**
    * Verify that a cell's proof is valid.
    *
    * @param commitmentBytes commitment bytes
-   * @param cellId the cell identifier
+   * @param cellIndex the cell identifier
    * @param cell the cell to verify
    * @param proofBytes the proof for the cell
    * @return true if the cell is valid with respect to this commitment
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyCellKzgProof(
-      byte[] commitmentBytes, long cellId, byte[] cell, byte[] proofBytes);
+      byte[] commitmentBytes, long cellIndex, byte[] cell, byte[] proofBytes);
 
   /**
    * Verify that multiple cells' proofs are valid.

@@ -181,7 +181,7 @@ extern "C" {
     pub fn verify_cell_kzg_proof(
         ok: *mut bool,
         commitment_bytes: *const Bytes48,
-        cell_id: u64,
+        cell_index: u64,
         cell: *const Cell,
         proof_bytes: *const Bytes48,
         s: *const KZGSettings,
@@ -200,7 +200,7 @@ extern "C" {
     pub fn recover_cells_and_kzg_proofs(
         recovered_cells: *mut Cell,
         recovered_proofs: *mut KZGProof,
-        cell_ids: *const u64,
+        cell_indices: *const u64,
         cells: *const Cell,
         num_cells: usize,
         s: *const KZGSettings,

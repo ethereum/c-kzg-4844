@@ -230,7 +230,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
 C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    uint64_t cell_id,
+    uint64_t cell_index,
     const Cell *cell,
     const Bytes48 *proof_bytes,
     const KZGSettings *s
@@ -251,7 +251,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 C_KZG_RET recover_cells_and_kzg_proofs(
     Cell *recovered_cells,
     KZGProof *recovered_proofs,
-    const uint64_t *cell_ids,
+    const uint64_t *cell_indices,
     const Cell *cells,
     size_t num_cells,
     const KZGSettings *s

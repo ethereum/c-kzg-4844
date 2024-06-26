@@ -64,12 +64,12 @@ type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof:
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
-type VerifyCellKzgProofTest = TestMeta<{commitment: string; cell_id: number; cell: string; proof: string}, boolean>;
+type VerifyCellKzgProofTest = TestMeta<{commitment: string; cell_index: number; cell: string; proof: string}, boolean>;
 type VerifyCellKzgProofBatchTest = TestMeta<
   {row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[]},
   boolean
 >;
-type RecoverCellsAndKzgProofsTest = TestMeta<{cell_ids: number[]; cells: string[]; proofs: string[]}, string[][]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
 
 const blobValidLength = randomBytes(BYTES_PER_BLOB);
 const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
@@ -409,12 +409,12 @@ describe("C-KZG", () => {
 
         let valid;
         const commitment = bytesFromHex(test.input.commitment);
-        const cellId = test.input.cell_id;
+        const cellIndex = test.input.cell_index;
         const cell = bytesFromHex(test.input.cell);
         const proof = bytesFromHex(test.input.proof);
 
         try {
-          valid = verifyCellKzgProof(commitment, cellId, cell, proof);
+          valid = verifyCellKzgProof(commitment, cellIndex, cell, proof);
         } catch (err) {
           expect(test.output).toBeNull();
           return;
@@ -458,12 +458,11 @@ describe("C-KZG", () => {
 
         let recoveredCells;
         let recoveredProofs;
-        const cellIds = test.input.cell_ids;
+        const cellIndices = test.input.cell_indices;
         const cells = test.input.cells.map(bytesFromHex);
-        const proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          [recoveredCells, recoveredProofs] = recoverCellsAndKzgProofs(cellIds, cells, proofs);
+          [recoveredCells, recoveredProofs] = recoverCellsAndKzgProofs(cellIndices, cells);
         } catch (err) {
           expect(test.output).toBeNull();
           return;

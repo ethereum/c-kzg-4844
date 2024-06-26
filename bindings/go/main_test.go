@@ -50,15 +50,15 @@ func fillBlobRandom(blob *Blob, seed int64) {
 }
 
 func getPartialCells(cells [cellsPerExtBlob]Cell, i int) ([]uint64, []Cell) {
-	cellIds := []uint64{}
+	cellIndices := []uint64{}
 	partialCells := []Cell{}
 	for j := range cells {
 		if j%i != 0 {
-			cellIds = append(cellIds, uint64(j))
+			cellIndices = append(cellIndices, uint64(j))
 			partialCells = append(partialCells, cells[j])
 		}
 	}
-	return cellIds, partialCells
+	return cellIndices, partialCells
 }
 
 func getColumns(cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
@@ -487,7 +487,7 @@ func TestVerifyCellKZGProof(t *testing.T) {
 	type Test struct {
 		Input struct {
 			Commitment string `yaml:"commitment"`
-			CellId     uint64 `yaml:"cell_id"`
+			CellIndex  uint64 `yaml:"cell_index"`
 			Cell       string `yaml:"cell"`
 			Proof      string `yaml:"proof"`
 		}
@@ -514,7 +514,7 @@ func TestVerifyCellKZGProof(t *testing.T) {
 				return
 			}
 
-			cellId := test.Input.CellId
+			cellIndex := test.Input.CellIndex
 
 			var cell Cell
 			err = cell.UnmarshalText([]byte(test.Input.Cell))
@@ -530,7 +530,7 @@ func TestVerifyCellKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, err := VerifyCellKZGProof(commitment, cellId, cell, proof)
+			valid, err := VerifyCellKZGProof(commitment, cellIndex, cell, proof)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -618,8 +618,8 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {
-			CellIds []uint64 `yaml:"cell_ids"`
-			Cells   []string `yaml:"cells"`
+			CellIndices []uint64 `yaml:"cell_indices"`
+			Cells       []string `yaml:"cells"`
 		}
 		Output *[][]string `yaml:"output"`
 	}
@@ -637,7 +637,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			cellIds := test.Input.CellIds
+			cellIndices := test.Input.CellIndices
 
 			var cells []Cell
 			for _, c := range test.Input.Cells {
@@ -650,7 +650,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 				cells = append(cells, cell)
 			}
 
-			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, cells)
+			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIndices, cells)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -685,8 +685,8 @@ func TestPartialRecover(t *testing.T) {
 
 	for i := 1; i <= 5; i++ {
 		mod := divideRoundUp(cellsPerExtBlob, i)
-		cellIds, partialCells := getPartialCells(cells, mod)
-		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
+		cellIndices, partialCells := getPartialCells(cells, mod)
+		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
 		require.NoError(t, err)
 		require.EqualValues(t, cells, recoveredCells)
 		require.EqualValues(t, proofs, recoveredProofs)
@@ -828,10 +828,10 @@ func Benchmark(b *testing.B) {
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
-		cellIds, partialCells := getPartialCells(blobCells[0], i)
+		cellIndices, partialCells := getPartialCells(blobCells[0], i)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
+				_, _, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
 				require.NoError(b, err)
 			}
 		})
@@ -839,10 +839,10 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= 5; i++ {
 		mod := divideRoundUp(cellsPerExtBlob, i)
-		cellIds, partialCells := getPartialCells(blobCells[0], mod)
+		cellIndices, partialCells := getPartialCells(blobCells[0], mod)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIds, partialCells)
+				_, _, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
 				require.NoError(b, err)
 			}
 		})

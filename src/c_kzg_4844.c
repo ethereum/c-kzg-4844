@@ -3382,7 +3382,7 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_ids            An array of ids for cells that you have
+ * @param[in]   cell_indices            An array of ids for cells that you have
  * @param[in]   cells               An array of cells
  * @param[in]   proofs_bytes        An array of proofs
  * @param[in]   num_cells           How many cells were provided
@@ -3394,7 +3394,7 @@ out:
 C_KZG_RET recover_cells_and_kzg_proofs(
     Cell *recovered_cells,
     KZGProof *recovered_proofs,
-    const uint64_t *cell_ids,
+    const uint64_t *cell_indices,
     const Cell *cells,
     size_t num_cells,
     const KZGSettings *s
@@ -3418,7 +3418,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     /* Check that cell ids are valid */
     for (size_t i = 0; i < num_cells; i++) {
-        if (cell_ids[i] >= CELLS_PER_EXT_BLOB) {
+        if (cell_indices[i] >= CELLS_PER_EXT_BLOB) {
             ret = C_KZG_BADARGS;
             goto out;
         }
@@ -3439,7 +3439,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     /* Update with existing cells */
     for (size_t i = 0; i < num_cells; i++) {
-        size_t index = cell_ids[i] * FIELD_ELEMENTS_PER_CELL;
+        size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             fr_t *field = &recovered_cells_fr[index + j];
 
@@ -3525,18 +3525,18 @@ out:
  *
  * @param[out]  ok                  True if the proof is valid, otherwise false
  * @param[in]   commitment_bytes    The commitment for the extended blob
- * @param[in]   cell_id             The cell identifier
+ * @param[in]   cell_index             The cell identifier
  * @param[in]   cell                The cell to check
  * @param[in]   proof_bytes         The cell proof to check
  * @param[in]   s                   The trusted setup
  *
- * @remark cell_id is the index of the cell within the extended blob.
- * @remark cell_id must be less than CELLS_PER_EXT_BLOB.
+ * @remark cell_index is the index of the cell within the extended blob.
+ * @remark cell_index must be less than CELLS_PER_EXT_BLOB.
  */
 C_KZG_RET verify_cell_kzg_proof(
     bool *ok,
     const Bytes48 *commitment_bytes,
-    uint64_t cell_id,
+    uint64_t cell_index,
     const Cell *cell,
     const Bytes48 *proof_bytes,
     const KZGSettings *s
@@ -3548,7 +3548,7 @@ C_KZG_RET verify_cell_kzg_proof(
     *ok = false;
 
     /* Check that cell id is a valid value */
-    if (cell_id >= CELLS_PER_EXT_BLOB) {
+    if (cell_index >= CELLS_PER_EXT_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -3575,7 +3575,7 @@ C_KZG_RET verify_cell_kzg_proof(
      * Calculate the value x that identifies the coset associated to the cell.
      * This defines the evaluation domain we need for verifying the proof.
      */
-    size_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_id);
+    size_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_index);
     x = s->expanded_roots_of_unity[pos];
 
     /* Reorder ys */

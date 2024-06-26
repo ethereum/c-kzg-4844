@@ -141,28 +141,23 @@ export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48
 export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 
 /**
- * Given at least 50% of cells/proofs, reconstruct the missing ones.
+ * Given at least 50% of cells, reconstruct the missing cells/proofs.
  *
- * @param[in] {number[]}  cellIds - The identifiers for the cells you have
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
  * @param[in] {Cell[]}    cells - The cells you have
- * @param[in] {Bytes48[]} proofsBytes - The proofs you have
  *
  * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
  *
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-export function recoverCellsAndKzgProofs(
-  cellIds: number[],
-  cells: Cell[],
-  proofsBytes: Bytes48[]
-): [Cell[], KZGProof[]];
+export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
 
 /**
  * Verify that a cell's proof is valid.
  *
  * @param {Bytes48}   commitmentBytes - Commitment bytes
- * @param {number}    cellId - The cell identifier
+ * @param {number}    cellIndex - The cell identifier
  * @param {Cell}      cell - The cell to verify
  * @param {Bytes48}   proofBytes - The proof for the cell
  *
@@ -170,7 +165,12 @@ export function recoverCellsAndKzgProofs(
  *
  * @throws {Error} - Errors validating cell's proof
  */
-export function verifyCellKzgProof(commitmentBytes: Bytes48, cellId: number, cell: Cell, proofBytes: Bytes48): boolean;
+export function verifyCellKzgProof(
+  commitmentBytes: Bytes48,
+  cellIndex: number,
+  cell: Cell,
+  proofBytes: Bytes48
+): boolean;
 
 /**
  * Verify that multiple cells' proofs are valid.

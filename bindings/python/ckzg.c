@@ -394,14 +394,14 @@ out:
 }
 
 static PyObject* verify_cell_kzg_proof_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_commitment, *input_cell_id, *input_cell, *input_proof, *s;
+  PyObject *input_commitment, *input_cell_index, *input_cell, *input_proof, *s;
   PyObject *ret = NULL;
   bool ok = false;
 
   /* Ensure inputs are the right types */
-  if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof", 5, 5, &input_commitment, &input_cell_id, &input_cell, &input_proof, &s) ||
+  if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof", 5, 5, &input_commitment, &input_cell_index, &input_cell, &input_proof, &s) ||
       !PyBytes_Check(input_commitment) ||
-      !PyLong_Check(input_cell_id) ||
+      !PyLong_Check(input_cell_index) ||
       !PyBytes_Check(input_cell) ||
       !PyBytes_Check(input_proof) ||
       !PyCapsule_IsValid(s, "KZGSettings")) {
@@ -415,7 +415,7 @@ static PyObject* verify_cell_kzg_proof_wrap(PyObject *self, PyObject *args) {
     goto out;
   }
   /* Convert the cell id to a cell id type (uint64_t) */
-  uint64_t cell_id = PyLong_AsUnsignedLongLong(input_cell_id);
+  uint64_t cell_index = PyLong_AsUnsignedLongLong(input_cell_index);
   if (PyErr_Occurred()) {
     ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
     goto out;
@@ -436,7 +436,7 @@ static PyObject* verify_cell_kzg_proof_wrap(PyObject *self, PyObject *args) {
   const Bytes48 *proof = (Bytes48 *)PyBytes_AsString(input_proof);
 
   /* Call our C function with our inputs */
-  if (verify_cell_kzg_proof(&ok, commitment, cell_id, cell, proof,
+  if (verify_cell_kzg_proof(&ok, commitment, cell_index, cell, proof,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_kzg_proof failed");
     goto out;
@@ -640,16 +640,16 @@ out:
 }
 
 static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_cell_ids, *input_cells, *s;
+  PyObject *input_cell_indices, *input_cells, *s;
   PyObject *ret = NULL;
-  uint64_t *cell_ids = NULL;
+  uint64_t *cell_indices = NULL;
   Cell *cells = NULL;
   Cell *recovered_cells = NULL;
   KZGProof *recovered_proofs = NULL;
 
   /* Ensure inputs are the right types */
-  if (!PyArg_UnpackTuple(args, "recover_cells_and_kzg_proofs", 4, 4, &input_cell_ids, &input_cells, &s) ||
-      !PyList_Check(input_cell_ids) ||
+  if (!PyArg_UnpackTuple(args, "recover_cells_and_kzg_proofs", 3, 3, &input_cell_indices, &input_cells, &s) ||
+      !PyList_Check(input_cell_indices) ||
       !PyList_Check(input_cells) ||
       !PyCapsule_IsValid(s, "KZGSettings")) {
     ret = PyErr_Format(PyExc_ValueError, "expected list, list, trusted setup");
@@ -657,34 +657,34 @@ static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
   }
 
   /* Ensure cell ids/cells are the same length */
-  Py_ssize_t cell_ids_count = PyList_Size(input_cell_ids);
+  Py_ssize_t cell_indices_count = PyList_Size(input_cell_indices);
   Py_ssize_t cells_count = PyList_Size(input_cells);
-  if (cell_ids_count != cells_count) {
-    ret = PyErr_Format(PyExc_ValueError, "expected same number of cell_ids and cells");
+  if (cell_indices_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of cell_indices and cells");
     goto out;
   }
 
   /* Allocate space for the cell ids */
-  cell_ids = (uint64_t *)calloc(cells_count, sizeof(uint64_t));
-  if (cell_ids == NULL) {
+  cell_indices = (uint64_t *)calloc(cells_count, sizeof(uint64_t));
+  if (cell_indices == NULL) {
     ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell ids");
     goto out;
   }
-  for (Py_ssize_t i = 0; i < cell_ids_count; i++) {
+  for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
     /* Ensure each cell id is an integer */
-    PyObject *cell_id = PyList_GetItem(input_cell_ids, i);
-    if (!PyLong_Check(cell_id)) {
+    PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
+    if (!PyLong_Check(cell_index)) {
       ret = PyErr_Format(PyExc_ValueError, "expected cell id to be an integer");
       goto out;
     }
     /* Convert the cell id to a cell id type (uint64_t) */
-    uint64_t value = PyLong_AsUnsignedLongLong(cell_id);
+    uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
     if (PyErr_Occurred()) {
       ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
       goto out;
     }
     /* The cell id is good, add it to our array */
-    memcpy(&cell_ids[i], &value, sizeof(uint64_t));
+    memcpy(&cell_indices[i], &value, sizeof(uint64_t));
   }
 
   /* Allocate space for the cells */
@@ -723,7 +723,7 @@ static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
   }
 
   /* Call our C function with our inputs */
-  if (recover_cells_and_kzg_proofs(recovered_cells, recovered_proofs, cell_ids, cells, cells_count,
+  if (recover_cells_and_kzg_proofs(recovered_cells, recovered_proofs, cell_indices, cells, cells_count,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "recover_cells_and_kzg_proofs failed");
     goto out;
@@ -772,7 +772,7 @@ static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
   ret = recovered_cells_and_proofs;
 
 out:
-  free(cell_ids);
+  free(cell_indices);
   free(cells);
   free(recovered_cells);
   free(recovered_proofs);

@@ -140,7 +140,7 @@ public class CKZG4844JNITest {
       boolean valid =
           CKZG4844JNI.verifyCellKzgProof(
               test.getInput().getCommitment(),
-              test.getInput().getCellId(),
+              test.getInput().getCellIndex(),
               test.getInput().getCell(),
               test.getInput().getProof());
       assertEquals(test.getOutput(), valid);
@@ -172,7 +172,7 @@ public class CKZG4844JNITest {
     try {
       final CellsAndProofs recoveredCellsAndProofs =
           CKZG4844JNI.recoverCellsAndKzgProofs(
-              test.getInput().getCellIds(), test.getInput().getCells());
+              test.getInput().getCellIndices(), test.getInput().getCells());
       assertArrayEquals(test.getOutput().getCells(), recoveredCellsAndProofs.getCells());
       assertArrayEquals(test.getOutput().getProofs(), recoveredCellsAndProofs.getProofs());
     } catch (CKZGException ex) {
@@ -231,9 +231,9 @@ public class CKZG4844JNITest {
     final byte[] proofs = cellsAndProofs.getProofs();
     final byte[] partialCells = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
     System.arraycopy(cells, 0, partialCells, 0, partialCells.length);
-    final long[] cellIds = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
+    final long[] cellIndices = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
     final CellsAndProofs recoveredCellsAndProofs =
-        CKZG4844JNI.recoverCellsAndKzgProofs(cellIds, partialCells);
+        CKZG4844JNI.recoverCellsAndKzgProofs(cellIndices, partialCells);
     assertArrayEquals(cells, recoveredCellsAndProofs.getCells());
     assertArrayEquals(proofs, recoveredCellsAndProofs.getProofs());
     CKZG4844JNI.freeTrustedSetup();
@@ -248,12 +248,12 @@ public class CKZG4844JNITest {
     final byte[] cells = cellsAndProofs.getCells();
     final byte[] proofs = cellsAndProofs.getProofs();
 
-    for (int cellId = 0; cellId < CELLS_PER_EXT_BLOB; cellId++) {
+    for (int cellIndex = 0; cellIndex < CELLS_PER_EXT_BLOB; cellIndex++) {
       byte[] cell = new byte[BYTES_PER_CELL];
       byte[] proof = new byte[BYTES_PER_PROOF];
-      System.arraycopy(cells, cellId * BYTES_PER_CELL, cell, 0, BYTES_PER_CELL);
-      System.arraycopy(proofs, cellId * BYTES_PER_PROOF, proof, 0, BYTES_PER_PROOF);
-      assertTrue(CKZG4844JNI.verifyCellKzgProof(commitment, cellId, cell, proof));
+      System.arraycopy(cells, cellIndex * BYTES_PER_CELL, cell, 0, BYTES_PER_CELL);
+      System.arraycopy(proofs, cellIndex * BYTES_PER_PROOF, proof, 0, BYTES_PER_PROOF);
+      assertTrue(CKZG4844JNI.verifyCellKzgProof(commitment, cellIndex, cell, proof));
     }
     CKZG4844JNI.freeTrustedSetup();
   }

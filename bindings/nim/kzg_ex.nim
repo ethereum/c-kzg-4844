@@ -111,11 +111,11 @@ proc verifyProof*(blob: KzgBlob,
     gCtx.verifyProof(blob, commitment, proof)
 
 proc verifyProof*(commitment: KzgBytes48,
-                  cellId: uint64,
+                  cellIndex: uint64,
                   cell: KzgCell,
                   proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
   verifyCtx:
-    gCtx.verifyProof(commitment, cellId, cell, proof)
+    gCtx.verifyProof(commitment, cellIndex, cell, proof)
 
 proc verifyProofs*(blobs: openArray[KzgBlob],
                   commitments: openArray[KzgBytes48],
@@ -135,10 +135,10 @@ proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string]
   verifyCtx:
     gCtx.computeCellsAndProofs(blob)
 
-proc recoverCellsAndProofs*(cellIds: openArray[uint64],
+proc recoverCellsAndProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
-    gCtx.recoverCellsAndProofs(cellIds, cells)
+    gCtx.recoverCellsAndProofs(cellIndices, cells)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -177,10 +177,10 @@ template computeCellsAndKzgProofs*(blob: KzgBlob): untyped =
   computeCellsAndProofs(blob)
 
 template verifyCellKzgProof*(commitment: KzgBytes48,
-                   cellId: uint64,
+                   cellIndex: uint64,
                    cell: KzgCell,
                    proof: KzgBytes48): untyped =
-  verifyProof(commitment, cellId, cell, proof)
+  verifyProof(commitment, cellIndex, cell, proof)
 
 template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
                    rowIndices: openArray[uint64],
@@ -189,8 +189,8 @@ template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
 
-template recoverCellsAndKzgProofs*(cellIds: openArray[uint64],
+template recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): untyped =
-  recoverCellsAndProofs(cellIds, cells)
+  recoverCellsAndProofs(cellIndices, cells)
 
 {. pop .}

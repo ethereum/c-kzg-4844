@@ -164,7 +164,7 @@ inline Cell *get_cell(const Napi::Env &env, const Napi::Value &val) {
     return reinterpret_cast<Cell *>(get_bytes(env, val, BYTES_PER_CELL, "cell")
     );
 }
-inline uint64_t get_cell_id(const Napi::Env &env, const Napi::Value &val) {
+inline uint64_t get_cell_index(const Napi::Env &env, const Napi::Value &val) {
     if (!val.IsNumber()) {
         Napi::TypeError::New(env, "cell id should be a number")
             .ThrowAsJavaScriptException();
@@ -634,7 +634,7 @@ out:
 /**
  * Given at least 50% of cells, reconstruct the missing cells/proofs.
  *
- * @param[in] {number[]}  cellIds - The identifiers for the cells you have
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
  * @param[in] {Cell[]}    cells - The cells you have
  *
  * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
@@ -644,7 +644,7 @@ out:
  */
 Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
-    uint64_t *cell_ids = NULL;
+    uint64_t *cell_indices = NULL;
     Cell *cells = NULL;
     Cell *recovered_cells = NULL;
     KZGProof *recovered_proofs = NULL;
@@ -656,7 +656,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
     if (!info[0].IsArray()) {
-        Napi::Error::New(env, "CellIds must be an array")
+        Napi::Error::New(env, "CellIndices must be an array")
             .ThrowAsJavaScriptException();
         return result;
     }
@@ -670,19 +670,21 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
         return env.Null();
     }
 
-    Napi::Array cell_ids_param = info[0].As<Napi::Array>();
+    Napi::Array cell_indices_param = info[0].As<Napi::Array>();
     Napi::Array cells_param = info[1].As<Napi::Array>();
 
-    if (cell_ids_param.Length() != cells_param.Length()) {
-        Napi::Error::New(env, "There must equal lengths of cellIds and cells")
+    if (cell_indices_param.Length() != cells_param.Length()) {
+        Napi::Error::New(
+            env, "There must equal lengths of cellIndices and cells"
+        )
             .ThrowAsJavaScriptException();
         goto out;
     }
 
     num_cells = cells_param.Length();
-    cell_ids = (uint64_t *)calloc(num_cells, sizeof(uint64_t));
-    if (cell_ids == nullptr) {
-        Napi::Error::New(env, "Error while allocating memory for cell_ids")
+    cell_indices = (uint64_t *)calloc(num_cells, sizeof(uint64_t));
+    if (cell_indices == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cell_indices")
             .ThrowAsJavaScriptException();
         goto out;
     }
@@ -714,7 +716,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
 
-        cell_ids[i] = get_cell_id(env, cell_ids_param[i]);
+        cell_indices[i] = get_cell_index(env, cell_indices_param[i]);
         Cell *cell = get_cell(env, cells_param[i]);
         if (cell == nullptr) {
             goto out;
@@ -725,7 +727,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     ret = recover_cells_and_kzg_proofs(
         recovered_cells,
         recovered_proofs,
-        cell_ids,
+        cell_indices,
         cells,
         num_cells,
         kzg_settings
@@ -774,7 +776,7 @@ out:
  * Verify that a cell's proof is valid.
  *
  * @param[in] {Bytes48}   commitmentBytes - Commitment bytes
- * @param[in] {number}    cellId - The cell identifier
+ * @param[in] {number}    cellIndex - The cell identifier
  * @param[in] {Cell}      cell - The cell to verify
  * @param[in] {Bytes48}   proofBytes - The proof for the cell
  *
@@ -788,7 +790,7 @@ Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
     if (commitment_bytes == nullptr) {
         return env.Null();
     }
-    uint64_t cell_id = get_cell_id(env, info[1]);
+    uint64_t cell_index = get_cell_index(env, info[1]);
     Cell *cell = get_cell(env, info[2]);
     if (cell == nullptr) {
         return env.Null();
@@ -804,7 +806,7 @@ Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
 
     bool out;
     C_KZG_RET ret = verify_cell_kzg_proof(
-        &out, commitment_bytes, cell_id, cell, proof_bytes, kzg_settings
+        &out, commitment_bytes, cell_index, cell, proof_bytes, kzg_settings
     );
 
     if (ret != C_KZG_OK) {
@@ -934,8 +936,8 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
-        row_indices[i] = get_cell_id(env, row_indices_param[i]);
-        column_indices[i] = get_cell_id(env, column_indices_param[i]);
+        row_indices[i] = get_cell_index(env, row_indices_param[i]);
+        column_indices[i] = get_cell_index(env, column_indices_param[i]);
         Cell *cell = get_cell(env, cells_param[i]);
         if (cell == nullptr) {
             goto out;

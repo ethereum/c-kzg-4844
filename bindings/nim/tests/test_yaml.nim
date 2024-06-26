@@ -148,10 +148,10 @@ suite "yaml tests":
   runTests(VERIFY_CELL_KZG_PROOF_TESTS):
     let
       commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-      cellId = n["input"]["cell_id"].content.parseInt().uint64
+      cellIndex = n["input"]["cell_index"].content.parseInt().uint64
       cell = KzgCell.fromHex(n["input"]["cell"])
       proof = KzgProof.fromHex(n["input"]["proof"])
-      res = ctx.verifyProof(commitment, cellId, cell, proof)
+      res = ctx.verifyProof(commitment, cellIndex, cell, proof)
     checkBool(res)
 
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
@@ -166,9 +166,9 @@ suite "yaml tests":
 
   runTests(RECOVER_CELLS_AND_KZG_PROOFS_TESTS):
     let
-      cellIds = uint64.fromIntList(n["input"]["cell_ids"])
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
-      res = ctx.recoverCellsAndProofs(cellIds, cells)
+      res = ctx.recoverCellsAndProofs(cellIndices, cells)
 
     checkRes(res):
       let expectedCells = KzgCell.fromHexList(n["output"][0])

@@ -7,8 +7,8 @@ public class VerifyCellKzgProofTest {
   public static class Input {
     private String commitment;
 
-    @JsonProperty("cell_id")
-    private Long cellId;
+    @JsonProperty("cell_index")
+    private Long cellIndex;
 
     private String cell;
     private String proof;
@@ -17,8 +17,8 @@ public class VerifyCellKzgProofTest {
       return Bytes.fromHexString(commitment).toArray();
     }
 
-    public Long getCellId() {
-      return cellId;
+    public Long getCellIndex() {
+      return cellIndex;
     }
 
     public byte[] getCell() {

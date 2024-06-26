@@ -8,13 +8,13 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Input {
-    cell_ids: Vec<u64>,
+    cell_indices: Vec<u64>,
     cells: Vec<String>,
 }
 
 impl Input {
-    pub fn get_cell_ids(&self) -> Result<Vec<u64>, Error> {
-        Ok(self.cell_ids.clone())
+    pub fn get_cell_indices(&self) -> Result<Vec<u64>, Error> {
+        Ok(self.cell_indices.clone())
     }
 
     pub fn get_cells(&self) -> Result<Vec<Cell>, Error> {

@@ -523,7 +523,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
   return result;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jlongArray cell_ids, jbyteArray cells)
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells)
 {
   if (settings == NULL)
   {
@@ -531,7 +531,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
     return NULL;
   }
 
-  size_t count = (size_t)(*env)->GetArrayLength(env, cell_ids);
+  size_t count = (size_t)(*env)->GetArrayLength(env, cell_indices);
   size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
   if (cells_size != count * BYTES_PER_CELL)
   {
@@ -543,14 +543,14 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
   Cell *recovered_cells_native = (Cell *)(*env)->GetByteArrayElements(env, recovered_cells, NULL);
   jbyteArray recovered_proofs = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
   KZGProof *recovered_proofs_native = (KZGProof *)(*env)->GetByteArrayElements(env, recovered_proofs, NULL);
-  uint64_t *cell_ids_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_ids, NULL);
+  uint64_t *cell_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_indices, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
 
-  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_cells_native, recovered_proofs_native, cell_ids_native, cells_native, count, settings);
+  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_cells_native, recovered_proofs_native, cell_indices_native, cells_native, count, settings);
 
   (*env)->ReleaseByteArrayElements(env, recovered_cells, (jbyte *)recovered_cells_native, 0);
   (*env)->ReleaseByteArrayElements(env, recovered_proofs, (jbyte *)recovered_proofs_native, 0);
-  (*env)->ReleaseLongArrayElements(env, cell_ids, (jlong *)cell_ids_native, JNI_ABORT);
+  (*env)->ReleaseLongArrayElements(env, cell_indices, (jlong *)cell_indices_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
@@ -586,7 +586,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
   return result;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jlong cell_id, jbyteArray cell, jbyteArray proof_bytes)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jlong cell_index, jbyteArray cell, jbyteArray proof_bytes)
 {
   if (settings == NULL)
   {
@@ -620,7 +620,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
 
   bool out;
-  C_KZG_RET ret = verify_cell_kzg_proof(&out, commitment_native, cell_id, cell_native, proof_native, settings);
+  C_KZG_RET ret = verify_cell_kzg_proof(&out, commitment_native, cell_index, cell_native, proof_native, settings);
 
   (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, cell, (jbyte *)cell_native, 0);
