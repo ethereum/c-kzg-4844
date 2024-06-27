@@ -1978,6 +1978,137 @@ static void profile_compute_cells_and_kzg_proofs(void) {
     }
     ProfilerStop();
 }
+
+static void profile_recover_cells_and_kzg_proofs(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    uint64_t *cell_indices = NULL;
+    Cell *cells = NULL;
+
+    /*
+     * NOTE: this profiling function only cares about cell recovery since the
+     * proofs will always be recomputed. If we included proof computation, it
+     * would drown out cell recovery.
+     */
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells */
+    compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
+
+    /* Initialize cell indices */
+    ret = c_kzg_calloc(
+        (void **)&cell_indices, CELLS_PER_EXT_BLOB / 2, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB / 2; i++) {
+        cell_indices[i] = i;
+    }
+
+    ProfilerStart("recover_cells_and_kzg_proofs.prof");
+    for (int i = 0; i < 5; i++) {
+        recover_cells_and_kzg_proofs(
+            cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s
+        );
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_cell_kzg_proof(void) {
+    C_KZG_RET ret;
+    bool ok;
+    Blob blob;
+    KZGCommitment commitment;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ProfilerStart("verify_cell_kzg_proof.prof");
+    for (int i = 0; i < 1000; i++) {
+        verify_cell_kzg_proof(&ok, &commitment, 0, &cells[0], &proofs[0], &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_cell_kzg_proof_batch(void) {
+    C_KZG_RET ret;
+    bool ok;
+    Blob blob;
+    uint64_t *row_indices = NULL;
+    uint64_t *column_indices = NULL;
+    KZGCommitment commitment;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Initialize indices */
+    ret = c_kzg_calloc(
+        (void **)&row_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc(
+        (void **)&column_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        row_indices[i] = 0;
+        column_indices[i] = i;
+    }
+
+    ProfilerStart("verify_cell_kzg_proof_batch.prof");
+    for (int i = 0; i < 100; i++) {
+        verify_cell_kzg_proof_batch(
+            &ok,
+            &commitment,
+            1,
+            row_indices,
+            column_indices,
+            cells,
+            proofs,
+            CELLS_PER_EXT_BLOB,
+            &s
+        );
+    }
+    ProfilerStop();
+}
 #endif /* PROFILE */
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2105,6 +2236,9 @@ int main(void) {
     profile_verify_blob_kzg_proof();
     profile_verify_blob_kzg_proof_batch();
     profile_compute_cells_and_kzg_proofs();
+    profile_recover_cells_and_kzg_proofs();
+    profile_verify_cell_kzg_proof();
+    profile_verify_cell_kzg_proof_batch();
 #endif
     teardown();
 

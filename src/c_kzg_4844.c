@@ -3272,13 +3272,14 @@ out:
  *
  * @param[out]  cells   An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  proofs  An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   blob    The blob to get cells for
+ * @param[in]   blob    The blob to get cells/proofs for
  * @param[in]   s       The trusted setup
  *
  * @remark Up to half of these cells may be lost.
  * @remark Use recover_cells_and_kzg_proofs for recovery.
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
+ * @remark Will return an error if both cells & proofs are NULL.
  */
 C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
@@ -3389,7 +3390,7 @@ out:
  * @param[in]   s                   The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
- * @remark If recovered_proofs/proofs_bytes is NULL, they won't be recovered.
+ * @remark If recovered_proofs is NULL, they won't be re-computed.
  */
 C_KZG_RET recover_cells_and_kzg_proofs(
     Cell *recovered_cells,
