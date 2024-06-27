@@ -99,9 +99,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.0.100"
+version = "1.0.101"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c891175c3fb232128f48de6590095e59198bbeb8620c310be349bfc3afd12c7b"
+checksum = "ac367972e516d45567c7eafc73d24e1c193dcf200a8d94e9db7b3d38b349572d"
 dependencies = [
  "jobserver",
  "libc",
@@ -126,7 +126,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_bls12_381"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#82e23807fe13a43760a1f43817ae2392d6b4a75c"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
 dependencies = [
  "blst",
  "blstrs",
@@ -139,7 +139,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_erasure_codes"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#82e23807fe13a43760a1f43817ae2392d6b4a75c"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -148,7 +148,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#82e23807fe13a43760a1f43817ae2392d6b4a75c"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
 ]
@@ -156,7 +156,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#82e23807fe13a43760a1f43817ae2392d6b4a75c"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -232,7 +232,7 @@ dependencies = [
 [[package]]
 name = "eip7594"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#82e23807fe13a43760a1f43817ae2392d6b4a75c"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_erasure_codes",
@@ -246,9 +246,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.12.0"
+version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3dca9240753cf90908d7e4aac30f630662b02aebaa1b58a3cadabdb23385b58b"
+checksum = "60b1af1c220855b6ceac025d3f6ecdd2b7c4894bfe9cd9bda4fbb4bc7c0d4cf0"
 
 [[package]]
 name = "ff"
