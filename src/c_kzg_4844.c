@@ -3734,21 +3734,18 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
     g2_t power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
-    size_t num_used_commitments = 0;
 
     /* Arrays */
     bool *is_cell_used = NULL;
-    bool *is_commitment_used = NULL;
     fr_t *aggregated_column_cells = NULL;
     fr_t *aggregated_interpolation_poly = NULL;
     fr_t *column_interpolation_poly = NULL;
     fr_t *commitment_weights = NULL;
     fr_t *r_powers = NULL;
-    fr_t *used_commitment_weights = NULL;
     fr_t *weighted_powers_of_r = NULL;
     fr_t *weights = NULL;
+    g1_t *commitments_g1 = NULL;
     g1_t *proofs_g1 = NULL;
-    g1_t *used_commitments = NULL;
 
     *ok = false;
 
@@ -3775,8 +3772,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_bool_array(&is_commitment_used, num_commitments);
-    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
@@ -3787,15 +3782,13 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_powers, num_cells);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&used_commitment_weights, num_commitments);
-    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weights, num_cells);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&proofs_g1, num_cells);
+    ret = new_g1_array(&commitments_g1, num_commitments);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&used_commitments, num_commitments);
+    ret = new_g1_array(&proofs_g1, num_cells);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3832,8 +3825,14 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute sum of the commitments
     ///////////////////////////////////////////////////////////////////////////
 
-    /* Zero out all of the weights */
     for (size_t i = 0; i < num_commitments; i++) {
+        /* Convert & validate commitment */
+        ret = bytes_to_kzg_commitment(
+            &commitments_g1[i], &commitments_bytes[i]
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        /* Initialize the weight to zero */
         commitment_weights[i] = FR_ZERO;
     }
 
@@ -3844,36 +3843,11 @@ C_KZG_RET verify_cell_kzg_proof_batch(
             &commitment_weights[row_indices[i]],
             &r_powers[i]
         );
-
-        /* Mark the commitment as being used */
-        is_commitment_used[row_indices[i]] = true;
-    }
-
-    /* Generate array of used commitments */
-    for (size_t i = 0; i < num_commitments; i++) {
-        /* We can ignore unused commitments */
-        if (!is_commitment_used[i]) continue;
-
-        /*
-         * Convert & validate commitment. Only do this for used
-         * commitments to save processing time.
-         */
-        ret = bytes_to_kzg_commitment(
-            &used_commitments[num_used_commitments], &commitments_bytes[i]
-        );
-        if (ret != C_KZG_OK) goto out;
-
-        /* Assign commitment weight and increment */
-        used_commitment_weights[num_used_commitments] = commitment_weights[i];
-        num_used_commitments++;
     }
 
     /* Compute commitment sum */
     ret = g1_lincomb_fast(
-        &final_g1_sum,
-        used_commitments,
-        used_commitment_weights,
-        num_used_commitments
+        &final_g1_sum, commitments_g1, commitment_weights, num_commitments
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -4020,16 +3994,14 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
 out:
     c_kzg_free(is_cell_used);
-    c_kzg_free(is_commitment_used);
     c_kzg_free(aggregated_column_cells);
     c_kzg_free(aggregated_interpolation_poly);
     c_kzg_free(column_interpolation_poly);
     c_kzg_free(commitment_weights);
     c_kzg_free(r_powers);
-    c_kzg_free(used_commitment_weights);
     c_kzg_free(weighted_powers_of_r);
     c_kzg_free(weights);
+    c_kzg_free(commitments_g1);
     c_kzg_free(proofs_g1);
-    c_kzg_free(used_commitments);
     return ret;
 }

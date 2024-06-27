@@ -1771,7 +1771,9 @@ static void test_reconstruct__succeeds_random_blob(void) {
         (void **)&partial_cells, num_partial_cells, sizeof(Cell)
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&cell_indices, num_partial_cells, sizeof(uint64_t));
+    ret = c_kzg_calloc(
+        (void **)&cell_indices, num_partial_cells, sizeof(uint64_t)
+    );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc(
         (void **)&recovered_cells, CELLS_PER_EXT_BLOB, sizeof(Cell)
