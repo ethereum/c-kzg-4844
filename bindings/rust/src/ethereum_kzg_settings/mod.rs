@@ -9,13 +9,17 @@ use once_cell::race::OnceBox;
 ///
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
 pub fn ethereum_kzg_settings() -> &'static KzgSettings {
-    ethereum_kzg_settings_arc().as_ref()
+    ethereum_kzg_settings_inner().as_ref()
 }
 
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
 ///
 /// It is useful for sharing the settings in multiple places.
-pub fn ethereum_kzg_settings_arc() -> &'static Arc<KzgSettings> {
+pub fn ethereum_kzg_settings_arc() -> Arc<KzgSettings> {
+    ethereum_kzg_settings_inner().clone()
+}
+
+fn ethereum_kzg_settings_inner() -> &'static Arc<KzgSettings> {
     static DEFAULT: OnceBox<Arc<KzgSettings>> = OnceBox::new();
     DEFAULT.get_or_init(|| {
         let settings =
