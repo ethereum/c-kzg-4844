@@ -20,7 +20,7 @@ pub use bindings::{
 };
 
 #[cfg(feature = "ethereum_kzg_settings")]
-// expose the default settings.
+// Expose the default settings.
 pub use ethereum_kzg_settings::{ethereum_kzg_settings, ethereum_kzg_settings_arc};
 
 // Expose the constants.
