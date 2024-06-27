@@ -980,7 +980,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_blob_to_kzg_commitment");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1021,7 +1021,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_compute_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1067,7 +1067,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_compute_blob_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1114,7 +1114,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_verify_cell_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1162,7 +1162,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_verify_cell_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1209,7 +1209,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_verify_blob_kzg_proof_batch");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1264,7 +1264,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_compute_cells_and_kzg_proofs");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1316,7 +1316,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_verify_cell_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1372,7 +1372,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_verify_cell_kzg_proof_batch");
                 fs::create_dir_all(&dir_path).unwrap();
@@ -1436,7 +1436,7 @@ mod tests {
                 use std::{env, fs::File, io::Write};
                 let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
                 let dir_path = root_dir
-                    .join("rustfuzz")
+                    .join("fuzz")
                     .join("corpus")
                     .join("fuzz_recover_cells_and_kzg_proofs");
                 fs::create_dir_all(&dir_path).unwrap();
