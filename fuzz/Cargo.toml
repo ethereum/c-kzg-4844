@@ -14,6 +14,7 @@ cc = "1.0"
 [dependencies]
 arbitrary = "1.0"
 eip7594 = { git = "https://github.com/crate-crypto/peerdas-kzg"}
+constantine = { git = "https://github.com/mratsim/constantine", package = "constantine-ethereum-kzg" }
 lazy_static = "1.4"
 libfuzzer-sys = "0.4"
 

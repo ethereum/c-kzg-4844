@@ -37,6 +37,7 @@ const NUM_G2_POINTS: usize = 65;
 //       facilitate type safety: proofs and commitments should not be interchangeable, we use a
 //       custom implementation.
 #[repr(C)]
+#[derive(Debug, Copy, Clone)]
 pub struct KZGCommitment {
     bytes: [u8; BYTES_PER_COMMITMENT],
 }
@@ -46,7 +47,7 @@ pub struct KZGCommitment {
 //       files. To facilitate type safety: proofs and commitments should not be interchangeable, we
 //       use a custom implementation.
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct KZGProof {
     bytes: [u8; BYTES_PER_PROOF],
 }

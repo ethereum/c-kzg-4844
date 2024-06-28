@@ -92,6 +92,7 @@ dependencies = [
  "arbitrary",
  "c-kzg",
  "cc",
+ "constantine-ethereum-kzg",
  "eip7594",
  "lazy_static",
  "libfuzzer-sys",
@@ -115,6 +116,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "constantine-core"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine#5308ddc6abb9e53d31eb91c90a97a09ddcdfd7e8"
+dependencies = [
+ "constantine-sys",
+]
+
+[[package]]
+name = "constantine-ethereum-kzg"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine#5308ddc6abb9e53d31eb91c90a97a09ddcdfd7e8"
+dependencies = [
+ "constantine-core",
+ "constantine-sys",
+]
+
+[[package]]
+name = "constantine-sys"
+version = "0.1.0"
+source = "git+https://github.com/mratsim/constantine#5308ddc6abb9e53d31eb91c90a97a09ddcdfd7e8"
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -126,7 +149,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_bls12_381"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#afd76b0385ca1512ffd531ad2d02d6240b1478e5"
 dependencies = [
  "blst",
  "blstrs",
@@ -139,7 +162,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_erasure_codes"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#afd76b0385ca1512ffd531ad2d02d6240b1478e5"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -148,7 +171,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#afd76b0385ca1512ffd531ad2d02d6240b1478e5"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
 ]
@@ -156,7 +179,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#afd76b0385ca1512ffd531ad2d02d6240b1478e5"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -232,7 +255,7 @@ dependencies = [
 [[package]]
 name = "eip7594"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/peerdas-kzg#fb6df2eefc29a3f1041aaaa3205c01de1218c02f"
+source = "git+https://github.com/crate-crypto/peerdas-kzg#afd76b0385ca1512ffd531ad2d02d6240b1478e5"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_erasure_codes",
