@@ -38,7 +38,8 @@ fuzz_target!(|input: Input| {
         input.cells.as_slice(),
         &KZG_SETTINGS,
     );
-    let rkzg_result = PROVER_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes, vec![]);
+    let rkzg_result =
+        PROVER_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes, vec![]);
 
     match (&ckzg_result, &rkzg_result) {
         (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {

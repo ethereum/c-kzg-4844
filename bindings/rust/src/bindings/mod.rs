@@ -1426,7 +1426,8 @@ mod tests {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: recover_cells_and_kzg_proofs::Test =
                 serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(cell_indices), Ok(cells)) = (test.input.get_cell_indices(), test.input.get_cells())
+            let (Ok(cell_indices), Ok(cells)) =
+                (test.input.get_cell_indices(), test.input.get_cells())
             else {
                 assert!(test.get_output().is_none());
                 continue;
