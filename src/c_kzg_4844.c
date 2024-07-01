@@ -2868,7 +2868,7 @@ out:
  * reconstructed original. Assumes that the inverse FFT of the original data
  * has the upper half of its values equal to zero.
  *
- * @param[out]  recovered   A preallocated array for recovered cells
+ * @param[out]  reconstructed_data_out   A preallocated array for recovered cells
  * @param[in]   cells       The cells that you have
  * @param[in]   s           The trusted setup
  *
@@ -2877,36 +2877,36 @@ out:
  * @remark Missing cells should be equal to FR_NULL.
  */
 static C_KZG_RET recover_cells_impl(
-    fr_t *recovered, fr_t *cells, const KZGSettings *s
+    fr_t *reconstructed_data_out, fr_t *cells, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     uint64_t *missing = NULL;
-    fr_t *zero_eval = NULL;
-    fr_t *zero_poly = NULL;
+    fr_t *zero_poly_eval = NULL;
+    fr_t *zero_poly_coeff = NULL;
     size_t zero_poly_len = 0;
-    fr_t *poly_evaluations_with_zero = NULL;
-    fr_t *poly_with_zero = NULL;
-    fr_t *eval_poly_with_zero = NULL;
-    fr_t *eval_zero_poly = NULL;
-    fr_t *reconstructed_poly = NULL;
+    fr_t *extended_evaluation_times_zero = NULL;
+    fr_t *extended_evaluation_times_zero_coeffs = NULL;
+    fr_t *extended_evaluations_over_coset = NULL;
+    fr_t *zero_poly_over_coset = NULL;
+    fr_t *reconstructed_poly_coeff = NULL;
     fr_t *cells_brp = NULL;
 
     /* Allocate space for arrays */
     ret = c_kzg_calloc((void **)&missing, s->max_width, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_eval, s->max_width);
+    ret = new_fr_array(&zero_poly_eval, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly, s->max_width);
+    ret = new_fr_array(&zero_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&poly_evaluations_with_zero, s->max_width);
+    ret = new_fr_array(&extended_evaluation_times_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&poly_with_zero, s->max_width);
+    ret = new_fr_array(&extended_evaluation_times_zero_coeffs, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&eval_poly_with_zero, s->max_width);
+    ret = new_fr_array(&extended_evaluations_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&eval_zero_poly, s->max_width);
+    ret = new_fr_array(&zero_poly_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&reconstructed_poly, s->max_width);
+    ret = new_fr_array(&reconstructed_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&cells_brp, s->max_width);
     if (ret != C_KZG_OK) goto out;
@@ -2927,34 +2927,34 @@ static C_KZG_RET recover_cells_impl(
     /* Check that we have enough cells */
     assert(len_missing <= s->max_width / 2);
 
-    /* Calculate Z_r,I */
+    /* Compute Z(x) in monomial form */
     ret = zero_polynomial_via_multiplication(
-        zero_poly, &zero_poly_len, missing, len_missing, s
+        zero_poly_coeff, &zero_poly_len, missing, len_missing, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Evaluate the zero poly */
-    ret = fft_fr(zero_eval, zero_poly, s->max_width, s);
+    /* Convert Z(x) to evaluation form */
+    ret = fft_fr(zero_poly_eval, zero_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Construct E * Z_r,I: the loop makes the evaluation polynomial */
+    /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
     for (size_t i = 0; i < s->max_width; i++) {
         if (fr_is_null(&cells_brp[i])) {
-            poly_evaluations_with_zero[i] = FR_ZERO;
+            extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
             blst_fr_mul(
-                &poly_evaluations_with_zero[i], &cells_brp[i], &zero_eval[i]
+                &extended_evaluation_times_zero[i], &cells_brp[i], &zero_poly_eval[i]
             );
         }
     }
 
-    /* Now inverse FFT so that poly_with_zero is (D * Z_r,I)(x) */
-    ret = ifft_fr(poly_with_zero, poly_evaluations_with_zero, s->max_width, s);
+    /* Convert (E*Z)(x) to monomial form  */
+    ret = ifft_fr(extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Scale both polynomials */
-    scale_poly(poly_with_zero, s->max_width);
-    scale_poly(zero_poly, zero_poly_len);
+    scale_poly(extended_evaluation_times_zero_coeffs, s->max_width);
+    scale_poly(zero_poly_coeff, zero_poly_len);
 
     /*
      * Polynomial division by convolution: Q3 = Q1 / Q2 where
@@ -2962,48 +2962,50 @@ static C_KZG_RET recover_cells_impl(
      *   Q2 = Z_r,I(k * x)
      *   Q3 = D(k * x)
      */
-    ret = fft_fr(eval_poly_with_zero, poly_with_zero, s->max_width, s);
+    ret = fft_fr(extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* We use max_width here (not zero_poly_len) intentionally */
-    ret = fft_fr(eval_zero_poly, zero_poly, s->max_width, s);
+    ret = fft_fr(zero_poly_over_coset, zero_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
     for (size_t i = 0; i < s->max_width; i++) {
         fr_div(
-            &eval_poly_with_zero[i], &eval_poly_with_zero[i], &eval_zero_poly[i]
+            &extended_evaluations_over_coset[i], &extended_evaluations_over_coset[i], &zero_poly_over_coset[i]
         );
     }
 
+    /* reconstructed_poly_over_coset is now extended_evaluations_over_coset */
+
     /* Convert the evaluations back to coefficents */
-    ret = ifft_fr(reconstructed_poly, eval_poly_with_zero, s->max_width, s);
+    ret = ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Unscale our reconstructed polynomial to get D(x) */
-    unscale_poly(reconstructed_poly, s->max_width);
+    unscale_poly(reconstructed_poly_coeff, s->max_width);
 
     /*
      * After unscaling the reconstructed polynomial, we have D(x) which
      * evaluates to our original data at the roots of unity. Next, we evaluate
      * the polynomial to get the original data.
      */
-    ret = fft_fr(recovered, reconstructed_poly, s->max_width, s);
+    ret = fft_fr(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
-    ret = bit_reversal_permutation(recovered, sizeof(fr_t), s->max_width);
+    ret = bit_reversal_permutation(reconstructed_data_out, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(missing);
-    c_kzg_free(zero_eval);
-    c_kzg_free(poly_evaluations_with_zero);
-    c_kzg_free(poly_with_zero);
-    c_kzg_free(eval_poly_with_zero);
-    c_kzg_free(eval_zero_poly);
-    c_kzg_free(reconstructed_poly);
-    c_kzg_free(zero_poly);
+    c_kzg_free(zero_poly_eval);
+    c_kzg_free(extended_evaluation_times_zero);
+    c_kzg_free(extended_evaluation_times_zero_coeffs);
+    c_kzg_free(extended_evaluations_over_coset);
+    c_kzg_free(zero_poly_over_coset);
+    c_kzg_free(reconstructed_poly_coeff);
+    c_kzg_free(zero_poly_coeff);
     c_kzg_free(cells_brp);
     return ret;
 }
