@@ -2869,8 +2869,8 @@ out:
  * has the upper half of its values equal to zero.
  *
  * @param[out]  reconstructed_data_out   A preallocated array for recovered cells
- * @param[in]   cells       The cells that you have
- * @param[in]   s           The trusted setup
+ * @param[in]   cells                    The cells that you have
+ * @param[in]   s                        The trusted setup
  *
  * @remark `recovered` and `cells` can point to the same memory.
  * @remark The array of cells must be 2n length and in the correct order.
@@ -2952,9 +2952,6 @@ static C_KZG_RET recover_cells_impl(
     ret = ifft_fr(extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Scale both polynomials */
-    scale_poly(extended_evaluation_times_zero_coeffs, s->max_width);
-    scale_poly(zero_poly_coeff, zero_poly_len);
 
     /*
      * Polynomial division by convolution: Q3 = Q1 / Q2 where
@@ -2962,11 +2959,11 @@ static C_KZG_RET recover_cells_impl(
      *   Q2 = Z_r,I(k * x)
      *   Q3 = D(k * x)
      */
-    ret = fft_fr(extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s);
+    ret = coset_fft_fr(extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* We use max_width here (not zero_poly_len) intentionally */
-    ret = fft_fr(zero_poly_over_coset, zero_poly_coeff, s->max_width, s);
+    ret = coset_fft_fr(zero_poly_over_coset, zero_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
@@ -2979,11 +2976,8 @@ static C_KZG_RET recover_cells_impl(
     /* reconstructed_poly_over_coset is now extended_evaluations_over_coset */
 
     /* Convert the evaluations back to coefficents */
-    ret = ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
+    ret = coset_ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
-
-    /* Unscale our reconstructed polynomial to get D(x) */
-    unscale_poly(reconstructed_poly_coeff, s->max_width);
 
     /*
      * After unscaling the reconstructed polynomial, we have D(x) which
