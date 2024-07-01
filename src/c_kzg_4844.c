@@ -30,10 +30,6 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
-/** Returns C_KZG_BADARGS if the condition is not met. */
-#define CHECK(cond) \
-    if (!(cond)) return C_KZG_BADARGS
-
 /** Returns number of elements in a statically defined array. */
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
@@ -1628,8 +1624,10 @@ static void fft_g1_fast(
  * @remark Use ifft_g1 for inverse transformation.
  */
 C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
-    CHECK(n <= s->max_width);
-    CHECK(is_power_of_two(n));
+    /* Ensure the length is valid */
+    if (n > s->max_width || !is_power_of_two(n)) {
+        return C_KZG_BADARGS;
+    }
 
     uint64_t stride = s->max_width / n;
     fft_g1_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
@@ -1649,8 +1647,10 @@ C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  * @remark Use fft_g1 for forward transformation.
  */
 C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
-    CHECK(n <= s->max_width);
-    CHECK(is_power_of_two(n));
+    /* Ensure the length is valid */
+    if (n > s->max_width || !is_power_of_two(n)) {
+        return C_KZG_BADARGS;
+    }
 
     uint64_t stride = s->max_width / n;
     fft_g1_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
@@ -1737,21 +1737,21 @@ static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
 static C_KZG_RET bit_reversal_permutation(
     void *values, size_t size, uint64_t n
 ) {
-    CHECK(n != 0);
-    CHECK(n >> 32 == 0);
-    CHECK(is_power_of_two(n));
-    CHECK(log2_pow2(n) != 0);
-
-    /* copy pointer and convert from void* to byte* */
+    C_KZG_RET ret;
+    byte *tmp = NULL;
     byte *v = values;
 
-    /* allocate scratch space for swapping an entry of the values array */
-    byte *tmp = NULL;
-    C_KZG_RET ret = c_kzg_malloc((void **)&tmp, size);
-    if (ret != C_KZG_OK) {
-        return ret;
+    /* Some sanity checks*/
+    if (n < 2 || n >= UINT32_MAX || !is_power_of_two(n)) {
+        ret = C_KZG_BADARGS;
+        goto out;
     }
 
+    /* Scratch space for swapping an entry of the values array */
+    ret = c_kzg_malloc((void **)&tmp, size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Reorder elements */
     int unused_bit_len = 32 - log2_pow2(n);
     for (uint32_t i = 0; i < n; i++) {
         uint32_t r = reverse_bits(i) >> unused_bit_len;
@@ -1762,9 +1762,10 @@ static C_KZG_RET bit_reversal_permutation(
             memcpy(v + (r * size), tmp, size);
         }
     }
-    c_kzg_free(tmp);
 
-    return C_KZG_OK;
+out:
+    c_kzg_free(tmp);
+    return ret;
 }
 
 /**
@@ -1782,16 +1783,26 @@ static C_KZG_RET expand_root_of_unity(
     fr_t *out, const fr_t *root, uint64_t width
 ) {
     uint64_t i;
-    CHECK(width >= 2);
+
+    /* We assume it's at least two */
+    if (width < 2) {
+        return C_KZG_BADARGS;
+    }
+
+    /* We know what these will be */
     out[0] = FR_ONE;
     out[1] = *root;
 
+    /* Compute powers of root */
     for (i = 2; i <= width; i++) {
         blst_fr_mul(&out[i], &out[i - 1], root);
         if (fr_is_one(&out[i])) break;
     }
-    CHECK(i == width);
-    CHECK(fr_is_one(&out[width]));
+
+    /* We expect the last entry to be one */
+    if (i != width || !fr_is_one(&out[width])) {
+        return C_KZG_BADARGS;
+    }
 
     return C_KZG_OK;
 }
@@ -1809,8 +1820,12 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     while ((1ULL << max_scale) < s->max_width)
         max_scale++;
 
+    /* Ensure this element will exist */
+    if (max_scale >= NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY)) {
+        return C_KZG_BADARGS;
+    }
+
     /* Get the root of unity */
-    CHECK(max_scale < NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY));
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
@@ -2118,7 +2133,6 @@ C_KZG_RET load_trusted_setup(
 
     /* For DAS reconstruction */
     out->max_width *= 2;
-    CHECK(out->max_width == FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->roots_of_unity, out->max_width);
@@ -2358,8 +2372,10 @@ static void fft_fr_fast(
 static C_KZG_RET fft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
 ) {
-    CHECK(n <= s->max_width);
-    CHECK(is_power_of_two(n));
+    /* Ensure the length is valid */
+    if (n > s->max_width || !is_power_of_two(n)) {
+        return C_KZG_BADARGS;
+    }
 
     size_t stride = s->max_width / n;
     fft_fr_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
@@ -2381,8 +2397,10 @@ static C_KZG_RET fft_fr(
 static C_KZG_RET ifft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
 ) {
-    CHECK(n <= s->max_width);
-    CHECK(is_power_of_two(n));
+    /* Ensure the length is valid */
+    if (n > s->max_width || !is_power_of_two(n)) {
+        return C_KZG_BADARGS;
+    }
 
     size_t stride = s->max_width / n;
     fft_fr_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
