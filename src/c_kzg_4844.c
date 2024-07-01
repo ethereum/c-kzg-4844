@@ -2810,7 +2810,7 @@ static C_KZG_RET coset_fft_fr(
     if (ret != C_KZG_OK) goto out;
 
     /* Shift the poly */
-    memcpy(in_shifted, in, n*sizeof(fr_t));
+    memcpy(in_shifted, in, n * sizeof(fr_t));
     shift_poly(in_shifted, n, &SCALE_FACTOR);
 
     ret = fft_fr(out, in_shifted, n, s);
@@ -2821,7 +2821,6 @@ out:
 
     return ret;
 }
-
 
 /** Do an inverse FFT over a coset of the roots of unity.
  *
@@ -2851,7 +2850,8 @@ out:
  * reconstructed original. Assumes that the inverse FFT of the original data
  * has the upper half of its values equal to zero.
  *
- * @param[out]  reconstructed_data_out   A preallocated array for recovered cells
+ * @param[out]  reconstructed_data_out   A preallocated array for recovered
+ *                                       cells
  * @param[in]   cells                    The cells that you have
  * @param[in]   s                        The trusted setup
  *
@@ -2926,15 +2926,21 @@ static C_KZG_RET recover_cells_impl(
             extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
             blst_fr_mul(
-                &extended_evaluation_times_zero[i], &cells_brp[i], &zero_poly_eval[i]
+                &extended_evaluation_times_zero[i],
+                &cells_brp[i],
+                &zero_poly_eval[i]
             );
         }
     }
 
     /* Convert (E*Z)(x) to monomial form  */
-    ret = ifft_fr(extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->max_width, s);
+    ret = ifft_fr(
+        extended_evaluation_times_zero_coeffs,
+        extended_evaluation_times_zero,
+        s->max_width,
+        s
+    );
     if (ret != C_KZG_OK) goto out;
-
 
     /*
      * Polynomial division by convolution: Q3 = Q1 / Q2 where
@@ -2942,7 +2948,12 @@ static C_KZG_RET recover_cells_impl(
      *   Q2 = Z_r,I(k * x)
      *   Q3 = D(k * x)
      */
-    ret = coset_fft_fr(extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s);
+    ret = coset_fft_fr(
+        extended_evaluations_over_coset,
+        extended_evaluation_times_zero_coeffs,
+        s->max_width,
+        s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* We use max_width here (not zero_poly_len) intentionally */
@@ -2952,14 +2963,21 @@ static C_KZG_RET recover_cells_impl(
     /* The result of the division is Q3 */
     for (size_t i = 0; i < s->max_width; i++) {
         fr_div(
-            &extended_evaluations_over_coset[i], &extended_evaluations_over_coset[i], &zero_poly_over_coset[i]
+            &extended_evaluations_over_coset[i],
+            &extended_evaluations_over_coset[i],
+            &zero_poly_over_coset[i]
         );
     }
 
     /* reconstructed_poly_over_coset is now extended_evaluations_over_coset */
 
     /* Convert the evaluations back to coefficents */
-    ret = coset_ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
+    ret = coset_ifft_fr(
+        reconstructed_poly_coeff,
+        extended_evaluations_over_coset,
+        s->max_width,
+        s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /*
@@ -2967,11 +2985,15 @@ static C_KZG_RET recover_cells_impl(
      * evaluates to our original data at the roots of unity. Next, we evaluate
      * the polynomial to get the original data.
      */
-    ret = fft_fr(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
+    ret = fft_fr(
+        reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
-    ret = bit_reversal_permutation(reconstructed_data_out, sizeof(fr_t), s->max_width);
+    ret = bit_reversal_permutation(
+        reconstructed_data_out, sizeof(fr_t), s->max_width
+    );
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3967,8 +3989,14 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          */
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(&inv_coset_factor, &s->expanded_roots_of_unity[pos]);
-        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
+        blst_fr_eucl_inverse(
+            &inv_coset_factor, &s->expanded_roots_of_unity[pos]
+        );
+        shift_poly(
+            column_interpolation_poly,
+            FIELD_ELEMENTS_PER_CELL,
+            &inv_coset_factor
+        );
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
