@@ -3965,19 +3965,10 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          * To unscale, divide by the coset. It's faster to multiply with the
          * inverse. We can skip the first iteration because its dividing by one.
          */
-        fr_t inv_x, inv_x_pow;
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
-        fr_t coset_factor = s->expanded_roots_of_unity[pos];
-        blst_fr_eucl_inverse(&inv_x, &coset_factor);
-        inv_x_pow = inv_x;
-        for (uint64_t i = 1; i < FIELD_ELEMENTS_PER_CELL; i++) {
-            blst_fr_mul(
-                &column_interpolation_poly[i],
-                &column_interpolation_poly[i],
-                &inv_x_pow
-            );
-            blst_fr_mul(&inv_x_pow, &inv_x_pow, &inv_x);
-        }
+        fr_t inv_coset_factor;
+        blst_fr_eucl_inverse(&inv_coset_factor, &s->expanded_roots_of_unity[pos]);
+        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
