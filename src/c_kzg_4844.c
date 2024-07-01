@@ -152,7 +152,7 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
 /** The zero field element. */
 static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
 
-/** This is 1 in Blst's `blst_fr` limb representation. Crazy but true. */
+/** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t FR_ONE = {
     0x00000001fffffffeL, 0x5884b7fa00034802L,
     0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
@@ -171,10 +171,10 @@ static const fr_t FR_NULL = {
 /**
  * Wrapped malloc() that reports failures to allocate.
  *
- * @remark Will return C_KZG_BADARGS if the requested size is zero.
- *
  * @param[out] out  Pointer to the allocated space
  * @param[in]  size The number of bytes to be allocated
+ *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
  */
 static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
     *out = NULL;
@@ -186,11 +186,11 @@ static C_KZG_RET c_kzg_malloc(void **out, size_t size) {
 /**
  * Wrapped calloc() that reports failures to allocate.
  *
- * @remark Will return C_KZG_BADARGS if the requested size is zero.
- *
  * @param[out] out   Pointer to the allocated space
  * @param[in]  count The number of elements
  * @param[in]  size  The size of each element
+ *
+ * @remark Will return C_KZG_BADARGS if the requested size is zero.
  */
 static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
     *out = NULL;
@@ -202,10 +202,10 @@ static C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
 /**
  * Allocate memory for an array of G1 group elements.
  *
- * @remark Free the space later using c_kzg_free().
- *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G1 elements to be allocated
+ *
+ * @remark Free the space later using c_kzg_free().
  */
 static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(g1_t));
@@ -214,10 +214,10 @@ static C_KZG_RET new_g1_array(g1_t **x, size_t n) {
 /**
  * Allocate memory for an array of G2 group elements.
  *
- * @remark Free the space later using c_kzg_free().
- *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of G2 elements to be allocated
+ *
+ * @remark Free the space later using c_kzg_free().
  */
 static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(g2_t));
@@ -226,10 +226,10 @@ static C_KZG_RET new_g2_array(g2_t **x, size_t n) {
 /**
  * Allocate memory for an array of field elements.
  *
- * @remark Free the space later using c_kzg_free().
- *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of field elements to be allocated
+ *
+ * @remark Free the space later using c_kzg_free().
  */
 static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(fr_t));
@@ -238,10 +238,10 @@ static C_KZG_RET new_fr_array(fr_t **x, size_t n) {
 /**
  * Allocate memory for an array of booleans.
  *
- * @remark Free the space later using c_kzg_free().
- *
  * @param[out] x Pointer to the allocated space
  * @param[in]  n The number of booleans to be allocated
+ *
+ * @remark Free the space later using c_kzg_free().
  */
 static C_KZG_RET new_bool_array(bool **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(bool));
@@ -297,8 +297,8 @@ static bool fr_is_zero(const fr_t *p) {
  * @param[in] aa The first element
  * @param[in] bb The second element
  *
- * @retval true  if @p aa and @p bb are equal
- * @retval false otherwise
+ * @retval true     The two elements are equal.
+ * @retval false    The two elements are not equal.
  */
 static bool fr_equal(const fr_t *aa, const fr_t *bb) {
     uint64_t a[4], b[4];
@@ -322,14 +322,12 @@ static bool fr_is_null(const fr_t *p) {
 /**
  * Divide a field element by another.
  *
- * @remark The behaviour for @p b == 0 is unspecified.
- *
- * @remark This function does support in-place computation, i.e. @p out == @p a
- * or @p out == @p b work.
- *
- * @param[out] out @p a divided by @p b in the field
+ * @param[out] out `a` divided by `b` in the field
  * @param[in]  a   The dividend
  * @param[in]  b   The divisor
+ *
+ * @remark The behavior for `b == 0` is unspecified.
+ * @remark This function supports in-place computation.
  */
 static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
     blst_fr tmp;
@@ -340,16 +338,14 @@ static void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
 /**
  * Exponentiation of a field element.
  *
- * Uses square and multiply for log(@p n) performance.
+ * Uses square and multiply for log(n) performance.
  *
- * @remark A 64-bit exponent is sufficient for our needs here.
- *
- * @remark This function does support in-place computation, i.e. @p a == @p out
- * works.
- *
- * @param[out] out @p a raised to the power of @p n
+ * @param[out] out `a` raised to the power of `n`
  * @param[in]  a   The field element to be exponentiated
  * @param[in]  n   The exponent
+ *
+ * @remark A 64-bit exponent is sufficient for our needs here.
+ * @remark This function does support in-place computation.
  */
 static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
     fr_t tmp = *a;
@@ -367,11 +363,11 @@ static void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
 /**
  * Create a field element from a single 64-bit unsigned integer.
  *
- * @remark This can only generate a tiny fraction of possible field elements,
- * and is mostly useful for testing.
- *
- * @param[out] out The field element equivalent of @p n
+ * @param[out] out The field element equivalent of `n`
  * @param[in]  n   The 64-bit integer to be converted
+ *
+ * @remark This can only generate a tiny fraction of possible field elements,
+ *         and is mostly useful for testing.
  */
 static void fr_from_uint64(fr_t *out, uint64_t n) {
     uint64_t vals[] = {n, 0, 0, 0};
@@ -381,17 +377,14 @@ static void fr_from_uint64(fr_t *out, uint64_t n) {
 /**
  * Montgomery batch inversion in finite field.
  *
- * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
- * the `out` output array has already been mutated.
- *
- * @remark This function does not support in-place computation (i.e. `a` MUST
- * NOT point to the same place as `out`)
+ * @param[out] out The inverses of `a`, length `len`
+ * @param[in]  a   A vector of field elements, length `len`
+ * @param[in]  len The number of field elements
  *
  * @remark This function only supports len > 0.
- *
- * @param[out] out The inverses of @p a, length @p len
- * @param[in]  a   A vector of field elements, length @p len
- * @param[in]  len The number of field elements
+ * @remark This function does NOT support in-place computation.
+ * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
+ *         the `out` output array has already been mutated.
  */
 static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
     int i;
@@ -424,9 +417,9 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 /**
  * Multiply a G1 group element by a field element.
  *
- * @param[out] out @p a * @p b
- * @param[in]  a   The G1 group element
- * @param[in]  b   The multiplier
+ * @param[out] out  `a * b`
+ * @param[in]  a    The G1 group element
+ * @param[in]  b    The multiplier
  */
 static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
@@ -437,7 +430,7 @@ static void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
 /**
  * Multiply a G2 group element by a field element.
  *
- * @param[out] out @p a * @p b
+ * @param[out] out `a * b`
  * @param[in]  a   The G2 group element
  * @param[in]  b   The multiplier
  */
@@ -450,7 +443,7 @@ static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
 /**
  * Subtraction of G1 group elements.
  *
- * @param[out] out @p a - @p b
+ * @param[out] out `a - b`
  * @param[in]  a   A G1 group element
  * @param[in]  b   The G1 group element to be subtracted
  */
@@ -463,7 +456,7 @@ static void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
 /**
  * Subtraction of G2 group elements.
  *
- * @param[out] out @p a - @p b
+ * @param[out] out `a - b`
  * @param[in]  a   A G2 group element
  * @param[in]  b   The G2 group element to be subtracted
  */
@@ -543,10 +536,10 @@ static void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
 /**
  * Serialize a 64-bit unsigned integer into bytes.
  *
- * @remark The output format is big-endian.
- *
  * @param[out] out An 8-byte array to store the serialized integer
  * @param[in]  n   The integer to be serialized
+ *
+ * @remark The output format is big-endian.
  */
 static void bytes_from_uint64(uint8_t out[8], uint64_t n) {
     for (int i = 7; i >= 0; i--) {
@@ -589,12 +582,12 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
 /**
  * Perform BLS validation required by the types KZGProof and KZGCommitment.
  *
- * @remark This function deviates from the spec because it returns (via an
- *     output argument) the g1 point. This way is more efficient (faster)
- *     but the function name is a bit misleading.
- *
  * @param[out]  out The output g1 point
  * @param[in]   b   The proof/commitment bytes
+ *
+ * @remark This function deviates from the spec because it returns (via an
+ *         output argument) the g1 point. This way is more efficient (faster)
+ *         but the function name is a bit misleading.
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     blst_p1_affine p1_affine;
@@ -656,14 +649,13 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
     (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
 
 /**
- * Return the Fiat-Shamir challenge required to verify `blob` and
- * `commitment`.
- *
- * @remark This function should compute challenges even if `n==0`.
+ * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
  *
  * @param[out] eval_challenge_out The evaluation challenge
  * @param[in]  blob               A blob
  * @param[in]  commitment         A commitment
+ *
+ * @remark This function should compute challenges even if `n == 0`.
  */
 static void compute_challenge(
     fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
@@ -726,25 +718,24 @@ static void g1_lincomb_naive(
  * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
  * where `n` is `len - 1`.
  *
- * @remark This function CAN be called with the point at infinity in `p`.
- *
- * @remark While this function is significantly faster than
- * `g1_lincomb_naive()`, we refrain from using it in security-critical places
- * (like verification) because the blst Pippenger code has not been
- * audited. In those critical places, we prefer using `g1_lincomb_naive()` which
- * is much simpler.
- *
  * @param[out] out    The resulting sum-product
- * @param[in]  p      Array of G1 group elements, length @p len
- * @param[in]  coeffs Array of field elements, length @p len
+ * @param[in]  p      Array of G1 group elements, length `len`
+ * @param[in]  coeffs Array of field elements, length `len`
  * @param[in]  len    The number of group/field elements
  *
- * For the benefit of future generations (since Blst has no documentation to
+ * @remark This function CAN be called with the point at infinity in `p`.
+ * @remark While this function is significantly faster than
+ *         g1_lincomb_naive(), we refrain from using it in security-critical
+ *         places (like verification) because the blst Pippenger code has not
+ *         been audited. In those critical places, we prefer using
+ *         g1_lincomb_naive() which is much simpler.
+ *
+ * For the benefit of future generations (since blst has no documentation to
  * speak of), there are two ways to pass the arrays of scalars and points
  * into blst_p1s_mult_pippenger().
  *
  * 1. Pass `points` as an array of pointers to the points, and pass
- *    `scalars` as an array of pointers to the scalars, each of length @p len.
+ *    `scalars` as an array of pointers to the scalars, each of length `len`.
  * 2. Pass an array where the first element is a pointer to the contiguous
  *    array of points and the second is null, and similarly for scalars.
  *
@@ -840,11 +831,11 @@ out:
 /**
  * Compute and return [ x^0, x^1, ..., x^{n-1} ].
  *
- * @remark `out` is left untouched if `n == 0`.
- *
  * @param[out] out The array to store the powers
  * @param[in]  x   The field element to raise to powers
  * @param[in]  n   The number of powers to compute
+ *
+ * @remark `out` is left untouched if `n == 0`.
  */
 static void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
     fr_t current_power = FR_ONE;
@@ -1026,17 +1017,15 @@ C_KZG_RET verify_kzg_proof(
 /**
  * Helper function: Verify KZG proof claiming that `p(z) == y`.
  *
- * Given a @p commitment to a polynomial, a @p proof for @p z, and the
- * claimed value @p y at @p z, verify the claim.
+ * Given a `commitment` to a polynomial, a `proof` for `z`, and the
+ * claimed value `y` at `z`, verify the claim.
  *
- * @param[out] out        `true` if the proof is valid, `false` if not
- * @param[in]  commitment The commitment to a polynomial
- * @param[in]  z          The point at which the proof is to be checked
- *                        (opened)
- * @param[in]  y          The claimed value of the polynomial at @p z
- * @param[in]  proof      A proof of the value of the polynomial at the
- *                        point @p z
- * @param[in]  s          The trusted setup
+ * @param[out]  ok          True if the proof is valid, otherwise false
+ * @param[in]   commitment  The commitment to a polynomial
+ * @param[in]   z           The point at which the proof is to be opened
+ * @param[in]   y           The claimed value of the polynomial at `z`
+ * @param[in]   proof       A proof of the value of the polynomial at `z`
+ * @param[in]   s           The trusted setup
  */
 static C_KZG_RET verify_kzg_proof_impl(
     bool *ok,
@@ -1373,12 +1362,6 @@ out:
  * Helper function for verify_blob_kzg_proof_batch(): actually perform the
  * verification.
  *
- * @remark This function assumes that `n` is trusted and that all input arrays
- *     contain `n` elements. `n` should be the actual size of the arrays and not
- *     read off a length field in the protocol.
- *
- * @remark This function only works for `n > 0`.
- *
  * @param[out] ok             True if the proofs are valid, otherwise false
  * @param[in]  commitments_g1 Array of commitments to verify
  * @param[in]  zs_fr          Array of evaluation points for the KZG proofs
@@ -1386,6 +1369,11 @@ out:
  * @param[in]  proofs_g1      Array of proofs used for verification
  * @param[in]  n              The number of blobs/commitments/proofs
  * @param[in]  s              The trusted setup
+ *
+ * @remark This function only works for `n > 0`.
+ * @remark This function assumes that `n` is trusted and that all input arrays
+ *         contain `n` elements. `n` should be the actual size of the arrays and
+ *         not read off a length field in the protocol.
  */
 static C_KZG_RET verify_kzg_proof_batch(
     bool *ok,
@@ -1456,18 +1444,17 @@ out:
  * Given a list of blobs and blob KZG proofs, verify that they correspond to the
  * provided commitments.
  *
- * @remark This function assumes that `n` is trusted and that all input arrays
- * contain `n` elements. `n` should be the actual size of the arrays and not
- * read off a length field in the protocol.
- *
- * @remark This function accepts if called with `n==0`.
- *
  * @param[out] ok                True if the proofs are valid, otherwise false
  * @param[in]  blobs             Array of blobs to verify
  * @param[in]  commitments_bytes Array of commitments to verify
  * @param[in]  proofs_bytes      Array of proofs used for verification
  * @param[in]  n                 The number of blobs/commitments/proofs
  * @param[in]  s                 The trusted setup
+ *
+ * @remark This function accepts if called with `n==0`.
+ * @remark This function assumes that `n` is trusted and that all input arrays
+ *         contain `n` elements. `n` should be the actual size of the arrays and
+ *         not read off a length field in the protocol.
  */
 C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
@@ -1551,12 +1538,13 @@ out:
 /**
  * Utility function to test whether the argument is a power of two.
  *
- * @remark This method returns `true` for `is_power_of_two(0)` which is a bit
- *     weird, but not an issue in the contexts in which we use it.
- *
  * @param[in] n The number to test
- * @retval true  if @p n is a power of two or zero
- * @retval false otherwise
+ *
+ * @return True if `n` is zero or a power of two, otherwise false.
+ *
+ * @remark This method returns true for is_power_of_two(0) which is a bit
+ *         weird, but not an issue in the contexts in which we use it.
+ *
  */
 static bool is_power_of_two(uint64_t n) {
     return (n & (n - 1)) == 0;
@@ -1567,11 +1555,10 @@ static bool is_power_of_two(uint64_t n) {
  *
  * Recursively divide and conquer.
  *
- * @param[out] out          The results (array of length @p n)
- * @param[in]  in           The input data (array of length @p n * @p stride)
+ * @param[out] out          The results (length `n`)
+ * @param[in]  in           The input data (length `n * stride`)
  * @param[in]  stride       The input data stride
- * @param[in]  roots        Roots of unity
- *                          (array of length @p n * @p roots_stride)
+ * @param[in]  roots        Roots of unity (length `n * roots_stride`)
  * @param[in]  roots_stride The stride interval among the roots of unity
  * @param[in]  n            Length of the FFT, must be a power of two
  */
@@ -1621,7 +1608,7 @@ static void fft_g1_fast(
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use ifft_g1 for inverse transformation.
+ * @remark Use ifft_g1() for inverse transformation.
  */
 C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
@@ -1644,7 +1631,7 @@ C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use fft_g1 for forward transformation.
+ * @remark Use fft_g1() for forward transformation.
  */
 C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
@@ -1672,8 +1659,9 @@ C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 /**
  * Reverse the bit order in a 32-bit integer.
  *
- * @param[in] a The integer to be reversed
- * @return An integer with the bits of @p a reversed
+ * @param[in]   n   The integer to be reversed
+ *
+ * @return An integer with the bits of `n` reversed.
  */
 static uint32_t reverse_bits(uint32_t n) {
     uint32_t result = 0;
@@ -1688,14 +1676,13 @@ static uint32_t reverse_bits(uint32_t n) {
 /**
  * Calculate log base two of a power of two.
  *
- * In other words, the bit index of the one bit.
- *
- * @remark Works only for n a power of two, and only for n up to 2^31.
- * @remark Not the fastest implementation, but it doesn't need to be fast.
- *
  * @param[in] n The power of two
  *
- * @return the log base two of n
+ * @return The log base two of n.
+ *
+ * @remark In other words, the bit index of the one bit.
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ * @remark Not the fastest implementation, but it doesn't need to be fast.
  */
 static int log2_pow2(uint32_t n) {
     int position = 0;
@@ -1707,12 +1694,12 @@ static int log2_pow2(uint32_t n) {
 /**
  * Reverse the low-order bits in a 32-bit integer.
  *
- * @remark n must be a power of two.
- *
  * @param[in]   n       To reverse `b` bits, set `n = 2 ^ b`
  * @param[in]   value   The bits to be reversed
  *
- * @return The reversal of the lowest log_2(n) bits of the input value
+ * @return The reversal of the lowest log_2(n) bits of the input value.
+ *
+ * @remark n must be a power of two.
  */
 static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
     size_t unused_bit_len = 32 - log2_pow2(n);
@@ -1722,17 +1709,17 @@ static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
 /**
  * Reorder an array in reverse bit order of its indices.
  *
- * @remark Operates in-place on the array.
- * @remark Can handle arrays of any type: provide the element size in @p size.
- * @remark This means that input[n] == output[n'], where input and output
- *         denote the input and output array and n' is obtained from n by
- *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
- *         operates on log2(@p n)-bit numbers.
- *
  * @param[in,out] values The array, which is re-ordered in-place
  * @param[in]     size   The size in bytes of an element of the array
  * @param[in]     n      The length of the array, must be a power of two
  *                       strictly greater than 1 and less than 2^32.
+ *
+ * @remark Operates in-place on the array.
+ * @remark Can handle arrays of any type: provide the element size in `size`.
+ * @remark This means that `input[n] == output[n']`, where input and output
+ *         denote the input and output array and n' is obtained from n by
+ *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
+ *         operates on log2(n)-bit numbers.
  */
 static C_KZG_RET bit_reversal_permutation(
     void *values, size_t size, uint64_t n
@@ -1741,7 +1728,7 @@ static C_KZG_RET bit_reversal_permutation(
     byte *tmp = NULL;
     byte *v = values;
 
-    /* Some sanity checks*/
+    /* Some sanity checks */
     if (n < 2 || n >= UINT32_MAX || !is_power_of_two(n)) {
         ret = C_KZG_BADARGS;
         goto out;
@@ -1771,13 +1758,12 @@ out:
 /**
  * Generate powers of a root of unity in the field.
  *
- * @remark @p root must be such that @p root ^ @p width is equal to one, but
- * no smaller power of @p root is equal to one.
- *
- * @param[out] out   The generated powers of the root of unity
- *                   (array size @p width + 1)
+ * @param[out] out   The roots of unity (length `width + 1`)
  * @param[in]  root  A root of unity
- * @param[in]  width One less than the size of @p out
+ * @param[in]  width One less than the size of `out`
+ *
+ * @remark `root` must be such that `root ^ width` is equal to one, but
+ *         no smaller power of `root` is equal to one.
  */
 static C_KZG_RET expand_root_of_unity(
     fr_t *out, const fr_t *root, uint64_t width
@@ -1860,9 +1846,9 @@ out:
 /**
  * Free a trusted setup (KZGSettings).
  *
- * @remark It's a NOP if `s` is NULL.
- *
  * @param[in] s The trusted setup to free
+ *
+ * @remark This does nothing if `s` is NULL.
  */
 void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
@@ -2070,8 +2056,6 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
 /**
  * Load trusted setup into a KZGSettings.
  *
- * @remark Free after use with free_trusted_setup().
- *
  * @param[out]  out                 Pointer to the stored trusted setup data
  * @param[in]   g1_monomial_bytes   Array of G1 points in monomial form
  * @param[in]   g1_lagrange_bytes   Array of G1 points in Lagrange form
@@ -2079,6 +2063,8 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
  * @param[in]   g2_monomial_bytes   Array of G2 points in monomial form
  * @param[in]   num_g2_points       Number of points in g2_bytes
  * @param[in]   precompute          Configurable value between 0-15
+ *
+ * @remark Free afterwards use with free_trusted_setup().
  */
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
@@ -2221,16 +2207,15 @@ out_success:
 /**
  * Load trusted setup from a file.
  *
- * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where
- *     the first two numbers are in decimal and the remainder are hexstrings
- *     and any whitespace can be used as separators.
- *
- * @remark See also load_trusted_setup().
- * @remark The input file will not be closed.
- *
  * @param[out]  out         Pointer to the loaded trusted setup data
  * @param[in]   in          File handle for input
  * @param[in]   precompute  Configurable value between 0-15
+ *
+ * @remark See also load_trusted_setup().
+ * @remark The input file will not be closed.
+ * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where
+ *         the first two numbers are in decimal and the remainder are hexstrings
+ *         and any whitespace can be used as separators.
  */
 C_KZG_RET load_trusted_setup_file(
     KZGSettings *out, FILE *in, size_t precompute
@@ -2324,12 +2309,12 @@ out:
  *
  * Recursively divide and conquer.
  *
- * @param[out] out    The results (array of length @p n)
- * @param[in]  in     The input data (array of length @p n * @p stride)
- * @param[in]  stride The input data stride
- * @param[in]  roots  Roots of unity (array of length @p n * @p roots_stride)
- * @param[in]  roots_stride The stride interval among the roots of unity
- * @param[in]  n      Length of the FFT, must be a power of two
+ * @param[out]  out             The results (length `n`)
+ * @param[in]   in              The input data (length `n * stride`)
+ * @param[in]   stride          The input data stride
+ * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots_stride    The stride interval among the roots of unity
+ * @param[in]   n               Length of the FFT, must be a power of two
  */
 static void fft_fr_fast(
     fr_t *out,
@@ -2367,7 +2352,7 @@ static void fft_fr_fast(
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use ifft_fr for inverse transformation.
+ * @remark Use ifft_fr() for inverse transformation.
  */
 static C_KZG_RET fft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
@@ -2392,7 +2377,7 @@ static C_KZG_RET fft_fr(
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use fft_fr for forward transformation.
+ * @remark Use fft_fr() for forward transformation.
  */
 static C_KZG_RET ifft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
@@ -2427,9 +2412,10 @@ typedef struct {
  * Return the next highest power of two.
  *
  * @param[in]   v   A 64-bit unsigned integer <= 2^31
- * @return The lowest power of two equal or larger than @p v
  *
- * @remark If v is already a power of two, it is returned as-is.
+ * @return The lowest power of two equal or larger than `v`.
+ *
+ * @remark If `v` is already a power of two, it is returned as-is.
  */
 static inline uint64_t next_power_of_two(uint64_t v) {
     if (v == 0) return 1;
@@ -2458,7 +2444,7 @@ static inline uint64_t next_power_of_two(uint64_t v) {
  * @param[in]       indices_len The number of missing indices
  * @param[in]       s           The trusted setup
  *
- * @remark dst_len must be at least indices_len + 1 in length.
+ * @remark `dst_len` must be at least `indices_len + 1` in length.
  */
 static C_KZG_RET do_zero_poly_mul_partial(
     fr_t *dst,
@@ -2526,9 +2512,6 @@ static C_KZG_RET pad_p(
 /**
  * Calculate the product of the input polynomials via convolution.
  *
- * @remark This will pad the polynomials, perform FFTs, point-wise multiply the
- * results together, and apply an inverse FFT to the result.
- *
  * @param[out]  out             Polynomial with len_out fields allocated
  * @param[in]   len_out         Domain evaluation length, a power of two
  * @param[in]   scratch         Scratch space, at least 3x len_out
@@ -2536,6 +2519,9 @@ static C_KZG_RET pad_p(
  * @param[in]   partials        Array of polys to be multiplied together
  * @param[in]   partial_count   The number of polys to be multiplied together
  * @param[in]   s               The trusted setup
+ *
+ * @remark This will pad the polynomials, perform FFTs, point-wise multiply the
+ *         results together, and apply an inverse FFT to the result.
  */
 static C_KZG_RET reduce_partials(
     poly_t *out,
@@ -2973,16 +2959,16 @@ out:
 // Polynomial Conversion Functions
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
+/**
  * Convert a polynomial in monomial form to Lagrange form.
  *
- * @param[out]  monomial    The result, an array of @p len fields
- * @param[in]   lagrange    The input poly, an array of @p len fields
+ * @param[out]  monomial    The result, an array of `len` fields
+ * @param[in]   lagrange    The input poly, an array of `len` fields
  * @param[in]   len         The length of both polynomials
  * @param[in]   s           The trusted setup
  *
  * @remark To convert a monomial-form polynomial to a Lagrange-form polynomial,
- * you must inverse FFT the bit-reverse-permuated monomial polynomial.
+ *         you must inverse FFT the bit-reverse-permuated monomial polynomial.
  */
 static C_KZG_RET poly_lagrange_to_monomial(
     fr_t *lagrange, const fr_t *monomial, size_t len, const KZGSettings *s
@@ -3053,8 +3039,8 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @param[in]   s   The trusted setup
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only
- * the lower half of the extended polynomial is supplied because the upper half
- * is assumed to be zero.
+ *         the lower half of the extended polynomial is supplied because the
+ *         upper half is assumed to be zero.
  */
 static C_KZG_RET compute_fk20_proofs(
     g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
@@ -3180,10 +3166,9 @@ out:
 }
 
 /**
- * Helper function that verifies a KZG multiproof @p proof for the polynomial
- * in @p commitment.
+ * Verify a KZG multiproof `proof` for the polynomial in `commitment`.
  *
- * @param[out]  out         `true` if the proof is valid, otherwise `false`
+ * @param[out]  ok          True if the proof is valid, otherwise false
  * @param[in]   commitment  The commitment to the polynomial
  * @param[in]   proof       The KZG multiproof for the polynomial
  * @param[in]   h           The shift identifying the evaluation domain
@@ -3194,11 +3179,11 @@ out:
  * @remark commitment is assumed to be a single group element.
  * @remark proof is assumed to be a single group element.
  * @remark h has to be a single element. It specifies the coset which is the
- * evaluation domain of the multiproof.
+ *         evaluation domain of the multiproof.
  * @remark ys has to be an array of size n.
  */
 static C_KZG_RET verify_kzg_proof_multi_impl(
-    bool *out,
+    bool *ok,
     const g1_t *commitment,
     const g1_t *proof,
     const fr_t *h,
@@ -3269,7 +3254,7 @@ static C_KZG_RET verify_kzg_proof_multi_impl(
     g1_sub(&p_minus_interpolation_g1, commitment, &interpolation_poly_g1);
 
     /* Do the pairing check */
-    *out = pairings_verify(
+    *ok = pairings_verify(
         &p_minus_interpolation_g1,
         blst_p2_generator(),
         proof,
@@ -3401,14 +3386,14 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices            An array of ids for cells that you have
+ * @param[in]   cell_indices        An array of ids for cells that you have
  * @param[in]   cells               An array of cells
  * @param[in]   proofs_bytes        An array of proofs
  * @param[in]   num_cells           How many cells were provided
  * @param[in]   s                   The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
- * @remark If recovered_proofs is NULL, they won't be re-computed.
+ * @remark If recovered_proofs is NULL, they will not be recomputed.
  */
 C_KZG_RET recover_cells_and_kzg_proofs(
     Cell *recovered_cells,
