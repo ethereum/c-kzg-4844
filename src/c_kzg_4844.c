@@ -2773,35 +2773,19 @@ static const fr_t INV_SCALE_FACTOR = {
 };
 
 /**
- * Scale a polynomial in place.
+ * Shift a polynomial in place.
  *
- * Multiplies each coefficient by `1 / scale_factor ^ i`. Equivalent to
- * creating a polynomial that evaluates at `x * k` rather than `x`.
+ * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to
+ * creating a polynomial that evaluates at `x * shift_factor` rather than `x`.
  *
- * @param[in,out]   p       The polynomial coefficients to be scaled
- * @param[in]       len     Length of the polynomial coefficients
+ * @param[in,out]   p            The polynomial coefficients to be scaled
+ * @param[in]       len          Length of the polynomial coefficients
+ * @param[in]       shift_factor Shift factor
  */
-static void scale_poly(fr_t *p, size_t len) {
+static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
     fr_t factor_power = FR_ONE;
     for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &INV_SCALE_FACTOR);
-        blst_fr_mul(&p[i], &p[i], &factor_power);
-    }
-}
-
-/**
- * Unscale a polynomial in place.
- *
- * Multiplies each coefficient by `scale_factor ^ i`. Equivalent to creating a
- * polynomial that evaluates at `x / k` rather than `x`.
- *
- * @param[in,out]   p       The polynomial coefficients to be unscaled
- * @param[in]       len     Length of the polynomial coefficients
- */
-static void unscale_poly(fr_t *p, size_t len) {
-    fr_t factor_power = FR_ONE;
-    for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, &SCALE_FACTOR);
+        blst_fr_mul(&factor_power, &factor_power, shift_factor);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
 }
@@ -2827,7 +2811,7 @@ static C_KZG_RET coset_fft_fr(
 
     /* Shift the poly */
     memcpy(in_shifted, in, n*sizeof(fr_t));
-    unscale_poly(in_shifted, n);
+    shift_poly(in_shifted, n, &SCALE_FACTOR);
 
     ret = fft_fr(out, in_shifted, n, s);
     if (ret != C_KZG_OK) goto out;
@@ -2856,8 +2840,7 @@ static C_KZG_RET coset_ifft_fr(
     ret = ifft_fr(out, in, n, s);
     if (ret != C_KZG_OK) goto out;
 
-    // TODO: rename func
-    scale_poly(out, n);
+    shift_poly(out, n, &INV_SCALE_FACTOR);
 
 out:
     return ret;
