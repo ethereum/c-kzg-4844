@@ -1802,12 +1802,17 @@ static void test_coset_fft(void) {
     const size_t N = 8192;
     fr_t poly_eval[N];
     fr_t poly_coeff[N];
+    fr_t poly_coeff_backup[N];
     fr_t recovered_poly_coeff[N];
 
     // Generate poly in coeff form
     for (size_t i = 0; i < N; i++) {
         get_rand_fr(&poly_coeff[i]);
     }
+
+    /* Keep a backup of the coefficients becasue the coset_fft_fr() is gonna
+     * mutate them */
+    memcpy(poly_coeff_backup, poly_coeff, N * sizeof(fr_t));
 
     /* Evaluate poly using coset FFT */
     coset_fft_fr(poly_eval, poly_coeff, N, &s);
@@ -1819,7 +1824,9 @@ static void test_coset_fft(void) {
 
         blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &SCALE_FACTOR);
 
-        eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
+        eval_extended_poly(
+            &individual_evaluation, poly_coeff_backup, &shifted_w
+        );
 
         bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
         ASSERT_EQUALS(ok, true);
@@ -1830,7 +1837,7 @@ static void test_coset_fft(void) {
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
-        bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+        bool ok = fr_equal(&poly_coeff_backup[i], &recovered_poly_coeff[i]);
         ASSERT_EQUALS(ok, true);
     }
 }
