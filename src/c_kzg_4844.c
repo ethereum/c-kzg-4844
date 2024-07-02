@@ -2742,14 +2742,14 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * The scale factor.
+ * The coset shift factor for the cell recovery code.
  *
  *   fr_t a;
  *   fr_from_uint64(&a, 7);
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
  */
-static const fr_t SCALE_FACTOR = {
+static const fr_t RECOVERY_SHIFT_FACTOR = {
     0x0000000efffffff1L,
     0x17e363d300189c0fL,
     0xff9c57876f8457b0L,
@@ -2757,7 +2757,7 @@ static const fr_t SCALE_FACTOR = {
 };
 
 /**
- * The inverse scale factor.
+ * The inverse of RECOVERY_SHIFT_FACTOR.
  *
  *   fr_t a;
  *   fr_from_uint64(&a, 7);
@@ -2765,7 +2765,7 @@ static const fr_t SCALE_FACTOR = {
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
  */
-static const fr_t INV_SCALE_FACTOR = {
+static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
     0xdb6db6dadb6db6dcL,
     0xe6b5824adb6cc6daL,
     0xf8b356e005810db9L,
@@ -2790,14 +2790,16 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
     }
 }
 
-/** Do an FFT over a coset of the roots of unity.
+/**
+ * Do an FFT over a coset of the roots of unity.
+ * The function mutates the input array `in`.
  *
  * @param[out]  out The results (array of length n)
  * @param[in]   in  The input data (array of length n)
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
- * @remark The coset shift factor is SCALE_FACTOR
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
  */
 static C_KZG_RET coset_fft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
@@ -2811,7 +2813,7 @@ static C_KZG_RET coset_fft_fr(
 
     /* Shift the poly */
     memcpy(in_shifted, in, n * sizeof(fr_t));
-    shift_poly(in_shifted, n, &SCALE_FACTOR);
+    shift_poly(in_shifted, n, &RECOVERY_SHIFT_FACTOR);
 
     ret = fft_fr(out, in_shifted, n, s);
     if (ret != C_KZG_OK) goto out;
@@ -2822,14 +2824,16 @@ out:
     return ret;
 }
 
-/** Do an inverse FFT over a coset of the roots of unity.
+/**
+ * Do an inverse FFT over a coset of the roots of unity.
  *
  * @param[out]  out The results (array of length n)
  * @param[in]   in  The input data (array of length n)
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
- * @remark The coset shift factor is SCALE_FACTOR
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
+ * In this function we use its inverse to implement the IFFT.
  */
 static C_KZG_RET coset_ifft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
@@ -2839,7 +2843,7 @@ static C_KZG_RET coset_ifft_fr(
     ret = ifft_fr(out, in, n, s);
     if (ret != C_KZG_OK) goto out;
 
-    shift_poly(out, n, &INV_SCALE_FACTOR);
+    shift_poly(out, n, &INV_RECOVERY_SHIFT_FACTOR);
 
 out:
     return ret;
@@ -2850,8 +2854,7 @@ out:
  * reconstructed original. Assumes that the inverse FFT of the original data
  * has the upper half of its values equal to zero.
  *
- * @param[out]  reconstructed_data_out   A preallocated array for recovered
- *                                       cells
+ * @param[out]  reconstructed_data_out   Preallocated array for recovered cells
  * @param[in]   cells                    The cells that you have
  * @param[in]   s                        The trusted setup
  *

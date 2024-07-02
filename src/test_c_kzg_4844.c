@@ -1812,12 +1812,12 @@ static void test_coset_fft(void) {
     /* Evaluate poly using coset FFT */
     coset_fft_fr(poly_eval, poly_coeff, N, &s);
 
-    // check: result of coset FFT are really the evaluations over the coset
+    /* check: result of coset FFT are really the evaluations over the coset */
     for (size_t i = 0; i < N; i++) {
         fr_t shifted_w;
         fr_t individual_evaluation;
 
-        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &SCALE_FACTOR);
+        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR);
 
         eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
 
@@ -2221,8 +2221,6 @@ static void teardown(void) {
 
 int main(void) {
     setup();
-    RUN(test_fft);
-    RUN(test_coset_fft);
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);
@@ -2306,6 +2304,8 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
+    RUN(test_fft);
+    RUN(test_coset_fft);
     RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_verify_cell_kzg_proof__succeeds_random_blob);
 
