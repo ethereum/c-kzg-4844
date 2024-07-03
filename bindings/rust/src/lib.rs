@@ -19,8 +19,8 @@ pub use bindings::{
     C_KZG_RET as CkzgError,
 };
 
-#[cfg(feature = "ethereum_kzg_settings")]
 // Expose the default settings.
+#[cfg(feature = "ethereum_kzg_settings")]
 pub use ethereum_kzg_settings::{ethereum_kzg_settings, ethereum_kzg_settings_arc};
 
 // Expose the constants.
