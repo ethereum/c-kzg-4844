@@ -25,20 +25,19 @@ fn main() {
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
     cc.file(c_src_dir.join("c_kzg_4844.c"));
+    #[cfg(not(debug_assertions))]
+    cc.define("NDEBUG", None);
 
     cc.try_compile("ckzg").expect("Failed to compile ckzg");
 
     #[cfg(feature = "generate-bindings")]
     {
         let header_path = c_src_dir.join("c_kzg_4844.h");
-        let bindings_out_path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/bindings/rust/src/bindings/generated.rs"
-        );
+        let bindings_out_path = root_dir.join("bindings/rust/src/bindings/generated.rs");
         make_bindings(
             header_path.to_str().expect("valid header path"),
             blst_headers_dir.to_str().expect("valid blst header path"),
-            bindings_out_path.as_ref(),
+            &bindings_out_path,
         );
     }
 
