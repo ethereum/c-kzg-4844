@@ -3706,6 +3706,70 @@ out:
 }
 
 /**
+ * Helper function to compare two commitments.
+ * 
+ * @param[in]   a   The first commitment
+ * @param[in]   b   The second commitment
+ * 
+ * @return True if the commitments are the same, otherwise false.
+ */
+static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
+    return memcmp(a->bytes, b->bytes, BYTES_PER_COMMITMENT) == 0;
+}
+
+/**
+ * Helper function to copy one commitment's bytes to another.
+ * 
+ * @param[in]   dst   The destination commitment
+ * @param[in]   src   The source commitment
+ */
+static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
+    memcpy(dst->bytes, src->bytes, BYTES_PER_COMMITMENT);
+}
+
+/**
+ * Convert a list of commitments with potential duplicates to a list of unique
+ * commitments. Also returns a list of indices which point to those new unique
+ * commitments.
+ * 
+ * @param[in,out]   commitments Input commitments, output unique commitments
+ * @param[in,out]   indices     Input unused, output index to each commitment
+ * @param[in,out]   count       The number of commitments & indices
+ *
+ * @remark The input arrays are re-used.
+ * @remark The number of commitments/indices must be the same.
+ * @remark The length of `indices` is unchanged.
+ */
+void deduplicate_commitments(
+    Bytes48 *commitments, uint64_t *indices, size_t *count
+) {
+    /* Bail early if there are no commitments */
+    if (*count == 0) return;
+
+    /* The first commitment is always new */
+    indices[0] = 0;
+    size_t new_count = 1;
+
+    /* Create list of unique commitments & indices to them */
+    for (size_t i = 1; i < *count; i++) {
+        for (size_t j = 0; j < new_count; j++) {
+            if (commitments_equal(&commitments[i], &commitments[j])) {
+                /* This commitment has already been seen */
+                indices[i] = j;
+            } else {
+                /* This is a new commitment */
+                commitments_copy(&commitments[new_count], &commitments[j]);
+                indices[i] = new_count;
+                new_count++;
+            }
+        }
+    }
+
+    /* Update the count */
+    *count = new_count;
+}
+
+/**
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
@@ -3724,8 +3788,6 @@ out:
 C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
-    size_t num_commitments,
-    const uint64_t *row_indices,
     const uint64_t *column_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
@@ -3738,6 +3800,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
     g2_t power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
+    size_t num_commitments;
+    void **tmp = NULL;
+
+    /* Dedup arrays */
+    Bytes48 *unique_commitments = NULL;
+    uint64_t *row_indices = NULL;
 
     /* Arrays */
     bool *is_cell_used = NULL;
@@ -3766,9 +3834,22 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     for (size_t i = 0; i < num_cells; i++) {
         /* Make sure column index is valid */
         if (column_indices[i] >= CELLS_PER_EXT_BLOB) return C_KZG_BADARGS;
-        /* Make sure we can reference all commitments */
-        if (row_indices[i] >= num_commitments) return C_KZG_BADARGS;
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Deduplicate Commitments
+    ///////////////////////////////////////////////////////////////////////////
+
+    tmp = (void **)&unique_commitments;
+    ret = c_kzg_calloc(tmp, num_cells, sizeof(Bytes48));
+    if (ret != C_KZG_OK) goto out;
+    tmp = (void **)&row_indices;
+    ret = c_kzg_calloc(tmp, num_cells, sizeof(uint64_t));
+    if (ret != C_KZG_OK) goto out;
+
+    num_commitments = num_cells;
+    memcpy(unique_commitments, commitments_bytes, num_cells);
+    deduplicate_commitments(unique_commitments, row_indices, &num_commitments);
 
     ///////////////////////////////////////////////////////////////////////////
     // Array allocations
@@ -3997,6 +4078,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
 
 out:
+    c_kzg_free(unique_commitments);
+    c_kzg_free(row_indices);
     c_kzg_free(is_cell_used);
     c_kzg_free(aggregated_column_cells);
     c_kzg_free(aggregated_interpolation_poly);

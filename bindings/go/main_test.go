@@ -568,7 +568,12 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 
 			var rowCommitments []Bytes48
-			for _, c := range test.Input.RowCommitments {
+			for _, rowIndex := range test.Input.RowIndices {
+				if rowIndex >= uint64(len(test.Input.RowCommitments)) {
+					require.Nil(t, test.Output)
+					return
+				}
+				c := test.Input.RowCommitments[rowIndex]
 				var commitment Bytes48
 				err = commitment.UnmarshalText([]byte(c))
 				if err != nil {
@@ -578,7 +583,18 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				rowCommitments = append(rowCommitments, commitment)
 			}
 
-			rowIndices := test.Input.RowIndices
+			/*
+				for _, c := range test.Input.RowCommitments {
+					var commitment Bytes48
+					err = commitment.UnmarshalText([]byte(c))
+					if err != nil {
+						require.Nil(t, test.Output)
+						return
+					}
+					rowCommitments = append(rowCommitments, commitment)
+				}
+			*/
+
 			columnIndices := test.Input.ColumnIndices
 
 			var cells []Cell
@@ -603,7 +619,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			valid, err := VerifyCellKZGProofBatch(rowCommitments, columnIndices, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -857,13 +873,13 @@ func Benchmark(b *testing.B) {
 	})
 
 	b.Run("VerifyCellKZGProofBatch", func(b *testing.B) {
-		var rowIndices []uint64
+		var cellCommitments []Bytes48
 		var columnIndices []uint64
 		var cells []Cell
 		var cellProofs []Bytes48
 		for rowIndex, blobCell := range blobCells {
 			for columnIndex, cell := range blobCell {
-				rowIndices = append(rowIndices, uint64(rowIndex))
+				cellCommitments = append(cellCommitments, commitments[rowIndex])
 				columnIndices = append(columnIndices, uint64(columnIndex))
 				cells = append(cells, cell)
 				cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
@@ -871,7 +887,7 @@ func Benchmark(b *testing.B) {
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+			ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
@@ -879,7 +895,7 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= length; i *= 2 {
 		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
-			var rowIndices []uint64
+			var cellCommitments []Bytes48
 			var columnIndices []uint64
 			var cells []Cell
 			var cellProofs []Bytes48
@@ -888,7 +904,7 @@ func Benchmark(b *testing.B) {
 					break
 				}
 				for columnIndex, cell := range blobCell {
-					rowIndices = append(rowIndices, uint64(rowIndex))
+					cellCommitments = append(cellCommitments, commitments[rowIndex])
 					columnIndices = append(columnIndices, uint64(columnIndex))
 					cells = append(cells, cell)
 					cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
@@ -896,7 +912,7 @@ func Benchmark(b *testing.B) {
 			}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(commitments[:i], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
@@ -905,9 +921,17 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= cellsPerExtBlob; i *= 2 {
 		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
+
+		var cellCommitments []Bytes48
+		for _, rowIndex := range rowIndices {
+			for _, _ = range columnIndices {
+				cellCommitments = append(cellCommitments, commitments[rowIndex])
+			}
+		}
+
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
