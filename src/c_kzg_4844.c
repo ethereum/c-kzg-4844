@@ -3803,11 +3803,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     size_t num_commitments;
     void **tmp = NULL;
 
-    /* Dedup arrays */
+    /* Arrays */
     Bytes48 *unique_commitments = NULL;
     uint64_t *row_indices = NULL;
-
-    /* Arrays */
     bool *is_cell_used = NULL;
     fr_t *aggregated_column_cells = NULL;
     fr_t *aggregated_interpolation_poly = NULL;
@@ -3847,7 +3845,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ret = c_kzg_calloc(tmp, num_cells, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
 
-
+    /*
+     * Convert the array of cell commitments to an array of unique commitments
+     * and an array of indices to those unique commitments. We do this before
+     * the array allocations section below because we need to know how many
+     * commitment weights there will be.
+     */
     num_commitments = num_cells;
     memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
     deduplicate_commitments(unique_commitments, row_indices, &num_commitments);
