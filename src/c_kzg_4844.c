@@ -3758,7 +3758,7 @@ static void deduplicate_commitments(
                 indices[i] = j;
             } else {
                 /* This is a new commitment */
-                commitments_copy(&commitments[new_count], &commitments[j]);
+                commitments_copy(&commitments[new_count], &commitments[i]);
                 indices[i] = new_count;
                 new_count++;
             }
@@ -3847,8 +3847,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ret = c_kzg_calloc(tmp, num_cells, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
 
+
     num_commitments = num_cells;
-    memcpy(unique_commitments, commitments_bytes, num_cells);
+    memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
     deduplicate_commitments(unique_commitments, row_indices, &num_commitments);
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3913,7 +3914,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     for (size_t i = 0; i < num_commitments; i++) {
         /* Convert & validate commitment */
         ret = bytes_to_kzg_commitment(
-            &commitments_g1[i], &commitments_bytes[i]
+            &commitments_g1[i], &unique_commitments[i]
         );
         if (ret != C_KZG_OK) goto out;
 

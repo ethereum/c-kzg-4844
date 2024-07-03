@@ -567,8 +567,9 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var rowCommitments []Bytes48
+			var commitments []Bytes48
 			for _, rowIndex := range test.Input.RowIndices {
+				// Hack until we update the reference tests
 				if rowIndex >= uint64(len(test.Input.RowCommitments)) {
 					require.Nil(t, test.Output)
 					return
@@ -580,20 +581,8 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 					require.Nil(t, test.Output)
 					return
 				}
-				rowCommitments = append(rowCommitments, commitment)
+				commitments = append(commitments, commitment)
 			}
-
-			/*
-				for _, c := range test.Input.RowCommitments {
-					var commitment Bytes48
-					err = commitment.UnmarshalText([]byte(c))
-					if err != nil {
-						require.Nil(t, test.Output)
-						return
-					}
-					rowCommitments = append(rowCommitments, commitment)
-				}
-			*/
 
 			columnIndices := test.Input.ColumnIndices
 
@@ -619,7 +608,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyCellKZGProofBatch(rowCommitments, columnIndices, cells, proofs)
+			valid, err := VerifyCellKZGProofBatch(commitments, columnIndices, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
