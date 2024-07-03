@@ -3740,7 +3740,7 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
  * @remark The number of commitments/indices must be the same.
  * @remark The length of `indices` is unchanged.
  */
-void deduplicate_commitments(
+static void deduplicate_commitments(
     Bytes48 *commitments, uint64_t *indices, size_t *count
 ) {
     /* Bail early if there are no commitments */
