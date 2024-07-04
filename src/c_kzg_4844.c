@@ -2790,8 +2790,7 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
     }
 }
 
-/** Do an FFT over a coset of the roots of unity. The function mutates the
- *  input array `in`
+/** Do an FFT over a coset of the roots of unity.
  *
  * @param[out]  out The results (array of length n)
  * @param[in]   in  The input data (array of length n)
@@ -2801,17 +2800,25 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
  * @remark The coset shift factor is SCALE_FACTOR
  */
 static C_KZG_RET coset_fft_fr(
-    fr_t *out, fr_t *in, size_t n, const KZGSettings *s
+    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    fr_t *in_shifted = NULL;
 
-    shift_poly(in, n, &SCALE_FACTOR);
+    /* Create some room to shift the polynomial */
+    ret = new_fr_array(&in_shifted, n);
+    if (ret != C_KZG_OK) goto out;
 
-    /* Compute the FFT */
-    ret = fft_fr(out, in, n, s);
+    /* Shift the poly */
+    memcpy(in_shifted, in, n * sizeof(fr_t));
+    shift_poly(in_shifted, n, &SCALE_FACTOR);
+
+    ret = fft_fr(out, in_shifted, n, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
+    c_kzg_free(in_shifted);
+
     return ret;
 }
 
