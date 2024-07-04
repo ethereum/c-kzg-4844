@@ -2830,8 +2830,8 @@ out:
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
- * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
- * In this function we use its inverse to implement the IFFT.
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we
+ *         use its inverse to implement the IFFT.
  */
 static C_KZG_RET coset_ifft_fr(
     fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
