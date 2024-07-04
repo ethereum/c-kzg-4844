@@ -2792,7 +2792,6 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
 
 /**
  * Do an FFT over a coset of the roots of unity.
- * The function mutates the input array `in`.
  *
  * @param[out]  out The results (array of length n)
  * @param[in]   in  The input data (array of length n)
