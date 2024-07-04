@@ -2820,7 +2820,6 @@ static C_KZG_RET coset_fft_fr(
 
 out:
     c_kzg_free(in_shifted);
-
     return ret;
 }
 
