@@ -1857,6 +1857,90 @@ static void test_verify_cell_kzg_proof__succeeds_random_blob(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for deduplicate_commitments
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_deduplicate_commitments__one_duplicate(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 1, sizeof(Bytes48));
+    memset(&commitments[2], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[3], 3, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 3);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 1);
+    ASSERT_EQUALS(indices[2], 0);
+    ASSERT_EQUALS(indices[3], 2);
+}
+
+static void test_deduplicate_commitments__no_duplicates(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 1, sizeof(Bytes48));
+    memset(&commitments[2], 2, sizeof(Bytes48));
+    memset(&commitments[3], 3, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 4);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 1);
+    ASSERT_EQUALS(indices[2], 2);
+    ASSERT_EQUALS(indices[3], 3);
+}
+
+static void test_deduplicate_commitments__all_duplicates(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[2], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[3], 0, sizeof(Bytes48)); /* Duplicate */
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 1);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 0);
+    ASSERT_EQUALS(indices[2], 0);
+    ASSERT_EQUALS(indices[3], 0);
+}
+
+static void test_deduplicate_commitments__no_commitments(void) {
+    Bytes48 commitments[0];
+    uint64_t indices[0];
+    size_t count = 0;
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 0);
+}
+
+static void test_deduplicate_commitments__one_commitment(void) {
+    Bytes48 commitments[1];
+    uint64_t indices[1];
+    size_t count = 1;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 1);
+    ASSERT_EQUALS(indices[0], 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2221,6 +2305,11 @@ int main(void) {
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
     RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_verify_cell_kzg_proof__succeeds_random_blob);
+    RUN(test_deduplicate_commitments__one_duplicate);
+    RUN(test_deduplicate_commitments__no_duplicates);
+    RUN(test_deduplicate_commitments__all_duplicates);
+    RUN(test_deduplicate_commitments__no_commitments);
+    RUN(test_deduplicate_commitments__one_commitment);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
