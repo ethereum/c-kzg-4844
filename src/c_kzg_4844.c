@@ -3707,10 +3707,10 @@ out:
 
 /**
  * Helper function to compare two commitments.
- * 
+ *
  * @param[in]   a   The first commitment
  * @param[in]   b   The second commitment
- * 
+ *
  * @return True if the commitments are the same, otherwise false.
  */
 static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
@@ -3719,7 +3719,7 @@ static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
 
 /**
  * Helper function to copy one commitment's bytes to another.
- * 
+ *
  * @param[in]   dst   The destination commitment
  * @param[in]   src   The source commitment
  */
@@ -3731,9 +3731,9 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
  * Convert a list of commitments with potential duplicates to a list of unique
  * commitments. Also returns a list of indices which point to those new unique
  * commitments.
- * 
+ *
  * @param[in,out]   commitments Input commitments, output unique commitments
- * @param[in,out]   indices     Input unused, output index to each commitment
+ * @param[out]      indices     Input unused, output index to each commitment
  * @param[in,out]   count       The number of commitments & indices
  *
  * @remark The input arrays are re-used.
@@ -3752,16 +3752,20 @@ static void deduplicate_commitments(
 
     /* Create list of unique commitments & indices to them */
     for (size_t i = 1; i < *count; i++) {
+        bool exist = false;
         for (size_t j = 0; j < new_count; j++) {
             if (commitments_equal(&commitments[i], &commitments[j])) {
-                /* This commitment has already been seen */
+                /* This commitment already exists */
                 indices[i] = j;
-            } else {
-                /* This is a new commitment */
-                commitments_copy(&commitments[new_count], &commitments[i]);
-                indices[i] = new_count;
-                new_count++;
+                exist = true;
+                break;
             }
+        }
+        if (!exist) {
+            /* This is a new commitment */
+            commitments_copy(&commitments[new_count], &commitments[i]);
+            indices[i] = new_count;
+            new_count++;
         }
     }
 
