@@ -2970,7 +2970,8 @@ static C_KZG_RET recover_cells_impl(
         );
     }
 
-    /* reconstructed_poly_over_coset is now extended_evaluations_over_coset */
+    /* After the above polynomial division, extended_evaluations_over_coset is
+     * the same polynomial as reconstructed_poly_over_coset in the spec */
 
     /* Convert the evaluations back to coefficents */
     ret = coset_ifft_fr(
