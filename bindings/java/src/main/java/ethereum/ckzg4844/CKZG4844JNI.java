@@ -92,21 +92,14 @@ public class CKZG4844JNI {
    * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from method
    * parameters instead of a file.
    *
-   * @param g1Monomial g1 values in monomial form as bytes
-   * @param g1Lagrange g1 values in Lagrange form as bytes
-   * @param g1Count the count of the g1 values
-   * @param g2Monomial g2 values in monomial form as bytes
-   * @param g2Count the count of the g2 values
+   * @param g1MonomialBytes g1 values in monomial form as bytes
+   * @param g1LagrangeBytes g1 values in Lagrange form as bytes
+   * @param g2MonomialBytes g2 values in monomial form as bytes
    * @param precompute configurable value between 0-15
    * @throws CKZGException if there is a crypto error
    */
   public static native void loadTrustedSetup(
-      byte[] g1Monomial,
-      byte[] g1Lagrange,
-      long g1Count,
-      byte[] g2Monomial,
-      long g2Count,
-      long precompute);
+      byte[] g1MonomialBytes, byte[] g1LagrangeBytes, byte[] g2MonomialBytes, long precompute);
 
   /**
    * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from a

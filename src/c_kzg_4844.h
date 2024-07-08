@@ -165,10 +165,11 @@ typedef struct {
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
+    size_t num_g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_points,
+    size_t num_g1_lagrange_bytes,
     const uint8_t *g2_monomial_bytes,
-    size_t num_g2_points,
+    size_t num_g2_monomial_bytes,
     size_t precompute
 );
 

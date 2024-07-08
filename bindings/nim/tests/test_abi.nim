@@ -35,10 +35,11 @@ proc readSetup(): KzgSettings =
 
   let res = load_trusted_setup(result,
     g1MonomialBytes[0].addr,
+    g1MonomialBytes.len.csize_t,
     g1LagrangeBytes[0].addr,
-    n1.csize_t,
+    g1LagrangeBytes.len.csize_t,
     g2MonomialBytes[0].addr,
-    n2.csize_t,
+    g2MonomialBytes.len.csize_t,
     0)
 
   doAssert(res == KZG_OK,

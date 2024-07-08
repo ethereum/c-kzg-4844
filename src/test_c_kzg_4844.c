@@ -1817,7 +1817,9 @@ static void test_coset_fft(void) {
         fr_t shifted_w;
         fr_t individual_evaluation;
 
-        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR);
+        blst_fr_mul(
+            &shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR
+        );
 
         eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
 

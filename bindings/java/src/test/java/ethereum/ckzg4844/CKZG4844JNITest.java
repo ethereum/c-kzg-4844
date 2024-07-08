@@ -437,22 +437,39 @@ public class CKZG4844JNITest {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
 
-    // wrong g1Count
+    // wrong g1 monomial points
     CKZGException exception =
         assertThrows(
             CKZGException.class,
             () ->
                 CKZG4844JNI.loadTrustedSetup(
-                    parameters.getG1Monomial(),
+                    new byte[27], // wrong g1 monomial
                     parameters.getG1Lagrange(),
-                    parameters.getG1Count() + 1,
                     parameters.getG2Monomial(),
-                    parameters.getG2Count(),
                     0));
     assertEquals(C_KZG_BADARGS, exception.getError());
-    assertTrue(exception.getErrorMessage().contains("Invalid g1 monomial size."));
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
 
-    // wrong g2Count
+    // wrong g1 lagrange points
+    exception =
+        assertThrows(
+            CKZGException.class,
+            () ->
+                CKZG4844JNI.loadTrustedSetup(
+                    parameters.getG1Monomial(),
+                    new byte[27], // wrong g1 lagrange
+                    parameters.getG2Monomial(),
+                    0));
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
+
+    // wrong g2 monomial points
     exception =
         assertThrows(
             CKZGException.class,
@@ -460,12 +477,13 @@ public class CKZG4844JNITest {
                 CKZG4844JNI.loadTrustedSetup(
                     parameters.getG1Monomial(),
                     parameters.getG1Lagrange(),
-                    parameters.getG1Count(),
-                    parameters.getG2Monomial(),
-                    parameters.getG2Count() + 1,
+                    new byte[27], // wrong g1 lagrange
                     0));
     assertEquals(C_KZG_BADARGS, exception.getError());
-    assertTrue(exception.getErrorMessage().contains("Invalid g2 monomial size."));
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
   }
 
   private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {
@@ -494,12 +512,7 @@ public class CKZG4844JNITest {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
     CKZG4844JNI.loadTrustedSetup(
-        parameters.getG1Monomial(),
-        parameters.getG1Lagrange(),
-        parameters.getG1Count(),
-        parameters.getG2Monomial(),
-        parameters.getG2Count(),
-        0);
+        parameters.getG1Monomial(), parameters.getG1Lagrange(), parameters.getG2Monomial(), 0);
   }
 
   public static void loadTrustedSetupFromResource() {

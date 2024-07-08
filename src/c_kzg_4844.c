@@ -77,10 +77,10 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH =
 #define BYTES_PER_G2 96
 
 /** The number of g1 points in a trusted setup. */
-#define TRUSTED_SETUP_NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
+#define NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
 
 /** The number of g2 points in a trusted setup. */
-#define TRUSTED_SETUP_NUM_G2_POINTS 65
+#define NUM_G2_POINTS 65
 
 // clang-format off
 
@@ -1937,7 +1937,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = 2 * k;
 
-    if (FIELD_ELEMENTS_PER_CELL >= TRUSTED_SETUP_NUM_G2_POINTS) {
+    if (FIELD_ELEMENTS_PER_CELL >= NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -2056,23 +2056,25 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(
 /**
  * Load trusted setup into a KZGSettings.
  *
- * @param[out]  out                 Pointer to the stored trusted setup data
- * @param[in]   g1_monomial_bytes   Array of G1 points in monomial form
- * @param[in]   g1_lagrange_bytes   Array of G1 points in Lagrange form
- * @param[in]   num_g1_points       Number of points in g1_bytes
- * @param[in]   g2_monomial_bytes   Array of G2 points in monomial form
- * @param[in]   num_g2_points       Number of points in g2_bytes
- * @param[in]   precompute          Configurable value between 0-15
+ * @param[out]  out                     Pointer to the stored trusted setup
+ * @param[in]   g1_monomial_bytes       Array of G1 points in monomial form
+ * @param[in]   num_g1_monomial_bytes   Number of g1 monomial bytes
+ * @param[in]   g1_lagrange_bytes       Array of G1 points in Lagrange form
+ * @param[in]   num_g1_lagrange_bytes   Number of g1 Lagrange bytes
+ * @param[in]   g2_monomial_bytes       Array of G2 points in monomial form
+ * @param[in]   num_g2_monomial_bytes   Number of g2 monomial bytes
+ * @param[in]   precompute              Configurable value between 0-15
  *
  * @remark Free afterwards use with free_trusted_setup().
  */
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
+    size_t num_g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_points,
+    size_t num_g1_lagrange_bytes,
     const uint8_t *g2_monomial_bytes,
-    size_t num_g2_points,
+    size_t num_g2_monomial_bytes,
     size_t precompute
 ) {
     C_KZG_RET ret;
@@ -2103,15 +2105,16 @@ C_KZG_RET load_trusted_setup(
     out->wbits = precompute;
 
     /* Sanity check in case this is called directly */
-    if (num_g1_points != TRUSTED_SETUP_NUM_G1_POINTS ||
-        num_g2_points != TRUSTED_SETUP_NUM_G2_POINTS) {
+    if (num_g1_monomial_bytes != NUM_G1_POINTS * BYTES_PER_G1 ||
+        num_g1_lagrange_bytes != NUM_G1_POINTS * BYTES_PER_G1 ||
+        num_g2_monomial_bytes != NUM_G2_POINTS * BYTES_PER_G2) {
         ret = C_KZG_BADARGS;
         goto out_error;
     }
 
     /* 1<<max_scale is the smallest power of 2 >= n1 */
     uint32_t max_scale = 0;
-    while ((1ULL << max_scale) < num_g1_points)
+    while ((1ULL << max_scale) < NUM_G1_POINTS)
         max_scale++;
 
     /* Set the max_width */
@@ -2127,15 +2130,15 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values_monomial, num_g1_points);
+    ret = new_g1_array(&out->g1_values_monomial, NUM_G1_POINTS);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g1_array(&out->g1_values_lagrange_brp, num_g1_points);
+    ret = new_g1_array(&out->g1_values_lagrange_brp, NUM_G1_POINTS);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_g2_array(&out->g2_values_monomial, num_g2_points);
+    ret = new_g2_array(&out->g2_values_monomial, NUM_G2_POINTS);
     if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 monomial bytes to g1 points */
-    for (uint64_t i = 0; i < num_g1_points; i++) {
+    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(
             &g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]
@@ -2148,7 +2151,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Convert all g1 Lagrange bytes to g1 points */
-    for (uint64_t i = 0; i < num_g1_points; i++) {
+    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(
             &g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]
@@ -2161,7 +2164,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Convert all g2 bytes to g2 points */
-    for (uint64_t i = 0; i < num_g2_points; i++) {
+    for (uint64_t i = 0; i < NUM_G2_POINTS; i++) {
         blst_p2_affine g2_affine;
         BLST_ERROR err = blst_p2_uncompress(
             &g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]
@@ -2174,7 +2177,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Make sure the trusted setup was loaded in Lagrange form */
-    ret = is_trusted_setup_in_lagrange_form(out, num_g1_points, num_g2_points);
+    ret = is_trusted_setup_in_lagrange_form(out, NUM_G1_POINTS, NUM_G2_POINTS);
     if (ret != C_KZG_OK) goto out_error;
 
     /* Compute roots of unity and permute the G1 trusted setup */
@@ -2183,7 +2186,7 @@ C_KZG_RET load_trusted_setup(
 
     /* Bit reverse the Lagrange form points */
     ret = bit_reversal_permutation(
-        out->g1_values_lagrange_brp, sizeof(g1_t), num_g1_points
+        out->g1_values_lagrange_brp, sizeof(g1_t), NUM_G1_POINTS
     );
     if (ret != C_KZG_OK) goto out_error;
 
@@ -2229,34 +2232,34 @@ C_KZG_RET load_trusted_setup_file(
 
     /* Allocate space for points */
     ret = c_kzg_calloc(
-        (void **)&g1_monomial_bytes, TRUSTED_SETUP_NUM_G1_POINTS, BYTES_PER_G1
+        (void **)&g1_monomial_bytes, NUM_G1_POINTS, BYTES_PER_G1
     );
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc(
-        (void **)&g1_lagrange_bytes, TRUSTED_SETUP_NUM_G1_POINTS, BYTES_PER_G1
+        (void **)&g1_lagrange_bytes, NUM_G1_POINTS, BYTES_PER_G1
     );
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc(
-        (void **)&g2_monomial_bytes, TRUSTED_SETUP_NUM_G2_POINTS, BYTES_PER_G2
+        (void **)&g2_monomial_bytes, NUM_G2_POINTS, BYTES_PER_G2
     );
     if (ret != C_KZG_OK) goto out;
 
     /* Read the number of g1 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
-    if (num_matches != 1 || i != TRUSTED_SETUP_NUM_G1_POINTS) {
+    if (num_matches != 1 || i != NUM_G1_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Read the number of g2 points */
     num_matches = fscanf(in, "%" SCNu64, &i);
-    if (num_matches != 1 || i != TRUSTED_SETUP_NUM_G2_POINTS) {
+    if (num_matches != 1 || i != NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Read all of the g1 points in Lagrange form, byte by byte */
-    for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
+    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_lagrange_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;
@@ -2265,7 +2268,7 @@ C_KZG_RET load_trusted_setup_file(
     }
 
     /* Read all of the g2 points in monomial form, byte by byte */
-    for (i = 0; i < TRUSTED_SETUP_NUM_G2_POINTS * BYTES_PER_G2; i++) {
+    for (i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
         num_matches = fscanf(in, "%2hhx", &g2_monomial_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;
@@ -2275,7 +2278,7 @@ C_KZG_RET load_trusted_setup_file(
 
     /* Read all of the g1 points in monomial form, byte by byte */
     /* Note: this is last because it is an extension for EIP-7594 */
-    for (i = 0; i < TRUSTED_SETUP_NUM_G1_POINTS * BYTES_PER_G1; i++) {
+    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_monomial_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;
@@ -2286,10 +2289,11 @@ C_KZG_RET load_trusted_setup_file(
     ret = load_trusted_setup(
         out,
         g1_monomial_bytes,
+        NUM_G1_POINTS * BYTES_PER_G1,
         g1_lagrange_bytes,
-        TRUSTED_SETUP_NUM_G1_POINTS,
+        NUM_G1_POINTS * BYTES_PER_G1,
         g2_monomial_bytes,
-        TRUSTED_SETUP_NUM_G2_POINTS,
+        NUM_G2_POINTS * BYTES_PER_G2,
         precompute
     );
 

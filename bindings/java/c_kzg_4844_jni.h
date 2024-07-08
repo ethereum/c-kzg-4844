@@ -21,6 +21,8 @@ extern "C" {
 #define ethereum_ckzg4844_CKZG4844JNI_FIELD_ELEMENTS_PER_EXT_BLOB 8192L
 #undef ethereum_ckzg4844_CKZG4844JNI_FIELD_ELEMENTS_PER_CELL
 #define ethereum_ckzg4844_CKZG4844JNI_FIELD_ELEMENTS_PER_CELL 64L
+#undef ethereum_ckzg4844_CKZG4844JNI_CELLS_PER_EXT_BLOB
+#define ethereum_ckzg4844_CKZG4844JNI_CELLS_PER_EXT_BLOB 128L
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_COMMITMENT
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_COMMITMENT 48L
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_PROOF
@@ -29,8 +31,6 @@ extern "C" {
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_BLOB 131072L
 #undef ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_CELL
 #define ethereum_ckzg4844_CKZG4844JNI_BYTES_PER_CELL 2048L
-#undef ethereum_ckzg4844_CKZG4844JNI_CELLS_PER_EXT_BLOB
-#define ethereum_ckzg4844_CKZG4844JNI_CELLS_PER_EXT_BLOB 128L
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    loadTrustedSetup
@@ -42,10 +42,10 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    loadTrustedSetup
- * Signature: ([B[BJ[BJJ)V
+ * Signature: ([B[B[BJ)V
  */
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3BJ_3BJJ
-  (JNIEnv *, jclass, jbyteArray, jbyteArray, jlong, jbyteArray, jlong, jlong);
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3B_3BJ
+  (JNIEnv *, jclass, jbyteArray, jbyteArray, jbyteArray, jlong);
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
