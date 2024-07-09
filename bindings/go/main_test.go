@@ -61,20 +61,20 @@ func getPartialCells(cells [cellsPerExtBlob]Cell, i int) ([]uint64, []Cell) {
 	return cellIndices, partialCells
 }
 
-func getColumns(cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
-	var rowIndices []uint64
+func getColumns(blobCommitments []Bytes48, cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]Bytes48, []uint64, []Cell, []Bytes48) {
+	var cellCommitments []Bytes48
 	var columnIndices []uint64
 	var cells []Cell
 	var cellProofs []Bytes48
 	for i := range cellRows {
 		for j := 0; j < numCols; j++ {
-			rowIndices = append(rowIndices, uint64(i))
+			cellCommitments = append(cellCommitments, blobCommitments[i])
 			columnIndices = append(columnIndices, uint64(j))
 			cells = append(cells, cellRows[i][j])
 			cellProofs = append(cellProofs, proofRows[i][j])
 		}
 	}
-	return rowIndices, columnIndices, cells, cellProofs
+	return cellCommitments, columnIndices, cells, cellProofs
 }
 
 func divideRoundUp(a, b int) int {
@@ -902,15 +902,7 @@ func Benchmark(b *testing.B) {
 	}
 
 	for i := 1; i <= cellsPerExtBlob; i *= 2 {
-		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
-
-		var cellCommitments []Bytes48
-		for _, rowIndex := range rowIndices {
-			for _, _ = range columnIndices {
-				cellCommitments = append(cellCommitments, commitments[rowIndex])
-			}
-		}
-
+		cellCommitments, columnIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
