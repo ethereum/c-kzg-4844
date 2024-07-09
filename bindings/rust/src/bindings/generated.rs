@@ -119,10 +119,11 @@ extern "C" {
     pub fn load_trusted_setup(
         out: *mut KZGSettings,
         g1_monomial_bytes: *const u8,
+        num_g1_monomial_bytes: usize,
         g1_lagrange_bytes: *const u8,
-        num_g1_points: usize,
+        num_g1_lagrange_bytes: usize,
         g2_monomial_bytes: *const u8,
-        num_g2_points: usize,
+        num_g2_monomial_bytes: usize,
         precompute: usize,
     ) -> C_KZG_RET;
     pub fn load_trusted_setup_file(

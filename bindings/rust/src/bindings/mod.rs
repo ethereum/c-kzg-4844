@@ -105,43 +105,16 @@ impl KZGSettings {
         g2_monomial_bytes: &[u8],
         precompute: usize,
     ) -> Result<Self, Error> {
-        if g1_monomial_bytes.len() != FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1_POINT {
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Invalid number of g1 monomial points in trusted setup. Expected {} got {}",
-                FIELD_ELEMENTS_PER_BLOB,
-                g1_monomial_bytes.len()
-            )));
-        }
-        if g1_lagrange_bytes.len() != FIELD_ELEMENTS_PER_BLOB * BYTES_PER_G1_POINT {
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Invalid number of g1 Lagrange points in trusted setup. Expected {} got {}",
-                FIELD_ELEMENTS_PER_BLOB,
-                g1_lagrange_bytes.len()
-            )));
-        }
-        if g1_monomial_bytes.len() != g1_lagrange_bytes.len() {
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Different number of g1 monomial ({}) and Lagrange ({}) points in trusted setup",
-                g1_monomial_bytes.len(),
-                g1_lagrange_bytes.len()
-            )));
-        }
-        if g2_monomial_bytes.len() != NUM_G2_POINTS * BYTES_PER_G2_POINT {
-            return Err(Error::InvalidTrustedSetup(format!(
-                "Invalid number of g2 monomial points in trusted setup. Expected {} got {}",
-                NUM_G2_POINTS,
-                g2_monomial_bytes.len()
-            )));
-        }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
                 g1_monomial_bytes.as_ptr().cast(),
+                g1_monomial_bytes.len(),
                 g1_lagrange_bytes.as_ptr().cast(),
-                FIELD_ELEMENTS_PER_BLOB,
+                g1_lagrange_bytes.len(),
                 g2_monomial_bytes.as_ptr().cast(),
-                NUM_G2_POINTS,
+                g2_monomial_bytes.len(),
                 precompute,
             );
             if let C_KZG_RET::C_KZG_OK = res {

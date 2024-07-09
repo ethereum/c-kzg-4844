@@ -85,59 +85,66 @@ proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, st
   except IOError as ex:
     return err(ex.msg)
 
-proc loadTrustedSetup*(g1Monomial: openArray[G1Data],
-                       g1Lagrange: openArray[G1Data],
-                       g2Monomial: openArray[G2Data],
+proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
+                       g1LagrangeBytes: openArray[byte],
+                       g2MonomialBytes: openArray[byte],
                        precompute: Natural):
                          Result[KzgCtx, string] =
-  if g1Monomial.len == 0 or g1Lagrange.len == 0 or g2Monomial.len == 0:
-    return err($KZG_BADARGS)
-  if g1Monomial.len != g1Lagrange.len:
+  if g1MonomialBytes.len == 0 or g1LagrangeBytes.len == 0 or g2MonomialBytes.len == 0:
     return err($KZG_BADARGS)
 
   let
     ctx = newKzgCtx()
     res = load_trusted_setup(ctx.val,
-      g1Monomial[0][0].getPtr,
-      g1Lagrange[0][0].getPtr,
-      g1Monomial.len.csize_t,
-      g2Monomial[0][0].getPtr,
-      g2Monomial.len.csize_t,
+      g1MonomialBytes[0].getPtr,
+      g1MonomialBytes.len.csize_t,
+      g1LagrangeBytes[0].getPtr,
+      g1LagrangeBytes.len.csize_t,
+      g2MonomialBytes[0].getPtr,
+      g2MonomialBytes.len.csize_t,
       precompute.csize_t)
   verify(res, ctx)
 
 proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KzgCtx, string] =
   const
+    NumG1 = FIELD_ELEMENTS_PER_BLOB
     NumG2 = 65
-    G1Len = G1Data.len
-    G2Len = G2Data.len
+    G1Len = 48
+    G2Len = 96
 
   var
     s = newStringStream(input)
-    g1Monomial: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
-    g1Lagrange: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
-    g2Monomial: array[NumG2, G2Data]
+    g1MonomialBytes: seq[byte] = newSeq[byte](NumG1 * G1Len)
+    g1LagrangeBytes: seq[byte] = newSeq[byte](NumG1 * G1Len)
+    g2MonomialBytes: seq[byte] = newSeq[byte](NumG2 * G2Len)
 
   try:
-    let fieldElems = s.readLine().parseInt()
-    if fieldElems != FIELD_ELEMENTS_PER_BLOB:
-      return err("invalid field elements per blob, expect $1, got $2" % [
-        $FIELD_ELEMENTS_PER_BLOB, $fieldElems
+    let numG1 = s.readLine().parseInt()
+    if numG1 != NumG1:
+      return err("invalid number of G1 points, expect $1, got $2" % [
+        $NumG1, $numG1
       ])
     let numG2 = s.readLine().parseInt()
     if numG2 != NumG2:
-      return err("invalid number of G2, expect $1, got $2" % [
+      return err("invalid number of G2 points, expect $1, got $2" % [
         $NumG2, $numG2
       ])
 
-    for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
-      g1Lagrange[i] = hexToByteArray[G1Len](s.readLine())
+    for i in 0 ..< NumG1:
+      let p = hexToByteArray[G1Len](s.readLine())
+      for j in 0 ..< G1Len:
+        g1LagrangeBytes[i * G1Len + j] = p[j]
 
     for i in 0 ..< NumG2:
-      g2Monomial[i] = hexToByteArray[G2Len](s.readLine())
+      let p = hexToByteArray[G2Len](s.readLine())
+      for j in 0 ..< G2Len:
+        g2MonomialBytes[i * G2Len + j] = p[j]
 
-    for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
-      g1Monomial[i] = hexToByteArray[G1Len](s.readLine())
+    for i in 0 ..< NumG1:
+      let p = hexToByteArray[G1Len](s.readLine())
+      for j in 0 ..< G1Len:
+        g1MonomialBytes[i * G1Len + j] = p[j]
+
   except ValueError as ex:
     return err(ex.msg)
   except OSError as ex:
@@ -145,7 +152,7 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
   except IOError as ex:
     return err(ex.msg)
 
-  loadTrustedSetup(g1Monomial, g1Lagrange, g2Monomial, precompute)
+  loadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes, precompute)
 
 proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):

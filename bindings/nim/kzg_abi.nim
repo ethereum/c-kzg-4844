@@ -94,10 +94,11 @@ type
 
 proc load_trusted_setup*(res: KzgSettings,
                          g1MonomialBytes: ptr byte,
+                         numG1MonomialBytes: csize_t,
                          g1LagrangeBytes: ptr byte,
-                         numG1Points: csize_t,
+                         numG1LagrangeBytes: csize_t,
                          g2MonomialBytes: ptr byte,
-                         numG2Points: csize_t,
+                         numG2MonomialBytes: csize_t,
                          precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc load_trusted_setup_file*(res: KzgSettings,
