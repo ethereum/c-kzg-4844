@@ -218,14 +218,13 @@ def test_verify_cell_kzg_proof_batch(ts):
         with open(test_file, "r") as f:
             test = yaml.safe_load(f)
 
-        row_commitments = list(map(bytes_from_hex, test["input"]["row_commitments"]))
-        row_indices = test["input"]["row_indices"]
+        commitments = list(map(bytes_from_hex, test["input"]["commitments"]))
         column_indices = test["input"]["column_indices"]
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
         proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            valid = ckzg.verify_cell_kzg_proof_batch(row_commitments, row_indices, column_indices, cells, proofs, ts)
+            valid = ckzg.verify_cell_kzg_proof_batch(commitments, column_indices, cells, proofs, ts)
         except:
             assert test["output"] is None
             continue

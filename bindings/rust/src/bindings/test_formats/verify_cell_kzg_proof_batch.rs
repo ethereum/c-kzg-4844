@@ -7,23 +7,18 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct Input {
-    row_commitments: Vec<String>,
-    row_indices: Vec<u64>,
+    commitments: Vec<String>,
     column_indices: Vec<u64>,
     cells: Vec<String>,
     proofs: Vec<String>,
 }
 
 impl Input {
-    pub fn get_row_commitments(&self) -> Result<Vec<Bytes48>, Error> {
-        self.row_commitments
+    pub fn get_commitments(&self) -> Result<Vec<Bytes48>, Error> {
+        self.commitments
             .iter()
             .map(|s| Bytes48::from_hex(s))
             .collect::<Result<Vec<Bytes48>, Error>>()
-    }
-
-    pub fn get_row_indices(&self) -> Result<Vec<u64>, Error> {
-        Ok(self.row_indices.clone())
     }
 
     pub fn get_column_indices(&self) -> Result<Vec<u64>, Error> {

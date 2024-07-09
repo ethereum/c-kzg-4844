@@ -273,32 +273,26 @@ proc verifyProofs*(ctx: KzgCtx,
   verify(res, valid)
 
 proc verifyProofs*(ctx: KzgCtx,
-                   rowCommitments: openArray[KzgBytes48],
-                   rowIndices: openArray[uint64],
+                   commitments: openArray[KzgBytes48],
                    columnIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
-  if cells.len != rowIndices.len:
+  if commitments.len != cells.len:
     return err($KZG_BADARGS)
 
-  if cells.len != columnIndices.len:
+  if columnIndices.len != cells.len:
     return err($KZG_BADARGS)
 
-  if cells.len != proofs.len:
+  if proofs.len != cells.len:
     return err($KZG_BADARGS)
 
   if cells.len == 0:
     return ok(true)
 
-  if rowCommitments.len == 0:
-    return err($KZG_BADARGS)
-
   var valid: bool
   let res = verify_cell_kzg_proof_batch(
     valid,
-    rowCommitments[0].getPtr,
-    rowCommitments.len.csize_t,
-    rowIndices[0].getPtr,
+    commitments[0].getPtr,
     columnIndices[0].getPtr,
     cells[0].getPtr,
     proofs[0].getPtr,
@@ -382,11 +376,10 @@ template verifyCellKzgProof*(ctx: KzgCtx,
   verifyProof(ctx, commitment, cell, proof)
 
 template verifyCellKzgProofBatch*(ctx: KzgCtx,
-                   rowCommitments: openArray[KzgBytes48],
-                   rowIndices: openArray[uint64],
+                   commitments: openArray[KzgBytes48],
                    columnIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =
-  verifyProofs(ctx, rowCommitments, rowIndices, columnIndices, cells, proofs)
+  verifyProofs(ctx, commitments, columnIndices, cells, proofs)
 
 {. pop .}

@@ -545,11 +545,10 @@ func TestVerifyCellKZGProof(t *testing.T) {
 func TestVerifyCellKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
-			RowCommitments []string `yaml:"row_commitments"`
-			RowIndices     []uint64 `yaml:"row_indices"`
-			ColumnIndices  []uint64 `yaml:"column_indices"`
-			Cells          []string `yaml:"cells"`
-			Proofs         []string `yaml:"proofs"`
+			Commitments   []string `yaml:"commitments"`
+			ColumnIndices []uint64 `yaml:"column_indices"`
+			Cells         []string `yaml:"cells"`
+			Proofs        []string `yaml:"proofs"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -568,13 +567,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 			require.NoError(t, err)
 
 			var commitments []Bytes48
-			for _, rowIndex := range test.Input.RowIndices {
-				// Hack until we update the reference tests
-				if rowIndex >= uint64(len(test.Input.RowCommitments)) {
-					require.Nil(t, test.Output)
-					return
-				}
-				c := test.Input.RowCommitments[rowIndex]
+			for _, c := range test.Input.Commitments {
 				var commitment Bytes48
 				err = commitment.UnmarshalText([]byte(c))
 				if err != nil {

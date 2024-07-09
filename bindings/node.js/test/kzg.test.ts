@@ -66,7 +66,7 @@ type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[];
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
 type VerifyCellKzgProofTest = TestMeta<{commitment: string; cell_index: number; cell: string; proof: string}, boolean>;
 type VerifyCellKzgProofBatchTest = TestMeta<
-  {row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[]},
+  {commitments: string[]; column_indices: number[]; cells: string[]; proofs: string[]},
   boolean
 >;
 type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
@@ -432,14 +432,13 @@ describe("C-KZG", () => {
         const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
 
         let valid;
-        const rowCommitments = test.input.row_commitments.map(bytesFromHex);
-        const rowIndices = test.input.row_indices;
+        const commitments = test.input.commitments.map(bytesFromHex);
         const columnIndices = test.input.column_indices;
         const cells = test.input.cells.map(bytesFromHex);
         const proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          valid = verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+          valid = verifyCellKzgProofBatch(commitments, columnIndices, cells, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
           return;

@@ -466,8 +466,7 @@ public class ReferenceTests
 
     private class VerifyCellKzgProofBatchInput
     {
-        public List<string> RowCommitments { get; set; } = null!;
-        public List<ulong> RowIndices { get; set; } = null!;
+        public List<string> Commitments { get; set; } = null!;
         public List<ulong> ColumnIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
         public List<string> Proofs { get; set; } = null!;
@@ -494,17 +493,15 @@ public class ReferenceTests
             VerifyCellKzgProofBatchTest test = _deserializer.Deserialize<VerifyCellKzgProofBatchTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] rowCommitments = GetFlatBytes(test.Input.RowCommitments);
-            ulong[] rowIndices = test.Input.RowIndices.ToArray();
+            byte[] commitments = GetFlatBytes(test.Input.Commitments);
             ulong[] columnIndices = test.Input.ColumnIndices.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
             byte[] proofs = GetFlatBytes(test.Input.Proofs);
-            int numCommitments = rowCommitments.Length / Ckzg.BytesPerCommitment;
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(rowCommitments, numCommitments, rowIndices, columnIndices, cells, proofs, numCells, _ts);
+                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(commitments, columnIndices, cells, proofs, numCells, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch

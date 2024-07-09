@@ -484,17 +484,16 @@ impl KZGProof {
 
     pub fn verify_cell_kzg_proof_batch(
         commitments_bytes: &[Bytes48],
-        row_indices: &[u64],
         column_indices: &[u64],
         cells: &[Cell],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
     ) -> Result<bool, Error> {
-        if cells.len() != row_indices.len() {
+        if cells.len() != commitments_bytes.len() {
             return Err(Error::MismatchLength(format!(
-                "There are {} cells and {} row indices",
+                "There are {} cells and {} commitments",
                 cells.len(),
-                row_indices.len()
+                commitments_bytes.len()
             )));
         }
         if cells.len() != column_indices.len() {
@@ -516,8 +515,6 @@ impl KZGProof {
             let res = verify_cell_kzg_proof_batch(
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
-                commitments_bytes.len(),
-                row_indices.as_ptr(),
                 column_indices.as_ptr(),
                 cells.as_ptr(),
                 proofs_bytes.as_ptr(),
@@ -1330,9 +1327,8 @@ mod tests {
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(row_commitments), Ok(row_indices), Ok(column_indices), Ok(cells), Ok(proofs)) = (
-                test.input.get_row_commitments(),
-                test.input.get_row_indices(),
+            let (Ok(commitments), Ok(column_indices), Ok(cells), Ok(proofs)) = (
+                test.input.get_commitments(),
                 test.input.get_column_indices(),
                 test.input.get_cells(),
                 test.input.get_proofs(),
@@ -1352,11 +1348,8 @@ mod tests {
                 fs::create_dir_all(&dir_path).unwrap();
                 let file_path = dir_path.join(format!("data_{}.bin", index));
                 let mut file = File::create(&file_path).unwrap();
-                for row_commitment in &row_commitments {
-                    file.write_all(&row_commitment.bytes).unwrap();
-                }
-                for row_index in &row_indices {
-                    file.write_all(&row_index.to_le_bytes()).unwrap();
+                for commitment in &commitments {
+                    file.write_all(&commitment.bytes).unwrap();
                 }
                 for column_index in &column_indices {
                     file.write_all(&column_index.to_le_bytes()).unwrap();
@@ -1370,8 +1363,7 @@ mod tests {
             }
 
             match KZGProof::verify_cell_kzg_proof_batch(
-                &row_commitments,
-                &row_indices,
+                &commitments,
                 &column_indices,
                 &cells,
                 &proofs,

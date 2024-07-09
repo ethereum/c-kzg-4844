@@ -615,7 +615,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   return (jboolean)out;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray row_indices, jlongArray column_indices, jbyteArray cells, jbyteArray proofs_bytes)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray column_indices, jbyteArray cells, jbyteArray proofs_bytes)
 {
   if (settings == NULL)
   {
@@ -630,15 +630,14 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
     return 0;
   }
   size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
+  size_t count = num_commitments;
 
-  size_t row_indices_count = (size_t)(*env)->GetArrayLength(env, row_indices);
   size_t column_indices_count = (size_t)(*env)->GetArrayLength(env, column_indices);
-  if (row_indices_count != column_indices_count)
+  if (column_indices_count != count)
   {
-    throw_invalid_size_exception(env, "Invalid columnIndices counts.", row_indices_count, column_indices_count);
+    throw_invalid_size_exception(env, "Invalid columnIndices size.", column_indices_count, count);
     return 0;
   }
-  size_t count = row_indices_count;
 
   size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
   if (cells_size != count * BYTES_PER_CELL)
@@ -655,16 +654,14 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   }
 
   Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
-  uint64_t *row_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, row_indices, NULL);
   uint64_t *column_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, column_indices, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
   Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
 
   bool out;
-  C_KZG_RET ret = verify_cell_kzg_proof_batch(&out, commitments_native, num_commitments, row_indices_native, column_indices_native, cells_native, proofs_native, count, settings);
+  C_KZG_RET ret = verify_cell_kzg_proof_batch(&out, commitments_native, column_indices_native, cells_native, proofs_native, count, settings);
 
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
-  (*env)->ReleaseLongArrayElements(env, row_indices, (jlong *)row_indices_native, JNI_ABORT);
   (*env)->ReleaseLongArrayElements(env, column_indices, (jlong *)column_indices_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);

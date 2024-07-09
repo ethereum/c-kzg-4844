@@ -130,10 +130,10 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    verifyCellKzgProofBatch
- * Signature: ([B[J[J[B[B)Z
+ * Signature: ([B[J[B[B)Z
  */
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch
-  (JNIEnv *, jclass, jbyteArray, jlongArray, jlongArray, jbyteArray, jbyteArray);
+  (JNIEnv *, jclass, jbyteArray, jlongArray, jbyteArray, jbyteArray);
 
 #ifdef __cplusplus
 }
