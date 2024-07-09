@@ -3796,45 +3796,46 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
  * commitments. Also returns a list of indices which point to those new unique
  * commitments.
  *
- * @param[in,out]   commitments Input commitments, output unique commitments
- * @param[out]      indices     Input unused, output index to each commitment
- * @param[in,out]   count       The number of commitments & indices
+ * @param[in,out]   commitments_out Updated to only contain unique commitments
+ * @param[out]      indices_out     Used as map between old/new commitments
+ * @param[in,out]   count_out       Number of commitments before and after
  *
  * @remark The input arrays are re-used.
  * @remark The number of commitments/indices must be the same.
- * @remark The length of `indices` is unchanged.
+ * @remark The length of `indices_out` is unchanged.
+ * @remark `count_out` is updated to be the number of unique commitments.
  */
 static void deduplicate_commitments(
-    Bytes48 *commitments, uint64_t *indices, size_t *count
+    Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out
 ) {
     /* Bail early if there are no commitments */
-    if (*count == 0) return;
+    if (*count_out == 0) return;
 
     /* The first commitment is always new */
-    indices[0] = 0;
+    indices_out[0] = 0;
     size_t new_count = 1;
 
     /* Create list of unique commitments & indices to them */
-    for (size_t i = 1; i < *count; i++) {
+    for (size_t i = 1; i < *count_out; i++) {
         bool exist = false;
         for (size_t j = 0; j < new_count; j++) {
-            if (commitments_equal(&commitments[i], &commitments[j])) {
+            if (commitments_equal(&commitments_out[i], &commitments_out[j])) {
                 /* This commitment already exists */
-                indices[i] = j;
+                indices_out[i] = j;
                 exist = true;
                 break;
             }
         }
         if (!exist) {
             /* This is a new commitment */
-            commitments_copy(&commitments[new_count], &commitments[i]);
-            indices[i] = new_count;
+            commitments_copy(&commitments_out[new_count], &commitments_out[i]);
+            indices_out[i] = new_count;
             new_count++;
         }
     }
 
     /* Update the count */
-    *count = new_count;
+    *count_out = new_count;
 }
 
 /**
