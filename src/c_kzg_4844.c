@@ -3212,6 +3212,185 @@ out:
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Helper Functions for Batch Cell Verification
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Compute random linear combination challenge scalars for
+ * verify_cell_kzg_proof_batch. In this, we must hash EVERYTHING that the prover
+ * can control.
+ *
+ * @param[out]  r_powers_out        The output challenges
+ * @param[in]   commitments_bytes   The input commitments
+ * @param[in]   num_commitments     The number of commitments
+ * @param[in]   commitment_indices  The cell commitment indices
+ * @param[in]   cell_indices        The cell indices
+ * @param[in]   cells               The cell
+ * @param[in]   proofs_bytes        The cell proof
+ * @param[in]   num_cells           The number of cells
+ */
+static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
+    fr_t *r_powers_out,
+    const Bytes48 *commitments_bytes,
+    size_t num_commitments,
+    const uint64_t *commitment_indices,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    const Bytes48 *proofs_bytes,
+    size_t num_cells
+) {
+    C_KZG_RET ret;
+    uint8_t *bytes = NULL;
+    Bytes32 r_bytes;
+    fr_t r;
+
+    /* Calculate the size of the data we're going to hash */
+    size_t input_size = DOMAIN_STR_LENGTH  /* The domain separator */
+                        + sizeof(uint64_t) /* FIELD_ELEMENTS_PER_CELL */
+                        + sizeof(uint64_t) /* num_commitments */
+                        + sizeof(uint64_t) /* num_cells */
+                        + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
+                        + (num_cells * sizeof(uint64_t)) /* commitment_indices */
+                        + (num_cells * sizeof(uint64_t)) /* cell_indices */
+                        + (num_cells * BYTES_PER_CELL)   /* cells */
+                        + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
+
+    /* Allocate space to copy this data into */
+    ret = c_kzg_malloc((void **)&bytes, input_size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Pointer tracking `bytes` for writing on top of it */
+    uint8_t *offset = bytes;
+
+    /* Copy domain separator */
+    memcpy(
+        offset,
+        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH,
+        DOMAIN_STR_LENGTH
+    );
+    offset += DOMAIN_STR_LENGTH;
+
+    /* Copy field elements per cell */
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_CELL);
+    offset += sizeof(uint64_t);
+
+    /* Copy number of commitments */
+    bytes_from_uint64(offset, num_commitments);
+    offset += sizeof(uint64_t);
+
+    /* Copy number of cells */
+    bytes_from_uint64(offset, num_cells);
+    offset += sizeof(uint64_t);
+
+    for (size_t i = 0; i < num_commitments; i++) {
+        /* Copy commitment */
+        memcpy(offset, &commitments_bytes[i], BYTES_PER_COMMITMENT);
+        offset += BYTES_PER_COMMITMENT;
+    }
+
+    for (size_t i = 0; i < num_cells; i++) {
+        /* Copy row id */
+        bytes_from_uint64(offset, commitment_indices[i]);
+        offset += sizeof(uint64_t);
+
+        /* Copy column id */
+        bytes_from_uint64(offset, cell_indices[i]);
+        offset += sizeof(uint64_t);
+
+        /* Copy cell */
+        memcpy(offset, &cells[i], BYTES_PER_CELL);
+        offset += BYTES_PER_CELL;
+
+        /* Copy proof */
+        memcpy(offset, &proofs_bytes[i], BYTES_PER_PROOF);
+        offset += BYTES_PER_PROOF;
+    }
+
+    /* Now let's create the challenge! */
+    blst_sha256(r_bytes.bytes, bytes, input_size);
+    hash_to_bls_field(&r, &r_bytes);
+
+    /* Raise power of r for each cell */
+    compute_powers(r_powers_out, &r, num_cells);
+
+    /* Make sure we wrote the entire buffer */
+    assert(offset == bytes + input_size);
+
+out:
+    c_kzg_free(bytes);
+    return ret;
+}
+
+/**
+ * Helper function to compare two commitments.
+ *
+ * @param[in]   a   The first commitment
+ * @param[in]   b   The second commitment
+ *
+ * @return True if the commitments are the same, otherwise false.
+ */
+static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
+    return memcmp(a->bytes, b->bytes, BYTES_PER_COMMITMENT) == 0;
+}
+
+/**
+ * Helper function to copy one commitment's bytes to another.
+ *
+ * @param[in]   dst   The destination commitment
+ * @param[in]   src   The source commitment
+ */
+static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
+    memcpy(dst->bytes, src->bytes, BYTES_PER_COMMITMENT);
+}
+
+/**
+ * Convert a list of commitments with potential duplicates to a list of unique
+ * commitments. Also returns a list of indices which point to those new unique
+ * commitments.
+ *
+ * @param[in,out]   commitments_out Updated to only contain unique commitments
+ * @param[out]      indices_out     Used as map between old/new commitments
+ * @param[in,out]   count_out       Number of commitments before and after
+ *
+ * @remark The input arrays are re-used.
+ * @remark The number of commitments/indices must be the same.
+ * @remark The length of `indices_out` is unchanged.
+ * @remark `count_out` is updated to be the number of unique commitments.
+ */
+static void deduplicate_commitments(
+    Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out
+) {
+    /* Bail early if there are no commitments */
+    if (*count_out == 0) return;
+
+    /* The first commitment is always new */
+    indices_out[0] = 0;
+    size_t new_count = 1;
+
+    /* Create list of unique commitments & indices to them */
+    for (size_t i = 1; i < *count_out; i++) {
+        bool exist = false;
+        for (size_t j = 0; j < new_count; j++) {
+            if (commitments_equal(&commitments_out[i], &commitments_out[j])) {
+                /* This commitment already exists */
+                indices_out[i] = j;
+                exist = true;
+                break;
+            }
+        }
+        if (!exist) {
+            /* This is a new commitment */
+            commitments_copy(&commitments_out[new_count], &commitments_out[i]);
+            indices_out[i] = new_count;
+            new_count++;
+        }
+    }
+
+    /* Update the count */
+    *count_out = new_count;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Functions for EIP-7594
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -3467,181 +3646,6 @@ out:
     c_kzg_free(recovered_proofs_g1);
     c_kzg_free(blob);
     return ret;
-}
-
-/**
- * Compute random linear combination challenge scalars for
- * verify_cell_kzg_proof_batch. In this, we must hash EVERYTHING that the prover
- * can control.
- *
- * @param[out]  r_powers_out        The output challenges
- * @param[in]   commitments_bytes   The input commitments
- * @param[in]   num_commitments     The number of commitments
- * @param[in]   commitment_indices  The cell commitment indices
- * @param[in]   cell_indices        The cell indices
- * @param[in]   cells               The cell
- * @param[in]   proofs_bytes        The cell proof
- * @param[in]   num_cells           The number of cells
- */
-static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
-    fr_t *r_powers_out,
-    const Bytes48 *commitments_bytes,
-    size_t num_commitments,
-    const uint64_t *commitment_indices,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    const Bytes48 *proofs_bytes,
-    size_t num_cells
-) {
-    C_KZG_RET ret;
-    uint8_t *bytes = NULL;
-    Bytes32 r_bytes;
-    fr_t r;
-
-    /* Calculate the size of the data we're going to hash */
-    size_t input_size = DOMAIN_STR_LENGTH  /* The domain separator */
-                        + sizeof(uint64_t) /* FIELD_ELEMENTS_PER_CELL */
-                        + sizeof(uint64_t) /* num_commitments */
-                        + sizeof(uint64_t) /* num_cells */
-                        + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
-                        + (num_cells * sizeof(uint64_t)) /* commitment_indices */
-                        + (num_cells * sizeof(uint64_t)) /* cell_indices */
-                        + (num_cells * BYTES_PER_CELL)   /* cells */
-                        + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
-
-    /* Allocate space to copy this data into */
-    ret = c_kzg_malloc((void **)&bytes, input_size);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Pointer tracking `bytes` for writing on top of it */
-    uint8_t *offset = bytes;
-
-    /* Copy domain separator */
-    memcpy(
-        offset,
-        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH,
-        DOMAIN_STR_LENGTH
-    );
-    offset += DOMAIN_STR_LENGTH;
-
-    /* Copy field elements per cell */
-    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_CELL);
-    offset += sizeof(uint64_t);
-
-    /* Copy number of commitments */
-    bytes_from_uint64(offset, num_commitments);
-    offset += sizeof(uint64_t);
-
-    /* Copy number of cells */
-    bytes_from_uint64(offset, num_cells);
-    offset += sizeof(uint64_t);
-
-    for (size_t i = 0; i < num_commitments; i++) {
-        /* Copy commitment */
-        memcpy(offset, &commitments_bytes[i], BYTES_PER_COMMITMENT);
-        offset += BYTES_PER_COMMITMENT;
-    }
-
-    for (size_t i = 0; i < num_cells; i++) {
-        /* Copy row id */
-        bytes_from_uint64(offset, commitment_indices[i]);
-        offset += sizeof(uint64_t);
-
-        /* Copy column id */
-        bytes_from_uint64(offset, cell_indices[i]);
-        offset += sizeof(uint64_t);
-
-        /* Copy cell */
-        memcpy(offset, &cells[i], BYTES_PER_CELL);
-        offset += BYTES_PER_CELL;
-
-        /* Copy proof */
-        memcpy(offset, &proofs_bytes[i], BYTES_PER_PROOF);
-        offset += BYTES_PER_PROOF;
-    }
-
-    /* Now let's create the challenge! */
-    blst_sha256(r_bytes.bytes, bytes, input_size);
-    hash_to_bls_field(&r, &r_bytes);
-
-    /* Raise power of r for each cell */
-    compute_powers(r_powers_out, &r, num_cells);
-
-    /* Make sure we wrote the entire buffer */
-    assert(offset == bytes + input_size);
-
-out:
-    c_kzg_free(bytes);
-    return ret;
-}
-
-/**
- * Helper function to compare two commitments.
- *
- * @param[in]   a   The first commitment
- * @param[in]   b   The second commitment
- *
- * @return True if the commitments are the same, otherwise false.
- */
-static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
-    return memcmp(a->bytes, b->bytes, BYTES_PER_COMMITMENT) == 0;
-}
-
-/**
- * Helper function to copy one commitment's bytes to another.
- *
- * @param[in]   dst   The destination commitment
- * @param[in]   src   The source commitment
- */
-static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
-    memcpy(dst->bytes, src->bytes, BYTES_PER_COMMITMENT);
-}
-
-/**
- * Convert a list of commitments with potential duplicates to a list of unique
- * commitments. Also returns a list of indices which point to those new unique
- * commitments.
- *
- * @param[in,out]   commitments_out Updated to only contain unique commitments
- * @param[out]      indices_out     Used as map between old/new commitments
- * @param[in,out]   count_out       Number of commitments before and after
- *
- * @remark The input arrays are re-used.
- * @remark The number of commitments/indices must be the same.
- * @remark The length of `indices_out` is unchanged.
- * @remark `count_out` is updated to be the number of unique commitments.
- */
-static void deduplicate_commitments(
-    Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out
-) {
-    /* Bail early if there are no commitments */
-    if (*count_out == 0) return;
-
-    /* The first commitment is always new */
-    indices_out[0] = 0;
-    size_t new_count = 1;
-
-    /* Create list of unique commitments & indices to them */
-    for (size_t i = 1; i < *count_out; i++) {
-        bool exist = false;
-        for (size_t j = 0; j < new_count; j++) {
-            if (commitments_equal(&commitments_out[i], &commitments_out[j])) {
-                /* This commitment already exists */
-                indices_out[i] = j;
-                exist = true;
-                break;
-            }
-        }
-        if (!exist) {
-            /* This is a new commitment */
-            commitments_copy(&commitments_out[new_count], &commitments_out[i]);
-            indices_out[i] = new_count;
-            new_count++;
-        }
-    }
-
-    /* Update the count */
-    *count_out = new_count;
 }
 
 /**
