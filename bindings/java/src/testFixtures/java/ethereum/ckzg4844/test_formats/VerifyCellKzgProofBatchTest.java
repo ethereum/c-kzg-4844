@@ -8,11 +8,8 @@ import org.apache.tuweni.bytes.Bytes;
 
 public class VerifyCellKzgProofBatchTest {
   public static class Input {
-    @JsonProperty("row_commitments")
-    private List<String> rowCommitments;
-
-    @JsonProperty("row_indices")
-    private List<Long> rowIndices;
+    @JsonProperty("commitments")
+    private List<String> commitments;
 
     @JsonProperty("column_indices")
     private List<Long> columnIndices;
@@ -20,17 +17,13 @@ public class VerifyCellKzgProofBatchTest {
     private List<String> cells;
     private List<String> proofs;
 
-    public byte[] getRowCommitments() {
+    public byte[] getCommitments() {
       return TestUtils.flatten(
-          rowCommitments.stream()
+          commitments.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
               .toArray(byte[][]::new));
-    }
-
-    public long[] getRowIndices() {
-      return rowIndices.stream().mapToLong(Long::longValue).toArray();
     }
 
     public long[] getColumnIndices() {

@@ -228,23 +228,21 @@ public static partial class Ckzg
         }
     }
 
-    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> rowCommitments, int numRowCommitments,
-            ReadOnlySpan<ulong> rowIndices, ReadOnlySpan<ulong> columnIndices, ReadOnlySpan<byte> cells,
-            ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
+    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> columnIndices,
+            ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
-        ThrowOnInvalidLength(rowCommitments, nameof(rowCommitments), BytesPerCommitment * numRowCommitments);
-        ThrowOnInvalidLength(rowIndices, nameof(rowIndices), numCells);
+        ThrowOnInvalidLength(commitments, nameof(commitments), BytesPerCommitment * numCells);
         ThrowOnInvalidLength(columnIndices, nameof(columnIndices), numCells);
         ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
         ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * numCells);
 
-        fixed (byte* rowCommitmentPtr = rowCommitments, cellsPtr = cells, proofsPtr = proofs)
+        fixed (byte* commitmentsPtr = commitments, cellsPtr = cells, proofsPtr = proofs)
         {
-            fixed (ulong* rowIndicesPtr = rowIndices, columnIndicesPtr = columnIndices)
+            fixed (ulong* columnIndicesPtr = columnIndices)
             {
-                KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, rowCommitmentPtr, numRowCommitments,
-                    rowIndicesPtr, columnIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
+                KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, commitmentsPtr,
+                    columnIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;
             }

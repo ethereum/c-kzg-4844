@@ -155,8 +155,7 @@ public class CKZG4844JNITest {
     try {
       boolean valid =
           CKZG4844JNI.verifyCellKzgProofBatch(
-              test.getInput().getRowCommitments(),
-              test.getInput().getRowIndices(),
+              test.getInput().getCommitments(),
               test.getInput().getColumnIndices(),
               test.getInput().getCells(),
               test.getInput().getProofs());
@@ -263,20 +262,27 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
 
     final int count = 6;
+    final int commitmentsLength = CELLS_PER_EXT_BLOB * BYTES_PER_COMMITMENT;
     final int cellsLength = CELLS_PER_EXT_BLOB * BYTES_PER_CELL;
     final int proofsLength = CELLS_PER_EXT_BLOB * BYTES_PER_PROOF;
 
-    final byte[] commitments = new byte[count * BYTES_PER_COMMITMENT];
+    final byte[] commitments = new byte[count * commitmentsLength];
     final CellsAndProofs[] data = new CellsAndProofs[count];
-    final long[] rowIndices = new long[count * CELLS_PER_EXT_BLOB];
     final long[] columnIndices = new long[count * CELLS_PER_EXT_BLOB];
-    final byte[] cells = new byte[count * CELLS_PER_EXT_BLOB * BYTES_PER_CELL];
-    final byte[] proofs = new byte[count * CELLS_PER_EXT_BLOB * BYTES_PER_PROOF];
+    final byte[] cells = new byte[count * cellsLength];
+    final byte[] proofs = new byte[count * proofsLength];
 
     for (int i = 0; i < count; i++) {
       final byte[] blob = TestUtils.createRandomBlob();
       final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-      System.arraycopy(commitment, 0, commitments, i * BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
+      for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
+        System.arraycopy(
+            commitment,
+            0,
+            commitments,
+            i * commitmentsLength + j * BYTES_PER_COMMITMENT,
+            BYTES_PER_COMMITMENT);
+      }
       data[i] = CKZG4844JNI.computeCellsAndKzgProofs(blob);
       System.arraycopy(data[i].getCells(), 0, cells, i * cellsLength, cellsLength);
       System.arraycopy(data[i].getProofs(), 0, proofs, i * proofsLength, proofsLength);
@@ -285,13 +291,11 @@ public class CKZG4844JNITest {
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
         final int index = i * CELLS_PER_EXT_BLOB + j;
-        rowIndices[index] = i;
         columnIndices[index] = j;
       }
     }
 
-    assertTrue(
-        CKZG4844JNI.verifyCellKzgProofBatch(commitments, rowIndices, columnIndices, cells, proofs));
+    assertTrue(CKZG4844JNI.verifyCellKzgProofBatch(commitments, columnIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 

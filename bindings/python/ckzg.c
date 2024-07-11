@@ -456,37 +456,33 @@ out:
 }
 
 static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_row_commitments, *input_row_indices, *input_column_indices, *input_cells, *input_proofs, *s;
+  PyObject *input_commitments, *input_column_indices, *input_cells, *input_proofs, *s;
   PyObject *ret = NULL;
   Bytes48 *commitments = NULL;
-  uint64_t *row_indices = NULL;
   uint64_t *column_indices = NULL;
   Cell *cells = NULL;
   Bytes48 *proofs = NULL;
   bool ok = false;
 
   /* Ensure inputs are the right types */
-  if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof_batch", 6, 6, &input_row_commitments,
-          &input_row_indices, &input_column_indices, &input_cells, &input_proofs, &s) ||
-      !PyList_Check(input_row_commitments) ||
-      !PyList_Check(input_row_indices) ||
+  if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof_batch", 5, 5, &input_commitments,
+          &input_column_indices, &input_cells, &input_proofs, &s) ||
+      !PyList_Check(input_commitments) ||
       !PyList_Check(input_column_indices) ||
       !PyList_Check(input_cells) ||
       !PyList_Check(input_proofs) ||
       !PyCapsule_IsValid(s, "KZGSettings")) {
-    ret = PyErr_Format(PyExc_ValueError, "expected list, list, list, list, list, trusted setup");
+    ret = PyErr_Format(PyExc_ValueError, "expected list, list, list, list, trusted setup");
     goto out;
   }
 
-  /* The length of the commitments is independent */
-  Py_ssize_t row_commitments_count = PyList_Size(input_row_commitments);
   /* Ensure input lists are the same length */
-  Py_ssize_t row_indices_count = PyList_Size(input_row_indices);
+  Py_ssize_t commitments_count = PyList_Size(input_commitments);
   Py_ssize_t column_indices_count = PyList_Size(input_column_indices);
   Py_ssize_t cells_count = PyList_Size(input_cells);
   Py_ssize_t proofs_count = PyList_Size(input_proofs);
-  if (row_indices_count != cells_count) {
-    ret = PyErr_Format(PyExc_ValueError, "expected same number of row indices and cells");
+  if (commitments_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError, "expected same number of commitments and cells");
     goto out;
   }
   if (column_indices_count != cells_count) {
@@ -498,15 +494,15 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
     goto out;
   }
 
-  /* Allocate space for the row commitments */
-  commitments = (Bytes48 *)calloc(row_commitments_count, BYTES_PER_COMMITMENT);
+  /* Allocate space for the commitments */
+  commitments = (Bytes48 *)calloc(commitments_count, BYTES_PER_COMMITMENT);
   if (commitments == NULL) {
-    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for row commitments");
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for commitments");
     goto out;
   }
-  for (Py_ssize_t i = 0; i < row_commitments_count; i++) {
+  for (Py_ssize_t i = 0; i < commitments_count; i++) {
     /* Ensure each commitment is bytes */
-    PyObject *commitment = PyList_GetItem(input_row_commitments, i);
+    PyObject *commitment = PyList_GetItem(input_commitments, i);
     if (!PyBytes_Check(commitment)) {
       ret = PyErr_Format(PyExc_ValueError, "expected commitment to be bytes");
       goto out;
@@ -519,29 +515,6 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
     }
     /* The commitment is good, copy it to our array */
     memcpy(&commitments[i], PyBytes_AsString(commitment), BYTES_PER_COMMITMENT);
-  }
-
-  /* Allocate space for the row indices */
-  row_indices = (uint64_t *)calloc(row_indices_count, sizeof(uint64_t));
-  if (row_indices == NULL) {
-    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for row indices");
-    goto out;
-  }
-  for (Py_ssize_t i = 0; i < row_indices_count; i++) {
-    /* Ensure each row index is an integer */
-    PyObject *row_index = PyList_GetItem(input_row_indices, i);
-    if (!PyLong_Check(row_index)) {
-      ret = PyErr_Format(PyExc_ValueError, "expected row index to be an integer");
-      goto out;
-    }
-    /* Convert the row index to a uint64_t */
-    uint64_t value = PyLong_AsUnsignedLongLong(row_index);
-    if (PyErr_Occurred()) {
-      ret = PyErr_Format(PyExc_ValueError, "failed to convert row index to uint64_t");
-      goto out;
-    }
-    /* The row index is good, add it to our array */
-    memcpy(&row_indices[i], &value, sizeof(uint64_t));
   }
 
   /* Allocate space for the column indices */
@@ -614,8 +587,7 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   }
 
   /* Call our C function with our inputs */
-  if (verify_cell_kzg_proof_batch(&ok, commitments, row_commitments_count,
-        row_indices, column_indices, cells, proofs, cells_count,
+  if (verify_cell_kzg_proof_batch(&ok, commitments, column_indices, cells, proofs, cells_count,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_kzg_proof_batch failed");
     goto out;
@@ -632,7 +604,6 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
 
 out:
   free(commitments);
-  free(row_indices);
   free(column_indices);
   free(cells);
   free(proofs);

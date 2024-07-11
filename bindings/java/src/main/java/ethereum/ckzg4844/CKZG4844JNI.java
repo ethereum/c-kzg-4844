@@ -238,8 +238,7 @@ public class CKZG4844JNI {
   /**
    * Verify that multiple cells' proofs are valid.
    *
-   * @param commitmentsBytes the commitments for all blobs
-   * @param rowIndices the row index for each cell
+   * @param commitmentsBytes the commitments for each cell
    * @param columnIndices the column index for each cell
    * @param cells the cells to verify
    * @param proofsBytes the proof for each cell
@@ -247,9 +246,5 @@ public class CKZG4844JNI {
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyCellKzgProofBatch(
-      byte[] commitmentsBytes,
-      long[] rowIndices,
-      long[] columnIndices,
-      byte[] cells,
-      byte[] proofsBytes);
+      byte[] commitmentsBytes, long[] columnIndices, byte[] cells, byte[] proofsBytes);
 }

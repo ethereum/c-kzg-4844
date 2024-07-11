@@ -123,13 +123,12 @@ proc verifyProofs*(blobs: openArray[KzgBlob],
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
 
-proc verifyProofs*(rowCommitments: openArray[KzgBytes48],
-                   rowIndices: openArray[uint64],
+proc verifyProofs*(commitments: openArray[KzgBytes48],
                    columnIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   verifyCtx:
-    gCtx.verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
+    gCtx.verifyProofs(commitments, columnIndices, cells, proofs)
 
 proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
@@ -182,12 +181,11 @@ template verifyCellKzgProof*(commitment: KzgBytes48,
                    proof: KzgBytes48): untyped =
   verifyProof(commitment, cellIndex, cell, proof)
 
-template verifyCellKzgProofBatch*(rowCommitments: openArray[KzgBytes48],
-                   rowIndices: openArray[uint64],
+template verifyCellKzgProofBatch*(commitments: openArray[KzgBytes48],
                    columnIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =
-  verifyProofs(rowCommitments, rowIndices, columnIndices, cells, proofs)
+  verifyProofs(commitments, columnIndices, cells, proofs)
 
 template recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): untyped =

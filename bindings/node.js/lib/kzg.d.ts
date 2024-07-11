@@ -175,8 +175,7 @@ export function verifyCellKzgProof(
 /**
  * Verify that multiple cells' proofs are valid.
  *
- * @param {Bytes48[]} commitmentsBytes - The commitments for all blobs
- * @param {number[]}  rowIndices - The row index for each cell
+ * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
  * @param {number[]}  columnIndices - The column index for each cell
  * @param {Cell[]}    cells - The cells to verify
  * @param {Bytes48[]} proofsBytes - The proof for each cell

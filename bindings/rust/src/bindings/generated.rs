@@ -190,8 +190,6 @@ extern "C" {
     pub fn verify_cell_kzg_proof_batch(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
-        num_commitments: usize,
-        row_indices: *const u64,
         column_indices: *const u64,
         cells: *const Cell,
         proofs_bytes: *const Bytes48,

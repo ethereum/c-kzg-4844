@@ -61,20 +61,20 @@ func getPartialCells(cells [cellsPerExtBlob]Cell, i int) ([]uint64, []Cell) {
 	return cellIndices, partialCells
 }
 
-func getColumns(cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]uint64, []uint64, []Cell, []Bytes48) {
-	var rowIndices []uint64
+func getColumns(blobCommitments []Bytes48, cellRows [][cellsPerExtBlob]Cell, proofRows [][cellsPerExtBlob]Bytes48, numCols int) ([]Bytes48, []uint64, []Cell, []Bytes48) {
+	var cellCommitments []Bytes48
 	var columnIndices []uint64
 	var cells []Cell
 	var cellProofs []Bytes48
 	for i := range cellRows {
 		for j := 0; j < numCols; j++ {
-			rowIndices = append(rowIndices, uint64(i))
+			cellCommitments = append(cellCommitments, blobCommitments[i])
 			columnIndices = append(columnIndices, uint64(j))
 			cells = append(cells, cellRows[i][j])
 			cellProofs = append(cellProofs, proofRows[i][j])
 		}
 	}
-	return rowIndices, columnIndices, cells, cellProofs
+	return cellCommitments, columnIndices, cells, cellProofs
 }
 
 func divideRoundUp(a, b int) int {
@@ -545,11 +545,10 @@ func TestVerifyCellKZGProof(t *testing.T) {
 func TestVerifyCellKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
-			RowCommitments []string `yaml:"row_commitments"`
-			RowIndices     []uint64 `yaml:"row_indices"`
-			ColumnIndices  []uint64 `yaml:"column_indices"`
-			Cells          []string `yaml:"cells"`
-			Proofs         []string `yaml:"proofs"`
+			Commitments   []string `yaml:"commitments"`
+			ColumnIndices []uint64 `yaml:"column_indices"`
+			Cells         []string `yaml:"cells"`
+			Proofs        []string `yaml:"proofs"`
 		}
 		Output *bool `yaml:"output"`
 	}
@@ -567,18 +566,17 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 			require.NoError(t, testFile.Close())
 			require.NoError(t, err)
 
-			var rowCommitments []Bytes48
-			for _, c := range test.Input.RowCommitments {
+			var commitments []Bytes48
+			for _, c := range test.Input.Commitments {
 				var commitment Bytes48
 				err = commitment.UnmarshalText([]byte(c))
 				if err != nil {
 					require.Nil(t, test.Output)
 					return
 				}
-				rowCommitments = append(rowCommitments, commitment)
+				commitments = append(commitments, commitment)
 			}
 
-			rowIndices := test.Input.RowIndices
 			columnIndices := test.Input.ColumnIndices
 
 			var cells []Cell
@@ -603,7 +601,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+			valid, err := VerifyCellKZGProofBatch(commitments, columnIndices, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -857,13 +855,13 @@ func Benchmark(b *testing.B) {
 	})
 
 	b.Run("VerifyCellKZGProofBatch", func(b *testing.B) {
-		var rowIndices []uint64
+		var cellCommitments []Bytes48
 		var columnIndices []uint64
 		var cells []Cell
 		var cellProofs []Bytes48
 		for rowIndex, blobCell := range blobCells {
 			for columnIndex, cell := range blobCell {
-				rowIndices = append(rowIndices, uint64(rowIndex))
+				cellCommitments = append(cellCommitments, commitments[rowIndex])
 				columnIndices = append(columnIndices, uint64(columnIndex))
 				cells = append(cells, cell)
 				cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
@@ -871,7 +869,7 @@ func Benchmark(b *testing.B) {
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+			ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
@@ -879,7 +877,7 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= length; i *= 2 {
 		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
-			var rowIndices []uint64
+			var cellCommitments []Bytes48
 			var columnIndices []uint64
 			var cells []Cell
 			var cellProofs []Bytes48
@@ -888,7 +886,7 @@ func Benchmark(b *testing.B) {
 					break
 				}
 				for columnIndex, cell := range blobCell {
-					rowIndices = append(rowIndices, uint64(rowIndex))
+					cellCommitments = append(cellCommitments, commitments[rowIndex])
 					columnIndices = append(columnIndices, uint64(columnIndex))
 					cells = append(cells, cell)
 					cellProofs = append(cellProofs, blobCellProofs[rowIndex][columnIndex])
@@ -896,7 +894,7 @@ func Benchmark(b *testing.B) {
 			}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(commitments[:i], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
@@ -904,10 +902,10 @@ func Benchmark(b *testing.B) {
 	}
 
 	for i := 1; i <= cellsPerExtBlob; i *= 2 {
-		rowIndices, columnIndices, cells, cellProofs := getColumns(blobCells[:], blobCellProofs[:], i)
+		cellCommitments, columnIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(commitments[:], rowIndices, columnIndices, cells, cellProofs)
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, columnIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
