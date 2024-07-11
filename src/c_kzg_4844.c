@@ -3649,8 +3649,6 @@ static void deduplicate_commitments(
  *
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   The commitments associated with the rows
- * @param[in]   num_commitments     The number of commitments being passed
- * @param[in]   commitment_indices         Row indices for the cells
  * @param[in]   cell_indices      Column indices for the cells
  * @param[in]   cells               The cells to check
  * @param[in]   proofs_bytes        The proofs for the cells
@@ -3762,7 +3760,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
      */
     ret = compute_r_powers_for_verify_cell_kzg_proof_batch(
         r_powers,
-        commitments_bytes,
+        unique_commitments,
         num_commitments,
         commitment_indices,
         cell_indices,
