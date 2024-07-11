@@ -1916,7 +1916,6 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     g1_t *x = NULL;
     g1_t *points = NULL;
     blst_p1_affine *p_affine = NULL;
-    void **tmp = NULL;
     bool precompute = s->wbits != 0;
 
     n = s->max_width / 2;
@@ -1935,8 +1934,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for array of pointers, this is a 2D array */
-    tmp = (void **)&s->x_ext_fft_columns;
-    ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
+    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, __SIZEOF_POINTER__);
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < k2; i++) {
         ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
@@ -1964,8 +1962,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
 
     if (precompute) {
         /* Allocate space for precomputed tables */
-        tmp = (void **)&s->tables;
-        ret = c_kzg_calloc(tmp, k2, __SIZEOF_POINTER__);
+        ret = c_kzg_calloc((void **)&s->tables, k2, __SIZEOF_POINTER__);
         if (ret != C_KZG_OK) goto out;
 
         /* Allocate space for points in affine representation */
@@ -1986,8 +1983,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
             const blst_p1_affine *points_arg[2] = {p_affine, NULL};
 
             /* Allocate space for the table */
-            tmp = (void **)&s->tables[i];
-            ret = c_kzg_malloc(tmp, table_size);
+            ret = c_kzg_malloc((void **)&s->tables[i], table_size);
             if (ret != C_KZG_OK) goto out;
 
             /* Compute table for fixed-base MSM */
@@ -3680,7 +3676,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     g1_t weighted_proof_lincomb;
     g2_t power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
     size_t num_commitments;
-    void **tmp = NULL;
 
     /* Arrays */
     Bytes48 *unique_commitments = NULL;
@@ -3717,11 +3712,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Deduplicate Commitments
     ///////////////////////////////////////////////////////////////////////////
 
-    tmp = (void **)&unique_commitments;
-    ret = c_kzg_calloc(tmp, num_cells, sizeof(Bytes48));
+    ret = c_kzg_calloc((void**)&unique_commitments, num_cells, sizeof(Bytes48));
     if (ret != C_KZG_OK) goto out;
-    tmp = (void **)&commitment_indices;
-    ret = c_kzg_calloc(tmp, num_cells, sizeof(uint64_t));
+    ret = c_kzg_calloc((void**)&commitment_indices, num_cells, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
 
     /*
