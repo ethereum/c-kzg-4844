@@ -3262,7 +3262,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
 
-    /* We start with the domain separator */
+    /* Copy domain separator */
     memcpy(
         offset,
         RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH,
@@ -3270,34 +3270,41 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     );
     offset += DOMAIN_STR_LENGTH;
 
-    /* Copy count variables */
+    /* Copy field elements per cell */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_CELL);
     offset += sizeof(uint64_t);
+
+    /* Copy number of commitments */
     bytes_from_uint64(offset, num_commitments);
     offset += sizeof(uint64_t);
+
+    /* Copy number of cells */
     bytes_from_uint64(offset, num_cells);
     offset += sizeof(uint64_t);
 
-    /* Copy each (unique) commitment */
     for (size_t i = 0; i < num_commitments; i++) {
+        /* Copy commitment */
         memcpy(offset, &commitments_bytes[i], BYTES_PER_COMMITMENT);
         offset += BYTES_PER_COMMITMENT;
     }
 
-    /* For each cell, copy its indices & proof */
     for (size_t i = 0; i < num_cells; i++) {
+        /* Copy row id */
         bytes_from_uint64(offset, commitment_indices[i]);
         offset += sizeof(uint64_t);
+
+        /* Copy column id */
         bytes_from_uint64(offset, cell_indices[i]);
         offset += sizeof(uint64_t);
+
+        /* Copy cell */
         memcpy(offset, &cells[i], BYTES_PER_CELL);
         offset += BYTES_PER_CELL;
+
+        /* Copy proof */
         memcpy(offset, &proofs_bytes[i], BYTES_PER_PROOF);
         offset += BYTES_PER_PROOF;
     }
-
-    /* Make sure we wrote the entire buffer */
-    assert(offset == bytes + input_size);
 
     /* Now let's create the challenge! */
     blst_sha256(r_bytes.bytes, bytes, input_size);
@@ -3305,6 +3312,9 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
 
     /* Raise power of r for each cell */
     compute_powers(r_powers_out, &r, num_cells);
+
+    /* Make sure we wrote the entire buffer */
+    assert(offset == bytes + input_size);
 
 out:
     c_kzg_free(bytes);
