@@ -606,7 +606,7 @@ impl Cell {
     > {
         if cell_indices.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
-                "There are {} cell IDs and {} cells",
+                "There are {} cell indices and {} cells",
                 cell_indices.len(),
                 cells.len()
             )));

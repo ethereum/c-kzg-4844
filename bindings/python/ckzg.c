@@ -351,7 +351,7 @@ static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
     goto out;
   }
 
-  /* Ensure cell ids/cells are the same length */
+  /* Ensure cell indices/cells are the same length */
   Py_ssize_t cell_indices_count = PyList_Size(input_cell_indices);
   Py_ssize_t cells_count = PyList_Size(input_cells);
   if (cell_indices_count != cells_count) {
@@ -359,26 +359,26 @@ static PyObject* recover_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
     goto out;
   }
 
-  /* Allocate space for the cell ids */
+  /* Allocate space for the cell indices */
   cell_indices = (uint64_t *)calloc(cells_count, sizeof(uint64_t));
   if (cell_indices == NULL) {
-    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell ids");
+    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell indices");
     goto out;
   }
   for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
-    /* Ensure each cell id is an integer */
+    /* Ensure each cell index is an integer */
     PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
     if (!PyLong_Check(cell_index)) {
-      ret = PyErr_Format(PyExc_ValueError, "expected cell id to be an integer");
+      ret = PyErr_Format(PyExc_ValueError, "expected cell index to be an integer");
       goto out;
     }
-    /* Convert the cell id to a cell id type (uint64_t) */
+    /* Convert the cell index to a cell index type (uint64_t) */
     uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
     if (PyErr_Occurred()) {
-      ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
+      ret = PyErr_Format(PyExc_ValueError, "failed to convert cell index to uint64_t");
       goto out;
     }
-    /* The cell id is good, add it to our array */
+    /* The cell index is good, add it to our array */
     memcpy(&cell_indices[i], &value, sizeof(uint64_t));
   }
 

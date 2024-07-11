@@ -181,18 +181,6 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, proof)
 
-proc computeCellsAndProofs*(ctx: KzgCtx,
-                   blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
-  var ret: KzgCellsAndKzgProofs
-  var cellsPtr: ptr KzgCell = ret.cells[0].getPtr
-  var proofsPtr: ptr KzgProof = ret.proofs[0].getPtr
-  let res = compute_cells_and_kzg_proofs(
-    cellsPtr,
-    proofsPtr,
-    blob.getPtr,
-    ctx.val)
-  verify(res, ret)
-
 proc verifyProof*(ctx: KzgCtx,
                   commitment: KzgBytes48,
                   z: KzgBytes32, # Input Point
@@ -244,6 +232,39 @@ proc verifyProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
+proc computeCellsAndProofs*(ctx: KzgCtx,
+                   blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+  var ret: KzgCellsAndKzgProofs
+  var cellsPtr: ptr KzgCell = ret.cells[0].getPtr
+  var proofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  let res = compute_cells_and_kzg_proofs(
+    cellsPtr,
+    proofsPtr,
+    blob.getPtr,
+    ctx.val)
+  verify(res, ret)
+
+proc recoverCellsAndProofs*(ctx: KzgCtx,
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+  if cells.len != cellIndices.len:
+    return err($KZG_BADARGS)
+
+  if cells.len == 0:
+    return err($KZG_BADARGS)
+
+  var ret: KzgCellsAndKzgProofs
+  var recoveredCellsPtr: ptr KzgCell = ret.cells[0].getPtr
+  var recoveredProofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  let res = recover_cells_and_kzg_proofs(
+    recoveredCellsPtr,
+    recoveredProofsPtr,
+    cellIndices[0].getPtr,
+    cells[0].getPtr,
+    cells.len.csize_t,
+    ctx.val)
+  verify(res, ret)
+
 proc verifyProofs*(ctx: KzgCtx,
                    commitments: openArray[KzgBytes48],
                    cellIndices: openArray[uint64],
@@ -271,27 +292,6 @@ proc verifyProofs*(ctx: KzgCtx,
     cells.len.csize_t,
     ctx.val)
   verify(res, valid)
-
-proc recoverCellsAndProofs*(ctx: KzgCtx,
-                   cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
-  if cells.len != cellIndices.len:
-    return err($KZG_BADARGS)
-
-  if cells.len == 0:
-    return err($KZG_BADARGS)
-
-  var ret: KzgCellsAndKzgProofs
-  var recoveredCellsPtr: ptr KzgCell = ret.cells[0].getPtr
-  var recoveredProofsPtr: ptr KzgProof = ret.proofs[0].getPtr
-  let res = recover_cells_and_kzg_proofs(
-    recoveredCellsPtr,
-    recoveredProofsPtr,
-    cellIndices[0].getPtr,
-    cells[0].getPtr,
-    cells.len.csize_t,
-    ctx.val)
-  verify(res, ret)
 
 ##############################################################
 # Zero overhead aliases that match the spec

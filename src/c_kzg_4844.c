@@ -3544,7 +3544,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         goto out;
     }
 
-    /* Check that cell ids are valid */
+    /* Check that cell indices are valid */
     for (size_t i = 0; i < num_cells; i++) {
         if (cell_indices[i] >= CELLS_PER_EXT_BLOB) {
             ret = C_KZG_BADARGS;
@@ -3573,8 +3573,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
             /*
              * Check if the field has already been set. If it has, there was a
-             * duplicate cell id and we can return an error. The compiler will
-             * optimize this and the overhead is practically zero.
+             * duplicate cell index and we can return an error. The compiler
+             * will optimize this and the overhead is practically zero.
              */
             if (!fr_is_null(field)) {
                 ret = C_KZG_BADARGS;

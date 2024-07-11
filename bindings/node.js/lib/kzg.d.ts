@@ -7,8 +7,9 @@ export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
+export type Cell = Uint8Array; // 64 * 32 bytes
+
 export type ProofResult = [KZGProof, Bytes32];
-export type Cell = Uint8Array;
 
 export interface TrustedSetupJson {
   setup_G1: string[];

@@ -1,7 +1,5 @@
 # C-KZG-4844
 
-**Note: This is an alpha release with peerDas functionality.  For the current stable release use v3**
-
 This is a TypeScript library for EIP-4844 that implements the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
@@ -205,7 +203,6 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
  *
  * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
  * @param[in] {Cell[]}    cells - The cells you have
- * @param[in] {Bytes48[]} proofsBytes - The proofs you have
  *
  * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
  *
@@ -215,26 +212,7 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 export function recoverCellsAndKzgProofs(
   cellIndices: number[],
   cells: Cell[],
-  proofsBytes: Bytes48[]
 ): [Cell[], KZGProof[]];
-```
-
-### `verifyCellKzgProof`
-
-```ts
-/**
- * Verify that a cell's proof is valid.
- *
- * @param {Bytes48}   commitmentBytes - Commitment bytes
- * @param {number}    cellIndex - The cell identifier
- * @param {Cell}      cell - The cell to verify
- * @param {Bytes48}   proofBytes - The proof for the cell
- *
- * @return {boolean} - True if the cell is valid with respect to this commitment
- *
- * @throws {Error} - Errors validating cell's proof
- */
-export function verifyCellKzgProof(commitmentBytes: Bytes48, cellIndex: number, cell: Cell, proofBytes: Bytes48): boolean;
 ```
 
 ### `verifyCellKzgProofBatch`
@@ -243,9 +221,8 @@ export function verifyCellKzgProof(commitmentBytes: Bytes48, cellIndex: number, 
 /**
  * Verify that multiple cells' proofs are valid.
  *
- * @param {Bytes48[]} commitmentsBytes - The commitments for all blobs
- * @param {number[]}  rowIndices - The row index for each cell
- * @param {number[]}  cellIndices - The column index for each cell
+ * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
+ * @param {number[]}  cellIndices - The cell indices
  * @param {Cell[]}    cells - The cells to verify
  * @param {Bytes48[]} proofsBytes - The proof for each cell
  *
@@ -255,7 +232,6 @@ export function verifyCellKzgProof(commitmentBytes: Bytes48, cellIndex: number, 
  */
 export function verifyCellKzgProofBatch(
   commitmentsBytes: Bytes48[],
-  rowIndices: number[],
   cellIndices: number[],
   cells: Cell[],
   proofsBytes: Bytes48[]

@@ -19,9 +19,8 @@ const
   VERIFY_BLOB_KZG_PROOF_TESTS        = testBase & "verify_blob_kzg_proof"
   VERIFY_BLOB_KZG_PROOF_BATCH_TESTS  = testBase & "verify_blob_kzg_proof_batch"
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
-  VERIFY_CELL_KZG_PROOF_TESTS        = testBase & "verify_cell_kzg_proof"
-  VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
   RECOVER_CELLS_AND_KZG_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
+  VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
 
 proc toTestName(x: string): string =
   let parts = x.split(DirSep)

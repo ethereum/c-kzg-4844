@@ -166,7 +166,7 @@ inline Cell *get_cell(const Napi::Env &env, const Napi::Value &val) {
 }
 inline uint64_t get_cell_index(const Napi::Env &env, const Napi::Value &val) {
     if (!val.IsNumber()) {
-        Napi::TypeError::New(env, "cell id should be a number")
+        Napi::TypeError::New(env, "cell index should be a number")
             .ThrowAsJavaScriptException();
         /* TODO: how will the caller know there was an error? */
         return 0;

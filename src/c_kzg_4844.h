@@ -135,7 +135,7 @@ typedef struct {
      * `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,
      * length `max_width`. */
     fr_t *roots_of_unity;
-    /** The expanded roots of unity */
+    /** The expanded roots of unity. */
     fr_t *expanded_roots_of_unity;
     /** The bit-reversal permuted roots of unity. */
     fr_t *reverse_roots_of_unity;
@@ -150,11 +150,11 @@ typedef struct {
     g2_t *g2_values_monomial;
     /** Data used during FK20 proof generation. */
     g1_t **x_ext_fft_columns;
-    /** The precomputed tables for fixed-base MSM */
+    /** The precomputed tables for fixed-base MSM. */
     blst_p1_affine **tables;
-    /** The window size for the fixed-base MSM */
+    /** The window size for the fixed-base MSM. */
     size_t wbits;
-    /** The scratch size for the fixed-base MSM */
+    /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
 } KZGSettings;
 
