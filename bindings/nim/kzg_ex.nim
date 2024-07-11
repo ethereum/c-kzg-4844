@@ -61,13 +61,13 @@ proc loadTrustedSetup*(_: type Kzg,
     kzg.loadTrustedSetup(fileName, precompute)
 
 proc loadTrustedSetup*(_: type Kzg,
-                       g1Monomial: openArray[G1Data],
-                       g1Lagrange: openArray[G1Data],
-                       g2Monomial: openArray[G2Data],
+                       g1MonomialBytes: openArray[byte],
+                       g1LagrangeBytes: openArray[byte],
+                       g2MonomialBytes: openArray[byte],
                        precompute: Natural):
                            Result[void, string] =
   setupCtx:
-    kzg.loadTrustedSetup(g1Monomial, g1Lagrange, g2Monomial, precompute)
+    kzg.loadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes, precompute)
 
 proc loadTrustedSetupFromString*(_: type Kzg,
                                  input: string,

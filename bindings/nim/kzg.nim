@@ -31,9 +31,6 @@ type
     cells*: array[CELLS_PER_EXT_BLOB, KzgCell]
     proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
 
-  G1Data* = array[48, byte]
-  G2Data* = array[96, byte]
-
 when (NimMajor, NimMinor) < (1, 4):
   {.push raises: [Defect].}
 else:
