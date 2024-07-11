@@ -179,20 +179,20 @@ extern "C" {
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
+    pub fn recover_cells_and_kzg_proofs(
+        recovered_cells: *mut Cell,
+        recovered_proofs: *mut KZGProof,
+        cell_indices: *const u64,
+        cells: *const Cell,
+        num_cells: usize,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
     pub fn verify_cell_kzg_proof_batch(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
         cell_indices: *const u64,
         cells: *const Cell,
         proofs_bytes: *const Bytes48,
-        num_cells: usize,
-        s: *const KZGSettings,
-    ) -> C_KZG_RET;
-    pub fn recover_cells_and_kzg_proofs(
-        recovered_cells: *mut Cell,
-        recovered_proofs: *mut KZGProof,
-        cell_indices: *const u64,
-        cells: *const Cell,
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;

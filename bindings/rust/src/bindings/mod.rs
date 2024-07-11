@@ -896,8 +896,8 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
     const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
-    const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
     const RECOVER_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/recover_cells_and_kzg_proofs/*/*/*";
+    const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
 
     #[test]
     fn test_blob_to_kzg_commitment() {
@@ -1231,6 +1231,61 @@ mod tests {
     }
 
     #[test]
+    fn test_recover_cells_and_kzg_proofs() {
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
+        let test_files: Vec<PathBuf> = glob::glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert!(!test_files.is_empty());
+
+        #[allow(unused_variables)]
+        for (index, test_file) in test_files.iter().enumerate() {
+            let yaml_data = fs::read_to_string(test_file).unwrap();
+            let test: recover_cells_and_kzg_proofs::Test =
+                serde_yaml::from_str(&yaml_data).unwrap();
+            let (Ok(cell_indices), Ok(cells)) =
+                (test.input.get_cell_indices(), test.input.get_cells())
+            else {
+                assert!(test.get_output().is_none());
+                continue;
+            };
+
+            #[cfg(feature = "generate-fuzz-corpus")]
+            {
+                use std::{env, fs::File, io::Write};
+                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+                let dir_path = root_dir
+                    .join("fuzz")
+                    .join("corpus")
+                    .join("fuzz_recover_cells_and_kzg_proofs");
+                fs::create_dir_all(&dir_path).unwrap();
+                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let mut file = File::create(&file_path).unwrap();
+                for cell_index in &cell_indices {
+                    file.write_all(&cell_index.to_le_bytes()).unwrap();
+                }
+                for cell in &cells {
+                    file.write_all(&cell.bytes).unwrap();
+                }
+            }
+
+            match Cell::recover_cells_and_kzg_proofs(&cell_indices, &cells, &kzg_settings) {
+                Ok((recovered_cells, recovered_proofs)) => {
+                    let (expected_cells, expected_proofs) = test.get_output().unwrap();
+                    assert_eq!(recovered_cells.as_slice(), expected_cells);
+                    let proofs_as_bytes: Vec<Bytes48> =
+                        recovered_proofs.iter().map(|p| p.to_bytes()).collect();
+                    assert_eq!(proofs_as_bytes, expected_proofs);
+                }
+                _ => assert!(test.get_output().is_none()),
+            }
+        }
+    }
+
+    #[test]
     fn test_verify_cell_kzg_proof_batch() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
@@ -1288,61 +1343,6 @@ mod tests {
                 &kzg_settings,
             ) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
-                _ => assert!(test.get_output().is_none()),
-            }
-        }
-    }
-
-    #[test]
-    fn test_recover_cells_and_kzg_proofs() {
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
-            .unwrap()
-            .map(Result::unwrap)
-            .collect();
-        assert!(!test_files.is_empty());
-
-        #[allow(unused_variables)]
-        for (index, test_file) in test_files.iter().enumerate() {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: recover_cells_and_kzg_proofs::Test =
-                serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(cell_indices), Ok(cells)) =
-                (test.input.get_cell_indices(), test.input.get_cells())
-            else {
-                assert!(test.get_output().is_none());
-                continue;
-            };
-
-            #[cfg(feature = "generate-fuzz-corpus")]
-            {
-                use std::{env, fs::File, io::Write};
-                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let dir_path = root_dir
-                    .join("fuzz")
-                    .join("corpus")
-                    .join("fuzz_recover_cells_and_kzg_proofs");
-                fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
-                let mut file = File::create(&file_path).unwrap();
-                for cell_index in &cell_indices {
-                    file.write_all(&cell_index.to_le_bytes()).unwrap();
-                }
-                for cell in &cells {
-                    file.write_all(&cell.bytes).unwrap();
-                }
-            }
-
-            match Cell::recover_cells_and_kzg_proofs(&cell_indices, &cells, &kzg_settings) {
-                Ok((recovered_cells, recovered_proofs)) => {
-                    let (expected_cells, expected_proofs) = test.get_output().unwrap();
-                    assert_eq!(recovered_cells.as_slice(), expected_cells);
-                    let proofs_as_bytes: Vec<Bytes48> =
-                        recovered_proofs.iter().map(|p| p.to_bytes()).collect();
-                    assert_eq!(proofs_as_bytes, expected_proofs);
-                }
                 _ => assert!(test.get_output().is_none()),
             }
         }

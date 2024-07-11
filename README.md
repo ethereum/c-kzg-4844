@@ -39,8 +39,8 @@ For EIP-4844:
 For EIP-7594:
 
 - `compute_cells_and_kzg_proofs`
-- `verify_cell_kzg_proof_batch`
 - `recover_cells_and_kzg_proofs`
+- `verify_cell_kzg_proof_batch`
 
 This library also provides functions for loading and freeing the trusted setup,
 which are not defined in the specification. These functions are intended to be

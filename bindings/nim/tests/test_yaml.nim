@@ -145,15 +145,6 @@ suite "yaml tests":
       let proofs = KzgProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
 
-  runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
-    let
-      commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
-      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
-      cells = KzgCell.fromHexList(n["input"]["cells"])
-      proofs = KzgProof.fromHexList(n["input"]["proofs"])
-      res = ctx.verifyProofs(commitments, cellIndices, cells, proofs)
-    checkBool(res)
-
   runTests(RECOVER_CELLS_AND_KZG_PROOFS_TESTS):
     let
       cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
@@ -165,3 +156,12 @@ suite "yaml tests":
       check expectedCells == res.get.cells
       let expectedProofs = KzgProof.fromHexList(n["output"][1])
       check expectedProofs == res.get.proofs
+
+  runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
+    let
+      commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
+      cells = KzgCell.fromHexList(n["input"]["cells"])
+      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      res = ctx.verifyProofs(commitments, cellIndices, cells, proofs)
+    checkBool(res)

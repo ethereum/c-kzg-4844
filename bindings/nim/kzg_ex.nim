@@ -116,13 +116,6 @@ proc verifyProofs*(blobs: openArray[KzgBlob],
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
 
-proc verifyProofs*(commitments: openArray[KzgBytes48],
-                   cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
-  verifyCtx:
-    gCtx.verifyProofs(commitments, cellIndices, cells, proofs)
-
 proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
     gCtx.computeCellsAndProofs(blob)
@@ -131,6 +124,13 @@ proc recoverCellsAndProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   verifyCtx:
     gCtx.recoverCellsAndProofs(cellIndices, cells)
+
+proc verifyProofs*(commitments: openArray[KzgBytes48],
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+  verifyCtx:
+    gCtx.verifyProofs(commitments, cellIndices, cells, proofs)
 
 ##############################################################
 # Zero overhead aliases that match the spec
@@ -168,14 +168,14 @@ template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
 template computeCellsAndKzgProofs*(blob: KzgBlob): untyped =
   computeCellsAndProofs(blob)
 
+template recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): untyped =
+  recoverCellsAndProofs(cellIndices, cells)
+
 template verifyCellKzgProofBatch*(commitments: openArray[KzgBytes48],
                    cellIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(commitments, cellIndices, cells, proofs)
-
-template recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell]): untyped =
-  recoverCellsAndProofs(cellIndices, cells)
 
 {. pop .}

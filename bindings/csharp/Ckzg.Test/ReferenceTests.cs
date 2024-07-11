@@ -38,11 +38,9 @@ public class ReferenceTests
     private readonly string _verifyKzgProofTests = Path.Join(TestDir, "verify_kzg_proof");
     private readonly string _verifyBlobKzgProofTests = Path.Join(TestDir, "verify_blob_kzg_proof");
     private readonly string _verifyBlobKzgProofBatchTests = Path.Join(TestDir, "verify_blob_kzg_proof_batch");
-    private readonly string _computeCellsTests = Path.Join(TestDir, "compute_cells");
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");
-    private readonly string _verifyCellKzgProofTests = Path.Join(TestDir, "verify_cell_kzg_proof");
-    private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
     private readonly string _recoverCellsAndKzgProofsTests = Path.Join(TestDir, "recover_cells_and_kzg_proofs");
+    private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
     private IDeserializer _deserializer;
 
     #region Helper Functions
@@ -413,57 +411,6 @@ public class ReferenceTests
 
     #endregion
 
-    #region VerifyCellKzgProofBatch
-
-    private class VerifyCellKzgProofBatchInput
-    {
-        public List<string> Commitments { get; set; } = null!;
-        public List<ulong> CellIndices { get; set; } = null!;
-        public List<string> Cells { get; set; } = null!;
-        public List<string> Proofs { get; set; } = null!;
-    }
-
-    private class VerifyCellKzgProofBatchTest
-    {
-        public VerifyCellKzgProofBatchInput Input { get; set; } = null!;
-        public bool? Output { get; set; } = null!;
-    }
-
-    [TestCase]
-    public void TestVerifyCellKzgProofBatch()
-    {
-        Matcher matcher = new();
-        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
-
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyCellKzgProofBatchTests);
-        Assert.That(testFiles.Count(), Is.GreaterThan(0));
-
-        foreach (string testFile in testFiles)
-        {
-            string yaml = File.ReadAllText(testFile);
-            VerifyCellKzgProofBatchTest test = _deserializer.Deserialize<VerifyCellKzgProofBatchTest>(yaml);
-            Assert.That(test, Is.Not.EqualTo(null));
-
-            byte[] commitments = GetFlatBytes(test.Input.Commitments);
-            ulong[] cellIndices = test.Input.CellIndices.ToArray();
-            byte[] cells = GetFlatBytes(test.Input.Cells);
-            byte[] proofs = GetFlatBytes(test.Input.Proofs);
-            int numCells = cells.Length / Ckzg.BytesPerCell;
-
-            try
-            {
-                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(commitments, cellIndices, cells, proofs, numCells, _ts);
-                Assert.That(isCorrect, Is.EqualTo(test.Output));
-            }
-            catch
-            {
-                Assert.That(test.Output, Is.EqualTo(null));
-            }
-        }
-    }
-
-    #endregion
-
     #region RecoverCellsAndKzgProofs
 
     private class RecoverCellsAndKzgProofsInput
@@ -507,6 +454,57 @@ public class ReferenceTests
                 Assert.That(recoveredCells, Is.EqualTo(expectedCells));
                 byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
                 Assert.That(recoveredProofs, Is.EqualTo(expectedProofs));
+            }
+            catch
+            {
+                Assert.That(test.Output, Is.EqualTo(null));
+            }
+        }
+    }
+
+    #endregion
+
+    #region VerifyCellKzgProofBatch
+
+    private class VerifyCellKzgProofBatchInput
+    {
+        public List<string> Commitments { get; set; } = null!;
+        public List<ulong> CellIndices { get; set; } = null!;
+        public List<string> Cells { get; set; } = null!;
+        public List<string> Proofs { get; set; } = null!;
+    }
+
+    private class VerifyCellKzgProofBatchTest
+    {
+        public VerifyCellKzgProofBatchInput Input { get; set; } = null!;
+        public bool? Output { get; set; } = null!;
+    }
+
+    [TestCase]
+    public void TestVerifyCellKzgProofBatch()
+    {
+        Matcher matcher = new();
+        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
+
+        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyCellKzgProofBatchTests);
+        Assert.That(testFiles.Count(), Is.GreaterThan(0));
+
+        foreach (string testFile in testFiles)
+        {
+            string yaml = File.ReadAllText(testFile);
+            VerifyCellKzgProofBatchTest test = _deserializer.Deserialize<VerifyCellKzgProofBatchTest>(yaml);
+            Assert.That(test, Is.Not.EqualTo(null));
+
+            byte[] commitments = GetFlatBytes(test.Input.Commitments);
+            ulong[] cellIndices = test.Input.CellIndices.ToArray();
+            byte[] cells = GetFlatBytes(test.Input.Cells);
+            byte[] proofs = GetFlatBytes(test.Input.Proofs);
+            int numCells = cells.Length / Ckzg.BytesPerCell;
+
+            try
+            {
+                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(commitments, cellIndices, cells, proofs, numCells, _ts);
+                Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
             {

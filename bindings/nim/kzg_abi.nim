@@ -147,17 +147,17 @@ proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
                          blob: ptr KzgBlob,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
+proc recover_cells_and_kzg_proofs*(recoveredOut: ptr KzgCell,
+                         recoveredProofsOut: ptr KzgProof,
+                         cellIndices: ptr uint64,
+                         cells: ptr KzgCell,
+                         numCells: csize_t,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
 proc verify_cell_kzg_proof_batch*(res: var bool,
                          commitments: ptr KzgBytes48,
                          cellIndices: ptr uint64,
                          cells: ptr KzgCell,
                          proofs: ptr KzgBytes48,
-                         numCells: csize_t,
-                         s: KzgSettings): KZG_RET {.kzg_abi.}
-
-proc recover_cells_and_kzg_proofs*(recoveredOut: ptr KzgCell,
-                         recoveredProofsOut: ptr KzgProof,
-                         cellIndices: ptr uint64,
-                         cells: ptr KzgCell,
                          numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

@@ -38,10 +38,10 @@ public class TestUtils {
       "../../tests/verify_blob_kzg_proof_batch/";
   private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
       "../../tests/compute_cells_and_kzg_proofs/";
-  private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
-      "../../tests/verify_cell_kzg_proof_batch/";
   private static final String RECOVER_CELLS_AND_KZG_PROOFS_TESTS =
       "../../tests/recover_cells_and_kzg_proofs/";
+  private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
+      "../../tests/verify_cell_kzg_proof_batch/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
@@ -224,25 +224,6 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
-  public static List<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
-    final Stream.Builder<VerifyCellKzgProofBatchTest> tests = Stream.builder();
-    List<String> testFiles = getTestFiles(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
-    assert !testFiles.isEmpty();
-
-    try {
-      for (String testFile : testFiles) {
-        String jsonData = Files.readString(Path.of(testFile));
-        VerifyCellKzgProofBatchTest test =
-            OBJECT_MAPPER.readValue(jsonData, VerifyCellKzgProofBatchTest.class);
-        tests.add(test);
-      }
-    } catch (IOException ex) {
-      throw new UncheckedIOException(ex);
-    }
-
-    return tests.build().collect(Collectors.toList());
-  }
-
   public static List<RecoverCellsAndKzgProofsTest> getRecoverCellsAndKzgProofsTests() {
     final Stream.Builder<RecoverCellsAndKzgProofsTest> tests = Stream.builder();
     List<String> testFiles = getTestFiles(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
@@ -253,6 +234,25 @@ public class TestUtils {
         String jsonData = Files.readString(Path.of(testFile));
         RecoverCellsAndKzgProofsTest test =
             OBJECT_MAPPER.readValue(jsonData, RecoverCellsAndKzgProofsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
+    final Stream.Builder<VerifyCellKzgProofBatchTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        VerifyCellKzgProofBatchTest test =
+            OBJECT_MAPPER.readValue(jsonData, VerifyCellKzgProofBatchTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {

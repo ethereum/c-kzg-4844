@@ -61,11 +61,11 @@ type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof:
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
 type VerifyCellKzgProofBatchTest = TestMeta<
   {commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[]},
   boolean
 >;
-type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
 
 const blobValidLength = randomBytes(BYTES_PER_BLOB);
 const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
@@ -396,30 +396,6 @@ describe("C-KZG", () => {
       });
     });
 
-    it("reference tests for verifyCellKzgProofBatch should pass", () => {
-      const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
-      expect(tests.length).toBeGreaterThan(0);
-
-      tests.forEach((testFile: string) => {
-        const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
-
-        let valid;
-        const commitments = test.input.commitments.map(bytesFromHex);
-        const cellIndices = test.input.cell_indices;
-        const cells = test.input.cells.map(bytesFromHex);
-        const proofs = test.input.proofs.map(bytesFromHex);
-
-        try {
-          valid = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
-        } catch (err) {
-          expect(test.output).toBeNull();
-          return;
-        }
-
-        expect(valid).toEqual(test.output);
-      });
-    });
-
     it("reference tests for recoverCellsAndKzgProofs should pass", () => {
       const tests = globSync(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
       expect(tests.length).toBeGreaterThan(0);
@@ -451,6 +427,30 @@ describe("C-KZG", () => {
         for (let i = 0; i < recoveredProofs.length; i++) {
           assertBytesEqual(recoveredProofs[i], expectedProofs[i]);
         }
+      });
+    });
+
+    it("reference tests for verifyCellKzgProofBatch should pass", () => {
+      const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        const commitments = test.input.commitments.map(bytesFromHex);
+        const cellIndices = test.input.cell_indices;
+        const cells = test.input.cells.map(bytesFromHex);
+        const proofs = test.input.proofs.map(bytesFromHex);
+
+        try {
+          valid = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(valid).toEqual(test.output);
       });
     });
   });

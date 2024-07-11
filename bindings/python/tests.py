@@ -17,9 +17,8 @@ VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*
 
 # EIP-7594
 COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml"
-VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml"
-VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml"
 RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml"
+VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml"
 
 
 ###############################################################################
@@ -187,29 +186,6 @@ def test_compute_cells_and_kzg_proofs(ts):
         assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
-def test_verify_cell_kzg_proof_batch(ts):
-    test_files = glob.glob(VERIFY_CELL_KZG_PROOF_BATCH_TESTS)
-    assert len(test_files) > 0
-
-    for test_file in test_files:
-        with open(test_file, "r") as f:
-            test = yaml.safe_load(f)
-
-        commitments = list(map(bytes_from_hex, test["input"]["commitments"]))
-        cell_indices = test["input"]["cell_indices"]
-        cells = list(map(bytes_from_hex, test["input"]["cells"]))
-        proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
-
-        try:
-            valid = ckzg.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, ts)
-        except:
-            assert test["output"] is None
-            continue
-
-        expected_valid = test["output"]
-        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
-
-
 def test_recover_cells_and_kzg_proofs(ts):
     test_files = glob.glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
     assert len(test_files) > 0
@@ -233,6 +209,29 @@ def test_recover_cells_and_kzg_proofs(ts):
         assert recovered_proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
+def test_verify_cell_kzg_proof_batch(ts):
+    test_files = glob.glob(VERIFY_CELL_KZG_PROOF_BATCH_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        commitments = list(map(bytes_from_hex, test["input"]["commitments"]))
+        cell_indices = test["input"]["cell_indices"]
+        cells = list(map(bytes_from_hex, test["input"]["cells"]))
+        proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
+
+        try:
+            valid = ckzg.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_valid = test["output"]
+        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
+
+
 ###############################################################################
 # Main Logic
 ###############################################################################
@@ -244,9 +243,11 @@ if __name__ == "__main__":
     test_compute_kzg_proof(ts)
     test_compute_blob_kzg_proof(ts)
     test_verify_kzg_proof(ts)
-    test_compute_cells_and_kzg_proofs(ts)
     test_verify_blob_kzg_proof(ts)
     test_verify_blob_kzg_proof_batch(ts)
+
+    test_compute_cells_and_kzg_proofs(ts)
     test_recover_cells_and_kzg_proofs(ts)
+    test_verify_cell_kzg_proof_batch(ts)
 
     print("tests passed")

@@ -343,12 +343,10 @@ template computeCellsAndKzgProofs*(ctx: KzgCtx,
                    blob: KzgBlob): untyped =
   computeCellsAndProofs(ctx, blob)
 
-template verifyCellKzgProof*(ctx: KzgCtx,
-                   commitment: KzgBytes48,
-                   cellIndex: uint64,
-                   cell: KzgCell,
-                   proof: KzgBytes48): untyped =
-  verifyProof(ctx, commitment, cell, proof)
+template recoverCellsAndKzgProofs*(ctx: KzgCtx,
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): untyped =
+  recoverCellsAndProofs(ctx, cellIndices, cells)
 
 template verifyCellKzgProofBatch*(ctx: KzgCtx,
                    commitments: openArray[KzgBytes48],
