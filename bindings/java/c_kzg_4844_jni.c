@@ -493,7 +493,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
   jobject result = (*env)->NewObject(env, caps_class, caps_constructor, cells, proofs);
   if (result == NULL)
   {
-    throw_exception(env, "Failed to instantiate cells.");
+    throw_exception(env, "Failed to instantiate CellsAndProofs object.");
     return NULL;
   }
 
@@ -556,7 +556,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
   jobject result = (*env)->NewObject(env, caps_class, caps_constructor, recovered_cells, recovered_proofs);
   if (result == NULL)
   {
-    throw_exception(env, "Failed to instantiate cells.");
+    throw_exception(env, "Failed to instantiate CellsAndProof object.");
     return NULL;
   }
 

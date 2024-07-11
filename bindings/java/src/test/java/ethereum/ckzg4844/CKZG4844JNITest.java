@@ -413,8 +413,8 @@ public class CKZG4844JNITest {
             () ->
                 CKZG4844JNI.loadTrustedSetup(
                     new byte[27], // wrong g1 monomial
-                    parameters.getG1Lagrange(),
-                    parameters.getG2Monomial(),
+                    parameters.getG1LagrangeBytes(),
+                    parameters.getG2MonomialBytes(),
                     0));
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertTrue(
@@ -428,9 +428,9 @@ public class CKZG4844JNITest {
             CKZGException.class,
             () ->
                 CKZG4844JNI.loadTrustedSetup(
-                    parameters.getG1Monomial(),
+                    parameters.getG1MonomialBytes(),
                     new byte[27], // wrong g1 lagrange
-                    parameters.getG2Monomial(),
+                    parameters.getG2MonomialBytes(),
                     0));
     assertEquals(C_KZG_BADARGS, exception.getError());
     assertTrue(
@@ -444,8 +444,8 @@ public class CKZG4844JNITest {
             CKZGException.class,
             () ->
                 CKZG4844JNI.loadTrustedSetup(
-                    parameters.getG1Monomial(),
-                    parameters.getG1Lagrange(),
+                    parameters.getG1MonomialBytes(),
+                    parameters.getG1LagrangeBytes(),
                     new byte[27], // wrong g1 lagrange
                     0));
     assertEquals(C_KZG_BADARGS, exception.getError());
@@ -481,7 +481,10 @@ public class CKZG4844JNITest {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
     CKZG4844JNI.loadTrustedSetup(
-        parameters.getG1Monomial(), parameters.getG1Lagrange(), parameters.getG2Monomial(), 0);
+        parameters.getG1MonomialBytes(),
+        parameters.getG1LagrangeBytes(),
+        parameters.getG2MonomialBytes(),
+        0);
   }
 
   public static void loadTrustedSetupFromResource() {

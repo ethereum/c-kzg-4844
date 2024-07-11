@@ -69,7 +69,7 @@ public class CKZG4844JNI {
   public static final int BYTES_PER_COMMITMENT = 48;
   /** The number of bytes in a KZG proof. */
   public static final int BYTES_PER_PROOF = 48;
-  /** The number of field elements in a blob. */
+  /** The number of bytes in a blob. */
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
   /** The number of bytes in a single cell. */
   public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;

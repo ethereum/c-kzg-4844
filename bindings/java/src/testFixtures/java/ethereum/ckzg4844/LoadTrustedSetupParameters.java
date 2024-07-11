@@ -2,42 +2,26 @@ package ethereum.ckzg4844;
 
 public class LoadTrustedSetupParameters {
 
-  private final byte[] g1Monomial;
-  private final byte[] g1Lagrange;
-  private final long g1Count;
-  private final byte[] g2Monomial;
-  private final long g2Count;
+  private final byte[] g1MonomialBytes;
+  private final byte[] g1LagrangeBytes;
+  private final byte[] g2MonomialBytes;
 
   public LoadTrustedSetupParameters(
-      final byte[] g1Monomial,
-      final byte[] g1Lagrange,
-      final long g1Count,
-      final byte[] g2Monomial,
-      final long g2Count) {
-    this.g1Monomial = g1Monomial;
-    this.g1Lagrange = g1Lagrange;
-    this.g1Count = g1Count;
-    this.g2Monomial = g2Monomial;
-    this.g2Count = g2Count;
+      final byte[] g1MonomialBytes, final byte[] g1LagrangeBytes, final byte[] g2MonomialBytes) {
+    this.g1MonomialBytes = g1MonomialBytes;
+    this.g1LagrangeBytes = g1LagrangeBytes;
+    this.g2MonomialBytes = g2MonomialBytes;
   }
 
-  public byte[] getG1Monomial() {
-    return g1Monomial;
+  public byte[] getG1MonomialBytes() {
+    return g1MonomialBytes;
   }
 
-  public byte[] getG1Lagrange() {
-    return g1Lagrange;
+  public byte[] getG1LagrangeBytes() {
+    return g1LagrangeBytes;
   }
 
-  public long getG1Count() {
-    return g1Count;
-  }
-
-  public byte[] getG2Monomial() {
-    return g2Monomial;
-  }
-
-  public long getG2Count() {
-    return g2Count;
+  public byte[] getG2MonomialBytes() {
+    return g2MonomialBytes;
   }
 }
