@@ -145,15 +145,6 @@ suite "yaml tests":
       let proofs = KzgProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
 
-  runTests(VERIFY_CELL_KZG_PROOF_TESTS):
-    let
-      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-      cellIndex = n["input"]["cell_index"].content.parseInt().uint64
-      cell = KzgCell.fromHex(n["input"]["cell"])
-      proof = KzgProof.fromHex(n["input"]["proof"])
-      res = ctx.verifyProof(commitment, cellIndex, cell, proof)
-    checkBool(res)
-
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
     let
       commitments = KzgCommitment.fromHexList(n["input"]["commitments"])

@@ -566,55 +566,6 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
   return result;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof(JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes, jlong cell_index, jbyteArray cell, jbyteArray proof_bytes)
-{
-  if (settings == NULL)
-  {
-    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
-    return 0;
-  }
-
-  size_t commitment_size = (size_t)(*env)->GetArrayLength(env, commitment_bytes);
-  if (commitment_size != BYTES_PER_COMMITMENT)
-  {
-    throw_invalid_size_exception(env, "Invalid commitment size.", commitment_size, BYTES_PER_COMMITMENT);
-    return 0;
-  }
-
-  size_t cell_size = (size_t)(*env)->GetArrayLength(env, cell);
-  if (cell_size != BYTES_PER_CELL)
-  {
-    throw_invalid_size_exception(env, "Invalid cell size.", cell_size, BYTES_PER_CELL);
-    return 0;
-  }
-
-  size_t proof_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
-  if (proof_size != BYTES_PER_PROOF)
-  {
-    throw_invalid_size_exception(env, "Invalid proof size.", proof_size, BYTES_PER_PROOF);
-    return 0;
-  }
-
-  Bytes48 *commitment_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitment_bytes, NULL);
-  Cell *cell_native = (Cell *)(*env)->GetByteArrayElements(env, cell, NULL);
-  Bytes48 *proof_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proof_bytes, NULL);
-
-  bool out;
-  C_KZG_RET ret = verify_cell_kzg_proof(&out, commitment_native, cell_index, cell_native, proof_native, settings);
-
-  (*env)->ReleaseByteArrayElements(env, commitment_bytes, (jbyte *)commitment_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, cell, (jbyte *)cell_native, 0);
-  (*env)->ReleaseByteArrayElements(env, proof_bytes, (jbyte *)proof_native, 0);
-
-  if (ret != C_KZG_OK)
-  {
-    throw_c_kzg_exception(env, ret, "There was an error in verifyCellKzgProof.");
-    return 0;
-  }
-
-  return (jboolean)out;
-}
-
 JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray column_indices, jbyteArray cells, jbyteArray proofs_bytes)
 {
   if (settings == NULL)

@@ -154,25 +154,6 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
 
 /**
- * Verify that a cell's proof is valid.
- *
- * @param {Bytes48}   commitmentBytes - Commitment bytes
- * @param {number}    cellIndex - The cell identifier
- * @param {Cell}      cell - The cell to verify
- * @param {Bytes48}   proofBytes - The proof for the cell
- *
- * @return {boolean} - True if the cell is valid with respect to this commitment
- *
- * @throws {Error} - Errors validating cell's proof
- */
-export function verifyCellKzgProof(
-  commitmentBytes: Bytes48,
-  cellIndex: number,
-  cell: Cell,
-  proofBytes: Bytes48
-): boolean;
-
-/**
  * Verify that multiple cells' proofs are valid.
  *
  * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
@@ -186,7 +167,6 @@ export function verifyCellKzgProof(
  */
 export function verifyCellKzgProofBatch(
   commitmentsBytes: Bytes48[],
-  rowIndices: number[],
   columnIndices: number[],
   cells: Cell[],
   proofsBytes: Bytes48[]

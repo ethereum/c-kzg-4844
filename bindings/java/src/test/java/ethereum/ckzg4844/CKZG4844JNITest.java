@@ -134,22 +134,6 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
-  @MethodSource("getVerifyCellKzgProofTests")
-  public void verifyCellKzgProofTests(final VerifyCellKzgProofTest test) {
-    try {
-      boolean valid =
-          CKZG4844JNI.verifyCellKzgProof(
-              test.getInput().getCommitment(),
-              test.getInput().getCellIndex(),
-              test.getInput().getCell(),
-              test.getInput().getProof());
-      assertEquals(test.getOutput(), valid);
-    } catch (CKZGException ex) {
-      assertNull(test.getOutput());
-    }
-  }
-
-  @ParameterizedTest
   @MethodSource("getVerifyCellKzgProofBatchTests")
   public void verifyCellKzgProofBatchTests(final VerifyCellKzgProofBatchTest test) {
     try {
@@ -235,25 +219,6 @@ public class CKZG4844JNITest {
         CKZG4844JNI.recoverCellsAndKzgProofs(cellIndices, partialCells);
     assertArrayEquals(cells, recoveredCellsAndProofs.getCells());
     assertArrayEquals(proofs, recoveredCellsAndProofs.getProofs());
-    CKZG4844JNI.freeTrustedSetup();
-  }
-
-  @Test
-  public void checkVerifyCell() {
-    loadTrustedSetup();
-    final byte[] blob = TestUtils.createRandomBlob();
-    final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
-    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndKzgProofs(blob);
-    final byte[] cells = cellsAndProofs.getCells();
-    final byte[] proofs = cellsAndProofs.getProofs();
-
-    for (int cellIndex = 0; cellIndex < CELLS_PER_EXT_BLOB; cellIndex++) {
-      byte[] cell = new byte[BYTES_PER_CELL];
-      byte[] proof = new byte[BYTES_PER_PROOF];
-      System.arraycopy(cells, cellIndex * BYTES_PER_CELL, cell, 0, BYTES_PER_CELL);
-      System.arraycopy(proofs, cellIndex * BYTES_PER_PROOF, proof, 0, BYTES_PER_PROOF);
-      assertTrue(CKZG4844JNI.verifyCellKzgProof(commitment, cellIndex, cell, proof));
-    }
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -558,11 +523,6 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     return TestUtils.getComputeCellsAndKzgProofsTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
-  }
-
-  private static Stream<VerifyCellKzgProofTest> getVerifyCellKzgProofTests() {
-    loadTrustedSetup();
-    return TestUtils.getVerifyCellKzgProofTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {

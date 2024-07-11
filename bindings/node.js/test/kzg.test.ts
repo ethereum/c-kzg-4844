@@ -27,7 +27,6 @@ const {
 
   // EIP-7594
   computeCellsAndKzgProofs,
-  verifyCellKzgProof,
   verifyCellKzgProofBatch,
   recoverCellsAndKzgProofs,
 } = kzg;
@@ -49,12 +48,10 @@ const VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
 const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
-const VERIFY_CELL_KZG_PROOF_TESTS = "../../tests/verify_cell_kzg_proof/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
 const RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml";
 
 const BYTES_PER_FIELD_ELEMENT = 32;
-const CELLS_PER_EXT_BLOB = 128;
 
 type BlobToKzgCommitmentTest = TestMeta<{blob: string}, string>;
 type ComputeKzgProofTest = TestMeta<{blob: string; z: string}, string[]>;
@@ -64,7 +61,6 @@ type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof:
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
-type VerifyCellKzgProofTest = TestMeta<{commitment: string; cell_index: number; cell: string; proof: string}, boolean>;
 type VerifyCellKzgProofBatchTest = TestMeta<
   {commitments: string[]; column_indices: number[]; cells: string[]; proofs: string[]},
   boolean
@@ -400,30 +396,6 @@ describe("C-KZG", () => {
       });
     });
 
-    it("reference tests for verifyCellKzgProof should pass", () => {
-      const tests = globSync(VERIFY_CELL_KZG_PROOF_TESTS);
-      expect(tests.length).toBeGreaterThan(0);
-
-      tests.forEach((testFile: string) => {
-        const test: VerifyCellKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
-
-        let valid;
-        const commitment = bytesFromHex(test.input.commitment);
-        const cellIndex = test.input.cell_index;
-        const cell = bytesFromHex(test.input.cell);
-        const proof = bytesFromHex(test.input.proof);
-
-        try {
-          valid = verifyCellKzgProof(commitment, cellIndex, cell, proof);
-        } catch (err) {
-          expect(test.output).toBeNull();
-          return;
-        }
-
-        expect(valid).toEqual(test.output);
-      });
-    });
-
     it("reference tests for verifyCellKzgProofBatch should pass", () => {
       const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
       expect(tests.length).toBeGreaterThan(0);
@@ -716,42 +688,6 @@ describe("C-KZG", () => {
       expect(() => verifyBlobKzgProofBatch(blobs, commitments, proofs.slice(0, 1))).toThrowError(
         "Requires equal number of blobs/commitments/proofs"
       );
-    });
-  });
-
-  describe("tests for das functions", () => {
-    it("proofs should verify", () => {
-      const blob = generateRandomBlob();
-      const commitment = blobToKzgCommitment(blob);
-      const [cells, proofs] = computeCellsAndKzgProofs(blob);
-      for (const [i] of cells.entries()) {
-        verifyCellKzgProof(commitment, i, cells[i], proofs[i]);
-      }
-    });
-
-    it("proofs should verify in batch", () => {
-      const count = 3;
-      const blobs = new Array(count);
-      const commitments = new Array(count);
-      const row_indices = new Array(count * CELLS_PER_EXT_BLOB);
-      const column_indices = new Array(count * CELLS_PER_EXT_BLOB);
-      const cells = new Array(count * CELLS_PER_EXT_BLOB);
-      const proofs = new Array(count * CELLS_PER_EXT_BLOB);
-
-      for (const [i] of blobs.entries()) {
-        blobs[i] = generateRandomBlob();
-        commitments[i] = blobToKzgCommitment(blobs[i]);
-        const [blobCells, blobCellProofs] = computeCellsAndKzgProofs(blobs[i]);
-        for (let j = 0; j < CELLS_PER_EXT_BLOB; j++) {
-          const index = i * CELLS_PER_EXT_BLOB + j;
-          row_indices[index] = i;
-          column_indices[index] = j;
-          cells[index] = blobCells[j];
-          proofs[index] = blobCellProofs[j];
-        }
-      }
-
-      verifyCellKzgProofBatch(commitments, row_indices, column_indices, cells, proofs);
     });
   });
 });

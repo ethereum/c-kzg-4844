@@ -121,14 +121,6 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgP
 
 /*
  * Class:     ethereum_ckzg4844_CKZG4844JNI
- * Method:    verifyCellKzgProof
- * Signature: ([BJ[B[B)Z
- */
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
-  (JNIEnv *, jclass, jbyteArray, jlong, jbyteArray, jbyteArray);
-
-/*
- * Class:     ethereum_ckzg4844_CKZG4844JNI
  * Method:    verifyCellKzgProofBatch
  * Signature: ([B[J[B[B)Z
  */

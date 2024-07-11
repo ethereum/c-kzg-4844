@@ -179,14 +179,6 @@ extern "C" {
         blob: *const Blob,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    pub fn verify_cell_kzg_proof(
-        ok: *mut bool,
-        commitment_bytes: *const Bytes48,
-        cell_index: u64,
-        cell: *const Cell,
-        proof_bytes: *const Bytes48,
-        s: *const KZGSettings,
-    ) -> C_KZG_RET;
     pub fn verify_cell_kzg_proof_batch(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,

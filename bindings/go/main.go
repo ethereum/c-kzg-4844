@@ -466,37 +466,6 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([cellsPerExtB
 }
 
 /*
-VerifyCellKZGProof is the binding for:
-
-	C_KZG_RET verify_cell_kzg_proof(
-	    bool *ok,
-	    const Bytes48 *commitment_bytes,
-	    uint64_t cell_index,
-	    const Cell *cell,
-	    const KZGProof *proof,
-	    const KZGSettings *s);
-*/
-func VerifyCellKZGProof(commitmentBytes Bytes48, cellIndex uint64, cell Cell, proofBytes Bytes48) (bool, error) {
-	if !loaded {
-		panic("trusted setup isn't loaded")
-	}
-
-	var result C.bool
-	ret := C.verify_cell_kzg_proof(
-		&result,
-		(*C.Bytes48)(unsafe.Pointer(&commitmentBytes)),
-		(C.uint64_t)(cellIndex),
-		(*C.Cell)(unsafe.Pointer(&cell)),
-		(*C.Bytes48)(unsafe.Pointer(&proofBytes)),
-		&settings)
-
-	if ret != C.C_KZG_OK {
-		return false, makeErrorFromRet(ret)
-	}
-	return bool(result), nil
-}
-
-/*
 VerifyCellKZGProofBatch is the binding for:
 
 	C_KZG_RET verify_cell_kzg_proof_batch(

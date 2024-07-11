@@ -223,19 +223,6 @@ public class CKZG4844JNI {
   public static native CellsAndProofs recoverCellsAndKzgProofs(long[] cellIndices, byte[] cells);
 
   /**
-   * Verify that a cell's proof is valid.
-   *
-   * @param commitmentBytes commitment bytes
-   * @param cellIndex the cell identifier
-   * @param cell the cell to verify
-   * @param proofBytes the proof for the cell
-   * @return true if the cell is valid with respect to this commitment
-   * @throws CKZGException if there is a crypto error
-   */
-  public static native boolean verifyCellKzgProof(
-      byte[] commitmentBytes, long cellIndex, byte[] cell, byte[] proofBytes);
-
-  /**
    * Verify that multiple cells' proofs are valid.
    *
    * @param commitmentsBytes the commitments for each cell

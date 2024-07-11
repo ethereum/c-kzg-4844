@@ -242,65 +242,6 @@ static PyObject* verify_blob_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   if (ok) Py_RETURN_TRUE; else Py_RETURN_FALSE;
 }
 
-static PyObject* compute_cells_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_blob, *s;
-  PyObject *ret = NULL;
-  Cell *cells = NULL;
-
-  /* Ensure inputs are the right types */
-  if (!PyArg_UnpackTuple(args, "compute_cells", 2, 2, &input_blob, &s) ||
-      !PyBytes_Check(input_blob) ||
-      !PyCapsule_IsValid(s, "KZGSettings")) {
-    ret = PyErr_Format(PyExc_ValueError, "expected bytes and trusted setup");
-    goto out;
-  }
-
-  /* Ensure blob is the right size */
-  if (PyBytes_Size(input_blob) != BYTES_PER_BLOB) {
-    ret = PyErr_Format(PyExc_ValueError, "expected blob to be BYTES_PER_BLOB bytes");
-    goto out;
-  }
-
-  /* Allocate space for the recovered cells */
-  cells = calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
-  if (cells == NULL) {
-    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cells");
-    goto out;
-  }
-
-  /* Call our C function with our inputs */
-  const Blob *blob = (Blob *)PyBytes_AsString(input_blob);
-  if (compute_cells_and_kzg_proofs(cells, NULL, blob, PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    ret = PyErr_Format(PyExc_RuntimeError, "compute_cells failed");
-    goto out;
-  }
-
-  /* Convert our result to a list of bytes objects */
-  PyObject *output_cells = PyList_New(CELLS_PER_EXT_BLOB);
-  if (output_cells == NULL) {
-    ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for return list");
-    goto out;
-  }
-  for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-    /* Convert cell to a bytes object */
-    PyObject *cell_bytes = PyBytes_FromStringAndSize((const char *)&cells[i], BYTES_PER_CELL);
-    if (cell_bytes == NULL) {
-      Py_DECREF(cell_bytes);
-      ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cell bytes");
-      goto out;
-    }
-    /* Add it to our list */
-    PyList_SetItem(output_cells, i, cell_bytes);
-  }
-
-  /* Success! */
-  ret = output_cells;
-
-out:
-  free(cells);
-  return ret;
-}
-
 static PyObject* compute_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *args) {
   PyObject *input_blob, *s;
   PyObject *ret = NULL;
@@ -390,68 +331,6 @@ static PyObject* compute_cells_and_kzg_proofs_wrap(PyObject *self, PyObject *arg
 out:
   free(cells);
   free(proofs);
-  return ret;
-}
-
-static PyObject* verify_cell_kzg_proof_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_commitment, *input_cell_index, *input_cell, *input_proof, *s;
-  PyObject *ret = NULL;
-  bool ok = false;
-
-  /* Ensure inputs are the right types */
-  if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof", 5, 5, &input_commitment, &input_cell_index, &input_cell, &input_proof, &s) ||
-      !PyBytes_Check(input_commitment) ||
-      !PyLong_Check(input_cell_index) ||
-      !PyBytes_Check(input_cell) ||
-      !PyBytes_Check(input_proof) ||
-      !PyCapsule_IsValid(s, "KZGSettings")) {
-    ret = PyErr_Format(PyExc_ValueError, "expected bytes, int, bytes, bytes, trusted setup");
-    goto out;
-  }
-
-  /* Ensure commitment is the right size */
-  if (PyBytes_Size(input_commitment) != BYTES_PER_COMMITMENT) {
-    ret = PyErr_Format(PyExc_ValueError, "expected commitment to be BYTES_PER_COMMITMENT bytes");
-    goto out;
-  }
-  /* Convert the cell id to a cell id type (uint64_t) */
-  uint64_t cell_index = PyLong_AsUnsignedLongLong(input_cell_index);
-  if (PyErr_Occurred()) {
-    ret = PyErr_Format(PyExc_ValueError, "failed to convert cell id to uint64_t");
-    goto out;
-  }
-  /* Ensure cell is the right size */
-  if (PyBytes_Size(input_cell) != BYTES_PER_CELL) {
-    ret = PyErr_Format(PyExc_ValueError, "expected cell to be BYTES_PER_CELL bytes");
-    goto out;
-  }
-  /* Ensure proof is the right size */
-  if (PyBytes_Size(input_proof) != BYTES_PER_PROOF) {
-    ret = PyErr_Format(PyExc_ValueError, "expected proof to be BYTES_PER_PROOF bytes");
-    goto out;
-  }
-
-  const Bytes48 *commitment = (Bytes48 *)PyBytes_AsString(input_commitment);
-  const Cell *cell = (Cell *)PyBytes_AsString(input_cell);
-  const Bytes48 *proof = (Bytes48 *)PyBytes_AsString(input_proof);
-
-  /* Call our C function with our inputs */
-  if (verify_cell_kzg_proof(&ok, commitment, cell_index, cell, proof,
-        PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_kzg_proof failed");
-    goto out;
-  }
-
-  /* Success! */
-  if (ok) {
-    Py_INCREF(Py_True);
-    ret = Py_True;
-  } else {
-    Py_INCREF(Py_False);
-    ret = Py_False;
-  }
-
-out:
   return ret;
 }
 
@@ -758,9 +637,7 @@ static PyMethodDef ckzgmethods[] = {
   {"verify_kzg_proof",             verify_kzg_proof_wrap,             METH_VARARGS, "Verify a proof for the given inputs"},
   {"verify_blob_kzg_proof",        verify_blob_kzg_proof_wrap,        METH_VARARGS, "Verify a blob/commitment/proof combo"},
   {"verify_blob_kzg_proof_batch",  verify_blob_kzg_proof_batch_wrap,  METH_VARARGS, "Verify multiple blob/commitment/proof combos"},
-  {"compute_cells",                compute_cells_wrap,                METH_VARARGS, "Compute cells for a blob"},
   {"compute_cells_and_kzg_proofs", compute_cells_and_kzg_proofs_wrap, METH_VARARGS, "Compute cells and proofs for a blob"},
-  {"verify_cell_kzg_proof",        verify_cell_kzg_proof_wrap,        METH_VARARGS, "Verify a cell proof"},
   {"verify_cell_kzg_proof_batch",  verify_cell_kzg_proof_batch_wrap,  METH_VARARGS, "Verify multiple cell proofs"},
   {"recover_cells_and_kzg_proofs", recover_cells_and_kzg_proofs_wrap, METH_VARARGS, "Recover missing cells and proofs"},
   {NULL, NULL, 0, NULL}

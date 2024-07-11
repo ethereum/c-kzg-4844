@@ -187,29 +187,6 @@ def test_compute_cells_and_kzg_proofs(ts):
         assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
-def test_verify_cell_kzg_proof(ts):
-    test_files = glob.glob(VERIFY_CELL_KZG_PROOF_TESTS)
-    assert len(test_files) > 0
-
-    for test_file in test_files:
-        with open(test_file, "r") as f:
-            test = yaml.safe_load(f)
-
-        commitment = bytes_from_hex(test["input"]["commitment"])
-        cell_index = test["input"]["cell_index"]
-        cell = bytes_from_hex(test["input"]["cell"])
-        proof = bytes_from_hex(test["input"]["proof"])
-
-        try:
-            valid = ckzg.verify_cell_kzg_proof(commitment, cell_index, cell, proof, ts)
-        except:
-            assert test["output"] is None
-            continue
-
-        expected_valid = test["output"]
-        assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
-
-
 def test_verify_cell_kzg_proof_batch(ts):
     test_files = glob.glob(VERIFY_CELL_KZG_PROOF_BATCH_TESTS)
     assert len(test_files) > 0

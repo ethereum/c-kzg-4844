@@ -39,7 +39,6 @@ For EIP-4844:
 For EIP-7594:
 
 - `compute_cells_and_kzg_proofs`
-- `verify_cell_kzg_proof`
 - `verify_cell_kzg_proof_batch`
 - `recover_cells_and_kzg_proofs`
 

@@ -457,31 +457,6 @@ impl KZGProof {
         }
     }
 
-    pub fn verify_cell_kzg_proof(
-        commitment_bytes: &Bytes48,
-        cell_index: u64,
-        cell: &Cell,
-        proof_bytes: &Bytes48,
-        kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_cell_kzg_proof(
-                verified.as_mut_ptr(),
-                commitment_bytes,
-                cell_index,
-                cell,
-                proof_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
     pub fn verify_cell_kzg_proof_batch(
         commitments_bytes: &[Bytes48],
         column_indices: &[u64],
@@ -839,10 +814,9 @@ mod tests {
     use rand::{rngs::ThreadRng, Rng};
     use std::{fs, path::PathBuf};
     use test_formats::{
-        blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells,
-        compute_cells_and_kzg_proofs, compute_kzg_proof, recover_cells_and_kzg_proofs,
-        verify_blob_kzg_proof, verify_blob_kzg_proof_batch, verify_cell_kzg_proof,
-        verify_cell_kzg_proof_batch, verify_kzg_proof,
+        blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells_and_kzg_proofs,
+        compute_kzg_proof, recover_cells_and_kzg_proofs, verify_blob_kzg_proof,
+        verify_blob_kzg_proof_batch, verify_cell_kzg_proof_batch, verify_kzg_proof,
     };
 
     fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
@@ -922,7 +896,6 @@ mod tests {
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
 
     const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
-    const VERIFY_CELL_KZG_PROOF_TESTS: &str = "tests/verify_cell_kzg_proof/*/*/*";
     const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
     const RECOVER_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/recover_cells_and_kzg_proofs/*/*/*";
 
@@ -1252,61 +1225,6 @@ mod tests {
                         proofs.iter().map(|p| p.to_bytes()).collect();
                     assert_eq!(proofs_as_bytes, expected_proofs);
                 }
-                _ => assert!(test.get_output().is_none()),
-            }
-        }
-    }
-
-    #[test]
-    fn test_verify_cell_kzg_proof() {
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
-        let test_files: Vec<PathBuf> = glob::glob(VERIFY_CELL_KZG_PROOF_TESTS)
-            .unwrap()
-            .map(Result::unwrap)
-            .collect();
-        assert!(!test_files.is_empty());
-
-        #[allow(unused_variables)]
-        for (index, test_file) in test_files.iter().enumerate() {
-            let yaml_data = fs::read_to_string(test_file).unwrap();
-            let test: verify_cell_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(commitment), Ok(cell_index), Ok(cell), Ok(proof)) = (
-                test.input.get_commitment(),
-                test.input.get_cell_index(),
-                test.input.get_cell(),
-                test.input.get_proof(),
-            ) else {
-                assert!(test.get_output().is_none());
-                continue;
-            };
-
-            #[cfg(feature = "generate-fuzz-corpus")]
-            {
-                use std::{env, fs::File, io::Write};
-                let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-                let dir_path = root_dir
-                    .join("fuzz")
-                    .join("corpus")
-                    .join("fuzz_verify_cell_kzg_proof");
-                fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
-                let mut file = File::create(&file_path).unwrap();
-                file.write_all(&commitment.bytes).unwrap();
-                file.write_all(&cell_index.to_le_bytes()).unwrap();
-                file.write_all(&cell.bytes).unwrap();
-                file.write_all(&proof.bytes).unwrap();
-            }
-
-            match KZGProof::verify_cell_kzg_proof(
-                &commitment,
-                cell_index,
-                &cell,
-                &proof,
-                &kzg_settings,
-            ) {
-                Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
         }

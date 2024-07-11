@@ -773,53 +773,6 @@ out:
 }
 
 /**
- * Verify that a cell's proof is valid.
- *
- * @param[in] {Bytes48}   commitmentBytes - Commitment bytes
- * @param[in] {number}    cellIndex - The cell identifier
- * @param[in] {Cell}      cell - The cell to verify
- * @param[in] {Bytes48}   proofBytes - The proof for the cell
- *
- * @return {boolean} - True if the cell is valid with respect to this commitment
- *
- * @throws {Error} - Errors validating cell's proof
- */
-Napi::Value VerifyCellKzgProof(const Napi::CallbackInfo &info) {
-    Napi::Env env = info.Env();
-    Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
-    if (commitment_bytes == nullptr) {
-        return env.Null();
-    }
-    uint64_t cell_index = get_cell_index(env, info[1]);
-    Cell *cell = get_cell(env, info[2]);
-    if (cell == nullptr) {
-        return env.Null();
-    }
-    Bytes48 *proof_bytes = get_bytes48(env, info[3], "proofBytes");
-    if (proof_bytes == nullptr) {
-        return env.Null();
-    }
-    KZGSettings *kzg_settings = get_kzg_settings(env, info);
-    if (kzg_settings == nullptr) {
-        return env.Null();
-    }
-
-    bool out;
-    C_KZG_RET ret = verify_cell_kzg_proof(
-        &out, commitment_bytes, cell_index, cell, proof_bytes, kzg_settings
-    );
-
-    if (ret != C_KZG_OK) {
-        std::ostringstream msg;
-        msg << "Error in verifyCellKzgProof: " << from_c_kzg_ret(ret);
-        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
-        return env.Undefined();
-    }
-
-    return Napi::Boolean::New(env, out);
-}
-
-/**
  * Verify that multiple cells' proofs are valid.
  *
  * @param[in] {Bytes48[]} commitmentsBytes - The commitments for each cell
@@ -1000,9 +953,6 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
     exports["recoverCellsAndKzgProofs"] = Napi::Function::New(
         env, RecoverCellsAndKzgProofs, "recoverCellsAndKzgProofs"
-    );
-    exports["verifyCellKzgProof"] = Napi::Function::New(
-        env, VerifyCellKzgProof, "verifyCellKzgProof"
     );
     exports["verifyCellKzgProofBatch"] = Napi::Function::New(
         env, VerifyCellKzgProofBatch, "verifyCellKzgProofBatch"

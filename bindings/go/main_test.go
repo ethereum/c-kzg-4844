@@ -96,9 +96,7 @@ var (
 	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
 	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
 	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
-	computeCellsTests             = filepath.Join(testDir, "compute_cells/*/*/*")
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
-	verifyCellKZGProofTests       = filepath.Join(testDir, "verify_cell_kzg_proof/*/*/*")
 	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
 	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
 )
@@ -483,65 +481,6 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 	}
 }
 
-func TestVerifyCellKZGProof(t *testing.T) {
-	type Test struct {
-		Input struct {
-			Commitment string `yaml:"commitment"`
-			CellIndex  uint64 `yaml:"cell_index"`
-			Cell       string `yaml:"cell"`
-			Proof      string `yaml:"proof"`
-		}
-		Output *bool `yaml:"output"`
-	}
-
-	tests, err := filepath.Glob(verifyCellKZGProofTests)
-	require.NoError(t, err)
-	require.True(t, len(tests) > 0)
-
-	for _, testPath := range tests {
-		t.Run(testPath, func(t *testing.T) {
-			testFile, err := os.Open(testPath)
-			require.NoError(t, err)
-			test := Test{}
-			err = yaml.NewDecoder(testFile).Decode(&test)
-			require.NoError(t, testFile.Close())
-			require.NoError(t, err)
-
-			var commitment Bytes48
-			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			cellIndex := test.Input.CellIndex
-
-			var cell Cell
-			err = cell.UnmarshalText([]byte(test.Input.Cell))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			var proof Bytes48
-			err = proof.UnmarshalText([]byte(test.Input.Proof))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			valid, err := VerifyCellKZGProof(commitment, cellIndex, cell, proof)
-			if err == nil {
-				require.NotNil(t, test.Output)
-				require.Equal(t, *test.Output, valid)
-			} else {
-				t.Log(err)
-				require.Nil(t, test.Output)
-			}
-		})
-	}
-}
-
 func TestVerifyCellKZGProofBatch(t *testing.T) {
 	type Test struct {
 		Input struct {
@@ -845,14 +784,6 @@ func Benchmark(b *testing.B) {
 			}
 		})
 	}
-
-	b.Run("VerifyCellKZGProof", func(b *testing.B) {
-		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellKZGProof(commitments[0], 0, blobCells[0][0], blobCellProofs[0][0])
-			require.NoError(b, err)
-			require.True(b, ok)
-		}
-	})
 
 	b.Run("VerifyCellKZGProofBatch", func(b *testing.B) {
 		var cellCommitments []Bytes48

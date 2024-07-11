@@ -142,13 +142,6 @@ proc verify_blob_kzg_proof_batch*(res: var bool,
                          n: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}
 
-proc verify_cell_kzg_proof*(res: var bool,
-                         commitment: ptr KzgBytes48,
-                         cellIndex: uint64,
-                         cell: ptr KzgCell,
-                         proof: ptr KzgBytes48,
-                         s: KzgSettings): KZG_RET {.kzg_abi.}
-
 proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
                          proofsOut: ptr KzgProof,
                          blob: ptr KzgBlob,
