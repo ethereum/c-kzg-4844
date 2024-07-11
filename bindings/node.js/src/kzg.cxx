@@ -776,7 +776,7 @@ out:
  * Verify that multiple cells' proofs are valid.
  *
  * @param[in] {Bytes48[]} commitmentsBytes - The commitments for each cell
- * @param[in] {number[]}  columnIndices - The column index for each cell
+ * @param[in] {number[]}  cellIndices - The cell index for each cell
  * @param[in] {Cell[]}    cells - The cells to verify
  * @param[in] {Bytes48[]} proofsBytes - The proof for each cell
  *
@@ -792,13 +792,13 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray() &&
           info[3].IsArray())) {
         Napi::Error::New(
-            env, "commitments, column_indices, cells, and proofs must be arrays"
+            env, "commitments, cell_indices, cells, and proofs must be arrays"
         )
             .ThrowAsJavaScriptException();
         return result;
     }
     Napi::Array commitments_param = info[0].As<Napi::Array>();
-    Napi::Array column_indices_param = info[1].As<Napi::Array>();
+    Napi::Array cell_indices_param = info[1].As<Napi::Array>();
     Napi::Array cells_param = info[2].As<Napi::Array>();
     Napi::Array proofs_param = info[3].As<Napi::Array>();
     KZGSettings *kzg_settings = get_kzg_settings(env, info);
@@ -809,18 +809,18 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     bool out;
     Bytes48 *commitments = NULL;
-    uint64_t *column_indices = NULL;
+    uint64_t *cell_indices = NULL;
     Cell *cells = NULL;
     Bytes48 *proofs = NULL;
 
     size_t num_cells = cells_param.Length();
 
     if (commitments_param.Length() != num_cells ||
-        column_indices_param.Length() != num_cells ||
+        cell_indices_param.Length() != num_cells ||
         proofs_param.Length() != num_cells) {
         Napi::Error::New(
             env,
-            "Must have equal lengths for commitments, column_indices, cells, "
+            "Must have equal lengths for commitments, cell_indices, cells, "
             "and proofs"
         )
             .ThrowAsJavaScriptException();
@@ -835,13 +835,11 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
             .ThrowAsJavaScriptException();
         goto out;
     }
-    column_indices = (uint64_t *)calloc(
-        column_indices_param.Length(), sizeof(uint64_t)
+    cell_indices = (uint64_t *)calloc(
+        cell_indices_param.Length(), sizeof(uint64_t)
     );
-    if (column_indices == nullptr) {
-        Napi::Error::New(
-            env, "Error while allocating memory for column_indices"
-        )
+    if (cell_indices == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cell_indices")
             .ThrowAsJavaScriptException();
         goto out;
     }
@@ -869,7 +867,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
             goto out;
         }
         memcpy(&commitments[i], commitment, BYTES_PER_COMMITMENT);
-        column_indices[i] = get_cell_index(env, column_indices_param[i]);
+        cell_indices[i] = get_cell_index(env, cell_indices_param[i]);
         Cell *cell = get_cell(env, cells_param[i]);
         if (cell == nullptr) {
             goto out;
@@ -883,13 +881,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     }
 
     ret = verify_cell_kzg_proof_batch(
-        &out,
-        commitments,
-        column_indices,
-        cells,
-        proofs,
-        num_cells,
-        kzg_settings
+        &out, commitments, cell_indices, cells, proofs, num_cells, kzg_settings
     );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
@@ -902,7 +894,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
 
 out:
     free(commitments);
-    free(column_indices);
+    free(cell_indices);
     free(cells);
     free(proofs);
 

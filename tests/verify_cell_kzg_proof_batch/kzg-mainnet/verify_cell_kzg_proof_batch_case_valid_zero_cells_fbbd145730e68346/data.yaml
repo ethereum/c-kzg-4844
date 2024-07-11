@@ -1,6 +1,6 @@
 input:
   commitments: []
-  column_indices: []
+  cell_indices: []
   cells: []
   proofs: []
 output: true

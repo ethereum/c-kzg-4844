@@ -26,9 +26,8 @@ lazy_static! {
 
 #[derive(Arbitrary, Debug)]
 struct Input {
-    row_commitments: Vec<Bytes48>,
-    row_indices: Vec<u64>,
-    column_indices: Vec<u64>,
+    commitments: Vec<Bytes48>,
+    cell_indices: Vec<u64>,
     cells: Vec<Cell>,
     proofs: Vec<Bytes48>,
 }
@@ -39,7 +38,7 @@ fuzz_target!(|input: Input| {
     let cells_bytes: Vec<&[u8; BYTES_PER_CELL]> = cells_bytes_owned.iter().collect();
 
     let commitments_owned: Vec<[u8; BYTES_PER_COMMITMENT]> = input
-        .row_commitments
+        .commitments
         .iter()
         .map(|c| Bytes48::into_inner(*c))
         .collect();
@@ -53,17 +52,15 @@ fuzz_target!(|input: Input| {
     let proofs_bytes: Vec<&[u8; BYTES_PER_PROOF]> = proofs_owned.iter().collect();
 
     let ckzg_result = c_kzg::KzgProof::verify_cell_kzg_proof_batch(
-        &input.row_commitments,
-        &input.row_indices,
-        &input.column_indices,
+        &input.commitments,
+        &input.cell_indices,
         &input.cells,
         &input.proofs,
         &KZG_SETTINGS,
     );
     let rkzg_result = VERIFIER_CONTEXT.verify_cell_kzg_proof_batch(
         commitments_bytes,
-        input.row_indices,
-        input.column_indices,
+        input.cell_indices,
         cells_bytes,
         proofs_bytes,
     );

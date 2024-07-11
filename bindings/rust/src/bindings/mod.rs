@@ -459,7 +459,7 @@ impl KZGProof {
 
     pub fn verify_cell_kzg_proof_batch(
         commitments_bytes: &[Bytes48],
-        column_indices: &[u64],
+        cell_indices: &[u64],
         cells: &[Cell],
         proofs_bytes: &[Bytes48],
         kzg_settings: &KZGSettings,
@@ -471,11 +471,11 @@ impl KZGProof {
                 commitments_bytes.len()
             )));
         }
-        if cells.len() != column_indices.len() {
+        if cells.len() != cell_indices.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cells and {} column indices",
                 cells.len(),
-                column_indices.len()
+                cell_indices.len()
             )));
         }
         if cells.len() != proofs_bytes.len() {
@@ -490,7 +490,7 @@ impl KZGProof {
             let res = verify_cell_kzg_proof_batch(
                 verified.as_mut_ptr(),
                 commitments_bytes.as_ptr(),
-                column_indices.as_ptr(),
+                cell_indices.as_ptr(),
                 cells.as_ptr(),
                 proofs_bytes.as_ptr(),
                 cells.len(),
@@ -1245,9 +1245,9 @@ mod tests {
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
-            let (Ok(commitments), Ok(column_indices), Ok(cells), Ok(proofs)) = (
+            let (Ok(commitments), Ok(cell_indices), Ok(cells), Ok(proofs)) = (
                 test.input.get_commitments(),
-                test.input.get_column_indices(),
+                test.input.get_cell_indices(),
                 test.input.get_cells(),
                 test.input.get_proofs(),
             ) else {
@@ -1269,8 +1269,8 @@ mod tests {
                 for commitment in &commitments {
                     file.write_all(&commitment.bytes).unwrap();
                 }
-                for column_index in &column_indices {
-                    file.write_all(&column_index.to_le_bytes()).unwrap();
+                for cell_index in &cell_indices {
+                    file.write_all(&cell_index.to_le_bytes()).unwrap();
                 }
                 for cell in &cells {
                     file.write_all(&cell.bytes).unwrap();
@@ -1282,7 +1282,7 @@ mod tests {
 
             match KZGProof::verify_cell_kzg_proof_batch(
                 &commitments,
-                &column_indices,
+                &cell_indices,
                 &cells,
                 &proofs,
                 &kzg_settings,

@@ -566,7 +566,7 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
   return result;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray column_indices, jbyteArray cells, jbyteArray proofs_bytes)
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray cell_indices, jbyteArray cells, jbyteArray proofs_bytes)
 {
   if (settings == NULL)
   {
@@ -583,10 +583,10 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
   size_t count = num_commitments;
 
-  size_t column_indices_count = (size_t)(*env)->GetArrayLength(env, column_indices);
-  if (column_indices_count != count)
+  size_t cell_indices_count = (size_t)(*env)->GetArrayLength(env, cell_indices);
+  if (cell_indices_count != count)
   {
-    throw_invalid_size_exception(env, "Invalid columnIndices size.", column_indices_count, count);
+    throw_invalid_size_exception(env, "Invalid cellIndices size.", cell_indices_count, count);
     return 0;
   }
 
@@ -605,15 +605,15 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProof
   }
 
   Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
-  uint64_t *column_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, column_indices, NULL);
+  uint64_t *cell_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_indices, NULL);
   Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
   Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
 
   bool out;
-  C_KZG_RET ret = verify_cell_kzg_proof_batch(&out, commitments_native, column_indices_native, cells_native, proofs_native, count, settings);
+  C_KZG_RET ret = verify_cell_kzg_proof_batch(&out, commitments_native, cell_indices_native, cells_native, proofs_native, count, settings);
 
   (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
-  (*env)->ReleaseLongArrayElements(env, column_indices, (jlong *)column_indices_native, JNI_ABORT);
+  (*env)->ReleaseLongArrayElements(env, cell_indices, (jlong *)cell_indices_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
   (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);
 

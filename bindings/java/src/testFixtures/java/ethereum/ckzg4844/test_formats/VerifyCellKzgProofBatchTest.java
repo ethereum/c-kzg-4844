@@ -11,8 +11,8 @@ public class VerifyCellKzgProofBatchTest {
     @JsonProperty("commitments")
     private List<String> commitments;
 
-    @JsonProperty("column_indices")
-    private List<Long> columnIndices;
+    @JsonProperty("cell_indices")
+    private List<Long> cellIndices;
 
     private List<String> cells;
     private List<String> proofs;
@@ -26,8 +26,8 @@ public class VerifyCellKzgProofBatchTest {
               .toArray(byte[][]::new));
     }
 
-    public long[] getColumnIndices() {
-      return columnIndices.stream().mapToLong(Long::longValue).toArray();
+    public long[] getCellIndices() {
+      return cellIndices.stream().mapToLong(Long::longValue).toArray();
     }
 
     public byte[] getCells() {

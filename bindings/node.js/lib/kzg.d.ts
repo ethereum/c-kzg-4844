@@ -157,7 +157,7 @@ export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): 
  * Verify that multiple cells' proofs are valid.
  *
  * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
- * @param {number[]}  columnIndices - The column index for each cell
+ * @param {number[]}  cellIndices - The column index for each cell
  * @param {Cell[]}    cells - The cells to verify
  * @param {Bytes48[]} proofsBytes - The proof for each cell
  *
@@ -167,7 +167,7 @@ export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): 
  */
 export function verifyCellKzgProofBatch(
   commitmentsBytes: Bytes48[],
-  columnIndices: number[],
+  cellIndices: number[],
   cells: Cell[],
   proofsBytes: Bytes48[]
 ): boolean;

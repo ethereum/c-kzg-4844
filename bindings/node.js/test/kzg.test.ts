@@ -62,7 +62,7 @@ type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[];
 
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
 type VerifyCellKzgProofBatchTest = TestMeta<
-  {commitments: string[]; column_indices: number[]; cells: string[]; proofs: string[]},
+  {commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[]},
   boolean
 >;
 type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
@@ -405,12 +405,12 @@ describe("C-KZG", () => {
 
         let valid;
         const commitments = test.input.commitments.map(bytesFromHex);
-        const columnIndices = test.input.column_indices;
+        const cellIndices = test.input.cell_indices;
         const cells = test.input.cells.map(bytesFromHex);
         const proofs = test.input.proofs.map(bytesFromHex);
 
         try {
-          valid = verifyCellKzgProofBatch(commitments, columnIndices, cells, proofs);
+          valid = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
           return;

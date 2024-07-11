@@ -140,7 +140,7 @@ public class CKZG4844JNITest {
       boolean valid =
           CKZG4844JNI.verifyCellKzgProofBatch(
               test.getInput().getCommitments(),
-              test.getInput().getColumnIndices(),
+              test.getInput().getCellIndices(),
               test.getInput().getCells(),
               test.getInput().getProofs());
       assertEquals(test.getOutput(), valid);
@@ -233,7 +233,7 @@ public class CKZG4844JNITest {
 
     final byte[] commitments = new byte[count * commitmentsLength];
     final CellsAndProofs[] data = new CellsAndProofs[count];
-    final long[] columnIndices = new long[count * CELLS_PER_EXT_BLOB];
+    final long[] cellIndices = new long[count * CELLS_PER_EXT_BLOB];
     final byte[] cells = new byte[count * cellsLength];
     final byte[] proofs = new byte[count * proofsLength];
 
@@ -256,11 +256,11 @@ public class CKZG4844JNITest {
     for (int i = 0; i < count; i++) {
       for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
         final int index = i * CELLS_PER_EXT_BLOB + j;
-        columnIndices[index] = j;
+        cellIndices[index] = j;
       }
     }
 
-    assertTrue(CKZG4844JNI.verifyCellKzgProofBatch(commitments, columnIndices, cells, proofs));
+    assertTrue(CKZG4844JNI.verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 

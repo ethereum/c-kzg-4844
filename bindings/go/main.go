@@ -471,18 +471,18 @@ VerifyCellKZGProofBatch is the binding for:
 	C_KZG_RET verify_cell_kzg_proof_batch(
 	    bool *ok,
 	    const Bytes48 *commitments_bytes,
-	    const uint64_t *column_indices,
+	    const uint64_t *cell_indices,
 	    const Cell *cells,
 	    const Bytes48 *proofs_bytes,
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, columnIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
+func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	cellCount := len(cells)
-	if len(commitmentsBytes) != cellCount || len(columnIndices) != cellCount || len(proofsBytes) != cellCount {
+	if len(commitmentsBytes) != cellCount || len(cellIndices) != cellCount || len(proofsBytes) != cellCount {
 		return false, ErrBadArgs
 	}
 
@@ -490,7 +490,7 @@ func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, columnIndices []uint64,
 	ret := C.verify_cell_kzg_proof_batch(
 		&result,
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
-		*(**C.uint64_t)(unsafe.Pointer(&columnIndices)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(cells)),

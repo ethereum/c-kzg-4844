@@ -245,7 +245,7 @@ export function verifyCellKzgProof(commitmentBytes: Bytes48, cellIndex: number, 
  *
  * @param {Bytes48[]} commitmentsBytes - The commitments for all blobs
  * @param {number[]}  rowIndices - The row index for each cell
- * @param {number[]}  columnIndices - The column index for each cell
+ * @param {number[]}  cellIndices - The column index for each cell
  * @param {Cell[]}    cells - The cells to verify
  * @param {Bytes48[]} proofsBytes - The proof for each cell
  *
@@ -256,7 +256,7 @@ export function verifyCellKzgProof(commitmentBytes: Bytes48, cellIndex: number, 
 export function verifyCellKzgProofBatch(
   commitmentsBytes: Bytes48[],
   rowIndices: number[],
-  columnIndices: number[],
+  cellIndices: number[],
   cells: Cell[],
   proofsBytes: Bytes48[]
 ): boolean;

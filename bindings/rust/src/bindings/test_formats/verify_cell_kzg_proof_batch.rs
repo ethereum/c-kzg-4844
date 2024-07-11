@@ -8,7 +8,7 @@ use serde::Deserialize;
 #[derive(Deserialize)]
 pub struct Input {
     commitments: Vec<String>,
-    column_indices: Vec<u64>,
+    cell_indices: Vec<u64>,
     cells: Vec<String>,
     proofs: Vec<String>,
 }
@@ -21,8 +21,8 @@ impl Input {
             .collect::<Result<Vec<Bytes48>, Error>>()
     }
 
-    pub fn get_column_indices(&self) -> Result<Vec<u64>, Error> {
-        Ok(self.column_indices.clone())
+    pub fn get_cell_indices(&self) -> Result<Vec<u64>, Error> {
+        Ok(self.cell_indices.clone())
     }
 
     pub fn get_cells(&self) -> Result<Vec<Cell>, Error> {

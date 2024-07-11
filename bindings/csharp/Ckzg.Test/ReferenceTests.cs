@@ -418,7 +418,7 @@ public class ReferenceTests
     private class VerifyCellKzgProofBatchInput
     {
         public List<string> Commitments { get; set; } = null!;
-        public List<ulong> ColumnIndices { get; set; } = null!;
+        public List<ulong> CellIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
         public List<string> Proofs { get; set; } = null!;
     }
@@ -445,14 +445,14 @@ public class ReferenceTests
             Assert.That(test, Is.Not.EqualTo(null));
 
             byte[] commitments = GetFlatBytes(test.Input.Commitments);
-            ulong[] columnIndices = test.Input.ColumnIndices.ToArray();
+            ulong[] cellIndices = test.Input.CellIndices.ToArray();
             byte[] cells = GetFlatBytes(test.Input.Cells);
             byte[] proofs = GetFlatBytes(test.Input.Proofs);
             int numCells = cells.Length / Ckzg.BytesPerCell;
 
             try
             {
-                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(commitments, columnIndices, cells, proofs, numCells, _ts);
+                bool isCorrect = Ckzg.VerifyCellKzgProofBatch(commitments, cellIndices, cells, proofs, numCells, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch

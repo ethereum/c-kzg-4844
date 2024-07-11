@@ -212,21 +212,21 @@ public static partial class Ckzg
         }
     }
 
-    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> columnIndices,
+    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> cellIndices,
             ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(commitments, nameof(commitments), BytesPerCommitment * numCells);
-        ThrowOnInvalidLength(columnIndices, nameof(columnIndices), numCells);
+        ThrowOnInvalidLength(cellIndices, nameof(cellIndices), numCells);
         ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
         ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * numCells);
 
         fixed (byte* commitmentsPtr = commitments, cellsPtr = cells, proofsPtr = proofs)
         {
-            fixed (ulong* columnIndicesPtr = columnIndices)
+            fixed (ulong* cellIndicesPtr = cellIndices)
             {
                 KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, commitmentsPtr,
-                    columnIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
+                    cellIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;
             }

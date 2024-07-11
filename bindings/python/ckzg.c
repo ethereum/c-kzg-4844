@@ -335,19 +335,19 @@ out:
 }
 
 static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args) {
-  PyObject *input_commitments, *input_column_indices, *input_cells, *input_proofs, *s;
+  PyObject *input_commitments, *input_cell_indices, *input_cells, *input_proofs, *s;
   PyObject *ret = NULL;
   Bytes48 *commitments = NULL;
-  uint64_t *column_indices = NULL;
+  uint64_t *cell_indices = NULL;
   Cell *cells = NULL;
   Bytes48 *proofs = NULL;
   bool ok = false;
 
   /* Ensure inputs are the right types */
   if (!PyArg_UnpackTuple(args, "verify_cell_kzg_proof_batch", 5, 5, &input_commitments,
-          &input_column_indices, &input_cells, &input_proofs, &s) ||
+          &input_cell_indices, &input_cells, &input_proofs, &s) ||
       !PyList_Check(input_commitments) ||
-      !PyList_Check(input_column_indices) ||
+      !PyList_Check(input_cell_indices) ||
       !PyList_Check(input_cells) ||
       !PyList_Check(input_proofs) ||
       !PyCapsule_IsValid(s, "KZGSettings")) {
@@ -357,14 +357,14 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
 
   /* Ensure input lists are the same length */
   Py_ssize_t commitments_count = PyList_Size(input_commitments);
-  Py_ssize_t column_indices_count = PyList_Size(input_column_indices);
+  Py_ssize_t cell_indices_count = PyList_Size(input_cell_indices);
   Py_ssize_t cells_count = PyList_Size(input_cells);
   Py_ssize_t proofs_count = PyList_Size(input_proofs);
   if (commitments_count != cells_count) {
     ret = PyErr_Format(PyExc_ValueError, "expected same number of commitments and cells");
     goto out;
   }
-  if (column_indices_count != cells_count) {
+  if (cell_indices_count != cells_count) {
     ret = PyErr_Format(PyExc_ValueError, "expected same number of column indices and cells");
     goto out;
   }
@@ -397,26 +397,26 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   }
 
   /* Allocate space for the column indices */
-  column_indices = (uint64_t *)calloc(column_indices_count, sizeof(uint64_t));
-  if (column_indices == NULL) {
+  cell_indices = (uint64_t *)calloc(cell_indices_count, sizeof(uint64_t));
+  if (cell_indices == NULL) {
     ret = PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for column indices");
     goto out;
   }
-  for (Py_ssize_t i = 0; i < column_indices_count; i++) {
+  for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
     /* Ensure each column index is an integer */
-    PyObject *column_index = PyList_GetItem(input_column_indices, i);
-    if (!PyLong_Check(column_index)) {
+    PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
+    if (!PyLong_Check(cell_index)) {
       ret = PyErr_Format(PyExc_ValueError, "expected column index to be an integer");
       goto out;
     }
     /* Convert the column index to a uint64_t */
-    uint64_t value = PyLong_AsUnsignedLongLong(column_index);
+    uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
     if (PyErr_Occurred()) {
       ret = PyErr_Format(PyExc_ValueError, "failed to convert column index to uint64_t");
       goto out;
     }
     /* The column is good, add it to our array */
-    memcpy(&column_indices[i], &value, sizeof(uint64_t));
+    memcpy(&cell_indices[i], &value, sizeof(uint64_t));
   }
 
   /* Allocate space for the cells */
@@ -466,7 +466,7 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
   }
 
   /* Call our C function with our inputs */
-  if (verify_cell_kzg_proof_batch(&ok, commitments, column_indices, cells, proofs, cells_count,
+  if (verify_cell_kzg_proof_batch(&ok, commitments, cell_indices, cells, proofs, cells_count,
         PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
     ret = PyErr_Format(PyExc_RuntimeError, "verify_cell_kzg_proof_batch failed");
     goto out;
@@ -483,7 +483,7 @@ static PyObject* verify_cell_kzg_proof_batch_wrap(PyObject *self, PyObject *args
 
 out:
   free(commitments);
-  free(column_indices);
+  free(cell_indices);
   free(cells);
   free(proofs);
   return ret;

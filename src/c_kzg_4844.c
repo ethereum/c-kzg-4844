@@ -3481,8 +3481,8 @@ out:
  * @param[out]  r_powers_out        The output challenges
  * @param[in]   commitments_bytes   The input commitments
  * @param[in]   num_commitments     The number of commitments
- * @param[in]   row_indices         The cell row indices
- * @param[in]   column_indices      The cell column indices
+ * @param[in]   commitment_indices  The cell commitment indices
+ * @param[in]   cell_indices        The cell cell indices
  * @param[in]   cells               The cell
  * @param[in]   proofs_bytes        The cell proof
  * @param[in]   num_cells           The number of cells
@@ -3491,8 +3491,8 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     fr_t *r_powers_out,
     const Bytes48 *commitments_bytes,
     size_t num_commitments,
-    const uint64_t *row_indices,
-    const uint64_t *column_indices,
+    const uint64_t *commitment_indices,
+    const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
     size_t num_cells
@@ -3508,8 +3508,8 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
                         + sizeof(uint64_t) /* num_commitments */
                         + sizeof(uint64_t) /* num_cells */
                         + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
-                        + (num_cells * sizeof(uint64_t)) /* row_indices */
-                        + (num_cells * sizeof(uint64_t)) /* column_indices */
+                        + (num_cells * sizeof(uint64_t)) /* commitment_indices */
+                        + (num_cells * sizeof(uint64_t)) /* cell_indices */
                         + (num_cells * BYTES_PER_CELL)   /* cells */
                         + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
 
@@ -3548,11 +3548,11 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
 
     for (size_t i = 0; i < num_cells; i++) {
         /* Copy row id */
-        bytes_from_uint64(offset, row_indices[i]);
+        bytes_from_uint64(offset, commitment_indices[i]);
         offset += sizeof(uint64_t);
 
         /* Copy column id */
-        bytes_from_uint64(offset, column_indices[i]);
+        bytes_from_uint64(offset, cell_indices[i]);
         offset += sizeof(uint64_t);
 
         /* Copy cell */
@@ -3654,20 +3654,20 @@ static void deduplicate_commitments(
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   The commitments associated with the rows
  * @param[in]   num_commitments     The number of commitments being passed
- * @param[in]   row_indices         Row indices for the cells
- * @param[in]   column_indices      Column indices for the cells
+ * @param[in]   commitment_indices         Row indices for the cells
+ * @param[in]   cell_indices      Column indices for the cells
  * @param[in]   cells               The cells to check
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  *
- * @remark cells[i] is in column = column_indices[i] and row = row_indices[i].
- * @remark cells[i] is associated with commitments_bytes[row_indices[i]].
+ * @remark cells[i] is in column = cell_indices[i] and row = commitment_indices[i].
+ * @remark cells[i] is associated with commitments_bytes[commitment_indices[i]].
  */
 C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
     const Bytes48 *commitments_bytes,
-    const uint64_t *column_indices,
+    const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
     size_t num_cells,
@@ -3684,7 +3684,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     /* Arrays */
     Bytes48 *unique_commitments = NULL;
-    uint64_t *row_indices = NULL;
+    uint64_t *commitment_indices = NULL;
     bool *is_cell_used = NULL;
     fr_t *aggregated_column_cells = NULL;
     fr_t *aggregated_interpolation_poly = NULL;
@@ -3710,7 +3710,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     for (size_t i = 0; i < num_cells; i++) {
         /* Make sure column index is valid */
-        if (column_indices[i] >= CELLS_PER_EXT_BLOB) return C_KZG_BADARGS;
+        if (cell_indices[i] >= CELLS_PER_EXT_BLOB) return C_KZG_BADARGS;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3720,7 +3720,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     tmp = (void **)&unique_commitments;
     ret = c_kzg_calloc(tmp, num_cells, sizeof(Bytes48));
     if (ret != C_KZG_OK) goto out;
-    tmp = (void **)&row_indices;
+    tmp = (void **)&commitment_indices;
     ret = c_kzg_calloc(tmp, num_cells, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
 
@@ -3732,7 +3732,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
      */
     num_commitments = num_cells;
     memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
-    deduplicate_commitments(unique_commitments, row_indices, &num_commitments);
+    deduplicate_commitments(unique_commitments, commitment_indices, &num_commitments);
 
     ///////////////////////////////////////////////////////////////////////////
     // Array allocations
@@ -3771,8 +3771,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         r_powers,
         commitments_bytes,
         num_commitments,
-        row_indices,
-        column_indices,
+        commitment_indices,
+        cell_indices,
         cells,
         proofs_bytes,
         num_cells
@@ -3807,8 +3807,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Update commitment weights */
     for (size_t i = 0; i < num_cells; i++) {
         blst_fr_add(
-            &commitment_weights[row_indices[i]],
-            &commitment_weights[row_indices[i]],
+            &commitment_weights[commitment_indices[i]],
+            &commitment_weights[commitment_indices[i]],
             &r_powers[i]
         );
     }
@@ -3841,7 +3841,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
             );
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
-            size_t index = column_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
+            size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
             blst_fr_add(
                 &aggregated_column_cells[index],
                 &aggregated_column_cells[index],
@@ -3935,7 +3935,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     for (size_t i = 0; i < num_cells; i++) {
         uint32_t pos = reverse_bits_limited(
-            CELLS_PER_EXT_BLOB, column_indices[i]
+            CELLS_PER_EXT_BLOB, cell_indices[i]
         );
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
@@ -3959,7 +3959,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
 out:
     c_kzg_free(unique_commitments);
-    c_kzg_free(row_indices);
+    c_kzg_free(commitment_indices);
     c_kzg_free(is_cell_used);
     c_kzg_free(aggregated_column_cells);
     c_kzg_free(aggregated_interpolation_poly);

@@ -149,7 +149,7 @@ proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
 
 proc verify_cell_kzg_proof_batch*(res: var bool,
                          commitments: ptr KzgBytes48,
-                         columnIndices: ptr uint64,
+                         cellIndices: ptr uint64,
                          cells: ptr KzgCell,
                          proofs: ptr KzgBytes48,
                          numCells: csize_t,

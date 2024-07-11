@@ -2155,8 +2155,7 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     C_KZG_RET ret;
     bool ok;
     Blob blob;
-    uint64_t *row_indices = NULL;
-    uint64_t *column_indices = NULL;
+    uint64_t *cell_indices = NULL;
     KZGCommitment commitment;
     Cell *cells = NULL;
     KZGProof *proofs = NULL;
@@ -2180,27 +2179,25 @@ static void profile_verify_cell_kzg_proof_batch(void) {
 
     /* Initialize indices */
     ret = c_kzg_calloc(
-        (void **)&row_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+        (void **)&commitments, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ret = c_kzg_calloc(
-        (void **)&column_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+        (void **)&cell_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        row_indices[i] = 0;
-        column_indices[i] = i;
+        memcpy(commitments[i].bytes, &commitment, BYTES_PER_COMMITMENT);
+        cell_indices[i] = i;
     }
 
     ProfilerStart("verify_cell_kzg_proof_batch.prof");
     for (int i = 0; i < 100; i++) {
         verify_cell_kzg_proof_batch(
             &ok,
-            &commitment,
-            1,
-            row_indices,
-            column_indices,
+            &commitments,
+            cell_indices,
             cells,
             proofs,
             CELLS_PER_EXT_BLOB,

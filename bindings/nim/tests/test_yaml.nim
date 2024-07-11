@@ -148,10 +148,10 @@ suite "yaml tests":
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
     let
       commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
-      columnIndices = uint64.fromIntList(n["input"]["column_indices"])
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
-      res = ctx.verifyProofs(commitments, columnIndices, cells, proofs)
+      res = ctx.verifyProofs(commitments, cellIndices, cells, proofs)
     checkBool(res)
 
   runTests(RECOVER_CELLS_AND_KZG_PROOFS_TESTS):

@@ -182,7 +182,7 @@ extern "C" {
     pub fn verify_cell_kzg_proof_batch(
         ok: *mut bool,
         commitments_bytes: *const Bytes48,
-        column_indices: *const u64,
+        cell_indices: *const u64,
         cells: *const Cell,
         proofs_bytes: *const Bytes48,
         num_cells: usize,

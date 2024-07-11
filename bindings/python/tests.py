@@ -196,12 +196,12 @@ def test_verify_cell_kzg_proof_batch(ts):
             test = yaml.safe_load(f)
 
         commitments = list(map(bytes_from_hex, test["input"]["commitments"]))
-        column_indices = test["input"]["column_indices"]
+        cell_indices = test["input"]["cell_indices"]
         cells = list(map(bytes_from_hex, test["input"]["cells"]))
         proofs = list(map(bytes_from_hex, test["input"]["proofs"]))
 
         try:
-            valid = ckzg.verify_cell_kzg_proof_batch(commitments, column_indices, cells, proofs, ts)
+            valid = ckzg.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, ts)
         except:
             assert test["output"] is None
             continue
