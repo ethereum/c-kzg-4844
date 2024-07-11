@@ -476,21 +476,21 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgP
     return NULL;
   }
 
-  jclass cas_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
-  if (cas_class == NULL)
+  jclass caps_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
+  if (caps_class == NULL)
   {
     throw_exception(env, "Failed to find CellsAndProofs class.");
     return NULL;
   }
 
-  jmethodID cas_constructor = (*env)->GetMethodID(env, cas_class, "<init>", "([B[B)V");
-  if (cas_constructor == NULL)
+  jmethodID caps_constructor = (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
+  if (caps_constructor == NULL)
   {
     throw_exception(env, "Failed to find CellsAndProofs constructor.");
     return NULL;
   }
 
-  jobject result = (*env)->NewObject(env, cas_class, cas_constructor, cells, proofs);
+  jobject result = (*env)->NewObject(env, caps_class, caps_constructor, cells, proofs);
   if (result == NULL)
   {
     throw_exception(env, "Failed to instantiate cells.");
@@ -539,21 +539,21 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndK
     return NULL;
   }
 
-  jclass cas_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
-  if (cas_class == NULL)
+  jclass caps_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
+  if (caps_class == NULL)
   {
     throw_exception(env, "Failed to find CellsAndProofs class.");
     return NULL;
   }
 
-  jmethodID cas_constructor = (*env)->GetMethodID(env, cas_class, "<init>", "([B[B)V");
-  if (cas_constructor == NULL)
+  jmethodID caps_constructor = (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
+  if (caps_constructor == NULL)
   {
     throw_exception(env, "Failed to find CellsAndProofs constructor.");
     return NULL;
   }
 
-  jobject result = (*env)->NewObject(env, cas_class, cas_constructor, recovered_cells, recovered_proofs);
+  jobject result = (*env)->NewObject(env, caps_class, caps_constructor, recovered_cells, recovered_proofs);
   if (result == NULL)
   {
     throw_exception(env, "Failed to instantiate cells.");
