@@ -3331,7 +3331,7 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices        An array of ids for cells that you have
+ * @param[in]   cell_indices        An array of cell indices
  * @param[in]   cells               An array of cells
  * @param[in]   proofs_bytes        An array of proofs
  * @param[in]   num_cells           How many cells were provided
@@ -3478,7 +3478,7 @@ out:
  * @param[in]   commitments_bytes   The input commitments
  * @param[in]   num_commitments     The number of commitments
  * @param[in]   commitment_indices  The cell commitment indices
- * @param[in]   cell_indices        The cell cell indices
+ * @param[in]   cell_indices        The cell indices
  * @param[in]   cells               The cell
  * @param[in]   proofs_bytes        The cell proof
  * @param[in]   num_cells           The number of cells
@@ -3649,13 +3649,12 @@ static void deduplicate_commitments(
  *
  * @param[out]  ok                  True if the proofs are valid
  * @param[in]   commitments_bytes   The commitments associated with the rows
- * @param[in]   cell_indices      Column indices for the cells
+ * @param[in]   cell_indices        The cell indices
  * @param[in]   cells               The cells to check
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  *
- * @remark cells[i] is in column = cell_indices[i] and row = commitment_indices[i].
  * @remark cells[i] is associated with commitments_bytes[commitment_indices[i]].
  */
 C_KZG_RET verify_cell_kzg_proof_batch(
