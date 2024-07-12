@@ -1927,7 +1927,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for array of pointers, this is a 2D array */
-    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, __SIZEOF_POINTER__);
+    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < k2; i++) {
         ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
@@ -1955,7 +1955,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
 
     if (precompute) {
         /* Allocate space for precomputed tables */
-        ret = c_kzg_calloc((void **)&s->tables, k2, __SIZEOF_POINTER__);
+        ret = c_kzg_calloc((void **)&s->tables, k2, sizeof(void *));
         if (ret != C_KZG_OK) goto out;
 
         /* Allocate space for points in affine representation */
@@ -3121,7 +3121,7 @@ static C_KZG_RET compute_fk20_proofs(
     }
 
     /* Allocate 2d array for coefficients by column */
-    ret = c_kzg_calloc((void **)&coeffs, k2, __SIZEOF_POINTER__);
+    ret = c_kzg_calloc((void **)&coeffs, k2, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
     for (uint64_t i = 0; i < k2; i++) {
         ret = new_fr_array(&coeffs[i], k);
