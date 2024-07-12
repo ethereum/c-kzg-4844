@@ -7,8 +7,9 @@ public static partial class Ckzg
     public const int BytesPerProof = 48;
     public const int BytesPerCell = 2048;
 
-    // Should only be used in internal checks.
+    // These should only be used in internal checks.
     private const int BytesPerFieldElement = 32;
+    private const int CellsPerExtBlob = 128;
 
     /// <summary>
     ///     Loads trusted setup settings from file.
@@ -51,8 +52,8 @@ public static partial class Ckzg
     public static unsafe void BlobToKzgCommitment(Span<byte> commitment, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
-        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
         ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
 
         fixed (byte* commitmentPtr = commitment, blobPtr = blob)
         {
@@ -203,6 +204,8 @@ public static partial class Ckzg
             IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * CellsPerExtBlob);
+        ThrowOnInvalidLength(proofs, nameof(proofs), BytesPerProof * CellsPerExtBlob);
         ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
 
         fixed (byte* cellsPtr = cells, proofsPtr = proofs, blobPtr = blob)
@@ -216,6 +219,15 @@ public static partial class Ckzg
             ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
+
+        Console.WriteLine($"recoveredCells length: {recoveredCells.Length}, expected: {BytesPerCell * CellsPerExtBlob}");
+        Console.WriteLine($"recoveredProofs length: {recoveredProofs.Length}, expected: {BytesPerProof * CellsPerExtBlob}");
+        Console.WriteLine($"cellIndices length: {cellIndices.Length}, expected: {numCells}");
+        Console.WriteLine($"cells length: {cells.Length}, expected: {BytesPerCell * numCells}");
+        Console.WriteLine($"numCells: {numCells}");
+
+        ThrowOnInvalidLength(recoveredCells, nameof(recoveredCells), BytesPerCell * CellsPerExtBlob);
+        ThrowOnInvalidLength(recoveredProofs, nameof(recoveredProofs), BytesPerProof * CellsPerExtBlob);
         ThrowOnInvalidLength(cellIndices, nameof(cellIndices), numCells);
         ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
 
