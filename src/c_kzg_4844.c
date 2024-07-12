@@ -30,6 +30,9 @@
 // Macros
 ///////////////////////////////////////////////////////////////////////////////
 
+/** Returns the smaller value. */
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 /** Returns number of elements in a statically defined array. */
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
@@ -250,18 +253,6 @@ static C_KZG_RET new_bool_array(bool **x, size_t n) {
 ///////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ///////////////////////////////////////////////////////////////////////////////
-
-/**
- * Get the minimum of two unsigned integers.
- *
- * @param[in]   a   An unsigned integer
- * @param[in]   b   An unsigned integer
- *
- * @return Whichever value is smaller.
- */
-static inline size_t min(size_t a, size_t b) {
-    return a < b ? a : b;
-}
 
 /**
  * Test whether the operand is one in the finite field.
@@ -2656,7 +2647,7 @@ static C_KZG_RET zero_polynomial_via_multiplication(
         /* Build the partials from the missing indices */
         size_t offset = 0, out_offset = 0, max = len_missing;
         for (size_t i = 0; i < partial_count; i++) {
-            size_t end = min(offset + missing_per_partial, max);
+            size_t end = MIN(offset + missing_per_partial, max);
             partials[i].coeffs = &work[out_offset];
             partials[i].length = degree_of_partial;
 
@@ -2685,13 +2676,13 @@ static C_KZG_RET zero_polynomial_via_multiplication(
             size_t partial_size = next_power_of_two(partials[0].length);
             for (size_t i = 0; i < reduced_count; i++) {
                 size_t start = i * reduction_factor;
-                size_t out_end = min(
+                size_t out_end = MIN(
                     (start + reduction_factor) * partial_size, n
                 );
-                size_t reduced_len = min(
+                size_t reduced_len = MIN(
                     out_end - start * partial_size, s->max_width
                 );
-                size_t partials_num = min(
+                size_t partials_num = MIN(
                     reduction_factor, partial_count - start
                 );
                 partials[i].coeffs = work + start * partial_size;
