@@ -1,7 +1,7 @@
 # C-KZG-4844
 
-This is a TypeScript library for EIP-4844 that implements the [Polynomial
-Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+This is a TypeScript library for EIP-4844 and EIP-7594 that implements the
+[Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
 [C-KZG](https://github.com/benjaminion/c-kzg), but has been heavily modified
 since then. This package wraps that native `c-kzg` C code in C/C++ NAPI

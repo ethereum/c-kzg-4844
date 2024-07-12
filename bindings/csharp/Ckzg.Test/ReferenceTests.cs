@@ -393,8 +393,6 @@ public class ReferenceTests
             byte[] proofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
             byte[] blob = GetBytes(test.Input.Blob);
 
-            Console.WriteLine($"blob length: {blob.Length}");
-
             try
             {
                 Ckzg.ComputeCellsAndKzgProofs(cells, proofs, blob, _ts);
@@ -404,10 +402,8 @@ public class ReferenceTests
                 byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
                 Assert.That(proofs, Is.EqualTo(expectedProofs));
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Exception: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 Assert.That(test.Output, Is.EqualTo(null));
             }
         }
