@@ -913,17 +913,21 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Compute a KZG commitment from a polynomial (in lagrange form).
+ * Compute a KZG commitment from a polynomial.
  *
  * @param[out] out The resulting commitment
  * @param[in]  p   The polynomial to commit to
- * @param[in]  n   The polynomial length
  * @param[in]  s   The trusted setup
  */
-C_KZG_RET poly_to_kzg_commitment_lagrange(
-    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
+static C_KZG_RET poly_to_kzg_commitment(
+    g1_t *out, const Polynomial *p, const KZGSettings *s
 ) {
-    return g1_lincomb_fast(out, s->g1_values_lagrange_brp, p, n);
+    return g1_lincomb_fast(
+        out,
+        s->g1_values_lagrange_brp,
+        (const fr_t *)(&p->evals),
+        FIELD_ELEMENTS_PER_BLOB
+    );
 }
 
 /**
@@ -942,9 +946,7 @@ C_KZG_RET blob_to_kzg_commitment(
 
     ret = blob_to_polynomial(&p, blob);
     if (ret != C_KZG_OK) return ret;
-    ret = poly_to_kzg_commitment_lagrange(
-        &commitment, p.evals, FIELD_ELEMENTS_PER_BLOB, s
-    );
+    ret = poly_to_kzg_commitment(&commitment, &p, s);
     if (ret != C_KZG_OK) return ret;
     bytes_from_g1(out, &commitment);
     return C_KZG_OK;
@@ -3250,7 +3252,8 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
                         + sizeof(uint64_t) /* num_commitments */
                         + sizeof(uint64_t) /* num_cells */
                         + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
-                        + (num_cells * sizeof(uint64_t)) /* commitment_indices */
+                        +
+                        (num_cells * sizeof(uint64_t)) /* commitment_indices */
                         + (num_cells * sizeof(uint64_t)) /* cell_indices */
                         + (num_cells * BYTES_PER_CELL)   /* cells */
                         + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
@@ -3713,9 +3716,13 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Deduplicate Commitments
     ///////////////////////////////////////////////////////////////////////////
 
-    ret = c_kzg_calloc((void**)&unique_commitments, num_cells, sizeof(Bytes48));
+    ret = c_kzg_calloc(
+        (void **)&unique_commitments, num_cells, sizeof(Bytes48)
+    );
     if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc((void**)&commitment_indices, num_cells, sizeof(uint64_t));
+    ret = c_kzg_calloc(
+        (void **)&commitment_indices, num_cells, sizeof(uint64_t)
+    );
     if (ret != C_KZG_OK) goto out;
 
     /*
@@ -3726,7 +3733,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
      */
     num_commitments = num_cells;
     memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
-    deduplicate_commitments(unique_commitments, commitment_indices, &num_commitments);
+    deduplicate_commitments(
+        unique_commitments, commitment_indices, &num_commitments
+    );
 
     ///////////////////////////////////////////////////////////////////////////
     // Array allocations
