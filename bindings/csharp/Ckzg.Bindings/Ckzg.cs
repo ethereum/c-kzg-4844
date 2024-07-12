@@ -226,7 +226,7 @@ public static partial class Ckzg
 
         fixed (byte* recoveredCellsPtr = recoveredCells, recoveredProofsPtr = recoveredProofs, cellsPtr = cells)
         {
-            fixed(ulong *cellIndicesPtr = cellIndices)
+            fixed(ulong* cellIndicesPtr = cellIndices)
             {
                 KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
                     cellsPtr, numCells, ckzgSetup);
