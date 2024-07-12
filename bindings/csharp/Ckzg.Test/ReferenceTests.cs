@@ -455,10 +455,8 @@ public class ReferenceTests
                 byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
                 Assert.That(recoveredProofs, Is.EqualTo(expectedProofs));
             }
-            catch (Exception ex)
+            catch
             {
-                Console.WriteLine($"Exception: {ex.Message}");
-                Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 Assert.That(test.Output, Is.EqualTo(null));
             }
         }

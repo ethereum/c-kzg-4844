@@ -64,8 +64,8 @@ public static partial class Ckzg
     private static extern unsafe KzgResult ComputeCellsAndKzgProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "recover_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult RecoverCellsAndKzgProofs(byte *recovered_cells, byte *recovered_proofs,
-        ulong *cell_indices, byte *cells, int num_cells, IntPtr ts);
+    private static extern unsafe KzgResult RecoverCellsAndKzgProofs(byte* recovered_cells, byte* recovered_proofs,
+        ulong* cell_indices, byte* cells, int num_cells, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult VerifyCellKzgProofBatch(out bool result, byte* commitments,
