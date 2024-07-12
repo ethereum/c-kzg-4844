@@ -3500,7 +3500,7 @@ out:
 }
 
 /**
- * Given some cells/proofs for a blob, recover the missing ones.
+ * Given some cells for a blob, recover all cells/proofs.
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs

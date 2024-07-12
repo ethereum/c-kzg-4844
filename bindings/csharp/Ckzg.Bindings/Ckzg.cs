@@ -230,7 +230,7 @@ public static partial class Ckzg
     }
 
     /// <summary>
-    ///     Given some cells/proofs for a blob, recover the missing ones.
+    ///     Given some cells for a blob, recover all cells/proofs.
     /// </summary>
     /// <param name="recoveredCells">Recovered cells as a flattened byte array</param>
     /// <param name="recoveredProofs">Recovered proofs as a flattened byte array</param>
