@@ -3525,19 +3525,15 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     fr_t *recovered_cells_fr = NULL;
     g1_t *recovered_proofs_g1 = NULL;
     Blob *blob = NULL;
-    printf("start\n");
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
-        printf("num_cells: %zu\n", num_cells);
-        printf("a\n");
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Check if it's possible to recover */
     if (num_cells < CELLS_PER_EXT_BLOB / 2) {
-        printf("b\n");
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -3545,7 +3541,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     /* Check that cell indices are valid */
     for (size_t i = 0; i < num_cells; i++) {
         if (cell_indices[i] >= CELLS_PER_EXT_BLOB) {
-            printf("c\n");
             ret = C_KZG_BADARGS;
             goto out;
         }
@@ -3576,7 +3571,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
              * will optimize this and the overhead is practically zero.
              */
             if (!fr_is_null(field)) {
-                printf("d\n");
                 ret = C_KZG_BADARGS;
                 goto out;
             }
@@ -3584,10 +3578,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             /* Convert the untrusted bytes to a field element */
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
             ret = bytes_to_bls_field(field, (Bytes32 *)&cells[i].bytes[offset]);
-            if (ret != C_KZG_OK) {
-                printf("8\n");
-                goto out;
-            }
+            if (ret != C_KZG_OK) goto out;
         }
     }
 
@@ -3597,10 +3588,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     } else {
         /* Perform cell recovery */
         ret = recover_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
-        if (ret != C_KZG_OK) {
-            printf("9\n");
-            goto out;
-        }
+        if (ret != C_KZG_OK) goto out;
 
         /* Convert the recovered data points to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -3627,36 +3615,25 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             FIELD_ELEMENTS_PER_EXT_BLOB,
             s
         );
-        if (ret != C_KZG_OK) {
-            printf("10\n");
-            goto out;
-        }
+        if (ret != C_KZG_OK) goto out;
 
         /* Compute the proofs, provide only the first half */
         ret = compute_fk20_proofs(
             recovered_proofs_g1, recovered_cells_fr, FIELD_ELEMENTS_PER_BLOB, s
         );
-        if (ret != C_KZG_OK) {
-            printf("11\n");
-            goto out;
-        }
+        if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
         ret = bit_reversal_permutation(
             recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
         );
-        if (ret != C_KZG_OK) {
-            printf("12\n");
-            goto out;
-        }
+        if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
             bytes_from_g1(&recovered_proofs[i], &recovered_proofs_g1[i]);
         }
     }
-
-    printf("done\n");
 
 out:
     c_kzg_free(recovered_cells_fr);
