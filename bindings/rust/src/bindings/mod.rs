@@ -28,6 +28,9 @@ use arbitrary::Arbitrary;
 const BYTES_PER_G1_POINT: usize = 48;
 const BYTES_PER_G2_POINT: usize = 96;
 
+/// Number of G1 points required for the kzg trusted setup.
+pub const NUM_G1_POINTS: usize = 4096;
+
 /// Number of G2 points required for the kzg trusted setup.
 /// 65 is fixed and is used for providing multiproofs up to 64 field elements.
 const NUM_G2_POINTS: usize = 65;
@@ -66,6 +69,8 @@ pub enum Error {
     InvalidTrustedSetup(String),
     /// Paired arguments have different lengths.
     MismatchLength(String),
+    /// Loading the trusted setup failed.
+    LoadingTrustedSetupFailed(KzgErrors),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
 }
@@ -82,9 +87,34 @@ impl fmt::Display for Error {
             | Self::InvalidKzgCommitment(s)
             | Self::InvalidTrustedSetup(s)
             | Self::MismatchLength(s) => f.write_str(s),
+            Self::LoadingTrustedSetupFailed(s) => write!(f, "KzgErrors: {:?}", s),
             Self::CError(s) => fmt::Debug::fmt(s, f),
         }
     }
+}
+
+impl From<KzgErrors> for Error {
+    fn from(e: KzgErrors) -> Self {
+        Error::LoadingTrustedSetupFailed(e)
+    }
+}
+
+#[derive(Debug)]
+pub enum KzgErrors {
+    /// Failed to get current directory.
+    FailedCurrentDirectory,
+    /// The specified path does not exist.
+    PathNotExists,
+    /// Problems related to I/O.
+    IOError,
+    /// Not a valid file.
+    NotValidFile,
+    /// File is not properly formatted.
+    FileFormatError,
+    /// Not able to parse to usize.
+    ParseError,
+    /// Number of points does not match what is expected.
+    MismatchedNumberOfPoints,
 }
 
 /// Converts a hex string (with or without the 0x prefix) to bytes.
@@ -153,6 +183,73 @@ impl KZGSettings {
             .map_err(|e| Error::InvalidTrustedSetup(format!("Invalid trusted setup file: {e}")))?;
 
         Self::load_trusted_setup_file_inner(&file_path, precompute)
+    }
+
+    /// Parses the contents of a KZG trusted setup file into a KzgSettings.
+    pub fn parse_kzg_trusted_setup(trusted_setup: &str, precompute: usize) -> Result<Self, Error> {
+        let mut lines = trusted_setup.lines();
+
+        // Load number of g1 points
+        let n_g1 = lines
+            .next()
+            .ok_or(KzgErrors::FileFormatError)?
+            .parse::<usize>()
+            .map_err(|_| KzgErrors::ParseError)?;
+        if n_g1 != NUM_G1_POINTS {
+            return Err(KzgErrors::MismatchedNumberOfPoints.into());
+        }
+
+        // Load number of g2 points
+        let n_g2 = lines
+            .next()
+            .ok_or(KzgErrors::FileFormatError)?
+            .parse::<usize>()
+            .map_err(|_| KzgErrors::ParseError)?;
+        if n_g2 != NUM_G2_POINTS {
+            return Err(KzgErrors::MismatchedNumberOfPoints.into());
+        }
+
+        let mut g1_lagrange_bytes = alloc::boxed::Box::new([0; BYTES_PER_G1_POINT * NUM_G1_POINTS]);
+        let mut g2_monomial_bytes = alloc::boxed::Box::new([0; BYTES_PER_G2_POINT * NUM_G2_POINTS]);
+        let mut g1_monomial_bytes = alloc::boxed::Box::new([0; BYTES_PER_G1_POINT * NUM_G1_POINTS]);
+
+        // Load g1 Lagrange bytes
+        g1_lagrange_bytes
+            .chunks_mut(BYTES_PER_G1_POINT)
+            .map(|chunk| {
+                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+            })
+            .collect::<Result<(), KzgErrors>>()?;
+
+        // Load g2 monomial bytes
+        g2_monomial_bytes
+            .chunks_mut(BYTES_PER_G2_POINT)
+            .map(|chunk| {
+                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+            })
+            .collect::<Result<(), KzgErrors>>()?;
+
+        // Load g1 monomial bytes
+        g1_monomial_bytes
+            .chunks_mut(BYTES_PER_G1_POINT)
+            .map(|chunk| {
+                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+            })
+            .collect::<Result<(), KzgErrors>>()?;
+
+        if lines.next().is_some() {
+            return Err(KzgErrors::FileFormatError.into());
+        }
+
+        Self::load_trusted_setup(
+            g1_monomial_bytes.as_ref(),
+            g1_lagrange_bytes.as_ref(),
+            g2_monomial_bytes.as_ref(),
+            precompute,
+        )
     }
 
     /// Loads the trusted setup parameters from a file. The file format is as follows:
@@ -938,6 +1035,14 @@ mod tests {
                 _ => assert!(test.get_output().is_none()),
             }
         }
+    }
+
+    #[test]
+    fn test_parse_kzg_trusted_setup() {
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let trusted_setup = fs::read_to_string(trusted_setup_file).unwrap();
+        let _ = KZGSettings::parse_kzg_trusted_setup(&trusted_setup, 0).unwrap();
     }
 
     #[test]

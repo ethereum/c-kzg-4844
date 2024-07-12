@@ -64,19 +64,19 @@ type
 
   # A basic blob data.
   KzgBlob* {.importc: "Blob",
-    header: "c_kzg_4844.h".} = object
+    header: "c_kzg_4844.h", completeStruct.} = object
     bytes*: array[BYTES_PER_BLOB, uint8]
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
   KzgBytes48* {.importc: "Bytes48",
-    header: "c_kzg_4844.h".} = object
+    header: "c_kzg_4844.h", completeStruct.} = object
     bytes*: array[48, uint8]
 
   # An array of 32 bytes. Represents an untrusted
   # (potentially invalid) field element.
   KzgBytes32* {.importc: "Bytes32",
-    header: "c_kzg_4844.h".} = object
+    header: "c_kzg_4844.h", completeStruct.} = object
     bytes*: array[32, uint8]
 
   # A trusted (valid) KZG commitment.

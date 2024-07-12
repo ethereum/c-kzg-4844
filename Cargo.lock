@@ -97,6 +97,7 @@ dependencies = [
  "glob",
  "hex",
  "libc",
+ "once_cell",
  "rand",
  "serde",
  "serde_json",

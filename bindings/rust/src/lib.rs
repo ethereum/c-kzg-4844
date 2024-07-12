@@ -10,11 +10,19 @@ extern crate blst;
 
 mod bindings;
 
+#[cfg(feature = "ethereum_kzg_settings")]
+mod ethereum_kzg_settings;
+
 // Expose relevant types with idiomatic names.
 pub use bindings::{
     KZGCommitment as KzgCommitment, KZGProof as KzgProof, KZGSettings as KzgSettings,
     C_KZG_RET as CkzgError,
 };
+
+// Expose the default settings.
+#[cfg(feature = "ethereum_kzg_settings")]
+pub use ethereum_kzg_settings::{ethereum_kzg_settings, ethereum_kzg_settings_arc};
+
 // Expose the constants.
 pub use bindings::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_PROOF};
 // Expose the remaining relevant types.

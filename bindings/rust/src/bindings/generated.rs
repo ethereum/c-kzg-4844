@@ -96,7 +96,7 @@ pub struct KZGSettings {
     max_width: u64,
     #[doc = " Powers of the primitive root of unity determined by\n `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,\n length `max_width`."]
     roots_of_unity: *mut fr_t,
-    #[doc = " The expanded roots of unity"]
+    #[doc = " The expanded roots of unity."]
     expanded_roots_of_unity: *mut fr_t,
     #[doc = " The bit-reversal permuted roots of unity."]
     reverse_roots_of_unity: *mut fr_t,
@@ -108,11 +108,11 @@ pub struct KZGSettings {
     g2_values_monomial: *mut g2_t,
     #[doc = " Data used during FK20 proof generation."]
     x_ext_fft_columns: *mut *mut g1_t,
-    #[doc = " The precomputed tables for fixed-base MSM"]
+    #[doc = " The precomputed tables for fixed-base MSM."]
     tables: *mut *mut blst_p1_affine,
-    #[doc = " The window size for the fixed-base MSM"]
+    #[doc = " The window size for the fixed-base MSM."]
     wbits: usize,
-    #[doc = " The scratch size for the fixed-base MSM"]
+    #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
 }
 extern "C" {
