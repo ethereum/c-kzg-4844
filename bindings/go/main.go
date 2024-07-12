@@ -481,8 +481,7 @@ func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, c
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
-	cellCount := len(cells)
-	if len(commitmentsBytes) != cellCount || len(cellIndices) != cellCount || len(proofsBytes) != cellCount {
+	if len(commitmentsBytes) != len(cells) || len(cellIndices) != len(cells) || len(proofsBytes) != len(cells) {
 		return false, ErrBadArgs
 	}
 
