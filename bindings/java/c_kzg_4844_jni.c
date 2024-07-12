@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> // For memcpy
 #include "c_kzg_4844_jni.h"
 #include "c_kzg_4844.h"
 
