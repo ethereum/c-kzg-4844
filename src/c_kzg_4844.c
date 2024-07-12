@@ -3529,6 +3529,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
+        printf("num_cells: %zu\n", num_cells);
         printf("a\n");
         ret = C_KZG_BADARGS;
         goto out;

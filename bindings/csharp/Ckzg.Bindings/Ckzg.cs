@@ -23,7 +23,7 @@ public static partial class Ckzg
     {
         if (!File.Exists(filepath)) throw new ArgumentException("Trusted setup file does not exist", nameof(filepath));
 
-        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath, precompute);
+        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath, (ulong)precompute);
 
         if (ckzgSetup == IntPtr.Zero) throw new InvalidOperationException("Unable to load trusted setup");
         return ckzgSetup;
@@ -194,7 +194,7 @@ public static partial class Ckzg
         fixed (byte* blobsPtr = blobs, commitmentsPtr = commitments, proofsPtr = proofs)
         {
             KzgResult kzgResult =
-                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, count, ckzgSetup);
+                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (ulong)count, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -229,7 +229,7 @@ public static partial class Ckzg
             fixed(ulong* cellIndicesPtr = cellIndices)
             {
                 KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
-                    cellsPtr, numCells, ckzgSetup);
+                    cellsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(result);
             }
         }
@@ -249,7 +249,7 @@ public static partial class Ckzg
             fixed (ulong* cellIndicesPtr = cellIndices)
             {
                 KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, commitmentsPtr,
-                    cellIndicesPtr, cellsPtr, proofsPtr, numCells, ckzgSetup);
+                    cellIndicesPtr, cellsPtr, proofsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;
             }
