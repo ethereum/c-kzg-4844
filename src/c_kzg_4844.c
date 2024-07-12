@@ -3504,10 +3504,9 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices        An array of cell indices
- * @param[in]   cells               An array of cells
- * @param[in]   proofs_bytes        An array of proofs
- * @param[in]   num_cells           How many cells were provided
+ * @param[in]   cell_indices        The cell indices for the cells
+ * @param[in]   cells               The cells to check
+ * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
@@ -3646,8 +3645,8 @@ out:
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
- * @param[in]   commitments_bytes   The commitments associated with the rows
- * @param[in]   cell_indices        The cell indices
+ * @param[in]   commitments_bytes   The commitments for the cells
+ * @param[in]   cell_indices        The cell indices for the cells
  * @param[in]   cells               The cells to check
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided

@@ -204,6 +204,16 @@ public static partial class Ckzg
         }
     }
 
+    /// <summary>
+    ///     Given a blob, get all of its cells and proofs.
+    /// </summary>
+    /// <param name="cells">Cells as a flattened byte array</param>
+    /// <param name="proofs">Proofs as a flattened byte array</param>
+    /// <param name="blob">Blob bytes</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     public static unsafe void ComputeCellsAndKzgProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
             IntPtr ckzgSetup)
     {
@@ -219,6 +229,18 @@ public static partial class Ckzg
         }
     }
 
+    /// <summary>
+    ///     Given some cells/proofs for a blob, recover the missing ones.
+    /// </summary>
+    /// <param name="recoveredCells">Recovered cells as a flattened byte array</param>
+    /// <param name="recoveredProofs">Recovered proofs as a flattened byte array</param>
+    /// <param name="cellIndices">Cell indices as a flattened ulong array</param>
+    /// <param name="cells">Cells as a flattened byte array</param>
+    /// <param name="numCells">The number of cells provided</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     public static unsafe void RecoverCellsAndKzgProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
             ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
@@ -239,6 +261,19 @@ public static partial class Ckzg
         }
     }
 
+    /// <summary>
+    ///     Given some cells, verify that their proofs are valid.
+    /// </summary>
+    /// <param name="commitmentsBytes">The commitments associated with the rows</param>
+    /// <param name="cellIndices">Cell indices as a flattened ulong array</param>
+    /// <param name="cells">Cells as a flattened byte array</param>
+    /// <param name="proofsBytes">Proofs as a flattened byte array</param>
+    /// <param name="numCells">The number of cells provided</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    /// <returns>Verification result</returns>
     public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> cellIndices,
             ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
