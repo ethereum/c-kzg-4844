@@ -219,13 +219,6 @@ public static partial class Ckzg
             ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
-
-        Console.WriteLine($"recoveredCells length: {recoveredCells.Length}, expected: {BytesPerCell * CellsPerExtBlob}");
-        Console.WriteLine($"recoveredProofs length: {recoveredProofs.Length}, expected: {BytesPerProof * CellsPerExtBlob}");
-        Console.WriteLine($"cellIndices length: {cellIndices.Length}, expected: {numCells}");
-        Console.WriteLine($"cells length: {cells.Length}, expected: {BytesPerCell * numCells}");
-        Console.WriteLine($"numCells: {numCells}");
-
         ThrowOnInvalidLength(recoveredCells, nameof(recoveredCells), BytesPerCell * CellsPerExtBlob);
         ThrowOnInvalidLength(recoveredProofs, nameof(recoveredProofs), BytesPerProof * CellsPerExtBlob);
         ThrowOnInvalidLength(cellIndices, nameof(cellIndices), numCells);
@@ -286,13 +279,13 @@ public static partial class Ckzg
     private static void ThrowOnInvalidLength(ReadOnlySpan<byte> data, string fieldName, int expectedLength)
     {
         if (data.Length != expectedLength)
-            throw new ArgumentException("Invalid data size", fieldName);
+            throw new ArgumentException($"Invalid data size, got {data.Length}, expected {expectedLength}", fieldName);
     }
 
     private static void ThrowOnInvalidLength(ReadOnlySpan<ulong> data, string fieldName, int expectedLength)
     {
         if (data.Length != expectedLength)
-            throw new ArgumentException("Invalid data size", fieldName);
+            throw new ArgumentException($"Invalid data size, got {data.Length}, expected {expectedLength}", fieldName);
     }
     #endregion
 }
