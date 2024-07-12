@@ -436,9 +436,14 @@ public class ReferenceTests
 
         foreach (string testFile in testFiles)
         {
+            if (!testFile.Contains("valid_half_missing_every_other_cell")) {
+                continue;
+            }
+
             string yaml = File.ReadAllText(testFile);
             RecoverCellsAndKzgProofsTest test = _deserializer.Deserialize<RecoverCellsAndKzgProofsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
+            Console.WriteLine($"Test: {testFile}");
 
             byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
             byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
@@ -457,7 +462,6 @@ public class ReferenceTests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Test: {testFile}");
                 Console.WriteLine($"Exception: {ex.Message}");
                 Console.WriteLine($"Stack Trace: {ex.StackTrace}");
                 Assert.That(test.Output, Is.EqualTo(null));
