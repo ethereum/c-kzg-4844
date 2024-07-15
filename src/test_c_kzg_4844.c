@@ -1837,73 +1837,6 @@ static void test_coset_fft(void) {
     }
 }
 
-static void test_reconstruct__succeeds_random_blob(void) {
-    C_KZG_RET ret;
-    Blob blob;
-    Cell *cells = NULL;
-    KZGProof *proofs = NULL;
-    Cell *partial_cells = NULL;
-    Cell *recovered_cells = NULL;
-    KZGProof *recovered_proofs = NULL;
-    size_t num_partial_cells = CELLS_PER_EXT_BLOB / 2;
-    uint64_t *cell_indices = NULL;
-    int diff;
-
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&partial_cells, num_partial_cells, sizeof(Cell)
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&cell_indices, num_partial_cells, sizeof(uint64_t)
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&recovered_cells, CELLS_PER_EXT_BLOB, sizeof(Cell)
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&recovered_proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof)
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Get a random blob */
-    get_rand_blob(&blob);
-
-    /* Get the cells and proofs */
-    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Erase half of the cells */
-    for (size_t i = 0; i < num_partial_cells; i++) {
-        cell_indices[i] = i * 2;
-        memcpy(&partial_cells[i], &cells[cell_indices[i]], sizeof(Cell));
-    }
-
-    /* Reconstruct with half of the cells */
-    ret = recover_cells_and_kzg_proofs(
-        recovered_cells,
-        recovered_proofs,
-        cell_indices,
-        partial_cells,
-        num_partial_cells,
-        &s
-    );
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Check that all of the cells match */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        diff = memcmp(&cells[i], &recovered_cells[i], sizeof(Cell));
-        ASSERT_EQUALS(diff, 0);
-        diff = memcmp(&proofs[i], &recovered_proofs[i], sizeof(KZGProof));
-        ASSERT_EQUALS(diff, 0);
-    }
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for deduplicate_commitments
 ///////////////////////////////////////////////////////////////////////////////
@@ -1989,10 +1922,59 @@ static void test_deduplicate_commitments__one_commitment(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for recover_cells_and_kzg_proofs
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    const size_t num_partial_cells = CELLS_PER_EXT_BLOB / 2;
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
+    Cell partial_cells[num_partial_cells];
+    Cell recovered_cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+    KZGProof recovered_proofs[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Erase half of the cells */
+    for (size_t i = 0; i < num_partial_cells; i++) {
+        cell_indices[i] = i * 2;
+        memcpy(&partial_cells[i], &cells[cell_indices[i]], sizeof(Cell));
+    }
+
+    /* Reconstruct with half of the cells */
+    ret = recover_cells_and_kzg_proofs(
+        recovered_cells,
+        recovered_proofs,
+        cell_indices,
+        partial_cells,
+        num_partial_cells,
+        &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Check that all of the cells match */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        diff = memcmp(&cells[i], &recovered_cells[i], sizeof(Cell));
+        ASSERT_EQUALS(diff, 0);
+        diff = memcmp(&proofs[i], &recovered_proofs[i], sizeof(KZGProof));
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Tests for verify_cell_kzg_proof_batch
 ///////////////////////////////////////////////////////////////////////////////
 
-static void test_verify_cell_kzg_proof_batch__succeed(void) {
+static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
     C_KZG_RET ret;
     bool ok;
     Blob blob;
@@ -2356,13 +2338,13 @@ int main(void) {
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
     RUN(test_fft);
     RUN(test_coset_fft);
-    RUN(test_reconstruct__succeeds_random_blob);
     RUN(test_deduplicate_commitments__one_duplicate);
     RUN(test_deduplicate_commitments__no_duplicates);
     RUN(test_deduplicate_commitments__all_duplicates);
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
-    RUN(test_verify_cell_kzg_proof_batch__succeed);
+    RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
