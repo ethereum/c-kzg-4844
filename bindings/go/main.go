@@ -25,9 +25,9 @@ const (
 	// Only used in testing, shouldn't be exposed.
 	bytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
 
-	// CellsPerExtBlob is only used to define return types. Clients should
-	// use the NUMBER_OF_COLUMNS constant from the consensus specs instead.
-	CellsPerExtBlob = C.CELLS_PER_EXT_BLOB
+	// Used to define return types, but clients should use the NUMBER_OF_COLUMNS
+	// constant from the consensus specs. These will be the same.
+	cellsPerExtBlob = C.CELLS_PER_EXT_BLOB
 )
 
 type (
@@ -411,13 +411,13 @@ ComputeCellsAndKZGProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
-func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
+func ComputeCellsAndKZGProofs(blob *Blob) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 
-	cells := [CellsPerExtBlob]Cell{}
-	proofs := [CellsPerExtBlob]KZGProof{}
+	cells := [cellsPerExtBlob]Cell{}
+	proofs := [cellsPerExtBlob]KZGProof{}
 	ret := C.compute_cells_and_kzg_proofs(
 		(*C.Cell)(unsafe.Pointer(&cells)),
 		(*C.KZGProof)(unsafe.Pointer(&proofs)),
@@ -425,7 +425,7 @@ func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBl
 		&settings)
 
 	if ret != C.C_KZG_OK {
-		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
+		return [cellsPerExtBlob]Cell{}, [cellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
 	}
 	return cells, proofs, nil
 }
@@ -441,16 +441,16 @@ RecoverCellsAndKZGProofs is the binding for:
 	    size_t num_cells,
 	    const KZGSettings *s);
 */
-func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
+func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([cellsPerExtBlob]Cell, [cellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
 	if len(cellIndices) != len(cells) {
-		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, ErrBadArgs
+		return [cellsPerExtBlob]Cell{}, [cellsPerExtBlob]KZGProof{}, ErrBadArgs
 	}
 
-	recoveredCells := [CellsPerExtBlob]Cell{}
-	recoveredProofs := [CellsPerExtBlob]KZGProof{}
+	recoveredCells := [cellsPerExtBlob]Cell{}
+	recoveredProofs := [cellsPerExtBlob]KZGProof{}
 	ret := C.recover_cells_and_kzg_proofs(
 		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
 		(*C.KZGProof)(unsafe.Pointer(&recoveredProofs)),
@@ -460,7 +460,7 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtB
 		&settings)
 
 	if ret != C.C_KZG_OK {
-		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
+		return [cellsPerExtBlob]Cell{}, [cellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
 	}
 	return recoveredCells, recoveredProofs, nil
 }
