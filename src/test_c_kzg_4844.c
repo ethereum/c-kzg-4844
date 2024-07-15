@@ -1989,6 +1989,44 @@ static void test_deduplicate_commitments__one_commitment(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Tests for verify_cell_kzg_proof_batch
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_verify_cell_kzg_proof_batch__succeed(void) {
+    C_KZG_RET ret;
+    bool ok;
+    Blob blob;
+    KZGCommitment commitment;
+    Bytes48 commitments[CELLS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Initialize list of commitments & cell indices */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        memcpy(commitments[i].bytes, &commitment, BYTES_PER_COMMITMENT);
+        cell_indices[i] = i;
+    }
+
+    /* Verify all the proofs */
+    ret = verify_cell_kzg_proof_batch(
+        &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -2324,6 +2362,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__all_duplicates);
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
+    RUN(test_verify_cell_kzg_proof_batch__succeed);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
