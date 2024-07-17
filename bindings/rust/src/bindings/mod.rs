@@ -973,7 +973,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: blob_to_kzg_commitment_test::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let Ok(blob) = test.input.get_blob() else {
@@ -1007,7 +1007,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(z)) = (test.input.get_blob(), test.input.get_z()) else {
@@ -1036,7 +1036,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(commitment)) = (test.input.get_blob(), test.input.get_commitment())
@@ -1063,7 +1063,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(commitment), Ok(z), Ok(y), Ok(proof)) = (
@@ -1094,7 +1094,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blob), Ok(commitment), Ok(proof)) = (
@@ -1124,7 +1124,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_blob_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(blobs), Ok(commitments), Ok(proofs)) = (
@@ -1159,7 +1159,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: compute_cells_and_kzg_proofs::Test =
                 serde_yaml::from_str(&yaml_data).unwrap();
@@ -1192,7 +1192,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: recover_cells_and_kzg_proofs::Test =
                 serde_yaml::from_str(&yaml_data).unwrap();
@@ -1227,7 +1227,7 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
-        for test_file in test_files.iter() {
+        for test_file in test_files {
             let yaml_data = fs::read_to_string(test_file).unwrap();
             let test: verify_cell_kzg_proof_batch::Test = serde_yaml::from_str(&yaml_data).unwrap();
             let (Ok(commitments), Ok(cell_indices), Ok(cells), Ok(proofs)) = (
