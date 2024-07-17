@@ -26,10 +26,6 @@ serde = ["dep:serde"]
 generate-bindings = ["dep:bindgen"]
 ethereum_kzg_settings = ["dep:once_cell"]
 
-# Enable this feature when running the tests to generate the fuzzing corpus.
-# This converts the yaml reference tests into a binary form for the fuzzer.
-generate-fuzz-corpus = []
-
 # This is a standalone feature so that crates that disable default features can
 # enable blst/portable without having to add it as a dependency
 portable = ["blst/portable"]
@@ -40,7 +36,6 @@ portable = ["blst/portable"]
 no-threads = ["blst/no-threads"]
 
 [dependencies]
-arbitrary = { version = "1", features = ["derive"] }
 blst = { version = "0.3.11", default-features = false }
 hex = { version = "0.4.2", default-features = false, features = ["alloc"] }
 libc = { version = "0.2", default-features = false }
