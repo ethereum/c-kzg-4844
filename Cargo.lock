@@ -78,7 +78,7 @@ checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
 name = "c-kzg"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "bindgen",
  "blst",
