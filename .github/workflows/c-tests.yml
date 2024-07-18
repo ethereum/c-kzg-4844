@@ -30,6 +30,7 @@ jobs:
       # Check formatting.
       # Only need to check this once.
       - name: Run clang-format
+        if: matrix.os == 'ubuntu-latest'
         uses: jidicula/clang-format-action@v4.13.0
         with:
           clang-format-version: '18'
