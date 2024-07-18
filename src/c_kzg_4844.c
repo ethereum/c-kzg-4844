@@ -764,31 +764,21 @@ static C_KZG_RET g1_lincomb_fast(
     ret = c_kzg_malloc(&scratch, scratch_size);
     if (ret != C_KZG_OK) goto out;
 
-    /* Copy points into new array which can be altered */
-    memcpy(p_filtered, p, len * sizeof(blst_p1));
-
     /* Transform the field elements to 256-bit scalars */
     for (size_t i = 0; i < len; i++) {
         blst_scalar_from_fr(&scalars[i], &coeffs[i]);
     }
 
-    /* Filter out zero points */
-    size_t new_len = len;
-    for (size_t i = 0; i < new_len; i++) {
-        if (blst_p1_is_inf(&p_filtered[i])) {
-            /* Update the length of our array */
-            new_len = new_len - 1;
-
-            /* Only if it's not the last entry */
-            if (i != new_len) {
-                /* Replace entries with the last entry */
-                p_filtered[i] = p_filtered[new_len];
-                scalars[i] = scalars[new_len];
-
-                /* Recheck this index */
-                i = i - 1;
-            }
-        }
+    /* Filter out zero points:
+     * make a new list p_filtered that contains only non-zero points */
+    size_t new_len = 0;
+    for (size_t i = 0; i < len; i++) {
+      if (!blst_p1_is_inf(&p[i])) {
+        /* Copy valid points to the new position */
+        p_filtered[new_len] = p[i];
+        scalars[new_len] = scalars[i];
+        new_len++;
+      }
     }
 
     /* Check if the new length is fine */
