@@ -37,8 +37,8 @@
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
 /**
- * Helper macro to release memory allocated on the heap. Unlike free(),
- * c_kzg_free() macro sets the pointer value to NULL after freeing it.
+ * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
+ * pointer value to NULL after freeing it.
  */
 #define c_kzg_free(p) \
     do { \
@@ -89,12 +89,11 @@ static const g1_t G1_IDENTITY = {
 };
 
 /**
- * The first 32 roots of unity in the finite field F_r.
- * SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of unity.
+ * The first 32 roots of unity in the finite field F_r. SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of
+ * unity.
  *
- * For element `{A, B, C, D}`, the field element value is
- * `A + B * 2^64 + C * 2^128 + D * 2^192`. This format may be converted to
- * an `fr_t` type via the blst_fr_from_uint64() function.
+ * For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`.
+ * This format may be converted to an `fr_t` type via the blst_fr_from_uint64() function.
  *
  * The decimal values may be calculated with the following Python code:
  * @code{.py}
@@ -103,14 +102,13 @@ static const g1_t G1_IDENTITY = {
  * [pow(PRIMITIVE_ROOT, (MODULUS - 1) // (2**i), MODULUS) for i in range(32)]
  * @endcode
  *
- * Note: Being a "primitive root" in this context means that `r^k != 1` for any
- * `k < q-1` where q is the modulus. So powers of r generate the field. This is
- * also known as being a "primitive element".
+ * Note: Being a "primitive root" in this context means that `r^k != 1` for any `k < q-1` where q is
+ * the modulus. So powers of r generate the field. This is also known as being a "primitive
+ * element".
  *
- * In the formula above, the restriction can be slightly relaxed to `r` being a non-square.
- * This is easy to check: We just require that r^((q-1)/2) == -1. Instead of
- * 7, we could use 10, 13, 14, 15, 20... to create the 2^i'th roots of unity below.
- * Generally, there are a lot of primitive roots:
+ * In the formula above, the restriction can be slightly relaxed to `r` being a non-square. This is
+ * easy to check: We just require that r^((q-1)/2) == -1. Instead of 7, we could use 10, 13, 14, 15,
+ * 20... to create the 2^i'th roots of unity below. Generally, there are a lot of primitive roots:
  * https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html
  */
 static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
@@ -548,8 +546,7 @@ static void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
 }
 
 /**
- * Convert untrusted bytes to a trusted and validated BLS scalar field
- * element.
+ * Convert untrusted bytes to a trusted and validated BLS scalar field element.
  *
  * @param[out] out The field element to store the deserialized data
  * @param[in]  b   A 32-byte array containing the serialized field element
@@ -568,9 +565,8 @@ static C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @param[out]  out The output g1 point
  * @param[in]   b   The proof/commitment bytes
  *
- * @remark This function deviates from the spec because it returns (via an
- *         output argument) the g1 point. This way is more efficient (faster)
- *         but the function name is a bit misleading.
+ * @remark This function deviates from the spec because it returns (via an output argument) the g1
+ * point. This way is more efficient (faster) but the function name is a bit misleading.
  */
 static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     blst_p1_affine p1_affine;
@@ -609,8 +605,7 @@ static C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
 }
 
 /**
- * Deserialize a Blob (array of bytes) into a Polynomial (array of field
- * elements).
+ * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
  *
  * @param[out] p    The output polynomial (array of field elements)
  * @param[in]  blob The blob (an array of bytes)
@@ -677,8 +672,7 @@ static void compute_challenge(fr_t *eval_challenge_out, const Blob *blob, const 
  * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
  * where `n` is `len - 1`.
  *
- * This function computes the result naively without using Pippenger's
- * algorithm.
+ * This function computes the result naively without using Pippenger's algorithm.
  */
 static void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
     g1_t tmp;
@@ -692,8 +686,7 @@ static void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint6
 /**
  * Calculate a linear combination of G1 group elements.
  *
- * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
- * where `n` is `len - 1`.
+ * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
  *
  * @param[out] out    The resulting sum-product
  * @param[in]  p      Array of G1 group elements, length `len`
@@ -701,20 +694,17 @@ static void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint6
  * @param[in]  len    The number of group/field elements
  *
  * @remark This function CAN be called with the point at infinity in `p`.
- * @remark While this function is significantly faster than
- *         g1_lincomb_naive(), we refrain from using it in security-critical
- *         places (like verification) because the blst Pippenger code has not
- *         been audited. In those critical places, we prefer using
- *         g1_lincomb_naive() which is much simpler.
+ * @remark While this function is significantly faster than g1_lincomb_naive(), we refrain from
+ * using it in security-critical places (like verification) because the blst Pippenger code has not
+ * been audited. In those critical places, we prefer using g1_lincomb_naive() which is much simpler.
  *
- * For the benefit of future generations (since blst has no documentation to
- * speak of), there are two ways to pass the arrays of scalars and points
- * into blst_p1s_mult_pippenger().
+ * For the benefit of future generations (since blst has no documentation to speak of), there are
+ * two ways to pass the arrays of scalars and points into blst_p1s_mult_pippenger().
  *
- * 1. Pass `points` as an array of pointers to the points, and pass
- *    `scalars` as an array of pointers to the scalars, each of length `len`.
- * 2. Pass an array where the first element is a pointer to the contiguous
- *    array of points and the second is null, and similarly for scalars.
+ * 1. Pass `points` as an array of pointers to the points, and pass `scalars` as an array of
+ *    pointers to the scalars, each of length `len`.
+ * 2. Pass an array where the first element is a pointer to the contiguous array of points and the
+ *    second is null, and similarly for scalars.
  *
  * We do the second of these to save memory here.
  */
@@ -753,8 +743,7 @@ static C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, s
         blst_scalar_from_fr(&scalars[i], &coeffs[i]);
     }
 
-    /* Filter out zero points:
-     * make a new list p_filtered that contains only non-zero points */
+    /* Filter out zero points: make a new list p_filtered that contains only non-zero points */
     size_t new_len = 0;
     for (size_t i = 0; i < len; i++) {
         if (!blst_p1_is_inf(&p[i])) {
@@ -837,10 +826,9 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         /*
-         * If the point to evaluate at is one of the evaluation points by which
-         * the polynomial is given, we can just return the result directly.
-         * Note that special-casing this is necessary, as the formula below
-         * would divide by zero otherwise.
+         * If the point to evaluate at is one of the evaluation points by which the polynomial is
+         * given, we can just return the result directly.  Note that special-casing this is
+         * necessary, as the formula below would divide by zero otherwise.
          */
         if (fr_equal(x, &roots_of_unity[i])) {
             *out = p->evals[i];
@@ -959,8 +947,8 @@ C_KZG_RET verify_kzg_proof(
 /**
  * Helper function: Verify KZG proof claiming that `p(z) == y`.
  *
- * Given a `commitment` to a polynomial, a `proof` for `z`, and the
- * claimed value `y` at `z`, verify the claim.
+ * Given a `commitment` to a polynomial, a `proof` for `z`, and the claimed value `y` at `z`, verify
+ * the claim.
  *
  * @param[out]  ok          True if the proof is valid, otherwise false
  * @param[in]   commitment  The commitment to a polynomial
@@ -1007,8 +995,7 @@ static C_KZG_RET compute_kzg_proof_impl(
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
  * @param[out] proof_out The combined proof as a single G1 element
- * @param[out] y_out     The evaluation of the polynomial at the evaluation
- *                       point z
+ * @param[out] y_out     The evaluation of the polynomial at the evaluation point z
  * @param[in]  blob      The blob (polynomial) to generate a proof for
  * @param[in]  z         The generator z-value for the evaluation points
  * @param[in]  s         The trusted setup
@@ -1037,12 +1024,10 @@ out:
 }
 
 /**
- * Helper function for compute_kzg_proof() and
- * compute_blob_kzg_proof().
+ * Helper function for compute_kzg_proof() and compute_blob_kzg_proof().
  *
  * @param[out] proof_out  The combined proof as a single G1 element
- * @param[out] y_out      The evaluation of the polynomial at the evaluation
- *                        point z
+ * @param[out] y_out      The evaluation of the polynomial at the evaluation point z
  * @param[in]  polynomial The polynomial in Lagrange form
  * @param[in]  z          The evaluation point
  * @param[in]  s          The trusted setup
@@ -1130,9 +1115,9 @@ out:
 }
 
 /**
- * Given a blob and a commitment, return the KZG proof that is used to verify
- * it against the commitment. This function does not verify that the commitment
- * is correct with respect to the blob.
+ * Given a blob and a commitment, return the KZG proof that is used to verify it against the
+ * commitment. This function does not verify that the commitment is correct with respect to the
+ * blob.
  *
  * @param[out] out              The resulting proof
  * @param[in]  blob             A blob
@@ -1166,8 +1151,7 @@ out:
 }
 
 /**
- * Given a blob and its proof, verify that it corresponds to the provided
- * commitment.
+ * Given a blob and its proof, verify that it corresponds to the provided commitment.
  *
  * @param[out] ok               True if the proofs are valid, otherwise false
  * @param[in]  blob             Blob to verify
@@ -1284,8 +1268,7 @@ out:
 }
 
 /**
- * Helper function for verify_blob_kzg_proof_batch(): actually perform the
- * verification.
+ * Helper function for verify_blob_kzg_proof_batch(): actually perform the verification.
  *
  * @param[out] ok             True if the proofs are valid, otherwise false
  * @param[in]  commitments_g1 Array of commitments to verify
@@ -1296,9 +1279,8 @@ out:
  * @param[in]  s              The trusted setup
  *
  * @remark This function only works for `n > 0`.
- * @remark This function assumes that `n` is trusted and that all input arrays
- *         contain `n` elements. `n` should be the actual size of the arrays and
- *         not read off a length field in the protocol.
+ * @remark This function assumes that `n` is trusted and that all input arrays contain `n` elements.
+ * `n` should be the actual size of the arrays and not read off a length field in the protocol.
  */
 static C_KZG_RET verify_kzg_proof_batch(
     bool *ok,
@@ -1364,8 +1346,8 @@ out:
 }
 
 /**
- * Given a list of blobs and blob KZG proofs, verify that they correspond to the
- * provided commitments.
+ * Given a list of blobs and blob KZG proofs, verify that they correspond to the provided
+ * commitments.
  *
  * @param[out] ok                True if the proofs are valid, otherwise false
  * @param[in]  blobs             Array of blobs to verify
@@ -1375,9 +1357,8 @@ out:
  * @param[in]  s                 The trusted setup
  *
  * @remark This function accepts if called with `n==0`.
- * @remark This function assumes that `n` is trusted and that all input arrays
- *         contain `n` elements. `n` should be the actual size of the arrays and
- *         not read off a length field in the protocol.
+ * @remark This function assumes that `n` is trusted and that all input arrays contain `n` elements.
+ * `n` should be the actual size of the arrays and not read off a length field in the protocol.
  */
 C_KZG_RET verify_blob_kzg_proof_batch(
     bool *ok,
@@ -1459,8 +1440,8 @@ out:
  *
  * @return True if `n` is zero or a power of two, otherwise false.
  *
- * @remark This method returns true for is_power_of_two(0) which is a bit
- *         weird, but not an issue in the contexts in which we use it.
+ * @remark This method returns true for is_power_of_two(0) which is a bit weird, but not an issue in
+ * the contexts in which we use it.
  *
  */
 static bool is_power_of_two(uint64_t n) {
@@ -1624,10 +1605,9 @@ static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
  *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in `size`.
- * @remark This means that `input[n] == output[n']`, where input and output
- *         denote the input and output array and n' is obtained from n by
- *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
- *         operates on log2(n)-bit numbers.
+ * @remark This means that `input[n] == output[n']`, where input and output denote the input and
+ * output array and n' is obtained from n by bit-reversing n. As opposed to reverse_bits, this
+ * bit-reversal operates on log2(n)-bit numbers.
  */
 static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     C_KZG_RET ret;
@@ -1668,8 +1648,8 @@ out:
  * @param[in]  root  A root of unity
  * @param[in]  width One less than the size of `out`
  *
- * @remark `root` must be such that `root ^ width` is equal to one, but
- *         no smaller power of `root` is equal to one.
+ * @remark `root` must be such that `root ^ width` is equal to one, but no smaller power of `root`
+ * is equal to one.
  */
 static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
     uint64_t i;
@@ -1756,10 +1736,9 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g2_values_monomial);
 
     /*
-     * If for whatever reason we accidentally call free_trusted_setup() on an
-     * uninitialized structure, we don't want to deference these 2d arrays.
-     * Without these NULL checks, it's possible for there to be a segmentation
-     * fault via null pointer dereference.
+     * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
+     * structure, we don't want to deference these 2d arrays.  Without these NULL checks, it's
+     * possible for there to be a segmentation fault via null pointer dereference.
      */
     if (s->x_ext_fft_columns != NULL) {
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -1778,8 +1757,8 @@ void free_trusted_setup(KZGSettings *s) {
 }
 
 /**
- * The first part of the Toeplitz matrix multiplication algorithm: the Fourier
- * transform of the vector x extended.
+ * The first part of the Toeplitz matrix multiplication algorithm: the Fourier transform of the
+ * vector x extended.
  *
  * @param[out]  out The FFT of the extension of x, size n * 2
  * @param[in]   x   The input vector, size n
@@ -1979,11 +1958,10 @@ C_KZG_RET load_trusted_setup(
     }
 
     /*
-     * This is the window size for the windowed multiplication in proof
-     * generation. The larger wbits is, the faster the MSM will be, but the
-     * size of the precomputed table will grow exponentially. With 8 bits, the
-     * tables are 96 MiB; with 9 bits, the tables are 192 MiB and so forth.
-     * From our testing, there are diminishing returns after 8 bits.
+     * This is the window size for the windowed multiplication in proof generation. The larger wbits
+     * is, the faster the MSM will be, but the size of the precomputed table will grow
+     * exponentially. With 8 bits, the tables are 96 MiB; with 9 bits, the tables are 192 MiB and so
+     * forth. From our testing, there are diminishing returns after 8 bits.
      */
     out->wbits = precompute;
 
@@ -2073,9 +2051,8 @@ C_KZG_RET load_trusted_setup(
 
 out_error:
     /*
-     * Note: this only frees the fields in the KZGSettings structure. It does
-     * not free the KZGSettings structure memory. If necessary, that must be
-     * done by the caller.
+     * Note: this only frees the fields in the KZGSettings structure. It does not free the
+     * KZGSettings structure memory. If necessary, that must be done by the caller.
      */
     free_trusted_setup(out);
 out_success:
@@ -2091,9 +2068,8 @@ out_success:
  *
  * @remark See also load_trusted_setup().
  * @remark The input file will not be closed.
- * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where
- *         the first two numbers are in decimal and the remainder are hexstrings
- *         and any whitespace can be used as separators.
+ * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where the first two numbers
+ * are in decimal and the remainder are hexstrings and any whitespace can be used as separators.
  */
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
     C_KZG_RET ret;
@@ -2289,12 +2265,12 @@ static inline uint64_t next_power_of_two(uint64_t v) {
 }
 
 /**
- * Calculates the minimal polynomial that evaluates to zero for powers of roots
- * of unity at the given indices.
+ * Calculates the minimal polynomial that evaluates to zero for powers of roots of unity at the
+ * given indices.
  *
- * Uses straightforward long multiplication to calculate the product of
- * `(x - * r^i)` where `r` is a root of unity and the `i`s are the indices at
- * which it must evaluate to zero. This results in a poly of degree indices_len.
+ * Uses straightforward long multiplication to calculate the product of `(x - * r^i)` where `r` is a
+ * root of unity and the `i`s are the indices at which it must evaluate to zero. This results in a
+ * poly of degree indices_len.
  *
  * @param[in,out]   dst         The zero polynomial for indices
  * @param[in,out]   dst_len     The length of dst
@@ -2372,8 +2348,8 @@ static C_KZG_RET pad_p(fr_t *out, size_t out_len, const fr_t *in, size_t in_len)
  * @param[in]   partial_count   The number of polys to be multiplied together
  * @param[in]   s               The trusted setup
  *
- * @remark This will pad the polynomials, perform FFTs, point-wise multiply the
- *         results together, and apply an inverse FFT to the result.
+ * @remark This will pad the polynomials, perform FFTs, point-wise multiply the results together,
+ * and apply an inverse FFT to the result.
  */
 static C_KZG_RET reduce_partials(
     poly_t *out,
@@ -2400,10 +2376,7 @@ static C_KZG_RET reduce_partials(
         goto out;
     }
 
-    /*
-     * The degree of the output polynomial is the sum of the degrees of the
-     * input polynomials.
-     */
+    /* The degree of the output polynomial is the sum of the degrees of the input polynomials */
     size_t out_degree = 0;
     for (size_t i = 0; i < partial_count; i++) {
         out_degree += partials[i].length - 1;
@@ -2419,8 +2392,8 @@ static C_KZG_RET reduce_partials(
     fr_t *p_eval = scratch + len_out * 2;
 
     /*
-     * Do the last partial first: it is no longer than the others and the
-     * padding can remain in place for the rest.
+     * Do the last partial first: it is no longer than the others and the padding can remain in
+     * place for the rest.
      */
     ret = pad_p(
         p_padded, len_out, partials[partial_count - 1].coeffs, partials[partial_count - 1].length
@@ -2450,13 +2423,12 @@ out:
 }
 
 /**
- * Calculate the minimal polynomial that evaluates to zero for the powers of
- * roots of unity that correspond to missing indices.
+ * Calculate the minimal polynomial that evaluates to zero for the powers of roots of unity that
+ * correspond to missing indices.
  *
- * This is done simply by multiplying together `(x - r^i)` for all the `i` that
- * are missing indices, using a combination of direct multiplication
- * (#do_zero_poly_mul_partial) and iterated multiplication via convolution
- * (#reduce_partials).
+ * This is done simply by multiplying together `(x - r^i)` for all the `i` that are missing indices,
+ * using a combination of direct multiplication (#do_zero_poly_mul_partial) and iterated
+ * multiplication via convolution (#reduce_partials).
  *
  * @param[out]  zero_poly       The zero polynomial
  * @param[out]  zero_poly_len   The zero polynomial length
@@ -2603,8 +2575,8 @@ static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
 /**
  * Shift a polynomial in place.
  *
- * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to
- * creating a polynomial that evaluates at `x * shift_factor` rather than `x`.
+ * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that
+ * evaluates at `x * shift_factor` rather than `x`.
  *
  * @param[in,out]   p            The polynomial coefficients to be scaled
  * @param[in]       len          Length of the polynomial coefficients
@@ -2656,8 +2628,8 @@ out:
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
- * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we
- *         use its inverse to implement the IFFT.
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we use its inverse to
+ * implement the IFFT.
  */
 static C_KZG_RET coset_ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
@@ -2672,9 +2644,8 @@ out:
 }
 
 /**
- * Given a dataset with up to half the entries missing, return the
- * reconstructed original. Assumes that the inverse FFT of the original data
- * has the upper half of its values equal to zero.
+ * Given a dataset with up to half the entries missing, return the reconstructed original. Assumes
+ * that the inverse FFT of the original data has the upper half of its values equal to zero.
  *
  * @param[out]  reconstructed_data_out   Preallocated array for recovered cells
  * @param[in]   cells                    The cells that you have
@@ -2784,17 +2755,18 @@ static C_KZG_RET recover_cells_impl(
         );
     }
 
-    /* After the above polynomial division, extended_evaluations_over_coset is
-     * the same polynomial as reconstructed_poly_over_coset in the spec */
+    /*
+     * Note: After the above polynomial division, extended_evaluations_over_coset is the same
+     * polynomial as reconstructed_poly_over_coset in the spec.
+     */
 
     /* Convert the evaluations back to coefficents */
     ret = coset_ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * After unscaling the reconstructed polynomial, we have D(x) which
-     * evaluates to our original data at the roots of unity. Next, we evaluate
-     * the polynomial to get the original data.
+     * After unscaling the reconstructed polynomial, we have D(x) which evaluates to our original
+     * data at the roots of unity. Next, we evaluate the polynomial to get the original data.
      */
     ret = fft_fr(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
@@ -2828,8 +2800,8 @@ out:
  * @param[in]   len         The length of both polynomials
  * @param[in]   s           The trusted setup
  *
- * @remark To convert a monomial-form polynomial to a Lagrange-form polynomial,
- *         you must inverse FFT the bit-reverse-permuated monomial polynomial.
+ * @remark To convert a monomial-form polynomial to a Lagrange-form polynomial, you must inverse FFT
+ * the bit-reverse-permuated monomial polynomial.
  */
 static C_KZG_RET poly_lagrange_to_monomial(
     fr_t *lagrange, const fr_t *monomial, size_t len, const KZGSettings *s
@@ -2860,8 +2832,7 @@ out:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Reorder and extend polynomial coefficients for the toeplitz method, strided
- * version.
+ * Reorder and extend polynomial coefficients for the toeplitz method, strided version.
  *
  * @param[out]  out     The reordered polynomial, size `n * 2 / stride`
  * @param[in]   in      The input polynomial, size `n`
@@ -2898,9 +2869,8 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @param[in]   n   The length of the polynomial
  * @param[in]   s   The trusted setup
  *
- * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only
- *         the lower half of the extended polynomial is supplied because the
- *         upper half is assumed to be zero.
+ * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
+ * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
 static C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
@@ -3021,9 +2991,8 @@ out:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Compute random linear combination challenge scalars for
- * verify_cell_kzg_proof_batch. In this, we must hash EVERYTHING that the prover
- * can control.
+ * Compute random linear combination challenge scalars for verify_cell_kzg_proof_batch. In this, we
+ * must hash EVERYTHING that the prover can control.
  *
  * @param[out]  r_powers_out        The output challenges
  * @param[in]   commitments_bytes   The input commitments
@@ -3145,9 +3114,8 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
 }
 
 /**
- * Convert a list of commitments with potential duplicates to a list of unique
- * commitments. Also returns a list of indices which point to those new unique
- * commitments.
+ * Convert a list of commitments with potential duplicates to a list of unique commitments. Also
+ * returns a list of indices which point to those new unique commitments.
  *
  * @param[in,out]   commitments_out Updated to only contain unique commitments
  * @param[out]      indices_out     Used as map between old/new commitments
@@ -3234,10 +3202,9 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     memset(poly_lagrange, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /*
-     * Convert the blob to a polynomial. Note that only the first 4096 fields
-     * of the polynomial will be set. The upper 4096 fields will remain zero.
-     * This is required because the polynomial will be evaluated with 8192
-     * roots of unity.
+     * Convert the blob to a polynomial. Note that only the first 4096 fields of the polynomial will
+     * be set. The upper 4096 fields will remain zero.  This is required because the polynomial will
+     * be evaluated with 8192 roots of unity.
      */
     ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
@@ -3362,9 +3329,9 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             fr_t *field = &recovered_cells_fr[index + j];
 
             /*
-             * Check if the field has already been set. If it has, there was a
-             * duplicate cell index and we can return an error. The compiler
-             * will optimize this and the overhead is practically zero.
+             * Check if the field has already been set. If it has, there was a duplicate cell index
+             * and we can return an error. The compiler will optimize this and the overhead is
+             * practically zero.
              */
             if (!fr_is_null(field)) {
                 ret = C_KZG_BADARGS;
@@ -3400,9 +3367,9 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     if (recovered_proofs != NULL) {
         /*
-         * Instead of converting the cells to a blob and back, we can just treat
-         * the cells as a polynomial. We are done with the fr-form recovered
-         * cells and we can safely mutate the array.
+         * Instead of converting the cells to a blob and back, we can just treat the cells as a
+         * polynomial. We are done with the fr-form recovered cells and we can safely mutate the
+         * array.
          */
         ret = poly_lagrange_to_monomial(
             recovered_cells_fr, recovered_cells_fr, FIELD_ELEMENTS_PER_EXT_BLOB, s
@@ -3503,10 +3470,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * Convert the array of cell commitments to an array of unique commitments
-     * and an array of indices to those unique commitments. We do this before
-     * the array allocations section below because we need to know how many
-     * commitment weights there will be.
+     * Convert the array of cell commitments to an array of unique commitments and an array of
+     * indices to those unique commitments. We do this before the array allocations section below
+     * because we need to know how many commitment weights there will be.
      */
     num_commitments = num_cells;
     memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
@@ -3542,8 +3508,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     /*
-     * Derive random factors for the linear combination. The exponents start
-     * with 0. That is, they are r^0, r^1, r^2, r^3, and so on.
+     * Derive random factors for the linear combination. The exponents start with 0. That is, they
+     * are r^0, r^1, r^2, r^3, and so on.
      */
     ret = compute_r_powers_for_verify_cell_kzg_proof_batch(
         r_powers,
@@ -3645,10 +3611,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         if (ret != C_KZG_OK) goto out;
 
         /*
-         * Get interpolation polynomial for this column. To do so we first do an
-         * IDFT over the roots of unity and then we scale by the coset factor.
-         * We can't do an IDFT directly over the coset because it's not a
-         * subgroup.
+         * Get interpolation polynomial for this column. To do so we first do an IDFT over the roots
+         * of unity and then we scale by the coset factor.  We can't do an IDFT directly over the
+         * coset because it's not a subgroup.
          */
         ret = ifft_fr(
             column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
@@ -3656,8 +3621,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         if (ret != C_KZG_OK) goto out;
 
         /*
-         * To unscale, divide by the coset. It's faster to multiply with the
-         * inverse. We can skip the first iteration because its dividing by one.
+         * To unscale, divide by the coset. It's faster to multiply with the inverse. We can skip
+         * the first iteration because its dividing by one.
          */
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
