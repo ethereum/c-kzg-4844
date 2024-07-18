@@ -2,18 +2,14 @@ namespace Ckzg;
 
 public static partial class Ckzg
 {
-
-    // Private constants.
-    private const int BytesPerFieldElement = 32;
-    private const int CellsPerExtBlob = 128;
-    private const int FieldElementsPerBlob = 4096;
-    private const int FieldElementsPerCell = 64;
-
-    // Public constants.
     public const int BytesPerBlob = FieldElementsPerBlob * BytesPerFieldElement;
     public const int BytesPerCell = FieldElementsPerCell * BytesPerFieldElement;
     public const int BytesPerCommitment = 48;
+    public const int BytesPerFieldElement = 32;
     public const int BytesPerProof = 48;
+    public const int CellsPerExtBlob = 128;
+    public const int FieldElementsPerBlob = 4096;
+    public const int FieldElementsPerCell = 64;
 
     /// <summary>
     ///     Loads trusted setup settings from file.

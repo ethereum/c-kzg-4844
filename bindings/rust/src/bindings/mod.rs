@@ -27,7 +27,7 @@ const BYTES_PER_G1_POINT: usize = 48;
 const BYTES_PER_G2_POINT: usize = 96;
 
 /// Number of G1 points required for the kzg trusted setup.
-pub const NUM_G1_POINTS: usize = 4096;
+const NUM_G1_POINTS: usize = 4096;
 
 /// Number of G2 points required for the kzg trusted setup.
 /// 65 is fixed and is used for providing multiproofs up to 64 field elements.

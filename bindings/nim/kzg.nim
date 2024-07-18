@@ -12,11 +12,6 @@ export
   results,
   kzg_abi
 
-# Private constants
-const
-  FIELD_ELEMENTS_PER_BLOB = 4096
-  CELLS_PER_EXT_BLOB = 128
-
 type
   KzgCtx* = ref object
     valFreed: bool

@@ -25,16 +25,13 @@ when not defined(kzgExternalBlst):
 {.passc: "-I" & escape(bindingsPath) .}
 {.passc: "-I" & escape(srcPath) .}
 
-# Private constants
 const
-  FIELD_ELEMENTS_PER_BLOB = 4096
-  FIELD_ELEMENTS_PER_CELL = 64
-  BYTES_PER_FIELD_ELEMENT = 32
-
-# Public constants
-const
+  FIELD_ELEMENTS_PER_BLOB* = 4096
+  FIELD_ELEMENTS_PER_CELL* = 64
+  BYTES_PER_FIELD_ELEMENT* = 32
   BYTES_PER_BLOB* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
   BYTES_PER_CELL* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
+  CELLS_PER_EXT_BLOB* = 128
 
 type
   KZG_RET* = distinct cint

@@ -4,9 +4,6 @@ use rand::{rngs::ThreadRng, Rng};
 use std::path::Path;
 use std::sync::Arc;
 
-const BYTES_PER_FIELD_ELEMENT: usize = 32;
-const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-
 fn generate_random_field_element(rng: &mut ThreadRng) -> Bytes32 {
     let mut arr = [0u8; BYTES_PER_FIELD_ELEMENT];
     rng.fill(&mut arr[..]);
