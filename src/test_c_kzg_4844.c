@@ -2076,9 +2076,8 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     Cell *cells = NULL;
 
     /*
-     * NOTE: this profiling function only cares about cell recovery since the
-     * proofs will always be recomputed. If we included proof computation, it
-     * would drown out cell recovery.
+     * NOTE: this profiling function only cares about cell recovery since the proofs will always be
+     * recomputed. If we included proof computation, it would drown out cell recovery.
      */
 
     /* Get a random blob */
@@ -2268,10 +2267,9 @@ int main(void) {
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
-     * These functions are only executed if we're profiling. To me, it makes
-     * sense to put these in the testing file so we can re-use the helper
-     * functions. Additionally, it checks that whatever performance changes
-     * haven't broken the library.
+     * These functions are only executed if we're profiling. To me, it makes sense to put these in
+     * the testing file so we can re-use the helper functions. Additionally, it checks that whatever
+     * performance changes haven't broken the library.
      */
 #ifdef PROFILE
     profile_blob_to_kzg_commitment();
