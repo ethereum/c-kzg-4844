@@ -1,6 +1,6 @@
 [package]
 name = "c-kzg"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 license = "Apache-2.0"
 description = "A minimal implementation of the Polynomial Commitments API for EIP-4844, written in C."
