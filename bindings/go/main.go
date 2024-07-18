@@ -18,10 +18,13 @@ import (
 
 const (
 	BytesPerBlob         = C.BYTES_PER_BLOB
+	BytesPerCell         = C.BYTES_PER_CELL
 	BytesPerCommitment   = C.BYTES_PER_COMMITMENT
 	BytesPerFieldElement = C.BYTES_PER_FIELD_ELEMENT
 	BytesPerProof        = C.BYTES_PER_PROOF
+	CellsPerExtBlob      = C.CELLS_PER_EXT_BLOB
 	FieldElementsPerBlob = C.FIELD_ELEMENTS_PER_BLOB
+	FieldElementsPerCell = C.FIELD_ELEMENTS_PER_CELL
 )
 
 type (
@@ -30,6 +33,7 @@ type (
 	KZGCommitment Bytes48
 	KZGProof      Bytes48
 	Blob          [BytesPerBlob]byte
+	Cell          [BytesPerCell]byte
 )
 
 var (
@@ -114,6 +118,23 @@ func (b *Blob) UnmarshalText(input []byte) error {
 	return nil
 }
 
+func (c *Cell) UnmarshalText(input []byte) error {
+	if bytes.HasPrefix(input, []byte("0x")) {
+		input = input[2:]
+	}
+	if len(input) != 2*len(c) {
+		return ErrBadArgs
+	}
+	l, err := hex.Decode(c[:], input)
+	if err != nil {
+		return err
+	}
+	if l != len(c) {
+		return ErrBadArgs
+	}
+	return nil
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Interface Functions
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,29 +144,27 @@ LoadTrustedSetup is the binding for:
 
 	C_KZG_RET load_trusted_setup(
 	    KZGSettings *out,
-	    const uint8_t *g1_bytes,
-	    size_t n1,
-	    const uint8_t *g2_bytes,
-	    size_t n2);
+	    const uint8_t *g1_monomial_bytes,
+	    size_t num_g1_monomial_bytes,
+	    const uint8_t *g1_lagrange_bytes,
+	    size_t num_g1_lagrange_bytes,
+	    const uint8_t *g2_monomial_bytes,
+	    size_t num_g2_monomial_bytes,
+	    size_t precompute);
 */
-func LoadTrustedSetup(g1Bytes, g2Bytes []byte) error {
+func LoadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes []byte, precompute uint) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
-	if len(g1Bytes)%C.BYTES_PER_G1 != 0 {
-		panic(fmt.Sprintf("len(g1Bytes) is not a multiple of %v", C.BYTES_PER_G1))
-	}
-	if len(g2Bytes)%C.BYTES_PER_G2 != 0 {
-		panic(fmt.Sprintf("len(g2Bytes) is not a multiple of %v", C.BYTES_PER_G2))
-	}
-	numG1Elements := len(g1Bytes) / C.BYTES_PER_G1
-	numG2Elements := len(g2Bytes) / C.BYTES_PER_G2
 	ret := C.load_trusted_setup(
 		&settings,
-		*(**C.uint8_t)(unsafe.Pointer(&g1Bytes)),
-		(C.size_t)(numG1Elements),
-		*(**C.uint8_t)(unsafe.Pointer(&g2Bytes)),
-		(C.size_t)(numG2Elements))
+		*(**C.uint8_t)(unsafe.Pointer(&g1MonomialBytes)),
+		(C.size_t)(len(g1MonomialBytes)),
+		*(**C.uint8_t)(unsafe.Pointer(&g1LagrangeBytes)),
+		(C.size_t)(len(g1LagrangeBytes)),
+		*(**C.uint8_t)(unsafe.Pointer(&g2MonomialBytes)),
+		(C.size_t)(len(g2MonomialBytes)),
+		(C.size_t)(precompute))
 	if ret == C.C_KZG_OK {
 		loaded = true
 		return nil
@@ -158,9 +177,10 @@ LoadTrustedSetupFile is the binding for:
 
 	C_KZG_RET load_trusted_setup_file(
 	    KZGSettings *out,
-	    FILE *in);
+	    FILE *in,
+	    size_t precompute);
 */
-func LoadTrustedSetupFile(trustedSetupFile string) error {
+func LoadTrustedSetupFile(trustedSetupFile string, precompute uint) error {
 	if loaded {
 		panic("trusted setup is already loaded")
 	}
@@ -172,7 +192,7 @@ func LoadTrustedSetupFile(trustedSetupFile string) error {
 	if fp == nil {
 		panic("error reading trusted setup")
 	}
-	ret := C.load_trusted_setup_file(&settings, fp)
+	ret := C.load_trusted_setup_file(&settings, fp, (C.size_t)(precompute))
 	C.fclose(fp)
 	if ret == C.C_KZG_OK {
 		loaded = true
@@ -240,10 +260,8 @@ func ComputeKZGProof(blob *Blob, zBytes Bytes32) (KZGProof, Bytes32, error) {
 	if blob == nil {
 		return KZGProof{}, Bytes32{}, ErrBadArgs
 	}
-	var (
-		proof KZGProof
-		y     Bytes32
-	)
+
+	var proof, y = KZGProof{}, Bytes32{}
 	ret := C.compute_kzg_proof(
 		(*C.KZGProof)(unsafe.Pointer(&proof)),
 		(*C.Bytes32)(unsafe.Pointer(&y)),
@@ -373,6 +391,105 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
 		(C.size_t)(len(blobs)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return false, makeErrorFromRet(ret)
+	}
+	return bool(result), nil
+}
+
+/*
+ComputeCellsAndKZGProofs is the binding for:
+
+	C_KZG_RET compute_cells_and_kzg_proofs(
+	    Cell *cells,
+	    KZGProof *proofs,
+	    const Blob *blob,
+	    const KZGSettings *s);
+*/
+func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+
+	cells := [CellsPerExtBlob]Cell{}
+	proofs := [CellsPerExtBlob]KZGProof{}
+	ret := C.compute_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&cells)),
+		(*C.KZGProof)(unsafe.Pointer(&proofs)),
+		(*C.Blob)(unsafe.Pointer(blob)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
+	}
+	return cells, proofs, nil
+}
+
+/*
+RecoverCellsAndKZGProofs is the binding for:
+
+	C_KZG_RET recover_cells_and_kzg_proofs(
+	    Cell *recovered_cells,
+	    KZGProof *recovered_proofs,
+	    const uint64_t *cell_indices,
+	    const Cell *cells,
+	    size_t num_cells,
+	    const KZGSettings *s);
+*/
+func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	if len(cellIndices) != len(cells) {
+		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, ErrBadArgs
+	}
+
+	recoveredCells := [CellsPerExtBlob]Cell{}
+	recoveredProofs := [CellsPerExtBlob]KZGProof{}
+	ret := C.recover_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
+		(*C.KZGProof)(unsafe.Pointer(&recoveredProofs)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		(C.size_t)(len(cells)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, makeErrorFromRet(ret)
+	}
+	return recoveredCells, recoveredProofs, nil
+}
+
+/*
+VerifyCellKZGProofBatch is the binding for:
+
+	C_KZG_RET verify_cell_kzg_proof_batch(
+	    bool *ok,
+	    const Bytes48 *commitments_bytes,
+	    const uint64_t *cell_indices,
+	    const Cell *cells,
+	    const Bytes48 *proofs_bytes,
+	    size_t num_cells,
+	    const KZGSettings *s);
+*/
+func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	if len(commitmentsBytes) != len(cells) || len(cellIndices) != len(cells) || len(proofsBytes) != len(cells) {
+		return false, ErrBadArgs
+	}
+
+	var result C.bool
+	ret := C.verify_cell_kzg_proof_batch(
+		&result,
+		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
+		(C.size_t)(len(cells)),
 		&settings)
 
 	if ret != C.C_KZG_OK {

@@ -11,7 +11,7 @@ proc createKateBlobs(n: int): KateBlobs =
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% 32 == 0:
         blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
@@ -22,7 +22,7 @@ proc createKateBlobs(n: int): KateBlobs =
 
 suite "verify proof (extended version)":
   test "load trusted setup from string":
-    let res = Kzg.loadTrustedSetupFromString(trustedSetup)
+    let res = Kzg.loadTrustedSetupFromString(trustedSetup, 0)
     check res.isOk
 
   test "verify batch proof success":
@@ -76,7 +76,7 @@ suite "verify proof (extended version)":
     # no need to check return value
     # only test if those templates can be compiled successfully
     check Kzg.freeTrustedSetup().isOk
-    check Kzg.loadTrustedSetupFile(trustedSetupFile).isOk
+    check Kzg.loadTrustedSetupFile(trustedSetupFile, 0).isOk
     discard blobToKzgCommitment(blob)
     let kp = computeKzgProof(blob, inputPoint)
     discard computeBlobKzgProof(blob, commitment)
@@ -86,5 +86,5 @@ suite "verify proof (extended version)":
     discard verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
 
   test "load trusted setup more than once":
-    let res = Kzg.loadTrustedSetupFromString(trustedSetup)
+    let res = Kzg.loadTrustedSetupFromString(trustedSetup, 0)
     check res.isErr

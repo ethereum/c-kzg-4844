@@ -36,6 +36,12 @@ public class TestUtils {
   private static final String VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/";
   private static final String VERIFY_BLOB_KZG_PROOF_BATCH_TESTS =
       "../../tests/verify_blob_kzg_proof_batch/";
+  private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
+      "../../tests/compute_cells_and_kzg_proofs/";
+  private static final String RECOVER_CELLS_AND_KZG_PROOFS_TESTS =
+      "../../tests/recover_cells_and_kzg_proofs/";
+  private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
+      "../../tests/verify_cell_kzg_proof_batch/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
@@ -199,23 +205,85 @@ public class TestUtils {
     return tests.build().collect(Collectors.toList());
   }
 
+  public static List<ComputeCellsAndKzgProofsTest> getComputeCellsAndKzgProofsTests() {
+    final Stream.Builder<ComputeCellsAndKzgProofsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        ComputeCellsAndKzgProofsTest test =
+            OBJECT_MAPPER.readValue(jsonData, ComputeCellsAndKzgProofsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<RecoverCellsAndKzgProofsTest> getRecoverCellsAndKzgProofsTests() {
+    final Stream.Builder<RecoverCellsAndKzgProofsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        RecoverCellsAndKzgProofsTest test =
+            OBJECT_MAPPER.readValue(jsonData, RecoverCellsAndKzgProofsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
+    final Stream.Builder<VerifyCellKzgProofBatchTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        VerifyCellKzgProofBatchTest test =
+            OBJECT_MAPPER.readValue(jsonData, VerifyCellKzgProofBatchTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
   public static LoadTrustedSetupParameters createLoadTrustedSetupParameters(
       final String trustedSetup) {
     try (final BufferedReader reader = new BufferedReader(new FileReader(trustedSetup))) {
       final int g1Count = Integer.parseInt(reader.readLine());
       final int g2Count = Integer.parseInt(reader.readLine());
 
-      final ByteBuffer g1 = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
-      final ByteBuffer g2 = ByteBuffer.allocate(g2Count * CKZG4844JNI.BYTES_PER_G2);
+      final ByteBuffer g1MonomialBytes = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
+      final ByteBuffer g1LagrangeBytes = ByteBuffer.allocate(g1Count * CKZG4844JNI.BYTES_PER_G1);
+      final ByteBuffer g2MonomialBytes = ByteBuffer.allocate(g2Count * CKZG4844JNI.BYTES_PER_G2);
 
       for (int i = 0; i < g1Count; i++) {
-        g1.put(Bytes.fromHexString(reader.readLine()).toArray());
+        g1LagrangeBytes.put(Bytes.fromHexString(reader.readLine()).toArray());
       }
       for (int i = 0; i < g2Count; i++) {
-        g2.put(Bytes.fromHexString(reader.readLine()).toArray());
+        g2MonomialBytes.put(Bytes.fromHexString(reader.readLine()).toArray());
+      }
+      for (int i = 0; i < g1Count; i++) {
+        g1MonomialBytes.put(Bytes.fromHexString(reader.readLine()).toArray());
       }
 
-      return new LoadTrustedSetupParameters(g1.array(), g1Count, g2.array(), g2Count);
+      return new LoadTrustedSetupParameters(
+          g1MonomialBytes.array(), g1LagrangeBytes.array(), g2MonomialBytes.array());
     } catch (final IOException ex) {
       throw new UncheckedIOException(ex);
     }

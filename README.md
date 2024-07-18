@@ -2,7 +2,7 @@
 
 A minimal implementation of the [Polynomial
 Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
-API for EIP-4844, written in C.
+API for EIP-4844 and EIP-7594, written in C.
 
 ## Bindings
 
@@ -27,12 +27,20 @@ The C-KZG-4844 library provides implementations of the public KZG functions that
 are defined in the Polynomial Commitments specification. The aim is to align
 these functions as closely as possible with the specification.
 
+For EIP-4844:
+
 - `blob_to_kzg_commitment`
 - `compute_kzg_proof`
 - `compute_blob_kzg_proof`
 - `verify_kzg_proof`
 - `verify_blob_kzg_proof`
 - `verify_blob_kzg_proof_batch`
+
+For EIP-7594:
+
+- `compute_cells_and_kzg_proofs`
+- `recover_cells_and_kzg_proofs`
+- `verify_cell_kzg_proof_batch`
 
 This library also provides functions for loading and freeing the trusted setup,
 which are not defined in the specification. These functions are intended to be

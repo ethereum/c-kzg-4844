@@ -110,7 +110,7 @@ public class CKZG4844JNIBenchmark {
 
   @Setup
   public void setUp() {
-    CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup.txt");
+    CKZG4844JNI.loadTrustedSetup("../../src/trusted_setup.txt", 8);
   }
 
   @TearDown

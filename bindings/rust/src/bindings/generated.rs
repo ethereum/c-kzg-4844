@@ -5,8 +5,13 @@ use libc::FILE;
 pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
+pub const BITS_PER_FIELD_ELEMENT: usize = 255;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_BLOB: usize = 131072;
+pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
+pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
+pub const CELLS_PER_EXT_BLOB: usize = 128;
+pub const BYTES_PER_CELL: usize = 2048;
 pub type limb_t = u64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -29,6 +34,12 @@ pub struct blst_p1 {
     x: blst_fp,
     y: blst_fp,
     z: blst_fp,
+}
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub struct blst_p1_affine {
+    x: blst_fp,
+    y: blst_fp,
 }
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -58,6 +69,12 @@ pub struct Bytes48 {
 pub struct Blob {
     bytes: [u8; 131072usize],
 }
+#[doc = " A single cell for a blob."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub struct Cell {
+    bytes: [u8; 2048usize],
+}
 #[repr(C)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -79,20 +96,41 @@ pub struct KZGSettings {
     max_width: u64,
     #[doc = " Powers of the primitive root of unity determined by\n `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,\n length `max_width`."]
     roots_of_unity: *mut fr_t,
+    #[doc = " The expanded roots of unity."]
+    expanded_roots_of_unity: *mut fr_t,
+    #[doc = " The bit-reversal permuted roots of unity."]
+    reverse_roots_of_unity: *mut fr_t,
+    #[doc = " G1 group elements from the trusted setup,\n in monomial form."]
+    g1_values_monomial: *mut g1_t,
     #[doc = " G1 group elements from the trusted setup,\n in Lagrange form bit-reversal permutation."]
-    g1_values: *mut g1_t,
-    #[doc = " G2 group elements from the trusted setup."]
-    g2_values: *mut g2_t,
+    g1_values_lagrange_brp: *mut g1_t,
+    #[doc = " G2 group elements from the trusted setup,\n in monomial form."]
+    g2_values_monomial: *mut g2_t,
+    #[doc = " Data used during FK20 proof generation."]
+    x_ext_fft_columns: *mut *mut g1_t,
+    #[doc = " The precomputed tables for fixed-base MSM."]
+    tables: *mut *mut blst_p1_affine,
+    #[doc = " The window size for the fixed-base MSM."]
+    wbits: usize,
+    #[doc = " The scratch size for the fixed-base MSM."]
+    scratch_size: usize,
 }
 extern "C" {
     pub fn load_trusted_setup(
         out: *mut KZGSettings,
-        g1_bytes: *const u8,
-        n1: usize,
-        g2_bytes: *const u8,
-        n2: usize,
+        g1_monomial_bytes: *const u8,
+        num_g1_monomial_bytes: usize,
+        g1_lagrange_bytes: *const u8,
+        num_g1_lagrange_bytes: usize,
+        g2_monomial_bytes: *const u8,
+        num_g2_monomial_bytes: usize,
+        precompute: usize,
     ) -> C_KZG_RET;
-    pub fn load_trusted_setup_file(out: *mut KZGSettings, in_: *mut FILE) -> C_KZG_RET;
+    pub fn load_trusted_setup_file(
+        out: *mut KZGSettings,
+        in_: *mut FILE,
+        precompute: usize,
+    ) -> C_KZG_RET;
     pub fn free_trusted_setup(s: *mut KZGSettings);
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
@@ -133,6 +171,29 @@ extern "C" {
         commitments_bytes: *const Bytes48,
         proofs_bytes: *const Bytes48,
         n: usize,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+    pub fn compute_cells_and_kzg_proofs(
+        cells: *mut Cell,
+        proofs: *mut KZGProof,
+        blob: *const Blob,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+    pub fn recover_cells_and_kzg_proofs(
+        recovered_cells: *mut Cell,
+        recovered_proofs: *mut KZGProof,
+        cell_indices: *const u64,
+        cells: *const Cell,
+        num_cells: usize,
+        s: *const KZGSettings,
+    ) -> C_KZG_RET;
+    pub fn verify_cell_kzg_proof_batch(
+        ok: *mut bool,
+        commitments_bytes: *const Bytes48,
+        cell_indices: *const u64,
+        cells: *const Cell,
+        proofs_bytes: *const Bytes48,
+        num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
 }

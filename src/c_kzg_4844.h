@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Benjamin Edgington
+ * Copyright 2024 Benjamin Edgington
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,11 +45,27 @@ extern "C" {
 /** The number of bytes in a BLS scalar field element. */
 #define BYTES_PER_FIELD_ELEMENT 32
 
+/** The number of bits in a BLS scalar field element. */
+#define BITS_PER_FIELD_ELEMENT 255
+
 /** The number of field elements in a blob. */
 #define FIELD_ELEMENTS_PER_BLOB 4096
 
 /** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
+
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
+
+/** The number of field elements in a cell. */
+#define FIELD_ELEMENTS_PER_CELL 64
+
+/** The number of cells in an extended blob. */
+#define CELLS_PER_EXT_BLOB \
+    (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
+
+/** The number of bytes in a single cell. */
+#define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Types
@@ -93,6 +109,13 @@ typedef Bytes48 KZGCommitment;
 typedef Bytes48 KZGProof;
 
 /**
+ * A single cell for a blob.
+ */
+typedef struct {
+    uint8_t bytes[BYTES_PER_CELL];
+} Cell;
+
+/**
  * The common return type for all routines in which something can go wrong.
  */
 typedef enum {
@@ -112,11 +135,27 @@ typedef struct {
      * `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,
      * length `max_width`. */
     fr_t *roots_of_unity;
+    /** The expanded roots of unity. */
+    fr_t *expanded_roots_of_unity;
+    /** The bit-reversal permuted roots of unity. */
+    fr_t *reverse_roots_of_unity;
+    /** G1 group elements from the trusted setup,
+     * in monomial form. */
+    g1_t *g1_values_monomial;
     /** G1 group elements from the trusted setup,
      * in Lagrange form bit-reversal permutation. */
-    g1_t *g1_values;
-    /** G2 group elements from the trusted setup. */
-    g2_t *g2_values;
+    g1_t *g1_values_lagrange_brp;
+    /** G2 group elements from the trusted setup,
+     * in monomial form. */
+    g2_t *g2_values_monomial;
+    /** Data used during FK20 proof generation. */
+    g1_t **x_ext_fft_columns;
+    /** The precomputed tables for fixed-base MSM. */
+    blst_p1_affine **tables;
+    /** The window size for the fixed-base MSM. */
+    size_t wbits;
+    /** The scratch size for the fixed-base MSM. */
+    size_t scratch_size;
 } KZGSettings;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -125,13 +164,18 @@ typedef struct {
 
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
-    const uint8_t *g1_bytes, /* n1 * 48 bytes */
-    size_t n1,
-    const uint8_t *g2_bytes, /* n2 * 96 bytes */
-    size_t n2
+    const uint8_t *g1_monomial_bytes,
+    size_t num_g1_monomial_bytes,
+    const uint8_t *g1_lagrange_bytes,
+    size_t num_g1_lagrange_bytes,
+    const uint8_t *g2_monomial_bytes,
+    size_t num_g2_monomial_bytes,
+    size_t precompute
 );
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in);
+C_KZG_RET load_trusted_setup_file(
+    KZGSettings *out, FILE *in, size_t precompute
+);
 
 void free_trusted_setup(KZGSettings *s);
 
@@ -177,6 +221,29 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
+    const KZGSettings *s
+);
+
+C_KZG_RET compute_cells_and_kzg_proofs(
+    Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+);
+
+C_KZG_RET recover_cells_and_kzg_proofs(
+    Cell *recovered_cells,
+    KZGProof *recovered_proofs,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    size_t num_cells,
+    const KZGSettings *s
+);
+
+C_KZG_RET verify_cell_kzg_proof_batch(
+    bool *ok,
+    const Bytes48 *commitments_bytes,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    const Bytes48 *proofs_bytes,
+    size_t num_cells,
     const KZGSettings *s
 );
 

@@ -13,13 +13,13 @@
 	<PropertyGroup>
 		<Authors>Ethereum Foundation</Authors>
 		<Copyright>Ethereum Foundation</Copyright>
-		<Description>The C# bindings for the Polynomial Commitments API library for EIP-4844</Description>
+		<Description>The C# bindings for the Polynomial Commitments API library for EIP-4844 and EIP-7594</Description>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols>true</IncludeSymbols>
 		<PackageId>Ckzg.Bindings</PackageId>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageTags>c-kzg eip-4844</PackageTags>
+		<PackageTags>c-kzg eip-4844 eip-7594</PackageTags>
 		<RepositoryType>git</RepositoryType>
 		<RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>

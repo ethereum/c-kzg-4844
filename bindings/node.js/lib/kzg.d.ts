@@ -7,7 +7,10 @@ export type Bytes48 = Uint8Array; // 48 bytes
 export type KZGProof = Uint8Array; // 48 bytes
 export type KZGCommitment = Uint8Array; // 48 bytes
 export type Blob = Uint8Array; // 4096 * 32 bytes
+export type Cell = Uint8Array; // 64 * 32 bytes
+
 export type ProofResult = [KZGProof, Bytes32];
+
 export interface TrustedSetupJson {
   setup_G1: string[];
   setup_G2: string[];
@@ -19,7 +22,10 @@ export const BYTES_PER_BLOB: number;
 export const BYTES_PER_COMMITMENT: number;
 export const BYTES_PER_FIELD_ELEMENT: number;
 export const BYTES_PER_PROOF: number;
+export const BYTES_PER_CELL: number;
 export const FIELD_ELEMENTS_PER_BLOB: number;
+export const FIELD_ELEMENTS_PER_CELL: number;
+export const CELLS_PER_EXT_BLOB: number;
 
 /**
  * Initialize the library with a trusted setup file.
@@ -33,13 +39,14 @@ export const FIELD_ELEMENTS_PER_BLOB: number;
  * the official Ethereum mainnet setup from the KZG ceremony. Should only be
  * used for cases where the Ethereum official mainnet KZG setup is acceptable.
  *
+ * @param {number} precompute
  * @param {string | undefined} filePath
  * @default - If no string is passed the default trusted setup from the Ethereum KZG ceremony is used
  *
  * @throws {TypeError} - Non-String input
  * @throws {Error} - For all other errors. See error message for more info
  */
-export function loadTrustedSetup(filePath?: string): void;
+export function loadTrustedSetup(precompute: number, filePath?: string): void;
 
 /**
  * Convert a blob to a KZG commitment.
@@ -126,3 +133,46 @@ export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBy
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
 export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
+
+/**
+ * Get the cells and proofs for a given blob.
+ *
+ * @param {Blob}    blob - the blob to get cells/proofs for
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Failure to allocate or compute cells and proofs
+ */
+export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
+
+/**
+ * Given at least 50% of cells, reconstruct the missing cells/proofs.
+ *
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells and proofs
+ */
+export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
+
+/**
+ * Verify that multiple cells' proofs are valid.
+ *
+ * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
+ * @param {number[]}  cellIndices - The column index for each cell
+ * @param {Cell[]}    cells - The cells to verify
+ * @param {Bytes48[]} proofsBytes - The proof for each cell
+ *
+ * @return {boolean} - True if the cells are valid with respect to the given commitments
+ *
+ * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
+ */
+export function verifyCellKzgProofBatch(
+  commitmentsBytes: Bytes48[],
+  cellIndices: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
+): boolean;

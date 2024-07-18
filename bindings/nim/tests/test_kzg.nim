@@ -11,7 +11,7 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
       # don't overflow modulus
-      if blob.bytes[i] > MAX_TOP_BYTE and i %% BYTES_PER_FIELD_ELEMENT == 0:
+      if blob.bytes[i] > MAX_TOP_BYTE and i %% 32 == 0:
         blob.bytes[i] = MAX_TOP_BYTE
     result.blobs.add(blob)
 
@@ -24,7 +24,7 @@ suite "verify proof (high-level)":
   var ctx: KzgCtx
 
   test "load trusted setup from string":
-    let res = loadTrustedSetupFromString(trustedSetup)
+    let res = loadTrustedSetupFromString(trustedSetup, 0)
     check res.isOk
     ctx = res.get
 
@@ -78,7 +78,7 @@ suite "verify proof (high-level)":
   test "template aliases":
     # no need to check return value
     # only test if those templates can be compiled successfully
-    let res = loadTrustedSetupFile(trustedSetupFile)
+    let res = loadTrustedSetupFile(trustedSetupFile, 0)
     check res.isOk
     ctx = res.get
 

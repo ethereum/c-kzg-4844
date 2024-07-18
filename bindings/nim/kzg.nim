@@ -4,7 +4,7 @@
 
 import
   std/[streams, strutils],
-  stew/byteutils,
+  stew/[assign2, byteutils],
   results,
   ./kzg_abi
 
@@ -21,8 +21,10 @@ type
     proof*: KzgProof
     y*: KzgBytes32
 
-  G1Data* = array[48, byte]
-  G2Data* = array[96, byte]
+  KzgCells* = array[CELLS_PER_EXT_BLOB, KzgCell]
+  KzgCellsAndKzgProofs* = object
+    cells*: array[CELLS_PER_EXT_BLOB, KzgCell]
+    proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
 
 when (NimMajor, NimMinor) < (1, 4):
   {.push raises: [Defect].}
@@ -61,63 +63,77 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 # Public functions
 ##############################################################
 
-proc loadTrustedSetup*(input: File): Result[KzgCtx, string] =
+proc loadTrustedSetup*(input: File, precompute: Natural): Result[KzgCtx, string] =
   let
     ctx = newKzgCtx()
-    res = load_trusted_setup_file(ctx.val, input)
+    res = load_trusted_setup_file(ctx.val, input, precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetup*(fileName: string): Result[KzgCtx, string] =
+proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, string] =
   try:
     let file = open(fileName)
-    result = file.loadTrustedSetup()
+    result = file.loadTrustedSetup(precompute)
     file.close()
   except IOError as ex:
     return err(ex.msg)
 
-proc loadTrustedSetup*(g1: openArray[G1Data],
-                       g2: openArray[G2Data]):
+proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
+                       g1LagrangeBytes: openArray[byte],
+                       g2MonomialBytes: openArray[byte],
+                       precompute: Natural):
                          Result[KzgCtx, string] =
-  if g1.len == 0 or g2.len == 0:
+  if g1MonomialBytes.len == 0 or g1LagrangeBytes.len == 0 or g2MonomialBytes.len == 0:
     return err($KZG_BADARGS)
 
   let
     ctx = newKzgCtx()
     res = load_trusted_setup(ctx.val,
-      g1[0][0].getPtr,
-      g1.len.csize_t,
-      g2[0][0].getPtr,
-      g2.len.csize_t)
+      g1MonomialBytes[0].getPtr,
+      g1MonomialBytes.len.csize_t,
+      g1LagrangeBytes[0].getPtr,
+      g1LagrangeBytes.len.csize_t,
+      g2MonomialBytes[0].getPtr,
+      g2MonomialBytes.len.csize_t,
+      precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
+proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KzgCtx, string] =
   const
+    NumG1 = FIELD_ELEMENTS_PER_BLOB
     NumG2 = 65
-    G1Len = G1Data.len
-    G2Len = G2Data.len
+    G1Len = 48
+    G2Len = 96
 
   var
     s = newStringStream(input)
-    g1: array[FIELD_ELEMENTS_PER_BLOB, G1Data]
-    g2: array[NumG2, G2Data]
+    g1MonomialBytes: array[NumG1 * G1Len, byte]
+    g1LagrangeBytes: array[NumG1 * G1Len, byte]
+    g2MonomialBytes: array[NumG2 * G2Len, byte]
 
   try:
-    let fieldElems = s.readLine().parseInt()
-    if fieldElems != FIELD_ELEMENTS_PER_BLOB:
-      return err("invalid field elements per blob, expect $1, got $2" % [
-        $FIELD_ELEMENTS_PER_BLOB, $fieldElems
+    let numG1 = s.readLine().parseInt()
+    if numG1 != NumG1:
+      return err("invalid number of G1 points, expect $1, got $2" % [
+        $NumG1, $numG1
       ])
     let numG2 = s.readLine().parseInt()
     if numG2 != NumG2:
-      return err("invalid number of G2, expect $1, got $2" % [
+      return err("invalid number of G2 points, expect $1, got $2" % [
         $NumG2, $numG2
       ])
 
-    for i in 0 ..< FIELD_ELEMENTS_PER_BLOB:
-      g1[i] = hexToByteArray[G1Len](s.readLine())
+    for i in 0 ..< NumG1:
+      let p = hexToByteArray[G1Len](s.readLine())
+      assign(g1LagrangeBytes.toOpenArray(i * G1Len, ((i + 1) * G1Len) - 1), p)
 
     for i in 0 ..< NumG2:
-      g2[i] = hexToByteArray[G2Len](s.readLine())
+      let p = hexToByteArray[G2Len](s.readLine())
+      assign(g2MonomialBytes.toOpenArray(i * G2Len, ((i + 1) * G2Len) - 1), p)
+
+    for i in 0 ..< NumG1:
+      let p = hexToByteArray[G1Len](s.readLine())
+      assign(g1MonomialBytes.toOpenArray(i * G1Len, ((i + 1) * G1Len) - 1), p)
+
   except ValueError as ex:
     return err(ex.msg)
   except OSError as ex:
@@ -125,7 +141,7 @@ proc loadTrustedSetupFromString*(input: string): Result[KzgCtx, string] =
   except IOError as ex:
     return err(ex.msg)
 
-  loadTrustedSetup(g1, g2)
+  loadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes, precompute)
 
 proc toCommitment*(ctx: KzgCtx,
                    blob: KzgBlob):
@@ -208,12 +224,73 @@ proc verifyProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
+proc computeCellsAndProofs*(ctx: KzgCtx,
+                   blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+  var ret: KzgCellsAndKzgProofs
+  var cellsPtr: ptr KzgCell = ret.cells[0].getPtr
+  var proofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  let res = compute_cells_and_kzg_proofs(
+    cellsPtr,
+    proofsPtr,
+    blob.getPtr,
+    ctx.val)
+  verify(res, ret)
+
+proc recoverCellsAndProofs*(ctx: KzgCtx,
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+  if cells.len != cellIndices.len:
+    return err($KZG_BADARGS)
+
+  if cells.len == 0:
+    return err($KZG_BADARGS)
+
+  var ret: KzgCellsAndKzgProofs
+  var recoveredCellsPtr: ptr KzgCell = ret.cells[0].getPtr
+  var recoveredProofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  let res = recover_cells_and_kzg_proofs(
+    recoveredCellsPtr,
+    recoveredProofsPtr,
+    cellIndices[0].getPtr,
+    cells[0].getPtr,
+    cells.len.csize_t,
+    ctx.val)
+  verify(res, ret)
+
+proc verifyProofs*(ctx: KzgCtx,
+                   commitments: openArray[KzgBytes48],
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+  if commitments.len != cells.len:
+    return err($KZG_BADARGS)
+
+  if cellIndices.len != cells.len:
+    return err($KZG_BADARGS)
+
+  if proofs.len != cells.len:
+    return err($KZG_BADARGS)
+
+  if cells.len == 0:
+    return ok(true)
+
+  var valid: bool
+  let res = verify_cell_kzg_proof_batch(
+    valid,
+    commitments[0].getPtr,
+    cellIndices[0].getPtr,
+    cells[0].getPtr,
+    proofs[0].getPtr,
+    cells.len.csize_t,
+    ctx.val)
+  verify(res, valid)
+
 ##############################################################
 # Zero overhead aliases that match the spec
 ##############################################################
 
-template loadTrustedSetupFile*(input: File | string): untyped =
-  loadTrustedSetup(input)
+template loadTrustedSetupFile*(input: File | string, precompute: Natural): untyped =
+  loadTrustedSetup(input, precompute)
 
 template freeTrustedSetup*(ctx: KzgCtx) =
   destroy(ctx)
@@ -223,7 +300,8 @@ template blobToKzgCommitment*(ctx: KzgCtx,
   toCommitment(ctx, blob)
 
 template computeKzgProof*(ctx: KzgCtx,
-                   blob: KzgBlob, z: KzgBytes32): untyped =
+                   blob: KzgBlob,
+                   z: KzgBytes32): untyped =
   computeProof(ctx, blob, z)
 
 template computeBlobKzgProof*(ctx: KzgCtx,
@@ -249,5 +327,21 @@ template verifyBlobKzgProofBatch*(ctx: KzgCtx,
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(ctx, blobs, commitments, proofs)
+
+template computeCellsAndKzgProofs*(ctx: KzgCtx,
+                   blob: KzgBlob): untyped =
+  computeCellsAndProofs(ctx, blob)
+
+template recoverCellsAndKzgProofs*(ctx: KzgCtx,
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): untyped =
+  recoverCellsAndProofs(ctx, cellIndices, cells)
+
+template verifyCellKzgProofBatch*(ctx: KzgCtx,
+                   commitments: openArray[KzgBytes48],
+                   cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell],
+                   proofs: openArray[KzgBytes48]): untyped =
+  verifyProofs(ctx, commitments, cellIndices, cells, proofs)
 
 {. pop .}

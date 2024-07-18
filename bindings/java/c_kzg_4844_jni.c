@@ -46,17 +46,10 @@ KZGSettings *allocate_settings(JNIEnv *env)
   {
     throw_exception(env, "Failed to allocate memory for the Trusted Setup.");
   }
-  else
-  {
-    s->max_width = 0;
-    s->roots_of_unity = NULL;
-    s->g1_values = NULL;
-    s->g2_values = NULL;
-  }
   return s;
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2(JNIEnv *env, jclass thisCls, jstring file)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2J(JNIEnv *env, jclass thisCls, jstring file, jlong precompute)
 {
   if (settings)
   {
@@ -78,7 +71,8 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
     return;
   }
 
-  C_KZG_RET ret = load_trusted_setup_file(settings, f);
+  size_t precompute_native = (size_t)precompute;
+  C_KZG_RET ret = load_trusted_setup_file(settings, f, precompute_native);
 
   (*env)->ReleaseStringUTFChars(env, file, file_native);
   fclose(f);
@@ -91,7 +85,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljav
   }
 }
 
-JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1, jlong g1Count, jbyteArray g2, jlong g2Count)
+JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3B_3BJ(JNIEnv *env, jclass thisCls, jbyteArray g1MonomialBytes, jbyteArray g1LagrangeBytes, jbyteArray g2MonomialBytes, jlong precompute)
 {
   if (settings)
   {
@@ -99,33 +93,31 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3BJ
     return;
   }
 
-  size_t g1_bytes = (size_t)(*env)->GetArrayLength(env, g1);
-  size_t g1_expected_bytes = (size_t)g1Count * 48;
-
-  if (g1_bytes != g1_expected_bytes)
-  {
-    throw_invalid_size_exception(env, "Invalid g1 size.", g1_bytes, g1_expected_bytes);
-    return;
-  }
-
-  size_t g2_bytes = (size_t)(*env)->GetArrayLength(env, g2);
-  size_t g2_expected_bytes = (size_t)g2Count * 96;
-
-  if (g2_bytes != g2_expected_bytes)
-  {
-    throw_invalid_size_exception(env, "Invalid g2 size.", g2_bytes, g2_expected_bytes);
-    return;
-  }
+  size_t g1_monomial_bytes_count = (size_t)(*env)->GetArrayLength(env, g1MonomialBytes);
+  size_t g1_lagrange_bytes_count = (size_t)(*env)->GetArrayLength(env, g1LagrangeBytes);
+  size_t g2_monomial_bytes_count = (size_t)(*env)->GetArrayLength(env, g2MonomialBytes);
 
   settings = allocate_settings(env);
 
-  jbyte *g1_native = (*env)->GetByteArrayElements(env, g1, NULL);
-  jbyte *g2_native = (*env)->GetByteArrayElements(env, g2, NULL);
+  jbyte *g1_monomial_bytes_native = (*env)->GetByteArrayElements(env, g1MonomialBytes, NULL);
+  jbyte *g1_lagrange_bytes_native = (*env)->GetByteArrayElements(env, g1LagrangeBytes, NULL);
+  jbyte *g2_monomial_bytes_native = (*env)->GetByteArrayElements(env, g2MonomialBytes, NULL);
+  size_t precompute_native = (size_t)precompute;
 
-  C_KZG_RET ret = load_trusted_setup(settings, (uint8_t *)g1_native, (size_t)g1Count, (uint8_t *)g2_native, (size_t)g2Count);
+  C_KZG_RET ret = load_trusted_setup(
+    settings,
+    (uint8_t *)g1_monomial_bytes_native,
+    g1_monomial_bytes_count,
+    (uint8_t *)g1_lagrange_bytes_native,
+    g1_lagrange_bytes_count,
+    (uint8_t *)g2_monomial_bytes_native,
+    g2_monomial_bytes_count,
+    precompute_native
+  );
 
-  (*env)->ReleaseByteArrayElements(env, g1, g1_native, JNI_ABORT);
-  (*env)->ReleaseByteArrayElements(env, g2, g2_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g1MonomialBytes, g1_monomial_bytes_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g1LagrangeBytes, g1_lagrange_bytes_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, g2MonomialBytes, g2_monomial_bytes_native, JNI_ABORT);
 
   if (ret != C_KZG_OK)
   {
@@ -441,6 +433,192 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof
   if (ret != C_KZG_OK)
   {
     throw_c_kzg_exception(env, ret, "There was an error in verifyBlobKzgProofBatch.");
+    return 0;
+  }
+
+  return (jboolean)out;
+}
+
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jbyteArray blob)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB)
+  {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size, BYTES_PER_BLOB);
+    return NULL;
+  }
+
+  /* The output variables, will be combined in a CellsAndProofs object */
+  jbyteArray cells = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+  jbyteArray proofs = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
+
+  /* The native variables */
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+  KZGProof *proofs_native = (KZGProof *)(*env)->GetByteArrayElements(env, proofs, NULL);
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  C_KZG_RET ret = compute_cells_and_kzg_proofs(cells_native, proofs_native, blob_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, 0);
+  (*env)->ReleaseByteArrayElements(env, proofs, (jbyte *)proofs_native, 0);
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in computeCellsAndKzgProofs.");
+    return NULL;
+  }
+
+  jclass caps_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
+  if (caps_class == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs class.");
+    return NULL;
+  }
+
+  jmethodID caps_constructor = (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
+  if (caps_constructor == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs constructor.");
+    return NULL;
+  }
+
+  jobject result = (*env)->NewObject(env, caps_class, caps_constructor, cells, proofs);
+  if (result == NULL)
+  {
+    throw_exception(env, "Failed to instantiate CellsAndProofs object.");
+    return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, cells);
+  (*env)->DeleteLocalRef(env, proofs);
+
+  return result;
+}
+
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, cell_indices);
+  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  if (cells_size != count * BYTES_PER_CELL)
+  {
+    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, count * BYTES_PER_CELL);
+    return 0;
+  }
+
+  jbyteArray recovered_cells = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+  Cell *recovered_cells_native = (Cell *)(*env)->GetByteArrayElements(env, recovered_cells, NULL);
+  jbyteArray recovered_proofs = (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF);
+  KZGProof *recovered_proofs_native = (KZGProof *)(*env)->GetByteArrayElements(env, recovered_proofs, NULL);
+  uint64_t *cell_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_indices, NULL);
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+
+  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_cells_native, recovered_proofs_native, cell_indices_native, cells_native, count, settings);
+
+  (*env)->ReleaseByteArrayElements(env, recovered_cells, (jbyte *)recovered_cells_native, 0);
+  (*env)->ReleaseByteArrayElements(env, recovered_proofs, (jbyte *)recovered_proofs_native, 0);
+  (*env)->ReleaseLongArrayElements(env, cell_indices, (jlong *)cell_indices_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in recoverCellsAndKzgProofs.");
+    return NULL;
+  }
+
+  jclass caps_class = (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
+  if (caps_class == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs class.");
+    return NULL;
+  }
+
+  jmethodID caps_constructor = (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
+  if (caps_constructor == NULL)
+  {
+    throw_exception(env, "Failed to find CellsAndProofs constructor.");
+    return NULL;
+  }
+
+  jobject result = (*env)->NewObject(env, caps_class, caps_constructor, recovered_cells, recovered_proofs);
+  if (result == NULL)
+  {
+    throw_exception(env, "Failed to instantiate CellsAndProof object.");
+    return NULL;
+  }
+
+  (*env)->DeleteLocalRef(env, recovered_cells);
+  (*env)->DeleteLocalRef(env, recovered_proofs);
+
+  return result;
+}
+
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes, jlongArray cell_indices, jbyteArray cells, jbyteArray proofs_bytes)
+{
+  if (settings == NULL)
+  {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return 0;
+  }
+
+  size_t commitments_size = (size_t)(*env)->GetArrayLength(env, commitments_bytes);
+  if (commitments_size % BYTES_PER_COMMITMENT != 0)
+  {
+    throw_invalid_size_exception(env, "Invalid commitments size.", commitments_size % BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT);
+    return 0;
+  }
+  size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
+  size_t count = num_commitments;
+
+  size_t cell_indices_count = (size_t)(*env)->GetArrayLength(env, cell_indices);
+  if (cell_indices_count != count)
+  {
+    throw_invalid_size_exception(env, "Invalid cellIndices size.", cell_indices_count, count);
+    return 0;
+  }
+
+  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  if (cells_size != count * BYTES_PER_CELL)
+  {
+    throw_invalid_size_exception(env, "Invalid cells size.", cells_size, count * BYTES_PER_CELL);
+    return 0;
+  }
+
+  size_t proofs_size = (size_t)(*env)->GetArrayLength(env, proofs_bytes);
+  if (proofs_size != count * BYTES_PER_PROOF)
+  {
+    throw_invalid_size_exception(env, "Invalid proofs size.", proofs_size, count * BYTES_PER_PROOF);
+    return 0;
+  }
+
+  Bytes48 *commitments_native = (Bytes48 *)(*env)->GetByteArrayElements(env, commitments_bytes, NULL);
+  uint64_t *cell_indices_native = (uint64_t *)(*env)->GetLongArrayElements(env, cell_indices, NULL);
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+  Bytes48 *proofs_native = (Bytes48 *)(*env)->GetByteArrayElements(env, proofs_bytes, NULL);
+
+  bool out;
+  C_KZG_RET ret = verify_cell_kzg_proof_batch(&out, commitments_native, cell_indices_native, cells_native, proofs_native, count, settings);
+
+  (*env)->ReleaseByteArrayElements(env, commitments_bytes, (jbyte *)commitments_native, JNI_ABORT);
+  (*env)->ReleaseLongArrayElements(env, cell_indices, (jlong *)cell_indices_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, proofs_bytes, (jbyte *)proofs_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK)
+  {
+    throw_c_kzg_exception(env, ret, "There was an error in verifyCellKzgProofBatch.");
     return 0;
   }
 

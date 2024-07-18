@@ -8,15 +8,21 @@ from typing import TextIO
 def convert(ts_json: TextIO, ts_text: TextIO) -> None:
     """Convert trusted setup to text format."""
     trusted_setup = json.load(ts_json)
-    g1_values = trusted_setup["g1_lagrange"]
-    g2_values = trusted_setup["g2_monomial"]
+    g1_monomial = trusted_setup["g1_monomial"]
+    g1_lagrange = trusted_setup["g1_lagrange"]
+    g2_monomial = trusted_setup["g2_monomial"]
 
-    print(len(g1_values), file=ts_text)
-    print(len(g2_values), file=ts_text)
-    for g1 in g1_values:
+    if len(g1_monomial) != len(g1_lagrange):
+        raise Exception("len(g1_monomial) != len(g1_lagrange)")
+
+    print(len(g1_monomial), file=ts_text)
+    print(len(g2_monomial), file=ts_text)
+    for g1 in g1_lagrange:
         print(g1.replace("0x", ""), file=ts_text)
-    for g2 in g2_values:
+    for g2 in g2_monomial:
         print(g2.replace("0x", ""), file=ts_text)
+    for g1 in g1_monomial:
+        print(g1.replace("0x", ""), file=ts_text)
 
 
 if __name__ == "__main__":

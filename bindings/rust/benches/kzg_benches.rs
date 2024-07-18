@@ -27,7 +27,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let mut rng = rand::thread_rng();
     let trusted_setup_file = Path::new("src/trusted_setup.txt");
     assert!(trusted_setup_file.exists());
-    let kzg_settings = Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file).unwrap());
+    let kzg_settings =
+        Arc::new(KzgSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap());
 
     let blobs: Vec<Blob> = (0..max_count)
         .map(|_| generate_random_blob(&mut rng))

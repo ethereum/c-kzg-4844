@@ -4,7 +4,7 @@
 #include "ckzg.h"
 #include "c_kzg_4844.h"
 
-KZGSettings* load_trusted_setup_wrap(const char* file) {
+KZGSettings* load_trusted_setup_wrap(const char* file, size_t precompute) {
   KZGSettings* out = malloc(sizeof(KZGSettings));
 
   if (out == NULL) return NULL;
@@ -13,7 +13,7 @@ KZGSettings* load_trusted_setup_wrap(const char* file) {
 
   if (f == NULL) { free(out); return NULL; }
 
-  if (load_trusted_setup_file(out, f) != C_KZG_OK) { free(out); fclose(f); return NULL; }
+  if (load_trusted_setup_file(out, f, precompute) != C_KZG_OK) { free(out); fclose(f); return NULL; }
 
   fclose(f);
   return out;

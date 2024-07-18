@@ -29,6 +29,7 @@ public class ComputeKzgProofTest {
     if (output == null) {
       return null;
     }
+    assert output.size() == 2;
     byte[] proof = Bytes.fromHexString(output.get(0)).toArray();
     byte[] y = Bytes.fromHexString(output.get(1)).toArray();
     return ProofAndY.of(proof, y);

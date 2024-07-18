@@ -27,8 +27,11 @@ when not defined(kzgExternalBlst):
 
 const
   FIELD_ELEMENTS_PER_BLOB* = 4096
+  FIELD_ELEMENTS_PER_CELL* = 64
   BYTES_PER_FIELD_ELEMENT* = 32
-  KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+  BYTES_PER_BLOB* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+  BYTES_PER_CELL* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
+  CELLS_PER_EXT_BLOB* = 128
 
 type
   KZG_RET* = distinct cint
@@ -59,7 +62,7 @@ type
   # A basic blob data.
   KzgBlob* {.importc: "Blob",
     header: "c_kzg_4844.h", completeStruct.} = object
-    bytes*: array[KzgBlobSize, uint8]
+    bytes*: array[BYTES_PER_BLOB, uint8]
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
@@ -79,16 +82,25 @@ type
   # A trusted (valid) KZG proof.
   KzgProof* = KzgBytes48
 
+  # A single cell for a blob.
+  KzgCell* {.importc: "Cell",
+    header: "c_kzg_4844.h".} = object
+    bytes*: array[BYTES_PER_CELL, uint8]
+
 {.pragma: kzg_abi, importc, cdecl, header: "c_kzg_4844.h".}
 
 proc load_trusted_setup*(res: KzgSettings,
-                         g1Bytes: ptr byte, # n1 * 48 bytes
-                         n1: csize_t,
-                         g2Bytes: ptr byte, # n2 * 96 bytes
-                         n2: csize_t): KZG_RET {.kzg_abi.}
+                         g1MonomialBytes: ptr byte,
+                         numG1MonomialBytes: csize_t,
+                         g1LagrangeBytes: ptr byte,
+                         numG1LagrangeBytes: csize_t,
+                         g2MonomialBytes: ptr byte,
+                         numG2MonomialBytes: csize_t,
+                         precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc load_trusted_setup_file*(res: KzgSettings,
-                         input: File): KZG_RET {.kzg_abi.}
+                         input: File,
+                         precompute: csize_t): KZG_RET {.kzg_abi.}
 
 proc free_trusted_setup*(s: KzgSettings) {.kzg_abi.}
 
@@ -125,4 +137,24 @@ proc verify_blob_kzg_proof_batch*(res: var bool,
                          commitmentsBytes: ptr KzgBytes48,
                          proofBytes: ptr KzgBytes48,
                          n: csize_t,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc compute_cells_and_kzg_proofs*(cellsOut: ptr KzgCell,
+                         proofsOut: ptr KzgProof,
+                         blob: ptr KzgBlob,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc recover_cells_and_kzg_proofs*(recoveredOut: ptr KzgCell,
+                         recoveredProofsOut: ptr KzgProof,
+                         cellIndices: ptr uint64,
+                         cells: ptr KzgCell,
+                         numCells: csize_t,
+                         s: KzgSettings): KZG_RET {.kzg_abi.}
+
+proc verify_cell_kzg_proof_batch*(res: var bool,
+                         commitments: ptr KzgBytes48,
+                         cellIndices: ptr uint64,
+                         cells: ptr KzgCell,
+                         proofs: ptr KzgBytes48,
+                         numCells: csize_t,
                          s: KzgSettings): KZG_RET {.kzg_abi.}

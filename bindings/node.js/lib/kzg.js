@@ -39,12 +39,19 @@ bindings.DEFAULT_TRUSTED_SETUP_PATH = path.resolve(__dirname, "..", "deps", "c-k
  */
 function transformTrustedSetupJson(filePath) {
   const trustedSetup = JSON.parse(fs.readFileSync(filePath, "utf8"));
+  if(trustedSetup.g1_lagrange.length != trustedSetup.g1_monomial.length) {
+    throw new TypeError("g1_lagrange & g1_monomial must have the same number of values");
+  }
   const setupText =
-    bindings.FIELD_ELEMENTS_PER_BLOB +
-    "\n65\n" +
+    trustedSetup.g1_lagrange.length +
+    "\n" +
+    trustedSetup.g2_monomial.length +
+    "\n" +
     trustedSetup.g1_lagrange.map((p) => p.substring(2)).join("\n") +
     "\n" +
-    trustedSetup.g2_monomial.map((p) => p.substring(2)).join("\n");
+    trustedSetup.g2_monomial.map((p) => p.substring(2)).join("\n") +
+    "\n" +
+    trustedSetup.g1_monomial.map((p) => p.substring(2)).join("\n");
   const outputPath = filePath.replace(".json", ".txt");
   fs.writeFileSync(outputPath, setupText);
   return outputPath;
@@ -91,8 +98,8 @@ bindings.getTrustedSetupFilepath = function getTrustedSetupFilepath(filePath) {
 
 const originalLoadTrustedSetup = bindings.loadTrustedSetup;
 // docstring in ./kzg.d.ts with exported definition
-bindings.loadTrustedSetup = function loadTrustedSetup(filePath) {
-  originalLoadTrustedSetup(bindings.getTrustedSetupFilepath(filePath));
+bindings.loadTrustedSetup = function loadTrustedSetup(precompute, filePath) {
+  originalLoadTrustedSetup(precompute, bindings.getTrustedSetupFilepath(filePath));
 };
 
 module.exports = exports = bindings;

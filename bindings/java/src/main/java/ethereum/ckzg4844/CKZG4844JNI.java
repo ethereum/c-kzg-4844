@@ -43,24 +43,35 @@ public class CKZG4844JNI {
     }
   }
 
-  /** Scalar field modulus of BLS12-381 */
+  /** Scalar field modulus of BLS12-381. */
   public static final BigInteger BLS_MODULUS =
       new BigInteger(
           "52435875175126190479447740508185965837690552500527637822603658699938581184513");
   /** The number of bytes in a g1 point. */
-  public static final int BYTES_PER_G1 = 48;
+  protected static final int BYTES_PER_G1 = 48;
   /** The number of bytes in a g2 point. */
-  public static final int BYTES_PER_G2 = 96;
-  /** The number of bytes in a KZG commitment */
-  public static final int BYTES_PER_COMMITMENT = 48;
-  /** The number of bytes in a KZG proof */
-  public static final int BYTES_PER_PROOF = 48;
-  /** Bytes used to encode a BLS scalar field element */
+  protected static final int BYTES_PER_G2 = 96;
+  /** The number of bytes in a BLS scalar field element. */
   public static final int BYTES_PER_FIELD_ELEMENT = 32;
-  /** Number of field elements in a blob */
+  /** The number of bits in a BLS scalar field element. */
+  protected static final int BITS_PER_FIELD_ELEMENT = 255;
+  /** The number of field elements in a blob. */
   public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
-  /** Number of field elements in a blob */
+  /** The number of field elements in an extended blob. */
+  protected static final int FIELD_ELEMENTS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
+  /** The number of field elements in a cell. */
+  public static final int FIELD_ELEMENTS_PER_CELL = 64;
+  /** The number of bytes in a KZG commitment. */
+  public static final int BYTES_PER_COMMITMENT = 48;
+  /** The number of bytes in a KZG proof. */
+  public static final int BYTES_PER_PROOF = 48;
+  /** The number of bytes in a blob. */
   public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
+  /** The number of bytes in a single cell. */
+  public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
+  /** The number of cells in an extended blob. */
+  public static final int CELLS_PER_EXT_BLOB =
+      FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
 
   private CKZG4844JNI() {}
 
@@ -71,32 +82,37 @@ public class CKZG4844JNI {
    * crypto native calls will throw a {@link RuntimeException}.
    *
    * @param file a path to a trusted setup file
+   * @param precompute configurable value between 0-15
    * @throws CKZGException if there is a crypto error
    */
-  public static native void loadTrustedSetup(String file);
+  public static native void loadTrustedSetup(String file, long precompute);
 
   /**
-   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from method
+   * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from method
    * parameters instead of a file.
    *
-   * @param g1 g1 values as bytes
-   * @param g1Count the count of the g1 values
-   * @param g2 g2 values as bytes
-   * @param g2Count the count of the g2 values
+   * @param g1MonomialBytes g1 values in monomial form as bytes
+   * @param g1LagrangeBytes g1 values in Lagrange form as bytes
+   * @param g2MonomialBytes g2 values in monomial form as bytes
+   * @param precompute configurable value between 0-15
    * @throws CKZGException if there is a crypto error
    */
-  public static native void loadTrustedSetup(byte[] g1, long g1Count, byte[] g2, long g2Count);
+  public static native void loadTrustedSetup(
+      byte[] g1MonomialBytes, byte[] g1LagrangeBytes, byte[] g2MonomialBytes, long precompute);
 
   /**
-   * An alternative to {@link #loadTrustedSetup(String)}. Loads the trusted setup from a resource.
+   * An alternative to {@link #loadTrustedSetup(String,long)}. Loads the trusted setup from a
+   * resource.
    *
-   * @param resource the resource name that contains the trusted setup
    * @param clazz the class to use to get the resource
+   * @param resource the resource name that contains the trusted setup
+   * @param precompute configurable value between 0-15
    * @param <T> the type of the class
    * @throws CKZGException if there is a crypto error
    * @throws IllegalArgumentException if the resource does not exist
    */
-  public static <T> void loadTrustedSetupFromResource(String resource, Class<T> clazz) {
+  public static <T> void loadTrustedSetupFromResource(
+      String resource, Class<T> clazz, long precompute) {
     InputStream is = clazz.getResourceAsStream(resource);
     if (is == null) {
       throw new IllegalArgumentException("Resource " + resource + " does not exist.");
@@ -106,7 +122,7 @@ public class CKZG4844JNI {
       Path jniWillLoadFrom = Files.createTempFile("kzg-trusted-setup", ".txt");
       jniWillLoadFrom.toFile().deleteOnExit();
       Files.copy(is, jniWillLoadFrom, StandardCopyOption.REPLACE_EXISTING);
-      loadTrustedSetup(jniWillLoadFrom.toString());
+      loadTrustedSetup(jniWillLoadFrom.toString(), precompute);
     } catch (IOException ex) {
       throw new UncheckedIOException("Error loading trusted setup from resource " + resource, ex);
     }
@@ -131,58 +147,90 @@ public class CKZG4844JNI {
    * Compute proof at point z for the polynomial represented by blob.
    *
    * @param blob blob bytes
-   * @param z_bytes a point
+   * @param zBytes a point
    * @return an instance of {@link ProofAndY} holding the proof and the value y = f(z)
    * @throws CKZGException if there is a crypto error
    */
-  public static native ProofAndY computeKzgProof(byte[] blob, byte[] z_bytes);
+  public static native ProofAndY computeKzgProof(byte[] blob, byte[] zBytes);
 
   /**
    * Given a blob, return the KZG proof that is used to verify it against the commitment
    *
    * @param blob blob bytes
-   * @param commitment_bytes commitment bytes
+   * @param commitmentBytes commitment bytes
    * @return the proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitment_bytes);
+  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitmentBytes);
 
   /**
    * Verify the proof by point evaluation for the given commitment
    *
-   * @param commitment_bytes commitment bytes
-   * @param z_bytes Z
-   * @param y_bytes Y
-   * @param proof_bytes the proof that needs verifying
+   * @param commitmentBytes commitment bytes
+   * @param zBytes Z
+   * @param yBytes Y
+   * @param proofBytes the proof that needs verifying
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyKzgProof(
-      byte[] commitment_bytes, byte[] z_bytes, byte[] y_bytes, byte[] proof_bytes);
+      byte[] commitmentBytes, byte[] zBytes, byte[] yBytes, byte[] proofBytes);
 
   /**
    * Given a blob and a KZG proof, verify that the blob data corresponds to the provided commitment.
    *
    * @param blob blob bytes
-   * @param commitment_bytes commitment bytes
-   * @param proof_bytes proof bytes
+   * @param commitmentBytes commitment bytes
+   * @param proofBytes proof bytes
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyBlobKzgProof(
-      byte[] blob, byte[] commitment_bytes, byte[] proof_bytes);
+      byte[] blob, byte[] commitmentBytes, byte[] proofBytes);
 
   /**
    * Given a list of blobs and blob KZG proofs, verify that they correspond to the provided
    * commitments.
    *
    * @param blobs flattened blobs bytes
-   * @param commitments_bytes flattened commitments bytes
-   * @param proofs_bytes flattened proofs bytes
+   * @param commitmentsBytes flattened commitments bytes
+   * @param proofsBytes flattened proofs bytes
    * @param count the number of blobs (should be same as the number of proofs and commitments)
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
   public static native boolean verifyBlobKzgProofBatch(
-      byte[] blobs, byte[] commitments_bytes, byte[] proofs_bytes, long count);
+      byte[] blobs, byte[] commitmentsBytes, byte[] proofsBytes, long count);
+
+  /**
+   * Get the cells and proofs for a given blob.
+   *
+   * @param blob the blob to get cells/proofs for
+   * @return a CellsAndProofs object
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native CellsAndProofs computeCellsAndKzgProofs(byte[] blob);
+
+  /**
+   * Given at least 50% of cells, reconstruct the missing cells/proofs.
+   *
+   * @param cellIndices the identifiers for the cells you have
+   * @param cells the cells you have
+   * @return all cells/proofs for that blob
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native CellsAndProofs recoverCellsAndKzgProofs(long[] cellIndices, byte[] cells);
+
+  /**
+   * Verify that multiple cells' proofs are valid.
+   *
+   * @param commitmentsBytes the commitments for each cell
+   * @param cellIndices the column index for each cell
+   * @param cells the cells to verify
+   * @param proofsBytes the proof for each cell
+   * @return true if the cells are valid with respect to the given commitments
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native boolean verifyCellKzgProofBatch(
+      byte[] commitmentsBytes, long[] cellIndices, byte[] cells, byte[] proofsBytes);
 }

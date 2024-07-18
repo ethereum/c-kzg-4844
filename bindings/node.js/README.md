@@ -1,13 +1,15 @@
 # C-KZG-4844
 
-This is a TypeScript library for EIP-4844 that implements the [Polynomial
-Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+This is a TypeScript library for EIP-4844 and EIP-7594 that implements the
+[Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
 API. The core functionality was originally a stripped-down copy of
 [C-KZG](https://github.com/benjaminion/c-kzg), but has been heavily modified
 since then. This package wraps that native `c-kzg` C code in C/C++ NAPI
 bindings for use in node.js applications.
 
-Spec: <https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md>
+Important Links:
+[EIP-4844 - Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+[EIP-7594 - Polynomial Commitments Sampling](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/polynomial-commitments-sampling.md)
 
 ## Prerequisites
 
@@ -175,5 +177,63 @@ verifyBlobKzgProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
+): boolean;
+```
+
+### `computeCellsAndKzgProofs`
+
+```ts
+/**
+ * Get the cells and proofs for a given blob.
+ *
+ * @param {Blob}    blob - the blob to get cells/proofs for
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Failure to allocate or compute cells and proofs
+ */
+export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
+```
+
+### `recoverCellsAndKzgProofs`
+
+```ts
+/**
+ * Given at least 50% of cells/proofs, reconstruct the missing ones.
+ *
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ *
+ * @return {[Cell[], KZGProof[]]} - A tuple of cells and proofs
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells and proofs
+ */
+export function recoverCellsAndKzgProofs(
+  cellIndices: number[],
+  cells: Cell[],
+): [Cell[], KZGProof[]];
+```
+
+### `verifyCellKzgProofBatch`
+
+```ts
+/**
+ * Verify that multiple cells' proofs are valid.
+ *
+ * @param {Bytes48[]} commitmentsBytes - The commitments for each cell
+ * @param {number[]}  cellIndices - The cell indices
+ * @param {Cell[]}    cells - The cells to verify
+ * @param {Bytes48[]} proofsBytes - The proof for each cell
+ *
+ * @return {boolean} - True if the cells are valid with respect to the given commitments
+ *
+ * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
+ */
+export function verifyCellKzgProofBatch(
+  commitmentsBytes: Bytes48[],
+  cellIndices: number[],
+  cells: Cell[],
+  proofsBytes: Bytes48[]
 ): boolean;
 ```

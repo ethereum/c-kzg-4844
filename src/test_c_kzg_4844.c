@@ -19,6 +19,52 @@
 KZGSettings s;
 
 ///////////////////////////////////////////////////////////////////////////////
+// Debugging functions
+///////////////////////////////////////////////////////////////////////////////
+
+void print_bytes32(const Bytes32 *bytes) {
+    for (size_t i = 0; i < 32; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
+}
+
+void print_bytes48(const Bytes48 *bytes) {
+    for (size_t i = 0; i < 48; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
+}
+
+void print_fr(const fr_t *f) {
+    Bytes32 bytes;
+    bytes_from_bls_field(&bytes, f);
+    print_bytes32(&bytes);
+}
+
+void print_g1(const g1_t *g) {
+    Bytes48 bytes;
+    bytes_from_g1(&bytes, g);
+    print_bytes48(&bytes);
+}
+
+void print_blob(const Blob *blob) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
+    }
+}
+
+void print_cell(const Cell *cell) {
+    for (size_t i = 0; i < BYTES_PER_CELL; i++) {
+        if (i % BYTES_PER_FIELD_ELEMENT == 0) {
+            printf("\n");
+        }
+        printf("%02x", cell->bytes[i]);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Helper functions
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -108,6 +154,14 @@ static void get_rand_uint32(uint32_t *out) {
 static void eval_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
     *out = poly_coefficients[FIELD_ELEMENTS_PER_BLOB - 1];
     for (size_t i = FIELD_ELEMENTS_PER_BLOB - 1; i > 0; i--) {
+        blst_fr_mul(out, out, x);
+        blst_fr_add(out, out, &poly_coefficients[i - 1]);
+    }
+}
+
+static void eval_extended_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
+    *out = poly_coefficients[FIELD_ELEMENTS_PER_EXT_BLOB - 1];
+    for (size_t i = FIELD_ELEMENTS_PER_EXT_BLOB - 1; i > 0; i--) {
         blst_fr_mul(out, out, x);
         blst_fr_add(out, out, &poly_coefficients[i - 1]);
     }
@@ -1505,18 +1559,18 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    const int n_samples = 16;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
+    const int n_cells = 16;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
     Blob *blobs = NULL;
     bool ok;
 
     /* Allocate blobs because they are big */
-    ret = c_kzg_malloc((void **)&blobs, n_samples * sizeof(Blob));
+    ret = c_kzg_malloc((void **)&blobs, n_cells * sizeof(Blob));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1528,7 +1582,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
     /* Verify batched proofs for 0,1,2..16 blobs */
     /* This should still work with zero blobs */
-    for (int count = 0; count <= n_samples; count++) {
+    for (int count = 0; count <= n_cells; count++) {
         ret = verify_blob_kzg_proof_batch(
             &ok, blobs, commitments, proofs, count, &s
         );
@@ -1542,14 +1596,14 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
 static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1563,7 +1617,7 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     proofs[1] = proofs[0];
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT_EQUALS(ok, false);
@@ -1571,14 +1625,14 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
 
 static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1596,21 +1650,21 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     );
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1628,22 +1682,22 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     );
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     C_KZG_RET ret;
-    const int n_samples = 2;
-    Bytes48 proofs[n_samples];
-    KZGCommitment commitments[n_samples];
-    Blob blobs[n_samples];
+    const int n_cells = 2;
+    Bytes48 proofs[n_cells];
+    KZGCommitment commitments[n_cells];
+    Blob blobs[n_cells];
     Bytes32 field_element;
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_samples; i++) {
+    for (int i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1661,7 +1715,7 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     memcpy(blobs[1].bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
     ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_samples, &s
+        &ok, blobs, commitments, proofs, n_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -1698,6 +1752,260 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for reconstruction
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_fft(void) {
+    // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
+    // issue 444)
+    const size_t N = 8192;
+    fr_t poly_eval[N];
+    fr_t poly_coeff[N];
+    fr_t recovered_poly_coeff[N];
+
+    // Generate poly in coeff form
+    for (size_t i = 0; i < N; i++) {
+        get_rand_fr(&poly_coeff[i]);
+    }
+
+    /* Evaluate poly using FFT */
+    fft_fr(poly_eval, poly_coeff, N, &s);
+
+    /* check: result of FFT are really the evaluations of the poly */
+    for (size_t i = 0; i < N; i++) {
+        fr_t individual_evaluation;
+
+        eval_extended_poly(
+            &individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]
+        );
+
+        bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+
+    /* Turn the eval poly back into a coeff poly */
+    ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+
+    /* Check the end-to-end journey */
+    for (size_t i = 0; i < N; i++) {
+        bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+static void test_coset_fft(void) {
+    // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
+    // issue 444)
+    const size_t N = 8192;
+    fr_t poly_eval[N];
+    fr_t poly_coeff[N];
+    fr_t recovered_poly_coeff[N];
+
+    // Generate poly in coeff form
+    for (size_t i = 0; i < N; i++) {
+        get_rand_fr(&poly_coeff[i]);
+    }
+
+    /* Evaluate poly using coset FFT */
+    coset_fft_fr(poly_eval, poly_coeff, N, &s);
+
+    /* check: result of coset FFT are really the evaluations over the coset */
+    for (size_t i = 0; i < N; i++) {
+        fr_t shifted_w;
+        fr_t individual_evaluation;
+
+        blst_fr_mul(
+            &shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR
+        );
+
+        eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
+
+        bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+
+    /* Turn the eval poly back into a coeff poly */
+    coset_ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+
+    /* Check the end-to-end journey */
+    for (size_t i = 0; i < N; i++) {
+        bool ok = fr_equal(&poly_coeff[i], &recovered_poly_coeff[i]);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for deduplicate_commitments
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_deduplicate_commitments__one_duplicate(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 1, sizeof(Bytes48));
+    memset(&commitments[2], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[3], 3, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 3);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 1);
+    ASSERT_EQUALS(indices[2], 0);
+    ASSERT_EQUALS(indices[3], 2);
+}
+
+static void test_deduplicate_commitments__no_duplicates(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 1, sizeof(Bytes48));
+    memset(&commitments[2], 2, sizeof(Bytes48));
+    memset(&commitments[3], 3, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 4);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 1);
+    ASSERT_EQUALS(indices[2], 2);
+    ASSERT_EQUALS(indices[3], 3);
+}
+
+static void test_deduplicate_commitments__all_duplicates(void) {
+    Bytes48 commitments[4];
+    uint64_t indices[4];
+    size_t count = 4;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+    memset(&commitments[1], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[2], 0, sizeof(Bytes48)); /* Duplicate */
+    memset(&commitments[3], 0, sizeof(Bytes48)); /* Duplicate */
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 1);
+    ASSERT_EQUALS(indices[0], 0);
+    ASSERT_EQUALS(indices[1], 0);
+    ASSERT_EQUALS(indices[2], 0);
+    ASSERT_EQUALS(indices[3], 0);
+}
+
+static void test_deduplicate_commitments__no_commitments(void) {
+    Bytes48 commitments[0];
+    uint64_t indices[0];
+    size_t count = 0;
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 0);
+}
+
+static void test_deduplicate_commitments__one_commitment(void) {
+    Bytes48 commitments[1];
+    uint64_t indices[1];
+    size_t count = 1;
+
+    memset(&commitments[0], 0, sizeof(Bytes48));
+
+    deduplicate_commitments(commitments, indices, &count);
+
+    ASSERT_EQUALS(count, 1);
+    ASSERT_EQUALS(indices[0], 0);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for recover_cells_and_kzg_proofs
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    const size_t num_partial_cells = CELLS_PER_EXT_BLOB / 2;
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
+    Cell partial_cells[num_partial_cells];
+    Cell recovered_cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+    KZGProof recovered_proofs[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Erase half of the cells */
+    for (size_t i = 0; i < num_partial_cells; i++) {
+        cell_indices[i] = i * 2;
+        memcpy(&partial_cells[i], &cells[cell_indices[i]], sizeof(Cell));
+    }
+
+    /* Reconstruct with half of the cells */
+    ret = recover_cells_and_kzg_proofs(
+        recovered_cells,
+        recovered_proofs,
+        cell_indices,
+        partial_cells,
+        num_partial_cells,
+        &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Check that all of the cells match */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        diff = memcmp(&cells[i], &recovered_cells[i], sizeof(Cell));
+        ASSERT_EQUALS(diff, 0);
+        diff = memcmp(&proofs[i], &recovered_proofs[i], sizeof(KZGProof));
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Tests for verify_cell_kzg_proof_batch
+///////////////////////////////////////////////////////////////////////////////
+
+static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
+    C_KZG_RET ret;
+    bool ok;
+    Blob blob;
+    KZGCommitment commitment;
+    Bytes48 commitments[CELLS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Initialize list of commitments & cell indices */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        memcpy(commitments[i].bytes, &commitment, BYTES_PER_COMMITMENT);
+        cell_indices[i] = i;
+    }
+
+    /* Verify all the proofs */
+    ret = verify_cell_kzg_proof_batch(
+        &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1800,6 +2108,124 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     }
     ProfilerStop();
 }
+
+static void profile_compute_cells_and_kzg_proofs(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ProfilerStart("compute_cells_and_kzg_proofs.prof");
+    for (int i = 0; i < 5; i++) {
+        compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    }
+    ProfilerStop();
+}
+
+static void profile_recover_cells_and_kzg_proofs(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    uint64_t *cell_indices = NULL;
+    Cell *cells = NULL;
+
+    /*
+     * NOTE: this profiling function only cares about cell recovery since the
+     * proofs will always be recomputed. If we included proof computation, it
+     * would drown out cell recovery.
+     */
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells */
+    compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
+
+    /* Initialize cell indices */
+    ret = c_kzg_calloc(
+        (void **)&cell_indices, CELLS_PER_EXT_BLOB / 2, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB / 2; i++) {
+        cell_indices[i] = i;
+    }
+
+    ProfilerStart("recover_cells_and_kzg_proofs.prof");
+    for (int i = 0; i < 5; i++) {
+        recover_cells_and_kzg_proofs(
+            cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s
+        );
+    }
+    ProfilerStop();
+}
+
+static void profile_verify_cell_kzg_proof_batch(void) {
+    C_KZG_RET ret;
+    bool ok;
+    Blob blob;
+    uint64_t *cell_indices = NULL;
+    KZGCommitment commitment;
+    Cell *cells = NULL;
+    KZGProof *proofs = NULL;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the commitment to the blob */
+    ret = blob_to_kzg_commitment(&commitment, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Allocate arrays */
+    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute cells and proofs */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Initialize indices */
+    ret = c_kzg_calloc(
+        (void **)&commitments, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_calloc(
+        (void **)&cell_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        memcpy(commitments[i].bytes, &commitment, BYTES_PER_COMMITMENT);
+        cell_indices[i] = i;
+    }
+
+    ProfilerStart("verify_cell_kzg_proof_batch.prof");
+    for (int i = 0; i < 100; i++) {
+        verify_cell_kzg_proof_batch(
+            &ok,
+            &commitments,
+            cell_indices,
+            cells,
+            proofs,
+            CELLS_PER_EXT_BLOB,
+            &s
+        );
+    }
+    ProfilerStop();
+}
 #endif /* PROFILE */
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1815,7 +2241,7 @@ static void setup(void) {
     assert(fp != NULL);
 
     /* Load that trusted setup file */
-    ret = load_trusted_setup_file(&s, fp);
+    ret = load_trusted_setup_file(&s, fp, 0);
     assert(ret == C_KZG_OK);
 
     fclose(fp);
@@ -1910,6 +2336,15 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
+    RUN(test_fft);
+    RUN(test_coset_fft);
+    RUN(test_deduplicate_commitments__one_duplicate);
+    RUN(test_deduplicate_commitments__no_duplicates);
+    RUN(test_deduplicate_commitments__all_duplicates);
+    RUN(test_deduplicate_commitments__no_commitments);
+    RUN(test_deduplicate_commitments__one_commitment);
+    RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes
@@ -1924,6 +2359,9 @@ int main(void) {
     profile_verify_kzg_proof();
     profile_verify_blob_kzg_proof();
     profile_verify_blob_kzg_proof_batch();
+    profile_compute_cells_and_kzg_proofs();
+    profile_recover_cells_and_kzg_proofs();
+    profile_verify_cell_kzg_proof_batch();
 #endif
     teardown();
 

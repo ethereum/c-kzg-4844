@@ -12,12 +12,15 @@ import
 
 const
   testBase = kzgPath & "tests/"
-  BLOB_TO_KZG_COMMITMENT_TESTS = testBase & "blob_to_kzg_commitment"
-  COMPUTE_KZG_PROOF_TESTS      = testBase & "compute_kzg_proof"
-  COMPUTE_BLOB_KZG_PROOF_TESTS = testBase & "compute_blob_kzg_proof"
-  VERIFY_KZG_PROOF_TESTS       = testBase & "verify_kzg_proof"
-  VERIFY_BLOB_KZG_PROOF_TESTS  = testBase & "verify_blob_kzg_proof"
-  VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = testBase & "verify_blob_kzg_proof_batch"
+  BLOB_TO_KZG_COMMITMENT_TESTS       = testBase & "blob_to_kzg_commitment"
+  COMPUTE_KZG_PROOF_TESTS            = testBase & "compute_kzg_proof"
+  COMPUTE_BLOB_KZG_PROOF_TESTS       = testBase & "compute_blob_kzg_proof"
+  VERIFY_KZG_PROOF_TESTS             = testBase & "verify_kzg_proof"
+  VERIFY_BLOB_KZG_PROOF_TESTS        = testBase & "verify_blob_kzg_proof"
+  VERIFY_BLOB_KZG_PROOF_BATCH_TESTS  = testBase & "verify_blob_kzg_proof_batch"
+  COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
+  RECOVER_CELLS_AND_KZG_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
+  VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
 
 proc toTestName(x: string): string =
   let parts = x.split(DirSep)
@@ -39,6 +42,10 @@ proc fromHex(T: type, x: YamlNode): T =
 proc fromHexList(T: type, xList: YamlNode): seq[T] =
   for x in xList:
     result.add(T.fromHex(x.content))
+
+proc fromIntList(T: type, xList: YamlNode): seq[T] =
+  for x in xList:
+    result.add(x.content.parseInt().T)
 
 template runTests(folder: string, body: untyped) =
   let test_files = walkDirRec(folder).toSeq()
@@ -72,7 +79,7 @@ suite "yaml tests":
   var ctx: KzgCtx
 
   test "load trusted setup from string":
-    let res = loadTrustedSetupFromString(trustedSetup)
+    let res = loadTrustedSetupFromString(trustedSetup, 8)
     check res.isOk
     ctx = res.get
 
@@ -124,4 +131,36 @@ suite "yaml tests":
       commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyProofs(blobs, commitments, proofs)
+    checkBool(res)
+
+  runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      res = ctx.computeCellsAndProofs(blob)
+
+    checkRes(res):
+      let cells = KzgCell.fromHexList(n["output"][0])
+      check cells == res.get.cells
+      let proofs = KzgProof.fromHexList(n["output"][1])
+      check proofs == res.get.proofs
+
+  runTests(RECOVER_CELLS_AND_KZG_PROOFS_TESTS):
+    let
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
+      cells = KzgCell.fromHexList(n["input"]["cells"])
+      res = ctx.recoverCellsAndProofs(cellIndices, cells)
+
+    checkRes(res):
+      let expectedCells = KzgCell.fromHexList(n["output"][0])
+      check expectedCells == res.get.cells
+      let expectedProofs = KzgProof.fromHexList(n["output"][1])
+      check expectedProofs == res.get.proofs
+
+  runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
+    let
+      commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
+      cells = KzgCell.fromHexList(n["input"]["cells"])
+      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      res = ctx.verifyProofs(commitments, cellIndices, cells, proofs)
     checkBool(res)

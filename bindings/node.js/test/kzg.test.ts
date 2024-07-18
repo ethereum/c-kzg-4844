@@ -13,6 +13,7 @@ interface TestMeta<I extends Record<string, any>, O extends boolean | string | s
 import kzg from "../lib/kzg";
 import type {ProofResult} from "../lib/kzg";
 const {
+  // EIP-4844
   loadTrustedSetup,
   blobToKzgCommitment,
   computeKzgProof,
@@ -23,8 +24,13 @@ const {
   BYTES_PER_BLOB,
   BYTES_PER_COMMITMENT,
   BYTES_PER_PROOF,
-  BYTES_PER_FIELD_ELEMENT,
+
+  // EIP-7594
+  computeCellsAndKzgProofs,
+  verifyCellKzgProofBatch,
+  recoverCellsAndKzgProofs,
 } = kzg;
+
 // not exported by types, only exported for testing purposes
 const getTrustedSetupFilepath = (kzg as any).getTrustedSetupFilepath as (filePath?: string) => string;
 const DEFAULT_TRUSTED_SETUP_PATH = (kzg as any).DEFAULT_TRUSTED_SETUP_PATH as string;
@@ -41,12 +47,25 @@ const VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
+const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
+const RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
+
+const BYTES_PER_FIELD_ELEMENT = 32;
+
 type BlobToKzgCommitmentTest = TestMeta<{blob: string}, string>;
 type ComputeKzgProofTest = TestMeta<{blob: string; z: string}, string[]>;
 type ComputeBlobKzgProofTest = TestMeta<{blob: string; commitment: string}, string>;
 type VerifyKzgProofTest = TestMeta<{commitment: string; y: string; z: string; proof: string}, boolean>;
 type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof: string}, boolean>;
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
+
+type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
+type VerifyCellKzgProofBatchTest = TestMeta<
+  {commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[]},
+  boolean
+>;
 
 const blobValidLength = randomBytes(BYTES_PER_BLOB);
 const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
@@ -171,7 +190,7 @@ function testArgCount(fn: (...args: any[]) => any, validArgs: any[]): void {
 
 describe("C-KZG", () => {
   beforeAll(async () => {
-    loadTrustedSetup(TEST_SETUP_FILE_PATH_JSON);
+    loadTrustedSetup(0, TEST_SETUP_FILE_PATH_JSON);
   });
 
   describe("locating trusted setup file", () => {
@@ -335,6 +354,97 @@ describe("C-KZG", () => {
 
         try {
           valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(valid).toEqual(test.output);
+      });
+    });
+
+    it("reference tests for computeCellsAndKzgProofs should pass", () => {
+      const tests = globSync(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: ComputeCellsAndKzgProofsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let cells;
+        let proofs;
+        const blob = bytesFromHex(test.input.blob);
+
+        try {
+          [cells, proofs] = computeCellsAndKzgProofs(blob);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        expect(test.output.length).toBe(2);
+        const expectedCells = test.output[0].map(bytesFromHex);
+        const expectedProofs = test.output[1].map(bytesFromHex);
+        expect(cells.length).toBe(expectedCells.length);
+        for (let i = 0; i < cells.length; i++) {
+          assertBytesEqual(cells[i], expectedCells[i]);
+        }
+        expect(proofs.length).toBe(expectedProofs.length);
+        for (let i = 0; i < proofs.length; i++) {
+          assertBytesEqual(proofs[i], expectedProofs[i]);
+        }
+      });
+    });
+
+    it("reference tests for recoverCellsAndKzgProofs should pass", () => {
+      const tests = globSync(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: RecoverCellsAndKzgProofsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let recoveredCells;
+        let recoveredProofs;
+        const cellIndices = test.input.cell_indices;
+        const cells = test.input.cells.map(bytesFromHex);
+
+        try {
+          [recoveredCells, recoveredProofs] = recoverCellsAndKzgProofs(cellIndices, cells);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        expect(test.output.length).toBe(2);
+        const expectedCells = test.output[0].map(bytesFromHex);
+        const expectedProofs = test.output[1].map(bytesFromHex);
+        expect(recoveredCells.length).toBe(expectedCells.length);
+        for (let i = 0; i < recoveredCells.length; i++) {
+          assertBytesEqual(recoveredCells[i], expectedCells[i]);
+        }
+        expect(recoveredProofs.length).toBe(expectedProofs.length);
+        for (let i = 0; i < recoveredProofs.length; i++) {
+          assertBytesEqual(recoveredProofs[i], expectedProofs[i]);
+        }
+      });
+    });
+
+    it("reference tests for verifyCellKzgProofBatch should pass", () => {
+      const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let valid;
+        const commitments = test.input.commitments.map(bytesFromHex);
+        const cellIndices = test.input.cell_indices;
+        const cells = test.input.cells.map(bytesFromHex);
+        const proofs = test.input.proofs.map(bytesFromHex);
+
+        try {
+          valid = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
         } catch (err) {
           expect(test.output).toBeNull();
           return;

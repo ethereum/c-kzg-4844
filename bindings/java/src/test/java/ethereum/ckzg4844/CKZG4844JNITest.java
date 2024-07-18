@@ -1,5 +1,9 @@
 package ethereum.ckzg4844;
 
+import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_CELL;
+import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_COMMITMENT;
+import static ethereum.ckzg4844.CKZG4844JNI.BYTES_PER_PROOF;
+import static ethereum.ckzg4844.CKZG4844JNI.CELLS_PER_EXT_BLOB;
 import static ethereum.ckzg4844.CKZGException.CKZGError.C_KZG_BADARGS;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ethereum.ckzg4844.test_formats.*;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,8 +30,6 @@ public class CKZG4844JNITest {
 
   private static final String TRUSTED_SETUP_FILE = "../../src/trusted_setup.txt";
   private static final String TRUSTED_SETUP_RESOURCE = "/trusted-setups/trusted_setup.txt";
-  private static final String OLD_TRUSTED_SETUP_FILE =
-      "./src/testFixtures/resources/trusted-setups/trusted_setup_old.txt";
 
   static {
     CKZG4844JNI.loadNativeLibrary();
@@ -118,6 +121,49 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
+  @MethodSource("getComputeCellsAndKzgProofsTests")
+  public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
+    try {
+      CellsAndProofs cellsAndProofs =
+          CKZG4844JNI.computeCellsAndKzgProofs(test.getInput().getBlob());
+      assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
+      assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getRecoverCellsAndKzgProofsTests")
+  public void recoverCellsAndKzgProofsTests(final RecoverCellsAndKzgProofsTest test) {
+    try {
+      final CellsAndProofs recoveredCellsAndProofs =
+          CKZG4844JNI.recoverCellsAndKzgProofs(
+              test.getInput().getCellIndices(), test.getInput().getCells());
+      assertArrayEquals(test.getOutput().getCells(), recoveredCellsAndProofs.getCells());
+      assertArrayEquals(test.getOutput().getProofs(), recoveredCellsAndProofs.getProofs());
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getVerifyCellKzgProofBatchTests")
+  public void verifyCellKzgProofBatchTests(final VerifyCellKzgProofBatchTest test) {
+    try {
+      boolean valid =
+          CKZG4844JNI.verifyCellKzgProofBatch(
+              test.getInput().getCommitments(),
+              test.getInput().getCellIndices(),
+              test.getInput().getCells(),
+              test.getInput().getProofs());
+      assertEquals(test.getOutput(), valid);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
   @EnumSource(TrustedSetupSource.class)
   public void testVerifyBlobKzgProofBatch(final TrustedSetupSource trustedSetupSource) {
     loadTrustedSetup(trustedSetupSource);
@@ -154,8 +200,67 @@ public class CKZG4844JNITest {
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] z_bytes = TestUtils.randomBLSFieldElementBytes();
     final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
-    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proofAndY.getProof().length);
+    assertEquals(BYTES_PER_PROOF, proofAndY.getProof().length);
     assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkRecoverCellsAndKzgProofs() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndKzgProofs(blob);
+    final byte[] cells = cellsAndProofs.getCells();
+    final byte[] proofs = cellsAndProofs.getProofs();
+    final byte[] partialCells = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
+    System.arraycopy(cells, 0, partialCells, 0, partialCells.length);
+    final long[] cellIndices = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
+    final CellsAndProofs recoveredCellsAndProofs =
+        CKZG4844JNI.recoverCellsAndKzgProofs(cellIndices, partialCells);
+    assertArrayEquals(cells, recoveredCellsAndProofs.getCells());
+    assertArrayEquals(proofs, recoveredCellsAndProofs.getProofs());
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkVerifyCellBatch() {
+    loadTrustedSetup();
+
+    final int count = 6;
+    final int commitmentsLength = CELLS_PER_EXT_BLOB * BYTES_PER_COMMITMENT;
+    final int cellsLength = CELLS_PER_EXT_BLOB * BYTES_PER_CELL;
+    final int proofsLength = CELLS_PER_EXT_BLOB * BYTES_PER_PROOF;
+
+    final byte[] commitments = new byte[count * commitmentsLength];
+    final CellsAndProofs[] data = new CellsAndProofs[count];
+    final long[] cellIndices = new long[count * CELLS_PER_EXT_BLOB];
+    final byte[] cells = new byte[count * cellsLength];
+    final byte[] proofs = new byte[count * proofsLength];
+
+    for (int i = 0; i < count; i++) {
+      final byte[] blob = TestUtils.createRandomBlob();
+      final byte[] commitment = CKZG4844JNI.blobToKzgCommitment(blob);
+      for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
+        System.arraycopy(
+            commitment,
+            0,
+            commitments,
+            i * commitmentsLength + j * BYTES_PER_COMMITMENT,
+            BYTES_PER_COMMITMENT);
+      }
+      data[i] = CKZG4844JNI.computeCellsAndKzgProofs(blob);
+      System.arraycopy(data[i].getCells(), 0, cells, i * cellsLength, cellsLength);
+      System.arraycopy(data[i].getProofs(), 0, proofs, i * proofsLength, proofsLength);
+    }
+
+    for (int i = 0; i < count; i++) {
+      for (int j = 0; j < CELLS_PER_EXT_BLOB; j++) {
+        final int index = i * CELLS_PER_EXT_BLOB + j;
+        cellIndices[index] = j;
+      }
+    }
+
+    assertTrue(CKZG4844JNI.verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs));
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -165,7 +270,7 @@ public class CKZG4844JNITest {
     final byte[] blob = TestUtils.createRandomBlob();
     final byte[] commitment = TestUtils.createRandomCommitment();
     final byte[] proof = CKZG4844JNI.computeBlobKzgProof(blob, commitment);
-    assertEquals(CKZG4844JNI.BYTES_PER_PROOF, proof.length);
+    assertEquals(BYTES_PER_PROOF, proof.length);
     CKZG4844JNI.freeTrustedSetup();
   }
 
@@ -297,44 +402,57 @@ public class CKZG4844JNITest {
   }
 
   @Test
-  public void shouldThrowExceptionIfTrustedSetupIsNotInLagrangeForm() {
-    CKZGException exception =
-        assertThrows(
-            CKZGException.class, () -> CKZG4844JNI.loadTrustedSetup(OLD_TRUSTED_SETUP_FILE));
-
-    assertEquals(C_KZG_BADARGS, exception.getError());
-  }
-
-  @Test
   public void shouldThrowExceptionOnIncorrectTrustedSetupParameters() {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
 
-    // wrong g1Count
+    // wrong g1 monomial points
     CKZGException exception =
         assertThrows(
             CKZGException.class,
             () ->
                 CKZG4844JNI.loadTrustedSetup(
-                    parameters.getG1(),
-                    parameters.getG1Count() + 1,
-                    parameters.getG2(),
-                    parameters.getG2Count()));
+                    new byte[27], // wrong g1 monomial
+                    parameters.getG1LagrangeBytes(),
+                    parameters.getG2MonomialBytes(),
+                    0));
     assertEquals(C_KZG_BADARGS, exception.getError());
-    assertTrue(exception.getErrorMessage().contains("Invalid g1 size."));
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
 
-    // wrong g2Count
+    // wrong g1 lagrange points
     exception =
         assertThrows(
             CKZGException.class,
             () ->
                 CKZG4844JNI.loadTrustedSetup(
-                    parameters.getG1(),
-                    parameters.getG1Count(),
-                    parameters.getG2(),
-                    parameters.getG2Count() + 1));
+                    parameters.getG1MonomialBytes(),
+                    new byte[27], // wrong g1 lagrange
+                    parameters.getG2MonomialBytes(),
+                    0));
     assertEquals(C_KZG_BADARGS, exception.getError());
-    assertTrue(exception.getErrorMessage().contains("Invalid g2 size."));
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
+
+    // wrong g2 monomial points
+    exception =
+        assertThrows(
+            CKZGException.class,
+            () ->
+                CKZG4844JNI.loadTrustedSetup(
+                    parameters.getG1MonomialBytes(),
+                    parameters.getG1LagrangeBytes(),
+                    new byte[27], // wrong g1 lagrange
+                    0));
+    assertEquals(C_KZG_BADARGS, exception.getError());
+    assertTrue(
+        exception
+            .getErrorMessage()
+            .contains("There was an error while loading the Trusted Setup."));
   }
 
   private void assertExceptionIsTrustedSetupIsNotLoaded(final RuntimeException exception) {
@@ -356,18 +474,21 @@ public class CKZG4844JNITest {
   }
 
   private static void loadTrustedSetup() {
-    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE);
+    CKZG4844JNI.loadTrustedSetup(TRUSTED_SETUP_FILE, 0);
   }
 
   private static void loadTrustedSetupFromParameters() {
     final LoadTrustedSetupParameters parameters =
         TestUtils.createLoadTrustedSetupParameters(TRUSTED_SETUP_FILE);
     CKZG4844JNI.loadTrustedSetup(
-        parameters.getG1(), parameters.getG1Count(), parameters.getG2(), parameters.getG2Count());
+        parameters.getG1MonomialBytes(),
+        parameters.getG1LagrangeBytes(),
+        parameters.getG2MonomialBytes(),
+        0);
   }
 
   public static void loadTrustedSetupFromResource() {
-    CKZG4844JNI.loadTrustedSetupFromResource(TRUSTED_SETUP_RESOURCE, CKZG4844JNITest.class);
+    CKZG4844JNI.loadTrustedSetupFromResource(TRUSTED_SETUP_RESOURCE, CKZG4844JNITest.class, 0);
   }
 
   private static Stream<BlobToKzgCommitmentTest> getBlobToKzgCommitmentTests() {
@@ -398,6 +519,24 @@ public class CKZG4844JNITest {
   private static Stream<VerifyBlobKzgProofBatchTest> getVerifyBlobKzgProofBatchTests() {
     loadTrustedSetup();
     return TestUtils.getVerifyBlobKzgProofBatchTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeCellsAndKzgProofsTest> getComputeCellsAndKzgProofsTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeCellsAndKzgProofsTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<RecoverCellsAndKzgProofsTest> getRecoverCellsAndKzgProofsTests() {
+    loadTrustedSetup();
+    return TestUtils.getRecoverCellsAndKzgProofsTests().stream()
+        .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<VerifyCellKzgProofBatchTest> getVerifyCellKzgProofBatchTests() {
+    loadTrustedSetup();
+    return TestUtils.getVerifyCellKzgProofBatchTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
   }
 }
