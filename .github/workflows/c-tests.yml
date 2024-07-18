@@ -29,11 +29,11 @@ jobs:
 
       # Check formatting.
       # Only need to check this once.
-      - name: Check formatting
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          make format
-          git diff --exit-code
+      - name: Run clang-format
+        uses: jidicula/clang-format-action@v4.13.0
+        with:
+          clang-format-version: '18'
+          check-path: 'src'
 
       # Build and test.
       - name: Build
