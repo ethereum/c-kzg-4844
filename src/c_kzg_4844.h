@@ -38,31 +38,22 @@ extern "C" {
 
 /** The number of bytes in a KZG commitment. */
 #define BYTES_PER_COMMITMENT 48
-
 /** The number of bytes in a KZG proof. */
 #define BYTES_PER_PROOF 48
-
 /** The number of bytes in a BLS scalar field element. */
 #define BYTES_PER_FIELD_ELEMENT 32
-
 /** The number of bits in a BLS scalar field element. */
 #define BITS_PER_FIELD_ELEMENT 255
-
 /** The number of field elements in a blob. */
 #define FIELD_ELEMENTS_PER_BLOB 4096
-
 /** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
-
 /** The number of field elements in an extended blob */
 #define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
-
 /** The number of field elements in a cell. */
 #define FIELD_ELEMENTS_PER_CELL 64
-
 /** The number of cells in an extended blob. */
 #define CELLS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
-
 /** The number of bytes in a single cell. */
 #define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
 
@@ -74,49 +65,33 @@ typedef blst_p1 g1_t; /**< Internal G1 group element type. */
 typedef blst_p2 g2_t; /**< Internal G2 group element type. */
 typedef blst_fr fr_t; /**< Internal Fr field element type. */
 
-/**
- * An array of 32 bytes. Represents an untrusted
- * (potentially invalid) field element.
- */
+/** An array of 32 bytes. Represents an untrusted (potentially invalid) field element. */
 typedef struct {
     uint8_t bytes[32];
 } Bytes32;
 
-/**
- * An array of 48 bytes. Represents an untrusted
- * (potentially invalid) commitment/proof.
- */
+/** An array of 48 bytes. Represents an untrusted (potentially invalid) commitment/proof. */
 typedef struct {
     uint8_t bytes[48];
 } Bytes48;
 
-/**
- * A basic blob data.
- */
+/** A basic blob data. */
 typedef struct {
     uint8_t bytes[BYTES_PER_BLOB];
 } Blob;
 
-/**
- * A trusted (valid) KZG commitment.
- */
+/** A trusted (valid) KZG commitment. */
 typedef Bytes48 KZGCommitment;
 
-/**
- * A trusted (valid) KZG proof.
- */
+/** A trusted (valid) KZG proof. */
 typedef Bytes48 KZGProof;
 
-/**
- * A single cell for a blob.
- */
+/** A single cell for a blob. */
 typedef struct {
     uint8_t bytes[BYTES_PER_CELL];
 } Cell;
 
-/**
- * The common return type for all routines in which something can go wrong.
- */
+/** The common return type for all routines in which something can go wrong. */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
     C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
@@ -124,28 +99,22 @@ typedef enum {
     C_KZG_MALLOC,  /**< Could not allocate memory. */
 } C_KZG_RET;
 
-/**
- * Stores the setup and parameters needed for computing KZG proofs.
- */
+/** Stores the setup and parameters needed for computing KZG proofs. */
 typedef struct {
     /** The length of `roots_of_unity`, a power of 2. */
     uint64_t max_width;
-    /** Powers of the primitive root of unity determined by
-     * `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,
-     * length `max_width`. */
+    /** Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal
+     * permutation order, length `max_width`. */
     fr_t *roots_of_unity;
     /** The expanded roots of unity. */
     fr_t *expanded_roots_of_unity;
     /** The bit-reversal permuted roots of unity. */
     fr_t *reverse_roots_of_unity;
-    /** G1 group elements from the trusted setup,
-     * in monomial form. */
+    /** G1 group elements from the trusted setup in monomial form. */
     g1_t *g1_values_monomial;
-    /** G1 group elements from the trusted setup,
-     * in Lagrange form bit-reversal permutation. */
+    /** G1 group elements from the trusted setup in Lagrange form and bit-reversed order. */
     g1_t *g1_values_lagrange_brp;
-    /** G2 group elements from the trusted setup,
-     * in monomial form. */
+    /** G2 group elements from the trusted setup in monomial form. */
     g2_t *g2_values_monomial;
     /** Data used during FK20 proof generation. */
     g1_t **x_ext_fft_columns;
