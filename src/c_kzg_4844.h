@@ -61,8 +61,7 @@ extern "C" {
 #define FIELD_ELEMENTS_PER_CELL 64
 
 /** The number of cells in an extended blob. */
-#define CELLS_PER_EXT_BLOB \
-    (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
+#define CELLS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
 
 /** The number of bytes in a single cell. */
 #define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
@@ -173,15 +172,11 @@ C_KZG_RET load_trusted_setup(
     size_t precompute
 );
 
-C_KZG_RET load_trusted_setup_file(
-    KZGSettings *out, FILE *in, size_t precompute
-);
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute);
 
 void free_trusted_setup(KZGSettings *s);
 
-C_KZG_RET blob_to_kzg_commitment(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
-);
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s);
 
 C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
@@ -192,10 +187,7 @@ C_KZG_RET compute_kzg_proof(
 );
 
 C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const KZGSettings *s
+    KZGProof *out, const Blob *blob, const Bytes48 *commitment_bytes, const KZGSettings *s
 );
 
 C_KZG_RET verify_kzg_proof(

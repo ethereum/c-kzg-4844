@@ -63,12 +63,10 @@ typedef struct {
 static const char *FIAT_SHAMIR_PROTOCOL_DOMAIN = "FSBLOBVERIFY_V1_";
 
 /** The domain separator for verify_blob_kzg_proof's random challenge. */
-static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH =
-    "RCKZGBATCH___V1_";
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH = "RCKZGBATCH___V1_";
 
 /** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
-static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH =
-    "RCKZGCBATCH__V1_";
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGCBATCH__V1_";
 
 /** Length of the domain strings above. */
 #define DOMAIN_STR_LENGTH 16
@@ -470,9 +468,7 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal
  */
-static bool pairings_verify(
-    const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2
-) {
+static bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
     blst_fp12 loop0, loop1, gt_point;
     blst_p1_affine aa1, bb1;
     blst_p2_affine aa2, bb2;
@@ -585,8 +581,7 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
 
     /* Convert the bytes to a p1 point */
     /* The uncompress routine checks that the point is on the curve */
-    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS)
-        return C_KZG_BADARGS;
+    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS) return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
     /* The point at infinity is accepted! */
@@ -636,8 +631,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
 }
 
 /* Input size to the Fiat-Shamir challenge computation. */
-#define CHALLENGE_INPUT_SIZE \
-    (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
+#define CHALLENGE_INPUT_SIZE (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
 
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
@@ -648,9 +642,7 @@ static C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob) {
  *
  * @remark This function should compute challenges even if `n == 0`.
  */
-static void compute_challenge(
-    fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment
-) {
+static void compute_challenge(fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment) {
     Bytes32 eval_challenge;
     uint8_t bytes[CHALLENGE_INPUT_SIZE];
 
@@ -692,9 +684,7 @@ static void compute_challenge(
  * This function computes the result naively without using Pippenger's
  * algorithm.
  */
-static void g1_lincomb_naive(
-    g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
-) {
+static void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
     g1_t tmp;
     *out = G1_IDENTITY;
     for (uint64_t i = 0; i < len; i++) {
@@ -732,9 +722,7 @@ static void g1_lincomb_naive(
  *
  * We do the second of these to save memory here.
  */
-static C_KZG_RET g1_lincomb_fast(
-    g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len
-) {
+static C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
     C_KZG_RET ret;
     void *scratch = NULL;
     blst_p1 *p_filtered = NULL;
@@ -796,9 +784,7 @@ static C_KZG_RET g1_lincomb_fast(
     /* Call the Pippenger implementation */
     const byte *scalars_arg[2] = {(byte *)scalars, NULL};
     const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-    blst_p1s_mult_pippenger(
-        out, points_arg, new_len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch
-    );
+    blst_p1s_mult_pippenger(out, points_arg, new_len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch);
     ret = C_KZG_OK;
 
 out:
@@ -900,14 +886,9 @@ out:
  * @param[in]  p   The polynomial to commit to
  * @param[in]  s   The trusted setup
  */
-static C_KZG_RET poly_to_kzg_commitment(
-    g1_t *out, const Polynomial *p, const KZGSettings *s
-) {
+static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
     return g1_lincomb_fast(
-        out,
-        s->g1_values_lagrange_brp,
-        (const fr_t *)(&p->evals),
-        FIELD_ELEMENTS_PER_BLOB
+        out, s->g1_values_lagrange_brp, (const fr_t *)(&p->evals), FIELD_ELEMENTS_PER_BLOB
     );
 }
 
@@ -918,9 +899,7 @@ static C_KZG_RET poly_to_kzg_commitment(
  * @param[in]  blob The blob representing the polynomial to be committed to
  * @param[in]  s    The trusted setup
  */
-C_KZG_RET blob_to_kzg_commitment(
-    KZGCommitment *out, const Blob *blob, const KZGSettings *s
-) {
+C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s) {
     C_KZG_RET ret;
     Polynomial p;
     g1_t commitment;
@@ -978,9 +957,7 @@ C_KZG_RET verify_kzg_proof(
     if (ret != C_KZG_OK) return ret;
 
     /* Call helper to do pairings check */
-    return verify_kzg_proof_impl(
-        ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s
-    );
+    return verify_kzg_proof_impl(ok, &commitment_g1, &z_fr, &y_fr, &proof_g1, s);
 }
 
 /**
@@ -1144,10 +1121,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 
     g1_t out_g1;
     ret = g1_lincomb_fast(
-        &out_g1,
-        s->g1_values_lagrange_brp,
-        (const fr_t *)(&q.evals),
-        FIELD_ELEMENTS_PER_BLOB
+        &out_g1, s->g1_values_lagrange_brp, (const fr_t *)(&q.evals), FIELD_ELEMENTS_PER_BLOB
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -1170,10 +1144,7 @@ out:
  * @param[in]  s                The trusted setup
  */
 C_KZG_RET compute_blob_kzg_proof(
-    KZGProof *out,
-    const Blob *blob,
-    const Bytes48 *commitment_bytes,
-    const KZGSettings *s
+    KZGProof *out, const Blob *blob, const Bytes48 *commitment_bytes, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     Polynomial polynomial;
@@ -1191,9 +1162,7 @@ C_KZG_RET compute_blob_kzg_proof(
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
     /* Call helper function to compute proof and y */
-    ret = compute_kzg_proof_impl(
-        out, &y, &polynomial, &evaluation_challenge_fr, s
-    );
+    ret = compute_kzg_proof_impl(out, &y, &polynomial, &evaluation_challenge_fr, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -1236,15 +1205,11 @@ C_KZG_RET verify_blob_kzg_proof(
     compute_challenge(&evaluation_challenge_fr, blob, &commitment_g1);
 
     /* Evaluate challenge to get y */
-    ret = evaluate_polynomial_in_evaluation_form(
-        &y_fr, &polynomial, &evaluation_challenge_fr, s
-    );
+    ret = evaluate_polynomial_in_evaluation_form(&y_fr, &polynomial, &evaluation_challenge_fr, s);
     if (ret != C_KZG_OK) return ret;
 
     /* Call helper to do pairings check */
-    return verify_kzg_proof_impl(
-        ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s
-    );
+    return verify_kzg_proof_impl(ok, &commitment_g1, &evaluation_challenge_fr, &y_fr, &proof_g1, s);
 }
 
 /**
@@ -1269,10 +1234,9 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     Bytes32 r_bytes;
     fr_t r;
 
-    size_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) +
-                        sizeof(uint64_t) +
-                        (n * (BYTES_PER_COMMITMENT +
-                              2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
+    size_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) + sizeof(uint64_t) +
+                        (n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF)
+                        );
     ret = c_kzg_malloc((void **)&bytes, input_size);
     if (ret != C_KZG_OK) goto out;
 
@@ -1280,11 +1244,7 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(
-        offset,
-        RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH,
-        DOMAIN_STR_LENGTH
-    );
+    memcpy(offset, RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH, DOMAIN_STR_LENGTH);
     offset += DOMAIN_STR_LENGTH;
 
     /* Copy degree of the polynomial */
@@ -1398,9 +1358,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
     /* Do the pairing check! */
-    *ok = pairings_verify(
-        &proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator()
-    );
+    *ok = pairings_verify(&proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());
 
 out:
     c_kzg_free(r_powers);
@@ -1447,9 +1405,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
 
     /* For a single blob, just do a regular single verification */
     if (n == 1) {
-        return verify_blob_kzg_proof(
-            ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s
-        );
+        return verify_blob_kzg_proof(ok, &blobs[0], &commitments_bytes[0], &proofs_bytes[0], s);
     }
 
     /* We will need a bunch of arrays to store our objects... */
@@ -1466,18 +1422,14 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         Polynomial polynomial;
 
         /* Convert each commitment to a g1 point */
-        ret = bytes_to_kzg_commitment(
-            &commitments_g1[i], &commitments_bytes[i]
-        );
+        ret = bytes_to_kzg_commitment(&commitments_g1[i], &commitments_bytes[i]);
         if (ret != C_KZG_OK) goto out;
 
         /* Convert each blob from bytes to a poly */
         ret = blob_to_polynomial(&polynomial, &blobs[i]);
         if (ret != C_KZG_OK) goto out;
 
-        compute_challenge(
-            &evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]
-        );
+        compute_challenge(&evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]);
 
         ret = evaluate_polynomial_in_evaluation_form(
             &ys_fr[i], &polynomial, &evaluation_challenges_fr[i], s
@@ -1532,20 +1484,13 @@ static bool is_power_of_two(uint64_t n) {
  * @param[in]  n            Length of the FFT, must be a power of two
  */
 static void fft_g1_fast(
-    g1_t *out,
-    const g1_t *in,
-    uint64_t stride,
-    const fr_t *roots,
-    uint64_t roots_stride,
-    uint64_t n
+    g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride, uint64_t n
 ) {
     g1_t y_times_root;
     uint64_t half = n / 2;
     if (half > 0) { /* Tunable parameter */
         fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_g1_fast(
-            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
-        );
+        fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             /* If the point is infinity, we can skip the calculation */
             if (blst_p1_is_inf(&out[i + half])) {
@@ -1555,9 +1500,7 @@ static void fft_g1_fast(
                 if (fr_is_one(&roots[i * roots_stride])) {
                     y_times_root = out[i + half];
                 } else {
-                    g1_mul(
-                        &y_times_root, &out[i + half], &roots[i * roots_stride]
-                    );
+                    g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
                 }
                 g1_sub(&out[i + half], &out[i], &y_times_root);
                 blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
@@ -1690,9 +1633,7 @@ static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
  *         bit-reversing n. As opposed to reverse_bits, this bit-reversal
  *         operates on log2(n)-bit numbers.
  */
-static C_KZG_RET bit_reversal_permutation(
-    void *values, size_t size, uint64_t n
-) {
+static C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     C_KZG_RET ret;
     byte *tmp = NULL;
     byte *v = values;
@@ -1734,9 +1675,7 @@ out:
  * @remark `root` must be such that `root ^ width` is equal to one, but
  *         no smaller power of `root` is equal to one.
  */
-static C_KZG_RET expand_root_of_unity(
-    fr_t *out, const fr_t *root, uint64_t width
-) {
+static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
     uint64_t i;
 
     /* We assume it's at least two */
@@ -1784,28 +1723,19 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(
-        s->expanded_roots_of_unity, &root_of_unity, s->max_width
-    );
+    ret = expand_root_of_unity(s->expanded_roots_of_unity, &root_of_unity, s->max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
-    memcpy(
-        s->roots_of_unity,
-        s->expanded_roots_of_unity,
-        sizeof(fr_t) * s->max_width
-    );
+    memcpy(s->roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
 
     /* Permute the roots of unity */
-    ret = bit_reversal_permutation(
-        s->roots_of_unity, sizeof(fr_t), s->max_width
-    );
+    ret = bit_reversal_permutation(s->roots_of_unity, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Populate reverse roots of unity */
     for (uint64_t i = 0; i <= s->max_width; i++) {
-        s->reverse_roots_of_unity[i] =
-            s->expanded_roots_of_unity[s->max_width - i];
+        s->reverse_roots_of_unity[i] = s->expanded_roots_of_unity[s->max_width - i];
     }
 
 out:
@@ -1860,9 +1790,7 @@ void free_trusted_setup(KZGSettings *s) {
  * @param[in]   n   The length of the input vector x
  * @param[in]   s   The trusted setup
  */
-static C_KZG_RET toeplitz_part_1(
-    g1_t *out, const g1_t *x, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t n2 = n * 2;
     g1_t *x_ext;
@@ -1949,9 +1877,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
 
         /* Allocate space for points in affine representation */
-        ret = c_kzg_calloc(
-            (void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine)
-        );
+        ret = c_kzg_calloc((void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine));
         if (ret != C_KZG_OK) goto out;
 
         /* Calculate the size of each table, this can be re-used */
@@ -1976,9 +1902,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         }
 
         /* Calculate the size of the scratch */
-        s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(
-            FIELD_ELEMENTS_PER_CELL
-        );
+        s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL);
     }
 
 out:
@@ -1995,9 +1919,7 @@ out:
  * @param[in] n1 Number of `g1` points in trusted_setup
  * @param[in] n2 Number of `g2` points in trusted_setup
  */
-static C_KZG_RET is_trusted_setup_in_lagrange_form(
-    const KZGSettings *s, size_t n1, size_t n2
-) {
+static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t n1, size_t n2) {
     /* Trusted setup is too small; we can't work with this */
     if (n1 < 2 || n2 < 2) {
         return C_KZG_BADARGS;
@@ -2105,9 +2027,7 @@ C_KZG_RET load_trusted_setup(
     /* Convert all g1 monomial bytes to g1 points */
     for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
-        BLST_ERROR err = blst_p1_uncompress(
-            &g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]
-        );
+        BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]);
         if (err != BLST_SUCCESS) {
             ret = C_KZG_BADARGS;
             goto out_error;
@@ -2118,9 +2038,7 @@ C_KZG_RET load_trusted_setup(
     /* Convert all g1 Lagrange bytes to g1 points */
     for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
-        BLST_ERROR err = blst_p1_uncompress(
-            &g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]
-        );
+        BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]);
         if (err != BLST_SUCCESS) {
             ret = C_KZG_BADARGS;
             goto out_error;
@@ -2131,9 +2049,7 @@ C_KZG_RET load_trusted_setup(
     /* Convert all g2 bytes to g2 points */
     for (uint64_t i = 0; i < NUM_G2_POINTS; i++) {
         blst_p2_affine g2_affine;
-        BLST_ERROR err = blst_p2_uncompress(
-            &g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]
-        );
+        BLST_ERROR err = blst_p2_uncompress(&g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]);
         if (err != BLST_SUCCESS) {
             ret = C_KZG_BADARGS;
             goto out_error;
@@ -2150,9 +2066,7 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
 
     /* Bit reverse the Lagrange form points */
-    ret = bit_reversal_permutation(
-        out->g1_values_lagrange_brp, sizeof(g1_t), NUM_G1_POINTS
-    );
+    ret = bit_reversal_permutation(out->g1_values_lagrange_brp, sizeof(g1_t), NUM_G1_POINTS);
     if (ret != C_KZG_OK) goto out_error;
 
     /* Setup for FK20 proof computation */
@@ -2185,9 +2099,7 @@ out_success:
  *         the first two numbers are in decimal and the remainder are hexstrings
  *         and any whitespace can be used as separators.
  */
-C_KZG_RET load_trusted_setup_file(
-    KZGSettings *out, FILE *in, size_t precompute
-) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
     C_KZG_RET ret;
     int num_matches;
     uint64_t i;
@@ -2196,17 +2108,11 @@ C_KZG_RET load_trusted_setup_file(
     uint8_t *g2_monomial_bytes = NULL;
 
     /* Allocate space for points */
-    ret = c_kzg_calloc(
-        (void **)&g1_monomial_bytes, NUM_G1_POINTS, BYTES_PER_G1
-    );
+    ret = c_kzg_calloc((void **)&g1_monomial_bytes, NUM_G1_POINTS, BYTES_PER_G1);
     if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc(
-        (void **)&g1_lagrange_bytes, NUM_G1_POINTS, BYTES_PER_G1
-    );
+    ret = c_kzg_calloc((void **)&g1_lagrange_bytes, NUM_G1_POINTS, BYTES_PER_G1);
     if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc(
-        (void **)&g2_monomial_bytes, NUM_G2_POINTS, BYTES_PER_G2
-    );
+    ret = c_kzg_calloc((void **)&g2_monomial_bytes, NUM_G2_POINTS, BYTES_PER_G2);
     if (ret != C_KZG_OK) goto out;
 
     /* Read the number of g1 points */
@@ -2286,24 +2192,15 @@ out:
  * @param[in]   n               Length of the FFT, must be a power of two
  */
 static void fft_fr_fast(
-    fr_t *out,
-    const fr_t *in,
-    size_t stride,
-    const fr_t *roots,
-    size_t roots_stride,
-    size_t n
+    fr_t *out, const fr_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n
 ) {
     size_t half = n / 2;
     if (half > 0) {
         fr_t y_times_root;
         fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_fr_fast(
-            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
-        );
+        fft_fr_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (size_t i = 0; i < half; i++) {
-            blst_fr_mul(
-                &y_times_root, &out[i + half], &roots[i * roots_stride]
-            );
+            blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
             blst_fr_sub(&out[i + half], &out[i], &y_times_root);
             blst_fr_add(&out[i], &out[i], &y_times_root);
         }
@@ -2323,9 +2220,7 @@ static void fft_fr_fast(
  * @remark The array lengths must be a power of two.
  * @remark Use ifft_fr() for inverse transformation.
  */
-static C_KZG_RET fft_fr(
-    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -2348,9 +2243,7 @@ static C_KZG_RET fft_fr(
  * @remark The array lengths must be a power of two.
  * @remark Use fft_fr() for forward transformation.
  */
-static C_KZG_RET ifft_fr(
-    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -2416,11 +2309,7 @@ static inline uint64_t next_power_of_two(uint64_t v) {
  * @remark `dst_len` must be at least `indices_len + 1` in length.
  */
 static C_KZG_RET do_zero_poly_mul_partial(
-    fr_t *dst,
-    size_t *dst_len,
-    const uint64_t *indices,
-    uint64_t indices_len,
-    const KZGSettings *s
+    fr_t *dst, size_t *dst_len, const uint64_t *indices, uint64_t indices_len, const KZGSettings *s
 ) {
     fr_t neg_di;
 
@@ -2457,9 +2346,7 @@ static C_KZG_RET do_zero_poly_mul_partial(
  * @param[in]   in      The input polynomial to be copied
  * @param[in]   in_len  The length of the input polynomial
  */
-static C_KZG_RET pad_p(
-    fr_t *out, size_t out_len, const fr_t *in, size_t in_len
-) {
+static C_KZG_RET pad_p(fr_t *out, size_t out_len, const fr_t *in, size_t in_len) {
     /* Ensure out is big enough */
     if (out_len < in_len) {
         return C_KZG_BADARGS;
@@ -2540,10 +2427,7 @@ static C_KZG_RET reduce_partials(
      * padding can remain in place for the rest.
      */
     ret = pad_p(
-        p_padded,
-        len_out,
-        partials[partial_count - 1].coeffs,
-        partials[partial_count - 1].length
+        p_padded, len_out, partials[partial_count - 1].coeffs, partials[partial_count - 1].length
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -2551,9 +2435,7 @@ static C_KZG_RET reduce_partials(
     if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < partial_count - 1; i++) {
-        ret = pad_p(
-            p_padded, partials[i].length, partials[i].coeffs, partials[i].length
-        );
+        ret = pad_p(p_padded, partials[i].length, partials[i].coeffs, partials[i].length);
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(p_eval, p_padded, len_out, s);
         if (ret != C_KZG_OK) goto out;
@@ -2617,14 +2499,11 @@ static C_KZG_RET zero_polynomial_via_multiplication(
     const size_t degree_of_partial = 32;
 
     const size_t missing_per_partial = degree_of_partial - 1;
-    size_t partial_count = (len_missing + missing_per_partial - 1) /
-                           missing_per_partial;
+    size_t partial_count = (len_missing + missing_per_partial - 1) / missing_per_partial;
     size_t n = next_power_of_two(partial_count * degree_of_partial);
 
     if (len_missing <= missing_per_partial) {
-        ret = do_zero_poly_mul_partial(
-            zero_poly, zero_poly_len, missing_indices, len_missing, s
-        );
+        ret = do_zero_poly_mul_partial(zero_poly, zero_poly_len, missing_indices, len_missing, s);
         if (ret != C_KZG_OK) goto out;
     } else {
         ret = new_fr_array(&work, n);
@@ -2642,11 +2521,7 @@ static C_KZG_RET zero_polynomial_via_multiplication(
             partials[i].length = degree_of_partial;
 
             ret = do_zero_poly_mul_partial(
-                partials[i].coeffs,
-                &partials[i].length,
-                &missing_indices[offset],
-                end - offset,
-                s
+                partials[i].coeffs, &partials[i].length, &missing_indices[offset], end - offset, s
             );
             if (ret != C_KZG_OK) goto out;
 
@@ -2656,35 +2531,21 @@ static C_KZG_RET zero_polynomial_via_multiplication(
 
         /* Adjust the length of the last partial */
         partials[partial_count - 1].length = 1 + len_missing -
-                                             (partial_count - 1) *
-                                                 missing_per_partial;
+                                             (partial_count - 1) * missing_per_partial;
 
         /* Reduce all the partials to a single polynomial */
         while (partial_count > 1) {
-            size_t reduced_count = (partial_count + reduction_factor - 1) /
-                                   reduction_factor;
+            size_t reduced_count = (partial_count + reduction_factor - 1) / reduction_factor;
             size_t partial_size = next_power_of_two(partials[0].length);
             for (size_t i = 0; i < reduced_count; i++) {
                 size_t start = i * reduction_factor;
-                size_t out_end = MIN(
-                    (start + reduction_factor) * partial_size, n
-                );
-                size_t reduced_len = MIN(
-                    out_end - start * partial_size, s->max_width
-                );
-                size_t partials_num = MIN(
-                    reduction_factor, partial_count - start
-                );
+                size_t out_end = MIN((start + reduction_factor) * partial_size, n);
+                size_t reduced_len = MIN(out_end - start * partial_size, s->max_width);
+                size_t partials_num = MIN(reduction_factor, partial_count - start);
                 partials[i].coeffs = work + start * partial_size;
                 if (partials_num > 1) {
                     ret = reduce_partials(
-                        &partials[i],
-                        reduced_len,
-                        scratch,
-                        n * 3,
-                        &partials[start],
-                        partials_num,
-                        s
+                        &partials[i], reduced_len, scratch, n * 3, &partials[start], partials_num, s
                     );
                     if (ret != C_KZG_OK) goto out;
                 } else {
@@ -2695,9 +2556,7 @@ static C_KZG_RET zero_polynomial_via_multiplication(
         }
 
         /* Pad the output with zeros */
-        ret = pad_p(
-            zero_poly, s->max_width, partials[0].coeffs, partials[0].length
-        );
+        ret = pad_p(zero_poly, s->max_width, partials[0].coeffs, partials[0].length);
         if (ret != C_KZG_OK) goto out;
 
         *zero_poly_len = partials[0].length;
@@ -2773,9 +2632,7 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
  *
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
  */
-static C_KZG_RET coset_fft_fr(
-    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET coset_fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t *in_shifted = NULL;
 
@@ -2806,9 +2663,7 @@ out:
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we
  *         use its inverse to implement the IFFT.
  */
-static C_KZG_RET coset_ifft_fr(
-    fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET coset_ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
 
     ret = ifft_fr(out, in, n, s);
@@ -2899,20 +2754,13 @@ static C_KZG_RET recover_cells_impl(
         if (fr_is_null(&cells_brp[i])) {
             extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
-            blst_fr_mul(
-                &extended_evaluation_times_zero[i],
-                &cells_brp[i],
-                &zero_poly_eval[i]
-            );
+            blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &zero_poly_eval[i]);
         }
     }
 
     /* Convert (E*Z)(x) to monomial form  */
     ret = ifft_fr(
-        extended_evaluation_times_zero_coeffs,
-        extended_evaluation_times_zero,
-        s->max_width,
-        s
+        extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->max_width, s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -2923,10 +2771,7 @@ static C_KZG_RET recover_cells_impl(
      *   Q3 = D(k * x)
      */
     ret = coset_fft_fr(
-        extended_evaluations_over_coset,
-        extended_evaluation_times_zero_coeffs,
-        s->max_width,
-        s
+        extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -2947,12 +2792,7 @@ static C_KZG_RET recover_cells_impl(
      * the same polynomial as reconstructed_poly_over_coset in the spec */
 
     /* Convert the evaluations back to coefficents */
-    ret = coset_ifft_fr(
-        reconstructed_poly_coeff,
-        extended_evaluations_over_coset,
-        s->max_width,
-        s
-    );
+    ret = coset_ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
@@ -2960,15 +2800,11 @@ static C_KZG_RET recover_cells_impl(
      * evaluates to our original data at the roots of unity. Next, we evaluate
      * the polynomial to get the original data.
      */
-    ret = fft_fr(
-        reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s
-    );
+    ret = fft_fr(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
-    ret = bit_reversal_permutation(
-        reconstructed_data_out, sizeof(fr_t), s->max_width
-    );
+    ret = bit_reversal_permutation(reconstructed_data_out, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -3051,8 +2887,7 @@ static C_KZG_RET toeplitz_coeffs_stride(
     for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
         out[i] = FR_ZERO;
     }
-    for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2;
-         i++, j += stride) {
+    for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2; i++, j += stride) {
         out[i] = in[j];
     }
 
@@ -3071,9 +2906,7 @@ static C_KZG_RET toeplitz_coeffs_stride(
  *         the lower half of the extended polynomial is supplied because the
  *         upper half is assumed to be zero.
  */
-static C_KZG_RET compute_fk20_proofs(
-    g1_t *out, const fr_t *p, size_t n, const KZGSettings *s
-) {
+static C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
     uint64_t k, k2;
 
@@ -3104,9 +2937,7 @@ static C_KZG_RET compute_fk20_proofs(
         /* Allocations for fixed-base MSM */
         ret = c_kzg_malloc(&scratch, s->scratch_size);
         if (ret != C_KZG_OK) goto out;
-        ret = c_kzg_calloc(
-            (void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar)
-        );
+        ret = c_kzg_calloc((void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar));
         if (ret != C_KZG_OK) goto out;
     }
 
@@ -3125,9 +2956,7 @@ static C_KZG_RET compute_fk20_proofs(
 
     /* Compute toeplitz coefficients and organize by column */
     for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        ret = toeplitz_coeffs_stride(
-            toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL
-        );
+        ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
         ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
@@ -3158,10 +2987,7 @@ static C_KZG_RET compute_fk20_proofs(
         } else {
             /* A pretty fast MSM without precomputation */
             ret = g1_lincomb_fast(
-                &h_ext_fft[i],
-                s->x_ext_fft_columns[i],
-                coeffs[i],
-                FIELD_ELEMENTS_PER_CELL
+                &h_ext_fft[i], s->x_ext_fft_columns[i], coeffs[i], FIELD_ELEMENTS_PER_CELL
             );
             if (ret != C_KZG_OK) goto out;
         }
@@ -3228,16 +3054,15 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     fr_t r;
 
     /* Calculate the size of the data we're going to hash */
-    size_t input_size = DOMAIN_STR_LENGTH  /* The domain separator */
-                        + sizeof(uint64_t) /* FIELD_ELEMENTS_PER_CELL */
-                        + sizeof(uint64_t) /* num_commitments */
-                        + sizeof(uint64_t) /* num_cells */
+    size_t input_size = DOMAIN_STR_LENGTH                          /* The domain separator */
+                        + sizeof(uint64_t)                         /* FIELD_ELEMENTS_PER_CELL */
+                        + sizeof(uint64_t)                         /* num_commitments */
+                        + sizeof(uint64_t)                         /* num_cells */
                         + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
-                        +
-                        (num_cells * sizeof(uint64_t)) /* commitment_indices */
-                        + (num_cells * sizeof(uint64_t)) /* cell_indices */
-                        + (num_cells * BYTES_PER_CELL)   /* cells */
-                        + (num_cells * BYTES_PER_PROOF); /* proofs_bytes */
+                        + (num_cells * sizeof(uint64_t))           /* commitment_indices */
+                        + (num_cells * sizeof(uint64_t))           /* cell_indices */
+                        + (num_cells * BYTES_PER_CELL)             /* cells */
+                        + (num_cells * BYTES_PER_PROOF);           /* proofs_bytes */
 
     /* Allocate space to copy this data into */
     ret = c_kzg_malloc((void **)&bytes, input_size);
@@ -3247,11 +3072,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     uint8_t *offset = bytes;
 
     /* Copy domain separator */
-    memcpy(
-        offset,
-        RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH,
-        DOMAIN_STR_LENGTH
-    );
+    memcpy(offset, RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH, DOMAIN_STR_LENGTH);
     offset += DOMAIN_STR_LENGTH;
 
     /* Copy field elements per cell */
@@ -3426,9 +3247,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     if (ret != C_KZG_OK) goto out;
 
     /* We need the polynomial to be in monomial form */
-    ret = poly_lagrange_to_monomial(
-        poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s
-    );
+    ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
     if (cells != NULL) {
@@ -3441,9 +3260,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the data points */
-        ret = bit_reversal_permutation(
-            data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB
-        );
+        ret = bit_reversal_permutation(data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the cells to byte-form */
@@ -3451,9 +3268,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
             for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
                 size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
                 size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-                bytes_from_bls_field(
-                    (Bytes32 *)&cells[i].bytes[offset], &data_fr[index]
-                );
+                bytes_from_bls_field((Bytes32 *)&cells[i].bytes[offset], &data_fr[index]);
             }
         }
     }
@@ -3464,15 +3279,11 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Compute the proofs, provide only the first half */
-        ret = compute_fk20_proofs(
-            proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s
-        );
+        ret = compute_fk20_proofs(proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
-        ret = bit_reversal_permutation(
-            proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
-        );
+        ret = bit_reversal_permutation(proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
@@ -3585,8 +3396,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
                 size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
                 size_t offset = j * BYTES_PER_FIELD_ELEMENT;
                 bytes_from_bls_field(
-                    (Bytes32 *)&recovered_cells[i].bytes[offset],
-                    &recovered_cells_fr[index]
+                    (Bytes32 *)&recovered_cells[i].bytes[offset], &recovered_cells_fr[index]
                 );
             }
         }
@@ -3599,10 +3409,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
          * cells and we can safely mutate the array.
          */
         ret = poly_lagrange_to_monomial(
-            recovered_cells_fr,
-            recovered_cells_fr,
-            FIELD_ELEMENTS_PER_EXT_BLOB,
-            s
+            recovered_cells_fr, recovered_cells_fr, FIELD_ELEMENTS_PER_EXT_BLOB, s
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3613,9 +3420,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
-        ret = bit_reversal_permutation(
-            recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB
-        );
+        ret = bit_reversal_permutation(recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the proofs to byte-form */
@@ -3696,13 +3501,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Deduplicate Commitments
     ///////////////////////////////////////////////////////////////////////////
 
-    ret = c_kzg_calloc(
-        (void **)&unique_commitments, num_cells, sizeof(Bytes48)
-    );
+    ret = c_kzg_calloc((void **)&unique_commitments, num_cells, sizeof(Bytes48));
     if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc(
-        (void **)&commitment_indices, num_cells, sizeof(uint64_t)
-    );
+    ret = c_kzg_calloc((void **)&commitment_indices, num_cells, sizeof(uint64_t));
     if (ret != C_KZG_OK) goto out;
 
     /*
@@ -3713,9 +3514,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
      */
     num_commitments = num_cells;
     memcpy(unique_commitments, commitments_bytes, num_cells * sizeof(Bytes48));
-    deduplicate_commitments(
-        unique_commitments, commitment_indices, &num_commitments
-    );
+    deduplicate_commitments(unique_commitments, commitment_indices, &num_commitments);
 
     ///////////////////////////////////////////////////////////////////////////
     // Array allocations
@@ -3778,9 +3577,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     for (size_t i = 0; i < num_commitments; i++) {
         /* Convert & validate commitment */
-        ret = bytes_to_kzg_commitment(
-            &commitments_g1[i], &unique_commitments[i]
-        );
+        ret = bytes_to_kzg_commitment(&commitments_g1[i], &unique_commitments[i]);
         if (ret != C_KZG_OK) goto out;
 
         /* Initialize the weight to zero */
@@ -3797,9 +3594,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     }
 
     /* Compute commitment sum */
-    ret = g1_lincomb_fast(
-        &final_g1_sum, commitments_g1, commitment_weights, num_commitments
-    );
+    ret = g1_lincomb_fast(&final_g1_sum, commitments_g1, commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
 
     ///////////////////////////////////////////////////////////////////////////
@@ -3819,17 +3614,11 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             fr_t field, scaled;
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(
-                &field, (Bytes32 *)&cells[i].bytes[offset]
-            );
+            ret = bytes_to_bls_field(&field, (Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
             size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
-            blst_fr_add(
-                &aggregated_column_cells[index],
-                &aggregated_column_cells[index],
-                &scaled
-            );
+            blst_fr_add(&aggregated_column_cells[index], &aggregated_column_cells[index], &scaled);
 
             /* Mark the cell as being used */
             is_cell_used[index] = true;
@@ -3855,9 +3644,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
         /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
-            &aggregated_column_cells[index],
-            sizeof(fr_t),
-            FIELD_ELEMENTS_PER_CELL
+            &aggregated_column_cells[index], sizeof(fr_t), FIELD_ELEMENTS_PER_CELL
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3868,10 +3655,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          * subgroup.
          */
         ret = ifft_fr(
-            column_interpolation_poly,
-            &aggregated_column_cells[index],
-            FIELD_ELEMENTS_PER_CELL,
-            s
+            column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
         );
         if (ret != C_KZG_OK) goto out;
 
@@ -3881,14 +3665,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          */
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(
-            &inv_coset_factor, &s->expanded_roots_of_unity[pos]
-        );
-        shift_poly(
-            column_interpolation_poly,
-            FIELD_ELEMENTS_PER_CELL,
-            &inv_coset_factor
-        );
+        blst_fr_eucl_inverse(&inv_coset_factor, &s->expanded_roots_of_unity[pos]);
+        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
@@ -3902,10 +3680,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     /* Commit to the final aggregated interpolation polynomial */
     ret = g1_lincomb_fast(
-        &evaluation,
-        s->g1_values_monomial,
-        aggregated_interpolation_poly,
-        FIELD_ELEMENTS_PER_CELL
+        &evaluation, s->g1_values_monomial, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -3917,17 +3692,13 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ///////////////////////////////////////////////////////////////////////////
 
     for (size_t i = 0; i < num_cells; i++) {
-        uint32_t pos = reverse_bits_limited(
-            CELLS_PER_EXT_BLOB, cell_indices[i]
-        );
+        uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
         fr_t coset_factor = s->expanded_roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
     }
 
-    ret = g1_lincomb_fast(
-        &weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_cells
-    );
+    ret = g1_lincomb_fast(&weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
 
     blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
@@ -3936,9 +3707,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Do the final pairing check
     ///////////////////////////////////////////////////////////////////////////
 
-    *ok = pairings_verify(
-        &final_g1_sum, blst_p2_generator(), &proof_lincomb, &power_of_s
-    );
+    *ok = pairings_verify(&final_g1_sum, blst_p2_generator(), &proof_lincomb, &power_of_s);
 
 out:
     c_kzg_free(unique_commitments);
