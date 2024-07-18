@@ -4,7 +4,7 @@
 
 import
   std/[streams, strutils],
-  stew/byteutils,
+  stew/[assign2, byteutils],
   results,
   ./kzg_abi
 
@@ -111,9 +111,9 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
 
   var
     s = newStringStream(input)
-    g1MonomialBytes: seq[byte] = newSeq[byte](NumG1 * G1Len)
-    g1LagrangeBytes: seq[byte] = newSeq[byte](NumG1 * G1Len)
-    g2MonomialBytes: seq[byte] = newSeq[byte](NumG2 * G2Len)
+    g1MonomialBytes: array[NumG1 * G1Len, byte]
+    g1LagrangeBytes: array[NumG1 * G1Len, byte]
+    g2MonomialBytes: array[NumG2 * G2Len, byte]
 
   try:
     let numG1 = s.readLine().parseInt()
@@ -129,18 +129,15 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
 
     for i in 0 ..< NumG1:
       let p = hexToByteArray[G1Len](s.readLine())
-      for j in 0 ..< G1Len:
-        g1LagrangeBytes[i * G1Len + j] = p[j]
+      assign(g1LagrangeBytes.toOpenArray(i * G1Len, ((i + 1) * G1Len) - 1), p)
 
     for i in 0 ..< NumG2:
       let p = hexToByteArray[G2Len](s.readLine())
-      for j in 0 ..< G2Len:
-        g2MonomialBytes[i * G2Len + j] = p[j]
+      assign(g2MonomialBytes.toOpenArray(i * G2Len, ((i + 1) * G2Len) - 1), p)
 
     for i in 0 ..< NumG1:
       let p = hexToByteArray[G1Len](s.readLine())
-      for j in 0 ..< G1Len:
-        g1MonomialBytes[i * G1Len + j] = p[j]
+      assign(g1MonomialBytes.toOpenArray(i * G1Len, ((i + 1) * G1Len) - 1), p)
 
   except ValueError as ex:
     return err(ex.msg)
