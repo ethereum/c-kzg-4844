@@ -773,12 +773,12 @@ static C_KZG_RET g1_lincomb_fast(
      * make a new list p_filtered that contains only non-zero points */
     size_t new_len = 0;
     for (size_t i = 0; i < len; i++) {
-      if (!blst_p1_is_inf(&p[i])) {
-        /* Copy valid points to the new position */
-        p_filtered[new_len] = p[i];
-        scalars[new_len] = scalars[i];
-        new_len++;
-      }
+        if (!blst_p1_is_inf(&p[i])) {
+            /* Copy valid points to the new position */
+            p_filtered[new_len] = p[i];
+            scalars[new_len] = scalars[i];
+            new_len++;
+        }
     }
 
     /* Check if the new length is fine */
