@@ -2387,6 +2387,8 @@ static C_KZG_RET ifft_fr(
  * @param[in]       roots_len    The number of roots
  * @param[in]       s            The trusted setup
  *
+ * @remark These do not have to be roots of unity. They are roots of a
+ * polynomial.
  * @remark `poly_len` must be at least `roots_len + 1` in length.
  */
 static C_KZG_RET compute_vanishing_polynomial_from_roots(
