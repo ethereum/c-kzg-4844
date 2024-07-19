@@ -2,6 +2,7 @@
  * This file contains unit tests for C-KZG-4844.
  */
 #include "c_kzg_4844.c"
+#include "c_kzg_4844.h"
 #include "tinytest.h"
 
 #include <assert.h>
@@ -1970,6 +1971,79 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
+static void test_zero_polynomial_from_roots(void) {
+    // Test case: (x - 2)(x - 3)
+    //
+    // Expected result: x^2 - 5x + 6
+
+    // Initialize array with the roots 2 and 3
+    fr_t roots[2];
+    fr_from_uint64(&roots[0], 2);
+    fr_from_uint64(&roots[1], 3);
+    size_t roots_len = 2;
+
+    fr_t poly[3];
+    size_t poly_len = 3;
+
+    zero_polynomial_from_roots(poly, &poly_len, roots, roots_len);
+
+    fr_t expected[3];
+
+    fr_from_uint64(&expected[0], 6);
+
+    // Negate 5
+    fr_from_uint64(&expected[1], 5);
+    blst_fr_cneg(&expected[1], &expected[1], true);
+
+    expected[2] = FR_ONE;
+
+    assert(poly_len == 3);
+    assert(fr_equal(&poly[0], &expected[0]));
+    assert(fr_equal(&poly[1], &expected[1]));
+    assert(fr_equal(&poly[2], &expected[2]));
+}
+
+static void test_zero_polynomial_periodic_roots(void) {
+    const size_t MAX_WIDTH = 8192;
+
+    fr_t *zero_poly = NULL;
+    C_KZG_RET ret = new_fr_array(&zero_poly, MAX_WIDTH);
+    assert(ret == C_KZG_OK);
+
+    size_t zero_poly_len;
+
+    fr_t *fft_result = NULL;
+    ret = new_fr_array(&fft_result, MAX_WIDTH);
+    assert(ret == C_KZG_OK);
+
+    // Test case: the 0th and 1st cell are missing
+    uint64_t missing_cell_indices[] = {0, 1};
+    size_t len_missing_cells = 2;
+
+    ret = zero_polynomial_periodic_roots(
+        zero_poly, &zero_poly_len, missing_cell_indices, len_missing_cells, &s
+    );
+
+    // Check return status
+    assert(ret == C_KZG_OK);
+
+    // Check polynomial length
+    assert(zero_poly_len == MAX_WIDTH);
+
+    // Compute FFT of zero_poly
+    fft_fr(fft_result, zero_poly, MAX_WIDTH, &s);
+
+    // Check FFT results
+    for (size_t i = 0; i < MAX_WIDTH; i++) {
+        if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
+            // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
+            assert(fr_is_zero(&fft_result[i]));
+        } else {
+            assert(!fr_is_zero(&fft_result[i]));
+        }
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Tests for verify_cell_kzg_proof_batch
 ///////////////////////////////////////////////////////////////////////////////
@@ -2253,6 +2327,8 @@ static void teardown(void) {
 
 int main(void) {
     setup();
+    RUN(test_zero_polynomial_from_roots);
+    RUN(test_zero_polynomial_periodic_roots);
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);
