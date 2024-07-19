@@ -2028,6 +2028,43 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     fft_fr(fft_result, vanishing_poly, s.max_width, &s);
 
     // Check FFT results
+    //
+    // Let explain how we are picking the roots of unity:
+    // Focussing just on the missing cell index 0.
+    //
+    // We expect that the following roots will evaluate to zero on the vanishing
+    // polynomial we computed:
+    //
+    // s->expanded_roots_of_unity[0]
+    // s->expanded_roots_of_unity[128]
+    // s->expanded_roots_of_unity[256]
+    // ...
+    // s->expanded_roots_of_unity[8064]
+    //
+    // For every cell index, we should have `FIELD_ELEMENTS_PER_CELL`
+    // number of these roots. ie each cell index corresponds to 64
+    // roots taken from `expanded_roots_of_unity` in the vanishing polynomial.
+    //
+    // In general, the formula is
+    // expanded_roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where `k`
+    // goes from 0 to FIELD_ELEMENTS_PER_CELL-1.
+    //
+    // For cell index 1, we would therefore expect the polynomial to vanish at
+    // points:
+    //
+    // s->expanded_roots_of_unity[1]
+    // s->expanded_roots_of_unity[129]
+    // s->expanded_roots_of_unity[257]
+    // ...
+    // s->expanded_roots_of_unity[8065]
+    //
+    // Sanity check:
+    // The largest cell index we can have is 127 since there are 128 cells.
+    //
+    // The last element for that cell index would have array index `127 + 128*63
+    // = 8191`. This is correct since `expanded_roots_of_unity` has 8192
+    // elements.
+    //
     for (size_t i = 0; i < s.max_width; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
