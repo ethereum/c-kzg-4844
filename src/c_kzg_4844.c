@@ -2439,7 +2439,11 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * @param[in]       len_missing_cells       The number of missing cell indices
  * @param[in]       s                       The trusted setup
  *
- * @remark This does not work if all cells are missing.
+ * @remark When all of the cells are missing, this algorithm has
+ * an edge case. We return C_KZG_BADARGS in that case.
+ * @remark When none of the cells are missing, recovery
+ * is trivial. We expect the caller to handle this case,
+ * and return C_KZG_BADARGS if not.
  * @remark `missing_cell_indices` are assumed to be less than
  * `CELLS_PER_EXT_BLOB`.
  */
@@ -2455,21 +2459,8 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *short_vanishing_poly = NULL;
     size_t short_vanishing_poly_len = 0;
 
-    /* If nothing is missing, return all zeros */
-    if (len_missing_cells == 0) {
-        for (size_t i = 0; i < s->max_width; i++) {
-            vanishing_poly[i] = FR_ZERO;
-        }
-        *vanishing_poly_len = 0;
-        ret = C_KZG_OK;
-        goto out;
-    }
-
-    /*  If all cells are missing, return an error.
-        It is not possible to perform recovery when all
-        cells are missing.
-    */
-    if (len_missing_cells == CELLS_PER_EXT_BLOB) {
+    /* Return early if none or all of the cells are missing */
+    if (len_missing_cells == 0 || len_missing_cells == CELLS_PER_EXT_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
