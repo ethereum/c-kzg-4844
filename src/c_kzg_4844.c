@@ -2375,7 +2375,6 @@ static C_KZG_RET ifft_fr(
 /**
  * Calculates the minimal polynomial that evaluates to zero for each root.
  *
- *
  * Uses straightforward long multiplication to calculate the product of
  * `(x - r_i)` where `r_i` is the i'th root. This results in a poly of degree
  * roots_len.
@@ -2421,8 +2420,9 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
     return C_KZG_OK;
 }
 
-/* Computes the minimal polynomial that evaluates to zero at equally
- * spaced chosen roots of unity in the domain of size `FIELD_ELEMENTS_PER_BLOB`.
+/**
+ * Computes the minimal polynomial that evaluates to zero at equally spaced
+ * chosen roots of unity in the domain of size `FIELD_ELEMENTS_PER_BLOB`.
  *
  * The roots of unity are chosen based on the missing cell indices. If the i'th
  * cell is missing, then the i'th root of unity from `expanded_roots_of_unity`
@@ -2465,23 +2465,23 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
     if (ret != C_KZG_OK) goto out;
 
-    /* Check if max_width is divisible by CELLS_PER_EXT_BLOB*/
+    /* Check if max_width is divisible by CELLS_PER_EXT_BLOB */
     assert(s->max_width % CELLS_PER_EXT_BLOB == 0);
 
     /*
-        For each missing cell index, choose the corresponding root of unity
-        from the subgroup of size `CELLS_PER_EXT_BLOB`.
-
-        In other words, if the missing index is `i`, then we add \omega^i
-        to the roots array, where \omega is a primitive `CELLS_PER_EXT_BLOB`
-        root of unity.
-    */
+     * For each missing cell index, choose the corresponding root of unity from
+     * the subgroup of size`CELLS_PER_EXT_BLOB`.
+     *
+     * In other words, if the missing index is `i`, then we add \omega^i to the
+     * roots array, where \omega is a primitive `CELLS_PER_EXT_BLOB` root of
+     * unity.
+     */
     size_t stride = s->max_width / CELLS_PER_EXT_BLOB;
     for (size_t i = 0; i < len_missing_cells; i++) {
         roots[i] = s->expanded_roots_of_unity[missing_cell_indices[i] * stride];
     }
 
-    /* Compute the polynomial that evaluates to zero on the roots*/
+    /* Compute the polynomial that evaluates to zero on the roots */
     ret = compute_vanishing_polynomial_from_roots(
         short_vanishing_poly,
         &short_vanishing_poly_len,
@@ -2491,18 +2491,22 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     if (ret != C_KZG_OK) goto out;
 
     /*
-        For each root \omega^i in `short_vanishing_poly`, we compute a
-        polynomial that has roots at H =   { \omega^i * \gamma^0, \omega^i *
-        \gamma^1,
-                                ...,
-                                \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
-                                }
-        where \gamma is a primitive `FIELD_ELEMENTS_PER_EXT_BLOB`-th root of
-       unity.
-
-        This is done by shifting the degree of all coefficients in
-        `short_vanishing_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
-    */
+     * For each root \omega^i in `short_vanishing_poly`, we compute a
+     * polynomial that has roots at
+     *
+     *  H = {
+     *      \omega^i * \gamma^0,
+     *      \omega^i * \gamma^1,
+     *      ...,
+     *      \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
+     *  }
+     *
+     * where \gamma is a primitive `FIELD_ELEMENTS_PER_EXT_BLOB`-th root of
+     * unity.
+     *
+     * This is done by shifting the degree of all coefficients in
+     * `short_vanishing_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
+     */
     for (size_t i = 0; i < short_vanishing_poly_len; i++) {
         vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
@@ -2627,9 +2631,9 @@ out:
 /**
  * Helper function to check if a uint64 value is in an array.
  *
- * @param[in]   arr                      The array
- * @param[in]   arr_size                 The size of the array
- * @param[in]   value                    The value we want to search
+ * @param[in]   arr         The array
+ * @param[in]   arr_size    The size of the array
+ * @param[in]   value       The value we want to search
  *
  * @return True if the value is in the array, otherwise false.
  */
@@ -2705,12 +2709,12 @@ static C_KZG_RET recover_cells_impl(
     /* Identify missing cells */
     size_t len_missing = 0;
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        /* Iterate over each cell index and check if we have received it*/
+        /* Iterate over each cell index and check if we have received it */
         if (!is_in_array(cell_indices, num_cells, i)) {
-
-            /*  If the cell is missing, bit reverse the index and add it to
-                to the missing array.
-            */
+            /*
+             * If the cell is missing, bit reverse the index and add it to the
+             * missing array.
+             */
             uint32_t brp_i = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
             missing_cell_indices[len_missing++] = brp_i;
         }
