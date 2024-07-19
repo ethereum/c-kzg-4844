@@ -1971,11 +1971,13 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
 }
 
 static void test_compute_vanishing_polynomial_from_roots(void) {
-    // Test case: (x - 2)(x - 3)
-    //
-    // Expected result: x^2 - 5x + 6
+    /*
+     * Test case: (x - 2)(x - 3)
+     *
+     * Expected result: x^2 - 5x + 6
+     */
 
-    // Initialize array with the roots 2 and 3
+    /* Initialize array with the roots 2 and 3 */
     fr_t roots[2];
     fr_from_uint64(&roots[0], 2);
     fr_from_uint64(&roots[1], 3);
@@ -1990,7 +1992,7 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 
     fr_from_uint64(&expected[0], 6);
 
-    // Negate 5
+    /* Negate 5 */
     fr_from_uint64(&expected[1], 5);
     blst_fr_cneg(&expected[1], &expected[1], true);
 
@@ -2012,7 +2014,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ret = new_fr_array(&fft_result, s.max_width);
     ASSERT("fft_result alloc", ret == C_KZG_OK);
 
-    // Test case: the 0th and 1st cell are missing
+    /* Test case: the 0th and 1st cell are missing */
     uint64_t missing_cell_indices[] = {0, 1};
     size_t len_missing_cells = 2;
 
@@ -2020,53 +2022,54 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
         vanishing_poly, missing_cell_indices, len_missing_cells, &s
     );
 
-    // Check return status
+    /* Check return status */
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
-    // Compute FFT of vanishing_poly
+    /* Compute FFT of vanishing_poly */
     fft_fr(fft_result, vanishing_poly, s.max_width, &s);
 
-    // Check FFT results
-    //
-    // Let explain how we are picking the roots of unity:
-    // Focussing just on the missing cell index 0.
-    //
-    // We expect that the following roots will evaluate to zero on the vanishing
-    // polynomial we computed:
-    //
-    // s->expanded_roots_of_unity[0]
-    // s->expanded_roots_of_unity[128]
-    // s->expanded_roots_of_unity[256]
-    // ...
-    // s->expanded_roots_of_unity[8064]
-    //
-    // For every cell index, we should have `FIELD_ELEMENTS_PER_CELL`
-    // number of these roots. ie each cell index corresponds to 64
-    // roots taken from `expanded_roots_of_unity` in the vanishing polynomial.
-    //
-    // In general, the formula is
-    // expanded_roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where `k`
-    // goes from 0 to FIELD_ELEMENTS_PER_CELL-1.
-    //
-    // For cell index 1, we would therefore expect the polynomial to vanish at
-    // points:
-    //
-    // s->expanded_roots_of_unity[1]
-    // s->expanded_roots_of_unity[129]
-    // s->expanded_roots_of_unity[257]
-    // ...
-    // s->expanded_roots_of_unity[8065]
-    //
-    // Sanity check:
-    // The largest cell index we can have is 127 since there are 128 cells.
-    //
-    // The last element for that cell index would have array index `127 + 128*63
-    // = 8191`. This is correct since `expanded_roots_of_unity` has 8192
-    // elements.
-    //
+    /*
+     * Check FFT results
+     *
+     * Let explain how we are picking the roots of unity:
+     * Focussing just on the missing cell index 0.
+     *
+     * We expect that the following roots will evaluate to zero on the vanishing
+     * polynomial we computed:
+     *
+     * s->expanded_roots_of_unity[0]
+     * s->expanded_roots_of_unity[128]
+     * s->expanded_roots_of_unity[256]
+     * ...
+     * s->expanded_roots_of_unity[8064]
+     *
+     * For every cell index, we should have `FIELD_ELEMENTS_PER_CELL`
+     * number of these roots. ie each cell index corresponds to 64
+     * roots taken from `expanded_roots_of_unity` in the vanishing polynomial.
+     *
+     * In general, the formula is
+     * expanded_roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where `k`
+     * goes from 0 to FIELD_ELEMENTS_PER_CELL-1.
+     *
+     * For cell index 1, we would therefore expect the polynomial to vanish at
+     * points:
+     *
+     * s->expanded_roots_of_unity[1]
+     * s->expanded_roots_of_unity[129]
+     * s->expanded_roots_of_unity[257]
+     * ...
+     * s->expanded_roots_of_unity[8065]
+     *
+     * Sanity check:
+     * The largest cell index we can have is 127 since there are 128 cells.
+     *
+     * The last element for that cell index would have array index `127 + 128*63
+     * = 8191`. This is correct since `expanded_roots_of_unity` has 8192
+     * elements.
+     */
     for (size_t i = 0; i < s.max_width; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
-            // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
+            /* Every CELLS_PER_EXT_BLOB-th evaluation should be zero */
             ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
         } else {
             ASSERT("evaluation is not zero", !fr_is_zero(&fft_result[i]));
