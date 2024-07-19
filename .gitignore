@@ -16,6 +16,10 @@ analysis-report/
 __pycache__
 .DS_Store
 
+# python build
+*dist/
+*ckzg.egg-info/
+
 # nimble build dir
 build/
 
