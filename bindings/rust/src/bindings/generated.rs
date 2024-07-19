@@ -51,13 +51,13 @@ pub struct blst_p2 {
 pub type g1_t = blst_p1;
 pub type g2_t = blst_p2;
 pub type fr_t = blst_fr;
-#[doc = " An array of 32 bytes. Represents an untrusted\n (potentially invalid) field element."]
+#[doc = " An array of 32 bytes. Represents an untrusted (potentially invalid) field element."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes32 {
     bytes: [u8; 32usize],
 }
-#[doc = " An array of 48 bytes. Represents an untrusted\n (potentially invalid) commitment/proof."]
+#[doc = " An array of 48 bytes. Represents an untrusted (potentially invalid) commitment/proof."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes48 {
@@ -94,17 +94,17 @@ pub enum C_KZG_RET {
 pub struct KZGSettings {
     #[doc = " The length of `roots_of_unity`, a power of 2."]
     max_width: u64,
-    #[doc = " Powers of the primitive root of unity determined by\n `SCALE2_ROOT_OF_UNITY` in bit-reversal permutation order,\n length `max_width`."]
+    #[doc = " Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal\n permutation order, length `max_width`."]
     roots_of_unity: *mut fr_t,
     #[doc = " The expanded roots of unity."]
     expanded_roots_of_unity: *mut fr_t,
     #[doc = " The bit-reversal permuted roots of unity."]
     reverse_roots_of_unity: *mut fr_t,
-    #[doc = " G1 group elements from the trusted setup,\n in monomial form."]
+    #[doc = " G1 group elements from the trusted setup in monomial form."]
     g1_values_monomial: *mut g1_t,
-    #[doc = " G1 group elements from the trusted setup,\n in Lagrange form bit-reversal permutation."]
+    #[doc = " G1 group elements from the trusted setup in Lagrange form and bit-reversed order."]
     g1_values_lagrange_brp: *mut g1_t,
-    #[doc = " G2 group elements from the trusted setup,\n in monomial form."]
+    #[doc = " G2 group elements from the trusted setup in monomial form."]
     g2_values_monomial: *mut g2_t,
     #[doc = " Data used during FK20 proof generation."]
     x_ext_fft_columns: *mut *mut g1_t,
