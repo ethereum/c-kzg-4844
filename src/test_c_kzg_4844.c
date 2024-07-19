@@ -2327,8 +2327,6 @@ static void teardown(void) {
 
 int main(void) {
     setup();
-    RUN(test_zero_polynomial_from_roots);
-    RUN(test_zero_polynomial_periodic_roots);
     RUN(test_c_kzg_malloc__succeeds_size_greater_than_zero);
     RUN(test_c_kzg_malloc__fails_size_equal_to_zero);
     RUN(test_c_kzg_malloc__fails_too_big);
@@ -2420,6 +2418,8 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_zero_polynomial_from_roots);
+    RUN(test_zero_polynomial_periodic_roots);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
