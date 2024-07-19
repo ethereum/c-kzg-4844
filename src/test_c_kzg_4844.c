@@ -1971,7 +1971,7 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
-static void test_zero_polynomial_from_roots(void) {
+static void test_compute_vanishing_polynomial_from_roots(void) {
     // Test case: (x - 2)(x - 3)
     //
     // Expected result: x^2 - 5x + 6
@@ -1985,7 +1985,7 @@ static void test_zero_polynomial_from_roots(void) {
     fr_t poly[3];
     size_t poly_len = 3;
 
-    zero_polynomial_from_roots(poly, &poly_len, roots, roots_len);
+    compute_vanishing_polynomial_from_roots(poly, &poly_len, roots, roots_len);
 
     fr_t expected[3];
 
@@ -2003,7 +2003,7 @@ static void test_zero_polynomial_from_roots(void) {
     ASSERT(fr_equal(&poly[2], &expected[2]));
 }
 
-static void test_zero_polynomial_periodic_roots(void) {
+static void test_vanishing_polynomial_from_cells(void) {
     const size_t MAX_WIDTH = 8192;
 
     fr_t *zero_poly = NULL;
@@ -2020,7 +2020,7 @@ static void test_zero_polynomial_periodic_roots(void) {
     uint64_t missing_cell_indices[] = {0, 1};
     size_t len_missing_cells = 2;
 
-    ret = zero_polynomial_periodic_roots(
+    ret = vanishing_polynomial_from_cells(
         zero_poly, &zero_poly_len, missing_cell_indices, len_missing_cells, &s
     );
 
@@ -2418,8 +2418,8 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
-    RUN(test_zero_polynomial_from_roots);
-    RUN(test_zero_polynomial_periodic_roots);
+    RUN(test_compute_vanishing_polynomial_from_roots);
+    RUN(test_vanishing_polynomial_from_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*

@@ -2370,7 +2370,7 @@ static C_KZG_RET ifft_fr(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Zero poly
+// Vanishing poly
 ///////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
@@ -2386,15 +2386,15 @@ typedef struct {
  * `(x - r_i)` where `r_i` is the i'th root. This results in a poly of degree
  * roots_len.
  *
- * @param[in,out]   poly      The zero polynomial for roots
- * @param[in,out]   poly_len  The length of poly
- * @param[in]       roots     The array of roots
- * @param[in]       roots_len The number of roots
- * @param[in]       s         The trusted setup
+ * @param[in,out]   poly         The zero polynomial for roots
+ * @param[in,out]   poly_len     The length of poly
+ * @param[in]       roots        The array of roots
+ * @param[in]       roots_len    The number of roots
+ * @param[in]       s            The trusted setup
  *
  * @remark `poly_len` must be at least `roots_len + 1` in length.
  */
-static C_KZG_RET zero_polynomial_from_roots(
+static C_KZG_RET compute_vanishing_polynomial_from_roots(
     fr_t *poly, size_t *poly_len, const fr_t *roots, size_t roots_len
 ) {
     fr_t neg_root;
@@ -2433,34 +2433,34 @@ static C_KZG_RET zero_polynomial_from_roots(
  * computed, along with every `CELLS_PER_EXT_BLOB` spaced root of unity in the
  * domain.
  *
- * @param[in,out]   zero_poly      The zero polynomial for cell indices
- * @param[in,out]   zero_poly_len  The length of zero_poly
- * @param[in]       missing_cell_indices     The array of missing cell indices
- * @param[in]       len_missing_cells The number of missing cell indices
- * @param[in]       s         The trusted setup
+ * @param[in,out]   vanishing_poly          The vanishing polynomial
+ * @param[in,out]   vanishing_poly_len      The length of vanishing_poly
+ * @param[in]       missing_cell_indices    The array of missing cell indices
+ * @param[in]       len_missing_cells       The number of missing cell indices
+ * @param[in]       s                       The trusted setup
  *
  * @remark This does not work if all cells are missing.
  * @remark `missing_cell_indices` are assumed to be less than
  * `CELLS_PER_EXT_BLOB`.
  */
-static C_KZG_RET zero_polynomial_periodic_roots(
-    fr_t *zero_poly,
-    size_t *zero_poly_len,
+static C_KZG_RET vanishing_polynomial_from_cells(
+    fr_t *vanishing_poly,
+    size_t *vanishing_poly_len,
     const uint64_t *missing_cell_indices,
     size_t len_missing_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *roots = NULL;
-    fr_t *short_zero_poly = NULL;
-    size_t short_zero_poly_len = 0;
+    fr_t *short_vanishing_poly = NULL;
+    size_t short_vanishing_poly_len = 0;
 
     /* If nothing is missing, return all zeros */
     if (len_missing_cells == 0) {
         for (size_t i = 0; i < s->max_width; i++) {
-            zero_poly[i] = FR_ZERO;
+            vanishing_poly[i] = FR_ZERO;
         }
-        *zero_poly_len = 0;
+        *vanishing_poly_len = 0;
         ret = C_KZG_OK;
         goto out;
     }
@@ -2477,7 +2477,7 @@ static C_KZG_RET zero_polynomial_periodic_roots(
     /* Allocate arrays */
     ret = new_fr_array(&roots, len_missing_cells);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&short_zero_poly, (len_missing_cells + 1));
+    ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
     if (ret != C_KZG_OK) goto out;
 
     /* Check if max_width is divisible by CELLS_PER_EXT_BLOB*/
@@ -2500,33 +2500,35 @@ static C_KZG_RET zero_polynomial_periodic_roots(
     }
 
     /* Compute the polynomial that evaluates to zero on the roots*/
-    ret = zero_polynomial_from_roots(
-        short_zero_poly, &short_zero_poly_len, roots, len_missing_cells
+    ret = compute_vanishing_polynomial_from_roots(
+        short_vanishing_poly,
+        &short_vanishing_poly_len,
+        roots,
+        len_missing_cells
     );
     if (ret != C_KZG_OK) goto out;
 
     /*
-        For each root \omega^i in `short_zero_poly`, we compute a polynomial
-        that has roots at H =   {
-                                \omega^i * \gamma^0,
-                                \omega^i * \gamma^1,
+        For each root \omega^i in `short_vanishing_poly`, we compute a
+       polynomial that has roots at H =   { \omega^i * \gamma^0, \omega^i *
+       \gamma^1,
                                 ...,
                                 \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
                                 }
         where \gamma is primitive `FIELD_ELEMENTS_PER_EXT_BLOB` generator.
 
         This is done by shifting the degree of all coefficients in
-        `short_zero_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
+        `short_vanishing_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
     */
-    for (size_t i = 0; i < short_zero_poly_len; i++) {
-        zero_poly[i * FIELD_ELEMENTS_PER_CELL] = short_zero_poly[i];
+    for (size_t i = 0; i < short_vanishing_poly_len; i++) {
+        vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
-    *zero_poly_len = s->max_width;
+    *vanishing_poly_len = s->max_width;
 
     ret = C_KZG_OK;
 out:
     c_kzg_free(roots);
-    c_kzg_free(short_zero_poly);
+    c_kzg_free(short_vanishing_poly);
     return ret;
 }
 
@@ -2682,13 +2684,13 @@ static C_KZG_RET recover_cells_impl(
 ) {
     C_KZG_RET ret;
     uint64_t *missing_cell_indices = NULL;
-    fr_t *zero_poly_eval = NULL;
-    fr_t *zero_poly_coeff = NULL;
-    size_t zero_poly_len = 0;
+    fr_t *vanishing_poly_eval = NULL;
+    fr_t *vanishing_poly_coeff = NULL;
+    size_t vanishing_poly_len = 0;
     fr_t *extended_evaluation_times_zero = NULL;
     fr_t *extended_evaluation_times_zero_coeffs = NULL;
     fr_t *extended_evaluations_over_coset = NULL;
-    fr_t *zero_poly_over_coset = NULL;
+    fr_t *vanishing_poly_over_coset = NULL;
     fr_t *reconstructed_poly_coeff = NULL;
     fr_t *cells_brp = NULL;
 
@@ -2697,9 +2699,9 @@ static C_KZG_RET recover_cells_impl(
         (void **)&missing_cell_indices, s->max_width, sizeof(uint64_t)
     );
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_eval, s->max_width);
+    ret = new_fr_array(&vanishing_poly_eval, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_coeff, s->max_width);
+    ret = new_fr_array(&vanishing_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&extended_evaluation_times_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
@@ -2707,7 +2709,7 @@ static C_KZG_RET recover_cells_impl(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&extended_evaluations_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_over_coset, s->max_width);
+    ret = new_fr_array(&vanishing_poly_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&reconstructed_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
@@ -2737,13 +2739,17 @@ static C_KZG_RET recover_cells_impl(
     assert(len_missing <= CELLS_PER_EXT_BLOB / 2);
 
     /* Compute Z(x) in monomial form */
-    ret = zero_polynomial_periodic_roots(
-        zero_poly_coeff, &zero_poly_len, missing_cell_indices, len_missing, s
+    ret = vanishing_polynomial_from_cells(
+        vanishing_poly_coeff,
+        &vanishing_poly_len,
+        missing_cell_indices,
+        len_missing,
+        s
     );
     if (ret != C_KZG_OK) goto out;
 
     /* Convert Z(x) to evaluation form */
-    ret = fft_fr(zero_poly_eval, zero_poly_coeff, s->max_width, s);
+    ret = fft_fr(vanishing_poly_eval, vanishing_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
@@ -2754,7 +2760,7 @@ static C_KZG_RET recover_cells_impl(
             blst_fr_mul(
                 &extended_evaluation_times_zero[i],
                 &cells_brp[i],
-                &zero_poly_eval[i]
+                &vanishing_poly_eval[i]
             );
         }
     }
@@ -2782,8 +2788,10 @@ static C_KZG_RET recover_cells_impl(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* We use max_width here (not zero_poly_len) intentionally */
-    ret = coset_fft_fr(zero_poly_over_coset, zero_poly_coeff, s->max_width, s);
+    /* We use max_width here (not vanishing_poly_len) intentionally */
+    ret = coset_fft_fr(
+        vanishing_poly_over_coset, vanishing_poly_coeff, s->max_width, s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
@@ -2791,7 +2799,7 @@ static C_KZG_RET recover_cells_impl(
         fr_div(
             &extended_evaluations_over_coset[i],
             &extended_evaluations_over_coset[i],
-            &zero_poly_over_coset[i]
+            &vanishing_poly_over_coset[i]
         );
     }
 
@@ -2825,13 +2833,13 @@ static C_KZG_RET recover_cells_impl(
 
 out:
     c_kzg_free(missing_cell_indices);
-    c_kzg_free(zero_poly_eval);
+    c_kzg_free(vanishing_poly_eval);
     c_kzg_free(extended_evaluation_times_zero);
     c_kzg_free(extended_evaluation_times_zero_coeffs);
     c_kzg_free(extended_evaluations_over_coset);
-    c_kzg_free(zero_poly_over_coset);
+    c_kzg_free(vanishing_poly_over_coset);
     c_kzg_free(reconstructed_poly_coeff);
-    c_kzg_free(zero_poly_coeff);
+    c_kzg_free(vanishing_poly_coeff);
     c_kzg_free(cells_brp);
     return ret;
 }
