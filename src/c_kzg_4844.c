@@ -2443,7 +2443,7 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * @remark `missing_cell_indices` are assumed to be less than
  * `CELLS_PER_EXT_BLOB`.
  */
-static C_KZG_RET vanishing_polynomial_from_cells(
+static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *vanishing_poly,
     size_t *vanishing_poly_len,
     const uint64_t *missing_cell_indices,
@@ -2739,7 +2739,7 @@ static C_KZG_RET recover_cells_impl(
     assert(len_missing <= CELLS_PER_EXT_BLOB / 2);
 
     /* Compute Z(x) in monomial form */
-    ret = vanishing_polynomial_from_cells(
+    ret = vanishing_polynomial_for_missing_cells(
         vanishing_poly_coeff,
         &vanishing_poly_len,
         missing_cell_indices,

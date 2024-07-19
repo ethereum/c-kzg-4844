@@ -2003,7 +2003,7 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
     ASSERT("coefficient 2 are equal", fr_equal(&poly[2], &expected[2]));
 }
 
-static void test_vanishing_polynomial_from_cells(void) {
+static void test_vanishing_polynomial_for_missing_cells(void) {
     const size_t MAX_WIDTH = 8192;
 
     fr_t *vanishing_poly = NULL;
@@ -2020,7 +2020,7 @@ static void test_vanishing_polynomial_from_cells(void) {
     uint64_t missing_cell_indices[] = {0, 1};
     size_t len_missing_cells = 2;
 
-    ret = vanishing_polynomial_from_cells(
+    ret = vanishing_polynomial_for_missing_cells(
         vanishing_poly,
         &vanishing_poly_len,
         missing_cell_indices,
@@ -2423,7 +2423,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
     RUN(test_compute_vanishing_polynomial_from_roots);
-    RUN(test_vanishing_polynomial_from_cells);
+    RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
