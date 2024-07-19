@@ -3000,7 +3000,7 @@ out:
  * polynomial, by inverse FFTing the bit-reverse-permuted lagrange polynomial.
  */
 static C_KZG_RET poly_lagrange_to_monomial(
-    fr_t *monomial, const fr_t *lagrange, size_t len, const KZGSettings *s
+    fr_t *monomial_out, const fr_t *lagrange, size_t len, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *lagrange_brp = NULL;
@@ -3015,7 +3015,7 @@ static C_KZG_RET poly_lagrange_to_monomial(
     if (ret != C_KZG_OK) goto out;
 
     /* Perform an inverse FFT on the BRP'd polynomial */
-    ret = ifft_fr(monomial, lagrange_brp, len, s);
+    ret = ifft_fr(monomial_out, lagrange_brp, len, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
