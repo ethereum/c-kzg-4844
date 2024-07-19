@@ -2511,7 +2511,6 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
         vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
 
-    ret = C_KZG_OK;
 out:
     c_kzg_free(roots);
     c_kzg_free(short_vanishing_poly);
