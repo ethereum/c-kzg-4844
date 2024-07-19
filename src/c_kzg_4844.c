@@ -2636,7 +2636,7 @@ out:
  *
  * @return True if the value is in the array, otherwise false.
  */
-bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
+static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
     for (size_t i = 0; i < arr_size; i++) {
         if (arr[i] == value) {
             return true;
