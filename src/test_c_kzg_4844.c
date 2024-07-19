@@ -1997,10 +1997,10 @@ static void test_zero_polynomial_from_roots(void) {
 
     expected[2] = FR_ONE;
 
-    assert(poly_len == 3);
-    assert(fr_equal(&poly[0], &expected[0]));
-    assert(fr_equal(&poly[1], &expected[1]));
-    assert(fr_equal(&poly[2], &expected[2]));
+    ASSERT(poly_len == 3);
+    ASSERT(fr_equal(&poly[0], &expected[0]));
+    ASSERT(fr_equal(&poly[1], &expected[1]));
+    ASSERT(fr_equal(&poly[2], &expected[2]));
 }
 
 static void test_zero_polynomial_periodic_roots(void) {
@@ -2008,13 +2008,13 @@ static void test_zero_polynomial_periodic_roots(void) {
 
     fr_t *zero_poly = NULL;
     C_KZG_RET ret = new_fr_array(&zero_poly, MAX_WIDTH);
-    assert(ret == C_KZG_OK);
+    ASSERT(ret == C_KZG_OK);
 
     size_t zero_poly_len;
 
     fr_t *fft_result = NULL;
     ret = new_fr_array(&fft_result, MAX_WIDTH);
-    assert(ret == C_KZG_OK);
+    ASSERT(ret == C_KZG_OK);
 
     // Test case: the 0th and 1st cell are missing
     uint64_t missing_cell_indices[] = {0, 1};
@@ -2025,10 +2025,10 @@ static void test_zero_polynomial_periodic_roots(void) {
     );
 
     // Check return status
-    assert(ret == C_KZG_OK);
+    ASSERT(ret == C_KZG_OK);
 
     // Check polynomial length
-    assert(zero_poly_len == MAX_WIDTH);
+    ASSERT(zero_poly_len == MAX_WIDTH);
 
     // Compute FFT of zero_poly
     fft_fr(fft_result, zero_poly, MAX_WIDTH, &s);
@@ -2037,9 +2037,9 @@ static void test_zero_polynomial_periodic_roots(void) {
     for (size_t i = 0; i < MAX_WIDTH; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
-            assert(fr_is_zero(&fft_result[i]));
+            ASSERT(fr_is_zero(&fft_result[i]));
         } else {
-            assert(!fr_is_zero(&fft_result[i]));
+            ASSERT(!fr_is_zero(&fft_result[i]));
         }
     }
 }
