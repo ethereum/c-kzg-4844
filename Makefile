@@ -15,7 +15,7 @@ go:
 
 .PHONY: java
 java:
-	@make -C bindings/java
+	@make -C bindings/java build test
 
 .PHONY: nim
 nim:
