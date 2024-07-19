@@ -2766,7 +2766,6 @@ static C_KZG_RET recover_cells_impl(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* We use max_width here (not vanishing_poly_len) intentionally */
     ret = coset_fft_fr(
         vanishing_poly_over_coset, vanishing_poly_coeff, s->max_width, s
     );
