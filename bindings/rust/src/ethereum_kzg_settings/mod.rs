@@ -40,7 +40,7 @@ fn ethereum_kzg_settings_inner(precompute: usize) -> &'static Arc<KzgSettings> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{bindings::BYTES_PER_BLOB, Blob, KzgCommitment, KzgProof, KzgSettings};
+    use crate::{bindings::BYTES_PER_BLOB, Blob, KzgSettings};
     use std::path::Path;
 
     #[test]
@@ -53,19 +53,23 @@ mod tests {
         let blob = Blob::new([1u8; BYTES_PER_BLOB]);
 
         // generate commitment
-        let ts_commitment = KzgCommitment::blob_to_kzg_commitment(&blob, &ts_settings)
+        let ts_commitment = ts_settings
+            .blob_to_kzg_commitment(&blob)
             .unwrap()
             .to_bytes();
-        let eth_commitment = KzgCommitment::blob_to_kzg_commitment(&blob, &eth_settings)
+        let eth_commitment = eth_settings
+            .blob_to_kzg_commitment(&blob)
             .unwrap()
             .to_bytes();
         assert_eq!(ts_commitment, eth_commitment);
 
         // generate proof
-        let ts_proof = KzgProof::compute_blob_kzg_proof(&blob, &ts_commitment, &ts_settings)
+        let ts_proof = ts_settings
+            .compute_blob_kzg_proof(&blob, &ts_commitment)
             .unwrap()
             .to_bytes();
-        let eth_proof = KzgProof::compute_blob_kzg_proof(&blob, &eth_commitment, &eth_settings)
+        let eth_proof = eth_settings
+            .compute_blob_kzg_proof(&blob, &eth_commitment)
             .unwrap()
             .to_bytes();
         assert_eq!(ts_proof, eth_proof);

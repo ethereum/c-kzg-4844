@@ -306,6 +306,250 @@ impl KZGSettings {
 
         result
     }
+
+    pub fn blob_to_kzg_commitment(&self, blob: &Blob) -> Result<KZGCommitment, Error> {
+        let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
+        unsafe {
+            let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob, self);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(kzg_commitment.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn compute_kzg_proof(
+        &self,
+        blob: &Blob,
+        z_bytes: &Bytes32,
+    ) -> Result<(KZGProof, Bytes32), Error> {
+        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
+        let mut y_out = MaybeUninit::<Bytes32>::uninit();
+        unsafe {
+            let res = compute_kzg_proof(
+                kzg_proof.as_mut_ptr(),
+                y_out.as_mut_ptr(),
+                blob,
+                z_bytes,
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((kzg_proof.assume_init(), y_out.assume_init()))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn compute_blob_kzg_proof(
+        &self,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
+    ) -> Result<KZGProof, Error> {
+        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
+        unsafe {
+            let res = compute_blob_kzg_proof(kzg_proof.as_mut_ptr(), blob, commitment_bytes, self);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(kzg_proof.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_kzg_proof(
+        &self,
+        commitment_bytes: &Bytes48,
+        z_bytes: &Bytes32,
+        y_bytes: &Bytes32,
+        proof_bytes: &Bytes48,
+    ) -> Result<bool, Error> {
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_kzg_proof(
+                verified.as_mut_ptr(),
+                commitment_bytes,
+                z_bytes,
+                y_bytes,
+                proof_bytes,
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_blob_kzg_proof(
+        &self,
+        blob: &Blob,
+        commitment_bytes: &Bytes48,
+        proof_bytes: &Bytes48,
+    ) -> Result<bool, Error> {
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_blob_kzg_proof(
+                verified.as_mut_ptr(),
+                blob,
+                commitment_bytes,
+                proof_bytes,
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_blob_kzg_proof_batch(
+        &self,
+        blobs: &[Blob],
+        commitments_bytes: &[Bytes48],
+        proofs_bytes: &[Bytes48],
+    ) -> Result<bool, Error> {
+        if blobs.len() != commitments_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} blobs and {} commitments",
+                blobs.len(),
+                commitments_bytes.len()
+            )));
+        }
+        if blobs.len() != proofs_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} blobs and {} proofs",
+                blobs.len(),
+                proofs_bytes.len()
+            )));
+        }
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_blob_kzg_proof_batch(
+                verified.as_mut_ptr(),
+                blobs.as_ptr(),
+                commitments_bytes.as_ptr(),
+                proofs_bytes.as_ptr(),
+                blobs.len(),
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn compute_cells_and_kzg_proofs(
+        &self,
+        blob: &Blob,
+    ) -> Result<
+        (
+            Box<[Cell; CELLS_PER_EXT_BLOB]>,
+            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
+        ),
+        Error,
+    > {
+        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
+        unsafe {
+            let res =
+                compute_cells_and_kzg_proofs(cells.as_mut_ptr(), proofs.as_mut_ptr(), blob, self);
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((Box::new(cells), Box::new(proofs)))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn recover_cells_and_kzg_proofs(
+        &self,
+        cell_indices: &[u64],
+        cells: &[Cell],
+    ) -> Result<
+        (
+            Box<[Cell; CELLS_PER_EXT_BLOB]>,
+            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
+        ),
+        Error,
+    > {
+        if cell_indices.len() != cells.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cell indices and {} cells",
+                cell_indices.len(),
+                cells.len()
+            )));
+        }
+        let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut recovered_proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
+        unsafe {
+            let res = recover_cells_and_kzg_proofs(
+                recovered_cells.as_mut_ptr(),
+                recovered_proofs.as_mut_ptr(),
+                cell_indices.as_ptr(),
+                cells.as_ptr(),
+                cells.len(),
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok((Box::new(recovered_cells), Box::new(recovered_proofs)))
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
+    pub fn verify_cell_kzg_proof_batch(
+        &self,
+        commitments_bytes: &[Bytes48],
+        cell_indices: &[u64],
+        cells: &[Cell],
+        proofs_bytes: &[Bytes48],
+    ) -> Result<bool, Error> {
+        if cells.len() != commitments_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cells and {} commitments",
+                cells.len(),
+                commitments_bytes.len()
+            )));
+        }
+        if cells.len() != cell_indices.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cells and {} column indices",
+                cells.len(),
+                cell_indices.len()
+            )));
+        }
+        if cells.len() != proofs_bytes.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cells and {} proofs",
+                cells.len(),
+                proofs_bytes.len()
+            )));
+        }
+        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
+        unsafe {
+            let res = verify_cell_kzg_proof_batch(
+                verified.as_mut_ptr(),
+                commitments_bytes.as_ptr(),
+                cell_indices.as_ptr(),
+                cells.as_ptr(),
+                proofs_bytes.as_ptr(),
+                cells.len(),
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(verified.assume_init())
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
 }
 
 impl Drop for KZGSettings {
@@ -421,183 +665,6 @@ impl KZGProof {
     pub fn as_hex_string(&self) -> String {
         hex::encode(self.bytes)
     }
-
-    pub fn compute_kzg_proof(
-        blob: &Blob,
-        z_bytes: &Bytes32,
-        kzg_settings: &KZGSettings,
-    ) -> Result<(Self, Bytes32), Error> {
-        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
-        let mut y_out = MaybeUninit::<Bytes32>::uninit();
-        unsafe {
-            let res = compute_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                y_out.as_mut_ptr(),
-                blob,
-                z_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok((kzg_proof.assume_init(), y_out.assume_init()))
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn compute_blob_kzg_proof(
-        blob: &Blob,
-        commitment_bytes: &Bytes48,
-        kzg_settings: &KZGSettings,
-    ) -> Result<Self, Error> {
-        let mut kzg_proof = MaybeUninit::<KZGProof>::uninit();
-        unsafe {
-            let res = compute_blob_kzg_proof(
-                kzg_proof.as_mut_ptr(),
-                blob,
-                commitment_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_proof.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn verify_kzg_proof(
-        commitment_bytes: &Bytes48,
-        z_bytes: &Bytes32,
-        y_bytes: &Bytes32,
-        proof_bytes: &Bytes48,
-        kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_kzg_proof(
-                verified.as_mut_ptr(),
-                commitment_bytes,
-                z_bytes,
-                y_bytes,
-                proof_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn verify_blob_kzg_proof(
-        blob: &Blob,
-        commitment_bytes: &Bytes48,
-        proof_bytes: &Bytes48,
-        kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof(
-                verified.as_mut_ptr(),
-                blob,
-                commitment_bytes,
-                proof_bytes,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn verify_blob_kzg_proof_batch(
-        blobs: &[Blob],
-        commitments_bytes: &[Bytes48],
-        proofs_bytes: &[Bytes48],
-        kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        if blobs.len() != commitments_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} blobs and {} commitments",
-                blobs.len(),
-                commitments_bytes.len()
-            )));
-        }
-        if blobs.len() != proofs_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} blobs and {} proofs",
-                blobs.len(),
-                proofs_bytes.len()
-            )));
-        }
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_blob_kzg_proof_batch(
-                verified.as_mut_ptr(),
-                blobs.as_ptr(),
-                commitments_bytes.as_ptr(),
-                proofs_bytes.as_ptr(),
-                blobs.len(),
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn verify_cell_kzg_proof_batch(
-        commitments_bytes: &[Bytes48],
-        cell_indices: &[u64],
-        cells: &[Cell],
-        proofs_bytes: &[Bytes48],
-        kzg_settings: &KZGSettings,
-    ) -> Result<bool, Error> {
-        if cells.len() != commitments_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} cells and {} commitments",
-                cells.len(),
-                commitments_bytes.len()
-            )));
-        }
-        if cells.len() != cell_indices.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} cells and {} column indices",
-                cells.len(),
-                cell_indices.len()
-            )));
-        }
-        if cells.len() != proofs_bytes.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} cells and {} proofs",
-                cells.len(),
-                proofs_bytes.len()
-            )));
-        }
-        let mut verified: MaybeUninit<bool> = MaybeUninit::uninit();
-        unsafe {
-            let res = verify_cell_kzg_proof_batch(
-                verified.as_mut_ptr(),
-                commitments_bytes.as_ptr(),
-                cell_indices.as_ptr(),
-                cells.as_ptr(),
-                proofs_bytes.as_ptr(),
-                cells.len(),
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(verified.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
 }
 
 impl KZGCommitment {
@@ -620,18 +687,6 @@ impl KZGCommitment {
 
     pub fn as_hex_string(&self) -> String {
         hex::encode(self.bytes)
-    }
-
-    pub fn blob_to_kzg_commitment(blob: &Blob, kzg_settings: &KZGSettings) -> Result<Self, Error> {
-        let mut kzg_commitment: MaybeUninit<KZGCommitment> = MaybeUninit::uninit();
-        unsafe {
-            let res = blob_to_kzg_commitment(kzg_commitment.as_mut_ptr(), blob, kzg_settings);
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok(kzg_commitment.assume_init())
-            } else {
-                Err(Error::CError(res))
-            }
-        }
     }
 }
 
@@ -659,70 +714,6 @@ impl Cell {
 
     pub fn from_hex(hex_str: &str) -> Result<Self, Error> {
         Self::from_bytes(&hex_to_bytes(hex_str)?)
-    }
-
-    pub fn compute_cells_and_kzg_proofs(
-        blob: &Blob,
-        kzg_settings: &KZGSettings,
-    ) -> Result<
-        (
-            Box<[Cell; CELLS_PER_EXT_BLOB]>,
-            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
-        ),
-        Error,
-    > {
-        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
-        let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
-        unsafe {
-            let res = compute_cells_and_kzg_proofs(
-                cells.as_mut_ptr(),
-                proofs.as_mut_ptr(),
-                blob,
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok((Box::new(cells), Box::new(proofs)))
-            } else {
-                Err(Error::CError(res))
-            }
-        }
-    }
-
-    pub fn recover_cells_and_kzg_proofs(
-        cell_indices: &[u64],
-        cells: &[Cell],
-        kzg_settings: &KZGSettings,
-    ) -> Result<
-        (
-            Box<[Cell; CELLS_PER_EXT_BLOB]>,
-            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
-        ),
-        Error,
-    > {
-        if cell_indices.len() != cells.len() {
-            return Err(Error::MismatchLength(format!(
-                "There are {} cell indices and {} cells",
-                cell_indices.len(),
-                cells.len()
-            )));
-        }
-        let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
-        let mut recovered_proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
-        unsafe {
-            let res = recover_cells_and_kzg_proofs(
-                recovered_cells.as_mut_ptr(),
-                recovered_proofs.as_mut_ptr(),
-                cell_indices.as_ptr(),
-                cells.as_ptr(),
-                cells.len(),
-                kzg_settings,
-            );
-            if let C_KZG_RET::C_KZG_OK = res {
-                Ok((Box::new(recovered_cells), Box::new(recovered_proofs)))
-            } else {
-                Err(Error::CError(res))
-            }
-        }
     }
 }
 
@@ -905,7 +896,7 @@ mod tests {
 
         let commitments: Vec<Bytes48> = blobs
             .iter()
-            .map(|blob| KZGCommitment::blob_to_kzg_commitment(blob, &kzg_settings).unwrap())
+            .map(|blob| kzg_settings.blob_to_kzg_commitment(blob).unwrap())
             .map(|commitment| commitment.to_bytes())
             .collect();
 
@@ -913,36 +904,30 @@ mod tests {
             .iter()
             .zip(commitments.iter())
             .map(|(blob, commitment)| {
-                KZGProof::compute_blob_kzg_proof(blob, commitment, &kzg_settings).unwrap()
+                kzg_settings
+                    .compute_blob_kzg_proof(blob, commitment)
+                    .unwrap()
             })
             .map(|proof| proof.to_bytes())
             .collect();
 
-        assert!(KZGProof::verify_blob_kzg_proof_batch(
-            &blobs,
-            &commitments,
-            &proofs,
-            &kzg_settings
-        )
-        .unwrap());
+        assert!(kzg_settings
+            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
+            .unwrap());
 
         blobs.pop();
 
-        let error =
-            KZGProof::verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs, &kzg_settings)
-                .unwrap_err();
+        let error = kzg_settings
+            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
+            .unwrap_err();
         assert!(matches!(error, Error::MismatchLength(_)));
 
         let incorrect_blob = generate_random_blob(&mut rng);
         blobs.push(incorrect_blob);
 
-        assert!(!KZGProof::verify_blob_kzg_proof_batch(
-            &blobs,
-            &commitments,
-            &proofs,
-            &kzg_settings
-        )
-        .unwrap());
+        assert!(!kzg_settings
+            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
+            .unwrap());
     }
 
     #[test]
@@ -981,7 +966,7 @@ mod tests {
                 continue;
             };
 
-            match KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings) {
+            match kzg_settings.blob_to_kzg_commitment(&blob) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1015,7 +1000,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_kzg_proof(&blob, &z, &kzg_settings) {
+            match kzg_settings.compute_kzg_proof(&blob, &z) {
                 Ok((proof, y)) => {
                     assert_eq!(proof.bytes, test.get_output().unwrap().0.bytes);
                     assert_eq!(y.bytes, test.get_output().unwrap().1.bytes);
@@ -1045,7 +1030,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::compute_blob_kzg_proof(&blob, &commitment, &kzg_settings) {
+            match kzg_settings.compute_blob_kzg_proof(&blob, &commitment) {
                 Ok(res) => assert_eq!(res.bytes, test.get_output().unwrap().bytes),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1076,7 +1061,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_kzg_proof(&commitment, &z, &y, &proof, &kzg_settings) {
+            match kzg_settings.verify_kzg_proof(&commitment, &z, &y, &proof) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1106,7 +1091,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof(&blob, &commitment, &proof, &kzg_settings) {
+            match kzg_settings.verify_blob_kzg_proof(&blob, &commitment, &proof) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1136,12 +1121,7 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_blob_kzg_proof_batch(
-                &blobs,
-                &commitments,
-                &proofs,
-                &kzg_settings,
-            ) {
+            match kzg_settings.verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
             }
@@ -1168,7 +1148,7 @@ mod tests {
                 continue;
             };
 
-            match Cell::compute_cells_and_kzg_proofs(&blob, &kzg_settings) {
+            match kzg_settings.compute_cells_and_kzg_proofs(&blob) {
                 Ok((cells, proofs)) => {
                     let (expected_cells, expected_proofs) = test.get_output().unwrap();
                     assert_eq!(cells.as_slice(), expected_cells);
@@ -1203,7 +1183,7 @@ mod tests {
                 continue;
             };
 
-            match Cell::recover_cells_and_kzg_proofs(&cell_indices, &cells, &kzg_settings) {
+            match kzg_settings.recover_cells_and_kzg_proofs(&cell_indices, &cells) {
                 Ok((recovered_cells, recovered_proofs)) => {
                     let (expected_cells, expected_proofs) = test.get_output().unwrap();
                     assert_eq!(recovered_cells.as_slice(), expected_cells);
@@ -1240,12 +1220,11 @@ mod tests {
                 continue;
             };
 
-            match KZGProof::verify_cell_kzg_proof_batch(
+            match kzg_settings.verify_cell_kzg_proof_batch(
                 &commitments,
                 &cell_indices,
                 &cells,
                 &proofs,
-                &kzg_settings,
             ) {
                 Ok(res) => assert_eq!(res, test.get_output().unwrap()),
                 _ => assert!(test.get_output().is_none()),
