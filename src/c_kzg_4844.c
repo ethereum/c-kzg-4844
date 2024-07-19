@@ -3412,10 +3412,6 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    /* Initialize all of the polynomial fields to zero */
-    memset(poly_monomial, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
-    memset(poly_lagrange, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
-
     /*
      * Convert the blob to a polynomial. Note that only the first 4096 fields
      * of the polynomial will be set. The upper 4096 fields will remain zero.
