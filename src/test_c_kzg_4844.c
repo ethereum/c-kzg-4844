@@ -1997,49 +1997,53 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 
     expected[2] = FR_ONE;
 
-    ASSERT(poly_len == 3);
-    ASSERT(fr_equal(&poly[0], &expected[0]));
-    ASSERT(fr_equal(&poly[1], &expected[1]));
-    ASSERT(fr_equal(&poly[2], &expected[2]));
+    ASSERT("polynomial length is 3", poly_len == 3);
+    ASSERT("coefficient 0 are equal", fr_equal(&poly[0], &expected[0]));
+    ASSERT("coefficient 1 are equal", fr_equal(&poly[1], &expected[1]));
+    ASSERT("coefficient 2 are equal", fr_equal(&poly[2], &expected[2]));
 }
 
 static void test_vanishing_polynomial_from_cells(void) {
     const size_t MAX_WIDTH = 8192;
 
-    fr_t *zero_poly = NULL;
-    C_KZG_RET ret = new_fr_array(&zero_poly, MAX_WIDTH);
-    ASSERT(ret == C_KZG_OK);
+    fr_t *vanishing_poly = NULL;
+    C_KZG_RET ret = new_fr_array(&vanishing_poly, MAX_WIDTH);
+    ASSERT("vanishing poly alloc", ret == C_KZG_OK);
 
-    size_t zero_poly_len;
+    size_t vanishing_poly_len;
 
     fr_t *fft_result = NULL;
     ret = new_fr_array(&fft_result, MAX_WIDTH);
-    ASSERT(ret == C_KZG_OK);
+    ASSERT("fft_result alloc", ret == C_KZG_OK);
 
     // Test case: the 0th and 1st cell are missing
     uint64_t missing_cell_indices[] = {0, 1};
     size_t len_missing_cells = 2;
 
     ret = vanishing_polynomial_from_cells(
-        zero_poly, &zero_poly_len, missing_cell_indices, len_missing_cells, &s
+        vanishing_poly,
+        &vanishing_poly_len,
+        missing_cell_indices,
+        len_missing_cells,
+        &s
     );
 
     // Check return status
-    ASSERT(ret == C_KZG_OK);
+    ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     // Check polynomial length
-    ASSERT(zero_poly_len == MAX_WIDTH);
+    ASSERT("vanishing poly length check", vanishing_poly_len == MAX_WIDTH);
 
-    // Compute FFT of zero_poly
-    fft_fr(fft_result, zero_poly, MAX_WIDTH, &s);
+    // Compute FFT of vanishing_poly
+    fft_fr(fft_result, vanishing_poly, MAX_WIDTH, &s);
 
     // Check FFT results
     for (size_t i = 0; i < MAX_WIDTH; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
-            ASSERT(fr_is_zero(&fft_result[i]));
+            ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
         } else {
-            ASSERT(!fr_is_zero(&fft_result[i]));
+            ASSERT("evaluation is not zero", !fr_is_zero(&fft_result[i]));
         }
     }
 }
