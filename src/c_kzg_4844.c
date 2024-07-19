@@ -2429,7 +2429,6 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * `CELLS_PER_EXT_BLOB` spaced root of unity in the domain.
  *
  * @param[in,out]   vanishing_poly          The vanishing polynomial
- * @param[in,out]   vanishing_poly_len      The length of vanishing_poly
  * @param[in]       missing_cell_indices    The array of missing cell indices
  * @param[in]       len_missing_cells       The number of missing cell indices
  * @param[in]       s                       The trusted setup
@@ -2444,7 +2443,6 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  */
 static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *vanishing_poly,
-    size_t *vanishing_poly_len,
     const uint64_t *missing_cell_indices,
     size_t len_missing_cells,
     const KZGSettings *s
@@ -2509,7 +2507,6 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     for (size_t i = 0; i < short_vanishing_poly_len; i++) {
         vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
-    *vanishing_poly_len = s->max_width;
 
     ret = C_KZG_OK;
 out:
@@ -2672,7 +2669,6 @@ static C_KZG_RET recover_cells_impl(
     uint64_t *missing_cell_indices = NULL;
     fr_t *vanishing_poly_eval = NULL;
     fr_t *vanishing_poly_coeff = NULL;
-    size_t vanishing_poly_len = 0;
     fr_t *extended_evaluation_times_zero = NULL;
     fr_t *extended_evaluation_times_zero_coeffs = NULL;
     fr_t *extended_evaluations_over_coset = NULL;
@@ -2726,11 +2722,7 @@ static C_KZG_RET recover_cells_impl(
 
     /* Compute Z(x) in monomial form */
     ret = vanishing_polynomial_for_missing_cells(
-        vanishing_poly_coeff,
-        &vanishing_poly_len,
-        missing_cell_indices,
-        len_missing,
-        s
+        vanishing_poly_coeff, missing_cell_indices, len_missing, s
     );
     if (ret != C_KZG_OK) goto out;
 

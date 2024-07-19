@@ -2009,8 +2009,6 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     C_KZG_RET ret = new_fr_array(&vanishing_poly, s.max_width);
     ASSERT("vanishing poly alloc", ret == C_KZG_OK);
 
-    size_t vanishing_poly_len;
-
     fr_t *fft_result = NULL;
     ret = new_fr_array(&fft_result, s.max_width);
     ASSERT("fft_result alloc", ret == C_KZG_OK);
@@ -2020,18 +2018,11 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     size_t len_missing_cells = 2;
 
     ret = vanishing_polynomial_for_missing_cells(
-        vanishing_poly,
-        &vanishing_poly_len,
-        missing_cell_indices,
-        len_missing_cells,
-        &s
+        vanishing_poly, missing_cell_indices, len_missing_cells, &s
     );
 
     // Check return status
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
-
-    // Check polynomial length
-    ASSERT("vanishing poly length check", vanishing_poly_len == s.max_width);
 
     // Compute FFT of vanishing_poly
     fft_fr(fft_result, vanishing_poly, s.max_width, &s);
