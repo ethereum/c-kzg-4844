@@ -2004,16 +2004,15 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 }
 
 static void test_vanishing_polynomial_for_missing_cells(void) {
-    const size_t MAX_WIDTH = 8192;
 
     fr_t *vanishing_poly = NULL;
-    C_KZG_RET ret = new_fr_array(&vanishing_poly, MAX_WIDTH);
+    C_KZG_RET ret = new_fr_array(&vanishing_poly, s.max_width);
     ASSERT("vanishing poly alloc", ret == C_KZG_OK);
 
     size_t vanishing_poly_len;
 
     fr_t *fft_result = NULL;
-    ret = new_fr_array(&fft_result, MAX_WIDTH);
+    ret = new_fr_array(&fft_result, s.max_width);
     ASSERT("fft_result alloc", ret == C_KZG_OK);
 
     // Test case: the 0th and 1st cell are missing
@@ -2032,13 +2031,13 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     // Check polynomial length
-    ASSERT("vanishing poly length check", vanishing_poly_len == MAX_WIDTH);
+    ASSERT("vanishing poly length check", vanishing_poly_len == s.max_width);
 
     // Compute FFT of vanishing_poly
-    fft_fr(fft_result, vanishing_poly, MAX_WIDTH, &s);
+    fft_fr(fft_result, vanishing_poly, s.max_width, &s);
 
     // Check FFT results
-    for (size_t i = 0; i < MAX_WIDTH; i++) {
+    for (size_t i = 0; i < s.max_width; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             // Every CELLS_PER_EXT_BLOB-th evaluation should be zero
             ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
