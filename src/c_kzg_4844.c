@@ -2429,9 +2429,9 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * spaced chosen roots of unity in the domain of size `FIELD_ELEMENTS_PER_BLOB`.
  *
  * The roots of unity are chosen based on the missing cell indices. If the i'th
- * cell is missing, then the i'th root of unity will be zero on the polynomial
- * computed, along with every `CELLS_PER_EXT_BLOB` spaced root of unity in the
- * domain.
+ * cell is missing, then the i'th root of unity from `expanded_roots_of_unity`
+ * will be zero on the polynomial computed, along with every
+ * `CELLS_PER_EXT_BLOB` spaced root of unity in the domain.
  *
  * @param[in,out]   vanishing_poly          The vanishing polynomial
  * @param[in,out]   vanishing_poly_len      The length of vanishing_poly
