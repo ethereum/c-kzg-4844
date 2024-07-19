@@ -2497,7 +2497,7 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
                                 ...,
                                 \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
                                 }
-        where \gamma is primitive `FIELD_ELEMENTS_PER_EXT_BLOB` generator.
+        where \gamma is a primitive `FIELD_ELEMENTS_PER_EXT_BLOB`-th root of unity.
 
         This is done by shifting the degree of all coefficients in
         `short_vanishing_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
