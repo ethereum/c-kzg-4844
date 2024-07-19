@@ -2666,7 +2666,7 @@ bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
  * has the upper half of its values equal to zero.
  *
  * @param[out]  reconstructed_data_out   Preallocated array for recovered cells
- * @param[in]   cell_indices             The cell indices
+ * @param[in]   cell_indices             The cell indices you have
  * @param[in]   num_cells                The number of cells that you have
  * @param[in]   cells                    The cells that you have
  * @param[in]   s                        The trusted setup
