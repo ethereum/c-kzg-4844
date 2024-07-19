@@ -2989,37 +2989,37 @@ out:
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Convert a polynomial in monomial form to Lagrange form.
+ * Bit reverses and converts a polynomial in lagrange form to monomial form.
  *
  * @param[out]  monomial    The result, an array of `len` fields
  * @param[in]   lagrange    The input poly, an array of `len` fields
  * @param[in]   len         The length of both polynomials
  * @param[in]   s           The trusted setup
  *
- * @remark To convert a monomial-form polynomial to a Lagrange-form polynomial,
- *         you must inverse FFT the bit-reverse-permuated monomial polynomial.
+ * @remark This method converts a lagrange-form polynomial to a monomial-form
+ * polynomial, by inverse FFTing the bit-reverse-permuted lagrange polynomial.
  */
 static C_KZG_RET poly_lagrange_to_monomial(
-    fr_t *lagrange, const fr_t *monomial, size_t len, const KZGSettings *s
+    fr_t *monomial, const fr_t *lagrange, size_t len, const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *monomial_brp = NULL;
+    fr_t *lagrange_brp = NULL;
 
     /* Allocate space for the intermediate BRP poly */
-    ret = new_fr_array(&monomial_brp, len);
+    ret = new_fr_array(&lagrange_brp, len);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy the values and perform a bit reverse permutation */
-    memcpy(monomial_brp, monomial, sizeof(fr_t) * len);
-    ret = bit_reversal_permutation(monomial_brp, sizeof(fr_t), len);
+    memcpy(lagrange_brp, lagrange, sizeof(fr_t) * len);
+    ret = bit_reversal_permutation(lagrange_brp, sizeof(fr_t), len);
     if (ret != C_KZG_OK) goto out;
 
     /* Perform an inverse FFT on the BRP'd polynomial */
-    ret = ifft_fr(lagrange, monomial_brp, len, s);
+    ret = ifft_fr(monomial, lagrange_brp, len, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
-    c_kzg_free(monomial_brp);
+    c_kzg_free(lagrange_brp);
     return ret;
 }
 
@@ -3417,10 +3417,10 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     memset(poly_lagrange, 0, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
 
     /*
-     * Convert the blob to a polynomial. Note that only the first 4096 fields
-     * of the polynomial will be set. The upper 4096 fields will remain zero.
-     * This is required because the polynomial will be evaluated with 8192
-     * roots of unity.
+     * Convert the blob to a polynomial in lagrange form. Note that only the
+     * first 4096 fields of the polynomial will be set. The upper 4096 fields
+     * will remain zero. This is required because the polynomial will be
+     * evaluated with 8192 roots of unity.
      */
     ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
