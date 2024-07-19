@@ -23,7 +23,6 @@
 
 #include <assert.h>
 #include <inttypes.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -2467,14 +2466,11 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     if (ret != C_KZG_OK) goto out;
 
     /* Check if max_width is divisible by CELLS_PER_EXT_BLOB*/
-    if (s->max_width % CELLS_PER_EXT_BLOB != 0) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
+    assert(s->max_width % CELLS_PER_EXT_BLOB == 0);
 
     /*
-        For each missing cell index, choose the corresponding root of unity from
-        the subgroup of size `CELLS_PER_EXT_BLOB`.
+        For each missing cell index, choose the corresponding root of unity
+        from the subgroup of size `CELLS_PER_EXT_BLOB`.
 
         In other words, if the missing index is `i`, then we add \omega^i
         to the roots array, where \omega is a primitive `CELLS_PER_EXT_BLOB`
@@ -2496,8 +2492,8 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
 
     /*
         For each root \omega^i in `short_vanishing_poly`, we compute a
-       polynomial that has roots at H =   { \omega^i * \gamma^0, \omega^i *
-       \gamma^1,
+        polynomial that has roots at H =   { \omega^i * \gamma^0, \omega^i *
+        \gamma^1,
                                 ...,
                                 \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
                                 }
