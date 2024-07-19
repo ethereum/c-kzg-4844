@@ -2373,11 +2373,6 @@ static C_KZG_RET ifft_fr(
 // Vanishing poly
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-    fr_t *coeffs;
-    size_t length;
-} poly_t;
-
 /**
  * Calculates the minimal polynomial that evaluates to zero for each root.
  *
