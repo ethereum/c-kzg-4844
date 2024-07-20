@@ -2369,344 +2369,151 @@ static C_KZG_RET ifft_fr(
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Zero poly
+// Vanishing poly
 ///////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-    fr_t *coeffs;
-    size_t length;
-} poly_t;
-
 /**
- * Return the next highest power of two.
- *
- * @param[in]   v   A 64-bit unsigned integer <= 2^31
- *
- * @return The lowest power of two equal or larger than `v`.
- *
- * @remark If `v` is already a power of two, it is returned as-is.
- */
-static inline uint64_t next_power_of_two(uint64_t v) {
-    if (v == 0) return 1;
-    v--;
-    v |= v >> 1;
-    v |= v >> 2;
-    v |= v >> 4;
-    v |= v >> 8;
-    v |= v >> 16;
-    v |= v >> 32;
-    v++;
-    return v;
-}
-
-/**
- * Calculates the minimal polynomial that evaluates to zero for powers of roots
- * of unity at the given indices.
+ * Calculates the minimal polynomial that evaluates to zero for each root.
  *
  * Uses straightforward long multiplication to calculate the product of
- * `(x - * r^i)` where `r` is a root of unity and the `i`s are the indices at
- * which it must evaluate to zero. This results in a poly of degree indices_len.
+ * `(x - r_i)` where `r_i` is the i'th root. This results in a poly of degree
+ * roots_len.
  *
- * @param[in,out]   dst         The zero polynomial for indices
- * @param[in,out]   dst_len     The length of dst
- * @param[in]       indices     The array of missing indices
- * @param[in]       indices_len The number of missing indices
- * @param[in]       s           The trusted setup
+ * @param[in,out]   poly         The zero polynomial for roots
+ * @param[in,out]   poly_len     The length of poly
+ * @param[in]       roots        The array of roots
+ * @param[in]       roots_len    The number of roots
+ * @param[in]       s            The trusted setup
  *
- * @remark `dst_len` must be at least `indices_len + 1` in length.
+ * @remark These do not have to be roots of unity. They are roots of a
+ * polynomial.
+ * @remark `poly_len` must be at least `roots_len + 1` in length.
  */
-static C_KZG_RET do_zero_poly_mul_partial(
-    fr_t *dst,
-    size_t *dst_len,
-    const uint64_t *indices,
-    uint64_t indices_len,
-    const KZGSettings *s
+static C_KZG_RET compute_vanishing_polynomial_from_roots(
+    fr_t *poly, size_t *poly_len, const fr_t *roots, size_t roots_len
 ) {
-    fr_t neg_di;
+    fr_t neg_root;
 
-    if (indices_len == 0) {
+    if (roots_len == 0) {
         return C_KZG_BADARGS;
     }
 
-    blst_fr_cneg(&dst[0], &s->expanded_roots_of_unity[indices[0]], true);
-    for (size_t i = 1; i < indices_len; i++) {
-        blst_fr_cneg(&neg_di, &s->expanded_roots_of_unity[indices[i]], true);
-        dst[i] = neg_di;
-        blst_fr_add(&dst[i], &dst[i], &dst[i - 1]);
+    /* Initialize with -root[0] */
+    blst_fr_cneg(&poly[0], &roots[0], true);
+
+    for (size_t i = 1; i < roots_len; i++) {
+        blst_fr_cneg(&neg_root, &roots[i], true);
+
+        poly[i] = neg_root;
+        blst_fr_add(&poly[i], &poly[i], &poly[i - 1]);
+
         for (size_t j = i - 1; j > 0; j--) {
-            blst_fr_mul(&dst[j], &dst[j], &neg_di);
-            blst_fr_add(&dst[j], &dst[j], &dst[j - 1]);
+            blst_fr_mul(&poly[j], &poly[j], &neg_root);
+            blst_fr_add(&poly[j], &poly[j], &poly[j - 1]);
         }
-        blst_fr_mul(&dst[0], &dst[0], &neg_di);
+        blst_fr_mul(&poly[0], &poly[0], &neg_root);
     }
 
-    dst[indices_len] = FR_ONE;
-    for (size_t i = indices_len + 1; i < *dst_len; i++) {
-        dst[i] = FR_ZERO;
-    }
-    *dst_len = indices_len + 1;
+    poly[roots_len] = FR_ONE;
+    *poly_len = roots_len + 1;
 
     return C_KZG_OK;
 }
 
 /**
- * Copy polynomial and set remaining fields to zero.
+ * Computes the minimal polynomial that evaluates to zero at equally spaced
+ * chosen roots of unity in the domain of size `FIELD_ELEMENTS_PER_BLOB`.
  *
- * @param[out]  out     The output polynomial with padded zeros
- * @param[out]  out_len The length of the output polynomial
- * @param[in]   in      The input polynomial to be copied
- * @param[in]   in_len  The length of the input polynomial
+ * The roots of unity are chosen based on the missing cell indices. If the i'th
+ * cell is missing, then the i'th root of unity from `expanded_roots_of_unity`
+ * will be zero on the polynomial computed, along with every
+ * `CELLS_PER_EXT_BLOB` spaced root of unity in the domain.
+ *
+ * @param[in,out]   vanishing_poly          The vanishing polynomial
+ * @param[in]       missing_cell_indices    The array of missing cell indices
+ * @param[in]       len_missing_cells       The number of missing cell indices
+ * @param[in]       s                       The trusted setup
+ *
+ * @remark When all of the cells are missing, this algorithm has
+ * an edge case. We return C_KZG_BADARGS in that case.
+ * @remark When none of the cells are missing, recovery
+ * is trivial. We expect the caller to handle this case,
+ * and return C_KZG_BADARGS if not.
+ * @remark `missing_cell_indices` are assumed to be less than
+ * `CELLS_PER_EXT_BLOB`.
  */
-static C_KZG_RET pad_p(
-    fr_t *out, size_t out_len, const fr_t *in, size_t in_len
-) {
-    /* Ensure out is big enough */
-    if (out_len < in_len) {
-        return C_KZG_BADARGS;
-    }
-
-    /* Copy polynomial fields */
-    for (size_t i = 0; i < in_len; i++) {
-        out[i] = in[i];
-    }
-
-    /* Set remaining fields to zero */
-    for (size_t i = in_len; i < out_len; i++) {
-        out[i] = FR_ZERO;
-    }
-
-    return C_KZG_OK;
-}
-
-/**
- * Calculate the product of the input polynomials via convolution.
- *
- * @param[out]  out             Polynomial with len_out fields allocated
- * @param[in]   len_out         Domain evaluation length, a power of two
- * @param[in]   scratch         Scratch space, at least 3x len_out
- * @param[in]   len_scratch     Scratch size, at least 3x len_out
- * @param[in]   partials        Array of polys to be multiplied together
- * @param[in]   partial_count   The number of polys to be multiplied together
- * @param[in]   s               The trusted setup
- *
- * @remark This will pad the polynomials, perform FFTs, point-wise multiply the
- *         results together, and apply an inverse FFT to the result.
- */
-static C_KZG_RET reduce_partials(
-    poly_t *out,
-    size_t len_out,
-    fr_t *scratch,
-    size_t len_scratch,
-    const poly_t *partials,
-    size_t partial_count,
+static C_KZG_RET vanishing_polynomial_for_missing_cells(
+    fr_t *vanishing_poly,
+    const uint64_t *missing_cell_indices,
+    size_t len_missing_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    fr_t *roots = NULL;
+    fr_t *short_vanishing_poly = NULL;
+    size_t short_vanishing_poly_len = 0;
 
-    /* Some sanity checks */
-    if (!is_power_of_two(len_out)) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
-    if (len_scratch < len_out * 3) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
-    if (partial_count == 0) {
+    /* Return early if none or all of the cells are missing */
+    if (len_missing_cells == 0 || len_missing_cells == CELLS_PER_EXT_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
-    /*
-     * The degree of the output polynomial is the sum of the degrees of the
-     * input polynomials.
-     */
-    size_t out_degree = 0;
-    for (size_t i = 0; i < partial_count; i++) {
-        out_degree += partials[i].length - 1;
-    }
-    if (out_degree + 1 > len_out) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
+    /* Allocate arrays */
+    ret = new_fr_array(&roots, len_missing_cells);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
+    if (ret != C_KZG_OK) goto out;
 
-    /* Split scratch up into three equally sized working arrays */
-    fr_t *p_padded = scratch + len_out * 0;
-    fr_t *mul_eval_ps = scratch + len_out * 1;
-    fr_t *p_eval = scratch + len_out * 2;
+    /* Check if max_width is divisible by CELLS_PER_EXT_BLOB */
+    assert(s->max_width % CELLS_PER_EXT_BLOB == 0);
 
     /*
-     * Do the last partial first: it is no longer than the others and the
-     * padding can remain in place for the rest.
+     * For each missing cell index, choose the corresponding root of unity from
+     * the subgroup of size`CELLS_PER_EXT_BLOB`.
+     *
+     * In other words, if the missing index is `i`, then we add \omega^i to the
+     * roots array, where \omega is a primitive `CELLS_PER_EXT_BLOB` root of
+     * unity.
      */
-    ret = pad_p(
-        p_padded,
-        len_out,
-        partials[partial_count - 1].coeffs,
-        partials[partial_count - 1].length
+    size_t stride = s->max_width / CELLS_PER_EXT_BLOB;
+    for (size_t i = 0; i < len_missing_cells; i++) {
+        roots[i] = s->expanded_roots_of_unity[missing_cell_indices[i] * stride];
+    }
+
+    /* Compute the polynomial that evaluates to zero on the roots */
+    ret = compute_vanishing_polynomial_from_roots(
+        short_vanishing_poly,
+        &short_vanishing_poly_len,
+        roots,
+        len_missing_cells
     );
     if (ret != C_KZG_OK) goto out;
 
-    ret = fft_fr(mul_eval_ps, p_padded, len_out, s);
-    if (ret != C_KZG_OK) goto out;
-
-    for (size_t i = 0; i < partial_count - 1; i++) {
-        ret = pad_p(
-            p_padded, partials[i].length, partials[i].coeffs, partials[i].length
-        );
-        if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(p_eval, p_padded, len_out, s);
-        if (ret != C_KZG_OK) goto out;
-        for (size_t j = 0; j < len_out; j++) {
-            blst_fr_mul(&mul_eval_ps[j], &mul_eval_ps[j], &p_eval[j]);
-        }
-    }
-
-    ret = ifft_fr(out->coeffs, mul_eval_ps, len_out, s);
-    if (ret != C_KZG_OK) goto out;
-
-    out->length = out_degree + 1;
-
-out:
-    return ret;
-}
-
-/**
- * Calculate the minimal polynomial that evaluates to zero for the powers of
- * roots of unity that correspond to missing indices.
- *
- * This is done simply by multiplying together `(x - r^i)` for all the `i` that
- * are missing indices, using a combination of direct multiplication
- * (#do_zero_poly_mul_partial) and iterated multiplication via convolution
- * (#reduce_partials).
- *
- * @param[out]  zero_poly       The zero polynomial
- * @param[out]  zero_poly_len   The zero polynomial length
- * @param[in]   missing_indices The indices of the missing coefficients
- * @param[in]   len_missing     The number of missing indices
- * @param[in]   s               The trusted setup
- *
- * @remark This does not work if all indices are missing.
- * @remark Unused coefficients are set to zero.
- */
-static C_KZG_RET zero_polynomial_via_multiplication(
-    fr_t *zero_poly,
-    size_t *zero_poly_len,
-    const uint64_t *missing_indices,
-    size_t len_missing,
-    const KZGSettings *s
-) {
-    C_KZG_RET ret;
-    fr_t *work = NULL;
-    fr_t *scratch = NULL;
-    poly_t *partials = NULL;
-
-    /* If nothing is missing, return all zeros */
-    if (len_missing == 0) {
-        for (size_t i = 0; i < s->max_width; i++) {
-            zero_poly[i] = FR_ZERO;
-        }
-        *zero_poly_len = 0;
-        ret = C_KZG_OK;
-        goto out;
-    }
-
-    /* Tunable parameter. Must be a power of two */
-    const size_t reduction_factor = 4;
-    /* Tunable parameter. Must be a power of two */
-    const size_t degree_of_partial = 32;
-
-    const size_t missing_per_partial = degree_of_partial - 1;
-    size_t partial_count = (len_missing + missing_per_partial - 1) /
-                           missing_per_partial;
-    size_t n = next_power_of_two(partial_count * degree_of_partial);
-
-    if (len_missing <= missing_per_partial) {
-        ret = do_zero_poly_mul_partial(
-            zero_poly, zero_poly_len, missing_indices, len_missing, s
-        );
-        if (ret != C_KZG_OK) goto out;
-    } else {
-        ret = new_fr_array(&work, n);
-        if (ret != C_KZG_OK) goto out;
-        ret = new_fr_array(&scratch, n * 3);
-        if (ret != C_KZG_OK) goto out;
-        ret = c_kzg_calloc((void **)&partials, partial_count, sizeof(poly_t));
-        if (ret != C_KZG_OK) goto out;
-
-        /* Build the partials from the missing indices */
-        size_t offset = 0, out_offset = 0, max = len_missing;
-        for (size_t i = 0; i < partial_count; i++) {
-            size_t end = MIN(offset + missing_per_partial, max);
-            partials[i].coeffs = &work[out_offset];
-            partials[i].length = degree_of_partial;
-
-            ret = do_zero_poly_mul_partial(
-                partials[i].coeffs,
-                &partials[i].length,
-                &missing_indices[offset],
-                end - offset,
-                s
-            );
-            if (ret != C_KZG_OK) goto out;
-
-            offset += missing_per_partial;
-            out_offset += degree_of_partial;
-        }
-
-        /* Adjust the length of the last partial */
-        partials[partial_count - 1].length = 1 + len_missing -
-                                             (partial_count - 1) *
-                                                 missing_per_partial;
-
-        /* Reduce all the partials to a single polynomial */
-        while (partial_count > 1) {
-            size_t reduced_count = (partial_count + reduction_factor - 1) /
-                                   reduction_factor;
-            size_t partial_size = next_power_of_two(partials[0].length);
-            for (size_t i = 0; i < reduced_count; i++) {
-                size_t start = i * reduction_factor;
-                size_t out_end = MIN(
-                    (start + reduction_factor) * partial_size, n
-                );
-                size_t reduced_len = MIN(
-                    out_end - start * partial_size, s->max_width
-                );
-                size_t partials_num = MIN(
-                    reduction_factor, partial_count - start
-                );
-                partials[i].coeffs = work + start * partial_size;
-                if (partials_num > 1) {
-                    ret = reduce_partials(
-                        &partials[i],
-                        reduced_len,
-                        scratch,
-                        n * 3,
-                        &partials[start],
-                        partials_num,
-                        s
-                    );
-                    if (ret != C_KZG_OK) goto out;
-                } else {
-                    partials[i].length = partials[start].length;
-                }
-            }
-            partial_count = reduced_count;
-        }
-
-        /* Pad the output with zeros */
-        ret = pad_p(
-            zero_poly, s->max_width, partials[0].coeffs, partials[0].length
-        );
-        if (ret != C_KZG_OK) goto out;
-
-        *zero_poly_len = partials[0].length;
+    /*
+     * For each root \omega^i in `short_vanishing_poly`, we compute a
+     * polynomial that has roots at
+     *
+     *  H = {
+     *      \omega^i * \gamma^0,
+     *      \omega^i * \gamma^1,
+     *      ...,
+     *      \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
+     *  }
+     *
+     * where \gamma is a primitive `FIELD_ELEMENTS_PER_EXT_BLOB`-th root of
+     * unity.
+     *
+     * This is done by shifting the degree of all coefficients in
+     * `short_vanishing_poly` up by `FIELD_ELEMENTS_PER_CELL` amount.
+     */
+    for (size_t i = 0; i < short_vanishing_poly_len; i++) {
+        vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
 
 out:
-    c_kzg_free(work);
-    c_kzg_free(partials);
-    c_kzg_free(scratch);
+    c_kzg_free(roots);
+    c_kzg_free(short_vanishing_poly);
     return ret;
 }
 
@@ -2821,11 +2628,31 @@ out:
 }
 
 /**
+ * Helper function to check if a uint64 value is in an array.
+ *
+ * @param[in]   arr         The array
+ * @param[in]   arr_size    The size of the array
+ * @param[in]   value       The value we want to search
+ *
+ * @return True if the value is in the array, otherwise false.
+ */
+static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
+    for (size_t i = 0; i < arr_size; i++) {
+        if (arr[i] == value) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * Given a dataset with up to half the entries missing, return the
  * reconstructed original. Assumes that the inverse FFT of the original data
  * has the upper half of its values equal to zero.
  *
  * @param[out]  reconstructed_data_out   Preallocated array for recovered cells
+ * @param[in]   cell_indices             The cell indices you have
+ * @param[in]   num_cells                The number of cells that you have
  * @param[in]   cells                    The cells that you have
  * @param[in]   s                        The trusted setup
  *
@@ -2834,26 +2661,31 @@ out:
  * @remark Missing cells should be equal to FR_NULL.
  */
 static C_KZG_RET recover_cells_impl(
-    fr_t *reconstructed_data_out, fr_t *cells, const KZGSettings *s
+    fr_t *reconstructed_data_out,
+    const uint64_t *cell_indices,
+    size_t num_cells,
+    fr_t *cells,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    uint64_t *missing = NULL;
-    fr_t *zero_poly_eval = NULL;
-    fr_t *zero_poly_coeff = NULL;
-    size_t zero_poly_len = 0;
+    uint64_t *missing_cell_indices = NULL;
+    fr_t *vanishing_poly_eval = NULL;
+    fr_t *vanishing_poly_coeff = NULL;
     fr_t *extended_evaluation_times_zero = NULL;
     fr_t *extended_evaluation_times_zero_coeffs = NULL;
     fr_t *extended_evaluations_over_coset = NULL;
-    fr_t *zero_poly_over_coset = NULL;
+    fr_t *vanishing_poly_over_coset = NULL;
     fr_t *reconstructed_poly_coeff = NULL;
     fr_t *cells_brp = NULL;
 
     /* Allocate space for arrays */
-    ret = c_kzg_calloc((void **)&missing, s->max_width, sizeof(uint64_t));
+    ret = c_kzg_calloc(
+        (void **)&missing_cell_indices, s->max_width, sizeof(uint64_t)
+    );
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_eval, s->max_width);
+    ret = new_fr_array(&vanishing_poly_eval, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_coeff, s->max_width);
+    ret = new_fr_array(&vanishing_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&extended_evaluation_times_zero, s->max_width);
     if (ret != C_KZG_OK) goto out;
@@ -2861,7 +2693,7 @@ static C_KZG_RET recover_cells_impl(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&extended_evaluations_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&zero_poly_over_coset, s->max_width);
+    ret = new_fr_array(&vanishing_poly_over_coset, s->max_width);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&reconstructed_poly_coeff, s->max_width);
     if (ret != C_KZG_OK) goto out;
@@ -2875,23 +2707,29 @@ static C_KZG_RET recover_cells_impl(
 
     /* Identify missing cells */
     size_t len_missing = 0;
-    for (size_t i = 0; i < s->max_width; i++) {
-        if (fr_is_null(&cells_brp[i])) {
-            missing[len_missing++] = i;
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        /* Iterate over each cell index and check if we have received it */
+        if (!is_in_array(cell_indices, num_cells, i)) {
+            /*
+             * If the cell is missing, bit reverse the index and add it to the
+             * missing array.
+             */
+            uint32_t brp_i = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
+            missing_cell_indices[len_missing++] = brp_i;
         }
     }
 
     /* Check that we have enough cells */
-    assert(len_missing <= s->max_width / 2);
+    assert(len_missing <= CELLS_PER_EXT_BLOB / 2);
 
     /* Compute Z(x) in monomial form */
-    ret = zero_polynomial_via_multiplication(
-        zero_poly_coeff, &zero_poly_len, missing, len_missing, s
+    ret = vanishing_polynomial_for_missing_cells(
+        vanishing_poly_coeff, missing_cell_indices, len_missing, s
     );
     if (ret != C_KZG_OK) goto out;
 
     /* Convert Z(x) to evaluation form */
-    ret = fft_fr(zero_poly_eval, zero_poly_coeff, s->max_width, s);
+    ret = fft_fr(vanishing_poly_eval, vanishing_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
@@ -2902,7 +2740,7 @@ static C_KZG_RET recover_cells_impl(
             blst_fr_mul(
                 &extended_evaluation_times_zero[i],
                 &cells_brp[i],
-                &zero_poly_eval[i]
+                &vanishing_poly_eval[i]
             );
         }
     }
@@ -2930,8 +2768,9 @@ static C_KZG_RET recover_cells_impl(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* We use max_width here (not zero_poly_len) intentionally */
-    ret = coset_fft_fr(zero_poly_over_coset, zero_poly_coeff, s->max_width, s);
+    ret = coset_fft_fr(
+        vanishing_poly_over_coset, vanishing_poly_coeff, s->max_width, s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
@@ -2939,7 +2778,7 @@ static C_KZG_RET recover_cells_impl(
         fr_div(
             &extended_evaluations_over_coset[i],
             &extended_evaluations_over_coset[i],
-            &zero_poly_over_coset[i]
+            &vanishing_poly_over_coset[i]
         );
     }
 
@@ -2972,14 +2811,14 @@ static C_KZG_RET recover_cells_impl(
     if (ret != C_KZG_OK) goto out;
 
 out:
-    c_kzg_free(missing);
-    c_kzg_free(zero_poly_eval);
+    c_kzg_free(missing_cell_indices);
+    c_kzg_free(vanishing_poly_eval);
     c_kzg_free(extended_evaluation_times_zero);
     c_kzg_free(extended_evaluation_times_zero_coeffs);
     c_kzg_free(extended_evaluations_over_coset);
-    c_kzg_free(zero_poly_over_coset);
+    c_kzg_free(vanishing_poly_over_coset);
     c_kzg_free(reconstructed_poly_coeff);
-    c_kzg_free(zero_poly_coeff);
+    c_kzg_free(vanishing_poly_coeff);
     c_kzg_free(cells_brp);
     return ret;
 }
@@ -3572,7 +3411,9 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         memcpy(recovered_cells, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
     } else {
         /* Perform cell recovery */
-        ret = recover_cells_impl(recovered_cells_fr, recovered_cells_fr, s);
+        ret = recover_cells_impl(
+            recovered_cells_fr, cell_indices, num_cells, recovered_cells_fr, s
+        );
         if (ret != C_KZG_OK) goto out;
 
         /* Convert the recovered data points to byte-form */
