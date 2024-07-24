@@ -2,9 +2,10 @@
 all: install test
 
 .PHONY: install
-install: ../../setup.py ckzg.c
-	python3 ../../setup.py install --force
+install: $(CURDIR)/../../setup.py $(CURDIR)/ckzg.c
+	python3 -m build --skip-dependency-check --outdir $(CURDIR)/dist $(CURDIR)/../../
+	python3 -m pip install $(CURDIR)/dist/*.whl --force-reinstall
 
 .PHONY: test
-test: tests.py
+test: $(CURDIR)/tests.py
 	python3 $<
