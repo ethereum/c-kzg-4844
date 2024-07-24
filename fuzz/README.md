@@ -5,14 +5,15 @@ This directory contains coverage-guided, differential fuzzers for the public KZG
 there is a `fuzz_<function>.rs` file for each target. These use
 [`arbitrary`](https://github.com/rust-fuzz/arbitrary) for creating the inputs to the functions. We
 can provide the reference tests as the starting corpus, which gives `arbitrary` a better idea of
-what inputs should be. This will differentially fuzzes EIP-4844 functions with
+what inputs should be. This will differentially fuzz EIP-4844 functions with
 [Constantine](https://github.com/mratsim/constantine) and EIP-7594 functions with
 [Rust-Eth-KZG](https://github.com/crate-crypto/rust-eth-kzg(https://github.com/crate-crypto/peerdas-kzg).
 
 ## Dependencies
 
-This is expected to run on Linux/macOS, it is not expected to work on Windows. This fuzzer requires
-`nim v1.6`, `rust`, `cargo`, and `cargo-fuzz`.
+Dependencies are `nim v1.6`, `rust`, `cargo`, and `cargo-fuzz`.
+
+Note: this is expected to run on Linux/macOS, it is not expected to work on Windows.
 
 ### Rust dependencies
 
@@ -47,10 +48,7 @@ Generate the initial fuzzing corpus (the reference tests) like this:
 cargo test --features generate-fuzz-corpus
 ```
 
-This will execute the reference tests in the Rust bindings & write the inputs to files as a flat
-array of bytes, which `arbitrary` will use.
-
-## Fuzzing
+## Running
 
 List available targets like this:
 
@@ -108,11 +106,11 @@ To stop the fuzzer, press ctrl-C on your keyboard. It will print something like:
 
 ### Multithreading
 
-If your system has multiple cores, it's easy to run fuzzers on multiple threads. Append
-`--jobs=<n>` where `n` is the number of threads you would like there to be.
+If your system has multiple cores, it's easy to run fuzzers on multiple threads. Append `--jobs=<n>`
+where `n` is the number of threads you would like there to be.
 
 ### Findings
 
-If there is a crash or timeout, the fuzzer will write a file to the target
-directory containing the input data associated with that crash/timeout. If this
-happens, please report the finding via an issue on GitHub.
+If there is a crash or timeout, the fuzzer will write a file to the target directory containing the
+input data associated with that crash/timeout. If this happens, please report the finding via an
+issue on GitHub.
