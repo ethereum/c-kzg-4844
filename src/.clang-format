@@ -10,3 +10,4 @@ BinPackArguments: False
 BinPackParameters: False
 PenaltyReturnTypeOnItsOwnLine: 1000
 PenaltyBreakAssignment: 100
+ColumnLimit: 100
