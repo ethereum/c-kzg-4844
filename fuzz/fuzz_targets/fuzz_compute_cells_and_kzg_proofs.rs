@@ -6,9 +6,9 @@ extern crate core;
 
 use c_kzg::Blob;
 use c_kzg::KzgSettings;
-use rust_eth_kzg::DASContext;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::path::PathBuf;
 
 lazy_static! {
@@ -21,7 +21,7 @@ lazy_static! {
 }
 
 fuzz_target!(|blob: Blob| {
-    let ckzg_result = c_kzg::Cell::compute_cells_and_kzg_proofs(&blob, &KZG_SETTINGS);
+    let ckzg_result = KZG_SETTINGS.compute_cells_and_kzg_proofs(&blob);
     let rkzg_result = DAS_CONTEXT.compute_cells_and_kzg_proofs(&blob.into_inner());
 
     match (&ckzg_result, &rkzg_result) {

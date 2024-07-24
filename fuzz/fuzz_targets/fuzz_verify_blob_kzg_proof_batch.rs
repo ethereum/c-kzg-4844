@@ -80,12 +80,8 @@ fuzz_target!(|input: Input| {
     let proofs: Vec<[u8; c_kzg::BYTES_PER_PROOF]> =
         input.proofs.iter().map(|p| p.into_inner()).collect();
 
-    let ckzg_result = c_kzg::KzgProof::verify_blob_kzg_proof_batch(
-        &input.blobs,
-        &input.commitments,
-        &input.proofs,
-        &KZG_SETTINGS,
-    );
+    let ckzg_result =
+        KZG_SETTINGS.verify_blob_kzg_proof_batch(&input.blobs, &input.commitments, &input.proofs);
     let cnst_result = cnst.verify_blob_kzg_proof_batch(
         blobs.as_slice(),
         commitments.as_slice(),

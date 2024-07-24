@@ -63,7 +63,7 @@ fuzz_target!(|blob: c_kzg::Blob| {
         .get_or_init(|| initialize_constantine_ctx())
         .get();
 
-    let ckzg_result = c_kzg::KzgCommitment::blob_to_kzg_commitment(&blob, &KZG_SETTINGS);
+    let ckzg_result = KZG_SETTINGS.blob_to_kzg_commitment(&blob);
     let cnst_result = cnst.blob_to_kzg_commitment(&blob);
 
     match (&ckzg_result, &cnst_result) {

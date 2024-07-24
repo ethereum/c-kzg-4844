@@ -10,9 +10,9 @@ use c_kzg::BYTES_PER_CELL;
 use c_kzg::BYTES_PER_COMMITMENT;
 use c_kzg::BYTES_PER_PROOF;
 use c_kzg::{Bytes48, Cell};
-use rust_eth_kzg::DASContext;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::path::PathBuf;
 
 lazy_static! {
@@ -51,12 +51,11 @@ fuzz_target!(|input: Input| {
         .collect();
     let proofs_bytes: Vec<&[u8; BYTES_PER_PROOF]> = proofs_owned.iter().collect();
 
-    let ckzg_result = c_kzg::KzgProof::verify_cell_kzg_proof_batch(
+    let ckzg_result = KZG_SETTINGS.verify_cell_kzg_proof_batch(
         &input.commitments,
         &input.cell_indices,
         &input.cells,
         &input.proofs,
-        &KZG_SETTINGS,
     );
     let rkzg_result = DAS_CONTEXT.verify_cell_kzg_proof_batch(
         commitments_bytes,

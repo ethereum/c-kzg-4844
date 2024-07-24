@@ -8,9 +8,9 @@ use arbitrary::Arbitrary;
 use c_kzg::Cell;
 use c_kzg::KzgSettings;
 use c_kzg::BYTES_PER_CELL;
-use rust_eth_kzg::DASContext;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::path::PathBuf;
 
 lazy_static! {
@@ -33,13 +33,9 @@ fuzz_target!(|input: Input| {
         input.cells.iter().map(Cell::to_bytes).collect();
     let cells_bytes: Vec<&[u8; BYTES_PER_CELL]> = cells_bytes_owned.iter().collect();
 
-    let ckzg_result = c_kzg::Cell::recover_cells_and_kzg_proofs(
-        input.cell_indices.as_slice(),
-        input.cells.as_slice(),
-        &KZG_SETTINGS,
-    );
-    let rkzg_result =
-        DAS_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes);
+    let ckzg_result = KZG_SETTINGS
+        .recover_cells_and_kzg_proofs(input.cell_indices.as_slice(), input.cells.as_slice());
+    let rkzg_result = DAS_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes);
 
     match (&ckzg_result, &rkzg_result) {
         (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {
