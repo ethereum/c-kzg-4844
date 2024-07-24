@@ -12,15 +12,15 @@
 #include <gperftools/profiler.h>
 #endif
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Globals
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KZGSettings s;
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Debugging functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void print_bytes32(const Bytes32 *bytes) {
     for (size_t i = 0; i < 32; i++) {
@@ -64,9 +64,9 @@ void print_cell(const Cell *cell) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void get_rand_bytes32(Bytes32 *out) {
     static uint64_t seed = 0;
@@ -167,9 +167,9 @@ static void eval_extended_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for memory allocation functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_c_kzg_malloc__succeeds_size_greater_than_zero(void) {
     C_KZG_RET ret;
@@ -236,9 +236,9 @@ static void test_c_kzg_calloc__fails_too_big(void) {
     ASSERT_EQUALS(ptr, NULL);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for fr_div
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_fr_div__by_one_is_equal(void) {
     fr_t a, q;
@@ -292,9 +292,9 @@ static void test_fr_div__succeeds_round_trip(void) {
     ASSERT_EQUALS(ok, true);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for fr_pow
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_fr_pow__test_power_of_two(void) {
     fr_t a, r, check;
@@ -319,9 +319,9 @@ static void test_fr_pow__test_inverse_on_root_of_unity(void) {
     ASSERT_EQUALS(ok, true);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for fr_batch_inv
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_fr_batch_inv__test_consistent(void) {
     C_KZG_RET ret;
@@ -356,9 +356,9 @@ static void test_fr_batch_inv__test_zero(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for g1_mul
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_g1_mul__test_consistent(void) {
     blst_scalar s;
@@ -416,9 +416,9 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for pairings_verify
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_pairings_verify__good_pairing(void) {
     fr_t s;
@@ -453,9 +453,9 @@ static void test_pairings_verify__bad_pairing(void) {
     ASSERT("pairings fail", !pairings_verify(&g1, &s1g2, &sg1, &g2));
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for blob_to_kzg_commitment
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
     C_KZG_RET ret;
@@ -470,8 +470,7 @@ static void test_blob_to_kzg_commitment__succeeds_x_less_than_modulus(void) {
      * int(BLS_MODULUS - 1).to_bytes(32, 'big').hex()
      */
     bytes32_from_hex(
-        &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000"
+        &field_element, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -493,8 +492,7 @@ static void test_blob_to_kzg_commitment__fails_x_equal_to_modulus(void) {
      * int(BLS_MODULUS).to_bytes(32, 'big').hex()
      */
     bytes32_from_hex(
-        &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        &field_element, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -516,8 +514,7 @@ static void test_blob_to_kzg_commitment__fails_x_greater_than_modulus(void) {
      * int(BLS_MODULUS + 1).to_bytes(32, 'big').hex()
      */
     bytes32_from_hex(
-        &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000002"
+        &field_element, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000002"
     );
 
     memset(&blob, 0, sizeof(blob));
@@ -557,8 +554,7 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     int diff;
 
     bytes32_from_hex(
-        &field_element,
-        "14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad"
+        &field_element, "14629a3a39f7b854e6aa49aa2edb450267eac2c14bb2d4f97a0b81a3f57055ad"
     );
 
     /* Initialize the blob with a single field element */
@@ -582,9 +578,9 @@ static void test_blob_to_kzg_commitment__succeeds_expected_commitment(void) {
     ASSERT_EQUALS(diff, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for validate_kzg_g1
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_validate_kzg_g1__succeeds_round_trip(void) {
     C_KZG_RET ret;
@@ -797,9 +793,9 @@ static void test_validate_kzg_g1__fails_with_mask_bits_001(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for reverse_bits
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_reverse_bits__succeeds_round_trip(void) {
     uint32_t original;
@@ -830,9 +826,9 @@ static void test_reverse_bits__succeeds_all_bits_are_one(void) {
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for bit_reversal_permutation
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_bit_reversal_permutation__succeeds_round_trip(void) {
     C_KZG_RET ret;
@@ -902,9 +898,7 @@ static void test_bit_reversal_permutation__fails_n_too_large(void) {
     for (size_t i = 0; i < 256; i++) {
         reversed[i] = 0;
     }
-    ret = bit_reversal_permutation(
-        &reversed, sizeof(uint32_t), (uint64_t)1 << 32
-    );
+    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), (uint64_t)1 << 32);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
@@ -930,9 +924,9 @@ static void test_bit_reversal_permutation__fails_n_is_one(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for compute_powers
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_compute_powers__succeeds_expected_powers(void) {
     C_KZG_RET ret;
@@ -946,8 +940,7 @@ static void test_compute_powers__succeeds_expected_powers(void) {
 
     /* Convert random field element to a fr_t */
     bytes32_from_hex(
-        &field_element_bytes,
-        "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
+        &field_element_bytes, "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
     );
     ret = bytes_to_bls_field(&field_element_fr, &field_element_bytes);
     ASSERT_EQUALS(ret, C_KZG_OK);
@@ -961,12 +954,10 @@ static void test_compute_powers__succeeds_expected_powers(void) {
      * input field element. The third element can be verified with Python.
      */
     bytes32_from_hex(
-        &expected_bytes[0],
-        "0000000000000000000000000000000000000000000000000000000000000001"
+        &expected_bytes[0], "0000000000000000000000000000000000000000000000000000000000000001"
     );
     bytes32_from_hex(
-        &expected_bytes[1],
-        "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
+        &expected_bytes[1], "1bf5410da0468196b4e242ca17617331d238ba5e586198bd42ebd7252919c3e1"
     );
 
     /*
@@ -975,22 +966,19 @@ static void test_compute_powers__succeeds_expected_powers(void) {
      * print(i.to_bytes(32, "big").hex())
      */
     bytes32_from_hex(
-        &expected_bytes[2],
-        "2f417bcb88693ff8bc5d61b6d44503f3a99e8c3df3891e0040dee96047458a0e"
+        &expected_bytes[2], "2f417bcb88693ff8bc5d61b6d44503f3a99e8c3df3891e0040dee96047458a0e"
     );
 
     for (int i = 0; i < n; i++) {
         bytes_from_bls_field(&powers_bytes[i], &powers[i]);
-        diff = memcmp(
-            powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32)
-        );
+        diff = memcmp(powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32));
         ASSERT_EQUALS(diff, 0);
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for g1_lincomb
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_g1_lincomb__verify_consistent(void) {
     C_KZG_RET ret;
@@ -1011,13 +999,11 @@ static void test_g1_lincomb__verify_consistent(void) {
     ASSERT("pippenger matches naive MSM", blst_p1_is_equal(&out, &check));
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for evaluate_polynomial_in_evaluation_form
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(
-    void
-) {
+static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(void) {
     C_KZG_RET ret;
     Polynomial p;
     fr_t x, y, c;
@@ -1035,9 +1021,7 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial(
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
 }
 
-static void
-test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
-) {
+static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void) {
     C_KZG_RET ret;
     Polynomial p;
     fr_t x, y, c;
@@ -1055,8 +1039,7 @@ test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range(void
     ASSERT("evaluation matches constant", fr_equal(&y, &c));
 }
 
-static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
-) {
+static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void) {
     C_KZG_RET ret;
     fr_t poly_coefficients[FIELD_ELEMENTS_PER_BLOB];
     Polynomial p;
@@ -1088,9 +1071,9 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void
     ASSERT("evaluation methods match", fr_equal(&y, &check));
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for log2_pow2
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_log2_pow2__succeeds_expected_values(void) {
     uint32_t x = 1;
@@ -1100,9 +1083,9 @@ static void test_log2_pow2__succeeds_expected_values(void) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for is_power_of_two
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_is_power_of_two__succeeds_powers_of_two(void) {
     uint64_t x = 1;
@@ -1121,9 +1104,9 @@ static void test_is_power_of_two__fails_not_powers_of_two(void) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for compute_kzg_proof
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     C_KZG_RET ret;
@@ -1135,12 +1118,10 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     int diff;
 
     bytes32_from_hex(
-        &field_element,
-        "69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13"
+        &field_element, "69386e69dbae0357b399b8d645a57a3062dfbe00bd8e97170b9bdd6bc6168a13"
     );
     bytes32_from_hex(
-        &input_value,
-        "03ea4fb841b4f9e01aa917c5e40dbd67efb4b8d4d9052069595f0647feba320d"
+        &input_value, "03ea4fb841b4f9e01aa917c5e40dbd67efb4b8d4d9052069595f0647feba320d"
     );
 
     /* Initialize the blob with a single field element */
@@ -1174,9 +1155,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     bytes_from_bls_field(&expected_output_value, &y_fr);
 
     /* Compare the computed y to the expected y */
-    diff = memcmp(
-        output_value.bytes, expected_output_value.bytes, sizeof(Bytes32)
-    );
+    diff = memcmp(output_value.bytes, expected_output_value.bytes, sizeof(Bytes32));
     ASSERT_EQUALS(diff, 0);
 }
 
@@ -1329,9 +1308,9 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
     ASSERT_EQUALS(ok, 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for verify_kzg_proof
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_verify_kzg_proof__fails_proof_not_in_g1(void) {
     C_KZG_RET ret;
@@ -1381,9 +1360,7 @@ static void test_verify_kzg_proof__fails_z_not_field_element(void) {
     bool ok;
 
     get_rand_g1_bytes(&c);
-    bytes32_from_hex(
-        &z, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
-    );
+    bytes32_from_hex(&z, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
     get_rand_field_element(&y);
     get_rand_g1_bytes(&proof);
 
@@ -1400,18 +1377,16 @@ static void test_verify_kzg_proof__fails_y_not_field_element(void) {
 
     get_rand_g1_bytes(&c);
     get_rand_field_element(&z);
-    bytes32_from_hex(
-        &y, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
-    );
+    bytes32_from_hex(&y, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001");
     get_rand_g1_bytes(&proof);
 
     ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for compute_blob_kzg_proof
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
     C_KZG_RET ret;
@@ -1435,8 +1410,7 @@ static void test_compute_and_verify_blob_kzg_proof__succeeds_round_trip(void) {
     ASSERT_EQUALS(ok, true);
 }
 
-static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
-) {
+static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     g1_t proof_g1;
@@ -1465,8 +1439,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof(void
     ASSERT_EQUALS(ok, false);
 }
 
-static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
-) {
+static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     KZGCommitment c;
@@ -1487,9 +1460,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1(void
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void
-test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void
-) {
+static void test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     KZGCommitment c;
@@ -1508,9 +1479,7 @@ test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1(void
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void
-test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1(void
-) {
+static void test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1(void) {
     C_KZG_RET ret;
     Bytes48 proof;
     KZGCommitment c;
@@ -1540,8 +1509,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
     bool ok;
 
     bytes32_from_hex(
-        &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        &field_element, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
     memset(&blob, 0, sizeof(blob));
     memcpy(blob.bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
@@ -1553,9 +1521,9 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for verify_kzg_proof_batch
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
@@ -1574,18 +1542,14 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i], &commitments[i], &s
-        );
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
     /* Verify batched proofs for 0,1,2..16 blobs */
     /* This should still work with zero blobs */
     for (int count = 0; count <= n_cells; count++) {
-        ret = verify_blob_kzg_proof_batch(
-            &ok, blobs, commitments, proofs, count, &s
-        );
+        ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, count, &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
     }
@@ -1607,18 +1571,14 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i], &commitments[i], &s
-        );
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
     /* Overwrite second proof with an incorrect one */
     proofs[1] = proofs[0];
 
-    ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_cells, &s
-    );
+    ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, n_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
     ASSERT_EQUALS(ok, false);
 }
@@ -1636,9 +1596,7 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i], &commitments[i], &s
-        );
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1649,9 +1607,7 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
 
-    ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_cells, &s
-    );
+    ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, n_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
@@ -1668,9 +1624,7 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i], &commitments[i], &s
-        );
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
@@ -1681,9 +1635,7 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
         "0123456789abcdef0123456789abcdef0123456789abcdef"
     );
 
-    ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_cells, &s
-    );
+    ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, n_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
@@ -1701,28 +1653,23 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
-        ret = compute_blob_kzg_proof(
-            &proofs[i], &blobs[i], &commitments[i], &s
-        );
+        ret = compute_blob_kzg_proof(&proofs[i], &blobs[i], &commitments[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
     }
 
     /* Overwrite one field element in the blob with modulus */
     bytes32_from_hex(
-        &field_element,
-        "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
+        &field_element, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001"
     );
     memcpy(blobs[1].bytes, field_element.bytes, BYTES_PER_FIELD_ELEMENT);
 
-    ret = verify_blob_kzg_proof_batch(
-        &ok, blobs, commitments, proofs, n_cells, &s
-    );
+    ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, n_cells, &s);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for expand_root_of_unity
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_expand_root_of_unity__succeeds_with_root(void) {
     C_KZG_RET ret;
@@ -1754,9 +1701,9 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for reconstruction
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_fft(void) {
     // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
@@ -1778,9 +1725,7 @@ static void test_fft(void) {
     for (size_t i = 0; i < N; i++) {
         fr_t individual_evaluation;
 
-        eval_extended_poly(
-            &individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]
-        );
+        eval_extended_poly(&individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]);
 
         bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
         ASSERT_EQUALS(ok, true);
@@ -1817,9 +1762,7 @@ static void test_coset_fft(void) {
         fr_t shifted_w;
         fr_t individual_evaluation;
 
-        blst_fr_mul(
-            &shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR
-        );
+        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR);
 
         eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
 
@@ -1837,9 +1780,9 @@ static void test_coset_fft(void) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for deduplicate_commitments
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_deduplicate_commitments__one_duplicate(void) {
     Bytes48 commitments[4];
@@ -1921,9 +1864,9 @@ static void test_deduplicate_commitments__one_commitment(void) {
     ASSERT_EQUALS(indices[0], 0);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for recover_cells_and_kzg_proofs
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     C_KZG_RET ret;
@@ -1952,12 +1895,7 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
 
     /* Reconstruct with half of the cells */
     ret = recover_cells_and_kzg_proofs(
-        recovered_cells,
-        recovered_proofs,
-        cell_indices,
-        partial_cells,
-        num_partial_cells,
-        &s
+        recovered_cells, recovered_proofs, cell_indices, partial_cells, num_partial_cells, &s
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
 
@@ -1970,9 +1908,113 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////
+static void test_compute_vanishing_polynomial_from_roots(void) {
+    /*
+     * Test case: (x - 2)(x - 3)
+     *
+     * Expected result: x^2 - 5x + 6
+     */
+
+    /* Initialize array with the roots 2 and 3 */
+    fr_t roots[2];
+    fr_from_uint64(&roots[0], 2);
+    fr_from_uint64(&roots[1], 3);
+    size_t roots_len = 2;
+
+    fr_t poly[3];
+    size_t poly_len = 3;
+
+    compute_vanishing_polynomial_from_roots(poly, &poly_len, roots, roots_len);
+
+    fr_t expected[3];
+
+    fr_from_uint64(&expected[0], 6);
+
+    /* Negate 5 */
+    fr_from_uint64(&expected[1], 5);
+    blst_fr_cneg(&expected[1], &expected[1], true);
+
+    expected[2] = FR_ONE;
+
+    ASSERT("polynomial length is 3", poly_len == 3);
+    ASSERT("coefficient 0 are equal", fr_equal(&poly[0], &expected[0]));
+    ASSERT("coefficient 1 are equal", fr_equal(&poly[1], &expected[1]));
+    ASSERT("coefficient 2 are equal", fr_equal(&poly[2], &expected[2]));
+}
+
+static void test_vanishing_polynomial_for_missing_cells(void) {
+
+    fr_t *vanishing_poly = NULL;
+    C_KZG_RET ret = new_fr_array(&vanishing_poly, s.max_width);
+    ASSERT("vanishing poly alloc", ret == C_KZG_OK);
+
+    fr_t *fft_result = NULL;
+    ret = new_fr_array(&fft_result, s.max_width);
+    ASSERT("fft_result alloc", ret == C_KZG_OK);
+
+    /* Test case: the 0th and 1st cell are missing */
+    uint64_t missing_cell_indices[] = {0, 1};
+    size_t len_missing_cells = 2;
+
+    ret = vanishing_polynomial_for_missing_cells(
+        vanishing_poly, missing_cell_indices, len_missing_cells, &s
+    );
+
+    /* Check return status */
+    ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
+
+    /* Compute FFT of vanishing_poly */
+    fft_fr(fft_result, vanishing_poly, s.max_width, &s);
+
+    /*
+     * Check FFT results
+     *
+     * Let explain how we are picking the roots of unity:
+     * Focussing just on the missing cell index 0.
+     *
+     * We expect that the following roots will evaluate to zero on the vanishing polynomial we
+     * computed:
+     *
+     * s->expanded_roots_of_unity[0]
+     * s->expanded_roots_of_unity[128]
+     * s->expanded_roots_of_unity[256]
+     * ...
+     * s->expanded_roots_of_unity[8064]
+     *
+     * For every cell index, we should have `FIELD_ELEMENTS_PER_CELL` number of these roots. ie each
+     * cell index corresponds to 64 roots taken from `expanded_roots_of_unity` in the vanishing
+     * polynomial.
+     *
+     * In general, the formula is expanded_roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where
+     * `k` goes from 0 to FIELD_ELEMENTS_PER_CELL-1.
+     *
+     * For cell index 1, we would therefore expect the polynomial to vanish at points:
+     *
+     * s->expanded_roots_of_unity[1]
+     * s->expanded_roots_of_unity[129]
+     * s->expanded_roots_of_unity[257]
+     * ...
+     * s->expanded_roots_of_unity[8065]
+     *
+     * Sanity check:
+     * The largest cell index we can have is 127 since there are 128 cells.
+     *
+     * The last element for that cell index would have array index `127 + 128*63 = 8191`. This is
+     * correct since `expanded_roots_of_unity` has 8192 elements.
+     */
+    for (size_t i = 0; i < s.max_width; i++) {
+        if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
+            /* Every CELLS_PER_EXT_BLOB-th evaluation should be zero */
+            ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
+        } else {
+            ASSERT("evaluation is not zero", !fr_is_zero(&fft_result[i]));
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for verify_cell_kzg_proof_batch
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
     C_KZG_RET ret;
@@ -2008,9 +2050,9 @@ static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef PROFILE
 static void profile_blob_to_kzg_commitment(void) {
@@ -2138,9 +2180,8 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     Cell *cells = NULL;
 
     /*
-     * NOTE: this profiling function only cares about cell recovery since the
-     * proofs will always be recomputed. If we included proof computation, it
-     * would drown out cell recovery.
+     * NOTE: this profiling function only cares about cell recovery since the proofs will always be
+     * recomputed. If we included proof computation, it would drown out cell recovery.
      */
 
     /* Get a random blob */
@@ -2154,9 +2195,7 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
 
     /* Initialize cell indices */
-    ret = c_kzg_calloc(
-        (void **)&cell_indices, CELLS_PER_EXT_BLOB / 2, sizeof(uint64_t)
-    );
+    ret = c_kzg_calloc((void **)&cell_indices, CELLS_PER_EXT_BLOB / 2, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB / 2; i++) {
         cell_indices[i] = i;
@@ -2164,9 +2203,7 @@ static void profile_recover_cells_and_kzg_proofs(void) {
 
     ProfilerStart("recover_cells_and_kzg_proofs.prof");
     for (int i = 0; i < 5; i++) {
-        recover_cells_and_kzg_proofs(
-            cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s
-        );
+        recover_cells_and_kzg_proofs(cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s);
     }
     ProfilerStop();
 }
@@ -2198,13 +2235,9 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Initialize indices */
-    ret = c_kzg_calloc(
-        (void **)&commitments, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
-    );
+    ret = c_kzg_calloc((void **)&commitments, CELLS_PER_EXT_BLOB, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc(
-        (void **)&cell_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t)
-    );
+    ret = c_kzg_calloc((void **)&cell_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -2215,22 +2248,16 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     ProfilerStart("verify_cell_kzg_proof_batch.prof");
     for (int i = 0; i < 100; i++) {
         verify_cell_kzg_proof_batch(
-            &ok,
-            &commitments,
-            cell_indices,
-            cells,
-            proofs,
-            CELLS_PER_EXT_BLOB,
-            &s
+            &ok, &commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
         );
     }
     ProfilerStop();
 }
 #endif /* PROFILE */
 
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Main logic
-///////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void setup(void) {
     FILE *fp;
@@ -2306,8 +2333,7 @@ int main(void) {
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_g1_lincomb__verify_consistent);
     RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial);
-    RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range
-    );
+    RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_range);
     RUN(test_evaluate_polynomial_in_evaluation_form__random_polynomial);
     RUN(test_log2_pow2__succeeds_expected_values);
     RUN(test_is_power_of_two__succeeds_powers_of_two);
@@ -2323,10 +2349,8 @@ int main(void) {
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1);
-    RUN(test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1
-    );
-    RUN(test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1
-    );
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_compute_commitment_not_in_g1);
+    RUN(test_compute_and_verify_blob_kzg_proof__fails_verify_commitment_not_in_g1);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_invalid_blob);
     RUN(test_verify_kzg_proof_batch__succeeds_round_trip);
     RUN(test_verify_kzg_proof_batch__fails_with_incorrect_proof);
@@ -2344,13 +2368,14 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_compute_vanishing_polynomial_from_roots);
+    RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
-     * These functions are only executed if we're profiling. To me, it makes
-     * sense to put these in the testing file so we can re-use the helper
-     * functions. Additionally, it checks that whatever performance changes
-     * haven't broken the library.
+     * These functions are only executed if we're profiling. To me, it makes sense to put these in
+     * the testing file so we can re-use the helper functions. Additionally, it checks that whatever
+     * performance changes haven't broken the library.
      */
 #ifdef PROFILE
     profile_blob_to_kzg_commitment();
