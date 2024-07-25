@@ -113,5 +113,13 @@ static const fr_t FR_NULL = {
 
 C_KZG_RET c_kzg_malloc(void **out, size_t size);
 
+C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
+
+C_KZG_RET new_g1_array(g1_t **x, size_t n);
+
+C_KZG_RET new_g2_array(g2_t **x, size_t n);
+
+C_KZG_RET new_fr_array(fr_t **x, size_t n);
+
 #endif // COMMON_H
 
