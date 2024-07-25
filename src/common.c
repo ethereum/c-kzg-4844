@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 
-
 /**
  * Wrapped malloc() that reports failures to allocate.
  *
