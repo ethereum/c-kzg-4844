@@ -86,11 +86,6 @@ typedef Bytes48 KZGCommitment;
 /** A trusted (valid) KZG proof. */
 typedef Bytes48 KZGProof;
 
-/** A single cell for a blob. */
-typedef struct {
-    uint8_t bytes[BYTES_PER_CELL];
-} Cell;
-
 /** The common return type for all routines in which something can go wrong. */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
@@ -182,29 +177,6 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
     size_t n,
-    const KZGSettings *s
-);
-
-C_KZG_RET compute_cells_and_kzg_proofs(
-    Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
-);
-
-C_KZG_RET recover_cells_and_kzg_proofs(
-    Cell *recovered_cells,
-    KZGProof *recovered_proofs,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    size_t num_cells,
-    const KZGSettings *s
-);
-
-C_KZG_RET verify_cell_kzg_proof_batch(
-    bool *ok,
-    const Bytes48 *commitments_bytes,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    const Bytes48 *proofs_bytes,
-    size_t num_cells,
     const KZGSettings *s
 );
 

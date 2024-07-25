@@ -3,21 +3,36 @@
 
 #include "c_kzg_4844.h"
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The coset shift factor for the cell recovery code.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t RECOVERY_SHIFT_FACTOR = {
+    0x0000000efffffff1L,
+    0x17e363d300189c0fL,
+    0xff9c57876f8457b0L,
+    0x351332208fc5a8c4L,
+};
 
 /** Internal representation of a polynomial. */
 typedef struct {
     fr_t evals[FIELD_ELEMENTS_PER_BLOB];
 } Polynomial;
 
+/** Length of the domain strings above. */
+#define DOMAIN_STR_LENGTH 16
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
-    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
-};
+    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
 
 /**
  * The first 32 roots of unity in the finite field F_r. SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of
@@ -74,21 +89,18 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0xd7b688830a4f2089L, 0x6558e9e3f6ac7b41L, 0x99e276b571905a7dL, 0x52dd465e2f094256L},
     {0x474650359d8e211bL, 0x84d37b826214abc6L, 0x8da40c1ef2bb4598L, 0x0c83ea7744bf1beeL},
     {0x694341f608c9dd56L, 0xed3a181fabb30adcL, 0x1339a815da8b398fL, 0x2c6d4e4511657e1eL},
-    {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}
-};
+    {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}};
 
 /** The zero field element. */
 static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
 
 /** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
-};
+    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
 
 /** This used to represent a missing element. It's a invalid value. */
 static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
-};
+    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -107,9 +119,38 @@ static const fr_t FR_NULL = {
         (p) = NULL; \
     } while (0)
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Public methods
-////////////////////////////////////////////////////////////////////////////////////////////////////
+bool fr_equal(const fr_t *aa, const fr_t *bb);
+void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
+bool fr_is_one(const fr_t *p);
+void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
+void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
+
+void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
+C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
+
+void bytes_from_g1(Bytes48 *out, const g1_t *in);
+void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
+void bytes_from_uint64(uint8_t out[8], uint64_t n);
+
+C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
+C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
+C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
+
+void hash_to_bls_field(fr_t *out, const Bytes32 *b);
+void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
+C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
+bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
+void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
+
+int log2_pow2(uint32_t n);
+
+uint32_t reverse_bits(uint32_t n);
+
+bool is_power_of_two(uint64_t n);
+
+void fr_from_uint64(fr_t *out, uint64_t n);
+
+C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
 
 C_KZG_RET c_kzg_malloc(void **out, size_t size);
 
@@ -121,5 +162,13 @@ C_KZG_RET new_g2_array(g2_t **x, size_t n);
 
 C_KZG_RET new_fr_array(fr_t **x, size_t n);
 
-#endif // COMMON_H
+C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
+C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 
+#ifdef UNIT_TESTS
+
+C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b);
+
+#endif
+
+#endif // COMMON_H

@@ -37,13 +37,13 @@ BLST_BUILDSCRIPT = ../blst/build.sh
 BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
 
 # Libraries to build with.
-LIBS = $(BLST_LIBRARY) common.o
+LIBS = $(BLST_LIBRARY)
 
 ###############################################################################
 # Core
 ###############################################################################
 
-all: c_kzg_4844.o common.o # test
+all: c_kzg_4844.o common.o c_kzg_7594.o
 
 $(BLST_BUILDSCRIPT):
 	@git submodule update --init
@@ -57,18 +57,12 @@ $(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
 .PHONY: blst
 blst: $(BLST_LIBRARY)
 
-c_kzg_4844.o: c_kzg_4844.c common.h $(BLST_LIBRARY)
-	@$(CC) $(CFLAGS) -c $<
-
-common.o: common.c
-	@$(CC) $(CFLAGS) -c $<
-
 test_c_kzg_4844: CFLAGS += -O0
-test_c_kzg_4844: test_c_kzg_4844.c c_kzg_4844.c $(BLST_LIBRARY)
+test_c_kzg_4844: test_c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
-test: test_c_kzg_4844
+test: all test_c_kzg_4844
 	@./test_c_kzg_4844
 
 ###############################################################################
