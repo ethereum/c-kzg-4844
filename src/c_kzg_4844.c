@@ -31,9 +31,6 @@
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Returns the smaller value. */
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-
 /** Returns number of elements in a statically defined array. */
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
