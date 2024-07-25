@@ -20,6 +20,7 @@
  * Minimal implementation of the polynomial commitments API for EIP-4844.
  */
 #include "c_kzg_4844.h"
+#include "common.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -1940,6 +1941,8 @@ C_KZG_RET load_trusted_setup(
     size_t precompute
 ) {
     C_KZG_RET ret;
+
+    dummy_function();
 
     out->max_width = 0;
     out->roots_of_unity = NULL;
