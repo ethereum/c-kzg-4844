@@ -43,7 +43,7 @@ LIBS = $(BLST_LIBRARY)
 # Core
 ###############################################################################
 
-all: c_kzg_4844.o common.o c_kzg_7594.o
+all: c_kzg_4844.o c_kzg_7594.o test
 
 $(BLST_BUILDSCRIPT):
 	@git submodule update --init
@@ -62,7 +62,7 @@ test_c_kzg_4844: test_c_kzg_4844.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
-test: all test_c_kzg_4844
+test: test_c_kzg_4844
 	@./test_c_kzg_4844
 
 ###############################################################################
@@ -113,7 +113,9 @@ profile: \
 	profile_verify_kzg_proof \
 	profile_verify_blob_kzg_proof \
 	profile_verify_blob_kzg_proof_batch \
-	profile_compute_cells_and_kzg_proofs
+	profile_compute_cells_and_kzg_proofs \
+	profile_recover_cells_and_kzg_proofs \
+	profile_verify_cell_kzg_proof_batch
 
 ###############################################################################
 # Sanitize
@@ -157,7 +159,7 @@ analyze: c_kzg_4844.c
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes c_kzg_4844.* common.* test_c_kzg_4844.c
+	@clang-format -i --sort-includes c_kzg_4844.* c_kzg_7594.* common.* test_c_kzg_4844.c
 
 .PHONY: clean
 clean:
