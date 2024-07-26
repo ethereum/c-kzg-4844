@@ -1,16 +1,14 @@
 /**
- * @file c_kzg_peerdas.c
+ * @file c_kzg_7594.c
  *
- * Minimal implementation of the polynomial commitments API for PeerDAS.
+ * Minimal implementation of the polynomial commitments API for EIP-7594.
  */
-
-#include "common.h"
 #include "c_kzg_7594.h"
+#include "common.h"
 
 #include "blst.h"
 
 #include <assert.h>
-#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -890,9 +888,7 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
  * @remark The length of `indices_out` is unchanged.
  * @remark `count_out` is updated to be the number of unique commitments.
  */
-void deduplicate_commitments(
-    Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out
-) {
+void deduplicate_commitments(Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out) {
     /* Bail early if there are no commitments */
     if (*count_out == 0) return;
 

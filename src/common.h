@@ -131,7 +131,6 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
 void bytes_from_g1(Bytes48 *out, const g1_t *in);
 void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
 void bytes_from_uint64(uint8_t out[8], uint64_t n);
-
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
 C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
@@ -143,32 +142,18 @@ bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t 
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 
 int log2_pow2(uint32_t n);
-
 uint32_t reverse_bits(uint32_t n);
-
 bool is_power_of_two(uint64_t n);
-
 void fr_from_uint64(fr_t *out, uint64_t n);
-
 C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
 
 C_KZG_RET c_kzg_malloc(void **out, size_t size);
-
 C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
-
 C_KZG_RET new_g1_array(g1_t **x, size_t n);
-
 C_KZG_RET new_g2_array(g2_t **x, size_t n);
-
 C_KZG_RET new_fr_array(fr_t **x, size_t n);
 
 C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
-
-#ifdef UNIT_TESTS
-
-C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b);
-
-#endif
 
 #endif // COMMON_H

@@ -6,8 +6,8 @@
 #ifndef C_KZG_7594_H
 #define C_KZG_7594_H
 
-#include "common.h"
 #include "c_kzg_4844.h"
+#include "common.h"
 
 /** A single cell for a blob. */
 typedef struct {
@@ -38,4 +38,3 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 );
 
 #endif /* C_KZG_7594_H */
-
