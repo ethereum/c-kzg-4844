@@ -23,6 +23,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -247,3 +251,7 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
 C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
+
+#ifdef __cplusplus
+}
+#endif

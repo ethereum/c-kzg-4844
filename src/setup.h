@@ -19,6 +19,10 @@
 #include "eip4844.h"
 #include "eip7594.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -37,3 +41,7 @@ C_KZG_RET load_trusted_setup(
 C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute);
 
 void free_trusted_setup(KZGSettings *s);
+
+#ifdef __cplusplus
+}
+#endif

@@ -18,6 +18,10 @@
 #include "eip4844.h"
 #include "eip7594.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -28,3 +32,7 @@ void print_fr(const fr_t *f);
 void print_g1(const g1_t *g);
 void print_blob(const Blob *blob);
 void print_cell(const Cell *cell);
+
+#ifdef __cplusplus
+}
+#endif
