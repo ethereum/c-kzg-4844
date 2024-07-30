@@ -38,6 +38,22 @@ static const fr_t RECOVERY_SHIFT_FACTOR = {
     0x351332208fc5a8c4L,
 };
 
+/**
+ * The inverse of RECOVERY_SHIFT_FACTOR.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   fr_div(&a, &FR_ONE, &a);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
+    0xdb6db6dadb6db6dcL,
+    0xe6b5824adb6cc6daL,
+    0xf8b356e005810db9L,
+    0x66d0f1e660ec4796L,
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory Allocation Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -130,7 +146,7 @@ static void fr_fft_fast(
  * @remark The array lengths must be a power of two.
  * @remark Use fr_ifft() for inverse transformation.
  */
-C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+static C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -153,7 +169,7 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  * @remark The array lengths must be a power of two.
  * @remark Use fr_fft() for forward transformation.
  */
-C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+static C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -190,7 +206,7 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  * @remark These do not have to be roots of unity. They are roots of a polynomial.
  * @remark `poly_len` must be at least `roots_len + 1` in length.
  */
-C_KZG_RET compute_vanishing_polynomial_from_roots(
+static C_KZG_RET compute_vanishing_polynomial_from_roots(
     fr_t *poly, size_t *poly_len, const fr_t *roots, size_t roots_len
 ) {
     fr_t neg_root;
@@ -240,7 +256,7 @@ C_KZG_RET compute_vanishing_polynomial_from_roots(
  * this case, and return C_KZG_BADARGS if not.
  * @remark `missing_cell_indices` are assumed to be less than `CELLS_PER_EXT_BLOB`.
  */
-C_KZG_RET vanishing_polynomial_for_missing_cells(
+static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *vanishing_poly,
     const uint64_t *missing_cell_indices,
     size_t len_missing_cells,
@@ -312,22 +328,6 @@ out:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Cell Recovery
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The inverse of RECOVERY_SHIFT_FACTOR.
- *
- *   fr_t a;
- *   fr_from_uint64(&a, 7);
- *   fr_div(&a, &FR_ONE, &a);
- *   for (size_t i = 0; i < 4; i++)
- *       printf("%#018llxL,\n", a.l[i]);
- */
-static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
-    0xdb6db6dadb6db6dcL,
-    0xe6b5824adb6cc6daL,
-    0xf8b356e005810db9L,
-    0x66d0f1e660ec4796L,
-};
 
 /**
  * Shift a polynomial in place.
@@ -911,7 +911,9 @@ static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
  * @remark The length of `indices_out` is unchanged.
  * @remark `count_out` is updated to be the number of unique commitments.
  */
-void deduplicate_commitments(Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out) {
+static void deduplicate_commitments(
+    Bytes48 *commitments_out, uint64_t *indices_out, size_t *count_out
+) {
     /* Bail early if there are no commitments */
     if (*count_out == 0) return;
 

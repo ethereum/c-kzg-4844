@@ -50,10 +50,8 @@ void print_blob(const Blob *blob) {
 }
 
 void print_cell(const Cell *cell) {
-    for (size_t i = 0; i < BYTES_PER_CELL; i++) {
-        if (i % BYTES_PER_FIELD_ELEMENT == 0) {
-            printf("\n");
-        }
-        printf("%02x", cell->bytes[i]);
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        Bytes32 *field = (Bytes32 *)&cell->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
     }
 }
