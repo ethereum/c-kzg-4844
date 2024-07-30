@@ -616,14 +616,14 @@ out:
  * @param[in]  roots_stride The stride interval among the roots of unity
  * @param[in]  n            Length of the FFT, must be a power of two
  */
-static void fft_g1_fast(
+static void g1_fft_fast(
     g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride, uint64_t n
 ) {
     g1_t y_times_root;
     uint64_t half = n / 2;
     if (half > 0) { /* Tunable parameter */
-        fft_g1_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_g1_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
+        g1_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
+        g1_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (uint64_t i = 0; i < half; i++) {
             /* If the point is infinity, we can skip the calculation */
             if (blst_p1_is_inf(&out[i + half])) {
@@ -653,16 +653,16 @@ static void fft_g1_fast(
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use ifft_g1() for inverse transformation.
+ * @remark Use g1_ifft() for inverse transformation.
  */
-C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
     uint64_t stride = s->max_width / n;
-    fft_g1_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    g1_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }
@@ -676,16 +676,16 @@ C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use fft_g1() for forward transformation.
+ * @remark Use g1_fft() for forward transformation.
  */
-C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
     uint64_t stride = s->max_width / n;
-    fft_g1_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
+    g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
     fr_from_uint64(&inv_len, n);

@@ -101,14 +101,14 @@ static uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
  */
-static void fft_fr_fast(
+static void fr_fft_fast(
     fr_t *out, const fr_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n
 ) {
     size_t half = n / 2;
     if (half > 0) {
         fr_t y_times_root;
-        fft_fr_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fft_fr_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
+        fr_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
+        fr_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (size_t i = 0; i < half; i++) {
             blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
             blst_fr_sub(&out[i + half], &out[i], &y_times_root);
@@ -128,16 +128,16 @@ static void fft_fr_fast(
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use ifft_fr() for inverse transformation.
+ * @remark Use fr_ifft() for inverse transformation.
  */
-C_KZG_RET fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
     size_t stride = s->max_width / n;
-    fft_fr_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    fr_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }
@@ -151,16 +151,16 @@ C_KZG_RET fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  * @param[in]   s   The trusted setup
  *
  * @remark The array lengths must be a power of two.
- * @remark Use fft_fr() for forward transformation.
+ * @remark Use fr_fft() for forward transformation.
  */
-C_KZG_RET ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
     if (n > s->max_width || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
     size_t stride = s->max_width / n;
-    fft_fr_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
+    fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
     fr_from_uint64(&inv_len, n);
@@ -357,7 +357,7 @@ static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
  *
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
  */
-C_KZG_RET coset_fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+static C_KZG_RET coset_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
     fr_t *in_shifted = NULL;
 
@@ -369,7 +369,7 @@ C_KZG_RET coset_fft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s
     memcpy(in_shifted, in, n * sizeof(fr_t));
     shift_poly(in_shifted, n, &RECOVERY_SHIFT_FACTOR);
 
-    ret = fft_fr(out, in_shifted, n, s);
+    ret = fr_fft(out, in_shifted, n, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -388,10 +388,10 @@ out:
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we use its inverse to
  * implement the IFFT.
  */
-C_KZG_RET coset_ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+static C_KZG_RET coset_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
 
-    ret = ifft_fr(out, in, n, s);
+    ret = fr_ifft(out, in, n, s);
     if (ret != C_KZG_OK) goto out;
 
     shift_poly(out, n, &INV_RECOVERY_SHIFT_FACTOR);
@@ -499,7 +499,7 @@ static C_KZG_RET recover_cells_impl(
     if (ret != C_KZG_OK) goto out;
 
     /* Convert Z(x) to evaluation form */
-    ret = fft_fr(vanishing_poly_eval, vanishing_poly_coeff, s->max_width, s);
+    ret = fr_fft(vanishing_poly_eval, vanishing_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
@@ -512,7 +512,7 @@ static C_KZG_RET recover_cells_impl(
     }
 
     /* Convert (E*Z)(x) to monomial form  */
-    ret = ifft_fr(
+    ret = fr_ifft(
         extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->max_width, s
     );
     if (ret != C_KZG_OK) goto out;
@@ -523,12 +523,12 @@ static C_KZG_RET recover_cells_impl(
      *   Q2 = Z_r,I(k * x)
      *   Q3 = D(k * x)
      */
-    ret = coset_fft_fr(
+    ret = coset_fft(
         extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->max_width, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    ret = coset_fft_fr(vanishing_poly_over_coset, vanishing_poly_coeff, s->max_width, s);
+    ret = coset_fft(vanishing_poly_over_coset, vanishing_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
@@ -546,14 +546,14 @@ static C_KZG_RET recover_cells_impl(
      */
 
     /* Convert the evaluations back to coefficents */
-    ret = coset_ifft_fr(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
+    ret = coset_ifft(reconstructed_poly_coeff, extended_evaluations_over_coset, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
      * After unscaling the reconstructed polynomial, we have D(x) which evaluates to our original
      * data at the roots of unity. Next, we evaluate the polynomial to get the original data.
      */
-    ret = fft_fr(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
+    ret = fr_fft(reconstructed_data_out, reconstructed_poly_coeff, s->max_width, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
@@ -604,7 +604,7 @@ static C_KZG_RET poly_lagrange_to_monomial(
     if (ret != C_KZG_OK) goto out;
 
     /* Perform an inverse FFT on the BRP'd polynomial */
-    ret = ifft_fr(monomial_out, lagrange_brp, len, s);
+    ret = fr_ifft(monomial_out, lagrange_brp, len, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -709,7 +709,7 @@ static C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const K
     for (uint64_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
-        ret = fft_fr(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
+        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
         for (uint64_t j = 0; j < k2; j++) {
             coeffs[j][i] = toeplitz_coeffs_fft[j];
@@ -744,7 +744,7 @@ static C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const K
         }
     }
 
-    ret = ifft_g1(h, h_ext_fft, k2, s);
+    ret = g1_ifft(h, h_ext_fft, k2, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Zero the second half of h */
@@ -752,7 +752,7 @@ static C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const K
         h[i] = G1_IDENTITY;
     }
 
-    ret = fft_g1(out, h, k2, s);
+    ret = g1_fft(out, h, k2, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -998,7 +998,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         if (ret != C_KZG_OK) goto out;
 
         /* Get the data points via forward transformation */
-        ret = fft_fr(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, s);
+        ret = fr_fft(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the data points */
@@ -1396,7 +1396,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          * of unity and then we scale by the coset factor.  We can't do an IDFT directly over the
          * coset because it's not a subgroup.
          */
-        ret = ifft_fr(
+        ret = fr_ifft(
             column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
         );
         if (ret != C_KZG_OK) goto out;

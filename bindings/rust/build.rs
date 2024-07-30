@@ -20,9 +20,6 @@ fn main() {
         // the same size as a bool in Rust. This is the root cause of the issues on Windows. If/when
         // this is fixed in bindgen, it should be safe to remove this compiler flag.
         cc.flag("/std:c11");
-
-        // To ignore the "C requires that a struct or union have at least one member" error.
-        cc.flag("/wd2016");
     }
 
     cc.include(blst_headers_dir.clone());

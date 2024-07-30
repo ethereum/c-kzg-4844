@@ -179,7 +179,7 @@ static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSe
     }
 
     /* Peform forward transformation */
-    ret = fft_g1(out, x_ext, n2, s);
+    ret = g1_fft(out, x_ext, n2, s);
     if (ret != C_KZG_OK) goto out;
 
 out:

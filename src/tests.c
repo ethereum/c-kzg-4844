@@ -1723,7 +1723,7 @@ static void test_fft(void) {
     }
 
     /* Evaluate poly using FFT */
-    fft_fr(poly_eval, poly_coeff, N, &s);
+    fr_fft(poly_eval, poly_coeff, N, &s);
 
     /* check: result of FFT are really the evaluations of the poly */
     for (size_t i = 0; i < N; i++) {
@@ -1736,7 +1736,7 @@ static void test_fft(void) {
     }
 
     /* Turn the eval poly back into a coeff poly */
-    ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+    fr_ifft(recovered_poly_coeff, poly_eval, N, &s);
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
@@ -1759,7 +1759,7 @@ static void test_coset_fft(void) {
     }
 
     /* Evaluate poly using coset FFT */
-    coset_fft_fr(poly_eval, poly_coeff, N, &s);
+    coset_fft(poly_eval, poly_coeff, N, &s);
 
     /* check: result of coset FFT are really the evaluations over the coset */
     for (size_t i = 0; i < N; i++) {
@@ -1775,7 +1775,7 @@ static void test_coset_fft(void) {
     }
 
     /* Turn the eval poly back into a coeff poly */
-    coset_ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+    coset_ifft(recovered_poly_coeff, poly_eval, N, &s);
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
@@ -1968,7 +1968,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     /* Compute FFT of vanishing_poly */
-    fft_fr(fft_result, vanishing_poly, s.max_width, &s);
+    fr_fft(fft_result, vanishing_poly, s.max_width, &s);
 
     /*
      * Check FFT results
