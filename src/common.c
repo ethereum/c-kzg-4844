@@ -17,7 +17,7 @@
 #include "common.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Memory Allocation Functions
+// Memory Allocation
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -88,7 +88,107 @@ C_KZG_RET new_fr_array(fr_t **x, size_t n) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Bytes Conversion Helper Functions
+// General Helper Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Utility function to test whether the argument is a power of two.
+ *
+ * @param[in] n The number to test
+ *
+ * @return True if `n` is zero or a power of two, otherwise false.
+ *
+ * @remark This method returns true for is_power_of_two(0) which is a bit weird, but not an issue in
+ * the contexts in which we use it.
+ *
+ */
+bool is_power_of_two(uint64_t n) {
+    return (n & (n - 1)) == 0;
+}
+
+/**
+ * Calculate log base two of a power of two.
+ *
+ * @param[in] n The power of two
+ *
+ * @return The log base two of n.
+ *
+ * @remark In other words, the bit index of the one bit.
+ * @remark Works only for n a power of two, and only for n up to 2^31.
+ * @remark Not the fastest implementation, but it doesn't need to be fast.
+ */
+int log2_pow2(uint32_t n) {
+    int position = 0;
+    while (n >>= 1)
+        position++;
+    return position;
+}
+
+/**
+ * Reverse the bit order in a 32-bit integer.
+ *
+ * @param[in]   n   The integer to be reversed
+ *
+ * @return An integer with the bits of `n` reversed.
+ */
+uint32_t reverse_bits(uint32_t n) {
+    uint32_t result = 0;
+    for (int i = 0; i < 32; ++i) {
+        result <<= 1;
+        result |= (n & 1);
+        n >>= 1;
+    }
+    return result;
+}
+
+/**
+ * Reorder an array in reverse bit order of its indices.
+ *
+ * @param[in,out] values The array, which is re-ordered in-place
+ * @param[in]     size   The size in bytes of an element of the array
+ * @param[in]     n      The length of the array, must be a power of two
+ *                       strictly greater than 1 and less than 2^32.
+ *
+ * @remark Operates in-place on the array.
+ * @remark Can handle arrays of any type: provide the element size in `size`.
+ * @remark This means that `input[n] == output[n']`, where input and output denote the input and
+ * output array and n' is obtained from n by bit-reversing n. As opposed to reverse_bits, this
+ * bit-reversal operates on log2(n)-bit numbers.
+ */
+C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
+    C_KZG_RET ret;
+    byte *tmp = NULL;
+    byte *v = values;
+
+    /* Some sanity checks */
+    if (n < 2 || n >= UINT32_MAX || !is_power_of_two(n)) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Scratch space for swapping an entry of the values array */
+    ret = c_kzg_malloc((void **)&tmp, size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Reorder elements */
+    int unused_bit_len = 32 - log2_pow2(n);
+    for (uint32_t i = 0; i < n; i++) {
+        uint32_t r = reverse_bits(i) >> unused_bit_len;
+        if (r > i) {
+            /* Swap the two elements */
+            memcpy(tmp, v + (i * size), size);
+            memcpy(v + (i * size), v + (r * size), size);
+            memcpy(v + (r * size), tmp, size);
+        }
+    }
+
+out:
+    c_kzg_free(tmp);
+    return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Conversion and Validation
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -187,8 +287,142 @@ C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
     return validate_kzg_g1(out, b);
 }
 
+/**
+ * Create a field element from a single 64-bit unsigned integer.
+ *
+ * @param[out] out The field element equivalent of `n`
+ * @param[in]  n   The 64-bit integer to be converted
+ *
+ * @remark This can only generate a tiny fraction of possible field elements,
+ *         and is mostly useful for testing.
+ */
+void fr_from_uint64(fr_t *out, uint64_t n) {
+    uint64_t vals[] = {n, 0, 0, 0};
+    blst_fr_from_uint64(out, vals);
+}
+
+/**
+ * Map bytes to a BLS field element.
+ *
+ * @param[out] out The field element to store the result
+ * @param[in]  b   A 32-byte array containing the input
+ */
+void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
+    blst_scalar tmp;
+    blst_scalar_from_bendian(&tmp, b->bytes);
+    blst_fr_from_scalar(out, &tmp);
+}
+
+/**
+ * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
+ *
+ * @param[out]  p           The output polynomial (array of field elements)
+ * @param[in]   blob        The blob (an array of bytes)
+ * @param[in]   num_fields  The number of field elements in the blob
+ */
+C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t num_fields) {
+    C_KZG_RET ret;
+    for (size_t i = 0; i < num_fields; i++) {
+        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]);
+        if (ret != C_KZG_OK) return ret;
+    }
+    return C_KZG_OK;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// BLS12-381 Helper Functions
+// Field Operations
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Test whether two field elements are equal.
+ *
+ * @param[in]   a   The first element
+ * @param[in]   b   The second element
+ *
+ * @retval true     The two elements are equal.
+ * @retval false    The two elements are not equal.
+ */
+bool fr_equal(const fr_t *a, const fr_t *b) {
+    uint64_t _a[4], _b[4];
+    blst_uint64_from_fr(_a, a);
+    blst_uint64_from_fr(_b, b);
+    return _a[0] == _b[0] && _a[1] == _b[1] && _a[2] == _b[2] && _a[3] == _b[3];
+}
+
+/**
+ * Test whether the operand is one in the finite field.
+ *
+ * @param[in] p The field element to be checked
+ *
+ * @retval true  The element is one
+ * @retval false The element is not one
+ */
+bool fr_is_one(const fr_t *p) {
+    uint64_t a[4];
+    blst_uint64_from_fr(a, p);
+    return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+/**
+ * Divide a field element by another.
+ *
+ * @param[out] out `a` divided by `b` in the field
+ * @param[in]  a   The dividend
+ * @param[in]  b   The divisor
+ *
+ * @remark The behavior for `b == 0` is unspecified.
+ * @remark This function supports in-place computation.
+ */
+void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr tmp;
+    blst_fr_eucl_inverse(&tmp, b);
+    blst_fr_mul(out, a, &tmp);
+}
+
+/**
+ * Exponentiation of a field element.
+ *
+ * Uses square and multiply for log(n) performance.
+ *
+ * @param[out] out `a` raised to the power of `n`
+ * @param[in]  a   The field element to be exponentiated
+ * @param[in]  n   The exponent
+ *
+ * @remark A 64-bit exponent is sufficient for our needs here.
+ * @remark This function does support in-place computation.
+ */
+void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
+    fr_t tmp = *a;
+    *out = FR_ONE;
+
+    while (true) {
+        if (n & 1) {
+            blst_fr_mul(out, out, &tmp);
+        }
+        if ((n >>= 1) == 0) break;
+        blst_fr_sqr(&tmp, &tmp);
+    }
+}
+
+/**
+ * Compute and return [ x^0, x^1, ..., x^{n-1} ].
+ *
+ * @param[out]  out The array to store the powers
+ * @param[in]   x   The field element to raise to powers
+ * @param[in]   n   The number of powers to compute
+ *
+ * @remark `out` is left untouched if `n == 0`.
+ */
+void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
+    fr_t current_power = FR_ONE;
+    for (uint64_t i = 0; i < n; i++) {
+        out[i] = current_power;
+        blst_fr_mul(&current_power, &current_power, x);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Point Operations
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -215,61 +449,6 @@ void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
     blst_p1_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
-}
-
-/**
- * Test whether the operand is one in the finite field.
- *
- * @param[in] p The field element to be checked
- *
- * @retval true  The element is one
- * @retval false The element is not one
- */
-bool fr_is_one(const fr_t *p) {
-    uint64_t a[4];
-    blst_uint64_from_fr(a, p);
-    return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
-}
-
-/**
- * Test whether two field elements are equal.
- *
- * @param[in] aa The first element
- * @param[in] bb The second element
- *
- * @retval true     The two elements are equal.
- * @retval false    The two elements are not equal.
- */
-bool fr_equal(const fr_t *aa, const fr_t *bb) {
-    uint64_t a[4], b[4];
-    blst_uint64_from_fr(a, aa);
-    blst_uint64_from_fr(b, bb);
-    return a[0] == b[0] && a[1] == b[1] && a[2] == b[2] && a[3] == b[3];
-}
-
-/**
- * Exponentiation of a field element.
- *
- * Uses square and multiply for log(n) performance.
- *
- * @param[out] out `a` raised to the power of `n`
- * @param[in]  a   The field element to be exponentiated
- * @param[in]  n   The exponent
- *
- * @remark A 64-bit exponent is sufficient for our needs here.
- * @remark This function does support in-place computation.
- */
-void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
-    fr_t tmp = *a;
-    *out = FR_ONE;
-
-    while (true) {
-        if (n & 1) {
-            blst_fr_mul(out, out, &tmp);
-        }
-        if ((n >>= 1) == 0) break;
-        blst_fr_sqr(&tmp, &tmp);
-    }
 }
 
 /**
@@ -310,185 +489,6 @@ bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t 
 
     return blst_fp12_is_one(&gt_point);
 }
-
-/**
- * Divide a field element by another.
- *
- * @param[out] out `a` divided by `b` in the field
- * @param[in]  a   The dividend
- * @param[in]  b   The divisor
- *
- * @remark The behavior for `b == 0` is unspecified.
- * @remark This function supports in-place computation.
- */
-void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr tmp;
-    blst_fr_eucl_inverse(&tmp, b);
-    blst_fr_mul(out, a, &tmp);
-}
-
-/**
- * Map bytes to a BLS field element.
- *
- * @param[out] out The field element to store the result
- * @param[in]  b   A 32-byte array containing the input
- */
-void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
-    blst_scalar tmp;
-    blst_scalar_from_bendian(&tmp, b->bytes);
-    blst_fr_from_scalar(out, &tmp);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Helper Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Compute and return [ x^0, x^1, ..., x^{n-1} ].
- *
- * @param[out] out The array to store the powers
- * @param[in]  x   The field element to raise to powers
- * @param[in]  n   The number of powers to compute
- *
- * @remark `out` is left untouched if `n == 0`.
- */
-void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
-    fr_t current_power = FR_ONE;
-    for (uint64_t i = 0; i < n; i++) {
-        out[i] = current_power;
-        blst_fr_mul(&current_power, &current_power, x);
-    }
-}
-
-/**
- * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
- *
- * @param[out]  p           The output polynomial (array of field elements)
- * @param[in]   blob        The blob (an array of bytes)
- * @param[in]   num_fields  The number of field elements in the blob
- */
-C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t num_fields) {
-    C_KZG_RET ret;
-    for (size_t i = 0; i < num_fields; i++) {
-        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]);
-        if (ret != C_KZG_OK) return ret;
-    }
-    return C_KZG_OK;
-}
-
-/**
- * Calculate log base two of a power of two.
- *
- * @param[in] n The power of two
- *
- * @return The log base two of n.
- *
- * @remark In other words, the bit index of the one bit.
- * @remark Works only for n a power of two, and only for n up to 2^31.
- * @remark Not the fastest implementation, but it doesn't need to be fast.
- */
-int log2_pow2(uint32_t n) {
-    int position = 0;
-    while (n >>= 1)
-        position++;
-    return position;
-}
-
-/**
- * Reverse the bit order in a 32-bit integer.
- *
- * @param[in]   n   The integer to be reversed
- *
- * @return An integer with the bits of `n` reversed.
- */
-uint32_t reverse_bits(uint32_t n) {
-    uint32_t result = 0;
-    for (int i = 0; i < 32; ++i) {
-        result <<= 1;
-        result |= (n & 1);
-        n >>= 1;
-    }
-    return result;
-}
-
-/**
- * Utility function to test whether the argument is a power of two.
- *
- * @param[in] n The number to test
- *
- * @return True if `n` is zero or a power of two, otherwise false.
- *
- * @remark This method returns true for is_power_of_two(0) which is a bit weird, but not an issue in
- * the contexts in which we use it.
- *
- */
-bool is_power_of_two(uint64_t n) {
-    return (n & (n - 1)) == 0;
-}
-
-/**
- * Reorder an array in reverse bit order of its indices.
- *
- * @param[in,out] values The array, which is re-ordered in-place
- * @param[in]     size   The size in bytes of an element of the array
- * @param[in]     n      The length of the array, must be a power of two
- *                       strictly greater than 1 and less than 2^32.
- *
- * @remark Operates in-place on the array.
- * @remark Can handle arrays of any type: provide the element size in `size`.
- * @remark This means that `input[n] == output[n']`, where input and output denote the input and
- * output array and n' is obtained from n by bit-reversing n. As opposed to reverse_bits, this
- * bit-reversal operates on log2(n)-bit numbers.
- */
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
-    C_KZG_RET ret;
-    byte *tmp = NULL;
-    byte *v = values;
-
-    /* Some sanity checks */
-    if (n < 2 || n >= UINT32_MAX || !is_power_of_two(n)) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
-
-    /* Scratch space for swapping an entry of the values array */
-    ret = c_kzg_malloc((void **)&tmp, size);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Reorder elements */
-    int unused_bit_len = 32 - log2_pow2(n);
-    for (uint32_t i = 0; i < n; i++) {
-        uint32_t r = reverse_bits(i) >> unused_bit_len;
-        if (r > i) {
-            /* Swap the two elements */
-            memcpy(tmp, v + (i * size), size);
-            memcpy(v + (i * size), v + (r * size), size);
-            memcpy(v + (r * size), tmp, size);
-        }
-    }
-
-out:
-    c_kzg_free(tmp);
-    return ret;
-}
-
-/**
- * Create a field element from a single 64-bit unsigned integer.
- *
- * @param[out] out The field element equivalent of `n`
- * @param[in]  n   The 64-bit integer to be converted
- *
- * @remark This can only generate a tiny fraction of possible field elements,
- *         and is mostly useful for testing.
- */
-void fr_from_uint64(fr_t *out, uint64_t n) {
-    uint64_t vals[] = {n, 0, 0, 0};
-    blst_fr_from_uint64(out, vals);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Multi-Scalar Multiplication
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Calculate a linear combination of G1 group elements.
@@ -603,10 +603,6 @@ out:
     c_kzg_free(scalars);
     return ret;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// FFT for G1 points
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Fast Fourier Transform.
