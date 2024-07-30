@@ -5,7 +5,7 @@
       "sources": [
         "src/kzg.cxx",
         "deps/blst/src/server.c",
-        "deps/c-kzg/c_kzg_4844.c"
+        "deps/c-kzg/ckzg.c"
       ],
       "include_dirs": [
         "<(module_root_dir)/deps/blst/bindings",

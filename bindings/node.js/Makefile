@@ -31,9 +31,10 @@ build: install clean
 	@# Prepare the dependencies directory
 	@mkdir -p deps/c-kzg
 	@cp -r ../../blst deps
-	@cp ../../src/c_kzg_4844.c deps/c-kzg
-	@cp ../../src/c_kzg_4844.h deps/c-kzg
+	@cp ../../src/*.{c,h} deps/c-kzg
 	@cp ../../src/trusted_setup.txt deps/c-kzg
+	@# Delete test files
+	@rm deps/c-kzg/*test*
 	@# Build the bindings
 	@$(YARN) node-gyp --loglevel=warn configure
 	@$(YARN) node-gyp --loglevel=warn build

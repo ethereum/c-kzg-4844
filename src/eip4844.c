@@ -14,18 +14,7 @@
  * limitations under the License.
  */
 
-/**
- * @file c_kzg_4844.c
- *
- * Minimal implementation of the polynomial commitments API for EIP-4844.
- */
-#include "c_kzg_4844.h"
-#include "common.h"
-
-#include <assert.h>
-#include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
+#include "eip4844.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants

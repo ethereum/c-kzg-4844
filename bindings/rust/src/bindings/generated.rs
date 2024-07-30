@@ -12,6 +12,19 @@ pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
+#[repr(C)]
+#[doc = " The common return type for all routines in which something can go wrong."]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum C_KZG_RET {
+    #[doc = "< Success!"]
+    C_KZG_OK = 0,
+    #[doc = "< The supplied data is invalid in some way."]
+    C_KZG_BADARGS = 1,
+    #[doc = "< Internal error - this should never occur."]
+    C_KZG_ERROR = 2,
+    #[doc = "< Could not allocate memory."]
+    C_KZG_MALLOC = 3,
+}
 pub type limb_t = u64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -69,25 +82,6 @@ pub struct Bytes48 {
 pub struct Blob {
     bytes: [u8; 131072usize],
 }
-#[doc = " A single cell for a blob."]
-#[repr(C)]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub struct Cell {
-    bytes: [u8; 2048usize],
-}
-#[repr(C)]
-#[doc = " The common return type for all routines in which something can go wrong."]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum C_KZG_RET {
-    #[doc = "< Success!"]
-    C_KZG_OK = 0,
-    #[doc = "< The supplied data is invalid in some way."]
-    C_KZG_BADARGS = 1,
-    #[doc = "< Internal error - this should never occur."]
-    C_KZG_ERROR = 2,
-    #[doc = "< Could not allocate memory."]
-    C_KZG_MALLOC = 3,
-}
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -114,6 +108,12 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
+}
+#[doc = " A single cell for a blob."]
+#[repr(C)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub struct Cell {
+    bytes: [u8; 2048usize],
 }
 extern "C" {
     pub fn load_trusted_setup(

@@ -43,7 +43,7 @@ LIBS = $(BLST_LIBRARY)
 # Core
 ###############################################################################
 
-all: c_kzg_4844.o c_kzg_7594.o test
+all: ckzg.o test
 
 $(BLST_BUILDSCRIPT):
 	@git submodule update --init
@@ -57,53 +57,53 @@ $(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
 .PHONY: blst
 blst: $(BLST_LIBRARY)
 
-test_c_kzg_4844: CFLAGS += -O0
-test_c_kzg_4844: test_c_kzg_4844.c $(BLST_LIBRARY)
+tests: CFLAGS += -O0
+tests: tests.c $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: test
-test: test_c_kzg_4844
-	@./test_c_kzg_4844
+test: tests
+	@./tests
 
 ###############################################################################
 # Coverage
 ###############################################################################
 
-test_c_kzg_4844_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-test_c_kzg_4844_cov: test_c_kzg_4844.c c_kzg_4844.c
+tests_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
+tests_cov: tests.c ckzg.c
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: coverage
-coverage: test_c_kzg_4844_cov
+coverage: tests_cov
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
-	    $< c_kzg_4844.c > coverage.html
+	    $< common.c eip4844.c eip7594.c > coverage.html
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
-	    --show-functions $< c_kzg_4844.c
+	    --show-functions $< common.c eip4844.c eip7594.c
 
 ###############################################################################
 # Profile
 ###############################################################################
 
-test_c_kzg_4844_prof: LIBS += -lprofiler
-test_c_kzg_4844_prof: CFLAGS += -O0 -DPROFILE
+tests_prof: LIBS += -lprofiler
+tests_prof: CFLAGS += -O0 -DPROFILE
 ifeq ($(PLATFORM),Darwin)
-test_c_kzg_4844_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
-test_c_kzg_4844_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
+tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
+tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-test_c_kzg_4844_prof: test_c_kzg_4844.c c_kzg_4844.c
+tests_prof: tests.c common.c eip4844.c eip7594.c
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: run_profiler
-run_profiler: test_c_kzg_4844_prof
+run_profiler: tests_prof
 	@CPUPROFILE_FREQUENCY=1000000000 ./$<
 
 .PHONY: profile_%
 profile_%: run_profiler
 	@echo Profiling $*...
 	@pprof --pdf --nodefraction=0.00001 --edgefraction=0.00001 \
-	    ./test_c_kzg_4844_prof $*.prof > $*.pdf
+	    ./tests_prof $*.prof > $*.pdf
 
 .PHONY: profile
 profile: \
@@ -123,7 +123,7 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: test_c_kzg_4844.c c_kzg_4844.c
+sanitize_%: tests.c common.c 4844.c 7594.c
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
@@ -148,7 +148,7 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: c_kzg_4844.c
+analyze: common.c 4844.c 7594.c
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
 	    -o analysis-report $(CFLAGS) -c $<
 	@[ -d analysis-report ] && exit 1 || exit 0
@@ -159,10 +159,10 @@ analyze: c_kzg_4844.c
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes c_kzg_4844.* c_kzg_7594.* common.* test_c_kzg_4844.c
+	@clang-format -i --sort-includes common.* 4844.* 7594.* tests.c
 
 .PHONY: clean
 clean:
 	@rm -f *.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
-	    test_c_kzg_4844 test_c_kzg_4844_cov test_c_kzg_4844_prof
+	    tests tests_cov tests_prof
 	@rm -rf analysis-report

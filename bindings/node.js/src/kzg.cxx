@@ -1,5 +1,5 @@
 #include "blst.h"
-#include "c_kzg_4844.h"
+#include "ckzg.h"
 #include <iostream>
 #include <napi.h>
 #include <sstream> // std::ostringstream

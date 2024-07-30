@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-/**
- * @file c_kzg_4844.h
- *
- * Minimal interface required for EIP-4844.
- */
-#ifndef C_KZG_4844_H
-#define C_KZG_4844_H
+#pragma once
 
+#include "blst.h"
+#include "common.h"
+
+#include <assert.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
-
-#include "blst.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdlib.h>
+#include <string.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -85,14 +80,6 @@ typedef Bytes48 KZGCommitment;
 
 /** A trusted (valid) KZG proof. */
 typedef Bytes48 KZGProof;
-
-/** The common return type for all routines in which something can go wrong. */
-typedef enum {
-    C_KZG_OK = 0,  /**< Success! */
-    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
-    C_KZG_ERROR,   /**< Internal error - this should never occur. */
-    C_KZG_MALLOC,  /**< Could not allocate memory. */
-} C_KZG_RET;
 
 /** Stores the setup and parameters needed for computing KZG proofs. */
 typedef struct {
@@ -179,9 +166,3 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     size_t n,
     const KZGSettings *s
 );
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* C_KZG_4844_H */

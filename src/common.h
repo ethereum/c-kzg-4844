@@ -1,7 +1,33 @@
-#ifndef COMMON_H
-#define COMMON_H
+/*
+ * Copyright 2024 Benjamin Edgington
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-#include "c_kzg_4844.h"
+#pragma once
+
+/** The common return type for all routines in which something can go wrong. */
+typedef enum {
+    C_KZG_OK = 0,  /**< Success! */
+    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
+    C_KZG_ERROR,   /**< Internal error - this should never occur. */
+    C_KZG_MALLOC,  /**< Could not allocate memory. */
+} C_KZG_RET;
+
+#include "eip4844.h"
+
+#include <stdlib.h>
+#include <string.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -32,7 +58,8 @@ typedef struct {
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
-    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}};
+    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
+};
 
 /**
  * The first 32 roots of unity in the finite field F_r. SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of
@@ -89,18 +116,21 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0xd7b688830a4f2089L, 0x6558e9e3f6ac7b41L, 0x99e276b571905a7dL, 0x52dd465e2f094256L},
     {0x474650359d8e211bL, 0x84d37b826214abc6L, 0x8da40c1ef2bb4598L, 0x0c83ea7744bf1beeL},
     {0x694341f608c9dd56L, 0xed3a181fabb30adcL, 0x1339a815da8b398fL, 0x2c6d4e4511657e1eL},
-    {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}};
+    {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}
+};
 
 /** The zero field element. */
 static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
 
 /** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL};
+    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
+};
 
 /** This used to represent a missing element. It's a invalid value. */
 static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL};
+    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -155,5 +185,3 @@ C_KZG_RET new_fr_array(fr_t **x, size_t n);
 
 C_KZG_RET fft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET ifft_g1(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
-
-#endif // COMMON_H

@@ -1,6 +1,6 @@
 INCLUDE_DIRS = ../../src ../../blst/bindings
 
-TARGETS=c_kzg_4844_jni.c ../../src/c_kzg_4844.c ../../lib/libblst.a
+TARGETS=ckzg_jni.c ../../src/ckzg.c ../../lib/libblst.a
 
 CC_FLAGS=
 OPTIMIZATION_LEVEL=-O2
