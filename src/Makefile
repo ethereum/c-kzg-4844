@@ -123,7 +123,7 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: tests.c common.c 4844.c 7594.c
+sanitize_%: tests.c ckzg.c
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
@@ -148,7 +148,7 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: common.c 4844.c 7594.c
+analyze: common.c eip4844.c eip7594.c
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
 	    -o analysis-report $(CFLAGS) -c $<
 	@[ -d analysis-report ] && exit 1 || exit 0

@@ -37,9 +37,7 @@ jobs:
           check-path: 'src'
           exclude-regex: 'tinytest.h'
 
-      # Build and test.
-      - name: Build
-        run: make test_c_kzg_4844
+      # Run tests.
       - name: Test
         run: make test
 
