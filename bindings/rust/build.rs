@@ -80,6 +80,7 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
         .clang_args([format!("-I{blst_headers_dir}")])
         // Get bindings for functions defined in the EIP files.
         .allowlist_type("C_KZG_RET")
+        .allowlist_var("BYTES_PER_.*")
         .allowlist_file(".*eip.*.h")
         /*
          * Cleanup instructions.

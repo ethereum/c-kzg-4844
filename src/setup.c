@@ -1,0 +1,544 @@
+/*
+ * Copyright 2024 Benjamin Edgington
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "eip4844.h"
+#include "eip7594.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Macros
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** The number of bytes in a g1 point. */
+#define BYTES_PER_G1 48
+
+/** The number of bytes in a g2 point. */
+#define BYTES_PER_G2 96
+
+/** The number of g1 points in a trusted setup. */
+#define NUM_G1_POINTS FIELD_ELEMENTS_PER_BLOB
+
+/** The number of g2 points in a trusted setup. */
+#define NUM_G2_POINTS 65
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Trusted Setup Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Generate powers of a root of unity in the field.
+ *
+ * @param[out] out   The roots of unity (length `width + 1`)
+ * @param[in]  root  A root of unity
+ * @param[in]  width One less than the size of `out`
+ *
+ * @remark `root` must be such that `root ^ width` is equal to one, but no smaller power of `root`
+ * is equal to one.
+ */
+static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
+    uint64_t i;
+
+    /* We assume it's at least two */
+    if (width < 2) {
+        return C_KZG_BADARGS;
+    }
+
+    /* We know what these will be */
+    out[0] = FR_ONE;
+    out[1] = *root;
+
+    /* Compute powers of root */
+    for (i = 2; i <= width; i++) {
+        blst_fr_mul(&out[i], &out[i - 1], root);
+        if (fr_is_one(&out[i])) break;
+    }
+
+    /* We expect the last entry to be one */
+    if (i != width || !fr_is_one(&out[width])) {
+        return C_KZG_BADARGS;
+    }
+
+    return C_KZG_OK;
+}
+
+/**
+ * Initialize the roots of unity.
+ *
+ * @param[out]  s   Pointer to KZGSettings
+ */
+static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
+    C_KZG_RET ret;
+    fr_t root_of_unity;
+
+    uint32_t max_scale = 0;
+    while ((1ULL << max_scale) < s->max_width)
+        max_scale++;
+
+    /* Ensure this element will exist */
+    if (max_scale >= NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY)) {
+        return C_KZG_BADARGS;
+    }
+
+    /* Get the root of unity */
+    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
+
+    /* Populate the roots of unity */
+    ret = expand_root_of_unity(s->expanded_roots_of_unity, &root_of_unity, s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Copy all but the last root to the roots of unity */
+    memcpy(s->roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
+
+    /* Permute the roots of unity */
+    ret = bit_reversal_permutation(s->roots_of_unity, sizeof(fr_t), s->max_width);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Populate reverse roots of unity */
+    for (uint64_t i = 0; i <= s->max_width; i++) {
+        s->reverse_roots_of_unity[i] = s->expanded_roots_of_unity[s->max_width - i];
+    }
+
+out:
+    return ret;
+}
+
+/**
+ * Free a trusted setup (KZGSettings).
+ *
+ * @param[in] s The trusted setup to free
+ *
+ * @remark This does nothing if `s` is NULL.
+ */
+void free_trusted_setup(KZGSettings *s) {
+    if (s == NULL) return;
+    s->max_width = 0;
+    c_kzg_free(s->roots_of_unity);
+    c_kzg_free(s->expanded_roots_of_unity);
+    c_kzg_free(s->reverse_roots_of_unity);
+    c_kzg_free(s->g1_values_monomial);
+    c_kzg_free(s->g1_values_lagrange_brp);
+    c_kzg_free(s->g2_values_monomial);
+
+    /*
+     * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
+     * structure, we don't want to deference these 2d arrays.  Without these NULL checks, it's
+     * possible for there to be a segmentation fault via null pointer dereference.
+     */
+    if (s->x_ext_fft_columns != NULL) {
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            c_kzg_free(s->x_ext_fft_columns[i]);
+        }
+    }
+    if (s->tables != NULL) {
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            c_kzg_free(s->tables[i]);
+        }
+    }
+    c_kzg_free(s->x_ext_fft_columns);
+    c_kzg_free(s->tables);
+    s->wbits = 0;
+    s->scratch_size = 0;
+}
+
+/**
+ * The first part of the Toeplitz matrix multiplication algorithm: the Fourier transform of the
+ * vector x extended.
+ *
+ * @param[out]  out The FFT of the extension of x, size n * 2
+ * @param[in]   x   The input vector, size n
+ * @param[in]   n   The length of the input vector x
+ * @param[in]   s   The trusted setup
+ */
+static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
+    C_KZG_RET ret;
+    size_t n2 = n * 2;
+    g1_t *x_ext;
+
+    /* Create extended array of points */
+    ret = new_g1_array(&x_ext, n2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Copy x & extend with zero */
+    for (size_t i = 0; i < n; i++) {
+        x_ext[i] = x[i];
+    }
+    for (size_t i = n; i < n2; i++) {
+        x_ext[i] = G1_IDENTITY;
+    }
+
+    /* Peform forward transformation */
+    ret = fft_g1(out, x_ext, n2, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(x_ext);
+    return ret;
+}
+
+/**
+ * Initialize fields for FK20 multi-proof computations.
+ *
+ * @param[out]  s   Pointer to KZGSettings to initialize
+ */
+static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
+    C_KZG_RET ret;
+    uint64_t n, k, k2;
+    g1_t *x = NULL;
+    g1_t *points = NULL;
+    blst_p1_affine *p_affine = NULL;
+    bool precompute = s->wbits != 0;
+
+    n = s->max_width / 2;
+    k = n / FIELD_ELEMENTS_PER_CELL;
+    k2 = 2 * k;
+
+    if (FIELD_ELEMENTS_PER_CELL >= NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Allocate space for arrays */
+    ret = new_g1_array(&x, k);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&points, k2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Allocate space for array of pointers, this is a 2D array */
+    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, sizeof(void *));
+    if (ret != C_KZG_OK) goto out;
+    for (size_t i = 0; i < k2; i++) {
+        ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
+        /* Compute x, sections of the g1 values */
+        size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (size_t i = 0; i < k - 1; i++) {
+            size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
+            x[i] = s->g1_values_monomial[j];
+        }
+        x[k - 1] = G1_IDENTITY;
+
+        /* Compute points, the fft of an extended x */
+        ret = toeplitz_part_1(points, x, k, s);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Reorganize from rows into columns */
+        for (size_t row = 0; row < k2; row++) {
+            s->x_ext_fft_columns[row][offset] = points[row];
+        }
+    }
+
+    if (precompute) {
+        /* Allocate space for precomputed tables */
+        ret = c_kzg_calloc((void **)&s->tables, k2, sizeof(void *));
+        if (ret != C_KZG_OK) goto out;
+
+        /* Allocate space for points in affine representation */
+        ret = c_kzg_calloc((void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine));
+        if (ret != C_KZG_OK) goto out;
+
+        /* Calculate the size of each table, this can be re-used */
+        size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
+            s->wbits, FIELD_ELEMENTS_PER_CELL
+        );
+
+        for (size_t i = 0; i < k2; i++) {
+            /* Transform the points to affine representation */
+            const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
+            blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
+            const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+
+            /* Allocate space for the table */
+            ret = c_kzg_malloc((void **)&s->tables[i], table_size);
+            if (ret != C_KZG_OK) goto out;
+
+            /* Compute table for fixed-base MSM */
+            blst_p1s_mult_wbits_precompute(
+                s->tables[i], s->wbits, points_arg, FIELD_ELEMENTS_PER_CELL
+            );
+        }
+
+        /* Calculate the size of the scratch */
+        s->scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL);
+    }
+
+out:
+    c_kzg_free(x);
+    c_kzg_free(points);
+    c_kzg_free(p_affine);
+    return ret;
+}
+
+/**
+ * Basic sanity check that the trusted setup was loaded in Lagrange form.
+ *
+ * @param[in] s  Pointer to the stored trusted setup data
+ * @param[in] n1 Number of `g1` points in trusted_setup
+ * @param[in] n2 Number of `g2` points in trusted_setup
+ */
+static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t n1, size_t n2) {
+    /* Trusted setup is too small; we can't work with this */
+    if (n1 < 2 || n2 < 2) {
+        return C_KZG_BADARGS;
+    }
+
+    /*
+     * If the following pairing equation checks out:
+     *     e(G1_SETUP[1], G2_SETUP[0]) ?= e(G1_SETUP[0], G2_SETUP[1])
+     * then the trusted setup was loaded in monomial form.
+     * If so, error out since we want the trusted setup in Lagrange form.
+     */
+    bool is_monomial_form = pairings_verify(
+        &s->g1_values_lagrange_brp[1],
+        &s->g2_values_monomial[0],
+        &s->g1_values_lagrange_brp[0],
+        &s->g2_values_monomial[1]
+    );
+    return is_monomial_form ? C_KZG_BADARGS : C_KZG_OK;
+}
+
+/**
+ * Load trusted setup into a KZGSettings.
+ *
+ * @param[out]  out                     Pointer to the stored trusted setup
+ * @param[in]   g1_monomial_bytes       Array of G1 points in monomial form
+ * @param[in]   num_g1_monomial_bytes   Number of g1 monomial bytes
+ * @param[in]   g1_lagrange_bytes       Array of G1 points in Lagrange form
+ * @param[in]   num_g1_lagrange_bytes   Number of g1 Lagrange bytes
+ * @param[in]   g2_monomial_bytes       Array of G2 points in monomial form
+ * @param[in]   num_g2_monomial_bytes   Number of g2 monomial bytes
+ * @param[in]   precompute              Configurable value between 0-15
+ *
+ * @remark Free afterwards use with free_trusted_setup().
+ */
+C_KZG_RET load_trusted_setup(
+    KZGSettings *out,
+    const uint8_t *g1_monomial_bytes,
+    size_t num_g1_monomial_bytes,
+    const uint8_t *g1_lagrange_bytes,
+    size_t num_g1_lagrange_bytes,
+    const uint8_t *g2_monomial_bytes,
+    size_t num_g2_monomial_bytes,
+    size_t precompute
+) {
+    C_KZG_RET ret;
+
+    out->max_width = 0;
+    out->roots_of_unity = NULL;
+    out->expanded_roots_of_unity = NULL;
+    out->reverse_roots_of_unity = NULL;
+    out->g1_values_monomial = NULL;
+    out->g1_values_lagrange_brp = NULL;
+    out->g2_values_monomial = NULL;
+    out->x_ext_fft_columns = NULL;
+    out->tables = NULL;
+
+    /* It seems that blst limits the input to 15 */
+    if (precompute > 15) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
+
+    /*
+     * This is the window size for the windowed multiplication in proof generation. The larger wbits
+     * is, the faster the MSM will be, but the size of the precomputed table will grow
+     * exponentially. With 8 bits, the tables are 96 MiB; with 9 bits, the tables are 192 MiB and so
+     * forth. From our testing, there are diminishing returns after 8 bits.
+     */
+    out->wbits = precompute;
+
+    /* Sanity check in case this is called directly */
+    if (num_g1_monomial_bytes != NUM_G1_POINTS * BYTES_PER_G1 ||
+        num_g1_lagrange_bytes != NUM_G1_POINTS * BYTES_PER_G1 ||
+        num_g2_monomial_bytes != NUM_G2_POINTS * BYTES_PER_G2) {
+        ret = C_KZG_BADARGS;
+        goto out_error;
+    }
+
+    /* 1<<max_scale is the smallest power of 2 >= n1 */
+    uint32_t max_scale = 0;
+    while ((1ULL << max_scale) < NUM_G1_POINTS)
+        max_scale++;
+
+    /* Set the max_width */
+    out->max_width = 1ULL << max_scale;
+
+    /* For DAS reconstruction */
+    out->max_width *= 2;
+
+    /* Allocate all of our arrays */
+    ret = new_fr_array(&out->roots_of_unity, out->max_width);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&out->expanded_roots_of_unity, out->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g1_array(&out->g1_values_monomial, NUM_G1_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g1_array(&out->g1_values_lagrange_brp, NUM_G1_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = new_g2_array(&out->g2_values_monomial, NUM_G2_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Convert all g1 monomial bytes to g1 points */
+    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
+        blst_p1_affine g1_affine;
+        BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]);
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p1_from_affine(&out->g1_values_monomial[i], &g1_affine);
+    }
+
+    /* Convert all g1 Lagrange bytes to g1 points */
+    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
+        blst_p1_affine g1_affine;
+        BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]);
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p1_from_affine(&out->g1_values_lagrange_brp[i], &g1_affine);
+    }
+
+    /* Convert all g2 bytes to g2 points */
+    for (uint64_t i = 0; i < NUM_G2_POINTS; i++) {
+        blst_p2_affine g2_affine;
+        BLST_ERROR err = blst_p2_uncompress(&g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]);
+        if (err != BLST_SUCCESS) {
+            ret = C_KZG_BADARGS;
+            goto out_error;
+        }
+        blst_p2_from_affine(&out->g2_values_monomial[i], &g2_affine);
+    }
+
+    /* Make sure the trusted setup was loaded in Lagrange form */
+    ret = is_trusted_setup_in_lagrange_form(out, NUM_G1_POINTS, NUM_G2_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Compute roots of unity and permute the G1 trusted setup */
+    ret = compute_roots_of_unity(out);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Bit reverse the Lagrange form points */
+    ret = bit_reversal_permutation(out->g1_values_lagrange_brp, sizeof(g1_t), NUM_G1_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Setup for FK20 proof computation */
+    ret = init_fk20_multi_settings(out);
+    if (ret != C_KZG_OK) goto out_error;
+
+    goto out_success;
+
+out_error:
+    /*
+     * Note: this only frees the fields in the KZGSettings structure. It does not free the
+     * KZGSettings structure memory. If necessary, that must be done by the caller.
+     */
+    free_trusted_setup(out);
+out_success:
+    return ret;
+}
+
+/**
+ * Load trusted setup from a file.
+ *
+ * @param[out]  out         Pointer to the loaded trusted setup data
+ * @param[in]   in          File handle for input
+ * @param[in]   precompute  Configurable value between 0-15
+ *
+ * @remark See also load_trusted_setup().
+ * @remark The input file will not be closed.
+ * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where the first two numbers
+ * are in decimal and the remainder are hexstrings and any whitespace can be used as separators.
+ */
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
+    C_KZG_RET ret;
+    int num_matches;
+    uint64_t i;
+    uint8_t *g1_monomial_bytes = NULL;
+    uint8_t *g1_lagrange_bytes = NULL;
+    uint8_t *g2_monomial_bytes = NULL;
+
+    /* Allocate space for points */
+    ret = c_kzg_calloc((void **)&g1_monomial_bytes, NUM_G1_POINTS, BYTES_PER_G1);
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc((void **)&g1_lagrange_bytes, NUM_G1_POINTS, BYTES_PER_G1);
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_calloc((void **)&g2_monomial_bytes, NUM_G2_POINTS, BYTES_PER_G2);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Read the number of g1 points */
+    num_matches = fscanf(in, "%" SCNu64, &i);
+    if (num_matches != 1 || i != NUM_G1_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Read the number of g2 points */
+    num_matches = fscanf(in, "%" SCNu64, &i);
+    if (num_matches != 1 || i != NUM_G2_POINTS) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
+
+    /* Read all of the g1 points in Lagrange form, byte by byte */
+    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
+        num_matches = fscanf(in, "%2hhx", &g1_lagrange_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
+    }
+
+    /* Read all of the g2 points in monomial form, byte by byte */
+    for (i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
+        num_matches = fscanf(in, "%2hhx", &g2_monomial_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
+    }
+
+    /* Read all of the g1 points in monomial form, byte by byte */
+    /* Note: this is last because it is an extension for EIP-7594 */
+    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
+        num_matches = fscanf(in, "%2hhx", &g1_monomial_bytes[i]);
+        if (num_matches != 1) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
+    }
+
+    ret = load_trusted_setup(
+        out,
+        g1_monomial_bytes,
+        NUM_G1_POINTS * BYTES_PER_G1,
+        g1_lagrange_bytes,
+        NUM_G1_POINTS * BYTES_PER_G1,
+        g2_monomial_bytes,
+        NUM_G2_POINTS * BYTES_PER_G2,
+        precompute
+    );
+
+out:
+    c_kzg_free(g1_monomial_bytes);
+    c_kzg_free(g1_lagrange_bytes);
+    c_kzg_free(g2_monomial_bytes);
+    return ret;
+}

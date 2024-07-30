@@ -16,6 +16,45 @@
 
 #pragma once
 
+#include "blst.h"
+
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Macros
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** The number of bytes in a KZG commitment. */
+#define BYTES_PER_COMMITMENT 48
+/** The number of bytes in a KZG proof. */
+#define BYTES_PER_PROOF 48
+/** The number of bytes in a BLS scalar field element. */
+#define BYTES_PER_FIELD_ELEMENT 32
+/** The number of bits in a BLS scalar field element. */
+#define BITS_PER_FIELD_ELEMENT 255
+
+/** Length of the domain strings above. */
+#define DOMAIN_STR_LENGTH 16
+
+/** Returns number of elements in a statically defined array. */
+#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
+
+/**
+ * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
+ * pointer value to NULL after freeing it.
+ */
+#define c_kzg_free(p) \
+    do { \
+        free(p); \
+        (p) = NULL; \
+    } while (0)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /** The common return type for all routines in which something can go wrong. */
 typedef enum {
     C_KZG_OK = 0,  /**< Success! */
@@ -24,41 +63,73 @@ typedef enum {
     C_KZG_MALLOC,  /**< Could not allocate memory. */
 } C_KZG_RET;
 
-#include "eip4844.h"
+typedef blst_p1 g1_t; /**< Internal G1 group element type. */
+typedef blst_p2 g2_t; /**< Internal G2 group element type. */
+typedef blst_fr fr_t; /**< Internal Fr field element type. */
 
-#include <stdlib.h>
-#include <string.h>
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * The coset shift factor for the cell recovery code.
- *
- *   fr_t a;
- *   fr_from_uint64(&a, 7);
- *   for (size_t i = 0; i < 4; i++)
- *       printf("%#018llxL,\n", a.l[i]);
- */
-static const fr_t RECOVERY_SHIFT_FACTOR = {
-    0x0000000efffffff1L,
-    0x17e363d300189c0fL,
-    0xff9c57876f8457b0L,
-    0x351332208fc5a8c4L,
-};
-
-/** Internal representation of a polynomial. */
+/** An array of 32 bytes. Represents an untrusted (potentially invalid) field element. */
 typedef struct {
-    fr_t evals[FIELD_ELEMENTS_PER_BLOB];
-} Polynomial;
+    uint8_t bytes[32];
+} Bytes32;
 
-/** Length of the domain strings above. */
-#define DOMAIN_STR_LENGTH 16
+/** An array of 48 bytes. Represents an untrusted (potentially invalid) commitment/proof. */
+typedef struct {
+    uint8_t bytes[48];
+} Bytes48;
+
+/** A trusted (valid) KZG commitment. */
+typedef Bytes48 KZGCommitment;
+
+/** A trusted (valid) KZG proof. */
+typedef Bytes48 KZGProof;
+
+/** Stores the setup and parameters needed for computing KZG proofs. */
+typedef struct {
+    /** The length of `roots_of_unity`, a power of 2. */
+    uint64_t max_width;
+    /** Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal
+     * permutation order, length `max_width`. */
+    fr_t *roots_of_unity;
+    /** The expanded roots of unity. */
+    fr_t *expanded_roots_of_unity;
+    /** The bit-reversal permuted roots of unity. */
+    fr_t *reverse_roots_of_unity;
+    /** G1 group elements from the trusted setup in monomial form. */
+    g1_t *g1_values_monomial;
+    /** G1 group elements from the trusted setup in Lagrange form and bit-reversed order. */
+    g1_t *g1_values_lagrange_brp;
+    /** G2 group elements from the trusted setup in monomial form. */
+    g2_t *g2_values_monomial;
+    /** Data used during FK20 proof generation. */
+    g1_t **x_ext_fft_columns;
+    /** The precomputed tables for fixed-base MSM. */
+    blst_p1_affine **tables;
+    /** The window size for the fixed-base MSM. */
+    size_t wbits;
+    /** The scratch size for the fixed-base MSM. */
+    size_t scratch_size;
+} KZGSettings;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
     {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
+};
+
+/** The zero field element. */
+static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
+
+/** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
+static const fr_t FR_ONE = {
+    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
+};
+
+/** This used to represent a missing element. It's an invalid value. */
+static const fr_t FR_NULL = {
+    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
 };
 
 /**
@@ -119,35 +190,9 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}
 };
 
-/** The zero field element. */
-static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
-
-/** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
-static const fr_t FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
-};
-
-/** This used to represent a missing element. It's a invalid value. */
-static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Macros
+// Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/** Returns number of elements in a statically defined array. */
-#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
-
-/**
- * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
- * pointer value to NULL after freeing it.
- */
-#define c_kzg_free(p) \
-    do { \
-        free(p); \
-        (p) = NULL; \
-    } while (0)
 
 bool fr_equal(const fr_t *aa, const fr_t *bb);
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
@@ -164,10 +209,10 @@ void bytes_from_uint64(uint8_t out[8], uint64_t n);
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
 C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
+C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t num_fields);
 
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
 void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
-C_KZG_RET blob_to_polynomial(Polynomial *p, const Blob *blob);
 bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 

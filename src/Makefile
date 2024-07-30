@@ -39,6 +39,9 @@ BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
 # Libraries to build with.
 LIBS = $(BLST_LIBRARY)
 
+# List of individual implementation files.
+IMPL_FILES = common.c eip4844.c eip7594.c setup.c
+
 ###############################################################################
 # Core
 ###############################################################################
@@ -78,9 +81,9 @@ coverage: tests_cov
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
-	    $< common.c eip4844.c eip7594.c > coverage.html
+	    $< $(IMPL_FILES) > coverage.html
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
-	    --show-functions $< common.c eip4844.c eip7594.c
+	    --show-functions $< $(IMPL_FILES)
 
 ###############################################################################
 # Profile
@@ -92,7 +95,7 @@ ifeq ($(PLATFORM),Darwin)
 tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-tests_prof: tests.c common.c eip4844.c eip7594.c
+tests_prof: tests.c
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 
 .PHONY: run_profiler
@@ -123,7 +126,7 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: tests.c ckzg.c
+sanitize_%: tests.c
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
@@ -148,7 +151,7 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: common.c eip4844.c eip7594.c
+analyze: $(IMPL_FILES)
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
 	    -o analysis-report $(CFLAGS) -c $<
 	@[ -d analysis-report ] && exit 1 || exit 0
@@ -159,7 +162,7 @@ analyze: common.c eip4844.c eip7594.c
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes common.* 4844.* 7594.* tests.c
+	@clang-format -i --sort-includes common.* eip4844.* eip7594.* tests.c
 
 .PHONY: clean
 clean:

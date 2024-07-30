@@ -17,3 +17,4 @@
 #include "common.c"
 #include "eip4844.c"
 #include "eip7594.c"
+#include "setup.c"

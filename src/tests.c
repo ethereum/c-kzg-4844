@@ -4,6 +4,7 @@
 #include "common.c"
 #include "eip4844.c"
 #include "eip7594.c"
+#include "setup.c"
 
 #include "tinytest.h"
 
@@ -1146,7 +1147,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     ASSERT_EQUALS(diff, 0);
 
     /* Get the expected y by evaluating the polynomial at input_value */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, blob.bytes, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ret = bytes_to_bls_field(&z_fr, &input_value);
@@ -1188,7 +1189,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
      * Now let's attempt to verify the proof.
      * First convert the blob to field elements.
      */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, blob.bytes, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Also convert z to a field element */
@@ -1231,7 +1232,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         /* Get the polynomial version of the blob */
-        ret = blob_to_polynomial(&poly, &blob);
+        ret = blob_to_polynomial(poly.evals, blob.bytes, FIELD_ELEMENTS_PER_BLOB);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         z_fr = s.roots_of_unity[i];
@@ -1285,7 +1286,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
      * Now let's attempt to verify the proof.
      * First convert the blob to field elements.
      */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, blob.bytes, FIELD_ELEMENTS_PER_BLOB);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Also convert z to a field element */

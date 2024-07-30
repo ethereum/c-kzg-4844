@@ -16,8 +16,27 @@
 
 #include "eip7594.h"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGCBATCH__V1_";
+
+/**
+ * The coset shift factor for the cell recovery code.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t RECOVERY_SHIFT_FACTOR = {
+    0x0000000efffffff1L,
+    0x17e363d300189c0fL,
+    0xff9c57876f8457b0L,
+    0x351332208fc5a8c4L,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory Allocation Functions
@@ -153,7 +172,7 @@ C_KZG_RET ifft_fr(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Zero poly
+// Vanishing Polynomial
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -966,7 +985,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
      * the polynomial will be set. The upper 4096 fields will remain zero. This is required because
      * the polynomial will be evaluated with 8192 roots of unity.
      */
-    ret = blob_to_polynomial((Polynomial *)poly_lagrange, blob);
+    ret = blob_to_polynomial(poly_lagrange, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* We need the polynomial to be in monomial form */

@@ -5,26 +5,12 @@ use libc::FILE;
 pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
-pub const BITS_PER_FIELD_ELEMENT: usize = 255;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_BLOB: usize = 131072;
 pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
-#[repr(C)]
-#[doc = " The common return type for all routines in which something can go wrong."]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
-pub enum C_KZG_RET {
-    #[doc = "< Success!"]
-    C_KZG_OK = 0,
-    #[doc = "< The supplied data is invalid in some way."]
-    C_KZG_BADARGS = 1,
-    #[doc = "< Internal error - this should never occur."]
-    C_KZG_ERROR = 2,
-    #[doc = "< Could not allocate memory."]
-    C_KZG_MALLOC = 3,
-}
 pub type limb_t = u64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -61,6 +47,19 @@ pub struct blst_p2 {
     y: blst_fp2,
     z: blst_fp2,
 }
+#[repr(C)]
+#[doc = " The common return type for all routines in which something can go wrong."]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+pub enum C_KZG_RET {
+    #[doc = "< Success!"]
+    C_KZG_OK = 0,
+    #[doc = "< The supplied data is invalid in some way."]
+    C_KZG_BADARGS = 1,
+    #[doc = "< Internal error - this should never occur."]
+    C_KZG_ERROR = 2,
+    #[doc = "< Could not allocate memory."]
+    C_KZG_MALLOC = 3,
+}
 pub type g1_t = blst_p1;
 pub type g2_t = blst_p2;
 pub type fr_t = blst_fr;
@@ -75,12 +74,6 @@ pub struct Bytes32 {
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes48 {
     bytes: [u8; 48usize],
-}
-#[doc = " A basic blob data."]
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Eq)]
-pub struct Blob {
-    bytes: [u8; 131072usize],
 }
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
@@ -108,6 +101,12 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
+}
+#[doc = " A basic blob data."]
+#[repr(C)]
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct Blob {
+    bytes: [u8; 131072usize],
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]

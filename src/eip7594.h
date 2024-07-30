@@ -18,6 +18,7 @@
 
 #include "blst.h"
 #include "common.h"
+#include "eip4844.h"
 
 #include <assert.h>
 #include <inttypes.h>
@@ -27,10 +28,31 @@
 #include <stdlib.h>
 #include <string.h>
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Macros
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
+/** The number of field elements in a cell. */
+#define FIELD_ELEMENTS_PER_CELL 64
+/** The number of cells in an extended blob. */
+#define CELLS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
+/** The number of bytes in a single cell. */
+#define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /** A single cell for a blob. */
 typedef struct {
     uint8_t bytes[BYTES_PER_CELL];
 } Cell;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Public Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
