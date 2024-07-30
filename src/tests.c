@@ -2,6 +2,7 @@
  * This file contains unit tests for C-KZG-4844.
  */
 #include "common.c"
+#include "debug.h"
 #include "eip4844.c"
 #include "eip7594.c"
 #include "setup.c"
@@ -21,52 +22,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KZGSettings s;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Debugging functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void print_bytes32(const Bytes32 *bytes) {
-    for (size_t i = 0; i < 32; i++) {
-        printf("%02x", bytes->bytes[i]);
-    }
-    printf("\n");
-}
-
-void print_bytes48(const Bytes48 *bytes) {
-    for (size_t i = 0; i < 48; i++) {
-        printf("%02x", bytes->bytes[i]);
-    }
-    printf("\n");
-}
-
-void print_fr(const fr_t *f) {
-    Bytes32 bytes;
-    bytes_from_bls_field(&bytes, f);
-    print_bytes32(&bytes);
-}
-
-void print_g1(const g1_t *g) {
-    Bytes48 bytes;
-    bytes_from_g1(&bytes, g);
-    print_bytes48(&bytes);
-}
-
-void print_blob(const Blob *blob) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
-        print_bytes32(field);
-    }
-}
-
-void print_cell(const Cell *cell) {
-    for (size_t i = 0; i < BYTES_PER_CELL; i++) {
-        if (i % BYTES_PER_FIELD_ELEMENT == 0) {
-            printf("\n");
-        }
-        printf("%02x", cell->bytes[i]);
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper functions
