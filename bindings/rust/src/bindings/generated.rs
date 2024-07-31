@@ -115,22 +115,6 @@ pub struct Cell {
     bytes: [u8; 2048usize],
 }
 extern "C" {
-    pub fn load_trusted_setup(
-        out: *mut KZGSettings,
-        g1_monomial_bytes: *const u8,
-        num_g1_monomial_bytes: usize,
-        g1_lagrange_bytes: *const u8,
-        num_g1_lagrange_bytes: usize,
-        g2_monomial_bytes: *const u8,
-        num_g2_monomial_bytes: usize,
-        precompute: usize,
-    ) -> C_KZG_RET;
-    pub fn load_trusted_setup_file(
-        out: *mut KZGSettings,
-        in_: *mut FILE,
-        precompute: usize,
-    ) -> C_KZG_RET;
-    pub fn free_trusted_setup(s: *mut KZGSettings);
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,
@@ -195,4 +179,20 @@ extern "C" {
         num_cells: usize,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
+    pub fn load_trusted_setup(
+        out: *mut KZGSettings,
+        g1_monomial_bytes: *const u8,
+        num_g1_monomial_bytes: usize,
+        g1_lagrange_bytes: *const u8,
+        num_g1_lagrange_bytes: usize,
+        g2_monomial_bytes: *const u8,
+        num_g2_monomial_bytes: usize,
+        precompute: usize,
+    ) -> C_KZG_RET;
+    pub fn load_trusted_setup_file(
+        out: *mut KZGSettings,
+        in_: *mut FILE,
+        precompute: usize,
+    ) -> C_KZG_RET;
+    pub fn free_trusted_setup(s: *mut KZGSettings);
 }
