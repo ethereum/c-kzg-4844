@@ -316,13 +316,13 @@ void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
 /**
  * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
  *
- * @param[out]  p           The output polynomial (array of field elements)
- * @param[in]   blob        The blob (an array of bytes)
- * @param[in]   num_fields  The number of field elements in the blob
+ * @param[out]  p       The output polynomial (array of field elements)
+ * @param[in]   blob    The blob (an array of bytes)
+ * @param[in]   n       The number of field elements in the polynomial/blob
  */
-C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t num_fields) {
+C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t n) {
     C_KZG_RET ret;
-    for (size_t i = 0; i < num_fields; i++) {
+    for (size_t i = 0; i < n; i++) {
         ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
