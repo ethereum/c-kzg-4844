@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "common.h"
-#include "eip4844.h"
 #include "eip7594.h"
+#include "eip4844.h"
 #include "setup.h"

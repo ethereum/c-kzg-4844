@@ -15,9 +15,7 @@
  */
 #pragma once
 
-#include "common.h"
-#include "eip4844.h"
-#include "eip7594.h"
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {

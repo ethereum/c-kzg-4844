@@ -16,12 +16,8 @@
 
 #pragma once
 
-#include "blst.h"
-
 #include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "blst.h"
 
 #ifdef __cplusplus
 extern "C" {

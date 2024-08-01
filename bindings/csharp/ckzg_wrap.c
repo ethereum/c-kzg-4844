@@ -1,4 +1,5 @@
 #include "ckzg_wrap.h"
+#include <stdlib.h>
 
 KZGSettings *load_trusted_setup_wrap(const char *file, size_t precompute) {
   KZGSettings *out = malloc(sizeof(KZGSettings));

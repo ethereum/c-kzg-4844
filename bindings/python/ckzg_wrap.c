@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include "ckzg.h"
 #include <Python.h>
+#include <stdbool.h>
 
 static void free_KZGSettings(PyObject *c) {
   KZGSettings *s = PyCapsule_GetPointer(c, "KZGSettings");

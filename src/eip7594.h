@@ -16,17 +16,9 @@
 
 #pragma once
 
-#include "blst.h"
-#include "common.h"
-#include "eip4844.h"
-
-#include <assert.h>
-#include <inttypes.h>
-#include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
+#include "common.h"
 
 #ifdef __cplusplus
 extern "C" {

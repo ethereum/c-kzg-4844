@@ -16,16 +16,7 @@
 
 #pragma once
 
-#include "blst.h"
 #include "common.h"
-
-#include <assert.h>
-#include <inttypes.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
