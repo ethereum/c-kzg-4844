@@ -1,12 +1,8 @@
 /*
  * This file contains unit tests for C-KZG-4844.
  */
-#include "common.c"
+#include "ckzg.c"
 #include "debug.h"
-#include "eip4844.c"
-#include "eip7594.c"
-#include "setup.c"
-
 #include "tinytest.h"
 
 #include <assert.h>
