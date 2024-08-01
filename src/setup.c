@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+#include "common.h"
 #include "eip4844.h"
 #include "eip7594.h"
-#include "common.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros

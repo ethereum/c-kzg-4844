@@ -162,7 +162,7 @@ analyze: $(IMPL_FILES)
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes common.* eip4844.* eip7594.* tests.c
+	@clang-format -i --sort-includes common.* eip4844.* eip7594.* setup.* debug.* ckzg.* tests.c
 
 .PHONY: clean
 clean:
