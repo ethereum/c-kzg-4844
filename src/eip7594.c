@@ -993,7 +993,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
      * the polynomial will be set. The upper 4096 fields will remain zero. This is required because
      * the polynomial will be evaluated with 8192 roots of unity.
      */
-    ret = blob_to_polynomial(poly_lagrange, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
+    ret = blob_to_polynomial(poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
 
     /* We need the polynomial to be in monomial form */

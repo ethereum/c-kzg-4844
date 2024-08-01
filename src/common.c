@@ -325,10 +325,10 @@ void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @param[in]   blob    The blob (an array of bytes)
  * @param[in]   n       The number of field elements in the polynomial/blob
  */
-C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t n) {
+C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
     C_KZG_RET ret;
-    for (size_t i = 0; i < n; i++) {
-        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob[i * BYTES_PER_FIELD_ELEMENT]);
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;

@@ -268,7 +268,7 @@ C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZG
     Polynomial p;
     g1_t commitment;
 
-    ret = blob_to_polynomial(p.evals, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
+    ret = blob_to_polynomial(p.evals, blob);
     if (ret != C_KZG_OK) return ret;
     ret = poly_to_kzg_commitment(&commitment, &p, s);
     if (ret != C_KZG_OK) return ret;
@@ -391,7 +391,7 @@ C_KZG_RET compute_kzg_proof(
     Polynomial polynomial;
     fr_t frz, fry;
 
-    ret = blob_to_polynomial(polynomial.evals, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
+    ret = blob_to_polynomial(polynomial.evals, blob);
     if (ret != C_KZG_OK) goto out;
     ret = bytes_to_bls_field(&frz, z_bytes);
     if (ret != C_KZG_OK) goto out;
@@ -516,7 +516,7 @@ C_KZG_RET compute_blob_kzg_proof(
     /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) goto out;
-    ret = blob_to_polynomial(polynomial.evals, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
+    ret = blob_to_polynomial(polynomial.evals, blob);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute the challenge for the given blob/commitment */
@@ -556,7 +556,7 @@ C_KZG_RET verify_blob_kzg_proof(
     /* Do conversions first to fail fast, compute_challenge is expensive */
     ret = bytes_to_kzg_commitment(&commitment_g1, commitment_bytes);
     if (ret != C_KZG_OK) return ret;
-    ret = blob_to_polynomial(polynomial.evals, blob->bytes, FIELD_ELEMENTS_PER_BLOB);
+    ret = blob_to_polynomial(polynomial.evals, blob);
     if (ret != C_KZG_OK) return ret;
     ret = bytes_to_kzg_proof(&proof_g1, proof_bytes);
     if (ret != C_KZG_OK) return ret;
@@ -783,7 +783,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
         if (ret != C_KZG_OK) goto out;
 
         /* Convert each blob from bytes to a poly */
-        ret = blob_to_polynomial(polynomial.evals, blobs[i].bytes, FIELD_ELEMENTS_PER_BLOB);
+        ret = blob_to_polynomial(polynomial.evals, &blobs[i]);
         if (ret != C_KZG_OK) goto out;
 
         compute_challenge(&evaluation_challenges_fr[i], &blobs[i], &commitments_g1[i]);

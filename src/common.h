@@ -237,7 +237,7 @@ C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
 C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
 void fr_from_uint64(fr_t *out, uint64_t n);
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
-C_KZG_RET blob_to_polynomial(fr_t *p, const uint8_t *blob, size_t n);
+C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
 
 /*
  * Field Operations:
