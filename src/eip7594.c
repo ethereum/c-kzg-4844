@@ -18,7 +18,6 @@
 
 #include "blst.h"
 #include "common.h"
-#include "eip4844.h"
 
 #include <inttypes.h>
 #include <stdio.h>

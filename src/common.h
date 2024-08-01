@@ -36,6 +36,12 @@ extern "C" {
 /** The number of bytes in a BLS scalar field element. */
 #define BYTES_PER_FIELD_ELEMENT 32
 
+/** The number of field elements in a blob. */
+#define FIELD_ELEMENTS_PER_BLOB 4096
+
+/** The number of bytes in a blob. */
+#define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
+
 /** The number of bits in a BLS scalar field element. */
 #define BITS_PER_FIELD_ELEMENT 255
 
@@ -80,6 +86,11 @@ typedef struct {
 typedef struct {
     uint8_t bytes[48];
 } Bytes48;
+
+/** A basic blob data. */
+typedef struct {
+    uint8_t bytes[BYTES_PER_BLOB];
+} Blob;
 
 /** A trusted (valid) KZG commitment. */
 typedef Bytes48 KZGCommitment;
