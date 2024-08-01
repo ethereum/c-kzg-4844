@@ -2,7 +2,7 @@ package ckzg4844
 
 // #cgo CFLAGS: -I${SRCDIR}/../../src
 // #cgo CFLAGS: -I${SRCDIR}/blst_headers
-// #include "c_kzg_4844.c"
+// #include "ckzg.c"
 import "C"
 
 import (

@@ -24,7 +24,7 @@ fn main() {
 
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
-    cc.file(c_src_dir.join("c_kzg_4844.c"));
+    cc.file(c_src_dir.join("ckzg.c"));
     #[cfg(not(debug_assertions))]
     cc.define("NDEBUG", None);
 
@@ -32,7 +32,7 @@ fn main() {
 
     #[cfg(feature = "generate-bindings")]
     {
-        let header_path = c_src_dir.join("c_kzg_4844.h");
+        let header_path = c_src_dir.join("ckzg.h");
         let bindings_out_path = root_dir.join("bindings/rust/src/bindings/generated.rs");
         make_bindings(
             header_path.to_str().expect("valid header path"),
@@ -78,8 +78,12 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
          */
         .header(header_path)
         .clang_args([format!("-I{blst_headers_dir}")])
-        // Get bindings only for the header file.
-        .allowlist_file(".*c_kzg_4844.h")
+        // Get bindings for functions defined in the EIP files.
+        .allowlist_type("C_KZG_RET")
+        .allowlist_var("BYTES_PER_.*")
+        .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
+        .allowlist_file(".*eip.*.h")
+        .allowlist_file(".*setup.h")
         /*
          * Cleanup instructions.
          */
@@ -154,9 +158,6 @@ fn replace_ckzg_ret_repr(mut bindings: String) -> String {
     let repr_start = bindings[..ckzg_ret]
         .rfind(repr_to_replace)
         .expect("Could not find repr to replace in bindings");
-
-    // Sanity check that it's an attribute of `C_KZG_RET` and not another type.
-    assert!(repr_start > bindings[..ckzg_ret].rfind('}').unwrap());
 
     bindings.replace_range(repr_start..repr_start + repr_to_replace.len(), "#[repr(C)]");
 

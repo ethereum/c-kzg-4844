@@ -1,5 +1,5 @@
 # This is a manifest for the Python bindings
-include bindings/python/ckzg.c
+include bindings/python/ckzg_wrap.c
 include bindings/python/README.md
 recursive-include blst *
 recursive-include lib *

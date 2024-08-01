@@ -35,7 +35,7 @@ def main():
         ext_modules=[
             Extension(
                 "ckzg",
-                sources=["bindings/python/ckzg.c", "src/c_kzg_4844.c"],
+                sources=["bindings/python/ckzg_wrap.c", "src/ckzg.c"],
                 include_dirs=["inc", "src"],
                 library_dirs=["lib"],
                 libraries=["blst"]

@@ -61,7 +61,7 @@ All the bindings are tested against the [KZG reference
 tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg),
 which are defined in the consensus-spec-tests. Additionally, a suite of unit
 tests for internal C functions is located
-[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test_c_kzg_4844.c).
+[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/tests.c).
 
 ### Parallelization
 

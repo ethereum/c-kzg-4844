@@ -1,5 +1,5 @@
-test_c_kzg_4844
-test_c_kzg_4844_*
+src/tests
+src/tests_*
 coverage.html
 analysis-report/
 *.profraw

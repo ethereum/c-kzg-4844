@@ -1,7 +1,12 @@
 /*
  * This file contains unit tests for C-KZG-4844.
  */
-#include "c_kzg_4844.c"
+#include "common.c"
+#include "debug.h"
+#include "eip4844.c"
+#include "eip7594.c"
+#include "setup.c"
+
 #include "tinytest.h"
 
 #include <assert.h>
@@ -17,52 +22,6 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 KZGSettings s;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Debugging functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void print_bytes32(const Bytes32 *bytes) {
-    for (size_t i = 0; i < 32; i++) {
-        printf("%02x", bytes->bytes[i]);
-    }
-    printf("\n");
-}
-
-void print_bytes48(const Bytes48 *bytes) {
-    for (size_t i = 0; i < 48; i++) {
-        printf("%02x", bytes->bytes[i]);
-    }
-    printf("\n");
-}
-
-void print_fr(const fr_t *f) {
-    Bytes32 bytes;
-    bytes_from_bls_field(&bytes, f);
-    print_bytes32(&bytes);
-}
-
-void print_g1(const g1_t *g) {
-    Bytes48 bytes;
-    bytes_from_g1(&bytes, g);
-    print_bytes48(&bytes);
-}
-
-void print_blob(const Blob *blob) {
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
-        print_bytes32(field);
-    }
-}
-
-void print_cell(const Cell *cell) {
-    for (size_t i = 0; i < BYTES_PER_CELL; i++) {
-        if (i % BYTES_PER_FIELD_ELEMENT == 0) {
-            printf("\n");
-        }
-        printf("%02x", cell->bytes[i]);
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper functions
@@ -1143,7 +1102,7 @@ static void test_compute_kzg_proof__succeeds_expected_proof(void) {
     ASSERT_EQUALS(diff, 0);
 
     /* Get the expected y by evaluating the polynomial at input_value */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, &blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     ret = bytes_to_bls_field(&z_fr, &input_value);
@@ -1185,7 +1144,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
      * Now let's attempt to verify the proof.
      * First convert the blob to field elements.
      */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, &blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Also convert z to a field element */
@@ -1228,7 +1187,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         /* Get the polynomial version of the blob */
-        ret = blob_to_polynomial(&poly, &blob);
+        ret = blob_to_polynomial(poly.evals, &blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
         z_fr = s.roots_of_unity[i];
@@ -1282,7 +1241,7 @@ static void test_compute_and_verify_kzg_proof__fails_incorrect_proof(void) {
      * Now let's attempt to verify the proof.
      * First convert the blob to field elements.
      */
-    ret = blob_to_polynomial(&poly, &blob);
+    ret = blob_to_polynomial(poly.evals, &blob);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Also convert z to a field element */
@@ -1719,7 +1678,7 @@ static void test_fft(void) {
     }
 
     /* Evaluate poly using FFT */
-    fft_fr(poly_eval, poly_coeff, N, &s);
+    fr_fft(poly_eval, poly_coeff, N, &s);
 
     /* check: result of FFT are really the evaluations of the poly */
     for (size_t i = 0; i < N; i++) {
@@ -1732,7 +1691,7 @@ static void test_fft(void) {
     }
 
     /* Turn the eval poly back into a coeff poly */
-    ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+    fr_ifft(recovered_poly_coeff, poly_eval, N, &s);
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
@@ -1755,7 +1714,7 @@ static void test_coset_fft(void) {
     }
 
     /* Evaluate poly using coset FFT */
-    coset_fft_fr(poly_eval, poly_coeff, N, &s);
+    coset_fft(poly_eval, poly_coeff, N, &s);
 
     /* check: result of coset FFT are really the evaluations over the coset */
     for (size_t i = 0; i < N; i++) {
@@ -1771,7 +1730,7 @@ static void test_coset_fft(void) {
     }
 
     /* Turn the eval poly back into a coeff poly */
-    coset_ifft_fr(recovered_poly_coeff, poly_eval, N, &s);
+    coset_ifft(recovered_poly_coeff, poly_eval, N, &s);
 
     /* Check the end-to-end journey */
     for (size_t i = 0; i < N; i++) {
@@ -1964,7 +1923,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     /* Compute FFT of vanishing_poly */
-    fft_fr(fft_result, vanishing_poly, s.max_width, &s);
+    fr_fft(fft_result, vanishing_poly, s.max_width, &s);
 
     /*
      * Check FFT results
