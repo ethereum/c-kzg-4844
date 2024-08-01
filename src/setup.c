@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-#include "common.h"
-#include "eip4844.h"
+#include "setup.h"
 #include "eip7594.h"
 
 #include <inttypes.h> /* For SCNu64 */
-#include <stddef.h>   /* For NULL */
-#include <stdio.h>    /* For FILE */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
