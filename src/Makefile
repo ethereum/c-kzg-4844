@@ -40,7 +40,8 @@ BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
 LIBS = $(BLST_LIBRARY)
 
 # List of individual implementation files.
-IMPL_FILES = common.c eip4844.c eip7594.c setup.c
+IMPL_FILES = common.c debug.c eip4844.c eip7594.c fft.c setup.c
+HEADER_FILES = $(patsubst %.c, %.h, $(IMPL_FILES))
 
 ###############################################################################
 # Core
@@ -162,7 +163,7 @@ analyze: $(IMPL_FILES)
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes common.* eip4844.* eip7594.* setup.* debug.* ckzg.* tests.c
+	@clang-format -i --sort-includes $(IMPL_FILES) $(HEADER_FILES) tests.c
 
 .PHONY: clean
 clean:
