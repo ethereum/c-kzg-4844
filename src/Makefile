@@ -88,9 +88,9 @@ coverage: tests_cov
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
-	    $< $(IMPL_FILES) > coverage.html
+	    $< $(SOURCE_FILES) > coverage.html
 	@$(XCRUN) llvm-cov report --instr-profile=ckzg.profdata \
-	    --show-functions $< $(IMPL_FILES)
+	    --show-functions $< $(SOURCE_FILES)
 
 ###############################################################################
 # Profile
