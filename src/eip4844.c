@@ -197,7 +197,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
     uint64_t i;
-    const fr_t *roots_of_unity = s->roots_of_unity;
+    const fr_t *brp_roots_of_unity = s->brp_roots_of_unity;
 
     ret = new_fr_array(&inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -210,12 +210,12 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
          * given, we can just return the result directly.  Note that special-casing this is
          * necessary, as the formula below would divide by zero otherwise.
          */
-        if (fr_equal(x, &roots_of_unity[i])) {
+        if (fr_equal(x, &brp_roots_of_unity[i])) {
             *out = p->evals[i];
             ret = C_KZG_OK;
             goto out;
         }
-        blst_fr_sub(&inverses_in[i], x, &roots_of_unity[i]);
+        blst_fr_sub(&inverses_in[i], x, &brp_roots_of_unity[i]);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -223,7 +223,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
 
     *out = FR_ZERO;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        blst_fr_mul(&tmp, &inverses[i], &roots_of_unity[i]);
+        blst_fr_mul(&tmp, &inverses[i], &brp_roots_of_unity[i]);
         blst_fr_mul(&tmp, &tmp, &p->evals[i]);
         blst_fr_add(out, out, &tmp);
     }
@@ -428,7 +428,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 
     fr_t tmp;
     Polynomial q;
-    const fr_t *roots_of_unity = s->roots_of_unity;
+    const fr_t *brp_roots_of_unity = s->brp_roots_of_unity;
     uint64_t i;
     /* m != 0 indicates that the evaluation point z equals root_of_unity[m-1] */
     uint64_t m = 0;
@@ -439,7 +439,7 @@ static C_KZG_RET compute_kzg_proof_impl(
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        if (fr_equal(z, &roots_of_unity[i])) {
+        if (fr_equal(z, &brp_roots_of_unity[i])) {
             /* We are asked to compute a KZG proof inside the domain */
             m = i + 1;
             inverses_in[i] = FR_ONE;
@@ -447,7 +447,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         }
         // (p_i - y) / (ω_i - z)
         blst_fr_sub(&q.evals[i], &polynomial->evals[i], y_out);
-        blst_fr_sub(&inverses_in[i], &roots_of_unity[i], z);
+        blst_fr_sub(&inverses_in[i], &brp_roots_of_unity[i], z);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -462,7 +462,7 @@ static C_KZG_RET compute_kzg_proof_impl(
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             /* Build denominator: z * (z - ω_i) */
-            blst_fr_sub(&tmp, z, &roots_of_unity[i]);
+            blst_fr_sub(&tmp, z, &brp_roots_of_unity[i]);
             blst_fr_mul(&inverses_in[i], &tmp, z);
         }
 
@@ -473,7 +473,7 @@ static C_KZG_RET compute_kzg_proof_impl(
             if (i == m) continue;
             /* Build numerator: ω_i * (p_i - y) */
             blst_fr_sub(&tmp, &polynomial->evals[i], y_out);
-            blst_fr_mul(&tmp, &tmp, &roots_of_unity[i]);
+            blst_fr_mul(&tmp, &tmp, &brp_roots_of_unity[i]);
             /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
             blst_fr_mul(&tmp, &tmp, &inverses[i]);
             blst_fr_add(&q.evals[m], &q.evals[m], &tmp);

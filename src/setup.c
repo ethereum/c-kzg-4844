@@ -100,10 +100,10 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
-    memcpy(s->roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
+    memcpy(s->brp_roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
 
     /* Apply the bit reversal permutation to the roots of unity */
-    ret = bit_reversal_permutation(s->roots_of_unity, sizeof(fr_t), s->max_width);
+    ret = bit_reversal_permutation(s->brp_roots_of_unity, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 
     /* Populate reverse roots of unity */
@@ -125,7 +125,7 @@ out:
 void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
     s->max_width = 0;
-    c_kzg_free(s->roots_of_unity);
+    c_kzg_free(s->brp_roots_of_unity);
     c_kzg_free(s->expanded_roots_of_unity);
     c_kzg_free(s->reverse_roots_of_unity);
     c_kzg_free(s->g1_values_monomial);
@@ -339,7 +339,7 @@ C_KZG_RET load_trusted_setup(
     C_KZG_RET ret;
 
     out->max_width = 0;
-    out->roots_of_unity = NULL;
+    out->brp_roots_of_unity = NULL;
     out->expanded_roots_of_unity = NULL;
     out->reverse_roots_of_unity = NULL;
     out->g1_values_monomial = NULL;
@@ -382,7 +382,7 @@ C_KZG_RET load_trusted_setup(
     out->max_width *= 2;
 
     /* Allocate all of our arrays */
-    ret = new_fr_array(&out->roots_of_unity, out->max_width);
+    ret = new_fr_array(&out->brp_roots_of_unity, out->max_width);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&out->expanded_roots_of_unity, out->max_width + 1);
     if (ret != C_KZG_OK) goto out_error;

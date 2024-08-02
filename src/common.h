@@ -106,7 +106,7 @@ typedef struct {
     uint64_t max_width;
     /** Roots of unity in bit-reversal permutation order.
      *  The array contains `domain_size` elements. */
-    fr_t *roots_of_unity;
+    fr_t *brp_roots_of_unity;
     /** Roots of unity for the subgroup of size `domain_size`.
      *  The array contains `domain_size + 1` elements, it starts and ends with Fr::one(). */
     fr_t *expanded_roots_of_unity;
