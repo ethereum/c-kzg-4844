@@ -85,13 +85,13 @@ pub struct Blob {
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct KZGSettings {
-    #[doc = " The length of `roots_of_unity`, a power of 2."]
-    max_width: u64,
-    #[doc = " Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal\n permutation order, length `max_width`."]
-    roots_of_unity: *mut fr_t,
-    #[doc = " The expanded roots of unity."]
+    #[doc = " The size of our multiplicative subgroup (the roots of unity). This is the size of\n  the extended domain (after the RS encoding has been applied), so the size of\n  the subgroup is FIELD_ELEMENTS_PER_EXT_BLOB."]
+    domain_size: u64,
+    #[doc = " Roots of unity in bit-reversal permutation order.\n  The array contains `domain_size` elements."]
+    brp_roots_of_unity: *mut fr_t,
+    #[doc = " Roots of unity for the subgroup of size `domain_size`.\n  The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     expanded_roots_of_unity: *mut fr_t,
-    #[doc = " The bit-reversal permuted roots of unity."]
+    #[doc = " Roots of unity for the subgroup of size `domain_size` reversed. Only used in FFTs.\n  The array contains `domain_size + 1` elements: it starts and ends with Fr::one()."]
     reverse_roots_of_unity: *mut fr_t,
     #[doc = " G1 group elements from the trusted setup in monomial form."]
     g1_values_monomial: *mut g1_t,

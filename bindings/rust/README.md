@@ -19,3 +19,9 @@ cargo test --release
 ```
 cargo bench
 ```
+
+## Update `generated.rs`
+
+```
+cargo build --features generate-bindings
+```
