@@ -103,7 +103,7 @@ typedef struct {
     /** The size of our multiplicative subgroup (the roots of unity). This is the size of
      *  the extended domain (after the RS encoding has been applied), so the size of
      *  the subgroup is FIELD_ELEMENTS_PER_EXT_BLOB. */
-    uint64_t max_width;
+    uint64_t domain_size;
     /** Roots of unity in bit-reversal permutation order.
      *  The array contains `domain_size` elements. */
     fr_t *brp_roots_of_unity;

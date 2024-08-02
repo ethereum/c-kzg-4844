@@ -662,11 +662,11 @@ static void g1_fft_fast(
  */
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > s->domain_size || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = s->max_width / n;
+    uint64_t stride = s->domain_size / n;
     g1_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
 
     return C_KZG_OK;
@@ -685,11 +685,11 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  */
 C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > s->domain_size || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = s->max_width / n;
+    uint64_t stride = s->domain_size / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
