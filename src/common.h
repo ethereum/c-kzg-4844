@@ -39,6 +39,9 @@ extern "C" {
 /** The number of field elements in a blob. */
 #define FIELD_ELEMENTS_PER_BLOB 4096
 
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
+
 /** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
 
@@ -100,12 +103,6 @@ typedef Bytes48 KZGProof;
 
 /** Stores the setup and parameters needed for computing KZG proofs. */
 typedef struct {
-    /**
-     * The size of our multiplicative subgroup (the roots of unity). This is the size of the
-     * extended domain (after the RS encoding has been applied), so the size of the subgroup is
-     * FIELD_ELEMENTS_PER_EXT_BLOB.
-     */
-    uint64_t domain_size;
     /**
      * Roots of unity for the subgroup of size `domain_size`.
      *

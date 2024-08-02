@@ -1904,11 +1904,11 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 static void test_vanishing_polynomial_for_missing_cells(void) {
 
     fr_t *vanishing_poly = NULL;
-    C_KZG_RET ret = new_fr_array(&vanishing_poly, s.domain_size);
+    C_KZG_RET ret = new_fr_array(&vanishing_poly, FIELD_ELEMENTS_PER_EXT_BLOB);
     ASSERT("vanishing poly alloc", ret == C_KZG_OK);
 
     fr_t *fft_result = NULL;
-    ret = new_fr_array(&fft_result, s.domain_size);
+    ret = new_fr_array(&fft_result, FIELD_ELEMENTS_PER_EXT_BLOB);
     ASSERT("fft_result alloc", ret == C_KZG_OK);
 
     /* Test case: the 0th and 1st cell are missing */
@@ -1923,7 +1923,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     /* Compute FFT of vanishing_poly */
-    fr_fft(fft_result, vanishing_poly, s.domain_size, &s);
+    fr_fft(fft_result, vanishing_poly, FIELD_ELEMENTS_PER_EXT_BLOB, &s);
 
     /*
      * Check FFT results
@@ -1961,7 +1961,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
      * The last element for that cell index would have array index `127 + 128*63 = 8191`. This is
      * correct since `roots_of_unity` has 8192 elements.
      */
-    for (size_t i = 0; i < s.domain_size; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             /* Every CELLS_PER_EXT_BLOB-th evaluation should be zero */
             ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));

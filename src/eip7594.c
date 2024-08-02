@@ -154,11 +154,11 @@ static void fr_fft_fast(
  */
 static C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->domain_size || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    size_t stride = s->domain_size / n;
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     fr_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
 
     return C_KZG_OK;
@@ -177,11 +177,11 @@ static C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *
  */
 static C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->domain_size || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    size_t stride = s->domain_size / n;
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
@@ -285,9 +285,6 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
     if (ret != C_KZG_OK) goto out;
 
-    /* Check if domain_size is divisible by CELLS_PER_EXT_BLOB */
-    assert(s->domain_size % CELLS_PER_EXT_BLOB == 0);
-
     /*
      * For each missing cell index, choose the corresponding root of unity from the subgroup of
      * size `CELLS_PER_EXT_BLOB`.
@@ -295,7 +292,7 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
      * In other words, if the missing index is `i`, then we add \omega^i to the roots array, where
      * \omega is a primitive `CELLS_PER_EXT_BLOB` root of unity.
      */
-    size_t stride = s->domain_size / CELLS_PER_EXT_BLOB;
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / CELLS_PER_EXT_BLOB;
     for (size_t i = 0; i < len_missing_cells; i++) {
         roots[i] = s->roots_of_unity[missing_cell_indices[i] * stride];
     }
@@ -457,28 +454,30 @@ static C_KZG_RET recover_cells_impl(
     fr_t *cells_brp = NULL;
 
     /* Allocate space for arrays */
-    ret = c_kzg_calloc((void **)&missing_cell_indices, s->domain_size, sizeof(uint64_t));
+    ret = c_kzg_calloc(
+        (void **)&missing_cell_indices, FIELD_ELEMENTS_PER_EXT_BLOB, sizeof(uint64_t)
+    );
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&vanishing_poly_eval, s->domain_size);
+    ret = new_fr_array(&vanishing_poly_eval, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&vanishing_poly_coeff, s->domain_size);
+    ret = new_fr_array(&vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&extended_evaluation_times_zero, s->domain_size);
+    ret = new_fr_array(&extended_evaluation_times_zero, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&extended_evaluation_times_zero_coeffs, s->domain_size);
+    ret = new_fr_array(&extended_evaluation_times_zero_coeffs, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&extended_evaluations_over_coset, s->domain_size);
+    ret = new_fr_array(&extended_evaluations_over_coset, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&vanishing_poly_over_coset, s->domain_size);
+    ret = new_fr_array(&vanishing_poly_over_coset, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&reconstructed_poly_coeff, s->domain_size);
+    ret = new_fr_array(&reconstructed_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&cells_brp, s->domain_size);
+    ret = new_fr_array(&cells_brp, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the data points, stored in new array */
-    memcpy(cells_brp, cells, s->domain_size * sizeof(fr_t));
-    ret = bit_reversal_permutation(cells_brp, sizeof(fr_t), s->domain_size);
+    memcpy(cells_brp, cells, FIELD_ELEMENTS_PER_EXT_BLOB * sizeof(fr_t));
+    ret = bit_reversal_permutation(cells_brp, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Identify missing cells */
@@ -505,11 +504,11 @@ static C_KZG_RET recover_cells_impl(
     if (ret != C_KZG_OK) goto out;
 
     /* Convert Z(x) to evaluation form */
-    ret = fr_fft(vanishing_poly_eval, vanishing_poly_coeff, s->domain_size, s);
+    ret = fr_fft(vanishing_poly_eval, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
-    for (size_t i = 0; i < s->domain_size; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (fr_is_null(&cells_brp[i])) {
             extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
@@ -519,7 +518,10 @@ static C_KZG_RET recover_cells_impl(
 
     /* Convert (E*Z)(x) to monomial form  */
     ret = fr_ifft(
-        extended_evaluation_times_zero_coeffs, extended_evaluation_times_zero, s->domain_size, s
+        extended_evaluation_times_zero_coeffs,
+        extended_evaluation_times_zero,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
+        s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -530,15 +532,20 @@ static C_KZG_RET recover_cells_impl(
      *   Q3 = D(k * x)
      */
     ret = coset_fft(
-        extended_evaluations_over_coset, extended_evaluation_times_zero_coeffs, s->domain_size, s
+        extended_evaluations_over_coset,
+        extended_evaluation_times_zero_coeffs,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
+        s
     );
     if (ret != C_KZG_OK) goto out;
 
-    ret = coset_fft(vanishing_poly_over_coset, vanishing_poly_coeff, s->domain_size, s);
+    ret = coset_fft(
+        vanishing_poly_over_coset, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* The result of the division is Q3 */
-    for (size_t i = 0; i < s->domain_size; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         fr_div(
             &extended_evaluations_over_coset[i],
             &extended_evaluations_over_coset[i],
@@ -552,18 +559,22 @@ static C_KZG_RET recover_cells_impl(
      */
 
     /* Convert the evaluations back to coefficents */
-    ret = coset_ifft(reconstructed_poly_coeff, extended_evaluations_over_coset, s->domain_size, s);
+    ret = coset_ifft(
+        reconstructed_poly_coeff, extended_evaluations_over_coset, FIELD_ELEMENTS_PER_EXT_BLOB, s
+    );
     if (ret != C_KZG_OK) goto out;
 
     /*
      * After unscaling the reconstructed polynomial, we have D(x) which evaluates to our original
      * data at the roots of unity. Next, we evaluate the polynomial to get the original data.
      */
-    ret = fr_fft(reconstructed_data_out, reconstructed_poly_coeff, s->domain_size, s);
+    ret = fr_fft(reconstructed_data_out, reconstructed_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Bit-reverse the recovered data points */
-    ret = bit_reversal_permutation(reconstructed_data_out, sizeof(fr_t), s->domain_size);
+    ret = bit_reversal_permutation(
+        reconstructed_data_out, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB
+    );
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -1097,7 +1108,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     }
 
     /* Do allocations */
-    ret = new_fr_array(&recovered_cells_fr, s->domain_size);
+    ret = new_fr_array(&recovered_cells_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&recovered_proofs_g1, CELLS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -1105,7 +1116,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all cells as missing */
-    for (size_t i = 0; i < s->domain_size; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         recovered_cells_fr[i] = FR_NULL;
     }
 
