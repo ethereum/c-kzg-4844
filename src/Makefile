@@ -39,14 +39,21 @@ BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
 # Libraries to build with.
 LIBS = $(BLST_LIBRARY)
 
-# List of individual implementation files.
-IMPL_FILES = common.c eip4844.c eip7594.c setup.c
+# Create file lists.
+SOURCE_FILES := $(shell find . -name '*.c' | sed 's|^\./||' | sort)
+HEADER_FILES := $(patsubst %.c, %.h, $(SOURCE_FILES))
+OBJECT_FILES := $(patsubst %.c, %.o, $(SOURCE_FILES))
+
+# There is no tests header file.
+HEADER_FILES := $(filter-out tests.h, $(HEADER_FILES))
+# We don't want to format this and it is not expected to change.
+HEADER_FILES := $(filter-out tinytest.h, $(HEADER_FILES))
 
 ###############################################################################
 # Core
 ###############################################################################
 
-all: ckzg.o test
+all: $(OBJECT_FILES) test
 
 $(BLST_BUILDSCRIPT):
 	@git submodule update --init
@@ -61,8 +68,8 @@ $(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
 blst: $(BLST_LIBRARY)
 
 tests: CFLAGS += -O0
-tests: tests.c $(BLST_LIBRARY)
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+tests: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
+	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 
 .PHONY: test
 test: tests
@@ -73,8 +80,8 @@ test: tests
 ###############################################################################
 
 tests_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-tests_cov: tests.c ckzg.c
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+tests_cov: $(SOURCE_FILES) $(HEADER_FILES)
+	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 
 .PHONY: coverage
 coverage: tests_cov
@@ -95,8 +102,8 @@ ifeq ($(PLATFORM),Darwin)
 tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-tests_prof: tests.c
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+tests_prof: $(SOURCE_FILES) $(HEADER_FILES)
+	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 
 .PHONY: run_profiler
 run_profiler: tests_prof
@@ -126,9 +133,9 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: tests.c
+sanitize_%: $(SOURCE_FILES) $(HEADER_FILES)
 	@echo Running sanitize=$*...
-	@$(CC) $(CFLAGS) -o $@ $< $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	    LSAN_OPTIONS=allocator_may_return_null=1 \
 	    ./$@; rm $@
@@ -151,7 +158,7 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: $(IMPL_FILES)
+analyze: $(SOURCE_FILES) $(HEADER_FILES)
 	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
 	    -o analysis-report $(CFLAGS) -c $<
 	@[ -d analysis-report ] && exit 1 || exit 0
@@ -162,7 +169,7 @@ analyze: $(IMPL_FILES)
 
 .PHONY: format
 format:
-	@clang-format -i --sort-includes common.* eip4844.* eip7594.* setup.* debug.* ckzg.* tests.c
+	@clang-format -i --sort-includes $(SOURCE_FILES) $(HEADER_FILES)
 
 .PHONY: clean
 clean:

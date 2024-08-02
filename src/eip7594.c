@@ -19,8 +19,9 @@
 #include "blst.h"
 #include "common.h"
 
-#include <inttypes.h>
-#include <stdio.h>
+#include <assert.h> /* For assert */
+#include <stdlib.h> /* For NULL */
+#include <string.h> /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
