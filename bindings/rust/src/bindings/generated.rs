@@ -87,11 +87,11 @@ pub struct Blob {
 pub struct KZGSettings {
     #[doc = " The size of our multiplicative subgroup (the roots of unity). This is the size of\n  the extended domain (after the RS encoding has been applied), so the size of\n  the subgroup is FIELD_ELEMENTS_PER_EXT_BLOB."]
     domain_size: u64,
-    #[doc = " Roots of unity in bit-reversal permutation order.\n  The array contains `domain_size` elements."]
-    brp_roots_of_unity: *mut fr_t,
     #[doc = " Roots of unity for the subgroup of size `domain_size`.\n  The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     expanded_roots_of_unity: *mut fr_t,
-    #[doc = " Roots of unity for the subgroup of size `domain_size` reversed. Only used in FFTs.\n  The array contains `domain_size + 1` elements: it starts and ends with Fr::one()."]
+    #[doc = " Roots of unity in bit-reversed order.\n\n  This array is derived by applying a bit-reversal permutation\n  to `expanded_roots_of_unity` excluding the last element.\n  Essentially:\n  `brp_roots_of_unity = bit_reversal_permutation(expanded_roots_of_unity[:-1])`\n\n  The array contains `domain_size` elements."]
+    brp_roots_of_unity: *mut fr_t,
+    #[doc = " Roots of unity for the subgroup of size `domain_size` in reversed order.\n\n  It is simply the reversed version of `expanded_roots_of_unity`.\n  Essentially:\n  `reverse_roots_of_unity = reverse(expanded_roots_of_unity)`.\n\n  This array is primarily used in FFTs.\n  The array contains `domain_size + 1` elements: it starts and ends with Fr::one()."]
     reverse_roots_of_unity: *mut fr_t,
     #[doc = " G1 group elements from the trusted setup in monomial form."]
     g1_values_monomial: *mut g1_t,
