@@ -80,7 +80,7 @@ test: tests
 ###############################################################################
 
 tests_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-tests_cov: $(SOURCE_FILES) $(HEADER_FILES)
+tests_cov: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 
 .PHONY: coverage
@@ -102,7 +102,7 @@ ifeq ($(PLATFORM),Darwin)
 tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-tests_prof: $(SOURCE_FILES) $(HEADER_FILES)
+tests_prof: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
 	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 
 .PHONY: run_profiler
@@ -133,7 +133,7 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: $(SOURCE_FILES) $(HEADER_FILES)
+sanitize_%: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
 	@echo Running sanitize=$*...
 	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
