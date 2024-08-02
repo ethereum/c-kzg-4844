@@ -104,13 +104,25 @@ typedef struct {
      *  the extended domain (after the RS encoding has been applied), so the size of
      *  the subgroup is FIELD_ELEMENTS_PER_EXT_BLOB. */
     uint64_t domain_size;
-    /** Roots of unity in bit-reversal permutation order.
-     *  The array contains `domain_size` elements. */
-    fr_t *brp_roots_of_unity;
     /** Roots of unity for the subgroup of size `domain_size`.
      *  The array contains `domain_size + 1` elements, it starts and ends with Fr::one(). */
     fr_t *expanded_roots_of_unity;
-    /** Roots of unity for the subgroup of size `domain_size` reversed. Only used in FFTs.
+    /** Roots of unity in bit-reversed order.
+     *
+     *  This array is derived by applying a bit-reversal permutation
+     *  to `expanded_roots_of_unity` excluding the last element.
+     *  Essentially:
+     *  `brp_roots_of_unity = bit_reversal_permutation(expanded_roots_of_unity[:-1])`
+     *
+     *  The array contains `domain_size` elements. */
+    fr_t *brp_roots_of_unity;
+    /** Roots of unity for the subgroup of size `domain_size` in reversed order.
+     *
+     *  It is simply the reversed version of `expanded_roots_of_unity`.
+     *  Essentially:
+     *  `reverse_roots_of_unity = reverse(expanded_roots_of_unity)`.
+     *
+     *  This array is primarily used in FFTs.
      *  The array contains `domain_size + 1` elements: it starts and ends with Fr::one(). */
     fr_t *reverse_roots_of_unity;
     /** G1 group elements from the trusted setup in monomial form. */
