@@ -92,7 +92,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    /* Get the root of unity */
+    /* Get the right subgroup generator */
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
@@ -102,7 +102,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     /* Copy all but the last root to the roots of unity */
     memcpy(s->roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
 
-    /* Permute the roots of unity */
+    /* Apply the bit reversal permutation to the roots of unity */
     ret = bit_reversal_permutation(s->roots_of_unity, sizeof(fr_t), s->max_width);
     if (ret != C_KZG_OK) goto out;
 

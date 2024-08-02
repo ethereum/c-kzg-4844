@@ -100,14 +100,18 @@ typedef Bytes48 KZGProof;
 
 /** Stores the setup and parameters needed for computing KZG proofs. */
 typedef struct {
-    /** The length of `roots_of_unity`, a power of 2. */
+    /** The size of our multiplicative subgroup (the roots of unity). This is the size of
+     *  the extended domain (after the RS encoding has been applied), so the size of
+     *  the subgroup is FIELD_ELEMENTS_PER_EXT_BLOB. */
     uint64_t max_width;
-    /** Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal
-     * permutation order, length `max_width`. */
+    /** Roots of unity in bit-reversal permutation order.
+     *  The array contains `domain_size` elements. */
     fr_t *roots_of_unity;
-    /** The expanded roots of unity. */
+    /** Roots of unity for the subgroup of size `domain_size`.
+     *  The array contains `domain_size + 1` elements, it starts and ends with Fr::one(). */
     fr_t *expanded_roots_of_unity;
-    /** The bit-reversal permuted roots of unity. */
+    /** Roots of unity for the subgroup of size `domain_size` reversed. Only used in FFTs.
+     *  The array contains `domain_size + 1` elements: it starts and ends with Fr::one(). */
     fr_t *reverse_roots_of_unity;
     /** G1 group elements from the trusted setup in monomial form. */
     g1_t *g1_values_monomial;
