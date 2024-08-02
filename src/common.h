@@ -111,13 +111,13 @@ typedef struct {
      *
      * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().
      */
-    fr_t *expanded_roots_of_unity;
+    fr_t *roots_of_unity;
     /**
      * Roots of unity in bit-reversed order.
      *
-     * This array is derived by applying a bit-reversal permutation to `expanded_roots_of_unity`
+     * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
      * excluding the last element. Essentially:
-     *   `brp_roots_of_unity = bit_reversal_permutation(expanded_roots_of_unity[:-1])`
+     *   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`
      *
      * The array contains `domain_size` elements.
      */
@@ -125,8 +125,8 @@ typedef struct {
     /**
      * Roots of unity for the subgroup of size `domain_size` in reversed order.
      *
-     * It is the reversed version of `expanded_roots_of_unity`. Essentially:
-     *    `reverse_roots_of_unity = reverse(expanded_roots_of_unity)`
+     * It is the reversed version of `roots_of_unity`. Essentially:
+     *    `reverse_roots_of_unity = reverse(roots_of_unity)`
      *
      * This array is primarily used in FFTs.
      * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().

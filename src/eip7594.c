@@ -159,7 +159,7 @@ static C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *
     }
 
     size_t stride = s->domain_size / n;
-    fr_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    fr_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }
@@ -248,7 +248,7 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * the domain of size `FIELD_ELEMENTS_PER_BLOB`.
  *
  * The roots of unity are chosen based on the missing cell indices. If the i'th cell is missing,
- * then the i'th root of unity from `expanded_roots_of_unity` will be zero on the polynomial
+ * then the i'th root of unity from `roots_of_unity` will be zero on the polynomial
  * computed, along with every `CELLS_PER_EXT_BLOB` spaced root of unity in the domain.
  *
  * @param[in,out]   vanishing_poly          The vanishing polynomial
@@ -297,7 +297,7 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
      */
     size_t stride = s->domain_size / CELLS_PER_EXT_BLOB;
     for (size_t i = 0; i < len_missing_cells; i++) {
-        roots[i] = s->expanded_roots_of_unity[missing_cell_indices[i] * stride];
+        roots[i] = s->roots_of_unity[missing_cell_indices[i] * stride];
     }
 
     /* Compute the polynomial that evaluates to zero on the roots */
@@ -1415,7 +1415,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          */
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(&inv_coset_factor, &s->expanded_roots_of_unity[pos]);
+        blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
         shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
 
         /* Update the aggregated poly */
@@ -1443,7 +1443,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     for (size_t i = 0; i < num_cells; i++) {
         uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
-        fr_t coset_factor = s->expanded_roots_of_unity[pos];
+        fr_t coset_factor = s->roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
     }

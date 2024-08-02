@@ -667,7 +667,7 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     }
 
     uint64_t stride = s->domain_size / n;
-    g1_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    g1_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }

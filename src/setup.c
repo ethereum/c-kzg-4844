@@ -96,11 +96,11 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(s->expanded_roots_of_unity, &root_of_unity, s->domain_size);
+    ret = expand_root_of_unity(s->roots_of_unity, &root_of_unity, s->domain_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
-    memcpy(s->brp_roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->domain_size);
+    memcpy(s->brp_roots_of_unity, s->roots_of_unity, sizeof(fr_t) * s->domain_size);
 
     /* Apply the bit reversal permutation to the roots of unity */
     ret = bit_reversal_permutation(s->brp_roots_of_unity, sizeof(fr_t), s->domain_size);
@@ -108,7 +108,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
 
     /* Populate reverse roots of unity */
     for (uint64_t i = 0; i <= s->domain_size; i++) {
-        s->reverse_roots_of_unity[i] = s->expanded_roots_of_unity[s->domain_size - i];
+        s->reverse_roots_of_unity[i] = s->roots_of_unity[s->domain_size - i];
     }
 
 out:
@@ -126,7 +126,7 @@ void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
     s->domain_size = 0;
     c_kzg_free(s->brp_roots_of_unity);
-    c_kzg_free(s->expanded_roots_of_unity);
+    c_kzg_free(s->roots_of_unity);
     c_kzg_free(s->reverse_roots_of_unity);
     c_kzg_free(s->g1_values_monomial);
     c_kzg_free(s->g1_values_lagrange_brp);
@@ -340,7 +340,7 @@ C_KZG_RET load_trusted_setup(
 
     out->domain_size = 0;
     out->brp_roots_of_unity = NULL;
-    out->expanded_roots_of_unity = NULL;
+    out->roots_of_unity = NULL;
     out->reverse_roots_of_unity = NULL;
     out->g1_values_monomial = NULL;
     out->g1_values_lagrange_brp = NULL;
@@ -384,7 +384,7 @@ C_KZG_RET load_trusted_setup(
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->brp_roots_of_unity, out->domain_size);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_fr_array(&out->expanded_roots_of_unity, out->domain_size + 1);
+    ret = new_fr_array(&out->roots_of_unity, out->domain_size + 1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_fr_array(&out->reverse_roots_of_unity, out->domain_size + 1);
     if (ret != C_KZG_OK) goto out_error;
