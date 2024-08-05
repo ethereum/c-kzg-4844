@@ -67,8 +67,8 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
-    fr_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
+    size_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    fr_fft_fast(out, in, 1, s->roots_of_unity, roots_stride, n);
 
     return C_KZG_OK;
 }
@@ -163,8 +163,8 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
-    g1_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
+    uint64_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    g1_fft_fast(out, in, 1, s->roots_of_unity, roots_stride, n);
 
     return C_KZG_OK;
 }
