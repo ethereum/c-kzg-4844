@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <stdint.h>
-
 #include "common.h"
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,9 +27,6 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/** The number of field elements in an extended blob */
-#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
 /** The number of field elements in a cell. */
 #define FIELD_ELEMENTS_PER_CELL 64

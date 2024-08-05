@@ -63,12 +63,12 @@ static void fr_fft_fast(
  */
 C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    size_t stride = s->max_width / n;
-    fr_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    fr_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }
@@ -86,11 +86,11 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  */
 C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    size_t stride = s->max_width / n;
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
@@ -159,12 +159,12 @@ static void g1_fft_fast(
  */
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = s->max_width / n;
-    g1_fft_fast(out, in, 1, s->expanded_roots_of_unity, stride, n);
+    uint64_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    g1_fft_fast(out, in, 1, s->roots_of_unity, stride, n);
 
     return C_KZG_OK;
 }
@@ -182,11 +182,11 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  */
 C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Ensure the length is valid */
-    if (n > s->max_width || !is_power_of_two(n)) {
+    if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = s->max_width / n;
+    uint64_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;

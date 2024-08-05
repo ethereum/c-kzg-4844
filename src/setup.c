@@ -15,9 +15,15 @@
  */
 
 #include "setup.h"
+#include "common.h"
 #include "eip7594.h"
+#include "fft.h"
 
+#include <assert.h>   /* For assert */
 #include <inttypes.h> /* For SCNu64 */
+#include <stdio.h>    /* For FILE */
+#include <stdlib.h>   /* For NULL */
+#include <string.h>   /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -85,7 +91,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     fr_t root_of_unity;
 
     uint32_t max_scale = 0;
-    while ((1ULL << max_scale) < s->max_width)
+    while ((1ULL << max_scale) < FIELD_ELEMENTS_PER_EXT_BLOB)
         max_scale++;
 
     /* Ensure this element will exist */
@@ -93,23 +99,25 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    /* Get the root of unity */
+    /* Get the right subgroup generator */
     blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(s->expanded_roots_of_unity, &root_of_unity, s->max_width);
+    ret = expand_root_of_unity(s->roots_of_unity, &root_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
-    memcpy(s->roots_of_unity, s->expanded_roots_of_unity, sizeof(fr_t) * s->max_width);
+    memcpy(s->brp_roots_of_unity, s->roots_of_unity, sizeof(fr_t) * FIELD_ELEMENTS_PER_EXT_BLOB);
 
-    /* Permute the roots of unity */
-    ret = bit_reversal_permutation(s->roots_of_unity, sizeof(fr_t), s->max_width);
+    /* Apply the bit reversal permutation to the roots of unity */
+    ret = bit_reversal_permutation(
+        s->brp_roots_of_unity, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB
+    );
     if (ret != C_KZG_OK) goto out;
 
     /* Populate reverse roots of unity */
-    for (uint64_t i = 0; i <= s->max_width; i++) {
-        s->reverse_roots_of_unity[i] = s->expanded_roots_of_unity[s->max_width - i];
+    for (uint64_t i = 0; i <= FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
+        s->reverse_roots_of_unity[i] = s->roots_of_unity[FIELD_ELEMENTS_PER_EXT_BLOB - i];
     }
 
 out:
@@ -125,9 +133,8 @@ out:
  */
 void free_trusted_setup(KZGSettings *s) {
     if (s == NULL) return;
-    s->max_width = 0;
+    c_kzg_free(s->brp_roots_of_unity);
     c_kzg_free(s->roots_of_unity);
-    c_kzg_free(s->expanded_roots_of_unity);
     c_kzg_free(s->reverse_roots_of_unity);
     c_kzg_free(s->g1_values_monomial);
     c_kzg_free(s->g1_values_lagrange_brp);
@@ -202,7 +209,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     blst_p1_affine *p_affine = NULL;
     bool precompute = s->wbits != 0;
 
-    n = s->max_width / 2;
+    n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
     k = n / FIELD_ELEMENTS_PER_CELL;
     k2 = 2 * k;
 
@@ -339,9 +346,8 @@ C_KZG_RET load_trusted_setup(
 ) {
     C_KZG_RET ret;
 
-    out->max_width = 0;
+    out->brp_roots_of_unity = NULL;
     out->roots_of_unity = NULL;
-    out->expanded_roots_of_unity = NULL;
     out->reverse_roots_of_unity = NULL;
     out->g1_values_monomial = NULL;
     out->g1_values_lagrange_brp = NULL;
@@ -376,18 +382,12 @@ C_KZG_RET load_trusted_setup(
     while ((1ULL << max_scale) < NUM_G1_POINTS)
         max_scale++;
 
-    /* Set the max_width */
-    out->max_width = 1ULL << max_scale;
-
-    /* For DAS reconstruction */
-    out->max_width *= 2;
-
     /* Allocate all of our arrays */
-    ret = new_fr_array(&out->roots_of_unity, out->max_width);
+    ret = new_fr_array(&out->brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_fr_array(&out->expanded_roots_of_unity, out->max_width + 1);
+    ret = new_fr_array(&out->roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1);
     if (ret != C_KZG_OK) goto out_error;
-    ret = new_fr_array(&out->reverse_roots_of_unity, out->max_width + 1);
+    ret = new_fr_array(&out->reverse_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB + 1);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g1_array(&out->g1_values_monomial, NUM_G1_POINTS);
     if (ret != C_KZG_OK) goto out_error;

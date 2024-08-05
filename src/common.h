@@ -17,6 +17,7 @@
 #pragma once
 
 #include "blst.h"
+
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -38,6 +39,9 @@ extern "C" {
 
 /** The number of field elements in a blob. */
 #define FIELD_ELEMENTS_PER_BLOB 4096
+
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
 /** The number of bytes in a blob. */
 #define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
@@ -100,14 +104,31 @@ typedef Bytes48 KZGProof;
 
 /** Stores the setup and parameters needed for computing KZG proofs. */
 typedef struct {
-    /** The length of `roots_of_unity`, a power of 2. */
-    uint64_t max_width;
-    /** Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal
-     * permutation order, length `max_width`. */
+    /**
+     * Roots of unity for the subgroup of size `domain_size`.
+     *
+     * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().
+     */
     fr_t *roots_of_unity;
-    /** The expanded roots of unity. */
-    fr_t *expanded_roots_of_unity;
-    /** The bit-reversal permuted roots of unity. */
+    /**
+     * Roots of unity for the subgroup of size `domain_size` in bit-reversed order.
+     *
+     * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
+     * excluding the last element. Essentially:
+     *   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`
+     *
+     * The array contains `domain_size` elements.
+     */
+    fr_t *brp_roots_of_unity;
+    /**
+     * Roots of unity for the subgroup of size `domain_size` in reversed order.
+     *
+     * It is the reversed version of `roots_of_unity`. Essentially:
+     *    `reverse_roots_of_unity = reverse(roots_of_unity)`
+     *
+     * This array is primarily used in FFTs.
+     * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().
+     */
     fr_t *reverse_roots_of_unity;
     /** G1 group elements from the trusted setup in monomial form. */
     g1_t *g1_values_monomial;

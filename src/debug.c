@@ -16,6 +16,8 @@
 
 #include "debug.h"
 
+#include <stdio.h>
+
 void print_bytes32(const Bytes32 *bytes) {
     for (size_t i = 0; i < 32; i++) {
         printf("%02x", bytes->bytes[i]);

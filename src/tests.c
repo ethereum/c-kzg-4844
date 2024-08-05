@@ -982,7 +982,7 @@ static void test_evaluate_polynomial_in_evaluation_form__constant_polynomial_in_
     fr_t x, y, c;
 
     get_rand_fr(&c);
-    x = s.roots_of_unity[123];
+    x = s.brp_roots_of_unity[123];
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         p.evals[i] = c;
@@ -1005,7 +1005,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void)
     }
 
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        eval_poly(&p.evals[i], poly_coefficients, &s.roots_of_unity[i]);
+        eval_poly(&p.evals[i], poly_coefficients, &s.brp_roots_of_unity[i]);
     }
 
     get_rand_fr(&x);
@@ -1016,7 +1016,7 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void)
 
     ASSERT("evaluation methods match", fr_equal(&y, &check));
 
-    x = s.roots_of_unity[123];
+    x = s.brp_roots_of_unity[123];
 
     eval_poly(&check, poly_coefficients, &x);
 
@@ -1186,7 +1186,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
         ret = blob_to_polynomial(poly.evals, &blob);
         ASSERT_EQUALS(ret, C_KZG_OK);
 
-        z_fr = s.roots_of_unity[i];
+        z_fr = s.brp_roots_of_unity[i];
         bytes_from_bls_field(&z, &z_fr);
 
         /* Compute the proof */
@@ -1680,7 +1680,7 @@ static void test_fft(void) {
     for (size_t i = 0; i < N; i++) {
         fr_t individual_evaluation;
 
-        eval_extended_poly(&individual_evaluation, poly_coeff, &s.expanded_roots_of_unity[i]);
+        eval_extended_poly(&individual_evaluation, poly_coeff, &s.roots_of_unity[i]);
 
         bool ok = fr_equal(&individual_evaluation, &poly_eval[i]);
         ASSERT_EQUALS(ok, true);
@@ -1717,7 +1717,7 @@ static void test_coset_fft(void) {
         fr_t shifted_w;
         fr_t individual_evaluation;
 
-        blst_fr_mul(&shifted_w, &s.expanded_roots_of_unity[i], &RECOVERY_SHIFT_FACTOR);
+        blst_fr_mul(&shifted_w, &s.roots_of_unity[i], &RECOVERY_SHIFT_FACTOR);
 
         eval_extended_poly(&individual_evaluation, poly_coeff, &shifted_w);
 
@@ -1900,11 +1900,11 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 static void test_vanishing_polynomial_for_missing_cells(void) {
 
     fr_t *vanishing_poly = NULL;
-    C_KZG_RET ret = new_fr_array(&vanishing_poly, s.max_width);
+    C_KZG_RET ret = new_fr_array(&vanishing_poly, FIELD_ELEMENTS_PER_EXT_BLOB);
     ASSERT("vanishing poly alloc", ret == C_KZG_OK);
 
     fr_t *fft_result = NULL;
-    ret = new_fr_array(&fft_result, s.max_width);
+    ret = new_fr_array(&fft_result, FIELD_ELEMENTS_PER_EXT_BLOB);
     ASSERT("fft_result alloc", ret == C_KZG_OK);
 
     /* Test case: the 0th and 1st cell are missing */
@@ -1919,7 +1919,7 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     ASSERT("compute vanishing poly from cells", ret == C_KZG_OK);
 
     /* Compute FFT of vanishing_poly */
-    fr_fft(fft_result, vanishing_poly, s.max_width, &s);
+    fr_fft(fft_result, vanishing_poly, FIELD_ELEMENTS_PER_EXT_BLOB, &s);
 
     /*
      * Check FFT results
@@ -1930,34 +1930,34 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
      * We expect that the following roots will evaluate to zero on the vanishing polynomial we
      * computed:
      *
-     * s->expanded_roots_of_unity[0]
-     * s->expanded_roots_of_unity[128]
-     * s->expanded_roots_of_unity[256]
+     * s->roots_of_unity[0]
+     * s->roots_of_unity[128]
+     * s->roots_of_unity[256]
      * ...
-     * s->expanded_roots_of_unity[8064]
+     * s->roots_of_unity[8064]
      *
      * For every cell index, we should have `FIELD_ELEMENTS_PER_CELL` number of these roots. ie each
-     * cell index corresponds to 64 roots taken from `expanded_roots_of_unity` in the vanishing
+     * cell index corresponds to 64 roots taken from `roots_of_unity` in the vanishing
      * polynomial.
      *
-     * In general, the formula is expanded_roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where
+     * In general, the formula is roots_of_unity[cell_index + CELLS_PER_EXT_BLOB * k] where
      * `k` goes from 0 to FIELD_ELEMENTS_PER_CELL-1.
      *
      * For cell index 1, we would therefore expect the polynomial to vanish at points:
      *
-     * s->expanded_roots_of_unity[1]
-     * s->expanded_roots_of_unity[129]
-     * s->expanded_roots_of_unity[257]
+     * s->roots_of_unity[1]
+     * s->roots_of_unity[129]
+     * s->roots_of_unity[257]
      * ...
-     * s->expanded_roots_of_unity[8065]
+     * s->roots_of_unity[8065]
      *
      * Sanity check:
      * The largest cell index we can have is 127 since there are 128 cells.
      *
      * The last element for that cell index would have array index `127 + 128*63 = 8191`. This is
-     * correct since `expanded_roots_of_unity` has 8192 elements.
+     * correct since `roots_of_unity` has 8192 elements.
      */
-    for (size_t i = 0; i < s.max_width; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             /* Every CELLS_PER_EXT_BLOB-th evaluation should be zero */
             ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
