@@ -14,21 +14,39 @@
  * limitations under the License.
  */
 
-#include "common.h"
+#pragma once
+
+#include "types.h"
+
+#include <stddef.h> /* For size_t */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Macros
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
+ * pointer value to NULL after freeing it.
+ */
+#define c_kzg_free(p) \
+    do { \
+        free(p); \
+        (p) = NULL; \
+    } while (0)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
-C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
-
-C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
-C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
+C_KZG_RET c_kzg_malloc(void **out, size_t size);
+C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
+C_KZG_RET new_g1_array(g1_t **x, size_t n);
+C_KZG_RET new_g2_array(g2_t **x, size_t n);
+C_KZG_RET new_fr_array(fr_t **x, size_t n);
 
 #ifdef __cplusplus
 }

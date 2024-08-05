@@ -14,10 +14,8 @@
  * limitations under the License.
  */
 
-#include "eip4844.h"
-#include "common.h"
-
-#include "blst.h"
+#include "eip4844/api.h"
+#include "common/alloc.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */

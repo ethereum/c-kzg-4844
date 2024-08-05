@@ -14,9 +14,26 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/common.c"
-#include "eip4844/api.c"
-#include "eip7594/api.c"
-#include "eip7594/fft.c"
-#include "setup/api.c"
+#pragma once
+
+#include "common/types.h"
+#include "eip7594/api.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Public Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void print_bytes32(const Bytes32 *bytes);
+void print_bytes48(const Bytes48 *bytes);
+void print_fr(const fr_t *f);
+void print_g1(const g1_t *g);
+void print_blob(const Blob *blob);
+void print_cell(const Cell *cell);
+
+#ifdef __cplusplus
+}
+#endif

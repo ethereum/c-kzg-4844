@@ -18,11 +18,7 @@
 
 #include "blst.h"
 
-#include <stdbool.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -55,116 +51,25 @@ extern "C" {
 /** Returns number of elements in a statically defined array. */
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
-/**
- * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
- * pointer value to NULL after freeing it.
- */
-#define c_kzg_free(p) \
-    do { \
-        free(p); \
-        (p) = NULL; \
-    } while (0)
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/** The common return type for all routines in which something can go wrong. */
-typedef enum {
-    C_KZG_OK = 0,  /**< Success! */
-    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
-    C_KZG_ERROR,   /**< Internal error - this should never occur. */
-    C_KZG_MALLOC,  /**< Could not allocate memory. */
-} C_KZG_RET;
-
-typedef blst_p1 g1_t; /**< Internal G1 group element type. */
-typedef blst_p2 g2_t; /**< Internal G2 group element type. */
-typedef blst_fr fr_t; /**< Internal Fr field element type. */
-
-/** An array of 32 bytes. Represents an untrusted (potentially invalid) field element. */
-typedef struct {
-    uint8_t bytes[32];
-} Bytes32;
-
-/** An array of 48 bytes. Represents an untrusted (potentially invalid) commitment/proof. */
-typedef struct {
-    uint8_t bytes[48];
-} Bytes48;
-
-/** A basic blob data. */
-typedef struct {
-    uint8_t bytes[BYTES_PER_BLOB];
-} Blob;
-
-/** A trusted (valid) KZG commitment. */
-typedef Bytes48 KZGCommitment;
-
-/** A trusted (valid) KZG proof. */
-typedef Bytes48 KZGProof;
-
-/** Stores the setup and parameters needed for computing KZG proofs. */
-typedef struct {
-    /**
-     * Roots of unity for the subgroup of size `domain_size`.
-     *
-     * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().
-     */
-    fr_t *roots_of_unity;
-    /**
-     * Roots of unity for the subgroup of size `domain_size` in bit-reversed order.
-     *
-     * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
-     * excluding the last element. Essentially:
-     *   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`
-     *
-     * The array contains `domain_size` elements.
-     */
-    fr_t *brp_roots_of_unity;
-    /**
-     * Roots of unity for the subgroup of size `domain_size` in reversed order.
-     *
-     * It is the reversed version of `roots_of_unity`. Essentially:
-     *    `reverse_roots_of_unity = reverse(roots_of_unity)`
-     *
-     * This array is primarily used in FFTs.
-     * The array contains `domain_size + 1` elements, it starts and ends with Fr::one().
-     */
-    fr_t *reverse_roots_of_unity;
-    /** G1 group elements from the trusted setup in monomial form. */
-    g1_t *g1_values_monomial;
-    /** G1 group elements from the trusted setup in Lagrange form and bit-reversed order. */
-    g1_t *g1_values_lagrange_brp;
-    /** G2 group elements from the trusted setup in monomial form. */
-    g2_t *g2_values_monomial;
-    /** Data used during FK20 proof generation. */
-    g1_t **x_ext_fft_columns;
-    /** The precomputed tables for fixed-base MSM. */
-    blst_p1_affine **tables;
-    /** The window size for the fixed-base MSM. */
-    size_t wbits;
-    /** The scratch size for the fixed-base MSM. */
-    size_t scratch_size;
-} KZGSettings;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** Deserialized form of the G1 identity/infinity point. */
-static const g1_t G1_IDENTITY = {
+static const blst_p1 G1_IDENTITY = {
     {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
 };
 
 /** The zero field element. */
-static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
+static const blst_fr FR_ZERO = {0L, 0L, 0L, 0L};
 
 /** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
-static const fr_t FR_ONE = {
+static const blst_fr FR_ONE = {
     0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
 };
 
 /** This used to represent a missing element. It's an invalid value. */
-static const fr_t FR_NULL = {
+static const blst_fr FR_NULL = {
     0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
 };
 
@@ -225,59 +130,3 @@ static const uint64_t SCALE2_ROOT_OF_UNITY[][4] = {
     {0x694341f608c9dd56L, 0xed3a181fabb30adcL, 0x1339a815da8b398fL, 0x2c6d4e4511657e1eL},
     {0x63e7cb4906ffc93fL, 0xf070bb00e28a193dL, 0xad1715b02e5713b5L, 0x4b5371495990693fL}
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Public Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/*
- * Memory Allocation:
- */
-C_KZG_RET c_kzg_malloc(void **out, size_t size);
-C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
-C_KZG_RET new_g1_array(g1_t **x, size_t n);
-C_KZG_RET new_g2_array(g2_t **x, size_t n);
-C_KZG_RET new_fr_array(fr_t **x, size_t n);
-
-/*
- * General Helper Functions:
- */
-bool is_power_of_two(uint64_t n);
-int log2_pow2(uint32_t n);
-uint32_t reverse_bits(uint32_t n);
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
-
-/*
- * Conversion and Validation:
- */
-void bytes_from_g1(Bytes48 *out, const g1_t *in);
-void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
-void bytes_from_uint64(uint8_t out[8], uint64_t n);
-C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
-C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
-C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
-void fr_from_uint64(fr_t *out, uint64_t n);
-void hash_to_bls_field(fr_t *out, const Bytes32 *b);
-C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
-
-/*
- * Field Operations:
- */
-bool fr_equal(const fr_t *a, const fr_t *b);
-bool fr_is_one(const fr_t *p);
-void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
-void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
-void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
-
-/*
- * Point Operations:
- */
-void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
-void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
-bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
-void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
-C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
-
-#ifdef __cplusplus
-}
-#endif

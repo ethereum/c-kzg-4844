@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I../inc -O2 -Wall -Wextra
+CFLAGS += -I. -I../inc -O2 -Wall -Wextra
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
@@ -41,13 +41,13 @@ LIBS = $(BLST_LIBRARY)
 
 # Create file lists.
 SOURCE_FILES := $(shell find . -name '*.c' | sed 's|^\./||' | sort)
-HEADER_FILES := $(patsubst %.c, %.h, $(SOURCE_FILES))
+HEADER_FILES := $(shell find . -name '*.h' | sed 's|^\./||' | sort)
 OBJECT_FILES := $(patsubst %.c, %.o, $(SOURCE_FILES))
 
 # There is no tests header file.
-HEADER_FILES := $(filter-out tests.h, $(HEADER_FILES))
+HEADER_FILES := $(filter-out test/tests.h, $(HEADER_FILES))
 # We don't want to format this and it is not expected to change.
-HEADER_FILES := $(filter-out tinytest.h, $(HEADER_FILES))
+HEADER_FILES := $(filter-out test/tinytest.h, $(HEADER_FILES))
 
 ###############################################################################
 # Core
@@ -69,7 +69,7 @@ blst: $(BLST_LIBRARY)
 
 tests: CFLAGS += -O0
 tests: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
-	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
 .PHONY: test
 test: tests
@@ -81,7 +81,7 @@ test: tests
 
 tests_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
 tests_cov: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
-	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
 .PHONY: coverage
 coverage: tests_cov
@@ -103,7 +103,7 @@ tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
 tests_prof: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
-	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
 .PHONY: run_profiler
 run_profiler: tests_prof
@@ -135,7 +135,7 @@ profile: \
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
 sanitize_%: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
 	@echo Running sanitize=$*...
-	@$(CC) $(CFLAGS) -o $@ tests.c $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	    LSAN_OPTIONS=allocator_may_return_null=1 \
 	    ./$@; rm $@
@@ -173,6 +173,6 @@ format:
 
 .PHONY: clean
 clean:
-	@rm -f *.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
+	@rm -f *.o */*.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
 	    tests tests_cov tests_prof
 	@rm -rf analysis-report
