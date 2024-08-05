@@ -82,6 +82,7 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
         .allowlist_type("C_KZG_RET")
         .allowlist_var("BYTES_PER_.*")
         .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
+        .allowlist_var("FIELD_ELEMENTS_PER_EXT_BLOB")
         .allowlist_file(".*eip.*.h")
         .allowlist_file(".*setup.h")
         /*

@@ -6,8 +6,8 @@ pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
-pub const BYTES_PER_BLOB: usize = 131072;
 pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
+pub const BYTES_PER_BLOB: usize = 131072;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
@@ -85,13 +85,11 @@ pub struct Blob {
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct KZGSettings {
-    #[doc = " The length of `roots_of_unity`, a power of 2."]
-    max_width: u64,
-    #[doc = " Powers of the primitive root of unity determined by `SCALE2_ROOT_OF_UNITY` in bit-reversal\n permutation order, length `max_width`."]
+    #[doc = " Roots of unity for the subgroup of size `domain_size`.\n\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     roots_of_unity: *mut fr_t,
-    #[doc = " The expanded roots of unity."]
-    expanded_roots_of_unity: *mut fr_t,
-    #[doc = " The bit-reversal permuted roots of unity."]
+    #[doc = " Roots of unity for the subgroup of size `domain_size` in bit-reversed order.\n\n This array is derived by applying a bit-reversal permutation to `roots_of_unity`\n excluding the last element. Essentially:\n   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`\n\n The array contains `domain_size` elements."]
+    brp_roots_of_unity: *mut fr_t,
+    #[doc = " Roots of unity for the subgroup of size `domain_size` in reversed order.\n\n It is the reversed version of `roots_of_unity`. Essentially:\n    `reverse_roots_of_unity = reverse(roots_of_unity)`\n\n This array is primarily used in FFTs.\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     reverse_roots_of_unity: *mut fr_t,
     #[doc = " G1 group elements from the trusted setup in monomial form."]
     g1_values_monomial: *mut g1_t,
