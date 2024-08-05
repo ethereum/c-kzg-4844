@@ -19,7 +19,9 @@
 
 #include "blst.h"
 
-#include <assert.h>
+#include <assert.h> /* For assert */
+#include <stdlib.h> /* For NULL */
+#include <string.h> /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
