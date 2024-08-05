@@ -17,22 +17,21 @@
 #pragma once
 
 #include "common/blob.h"
+#include "common/bytes.h"
 #include "common/ret.h"
 #include "common/settings.h"
-#include "common/types.h"
-
 #include "constants.h"
 #include "types.h"
 
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s

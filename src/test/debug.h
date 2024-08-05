@@ -16,16 +16,17 @@
 
 #pragma once
 
-#include "common/types.h"
+#include "common/blob.h"
+#include "common/bytes.h"
 #include "eip7594/api.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void print_bytes32(const Bytes32 *bytes);
 void print_bytes48(const Bytes48 *bytes);
