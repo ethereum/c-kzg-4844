@@ -55,6 +55,7 @@ extern "C" {
 #endif
 
 C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
+void print_blob(const Blob *blob);
 
 #ifdef __cplusplus
 }

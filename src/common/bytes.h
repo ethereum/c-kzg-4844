@@ -76,6 +76,8 @@ C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
 C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
 C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
 void hash_to_bls_field(fr_t *out, const Bytes32 *b);
+void print_bytes32(const Bytes32 *bytes);
+void print_bytes48(const Bytes48 *bytes);
 
 #ifdef __cplusplus
 }

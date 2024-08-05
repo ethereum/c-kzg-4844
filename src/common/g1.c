@@ -15,6 +15,9 @@
  */
 
 #include "g1.h"
+#include "common/bytes.h"
+
+#include <stdio.h> /* For printf */
 
 /**
  * Subtraction of G1 group elements.
@@ -40,4 +43,15 @@ void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
     blst_scalar_from_fr(&s, b);
     blst_p1_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
+}
+
+/**
+ * Print a G1 point to the console.
+ *
+ * @param[in]   g   The g1 point to print
+ */
+void print_g1(const g1_t *g) {
+    Bytes48 bytes;
+    bytes_from_g1(&bytes, g);
+    print_bytes48(&bytes);
 }

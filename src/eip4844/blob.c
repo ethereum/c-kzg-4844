@@ -17,6 +17,8 @@
 #include "blob.h"
 #include "common/bytes.h"
 
+#include <stdio.h> /* For printf */
+
 /**
  * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
  *
@@ -31,4 +33,16 @@ C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
+}
+
+/**
+ * Print a Blob to the console.
+ *
+ * @param[in]   blob    The Blob to print
+ */
+void print_blob(const Blob *blob) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
+    }
 }

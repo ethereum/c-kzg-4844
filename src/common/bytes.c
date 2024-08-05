@@ -16,6 +16,8 @@
 
 #include "bytes.h"
 
+#include <stdio.h> /* For printf */
+
 /**
  * Serialize a 64-bit unsigned integer into bytes.
  *
@@ -122,4 +124,28 @@ void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;
     blst_scalar_from_bendian(&tmp, b->bytes);
     blst_fr_from_scalar(out, &tmp);
+}
+
+/**
+ * Print a Bytes32 to the console.
+ *
+ * @param[in]   bytes   The Bytes32 to print
+ */
+void print_bytes32(const Bytes32 *bytes) {
+    for (size_t i = 0; i < 32; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
+}
+
+/**
+ * Print a Bytes48 to the console.
+ *
+ * @param[in]   bytes   The Bytes48 to print
+ */
+void print_bytes48(const Bytes48 *bytes) {
+    for (size_t i = 0; i < 48; i++) {
+        printf("%02x", bytes->bytes[i]);
+    }
+    printf("\n");
 }

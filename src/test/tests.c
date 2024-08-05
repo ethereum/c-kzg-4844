@@ -2,7 +2,6 @@
  * This file contains unit tests for C-KZG-4844.
  */
 #include "ckzg.c"
-#include "debug.h"
 #include "tinytest.h"
 
 #include <assert.h>

@@ -15,6 +15,7 @@
  */
 
 #include "fr.h"
+#include "common/bytes.h"
 
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
@@ -114,4 +115,15 @@ void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
 void fr_from_uint64(fr_t *out, uint64_t n) {
     uint64_t vals[] = {n, 0, 0, 0};
     blst_fr_from_uint64(out, vals);
+}
+
+/**
+ * Print a field element to the console.
+ *
+ * @param[in]   f   The field element to print
+ */
+void print_fr(const fr_t *f) {
+    Bytes32 bytes;
+    bytes_from_bls_field(&bytes, f);
+    print_bytes32(&bytes);
 }

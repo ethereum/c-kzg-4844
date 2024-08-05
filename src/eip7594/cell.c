@@ -13,3 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include "cell.h"
+#include "common/bytes.h"
+
+#include <stdio.h> /* For printf */
+
+/**
+ * Print Cell to the console.
+ *
+ * @param[in]   cell    The Cell to print
+ */
+void print_cell(const Cell *cell) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        Bytes32 *field = (Bytes32 *)&cell->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
+    }
+}
