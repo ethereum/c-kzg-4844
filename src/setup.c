@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include "setup.h"
 #include "common.h"
-#include "eip4844.h"
 #include "eip7594.h"
+#include "fft.h"
 
 #include <assert.h>   /* For assert */
 #include <inttypes.h> /* For SCNu64 */

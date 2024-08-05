@@ -13,11 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#pragma once
 
 #include "common.h"
-
-#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -27,20 +24,11 @@ extern "C" {
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET load_trusted_setup(
-    KZGSettings *out,
-    const uint8_t *g1_monomial_bytes,
-    size_t num_g1_monomial_bytes,
-    const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_lagrange_bytes,
-    const uint8_t *g2_monomial_bytes,
-    size_t num_g2_monomial_bytes,
-    size_t precompute
-);
+C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
+C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute);
-
-void free_trusted_setup(KZGSettings *s);
+C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
+C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 
 #ifdef __cplusplus
 }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "blst.h"
+
 #include <stdbool.h>
 
 #ifdef __cplusplus
@@ -276,8 +277,6 @@ void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
 bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
 void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
 C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
-C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
-C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 
 #ifdef __cplusplus
 }

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <stdint.h>
-
 #include "common.h"
+
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
