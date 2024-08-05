@@ -55,24 +55,6 @@
 // Constants
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** Deserialized form of the G1 identity/infinity point. */
-static const blst_p1 G1_IDENTITY = {
-    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
-};
-
-/** The zero field element. */
-static const blst_fr FR_ZERO = {0L, 0L, 0L, 0L};
-
-/** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
-static const blst_fr FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
-};
-
-/** This used to represent a missing element. It's an invalid value. */
-static const blst_fr FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
-};
-
 /**
  * The first 32 roots of unity in the finite field F_r. SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of
  * unity.

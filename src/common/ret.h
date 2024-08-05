@@ -16,43 +16,14 @@
 
 #pragma once
 
-#include "blob.h"
-#include "bytes.h"
-#include "fr.h"
-#include "g1.h"
-#include "g2.h"
-
-#include <stdbool.h> /* For bool */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Public Functions
+// Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
- * General Helper Functions:
- */
-bool is_power_of_two(uint64_t n);
-int log2_pow2(uint32_t n);
-uint32_t reverse_bits(uint32_t n);
-
-/*
- * Conversion and Validation:
- */
-void fr_from_uint64(fr_t *out, uint64_t n);
-void hash_to_bls_field(fr_t *out, const Bytes32 *b);
-C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
-
-/*
- * Helpers:
- */
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
-void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
-bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
-
-#ifdef __cplusplus
-}
-#endif
+/** The common return type for all routines in which something can go wrong. */
+typedef enum {
+    C_KZG_OK = 0,  /**< Success! */
+    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
+    C_KZG_ERROR,   /**< Internal error - this should never occur. */
+    C_KZG_MALLOC,  /**< Could not allocate memory. */
+} C_KZG_RET;

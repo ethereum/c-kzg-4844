@@ -13,17 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#include "common/alloc.c"
-#include "common/bytes.c"
-#include "common/common.c"
-#include "common/fr.c"
-#include "common/g1.c"
-#include "common/g2.c"
-#include "common/lincomb.c"
-#include "common/ret.c"
-#include "common/settings.c"
-#include "eip4844/api.c"
-#include "eip7594/api.c"
-#include "eip7594/fft.c"
-#include "setup/api.c"

@@ -16,6 +16,7 @@
 
 #include "common.h"
 #include "alloc.h"
+#include "g2.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -127,102 +128,6 @@ out:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Serialize a G1 group element into bytes.
- *
- * @param[out] out A 48-byte array to store the serialized G1 element
- * @param[in]  in  The G1 element to be serialized
- */
-void bytes_from_g1(Bytes48 *out, const g1_t *in) {
-    blst_p1_compress(out->bytes, in);
-}
-
-/**
- * Serialize a BLS field element into bytes.
- *
- * @param[out] out A 32-byte array to store the serialized field element
- * @param[in] in The field element to be serialized
- */
-void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, in);
-    blst_bendian_from_scalar(out->bytes, &s);
-}
-
-/**
- * Serialize a 64-bit unsigned integer into bytes.
- *
- * @param[out] out An 8-byte array to store the serialized integer
- * @param[in]  n   The integer to be serialized
- *
- * @remark The output format is big-endian.
- */
-void bytes_from_uint64(uint8_t out[8], uint64_t n) {
-    for (int i = 7; i >= 0; i--) {
-        out[i] = n & 0xFF;
-        n >>= 8;
-    }
-}
-
-/**
- * Perform BLS validation required by the types KZGProof and KZGCommitment.
- *
- * @param[out]  out The output g1 point
- * @param[in]   b   The proof/commitment bytes
- *
- * @remark This function deviates from the spec because it returns (via an output argument) the g1
- * point. This way is more efficient (faster) but the function name is a bit misleading.
- */
-static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
-    blst_p1_affine p1_affine;
-
-    /* Convert the bytes to a p1 point */
-    /* The uncompress routine checks that the point is on the curve */
-    if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS) return C_KZG_BADARGS;
-    blst_p1_from_affine(out, &p1_affine);
-
-    /* The point at infinity is accepted! */
-    if (blst_p1_is_inf(out)) return C_KZG_OK;
-    /* The point must be on the right subgroup */
-    if (!blst_p1_in_g1(out)) return C_KZG_BADARGS;
-
-    return C_KZG_OK;
-}
-
-/**
- * Convert untrusted bytes to a trusted and validated BLS scalar field element.
- *
- * @param[out] out The field element to store the deserialized data
- * @param[in]  b   A 32-byte array containing the serialized field element
- */
-C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
-    blst_scalar tmp;
-    blst_scalar_from_bendian(&tmp, b->bytes);
-    if (!blst_scalar_fr_check(&tmp)) return C_KZG_BADARGS;
-    blst_fr_from_scalar(out, &tmp);
-    return C_KZG_OK;
-}
-
-/**
- * Convert untrusted bytes into a trusted and validated KZGCommitment.
- *
- * @param[out]  out The output commitment
- * @param[in]   b   The commitment bytes
- */
-C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
-    return validate_kzg_g1(out, b);
-}
-
-/**
- * Convert untrusted bytes into a trusted and validated KZGProof.
- *
- * @param[out]  out The output proof
- * @param[in]   b   The proof bytes
- */
-C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
-    return validate_kzg_g1(out, b);
-}
-
-/**
  * Create a field element from a single 64-bit unsigned integer.
  *
  * @param[out] out The field element equivalent of `n`
@@ -286,32 +191,6 @@ void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Subtraction of G1 group elements.
- *
- * @param[out] out `a - b`
- * @param[in]  a   A G1 group element
- * @param[in]  b   The G1 group element to be subtracted
- */
-void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
-    g1_t bneg = *b;
-    blst_p1_cneg(&bneg, true);
-    blst_p1_add_or_double(out, a, &bneg);
-}
-
-/**
- * Multiply a G1 group element by a field element.
- *
- * @param[out] out  `a * b`
- * @param[in]  a    The G1 group element
- * @param[in]  b    The multiplier
- */
-void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    blst_p1_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
-}
-
-/**
  * Perform pairings and test whether the outcomes are equal in G_T.
  *
  * Tests whether `e(a1, a2) == e(b1, b2)`.
@@ -348,118 +227,4 @@ bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t 
     blst_final_exp(&gt_point, &gt_point);
 
     return blst_fp12_is_one(&gt_point);
-}
-
-/**
- * Calculate a linear combination of G1 group elements.
- *
- * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
- * where `n` is `len - 1`.
- *
- * This function computes the result naively without using Pippenger's algorithm.
- */
-void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
-    g1_t tmp;
-    *out = G1_IDENTITY;
-    for (uint64_t i = 0; i < len; i++) {
-        g1_mul(&tmp, &p[i], &coeffs[i]);
-        blst_p1_add_or_double(out, out, &tmp);
-    }
-}
-
-/**
- * Calculate a linear combination of G1 group elements.
- *
- * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
- *
- * @param[out] out    The resulting sum-product
- * @param[in]  p      Array of G1 group elements, length `len`
- * @param[in]  coeffs Array of field elements, length `len`
- * @param[in]  len    The number of group/field elements
- *
- * @remark This function CAN be called with the point at infinity in `p`.
- * @remark While this function is significantly faster than g1_lincomb_naive(), we refrain from
- * using it in security-critical places (like verification) because the blst Pippenger code has not
- * been audited. In those critical places, we prefer using g1_lincomb_naive() which is much simpler.
- *
- * For the benefit of future generations (since blst has no documentation to speak of), there are
- * two ways to pass the arrays of scalars and points into blst_p1s_mult_pippenger().
- *
- * 1. Pass `points` as an array of pointers to the points, and pass `scalars` as an array of
- *    pointers to the scalars, each of length `len`.
- * 2. Pass an array where the first element is a pointer to the contiguous array of points and the
- *    second is null, and similarly for scalars.
- *
- * We do the second of these to save memory here.
- */
-C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
-    C_KZG_RET ret;
-    void *scratch = NULL;
-    blst_p1 *p_filtered = NULL;
-    blst_p1_affine *p_affine = NULL;
-    blst_scalar *scalars = NULL;
-
-    /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
-    const size_t min_length_threshold = 8;
-
-    /* Use naive method if it's less than the threshold */
-    if (len < min_length_threshold) {
-        g1_lincomb_naive(out, p, coeffs, len);
-        ret = C_KZG_OK;
-        goto out;
-    }
-
-    /* Allocate space for arrays */
-    ret = c_kzg_calloc((void **)&p_filtered, len, sizeof(blst_p1));
-    if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
-    if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
-    if (ret != C_KZG_OK) goto out;
-
-    /* Allocate space for Pippenger scratch */
-    size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
-    ret = c_kzg_malloc(&scratch, scratch_size);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Transform the field elements to 256-bit scalars */
-    for (size_t i = 0; i < len; i++) {
-        blst_scalar_from_fr(&scalars[i], &coeffs[i]);
-    }
-
-    /* Filter out zero points: make a new list p_filtered that contains only non-zero points */
-    size_t new_len = 0;
-    for (size_t i = 0; i < len; i++) {
-        if (!blst_p1_is_inf(&p[i])) {
-            /* Copy valid points to the new position */
-            p_filtered[new_len] = p[i];
-            scalars[new_len] = scalars[i];
-            new_len++;
-        }
-    }
-
-    /* Check if the new length is fine */
-    if (new_len < min_length_threshold) {
-        /* We must use the original inputs */
-        g1_lincomb_naive(out, p, coeffs, len);
-        ret = C_KZG_OK;
-        goto out;
-    }
-
-    /* Transform the points to affine representation */
-    const blst_p1 *p_arg[2] = {p_filtered, NULL};
-    blst_p1s_to_affine(p_affine, p_arg, new_len);
-
-    /* Call the Pippenger implementation */
-    const byte *scalars_arg[2] = {(byte *)scalars, NULL};
-    const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-    blst_p1s_mult_pippenger(out, points_arg, new_len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch);
-    ret = C_KZG_OK;
-
-out:
-    c_kzg_free(scratch);
-    c_kzg_free(p_filtered);
-    c_kzg_free(p_affine);
-    c_kzg_free(scalars);
-    return ret;
 }

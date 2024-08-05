@@ -2,15 +2,21 @@
 
 use libc::FILE;
 
-pub const BYTES_PER_COMMITMENT: usize = 48;
-pub const BYTES_PER_PROOF: usize = 48;
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const BYTES_PER_BLOB: usize = 131072;
+pub const BYTES_PER_COMMITMENT: usize = 48;
+pub const BYTES_PER_PROOF: usize = 48;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
+#[doc = " A basic blob data."]
+#[repr(C)]
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct Blob {
+    bytes: [u8; 131072usize],
+}
 pub type limb_t = u64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -47,6 +53,7 @@ pub struct blst_p2 {
     y: blst_fp2,
     z: blst_fp2,
 }
+pub type fr_t = blst_fr;
 #[repr(C)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -61,8 +68,6 @@ pub enum C_KZG_RET {
     C_KZG_MALLOC = 3,
 }
 pub type g1_t = blst_p1;
-pub type g2_t = blst_p2;
-pub type fr_t = blst_fr;
 #[doc = " An array of 32 bytes. Represents an untrusted (potentially invalid) field element."]
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -75,12 +80,7 @@ pub struct Bytes32 {
 pub struct Bytes48 {
     bytes: [u8; 48usize],
 }
-#[doc = " A basic blob data."]
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Eq)]
-pub struct Blob {
-    bytes: [u8; 131072usize],
-}
+pub type g2_t = blst_p2;
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]

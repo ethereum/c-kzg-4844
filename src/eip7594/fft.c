@@ -15,7 +15,9 @@
  */
 
 #include "fft.h"
-#include "common/fr.h"
+
+#include "common/common.h"
+#include "common/constants.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // FFT Functions for Field Elements

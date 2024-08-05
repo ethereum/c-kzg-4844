@@ -15,9 +15,9 @@
  */
 #pragma once
 
-#include "common/common.h"
+#include "common/settings.h"
 
-#include <stdio.h>
+#include <stdio.h> /* For FILE */
 
 #ifdef __cplusplus
 extern "C" {

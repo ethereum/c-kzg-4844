@@ -16,7 +16,11 @@
 
 #pragma once
 
-#include "common/common.h"
+#include "common/blob.h"
+#include "common/bytes.h"
+#include "common/constants.h"
+#include "common/settings.h"
+#include "common/types.h"
 
 #ifdef __cplusplus
 extern "C" {

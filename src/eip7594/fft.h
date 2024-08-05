@@ -16,7 +16,10 @@
 
 #pragma once
 
-#include "common/common.h"
+#include "common/fr.h"
+#include "common/g1.h"
+#include "common/ret.h"
+#include "common/settings.h"
 
 #ifdef __cplusplus
 extern "C" {

@@ -18,39 +18,37 @@
 
 #include "fr.h"
 #include "g1.h"
-#include "g2.h"
 
-#include <stdbool.h> /* For bool */
-#include <stddef.h>  /* For size_t */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h> /* For uint*_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Macros
+// Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
- * Helper macro to release memory allocated on the heap. Unlike free(), c_kzg_free() macro sets the
- * pointer value to NULL after freeing it.
- */
-#define c_kzg_free(p) \
-    do { \
-        free(p); \
-        (p) = NULL; \
-    } while (0)
+/** An array of 32 bytes. Represents an untrusted (potentially invalid) field element. */
+typedef struct {
+    uint8_t bytes[32];
+} Bytes32;
+
+/** An array of 48 bytes. Represents an untrusted (potentially invalid) commitment/proof. */
+typedef struct {
+    uint8_t bytes[48];
+} Bytes48;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET c_kzg_malloc(void **out, size_t size);
-C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
-C_KZG_RET new_g1_array(g1_t **x, size_t n);
-C_KZG_RET new_g2_array(g2_t **x, size_t n);
-C_KZG_RET new_fr_array(fr_t **x, size_t n);
-C_KZG_RET new_bool_array(bool **x, size_t n);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void bytes_from_uint64(uint8_t out[8], uint64_t n);
+void bytes_from_g1(Bytes48 *out, const g1_t *in);
+void bytes_from_bls_field(Bytes32 *out, const fr_t *in);
+C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b);
+C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b);
+C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b);
 
 #ifdef __cplusplus
 }

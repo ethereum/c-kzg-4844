@@ -15,7 +15,9 @@
  */
 
 #include "alloc.h"
-#include "types.h"
+#include "fr.h"
+#include "g1.h"
+#include "g2.h"
 
 #include <stdbool.h> /* For bool */
 #include <stddef.h>  /* For size_t & NULL */

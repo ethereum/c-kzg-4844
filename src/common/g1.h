@@ -17,37 +17,22 @@
 #pragma once
 
 #include "blst.h"
-
-#include <stdbool.h>
+#include "fr.h"
+#include "ret.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef blst_fr fr_t; /**< Internal Fr field element type. */
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Macros
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/** The number of bits in a BLS scalar field element. */
-#define BITS_PER_FIELD_ELEMENT 255
+typedef blst_p1 g1_t; /**< Internal G1 group element type. */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** The zero field element. */
-static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
-
-/** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
-static const fr_t FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
-};
-
-/** This used to represent a missing element. It's an invalid value. */
-static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
+/** Deserialized form of the G1 identity/infinity point. */
+static const g1_t G1_IDENTITY = {
+    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -58,11 +43,10 @@ static const fr_t FR_NULL = {
 extern "C" {
 #endif
 
-bool fr_equal(const fr_t *a, const fr_t *b);
-bool fr_is_one(const fr_t *p);
-bool fr_is_null(const fr_t *p);
-void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
-void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
+void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
+void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
+void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
+C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
 
 #ifdef __cplusplus
 }

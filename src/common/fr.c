@@ -15,10 +15,9 @@
  */
 
 #include "fr.h"
-#include "constants.h"
-#include "types.h"
 
-#include <stdbool.h>
+#include <inttypes.h> /* For uint*_t */
+#include <stdbool.h>  /* For bool */
 
 /**
  * Test whether two field elements are equal.
@@ -73,7 +72,7 @@ bool fr_is_null(const fr_t *p) {
  * @remark This function supports in-place computation.
  */
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
-    blst_fr tmp;
+    fr_t tmp;
     blst_fr_eucl_inverse(&tmp, b);
     blst_fr_mul(out, a, &tmp);
 }

@@ -16,7 +16,11 @@
 
 #pragma once
 
-#include "common/common.h"
+#include "common/constants.h"
+#include "common/ret.h"
+#include "common/settings.h"
+#include "common/types.h"
+
 #include "constants.h"
 #include "types.h"
 

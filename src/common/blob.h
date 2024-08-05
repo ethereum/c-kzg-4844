@@ -16,43 +16,29 @@
 
 #pragma once
 
-#include "blob.h"
-#include "bytes.h"
-#include "fr.h"
-#include "g1.h"
-#include "g2.h"
-
-#include <stdbool.h> /* For bool */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h> /* For uint*_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Public Functions
+// Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/*
- * General Helper Functions:
- */
-bool is_power_of_two(uint64_t n);
-int log2_pow2(uint32_t n);
-uint32_t reverse_bits(uint32_t n);
+/** The number of bytes in a BLS scalar field element. */
+#define BYTES_PER_FIELD_ELEMENT 32
 
-/*
- * Conversion and Validation:
- */
-void fr_from_uint64(fr_t *out, uint64_t n);
-void hash_to_bls_field(fr_t *out, const Bytes32 *b);
-C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
+/** The number of field elements in a blob. */
+#define FIELD_ELEMENTS_PER_BLOB 4096
 
-/*
- * Helpers:
- */
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
-void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
-bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
-#ifdef __cplusplus
-}
-#endif
+/** The number of bytes in a blob. */
+#define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** A basic blob data. */
+typedef struct {
+    uint8_t bytes[BYTES_PER_BLOB];
+} Blob;
