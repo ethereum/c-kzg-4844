@@ -15,7 +15,6 @@
  */
 
 #include "common/alloc.c"
-#include "common/blob.c"
 #include "common/bytes.c"
 #include "common/fr.c"
 #include "common/g1.c"
@@ -25,6 +24,8 @@
 #include "common/ret.c"
 #include "common/settings.c"
 #include "eip4844/api.c"
+#include "eip4844/blob.c"
 #include "eip7594/api.c"
+#include "eip7594/cell.c"
 #include "eip7594/fft.c"
 #include "setup/api.c"

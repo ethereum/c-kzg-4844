@@ -13,18 +13,3 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#pragma once
-
-#include "constants.h"
-
-#include <inttypes.h>
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Types
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/** A single cell for a blob. */
-typedef struct {
-    uint8_t bytes[BYTES_PER_CELL];
-} Cell;

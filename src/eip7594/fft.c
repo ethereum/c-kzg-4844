@@ -16,8 +16,8 @@
 
 #include "fft.h"
 
-#include "common/blob.h"
 #include "common/helpers.h"
+#include "eip4844/blob.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // FFT Functions for Field Elements

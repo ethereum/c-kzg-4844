@@ -20,12 +20,56 @@
 #include "common/fr.h"
 #include "common/helpers.h"
 #include "common/lincomb.h"
-#include "constants.h"
 #include "fft.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
 #include <string.h> /* For memcpy */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Macros
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Length of the domain string. */
+#define DOMAIN_STR_LENGTH 16
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
+static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGCBATCH__V1_";
+
+/**
+ * The coset shift factor for the cell recovery code.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t RECOVERY_SHIFT_FACTOR = {
+    0x0000000efffffff1L,
+    0x17e363d300189c0fL,
+    0xff9c57876f8457b0L,
+    0x351332208fc5a8c4L,
+};
+
+/**
+ * The inverse of RECOVERY_SHIFT_FACTOR.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   fr_div(&a, &FR_ONE, &a);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
+    0xdb6db6dadb6db6dcL,
+    0xe6b5824adb6cc6daL,
+    0xf8b356e005810db9L,
+    0x66d0f1e660ec4796L,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper Functions

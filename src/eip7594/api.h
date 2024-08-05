@@ -16,12 +16,11 @@
 
 #pragma once
 
-#include "common/blob.h"
 #include "common/bytes.h"
 #include "common/ret.h"
 #include "common/settings.h"
-#include "constants.h"
-#include "types.h"
+#include "eip4844/blob.h"
+#include "eip7594/cell.h"
 
 #include <stdint.h>
 

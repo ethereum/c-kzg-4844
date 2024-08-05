@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "common/blob.h"
 #include "common/bytes.h"
-#include "eip7594/api.h"
+#include "eip4844/blob.h"
+#include "eip7594/cell.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions

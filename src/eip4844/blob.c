@@ -15,7 +15,7 @@
  */
 
 #include "blob.h"
-#include "bytes.h"
+#include "common/bytes.h"
 
 /**
  * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
