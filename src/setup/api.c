@@ -16,6 +16,7 @@
 
 #include "api.h"
 #include "common/alloc.h"
+#include "common/helpers.h"
 #include "eip7594/api.h"
 #include "eip7594/fft.h"
 

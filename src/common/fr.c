@@ -101,3 +101,17 @@ void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
         blst_fr_sqr(&tmp, &tmp);
     }
 }
+
+/**
+ * Create a field element from a single 64-bit unsigned integer.
+ *
+ * @param[out] out The field element equivalent of `n`
+ * @param[in]  n   The 64-bit integer to be converted
+ *
+ * @remark This can only generate a tiny fraction of possible field elements,
+ *         and is mostly useful for testing.
+ */
+void fr_from_uint64(fr_t *out, uint64_t n) {
+    uint64_t vals[] = {n, 0, 0, 0};
+    blst_fr_from_uint64(out, vals);
+}

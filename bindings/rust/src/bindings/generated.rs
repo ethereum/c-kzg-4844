@@ -11,12 +11,6 @@ pub const BYTES_PER_PROOF: usize = 48;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub const BYTES_PER_CELL: usize = 2048;
-#[doc = " A basic blob data."]
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Eq)]
-pub struct Blob {
-    bytes: [u8; 131072usize],
-}
 pub type limb_t = u64;
 #[repr(C)]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -66,6 +60,12 @@ pub enum C_KZG_RET {
     C_KZG_ERROR = 2,
     #[doc = "< Could not allocate memory."]
     C_KZG_MALLOC = 3,
+}
+#[doc = " A basic blob data."]
+#[repr(C)]
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct Blob {
+    bytes: [u8; 131072usize],
 }
 pub type g1_t = blst_p1;
 #[doc = " An array of 32 bytes. Represents an untrusted (potentially invalid) field element."]

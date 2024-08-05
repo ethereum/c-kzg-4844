@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-#include "common.h"
+#include "helpers.h"
 #include "alloc.h"
-#include "g2.h"
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// General Helper Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
+#include <stdlib.h> /* For NULL */
+#include <string.h> /* For memcpy */
 
 /**
  * Utility function to test whether the argument is a power of two.
@@ -123,52 +116,6 @@ out:
     return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Conversion and Validation
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Create a field element from a single 64-bit unsigned integer.
- *
- * @param[out] out The field element equivalent of `n`
- * @param[in]  n   The 64-bit integer to be converted
- *
- * @remark This can only generate a tiny fraction of possible field elements,
- *         and is mostly useful for testing.
- */
-void fr_from_uint64(fr_t *out, uint64_t n) {
-    uint64_t vals[] = {n, 0, 0, 0};
-    blst_fr_from_uint64(out, vals);
-}
-
-/**
- * Map bytes to a BLS field element.
- *
- * @param[out] out The field element to store the result
- * @param[in]  b   A 32-byte array containing the input
- */
-void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
-    blst_scalar tmp;
-    blst_scalar_from_bendian(&tmp, b->bytes);
-    blst_fr_from_scalar(out, &tmp);
-}
-
-/**
- * Deserialize a blob (array of bytes) into a polynomial (array of field elements).
- *
- * @param[out]  p       The output polynomial (array of field elements)
- * @param[in]   blob    The blob (an array of bytes)
- * @param[in]   n       The number of field elements in the polynomial/blob
- */
-C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
-    C_KZG_RET ret;
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
-        if (ret != C_KZG_OK) return ret;
-    }
-    return C_KZG_OK;
-}
-
 /**
  * Compute and return [ x^0, x^1, ..., x^{n-1} ].
  *
@@ -185,10 +132,6 @@ void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
         blst_fr_mul(&current_power, &current_power, x);
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Point Operations
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Perform pairings and test whether the outcomes are equal in G_T.

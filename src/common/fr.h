@@ -63,6 +63,7 @@ bool fr_is_one(const fr_t *p);
 bool fr_is_null(const fr_t *p);
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
+void fr_from_uint64(fr_t *out, uint64_t n);
 
 #ifdef __cplusplus
 }

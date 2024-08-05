@@ -16,9 +16,9 @@
 
 #include "api.h"
 #include "common/alloc.h"
-#include "common/common.h"
 #include "common/fr.h"
 #include "common/g1.h"
+#include "common/helpers.h"
 #include "common/ret.h"
 #include "common/settings.h"
 

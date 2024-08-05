@@ -111,3 +111,15 @@ C_KZG_RET bytes_to_kzg_commitment(g1_t *out, const Bytes48 *b) {
 C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
     return validate_kzg_g1(out, b);
 }
+
+/**
+ * Map bytes to a BLS field element.
+ *
+ * @param[out] out The field element to store the result
+ * @param[in]  b   A 32-byte array containing the input
+ */
+void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
+    blst_scalar tmp;
+    blst_scalar_from_bendian(&tmp, b->bytes);
+    blst_fr_from_scalar(out, &tmp);
+}
