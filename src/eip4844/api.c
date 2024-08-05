@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "eip4844/api.h"
+#include "api.h"
 #include "common/alloc.h"
 
 #include <assert.h> /* For assert */
