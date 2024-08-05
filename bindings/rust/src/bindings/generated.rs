@@ -2,9 +2,9 @@
 
 use libc::FILE;
 
+pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
-pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_BLOB: usize = 131072;
 pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
