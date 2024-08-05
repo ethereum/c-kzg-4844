@@ -19,6 +19,7 @@
 #include "common/fr.h"
 #include "common/g1.h"
 #include "common/helpers.h"
+#include "common/lincomb.h"
 #include "common/ret.h"
 #include "common/settings.h"
 

@@ -19,6 +19,7 @@
 #include "common/alloc.h"
 #include "common/fr.h"
 #include "common/helpers.h"
+#include "common/lincomb.h"
 #include "constants.h"
 #include "fft.h"
 

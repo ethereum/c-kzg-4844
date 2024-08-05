@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "ret.h"
 #include "g1.h"
 #include "g2.h"
+#include "ret.h"
 
-#include <stdbool.h> /* For bool */
 #include <inttypes.h> /* For uint*_t */
-#include <stddef.h>  /* For size_t */
+#include <stdbool.h>  /* For bool */
+#include <stddef.h>   /* For size_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions

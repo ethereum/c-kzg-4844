@@ -18,6 +18,7 @@
 
 #include "fr.h"
 #include "g1.h"
+#include "ret.h"
 
 #include <inttypes.h> /* For uint*_t */
 

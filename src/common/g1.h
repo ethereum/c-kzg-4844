@@ -18,7 +18,6 @@
 
 #include "blst.h"
 #include "fr.h"
-#include "ret.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -45,8 +44,6 @@ extern "C" {
 
 void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
 void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
-void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
-C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
 
 #ifdef __cplusplus
 }

@@ -16,9 +16,6 @@
 
 #include "g1.h"
 
-#include <stdbool.h> /* For bool */
-#include <stdlib.h>  /* For NULL */
-
 /**
  * Subtraction of G1 group elements.
  *
