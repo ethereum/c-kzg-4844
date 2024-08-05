@@ -14,10 +14,22 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/common.c"
-#include "common/fr.c"
-#include "eip4844/api.c"
-#include "eip7594/api.c"
-#include "eip7594/fft.c"
-#include "setup/api.c"
+#pragma once
+
+#include "types.h"
+
+#include <stdbool.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool fr_equal(const fr_t *a, const fr_t *b);
+bool fr_is_one(const fr_t *p);
+bool fr_is_null(const fr_t *p);
+void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
+void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
+
+#ifdef __cplusplus
+}
+#endif

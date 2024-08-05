@@ -17,6 +17,7 @@
 #include "api.h"
 
 #include "common/alloc.h"
+#include "common/fr.h"
 #include "constants.h"
 #include "fft.h"
 
@@ -25,36 +26,8 @@
 #include <string.h> /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-// Memory Allocation Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Allocate memory for an array of booleans.
- *
- * @param[out] x Pointer to the allocated space
- * @param[in]  n The number of booleans to be allocated
- *
- * @remark Free the space later using c_kzg_free().
- */
-static C_KZG_RET new_bool_array(bool **x, size_t n) {
-    return c_kzg_calloc((void **)x, n, sizeof(bool));
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Test whether the operand is null (all 0xff's).
- *
- * @param[in] p The field element to be checked
- *
- * @retval true  The element is null
- * @retval false The element is not null
- */
-static bool fr_is_null(const fr_t *p) {
-    return fr_equal(p, &FR_NULL);
-}
 
 /**
  * Reverse the low-order bits in a 32-bit integer.

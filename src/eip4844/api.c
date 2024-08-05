@@ -16,6 +16,7 @@
 
 #include "api.h"
 #include "common/alloc.h"
+#include "common/fr.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */

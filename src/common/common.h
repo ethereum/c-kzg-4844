@@ -52,10 +52,6 @@ C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
 /*
  * Field Operations:
  */
-bool fr_equal(const fr_t *a, const fr_t *b);
-bool fr_is_one(const fr_t *p);
-void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
-void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
 
 /*

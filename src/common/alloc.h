@@ -18,7 +18,8 @@
 
 #include "types.h"
 
-#include <stddef.h> /* For size_t */
+#include <stdbool.h> /* For bool */
+#include <stddef.h>  /* For size_t */
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,7 @@ C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
 C_KZG_RET new_g1_array(g1_t **x, size_t n);
 C_KZG_RET new_g2_array(g2_t **x, size_t n);
 C_KZG_RET new_fr_array(fr_t **x, size_t n);
+C_KZG_RET new_bool_array(bool **x, size_t n);
 
 #ifdef __cplusplus
 }

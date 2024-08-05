@@ -17,8 +17,9 @@
 #include "alloc.h"
 #include "types.h"
 
-#include <stddef.h> /* For size_t & NULL */
-#include <stdlib.h> /* For malloc */
+#include <stdbool.h> /* For bool */
+#include <stddef.h>  /* For size_t & NULL */
+#include <stdlib.h>  /* For malloc */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory Allocation
@@ -89,4 +90,16 @@ C_KZG_RET new_g2_array(g2_t **x, size_t n) {
  */
 C_KZG_RET new_fr_array(fr_t **x, size_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(fr_t));
+}
+
+/**
+ * Allocate memory for an array of booleans.
+ *
+ * @param[out] x Pointer to the allocated space
+ * @param[in]  n The number of booleans to be allocated
+ *
+ * @remark Free the space later using c_kzg_free().
+ */
+C_KZG_RET new_bool_array(bool **x, size_t n) {
+    return c_kzg_calloc((void **)x, n, sizeof(bool));
 }
