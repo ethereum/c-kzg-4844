@@ -110,7 +110,7 @@ typedef struct {
      */
     fr_t *roots_of_unity;
     /**
-     * Roots of unity in bit-reversed order.
+     * Roots of unity for the subgroup of size `domain_size` in bit-reversed order.
      *
      * This array is derived by applying a bit-reversal permutation to `roots_of_unity`
      * excluding the last element. Essentially:

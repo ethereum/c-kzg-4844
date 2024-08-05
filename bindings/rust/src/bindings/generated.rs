@@ -87,7 +87,7 @@ pub struct Blob {
 pub struct KZGSettings {
     #[doc = " Roots of unity for the subgroup of size `domain_size`.\n\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     roots_of_unity: *mut fr_t,
-    #[doc = " Roots of unity in bit-reversed order.\n\n This array is derived by applying a bit-reversal permutation to `roots_of_unity`\n excluding the last element. Essentially:\n   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`\n\n The array contains `domain_size` elements."]
+    #[doc = " Roots of unity for the subgroup of size `domain_size` in bit-reversed order.\n\n This array is derived by applying a bit-reversal permutation to `roots_of_unity`\n excluding the last element. Essentially:\n   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`\n\n The array contains `domain_size` elements."]
     brp_roots_of_unity: *mut fr_t,
     #[doc = " Roots of unity for the subgroup of size `domain_size` in reversed order.\n\n It is the reversed version of `roots_of_unity`. Essentially:\n    `reverse_roots_of_unity = reverse(roots_of_unity)`\n\n This array is primarily used in FFTs.\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
     reverse_roots_of_unity: *mut fr_t,
