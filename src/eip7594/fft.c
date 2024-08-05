@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "fft.h"
-
+#include "eip7594/fft.h"
 #include "common/helpers.h"
 #include "eip4844/blob.h"
 

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "helpers.h"
-#include "alloc.h"
+#include "common/helpers.h"
+#include "common/alloc.h"
 
 #include <stdlib.h> /* For NULL */
 #include <string.h> /* For memcpy */

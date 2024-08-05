@@ -18,7 +18,7 @@
 
 #include "blst.h"
 
-#include <stdbool.h>
+#include <stdbool.h> /* For bool */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -32,6 +32,9 @@ typedef blst_fr fr_t; /**< Internal Fr field element type. */
 
 /** The number of bits in a BLS scalar field element. */
 #define BITS_PER_FIELD_ELEMENT 255
+
+/** The number of bytes in a BLS scalar field element. */
+#define BYTES_PER_FIELD_ELEMENT 32
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants

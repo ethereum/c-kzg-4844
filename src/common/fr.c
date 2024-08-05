@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "fr.h"
+#include "common/fr.h"
 #include "common/bytes.h"
 
 #include <inttypes.h> /* For uint*_t */

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "fr.h"
-#include "g1.h"
-#include "ret.h"
+#include "common/fr.h"
+#include "common/g1.h"
+#include "common/ret.h"
 
 #include <inttypes.h> /* For uint*_t */
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "api.h"
+#include "setup/api.h"
 #include "common/alloc.h"
 #include "common/helpers.h"
 #include "eip7594/api.h"

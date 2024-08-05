@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#include "lincomb.h"
-#include "alloc.h"
+#include "common/lincomb.h"
+#include "common/alloc.h"
 
 #include <stdlib.h> /* For NULL */
 

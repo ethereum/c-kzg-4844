@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "api.h"
+#include "eip4844/api.h"
 #include "common/alloc.h"
 #include "common/fr.h"
 #include "common/g1.h"

@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "fr.h"
-#include "g1.h"
-#include "g2.h"
+#include "common/fr.h"
+#include "common/g1.h"
+#include "common/g2.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types

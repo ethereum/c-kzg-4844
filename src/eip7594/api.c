@@ -20,7 +20,7 @@
 #include "common/fr.h"
 #include "common/helpers.h"
 #include "common/lincomb.h"
-#include "fft.h"
+#include "eip7594/fft.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */

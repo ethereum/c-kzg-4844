@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "g1.h"
-#include "g2.h"
-#include "ret.h"
+#include "common/g1.h"
+#include "common/g2.h"
+#include "common/ret.h"
 
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
