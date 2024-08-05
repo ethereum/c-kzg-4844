@@ -17,7 +17,6 @@
 #pragma once
 
 #include "common/blob.h"
-#include "common/constants.h"
 #include "common/ret.h"
 #include "common/settings.h"
 #include "common/types.h"

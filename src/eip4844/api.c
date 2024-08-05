@@ -31,6 +31,9 @@
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** Length of the domain string. */
+#define DOMAIN_STR_LENGTH 16
+
 /* Input size to the Fiat-Shamir challenge computation. */
 #define CHALLENGE_INPUT_SIZE (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)
 

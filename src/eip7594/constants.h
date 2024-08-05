@@ -22,6 +22,9 @@
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** Length of the domain string. */
+#define DOMAIN_STR_LENGTH 16
+
 /** The number of field elements in a cell. */
 #define FIELD_ELEMENTS_PER_CELL 64
 

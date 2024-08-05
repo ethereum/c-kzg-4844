@@ -18,7 +18,6 @@
 
 #include "common/blob.h"
 #include "common/bytes.h"
-#include "common/constants.h"
 #include "common/settings.h"
 #include "common/types.h"
 
