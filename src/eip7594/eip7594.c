@@ -91,6 +91,11 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
+    /* Ensure the upper half of the fields are zero */
+    for (size_t i = FIELD_ELEMENTS_PER_BLOB; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
+        poly_monomial[i] = FR_ZERO;
+    }
+
     if (cells != NULL) {
         /* Allocate space for our data points */
         ret = new_fr_array(&data_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
