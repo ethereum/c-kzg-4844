@@ -71,6 +71,21 @@ uint32_t reverse_bits(uint32_t n) {
 }
 
 /**
+ * Reverse the low-order bits in a 32-bit integer.
+ *
+ * @param[in]   n       To reverse `b` bits, set `n = 2 ^ b`
+ * @param[in]   value   The bits to be reversed
+ *
+ * @return The reversal of the lowest log_2(n) bits of the input value.
+ *
+ * @remark n must be a power of two.
+ */
+uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
+    size_t unused_bit_len = 32 - log2_pow2(n);
+    return reverse_bits(value) >> unused_bit_len;
+}
+
+/**
  * Reorder an array in reverse bit order of its indices.
  *
  * @param[in,out] values The array, which is re-ordered in-place
