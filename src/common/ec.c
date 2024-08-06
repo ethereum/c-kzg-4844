@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/g1.h"
+#include "common/ec.h"
 #include "common/bytes.h"
 
 #include <stdio.h> /* For printf */

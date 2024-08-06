@@ -16,9 +16,8 @@
 
 #include "common/alloc.c"
 #include "common/bytes.c"
+#include "common/ec.c"
 #include "common/fr.c"
-#include "common/g1.c"
-#include "common/g2.c"
 #include "common/helpers.c"
 #include "common/lincomb.c"
 #include "common/ret.c"

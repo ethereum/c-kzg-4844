@@ -15,9 +15,8 @@
  */
 
 #include "common/alloc.h"
+#include "common/ec.h"
 #include "common/fr.h"
-#include "common/g1.h"
-#include "common/g2.h"
 
 #include <stdbool.h> /* For bool */
 #include <stddef.h>  /* For size_t & NULL */
