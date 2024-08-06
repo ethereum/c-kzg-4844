@@ -91,7 +91,8 @@ outside the bindings.
 The source code of C-KZG-4844 was audited by [Sigma
 Prime](https://sigmaprime.io/) in June 2023. You can find the [audit
 report](https://github.com/ethereum/c-kzg-4844/blob/main/doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
-in the `doc/audit/` directory.
+in the `doc/audit/` directory. Notably, the audit was for commit `fd24cf8` and 
+code introduced for EIP-7594 *has not been audited yet*. 
 
 ### Why C?
 
