@@ -15,8 +15,47 @@
  */
 
 #include "eip7594/fft.h"
+#include "common/alloc.h"
 #include "common/utils.h"
 #include "eip4844/blob.h"
+#include "eip7594/poly.h"
+
+#include <string.h> /* For memcpy */
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * The coset shift factor for the cell recovery code.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t RECOVERY_SHIFT_FACTOR = {
+    0x0000000efffffff1L,
+    0x17e363d300189c0fL,
+    0xff9c57876f8457b0L,
+    0x351332208fc5a8c4L,
+};
+
+/**
+ * The inverse of RECOVERY_SHIFT_FACTOR.
+ *
+ *   fr_t a;
+ *   fr_from_uint64(&a, 7);
+ *   fr_div(&a, &FR_ONE, &a);
+ *   for (size_t i = 0; i < 4; i++)
+ *       printf("%#018llxL,\n", a.l[i]);
+ */
+static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
+    0xdb6db6dadb6db6dcL,
+    0xe6b5824adb6cc6daL,
+    0xf8b356e005810db9L,
+    0x66d0f1e660ec4796L,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // FFT Functions for Field Elements
@@ -199,4 +238,61 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     }
 
     return C_KZG_OK;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// FFT Functions for Cosets
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Do an FFT over a coset of the roots of unity.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
+ */
+C_KZG_RET coset_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+    C_KZG_RET ret;
+    fr_t *in_shifted = NULL;
+
+    /* Create some room to shift the polynomial */
+    ret = new_fr_array(&in_shifted, n);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Shift the poly */
+    memcpy(in_shifted, in, n * sizeof(fr_t));
+    shift_poly(in_shifted, n, &RECOVERY_SHIFT_FACTOR);
+
+    ret = fr_fft(out, in_shifted, n, s);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(in_shifted);
+    return ret;
+}
+
+/**
+ * Do an inverse FFT over a coset of the roots of unity.
+ *
+ * @param[out]  out The results (array of length n)
+ * @param[in]   in  The input data (array of length n)
+ * @param[in]   n   Length of the arrays
+ * @param[in]   s   The trusted setup
+ *
+ * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we use its inverse to
+ * implement the IFFT.
+ */
+C_KZG_RET coset_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+    C_KZG_RET ret;
+
+    ret = fr_ifft(out, in, n, s);
+    if (ret != C_KZG_OK) goto out;
+
+    shift_poly(out, n, &INV_RECOVERY_SHIFT_FACTOR);
+
+out:
+    return ret;
 }

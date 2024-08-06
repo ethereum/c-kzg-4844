@@ -25,4 +25,5 @@
 #include "eip7594/cell.c"
 #include "eip7594/eip7594.c"
 #include "eip7594/fft.c"
+#include "eip7594/poly.c"
 #include "setup/setup.c"

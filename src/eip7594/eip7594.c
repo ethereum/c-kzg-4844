@@ -20,9 +20,9 @@
 #include "common/lincomb.h"
 #include "common/utils.h"
 #include "eip7594/fft.h"
+#include "eip7594/poly.h"
 
 #include <assert.h> /* For assert */
-#include <stdlib.h> /* For NULL */
 #include <string.h> /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -38,37 +38,6 @@
 
 /** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGCBATCH__V1_";
-
-/**
- * The coset shift factor for the cell recovery code.
- *
- *   fr_t a;
- *   fr_from_uint64(&a, 7);
- *   for (size_t i = 0; i < 4; i++)
- *       printf("%#018llxL,\n", a.l[i]);
- */
-static const fr_t RECOVERY_SHIFT_FACTOR = {
-    0x0000000efffffff1L,
-    0x17e363d300189c0fL,
-    0xff9c57876f8457b0L,
-    0x351332208fc5a8c4L,
-};
-
-/**
- * The inverse of RECOVERY_SHIFT_FACTOR.
- *
- *   fr_t a;
- *   fr_from_uint64(&a, 7);
- *   fr_div(&a, &FR_ONE, &a);
- *   for (size_t i = 0; i < 4; i++)
- *       printf("%#018llxL,\n", a.l[i]);
- */
-static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
-    0xdb6db6dadb6db6dcL,
-    0xe6b5824adb6cc6daL,
-    0xf8b356e005810db9L,
-    0x66d0f1e660ec4796L,
-};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Helper Functions
@@ -227,77 +196,6 @@ out:
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Cell Recovery
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Shift a polynomial in place.
- *
- * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that
- * evaluates at `x * shift_factor` rather than `x`.
- *
- * @param[in,out]   p            The polynomial coefficients to be scaled
- * @param[in]       len          Length of the polynomial coefficients
- * @param[in]       shift_factor Shift factor
- */
-static void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
-    fr_t factor_power = FR_ONE;
-    for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, shift_factor);
-        blst_fr_mul(&p[i], &p[i], &factor_power);
-    }
-}
-
-/**
- * Do an FFT over a coset of the roots of unity.
- *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
- * @param[in]   n   Length of the arrays
- * @param[in]   s   The trusted setup
- *
- * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
- */
-static C_KZG_RET coset_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
-    C_KZG_RET ret;
-    fr_t *in_shifted = NULL;
-
-    /* Create some room to shift the polynomial */
-    ret = new_fr_array(&in_shifted, n);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Shift the poly */
-    memcpy(in_shifted, in, n * sizeof(fr_t));
-    shift_poly(in_shifted, n, &RECOVERY_SHIFT_FACTOR);
-
-    ret = fr_fft(out, in_shifted, n, s);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    c_kzg_free(in_shifted);
-    return ret;
-}
-
-/**
- * Do an inverse FFT over a coset of the roots of unity.
- *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
- * @param[in]   n   Length of the arrays
- * @param[in]   s   The trusted setup
- *
- * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we use its inverse to
- * implement the IFFT.
- */
-static C_KZG_RET coset_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
-    C_KZG_RET ret;
-
-    ret = fr_ifft(out, in, n, s);
-    if (ret != C_KZG_OK) goto out;
-
-    shift_poly(out, n, &INV_RECOVERY_SHIFT_FACTOR);
-
-out:
-    return ret;
-}
 
 /**
  * Helper function to check if a uint64 value is in an array.
@@ -483,45 +381,6 @@ out:
     c_kzg_free(reconstructed_poly_coeff);
     c_kzg_free(vanishing_poly_coeff);
     c_kzg_free(cells_brp);
-    return ret;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-// Polynomial Conversion Functions
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Bit reverses and converts a polynomial in lagrange form to monomial form.
- *
- * @param[out]  monomial    The result, an array of `len` fields
- * @param[in]   lagrange    The input poly, an array of `len` fields
- * @param[in]   len         The length of both polynomials
- * @param[in]   s           The trusted setup
- *
- * @remark This method converts a lagrange-form polynomial to a monomial-form polynomial, by inverse
- * FFTing the bit-reverse-permuted lagrange polynomial.
- */
-static C_KZG_RET poly_lagrange_to_monomial(
-    fr_t *monomial_out, const fr_t *lagrange, size_t len, const KZGSettings *s
-) {
-    C_KZG_RET ret;
-    fr_t *lagrange_brp = NULL;
-
-    /* Allocate space for the intermediate BRP poly */
-    ret = new_fr_array(&lagrange_brp, len);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Copy the values and perform a bit reverse permutation */
-    memcpy(lagrange_brp, lagrange, sizeof(fr_t) * len);
-    ret = bit_reversal_permutation(lagrange_brp, sizeof(fr_t), len);
-    if (ret != C_KZG_OK) goto out;
-
-    /* Perform an inverse FFT on the BRP'd polynomial */
-    ret = fr_ifft(monomial_out, lagrange_brp, len, s);
-    if (ret != C_KZG_OK) goto out;
-
-out:
-    c_kzg_free(lagrange_brp);
     return ret;
 }
 
