@@ -18,8 +18,8 @@
 
 #include "common/bytes.h"
 #include "common/ret.h"
-#include "eip4844/api.h"
 #include "eip4844/blob.h"
+#include "eip4844/eip4844.h"
 #include "eip7594/cell.h"
 #include "setup/settings.h"
 

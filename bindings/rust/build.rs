@@ -91,7 +91,9 @@ fn make_bindings(
         .allowlist_var("BYTES_PER_.*")
         .allowlist_var("FIELD_ELEMENTS_PER_.*")
         .allowlist_var("CELLS_PER_EXT_BLOB")
-        .allowlist_file(".*api.h")
+        .allowlist_file(".*eip4844.h")
+        .allowlist_file(".*eip7594.h")
+        .allowlist_file(".*setup.h")
         /*
          * Cleanup instructions.
          */

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#include "api.h"
-
+#include "eip7594/eip7594.h"
 #include "common/alloc.h"
 #include "common/fr.h"
 #include "common/lincomb.h"

@@ -49,6 +49,7 @@ pub struct blst_p2 {
 }
 pub type fr_t = blst_fr;
 pub type g1_t = blst_p1;
+pub type g2_t = blst_p2;
 #[repr(C)]
 #[doc = " The common return type for all routines in which something can go wrong."]
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
@@ -74,7 +75,12 @@ pub struct Bytes32 {
 pub struct Bytes48 {
     bytes: [u8; 48usize],
 }
-pub type g2_t = blst_p2;
+#[doc = " A basic blob data."]
+#[repr(C)]
+#[derive(Debug, Hash, PartialEq, Eq)]
+pub struct Blob {
+    bytes: [u8; 131072usize],
+}
 #[doc = " Stores the setup and parameters needed for computing KZG proofs."]
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -99,12 +105,6 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
-}
-#[doc = " A basic blob data."]
-#[repr(C)]
-#[derive(Debug, Hash, PartialEq, Eq)]
-pub struct Blob {
-    bytes: [u8; 131072usize],
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]

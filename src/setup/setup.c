@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#include "setup/api.h"
+#include "setup/setup.h"
 #include "common/alloc.h"
 #include "common/utils.h"
-#include "eip7594/api.h"
+#include "eip7594/eip7594.h"
 #include "eip7594/fft.h"
 
 #include <assert.h>   /* For assert */
