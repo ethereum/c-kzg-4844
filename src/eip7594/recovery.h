@@ -39,4 +39,3 @@ C_KZG_RET recover_cells(
 #ifdef __cplusplus
 }
 #endif
-
