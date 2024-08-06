@@ -14,24 +14,45 @@
  * limitations under the License.
  */
 
-#include "common.h"
-#include "eip4844.h"
-#include "eip7594.h"
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "common/bytes.h"
+#include "common/ret.h"
+#include "eip4844/blob.h"
+#include "eip4844/eip4844.h"
+#include "eip7594/cell.h"
+#include "setup/settings.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void print_bytes32(const Bytes32 *bytes);
-void print_bytes48(const Bytes48 *bytes);
-void print_fr(const fr_t *f);
-void print_g1(const g1_t *g);
-void print_blob(const Blob *blob);
-void print_cell(const Cell *cell);
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+C_KZG_RET compute_cells_and_kzg_proofs(
+    Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
+);
+
+C_KZG_RET recover_cells_and_kzg_proofs(
+    Cell *recovered_cells,
+    KZGProof *recovered_proofs,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    size_t num_cells,
+    const KZGSettings *s
+);
+
+C_KZG_RET verify_cell_kzg_proof_batch(
+    bool *ok,
+    const Bytes48 *commitments_bytes,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    const Bytes48 *proofs_bytes,
+    size_t num_cells,
+    const KZGSettings *s
+);
 
 #ifdef __cplusplus
 }

@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-#include "eip4844.h"
-#include "common.h"
-
-#include "blst.h"
+#include "eip4844/eip4844.h"
+#include "common/alloc.h"
+#include "common/ec.h"
+#include "common/fr.h"
+#include "common/lincomb.h"
+#include "common/ret.h"
+#include "common/utils.h"
+#include "setup/settings.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
@@ -26,6 +30,9 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** Length of the domain string. */
+#define DOMAIN_STR_LENGTH 16
 
 /* Input size to the Fiat-Shamir challenge computation. */
 #define CHALLENGE_INPUT_SIZE (DOMAIN_STR_LENGTH + 16 + BYTES_PER_BLOB + BYTES_PER_COMMITMENT)

@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-#include "setup.h"
-#include "common.h"
-#include "eip7594.h"
-#include "fft.h"
+#include "setup/setup.h"
+#include "common/alloc.h"
+#include "common/utils.h"
+#include "eip7594/eip7594.h"
+#include "eip7594/fft.h"
 
 #include <assert.h>   /* For assert */
 #include <inttypes.h> /* For SCNu64 */
@@ -40,6 +41,9 @@
 
 /** The number of g2 points in a trusted setup. */
 #define NUM_G2_POINTS 65
+
+/** Returns number of elements in a statically defined array. */
+#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Trusted Setup Functions

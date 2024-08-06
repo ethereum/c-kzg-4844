@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/bytes.c"
-#include "common/ec.c"
-#include "common/fr.c"
-#include "common/lincomb.c"
-#include "common/utils.c"
-#include "eip4844/blob.c"
-#include "eip4844/eip4844.c"
-#include "eip7594/cell.c"
-#include "eip7594/eip7594.c"
-#include "eip7594/fft.c"
-#include "eip7594/fk20.c"
-#include "eip7594/poly.c"
-#include "eip7594/recovery.c"
-#include "setup/setup.c"
+#pragma once
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Types
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/** The common return type for all routines in which something can go wrong. */
+typedef enum {
+    C_KZG_OK = 0,  /**< Success! */
+    C_KZG_BADARGS, /**< The supplied data is invalid in some way. */
+    C_KZG_ERROR,   /**< Internal error - this should never occur. */
+    C_KZG_MALLOC,  /**< Could not allocate memory. */
+} C_KZG_RET;

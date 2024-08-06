@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/bytes.c"
-#include "common/ec.c"
-#include "common/fr.c"
-#include "common/lincomb.c"
-#include "common/utils.c"
-#include "eip4844/blob.c"
-#include "eip4844/eip4844.c"
-#include "eip7594/cell.c"
-#include "eip7594/eip7594.c"
-#include "eip7594/fft.c"
-#include "eip7594/fk20.c"
-#include "eip7594/poly.c"
-#include "eip7594/recovery.c"
-#include "setup/setup.c"
+#include "eip7594/cell.h"
+#include "common/bytes.h"
+
+#include <stdio.h> /* For printf */
+
+/**
+ * Print Cell to the console.
+ *
+ * @param[in]   cell    The Cell to print
+ */
+void print_cell(const Cell *cell) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        Bytes32 *field = (Bytes32 *)&cell->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field);
+    }
+}

@@ -16,62 +16,43 @@
 
 #pragma once
 
-#include "common.h"
+#include "common/fr.h"
+#include "common/ret.h"
 
-#include <stdint.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <inttypes.h> /* For uint*_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** The number of field elements in a cell. */
-#define FIELD_ELEMENTS_PER_CELL 64
+/** The number of field elements in a blob. */
+#define FIELD_ELEMENTS_PER_BLOB 4096
 
-/** The number of cells in an extended blob. */
-#define CELLS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL)
+/** The number of field elements in an extended blob */
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
-/** The number of bytes in a single cell. */
-#define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
+/** The number of bytes in a blob. */
+#define BYTES_PER_BLOB (FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/** A single cell for a blob. */
+/** A basic blob data. */
 typedef struct {
-    uint8_t bytes[BYTES_PER_CELL];
-} Cell;
+    uint8_t bytes[BYTES_PER_BLOB];
+} Blob;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-C_KZG_RET compute_cells_and_kzg_proofs(
-    Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
-);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-C_KZG_RET recover_cells_and_kzg_proofs(
-    Cell *recovered_cells,
-    KZGProof *recovered_proofs,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    size_t num_cells,
-    const KZGSettings *s
-);
-
-C_KZG_RET verify_cell_kzg_proof_batch(
-    bool *ok,
-    const Bytes48 *commitments_bytes,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    const Bytes48 *proofs_bytes,
-    size_t num_cells,
-    const KZGSettings *s
-);
+C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob);
+void print_blob(const Blob *blob);
 
 #ifdef __cplusplus
 }

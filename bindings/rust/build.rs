@@ -22,6 +22,7 @@ fn main() {
         cc.flag("/std:c11");
     }
 
+    cc.include(c_src_dir.clone());
     cc.include(blst_headers_dir.clone());
     cc.warnings(false);
     cc.file(c_src_dir.join("ckzg.c"));
@@ -36,6 +37,7 @@ fn main() {
         let bindings_out_path = root_dir.join("bindings/rust/src/bindings/generated.rs");
         make_bindings(
             header_path.to_str().expect("valid header path"),
+            c_src_dir.to_str().expect("valid c src path"),
             blst_headers_dir.to_str().expect("valid blst header path"),
             &bindings_out_path,
         );
@@ -46,7 +48,12 @@ fn main() {
 }
 
 #[cfg(feature = "generate-bindings")]
-fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &std::path::Path) {
+fn make_bindings(
+    header_path: &str,
+    c_src_dir: &str,
+    blst_headers_dir: &str,
+    bindings_out_path: &std::path::Path,
+) {
     use bindgen::Builder;
 
     #[derive(Debug)]
@@ -77,13 +84,15 @@ fn make_bindings(header_path: &str, blst_headers_dir: &str, bindings_out_path: &
          * Header definitions.
          */
         .header(header_path)
+        .clang_args([format!("-I{c_src_dir}")])
         .clang_args([format!("-I{blst_headers_dir}")])
         // Get bindings for functions defined in the EIP files.
         .allowlist_type("C_KZG_RET")
         .allowlist_var("BYTES_PER_.*")
-        .allowlist_var("FIELD_ELEMENTS_PER_BLOB")
-        .allowlist_var("FIELD_ELEMENTS_PER_EXT_BLOB")
-        .allowlist_file(".*eip.*.h")
+        .allowlist_var("FIELD_ELEMENTS_PER_.*")
+        .allowlist_var("CELLS_PER_EXT_BLOB")
+        .allowlist_file(".*eip4844.h")
+        .allowlist_file(".*eip7594.h")
         .allowlist_file(".*setup.h")
         /*
          * Cleanup instructions.

@@ -14,21 +14,29 @@
  * limitations under the License.
  */
 
-#include "common.h"
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "common/ec.h"
+#include "common/fr.h"
+#include "common/ret.h"
+#include "setup/settings.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s);
+
+C_KZG_RET coset_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
+C_KZG_RET coset_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 
 #ifdef __cplusplus
 }

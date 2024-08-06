@@ -31,20 +31,13 @@ build: install clean
 	@# Prepare the dependencies directory
 	@mkdir -p deps/c-kzg
 	@cp -r ../../blst deps
-	@# Copy source files
+	@# Copy files
 	@cp ../../src/ckzg.c deps/c-kzg
-	@cp ../../src/common.c deps/c-kzg
-	@cp ../../src/eip4844.c deps/c-kzg
-	@cp ../../src/eip7594.c deps/c-kzg
-	@cp ../../src/fft.c deps/c-kzg
-	@cp ../../src/setup.c deps/c-kzg
-	@# Copy header files
 	@cp ../../src/ckzg.h deps/c-kzg
-	@cp ../../src/common.h deps/c-kzg
-	@cp ../../src/eip4844.h deps/c-kzg
-	@cp ../../src/eip7594.h deps/c-kzg
-	@cp ../../src/fft.h deps/c-kzg
-	@cp ../../src/setup.h deps/c-kzg
+	@cp -r ../../src/common deps/c-kzg
+	@cp -r ../../src/eip4844 deps/c-kzg
+	@cp -r ../../src/eip7594 deps/c-kzg
+	@cp -r ../../src/setup deps/c-kzg
 	@# Copy trusted setup
 	@cp ../../src/trusted_setup.txt deps/c-kzg
 	@# Build the bindings

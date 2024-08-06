@@ -14,18 +14,28 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/bytes.c"
-#include "common/ec.c"
-#include "common/fr.c"
-#include "common/lincomb.c"
-#include "common/utils.c"
-#include "eip4844/blob.c"
-#include "eip4844/eip4844.c"
-#include "eip7594/cell.c"
-#include "eip7594/eip7594.c"
-#include "eip7594/fft.c"
-#include "eip7594/fk20.c"
-#include "eip7594/poly.c"
-#include "eip7594/recovery.c"
-#include "setup/setup.c"
+#pragma once
+
+#include "common/fr.h"
+#include "common/ret.h"
+#include "setup/settings.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Public Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+C_KZG_RET recover_cells(
+    fr_t *reconstructed_data_out,
+    const uint64_t *cell_indices,
+    size_t num_cells,
+    fr_t *cells,
+    const KZGSettings *s
+);
+
+#ifdef __cplusplus
+}
+#endif

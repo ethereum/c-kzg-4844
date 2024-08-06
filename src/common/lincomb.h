@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-#include "common/alloc.c"
-#include "common/bytes.c"
-#include "common/ec.c"
-#include "common/fr.c"
-#include "common/lincomb.c"
-#include "common/utils.c"
-#include "eip4844/blob.c"
-#include "eip4844/eip4844.c"
-#include "eip7594/cell.c"
-#include "eip7594/eip7594.c"
-#include "eip7594/fft.c"
-#include "eip7594/fk20.c"
-#include "eip7594/poly.c"
-#include "eip7594/recovery.c"
-#include "setup/setup.c"
+#pragma once
+
+#include "common/ec.h"
+#include "common/fr.h"
+#include "common/ret.h"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Public Functions
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
+C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
+
+#ifdef __cplusplus
+}
+#endif
