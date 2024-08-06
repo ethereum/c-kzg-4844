@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "common/helpers.h"
+#include "common/utils.h"
 #include "common/alloc.h"
 
 #include <stdlib.h> /* For NULL */

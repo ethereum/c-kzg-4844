@@ -18,10 +18,10 @@
 #include "common/alloc.h"
 #include "common/ec.h"
 #include "common/fr.h"
-#include "common/helpers.h"
 #include "common/lincomb.h"
 #include "common/ret.h"
 #include "common/settings.h"
+#include "common/utils.h"
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
