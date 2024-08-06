@@ -18,10 +18,10 @@
 
 #include "common/bytes.h"
 #include "common/ret.h"
-#include "common/settings.h"
 #include "eip4844/api.h"
 #include "eip4844/blob.h"
 #include "eip7594/cell.h"
+#include "setup/settings.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions

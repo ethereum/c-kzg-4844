@@ -16,7 +16,7 @@
 #pragma once
 
 #include "common/ret.h"
-#include "common/settings.h"
+#include "setup/settings.h"
 
 #include <stdio.h> /* For FILE */
 

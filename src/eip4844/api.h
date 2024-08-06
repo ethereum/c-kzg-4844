@@ -17,8 +17,8 @@
 #pragma once
 
 #include "common/bytes.h"
-#include "common/settings.h"
 #include "eip4844/blob.h"
+#include "setup/settings.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types

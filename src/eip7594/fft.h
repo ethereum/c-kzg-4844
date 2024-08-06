@@ -19,7 +19,7 @@
 #include "common/ec.h"
 #include "common/fr.h"
 #include "common/ret.h"
-#include "common/settings.h"
+#include "setup/settings.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
