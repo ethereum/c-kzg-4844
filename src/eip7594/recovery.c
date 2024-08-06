@@ -135,6 +135,11 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     );
     if (ret != C_KZG_OK) goto out;
 
+    /* Zero out all the coefficients */
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
+        vanishing_poly[i] = FR_ZERO;
+    }
+
     /*
      * For each root \omega^i in `short_vanishing_poly`, we compute a polynomial that has roots at
      *

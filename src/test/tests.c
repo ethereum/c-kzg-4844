@@ -131,7 +131,6 @@ static void test_c_kzg_malloc__succeeds_size_greater_than_zero(void) {
     bool is_null = ptr == NULL;
     c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ASSERT("valid pointer", ptr != NULL);
     ASSERT_EQUALS(is_null, false);
 }
 
