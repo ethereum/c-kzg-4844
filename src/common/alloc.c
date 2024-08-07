@@ -21,10 +21,6 @@
 #include <stdbool.h> /* For bool */
 #include <stddef.h>  /* For size_t & NULL */
 #include <stdlib.h>  /* For malloc */
-#include <string.h>  /* For memset */
-
-/** Enable to test non-zeroized allocations. */
-#define MEMSET_TO_FF 0
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Memory Allocation
@@ -42,9 +38,6 @@ C_KZG_RET c_kzg_malloc(void **out, size_t size) {
     *out = NULL;
     if (size == 0) return C_KZG_BADARGS;
     *out = malloc(size);
-#if MEMSET_TO_FF
-    if (*out != NULL) memset(*out, 0xff, size);
-#endif /* MEMSET_TO_FF */
     return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
 }
 
@@ -61,9 +54,6 @@ C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
     *out = NULL;
     if (count == 0 || size == 0) return C_KZG_BADARGS;
     *out = calloc(count, size);
-#if MEMSET_TO_FF
-    if (*out != NULL) memset(*out, 0xff, count * size);
-#endif /* MEMSET_TO_FF */
     return *out != NULL ? C_KZG_OK : C_KZG_MALLOC;
 }
 
