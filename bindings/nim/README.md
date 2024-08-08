@@ -24,7 +24,7 @@ nimble install unittest2
 nimble install yaml
 ```
 
-Run the tests from folder `bindings\nim`:
+Run the tests from folder `bindings/nim`:
 
 ```
 nim test

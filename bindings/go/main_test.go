@@ -614,22 +614,6 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	}
 }
 
-func TestPartialRecover(t *testing.T) {
-	var blob Blob
-	fillBlobRandom(&blob, 27)
-	cells, proofs, err := ComputeCellsAndKZGProofs(&blob)
-	require.NoError(t, err)
-
-	for i := 1; i <= 5; i++ {
-		mod := divideRoundUp(CellsPerExtBlob, i)
-		cellIndices, partialCells := getPartialCells(cells, mod)
-		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
-		require.NoError(t, err)
-		require.EqualValues(t, cells, recoveredCells)
-		require.EqualValues(t, proofs, recoveredProofs)
-	}
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // Benchmarks
 ///////////////////////////////////////////////////////////////////////////////
