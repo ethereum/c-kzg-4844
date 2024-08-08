@@ -48,7 +48,7 @@ ifeq ($(JAVA_HOME),)
   $(error JAVA_HOME is not set and autodetection failed)
 endif
 
-all: build test benchmark
+all: build test
 
 .PHONY: build
 build:
@@ -58,8 +58,3 @@ build:
 .PHONY: test
 test:
 	${GRADLE_COMMAND} clean check
-
-.PHONY: benchmark
-benchmark:
-	${GRADLE_COMMAND} clean jmh
-

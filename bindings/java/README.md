@@ -25,16 +25,6 @@ the [Makefile](./Makefile).
 make test
 ```
 
-## Benchmark
-
-JMH is used for benchmarking.
-See [CKZG4844JNIBenchmark.java](src/jmh/java/ethereum/ckzg4844/CKZG4844JNIBenchmark.java) for more
-information.
-
-```bash
-make benchmark
-```
-
 ## Library
 
 The library which uses this binding and publishes a package to a public maven repo
