@@ -32,7 +32,7 @@
  * @param[in]   stride  The stride
  */
 static C_KZG_RET toeplitz_coeffs_stride(
-    fr_t *out, const fr_t *in, size_t n, uint64_t offset, uint64_t stride
+    fr_t *out, const fr_t *in, uint64_t n, uint64_t offset, uint64_t stride
 ) {
     uint64_t k, k2;
 
@@ -63,7 +63,7 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
-C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s) {
+C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, uint64_t n, const KZGSettings *s) {
     C_KZG_RET ret;
     uint64_t k, k2;
 

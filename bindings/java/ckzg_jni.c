@@ -33,8 +33,8 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code,
   (*env)->Throw(env, exception);
 }
 
-void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size,
-                                  size_t expected_size) {
+void throw_invalid_size_exception(JNIEnv *env, const char *prefix,
+                                  uint64_t size, uint64_t expected_size) {
   char message[100];
   snprintf(message, sizeof(message), "%s Expected %zu bytes but got %zu.",
            prefix, expected_size, size);
@@ -73,7 +73,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup__Ljava_lang_String_2J(
     return;
   }
 
-  size_t precompute_native = (size_t)precompute;
+  uint64_t precompute_native = (uint64_t)precompute;
   C_KZG_RET ret = load_trusted_setup_file(settings, f, precompute_native);
 
   (*env)->ReleaseStringUTFChars(env, file, file_native);
@@ -98,12 +98,12 @@ Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3B_3BJ(
     return;
   }
 
-  size_t g1_monomial_bytes_count =
-      (size_t)(*env)->GetArrayLength(env, g1MonomialBytes);
-  size_t g1_lagrange_bytes_count =
-      (size_t)(*env)->GetArrayLength(env, g1LagrangeBytes);
-  size_t g2_monomial_bytes_count =
-      (size_t)(*env)->GetArrayLength(env, g2MonomialBytes);
+  uint64_t g1_monomial_bytes_count =
+      (uint64_t)(*env)->GetArrayLength(env, g1MonomialBytes);
+  uint64_t g1_lagrange_bytes_count =
+      (uint64_t)(*env)->GetArrayLength(env, g1LagrangeBytes);
+  uint64_t g2_monomial_bytes_count =
+      (uint64_t)(*env)->GetArrayLength(env, g2MonomialBytes);
 
   settings = allocate_settings(env);
 
@@ -113,7 +113,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_loadTrustedSetup___3B_3B_3BJ(
       (*env)->GetByteArrayElements(env, g1LagrangeBytes, NULL);
   jbyte *g2_monomial_bytes_native =
       (*env)->GetByteArrayElements(env, g2MonomialBytes, NULL);
-  size_t precompute_native = (size_t)precompute;
+  uint64_t precompute_native = (uint64_t)precompute;
 
   C_KZG_RET ret = load_trusted_setup(
       settings, (uint8_t *)g1_monomial_bytes_native, g1_monomial_bytes_count,
@@ -154,7 +154,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env,
     return NULL;
   }
 
-  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  uint64_t blob_size = (uint64_t)(*env)->GetArrayLength(env, blob);
   if (blob_size != BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
                                  BYTES_PER_BLOB);
@@ -189,14 +189,14 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
     return NULL;
   }
 
-  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  uint64_t blob_size = (uint64_t)(*env)->GetArrayLength(env, blob);
   if (blob_size != BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
                                  BYTES_PER_BLOB);
     return NULL;
   }
 
-  size_t z_bytes_size = (size_t)(*env)->GetArrayLength(env, z_bytes);
+  uint64_t z_bytes_size = (uint64_t)(*env)->GetArrayLength(env, z_bytes);
   if (z_bytes_size != BYTES_PER_FIELD_ELEMENT) {
     throw_invalid_size_exception(env, "Invalid z size.", z_bytes_size,
                                  BYTES_PER_FIELD_ELEMENT);
@@ -261,15 +261,15 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(
     return NULL;
   }
 
-  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  uint64_t blob_size = (uint64_t)(*env)->GetArrayLength(env, blob);
   if (blob_size != BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
                                  BYTES_PER_BLOB);
     return NULL;
   }
 
-  size_t commitment_bytes_size =
-      (size_t)(*env)->GetArrayLength(env, commitment_bytes);
+  uint64_t commitment_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, commitment_bytes);
   if (commitment_bytes_size != BYTES_PER_COMMITMENT) {
     throw_invalid_size_exception(env, "Invalid commitment size.",
                                  commitment_bytes_size, BYTES_PER_COMMITMENT);
@@ -309,29 +309,30 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(
     return 0;
   }
 
-  size_t commitment_bytes_size =
-      (size_t)(*env)->GetArrayLength(env, commitment_bytes);
+  uint64_t commitment_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, commitment_bytes);
   if (commitment_bytes_size != BYTES_PER_COMMITMENT) {
     throw_invalid_size_exception(env, "Invalid commitment size.",
                                  commitment_bytes_size, BYTES_PER_COMMITMENT);
     return 0;
   }
 
-  size_t z_bytes_size = (size_t)(*env)->GetArrayLength(env, z_bytes);
+  uint64_t z_bytes_size = (uint64_t)(*env)->GetArrayLength(env, z_bytes);
   if (z_bytes_size != BYTES_PER_FIELD_ELEMENT) {
     throw_invalid_size_exception(env, "Invalid z size.", z_bytes_size,
                                  BYTES_PER_FIELD_ELEMENT);
     return 0;
   }
 
-  size_t y_bytes_size = (size_t)(*env)->GetArrayLength(env, y_bytes);
+  uint64_t y_bytes_size = (uint64_t)(*env)->GetArrayLength(env, y_bytes);
   if (y_bytes_size != BYTES_PER_FIELD_ELEMENT) {
     throw_invalid_size_exception(env, "Invalid y size.", y_bytes_size,
                                  BYTES_PER_FIELD_ELEMENT);
     return 0;
   }
 
-  size_t proof_bytes_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
+  uint64_t proof_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, proof_bytes);
   if (proof_bytes_size != BYTES_PER_PROOF) {
     throw_invalid_size_exception(env, "Invalid proof size.", proof_bytes_size,
                                  BYTES_PER_PROOF);
@@ -375,22 +376,23 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(
     return 0;
   }
 
-  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  uint64_t blob_size = (uint64_t)(*env)->GetArrayLength(env, blob);
   if (blob_size != BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
                                  BYTES_PER_BLOB);
     return 0;
   }
 
-  size_t commitment_bytes_size =
-      (size_t)(*env)->GetArrayLength(env, commitment_bytes);
+  uint64_t commitment_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, commitment_bytes);
   if (commitment_bytes_size != BYTES_PER_COMMITMENT) {
     throw_invalid_size_exception(env, "Invalid commitment size.",
                                  commitment_bytes_size, BYTES_PER_COMMITMENT);
     return 0;
   }
 
-  size_t proof_bytes_size = (size_t)(*env)->GetArrayLength(env, proof_bytes);
+  uint64_t proof_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, proof_bytes);
   if (proof_bytes_size != BYTES_PER_PROOF) {
     throw_invalid_size_exception(env, "Invalid proof size.", proof_bytes_size,
                                  BYTES_PER_PROOF);
@@ -431,16 +433,16 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
     return 0;
   }
 
-  size_t count_native = (size_t)count;
-  size_t blobs_size = (size_t)(*env)->GetArrayLength(env, blobs);
+  uint64_t count_native = (uint64_t)count;
+  uint64_t blobs_size = (uint64_t)(*env)->GetArrayLength(env, blobs);
   if (blobs_size != count_native * BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blobs size.", blobs_size,
                                  count_native * BYTES_PER_BLOB);
     return 0;
   }
 
-  size_t commitments_bytes_size =
-      (size_t)(*env)->GetArrayLength(env, commitments_bytes);
+  uint64_t commitments_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, commitments_bytes);
   if (commitments_bytes_size != count_native * BYTES_PER_COMMITMENT) {
     throw_invalid_size_exception(env, "Invalid commitments size.",
                                  commitments_bytes_size,
@@ -448,7 +450,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
     return 0;
   }
 
-  size_t proofs_bytes_size = (size_t)(*env)->GetArrayLength(env, proofs_bytes);
+  uint64_t proofs_bytes_size =
+      (uint64_t)(*env)->GetArrayLength(env, proofs_bytes);
   if (proofs_bytes_size != count_native * BYTES_PER_PROOF) {
     throw_invalid_size_exception(env, "Invalid proofs size.", proofs_bytes_size,
                                  count_native * BYTES_PER_PROOF);
@@ -491,7 +494,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
     return NULL;
   }
 
-  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  uint64_t blob_size = (uint64_t)(*env)->GetArrayLength(env, blob);
   if (blob_size != BYTES_PER_BLOB) {
     throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
                                  BYTES_PER_BLOB);
@@ -558,8 +561,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
     return NULL;
   }
 
-  size_t count = (size_t)(*env)->GetArrayLength(env, cell_indices);
-  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  uint64_t count = (uint64_t)(*env)->GetArrayLength(env, cell_indices);
+  uint64_t cells_size = (uint64_t)(*env)->GetArrayLength(env, cells);
   if (cells_size != count * BYTES_PER_CELL) {
     throw_invalid_size_exception(env, "Invalid cells size.", cells_size,
                                  count * BYTES_PER_CELL);
@@ -633,32 +636,33 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(
     return 0;
   }
 
-  size_t commitments_size =
-      (size_t)(*env)->GetArrayLength(env, commitments_bytes);
+  uint64_t commitments_size =
+      (uint64_t)(*env)->GetArrayLength(env, commitments_bytes);
   if (commitments_size % BYTES_PER_COMMITMENT != 0) {
     throw_invalid_size_exception(env, "Invalid commitments size.",
                                  commitments_size % BYTES_PER_COMMITMENT,
                                  BYTES_PER_COMMITMENT);
     return 0;
   }
-  size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
-  size_t count = num_commitments;
+  uint64_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
+  uint64_t count = num_commitments;
 
-  size_t cell_indices_count = (size_t)(*env)->GetArrayLength(env, cell_indices);
+  uint64_t cell_indices_count =
+      (uint64_t)(*env)->GetArrayLength(env, cell_indices);
   if (cell_indices_count != count) {
     throw_invalid_size_exception(env, "Invalid cellIndices size.",
                                  cell_indices_count, count);
     return 0;
   }
 
-  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  uint64_t cells_size = (uint64_t)(*env)->GetArrayLength(env, cells);
   if (cells_size != count * BYTES_PER_CELL) {
     throw_invalid_size_exception(env, "Invalid cells size.", cells_size,
                                  count * BYTES_PER_CELL);
     return 0;
   }
 
-  size_t proofs_size = (size_t)(*env)->GetArrayLength(env, proofs_bytes);
+  uint64_t proofs_size = (uint64_t)(*env)->GetArrayLength(env, proofs_bytes);
   if (proofs_size != count * BYTES_PER_PROOF) {
     throw_invalid_size_exception(env, "Invalid proofs size.", proofs_size,
                                  count * BYTES_PER_PROOF);

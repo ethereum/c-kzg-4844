@@ -596,16 +596,16 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     const fr_t *zs_fr,
     const fr_t *ys_fr,
     const g1_t *proofs_g1,
-    size_t n
+    uint64_t n
 ) {
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
     Bytes32 r_bytes;
     fr_t r;
 
-    size_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) + sizeof(uint64_t) +
-                        (n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF)
-                        );
+    uint64_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) + sizeof(uint64_t) +
+                          (n *
+                           (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
     ret = c_kzg_malloc((void **)&bytes, input_size);
     if (ret != C_KZG_OK) goto out;
 
@@ -624,7 +624,7 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     bytes_from_uint64(offset, n);
     offset += sizeof(uint64_t);
 
-    for (size_t i = 0; i < n; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         /* Copy commitment */
         bytes_from_g1((Bytes48 *)offset, &commitments_g1[i]);
         offset += BYTES_PER_COMMITMENT;
@@ -677,7 +677,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     const fr_t *zs_fr,
     const fr_t *ys_fr,
     const g1_t *proofs_g1,
-    size_t n,
+    uint64_t n,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -707,7 +707,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     /* Compute \sum r^i * Proof_i */
     g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
 
-    for (size_t i = 0; i < n; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         g1_t ys_encrypted;
         /* Get [y_i] */
         g1_mul(&ys_encrypted, blst_p1_generator(), &ys_fr[i]);
@@ -754,7 +754,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
-    size_t n,
+    uint64_t n,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -784,7 +784,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     ret = new_fr_array(&ys_fr, n);
     if (ret != C_KZG_OK) goto out;
 
-    for (size_t i = 0; i < n; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         Polynomial polynomial;
 
         /* Convert each commitment to a g1 point */

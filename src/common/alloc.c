@@ -19,7 +19,7 @@
 #include "common/fr.h"
 
 #include <stdbool.h> /* For bool */
-#include <stddef.h>  /* For size_t & NULL */
+#include <stddef.h>  /* For NULL */
 #include <stdlib.h>  /* For malloc */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -34,7 +34,7 @@
  * @param[out] out  Pointer to the allocated space
  * @param[in]  size The number of bytes to be allocated
  */
-C_KZG_RET c_kzg_malloc(void **out, size_t size) {
+C_KZG_RET c_kzg_malloc(void **out, uint64_t size) {
     *out = NULL;
     if (size == 0) return C_KZG_BADARGS;
     *out = malloc(size);
@@ -50,7 +50,7 @@ C_KZG_RET c_kzg_malloc(void **out, size_t size) {
  *
  * @remark Will return C_KZG_BADARGS if the requested size is zero.
  */
-C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
+C_KZG_RET c_kzg_calloc(void **out, uint64_t count, uint64_t size) {
     *out = NULL;
     if (count == 0 || size == 0) return C_KZG_BADARGS;
     *out = calloc(count, size);
@@ -65,7 +65,7 @@ C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size) {
  *
  * @remark Free the space later using c_kzg_free().
  */
-C_KZG_RET new_g1_array(g1_t **x, size_t n) {
+C_KZG_RET new_g1_array(g1_t **x, uint64_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(g1_t));
 }
 
@@ -77,7 +77,7 @@ C_KZG_RET new_g1_array(g1_t **x, size_t n) {
  *
  * @remark Free the space later using c_kzg_free().
  */
-C_KZG_RET new_g2_array(g2_t **x, size_t n) {
+C_KZG_RET new_g2_array(g2_t **x, uint64_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(g2_t));
 }
 
@@ -89,7 +89,7 @@ C_KZG_RET new_g2_array(g2_t **x, size_t n) {
  *
  * @remark Free the space later using c_kzg_free().
  */
-C_KZG_RET new_fr_array(fr_t **x, size_t n) {
+C_KZG_RET new_fr_array(fr_t **x, uint64_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(fr_t));
 }
 
@@ -101,6 +101,6 @@ C_KZG_RET new_fr_array(fr_t **x, size_t n) {
  *
  * @remark Free the space later using c_kzg_free().
  */
-C_KZG_RET new_bool_array(bool **x, size_t n) {
+C_KZG_RET new_bool_array(bool **x, uint64_t n) {
     return c_kzg_calloc((void **)x, n, sizeof(bool));
 }

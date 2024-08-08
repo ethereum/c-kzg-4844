@@ -150,12 +150,12 @@ void free_trusted_setup(KZGSettings *s) {
      * possible for there to be a segmentation fault via null pointer dereference.
      */
     if (s->x_ext_fft_columns != NULL) {
-        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        for (uint64_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
             c_kzg_free(s->x_ext_fft_columns[i]);
         }
     }
     if (s->tables != NULL) {
-        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        for (uint64_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
             c_kzg_free(s->tables[i]);
         }
     }
@@ -174,9 +174,9 @@ void free_trusted_setup(KZGSettings *s) {
  * @param[in]   n   The length of the input vector x
  * @param[in]   s   The trusted setup
  */
-static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
+static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, uint64_t n, const KZGSettings *s) {
     C_KZG_RET ret;
-    size_t n2 = n * 2;
+    uint64_t n2 = n * 2;
     g1_t *x_ext;
 
     /* Create extended array of points */
@@ -184,10 +184,10 @@ static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSe
     if (ret != C_KZG_OK) goto out;
 
     /* Copy x & extend with zero */
-    for (size_t i = 0; i < n; i++) {
+    for (uint64_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
-    for (size_t i = n; i < n2; i++) {
+    for (uint64_t i = n; i < n2; i++) {
         x_ext[i] = G1_IDENTITY;
     }
 
@@ -231,16 +231,16 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     /* Allocate space for array of pointers, this is a 2D array */
     ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < k2; i++) {
+    for (uint64_t i = 0; i < k2; i++) {
         ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
-    for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
+    for (uint64_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
         /* Compute x, sections of the g1 values */
-        size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-        for (size_t i = 0; i < k - 1; i++) {
-            size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
+        uint64_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (uint64_t i = 0; i < k - 1; i++) {
+            uint64_t j = start - i * FIELD_ELEMENTS_PER_CELL;
             x[i] = s->g1_values_monomial[j];
         }
         x[k - 1] = G1_IDENTITY;
@@ -250,7 +250,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
 
         /* Reorganize from rows into columns */
-        for (size_t row = 0; row < k2; row++) {
+        for (uint64_t row = 0; row < k2; row++) {
             s->x_ext_fft_columns[row][offset] = points[row];
         }
     }
@@ -265,11 +265,11 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
 
         /* Calculate the size of each table, this can be re-used */
-        size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
+        uint64_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
             s->wbits, FIELD_ELEMENTS_PER_CELL
         );
 
-        for (size_t i = 0; i < k2; i++) {
+        for (uint64_t i = 0; i < k2; i++) {
             /* Transform the points to affine representation */
             const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
             blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
@@ -303,7 +303,7 @@ out:
  * @param[in] n1 Number of `g1` points in trusted_setup
  * @param[in] n2 Number of `g2` points in trusted_setup
  */
-static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t n1, size_t n2) {
+static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, uint64_t n1, uint64_t n2) {
     /* Trusted setup is too small; we can't work with this */
     if (n1 < 2 || n2 < 2) {
         return C_KZG_BADARGS;
@@ -341,12 +341,12 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t 
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
-    size_t num_g1_monomial_bytes,
+    uint64_t num_g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_lagrange_bytes,
+    uint64_t num_g1_lagrange_bytes,
     const uint8_t *g2_monomial_bytes,
-    size_t num_g2_monomial_bytes,
-    size_t precompute
+    uint64_t num_g2_monomial_bytes,
+    uint64_t precompute
 ) {
     C_KZG_RET ret;
 
@@ -473,7 +473,7 @@ out_success:
  * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where the first two numbers
  * are in decimal and the remainder are hexstrings and any whitespace can be used as separators.
  */
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, uint64_t precompute) {
     C_KZG_RET ret;
     int num_matches;
     uint64_t i;

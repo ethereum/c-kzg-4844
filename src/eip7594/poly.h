@@ -28,10 +28,10 @@
 extern "C" {
 #endif
 
-void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor);
+void shift_poly(fr_t *p, uint64_t len, const fr_t *shift_factor);
 
 C_KZG_RET poly_lagrange_to_monomial(
-    fr_t *monomial_out, const fr_t *lagrange, size_t len, const KZGSettings *s
+    fr_t *monomial_out, const fr_t *lagrange, uint64_t len, const KZGSettings *s
 );
 
 #ifdef __cplusplus

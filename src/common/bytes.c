@@ -132,7 +132,7 @@ void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
  * @param[in]   bytes   The Bytes32 to print
  */
 void print_bytes32(const Bytes32 *bytes) {
-    for (size_t i = 0; i < 32; i++) {
+    for (uint64_t i = 0; i < 32; i++) {
         printf("%02x", bytes->bytes[i]);
     }
     printf("\n");
@@ -144,7 +144,7 @@ void print_bytes32(const Bytes32 *bytes) {
  * @param[in]   bytes   The Bytes48 to print
  */
 void print_bytes48(const Bytes48 *bytes) {
-    for (size_t i = 0; i < 48; i++) {
+    for (uint64_t i = 0; i < 48; i++) {
         printf("%02x", bytes->bytes[i]);
     }
     printf("\n");
