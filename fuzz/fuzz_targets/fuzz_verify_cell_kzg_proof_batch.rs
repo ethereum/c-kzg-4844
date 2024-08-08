@@ -60,7 +60,6 @@ fuzz_target!(|input: Input| {
     let rkzg_result = DAS_CONTEXT.verify_cell_kzg_proof_batch(
         commitments_bytes,
         input.cell_indices,
-        vec![], // TODO: remove when the lib updates.
         cells_bytes,
         proofs_bytes,
     );
