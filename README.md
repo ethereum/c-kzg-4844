@@ -81,10 +81,10 @@ the overhead is negligible.
 
 ### Benchmarks
 
-C-KZG-4844 does not include C benchmarks; however, some bindings (Go, Java, and
-Rust) have their own benchmarks. Including benchmarks in the bindings offers a
-more realistic performance estimate, as C-KZG-4844 is not expected to be used
-outside the bindings.
+C-KZG-4844 provides benchmarks in the Go bindings. It is easier to write
+benchmarks in a high-level language and doing benchmarks in the bindings offers
+a more realistic performance overview, including FFI overhead. Additionally,
+C-KZG-4844 is not expected to be used outside the bindings.
 
 ### Security audit
 

@@ -14,12 +14,6 @@ cargo build --release
 cargo test --release
 ```
 
-## Benchmark
-
-```
-cargo bench
-```
-
 ## Update `generated.rs`
 
 ```
