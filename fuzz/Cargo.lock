@@ -34,9 +34,9 @@ dependencies = [
 
 [[package]]
 name = "blst"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62dc83a094a71d43eeadd254b1ec2d24cb6a0bb6cadce00df51f0db594711a32"
+checksum = "4378725facc195f1a538864863f6de233b500a8862747e7f165078a419d5e874"
 dependencies = [
  "cc",
  "glob",
@@ -95,9 +95,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.5"
+version = "1.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "324c74f2155653c90b04f25b2a47a8a631360cb908f92a772695f430c7e31052"
+checksum = "504bdec147f2cc13c8b57ed9401fd8a147cc66b67ad5cb241394244f2c947549"
 dependencies = [
  "jobserver",
  "libc",
@@ -112,7 +112,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "constantine-core"
 version = "0.1.0"
-source = "git+https://github.com/mratsim/constantine#4dea093dc03a26fb266cd3c8aece4b2a44be328a"
+source = "git+https://github.com/mratsim/constantine#1e34ec22929eaba7bcf1681350ec21aed8f370f7"
 dependencies = [
  "constantine-sys",
 ]
@@ -120,7 +120,7 @@ dependencies = [
 [[package]]
 name = "constantine-ethereum-kzg"
 version = "0.1.0"
-source = "git+https://github.com/mratsim/constantine#4dea093dc03a26fb266cd3c8aece4b2a44be328a"
+source = "git+https://github.com/mratsim/constantine#1e34ec22929eaba7bcf1681350ec21aed8f370f7"
 dependencies = [
  "constantine-core",
  "constantine-sys",
@@ -129,7 +129,7 @@ dependencies = [
 [[package]]
 name = "constantine-sys"
 version = "0.1.0"
-source = "git+https://github.com/mratsim/constantine#4dea093dc03a26fb266cd3c8aece4b2a44be328a"
+source = "git+https://github.com/mratsim/constantine#1e34ec22929eaba7bcf1681350ec21aed8f370f7"
 
 [[package]]
 name = "cpufeatures"
@@ -143,7 +143,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_eth_kzg_bls12_381"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/rust-eth-kzg#51a4beceffbfd4767a4ac473b8baccf509ad6fbd"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg#c1d4dc4c1503cb19e4eb6d2b2370a6925dca88ed"
 dependencies = [
  "blst",
  "blstrs",
@@ -156,7 +156,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_eth_kzg_erasure_codes"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/rust-eth-kzg#51a4beceffbfd4767a4ac473b8baccf509ad6fbd"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg#c1d4dc4c1503cb19e4eb6d2b2370a6925dca88ed"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_polynomial",
@@ -165,7 +165,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_internal_eth_kzg_polynomial"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/rust-eth-kzg#51a4beceffbfd4767a4ac473b8baccf509ad6fbd"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg#c1d4dc4c1503cb19e4eb6d2b2370a6925dca88ed"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
 ]
@@ -173,7 +173,7 @@ dependencies = [
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/rust-eth-kzg#51a4beceffbfd4767a4ac473b8baccf509ad6fbd"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg#c1d4dc4c1503cb19e4eb6d2b2370a6925dca88ed"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_polynomial",
@@ -310,9 +310,9 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "jobserver"
-version = "0.1.31"
+version = "0.1.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2b099aaa34a9751c5bf0878add70444e1ed2dd73f347be99003d4577277de6e"
+checksum = "48d1dbcbbeb6a7fec7e059840aa538bd62aaccf972c7346c4d9d2059312853d0"
 dependencies = [
  "libc",
 ]
@@ -339,6 +339,12 @@ dependencies = [
  "cc",
  "once_cell",
 ]
+
+[[package]]
+name = "memchr"
+version = "2.7.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
 name = "num_cpus"
@@ -436,7 +442,7 @@ dependencies = [
 [[package]]
 name = "rust_eth_kzg"
 version = "0.3.0"
-source = "git+https://github.com/crate-crypto/rust-eth-kzg#51a4beceffbfd4767a4ac473b8baccf509ad6fbd"
+source = "git+https://github.com/crate-crypto/rust-eth-kzg#c1d4dc4c1503cb19e4eb6d2b2370a6925dca88ed"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_erasure_codes",
@@ -455,18 +461,18 @@ checksum = "f3cb5ba0dc43242ce17de99c180e96db90b235b8a9fdc9543c96d2209116bd9f"
 
 [[package]]
 name = "serde"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc76f558e0cbb2a839d37354c575f1dc3fdc6546b5be373ba43d95f231bf7c12"
+checksum = "e33aedb1a7135da52b7c21791455563facbbcc43d0f0f66165b42c21b3dfb150"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.204"
+version = "1.0.205"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0cd7e117be63d3c3678776753929474f3b04a43a080c744d6b0ae2a8c28e222"
+checksum = "692d6f5ac90220161d6774db30c662202721e64aed9058d2c394f451261420c1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -475,11 +481,12 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.120"
+version = "1.0.122"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e0d21c9a8cae1235ad58a00c11cb40d4b1e5c784f1ef2c537876ed6ffd8b7c5"
+checksum = "784b6203951c57ff748476b126ccb5e8e2959a5c19e5c617ab1956be3dbc68da"
 dependencies = [
  "itoa",
+ "memchr",
  "ryu",
  "serde",
 ]
@@ -503,9 +510,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.71"
+version = "2.0.72"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b146dcf730474b4bcd16c311627b31ede9ab149045db4d6088b3becaea046462"
+checksum = "dc4b9b9bf2add8093d3f2c0204471e951b2285580335de42f9d2534f3ae7a8af"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -541,9 +548,9 @@ checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
 
 [[package]]
 name = "version_check"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
+checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "wyz"
