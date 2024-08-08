@@ -3,14 +3,16 @@
 import
   std/[os, sequtils, strutils, streams],
   unittest2, yaml,
-  ../kzg,
-  ./types
+  ../kzg
 
 # we want to use our own fromHex
 import
   stew/byteutils except fromHex
 
 const
+  kzgPath = currentSourcePath.rsplit(DirSep, 4)[0] & "/"
+  trustedSetupFile = kzgPath & "src/trusted_setup.txt"
+  trustedSetup* = staticRead(trustedSetupFile)
   testBase = kzgPath & "tests/"
   BLOB_TO_KZG_COMMITMENT_TESTS       = testBase & "blob_to_kzg_commitment"
   COMPUTE_KZG_PROOF_TESTS            = testBase & "compute_kzg_proof"

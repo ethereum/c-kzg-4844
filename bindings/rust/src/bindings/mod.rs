@@ -899,7 +899,6 @@ unsafe impl Send for KZGSettings {}
 #[allow(unused_imports, dead_code)]
 mod tests {
     use super::*;
-    use rand::{rngs::ThreadRng, Rng};
     use std::{fs, path::PathBuf};
     use test_formats::{
         blob_to_kzg_commitment_test, compute_blob_kzg_proof, compute_cells_and_kzg_proofs,
@@ -907,67 +906,12 @@ mod tests {
         verify_blob_kzg_proof_batch, verify_cell_kzg_proof_batch, verify_kzg_proof,
     };
 
-    fn generate_random_blob(rng: &mut ThreadRng) -> Blob {
-        let mut arr = [0u8; BYTES_PER_BLOB];
-        rng.fill(&mut arr[..]);
-        // Ensure that the blob is canonical by ensuring that
-        // each field element contained in the blob is < BLS_MODULUS
-        for i in 0..FIELD_ELEMENTS_PER_BLOB {
-            arr[i * BYTES_PER_FIELD_ELEMENT] = 0;
-        }
-        arr.into()
-    }
-
-    fn test_simple(trusted_setup_file: &Path) {
-        let mut rng = rand::thread_rng();
-        assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
-
-        let num_blobs: usize = rng.gen_range(1..16);
-        let mut blobs: Vec<Blob> = (0..num_blobs)
-            .map(|_| generate_random_blob(&mut rng))
-            .collect();
-
-        let commitments: Vec<Bytes48> = blobs
-            .iter()
-            .map(|blob| kzg_settings.blob_to_kzg_commitment(blob).unwrap())
-            .map(|commitment| commitment.to_bytes())
-            .collect();
-
-        let proofs: Vec<Bytes48> = blobs
-            .iter()
-            .zip(commitments.iter())
-            .map(|(blob, commitment)| {
-                kzg_settings
-                    .compute_blob_kzg_proof(blob, commitment)
-                    .unwrap()
-            })
-            .map(|proof| proof.to_bytes())
-            .collect();
-
-        assert!(kzg_settings
-            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
-            .unwrap());
-
-        blobs.pop();
-
-        let error = kzg_settings
-            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
-            .unwrap_err();
-        assert!(matches!(error, Error::MismatchLength(_)));
-
-        let incorrect_blob = generate_random_blob(&mut rng);
-        blobs.push(incorrect_blob);
-
-        assert!(!kzg_settings
-            .verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs)
-            .unwrap());
-    }
-
     #[test]
-    fn test_end_to_end() {
+    fn test_parse_kzg_trusted_setup() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        test_simple(trusted_setup_file);
+        assert!(trusted_setup_file.exists());
+        let trusted_setup = fs::read_to_string(trusted_setup_file).unwrap();
+        let _ = KZGSettings::parse_kzg_trusted_setup(&trusted_setup, 0).unwrap();
     }
 
     const BLOB_TO_KZG_COMMITMENT_TESTS: &str = "tests/blob_to_kzg_commitment/*/*/*";
@@ -976,7 +920,6 @@ mod tests {
     const VERIFY_KZG_PROOF_TESTS: &str = "tests/verify_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_TESTS: &str = "tests/verify_blob_kzg_proof/*/*/*";
     const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_blob_kzg_proof_batch/*/*/*";
-
     const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/compute_cells_and_kzg_proofs/*/*/*";
     const RECOVER_CELLS_AND_KZG_PROOFS_TESTS: &str = "tests/recover_cells_and_kzg_proofs/*/*/*";
     const VERIFY_CELL_KZG_PROOF_BATCH_TESTS: &str = "tests/verify_cell_kzg_proof_batch/*/*/*";
@@ -1020,14 +963,6 @@ mod tests {
                 _ => assert!(test.get_output().is_none()),
             }
         }
-    }
-
-    #[test]
-    fn test_parse_kzg_trusted_setup() {
-        let trusted_setup_file = Path::new("src/trusted_setup.txt");
-        assert!(trusted_setup_file.exists());
-        let trusted_setup = fs::read_to_string(trusted_setup_file).unwrap();
-        let _ = KZGSettings::parse_kzg_trusted_setup(&trusted_setup, 0).unwrap();
     }
 
     #[test]

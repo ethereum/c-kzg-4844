@@ -14,13 +14,13 @@ proc test(args, path: string) =
   exec "nim " & getEnv("TEST_LANG", "c") & " " & getEnv("NIMFLAGS") & " " & args &
     " --outdir:build -r -f --hints:off --warnings:off --skipParentCfg " & path
 
-proc runAllTest*() =
+proc runTests*() =
   echo ">>>>>>>>>>>>>>>> Run tests in DEBUG mode <<<<<<<<<<<<<<<<"
-  test "-d:debug", testPath & "/test_all"
+  test "-d:debug", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE mode <<<<<<<<<<<<<<<<"
-  test "-d:release", testPath & "/test_all"
+  test "-d:release", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE and THREADS ON mode <<<<<<<<<<<<<<<<"
-  test "--threads:on -d:release", testPath & "/test_all"
+  test "--threads:on -d:release", testPath & "/tests"
 
-task test, "Run all tests":
-  runAllTest()
+task test, "Run tests":
+  runTests()
