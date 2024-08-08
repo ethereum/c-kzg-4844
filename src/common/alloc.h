@@ -21,7 +21,6 @@
 #include "common/ret.h"
 
 #include <stdbool.h> /* For bool */
-#include <stddef.h>  /* For size_t */
 #include <stdlib.h>  /* For free */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -46,12 +45,12 @@
 extern "C" {
 #endif
 
-C_KZG_RET c_kzg_malloc(void **out, size_t size);
-C_KZG_RET c_kzg_calloc(void **out, size_t count, size_t size);
-C_KZG_RET new_g1_array(g1_t **x, size_t n);
-C_KZG_RET new_g2_array(g2_t **x, size_t n);
-C_KZG_RET new_fr_array(fr_t **x, size_t n);
-C_KZG_RET new_bool_array(bool **x, size_t n);
+C_KZG_RET c_kzg_malloc(void **out, uint64_t size);
+C_KZG_RET c_kzg_calloc(void **out, uint64_t count, uint64_t size);
+C_KZG_RET new_g1_array(g1_t **x, uint64_t n);
+C_KZG_RET new_g2_array(g2_t **x, uint64_t n);
+C_KZG_RET new_fr_array(fr_t **x, uint64_t n);
+C_KZG_RET new_bool_array(bool **x, uint64_t n);
 
 #ifdef __cplusplus
 }

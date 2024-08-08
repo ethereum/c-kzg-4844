@@ -62,7 +62,7 @@ typedef struct {
     /** The precomputed tables for fixed-base MSM. */
     blst_p1_affine **tables;
     /** The window size for the fixed-base MSM. */
-    size_t wbits;
+    uint64_t wbits;
     /** The scratch size for the fixed-base MSM. */
-    size_t scratch_size;
+    uint64_t scratch_size;
 } KZGSettings;

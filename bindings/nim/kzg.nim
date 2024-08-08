@@ -66,7 +66,7 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 proc loadTrustedSetup*(input: File, precompute: Natural): Result[KzgCtx, string] =
   let
     ctx = newKzgCtx()
-    res = load_trusted_setup_file(ctx.val, input, precompute.csize_t)
+    res = load_trusted_setup_file(ctx.val, input, precompute.uint64)
   verify(res, ctx)
 
 proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, string] =
@@ -89,12 +89,12 @@ proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
     ctx = newKzgCtx()
     res = load_trusted_setup(ctx.val,
       g1MonomialBytes[0].getPtr,
-      g1MonomialBytes.len.csize_t,
+      g1MonomialBytes.len.uint64,
       g1LagrangeBytes[0].getPtr,
-      g1LagrangeBytes.len.csize_t,
+      g1LagrangeBytes.len.uint64,
       g2MonomialBytes[0].getPtr,
-      g2MonomialBytes.len.csize_t,
-      precompute.csize_t)
+      g2MonomialBytes.len.uint64,
+      precompute.uint64)
   verify(res, ctx)
 
 proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KzgCtx, string] =
@@ -220,7 +220,7 @@ proc verifyProofs*(ctx: KzgCtx,
     blobs[0].getPtr,
     commitments[0].getPtr,
     proofs[0].getPtr,
-    blobs.len.csize_t,
+    blobs.len.uint64,
     ctx.val)
   verify(res, valid)
 
@@ -253,7 +253,7 @@ proc recoverCellsAndProofs*(ctx: KzgCtx,
     recoveredProofsPtr,
     cellIndices[0].getPtr,
     cells[0].getPtr,
-    cells.len.csize_t,
+    cells.len.uint64,
     ctx.val)
   verify(res, ret)
 
@@ -281,7 +281,7 @@ proc verifyProofs*(ctx: KzgCtx,
     cellIndices[0].getPtr,
     cells[0].getPtr,
     proofs[0].getPtr,
-    cells.len.csize_t,
+    cells.len.uint64,
     ctx.val)
   verify(res, valid)
 

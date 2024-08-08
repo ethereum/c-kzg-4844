@@ -81,7 +81,7 @@ uint32_t reverse_bits(uint32_t n) {
  * @remark n must be a power of two.
  */
 uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
-    size_t unused_bit_len = 32 - log2_pow2(n);
+    uint64_t unused_bit_len = 32 - log2_pow2(n);
     return reverse_bits(value) >> unused_bit_len;
 }
 
@@ -99,7 +99,7 @@ uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
  * output array and n' is obtained from n by bit-reversing n. As opposed to reverse_bits, this
  * bit-reversal operates on log2(n)-bit numbers.
  */
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
+C_KZG_RET bit_reversal_permutation(void *values, uint64_t size, uint64_t n) {
     C_KZG_RET ret;
     byte *tmp = NULL;
     byte *v = values;

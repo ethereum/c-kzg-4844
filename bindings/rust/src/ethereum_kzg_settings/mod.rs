@@ -12,18 +12,18 @@ const ETH_G2_MONOMIAL_POINTS: &[u8] = include_bytes!("./g2_monomial_bytes.bin");
 /// Returns default Ethereum mainnet KZG settings.
 ///
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
-pub fn ethereum_kzg_settings(precompute: usize) -> &'static KzgSettings {
+pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
     ethereum_kzg_settings_inner(precompute).as_ref()
 }
 
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
 ///
 /// It is useful for sharing the settings in multiple places.
-pub fn ethereum_kzg_settings_arc(precompute: usize) -> Arc<KzgSettings> {
+pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
     ethereum_kzg_settings_inner(precompute).clone()
 }
 
-fn ethereum_kzg_settings_inner(precompute: usize) -> &'static Arc<KzgSettings> {
+fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
     static DEFAULT: OnceBox<Arc<KzgSettings>> = OnceBox::new();
     DEFAULT.get_or_init(|| {
         let settings = KzgSettings::load_trusted_setup(

@@ -31,7 +31,7 @@ extern "C" {
 C_KZG_RET recover_cells(
     fr_t *reconstructed_data_out,
     const uint64_t *cell_indices,
-    size_t num_cells,
+    uint64_t num_cells,
     fr_t *cells,
     const KZGSettings *s
 );

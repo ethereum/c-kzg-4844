@@ -61,7 +61,7 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len
  *
  * We do the second of these to save memory here.
  */
-C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
+C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
     C_KZG_RET ret;
     void *scratch = NULL;
     blst_p1 *p_filtered = NULL;
@@ -69,7 +69,7 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
     blst_scalar *scalars = NULL;
 
     /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
-    const size_t min_length_threshold = 8;
+    const uint64_t min_length_threshold = 8;
 
     /* Use naive method if it's less than the threshold */
     if (len < min_length_threshold) {
@@ -87,18 +87,18 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for Pippenger scratch */
-    size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
+    uint64_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
     ret = c_kzg_malloc(&scratch, scratch_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Transform the field elements to 256-bit scalars */
-    for (size_t i = 0; i < len; i++) {
+    for (uint64_t i = 0; i < len; i++) {
         blst_scalar_from_fr(&scalars[i], &coeffs[i]);
     }
 
     /* Filter out zero points: make a new list p_filtered that contains only non-zero points */
-    size_t new_len = 0;
-    for (size_t i = 0; i < len; i++) {
+    uint64_t new_len = 0;
+    for (uint64_t i = 0; i < len; i++) {
         if (!blst_p1_is_inf(&p[i])) {
             /* Copy valid points to the new position */
             p_filtered[new_len] = p[i];

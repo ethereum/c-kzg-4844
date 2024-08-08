@@ -34,9 +34,9 @@
  * @param[in]       len          Length of the polynomial coefficients
  * @param[in]       shift_factor Shift factor
  */
-void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
+void shift_poly(fr_t *p, uint64_t len, const fr_t *shift_factor) {
     fr_t factor_power = FR_ONE;
-    for (size_t i = 1; i < len; i++) {
+    for (uint64_t i = 1; i < len; i++) {
         blst_fr_mul(&factor_power, &factor_power, shift_factor);
         blst_fr_mul(&p[i], &p[i], &factor_power);
     }
@@ -54,7 +54,7 @@ void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
  * FFTing the bit-reverse-permuted lagrange polynomial.
  */
 C_KZG_RET poly_lagrange_to_monomial(
-    fr_t *monomial_out, const fr_t *lagrange, size_t len, const KZGSettings *s
+    fr_t *monomial_out, const fr_t *lagrange, uint64_t len, const KZGSettings *s
 ) {
     C_KZG_RET ret;
     fr_t *lagrange_brp = NULL;

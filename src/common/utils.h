@@ -21,7 +21,6 @@
 
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
-#include <stddef.h>   /* For size_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
@@ -35,7 +34,7 @@ bool is_power_of_two(uint64_t n);
 int log2_pow2(uint32_t n);
 uint32_t reverse_bits(uint32_t n);
 uint32_t reverse_bits_limited(uint32_t n, uint32_t value);
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n);
+C_KZG_RET bit_reversal_permutation(void *values, uint64_t size, uint64_t n);
 void compute_powers(fr_t *out, const fr_t *x, uint64_t n);
 bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
 
