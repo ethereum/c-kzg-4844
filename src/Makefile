@@ -158,10 +158,13 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: $(SOURCE_FILES) $(HEADER_FILES)
-	@$(CC) --analyze -Xanalyzer -analyzer-output=html \
-	    -o analysis-report $(CFLAGS) -c $<
-	@[ -d analysis-report ] && exit 1 || exit 0
+analyze: $(SOURCE_FILES)
+	@rm -rf analysis-report
+	@for src in $^; do \
+		echo "Analyzing $$src..."; \
+		$(CC) --analyze -Xanalyzer -analyzer-output=html -o analysis-report $(CFLAGS) -c $$src; \
+		[ -d analysis-report ] && exit 1; true; \
+	done
 
 ###############################################################################
 # Cleanup

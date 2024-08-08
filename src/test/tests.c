@@ -126,68 +126,66 @@ static void eval_extended_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_c_kzg_malloc__succeeds_size_greater_than_zero(void) {
-    C_KZG_RET ret;
     void *ptr = NULL;
-
-    ret = c_kzg_malloc(&ptr, 123);
+    C_KZG_RET ret = c_kzg_malloc(&ptr, 123);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ASSERT("valid pointer", ptr != NULL);
-    free(ptr);
+    ASSERT_EQUALS(is_null, false);
 }
 
 static void test_c_kzg_malloc__fails_size_equal_to_zero(void) {
-    C_KZG_RET ret;
-    void *ptr = (void *)0x123;
-
-    ret = c_kzg_malloc(&ptr, 0);
+    void *ptr = NULL;
+    C_KZG_RET ret = c_kzg_malloc(&ptr, 0);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
-    ASSERT_EQUALS(ptr, NULL);
+    ASSERT_EQUALS(is_null, true);
 }
 
 static void test_c_kzg_malloc__fails_too_big(void) {
-    C_KZG_RET ret;
     void *ptr = NULL;
-
-    ret = c_kzg_malloc(&ptr, UINT64_MAX);
+    C_KZG_RET ret = c_kzg_malloc(&ptr, UINT64_MAX);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_MALLOC);
-    ASSERT_EQUALS(ptr, NULL);
+    ASSERT_EQUALS(is_null, true);
 }
 
 static void test_c_kzg_calloc__succeeds_size_greater_than_zero(void) {
-    C_KZG_RET ret;
     void *ptr = NULL;
-
-    ret = c_kzg_calloc(&ptr, 123, 456);
+    C_KZG_RET ret = c_kzg_calloc(&ptr, 123, 456);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ASSERT("valid pointer", ptr != NULL);
-    free(ptr);
+    ASSERT_EQUALS(is_null, false);
 }
 
 static void test_c_kzg_calloc__fails_count_equal_to_zero(void) {
-    C_KZG_RET ret;
     void *ptr = (void *)0x123;
-
-    ret = c_kzg_calloc(&ptr, 0, 456);
+    C_KZG_RET ret = c_kzg_calloc(&ptr, 0, 456);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
-    ASSERT_EQUALS(ptr, NULL);
+    ASSERT_EQUALS(is_null, true);
 }
 
 static void test_c_kzg_calloc__fails_size_equal_to_zero(void) {
-    C_KZG_RET ret;
     void *ptr = (void *)0x123;
-
-    ret = c_kzg_calloc(&ptr, 123, 0);
+    C_KZG_RET ret = c_kzg_calloc(&ptr, 123, 0);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
-    ASSERT_EQUALS(ptr, NULL);
+    ASSERT_EQUALS(is_null, true);
 }
 
 static void test_c_kzg_calloc__fails_too_big(void) {
-    C_KZG_RET ret;
     void *ptr = NULL;
-
-    ret = c_kzg_calloc(&ptr, UINT64_MAX, UINT64_MAX);
+    C_KZG_RET ret = c_kzg_calloc(&ptr, UINT64_MAX, UINT64_MAX);
+    bool is_null = ptr == NULL;
+    c_kzg_free(ptr);
     ASSERT_EQUALS(ret, C_KZG_MALLOC);
-    ASSERT_EQUALS(ptr, NULL);
+    ASSERT_EQUALS(is_null, true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1897,14 +1895,10 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
 }
 
 static void test_vanishing_polynomial_for_missing_cells(void) {
+    C_KZG_RET ret;
 
-    fr_t *vanishing_poly = NULL;
-    C_KZG_RET ret = new_fr_array(&vanishing_poly, FIELD_ELEMENTS_PER_EXT_BLOB);
-    ASSERT("vanishing poly alloc", ret == C_KZG_OK);
-
-    fr_t *fft_result = NULL;
-    ret = new_fr_array(&fft_result, FIELD_ELEMENTS_PER_EXT_BLOB);
-    ASSERT("fft_result alloc", ret == C_KZG_OK);
+    fr_t vanishing_poly[FIELD_ELEMENTS_PER_EXT_BLOB];
+    fr_t fft_result[FIELD_ELEMENTS_PER_EXT_BLOB];
 
     /* Test case: the 0th and 1st cell are missing */
     uint64_t missing_cell_indices[] = {0, 1};
@@ -2106,19 +2100,12 @@ static void profile_verify_blob_kzg_proof_batch(void) {
 }
 
 static void profile_compute_cells_and_kzg_proofs(void) {
-    C_KZG_RET ret;
     Blob blob;
-    Cell *cells = NULL;
-    KZGProof *proofs = NULL;
+    Cell cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
 
     /* Get a random blob */
     get_rand_blob(&blob);
-
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
-    ASSERT_EQUALS(ret, C_KZG_OK);
 
     ProfilerStart("compute_cells_and_kzg_proofs.prof");
     for (int i = 0; i < 5; i++) {
@@ -2128,10 +2115,9 @@ static void profile_compute_cells_and_kzg_proofs(void) {
 }
 
 static void profile_recover_cells_and_kzg_proofs(void) {
-    C_KZG_RET ret;
     Blob blob;
-    uint64_t *cell_indices = NULL;
-    Cell *cells = NULL;
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
 
     /*
      * NOTE: this profiling function only cares about cell recovery since the proofs will always be
@@ -2141,16 +2127,10 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     /* Get a random blob */
     get_rand_blob(&blob);
 
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
     /* Compute cells */
     compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
 
     /* Initialize cell indices */
-    ret = c_kzg_calloc((void **)&cell_indices, CELLS_PER_EXT_BLOB / 2, sizeof(uint64_t));
-    ASSERT_EQUALS(ret, C_KZG_OK);
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB / 2; i++) {
         cell_indices[i] = i;
     }
@@ -2166,10 +2146,11 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     C_KZG_RET ret;
     bool ok;
     Blob blob;
-    uint64_t *cell_indices = NULL;
     KZGCommitment commitment;
-    Cell *cells = NULL;
-    KZGProof *proofs = NULL;
+    KZGCommitment commitments[CELLS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
 
     /* Get a random blob */
     get_rand_blob(&blob);
@@ -2178,20 +2159,8 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     ret = blob_to_kzg_commitment(&commitment, &blob, &s);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
-    /* Allocate arrays */
-    ret = c_kzg_calloc((void **)&cells, CELLS_PER_EXT_BLOB, sizeof(Cell));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&proofs, CELLS_PER_EXT_BLOB, sizeof(KZGProof));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
     /* Compute cells and proofs */
     ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-
-    /* Initialize indices */
-    ret = c_kzg_calloc((void **)&commitments, CELLS_PER_EXT_BLOB, sizeof(uint64_t));
-    ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = c_kzg_calloc((void **)&cell_indices, CELLS_PER_EXT_BLOB, sizeof(uint64_t));
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -2202,7 +2171,7 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     ProfilerStart("verify_cell_kzg_proof_batch.prof");
     for (int i = 0; i < 100; i++) {
         verify_cell_kzg_proof_batch(
-            &ok, &commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
+            &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
         );
     }
     ProfilerStop();

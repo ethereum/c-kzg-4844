@@ -391,7 +391,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
                         + sizeof(uint64_t)                         /* FIELD_ELEMENTS_PER_CELL */
                         + sizeof(uint64_t)                         /* num_commitments */
                         + sizeof(uint64_t)                         /* num_cells */
-                        + (num_commitments * BYTES_PER_COMMITMENT) /* comms */
+                        + (num_commitments * BYTES_PER_COMMITMENT) /* commitment_bytes */
                         + (num_cells * sizeof(uint64_t))           /* commitment_indices */
                         + (num_cells * sizeof(uint64_t))           /* cell_indices */
                         + (num_cells * BYTES_PER_CELL)             /* cells */
