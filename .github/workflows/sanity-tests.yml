@@ -1,4 +1,4 @@
-name: Trusted Setup
+name: Sanity
 on:
   push:
     branches:
@@ -16,9 +16,14 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Download
+      # Check that our trusted setup matches the one from the spec
+      - name: Download Trusted Setup
         run: wget -O trusted_setup.json https://github.com/ethereum/consensus-specs/raw/dev/presets/mainnet/trusted_setups/trusted_setup_4096.json
-      - name: Convert
+      - name: Convert Trusted Setup
         run: python3 ./scripts/convert_trusted_setup.py --input trusted_setup.json --output trusted_setup.txt
-      - name: Compare
+      - name: Compare Trusted Setup
         run: cmp src/trusted_setup.txt trusted_setup.txt
+
+      # Check that our tests match the reference tests from the spec
+      - name: Compare Tests
+        run: python3 ./scripts/do_tests_match_ref_tests.py
