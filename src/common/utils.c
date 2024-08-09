@@ -44,7 +44,7 @@ bool is_power_of_two(uint64_t n) {
  * @return The log base two of n.
  *
  * @remark In other words, the bit index of the one bit.
- * @remark Works only for n a power of two, and only for n up to 2^31.
+ * @remark Works only for n a power of two.
  * @remark Not the fastest implementation, but it doesn't need to be fast.
  */
 uint64_t log2_pow2(uint64_t n) {
@@ -72,7 +72,7 @@ uint64_t reverse_bits(uint64_t n) {
 }
 
 /**
- * Reverse the low-order bits in a 32-bit integer.
+ * Reverse the low-order bits in a 64-bit integer.
  *
  * @param[in]   n       To reverse `b` bits, set `n = 2 ^ b`
  * @param[in]   value   The bits to be reversed
