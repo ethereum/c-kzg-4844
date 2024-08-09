@@ -21,15 +21,68 @@ endif
 
 # The base compiler flags. More can be added on command line.
 CFLAGS += -I. -I../inc -O2
-# Enable all of the optional warnings.
-CFLAGS += -pedantic -Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare \
-          -Wtype-limits -Wshadow -Wfloat-equal -Wpointer-arith -Wformat=2 \
-          -Wstrict-overflow=5 -Wstrict-prototypes -Wcast-align \
-          -Wredundant-decls -Wmissing-prototypes -Wmissing-declarations \
-          -Wold-style-definition -Wmissing-include-dirs -Wuninitialized \
-          -Wnull-dereference -Wformat-security -Wswitch-default -Wswitch-enum \
-          -Wundef -Walloca -Warray-bounds -Wcast-qual -Wstrict-aliasing=2 \
-          -Wc++-compat -Wpacked
+# Enable a bunch of optional warnings.
+CFLAGS += \
+	-pedantic \
+	-Wall \
+	-Wextra \
+	-Waggregate-return \
+	-Walloca \
+	-Warray-bounds \
+	-Wbad-function-cast \
+	-Wc++-compat \
+	-Wc++11-compat \
+	-Wcast-align \
+	-Wcast-qual \
+	-Wconditional-uninitialized \
+	-Wconversion \
+	-Wdisabled-optimization \
+	-Wdouble-promotion \
+	-Wenum-compare \
+	-Wfloat-equal \
+	-Wformat-nonliteral \
+	-Wformat-security \
+	-Wformat-y2k \
+	-Wformat=2 \
+	-Wframe-larger-than=1048576 \
+	-Wimplicit \
+	-Wimplicit-fallthrough \
+	-Winit-self \
+	-Winline \
+	-Winvalid-pch \
+	-Wlarger-than=512 \
+	-Wlong-long \
+	-Wmissing-declarations \
+	-Wmissing-field-initializers \
+	-Wmissing-format-attribute \
+	-Wmissing-include-dirs \
+	-Wmissing-noreturn \
+	-Wmissing-prototypes \
+	-Wnested-externs \
+	-Wnull-dereference \
+	-Wold-style-definition \
+	-Woverlength-strings \
+	-Wpacked \
+	-Wpadded \
+	-Wpointer-arith \
+	-Wredundant-decls \
+	-Wredundant-move \
+	-Wshadow \
+	-Wsign-compare \
+	-Wsign-conversion \
+	-Wstack-protector \
+	-Wstrict-aliasing=2 \
+	-Wstrict-overflow=5 \
+	-Wstrict-prototypes \
+	-Wswitch-default \
+	-Wswitch-enum \
+	-Wtype-limits \
+	-Wundef \
+	-Wuninitialized \
+	-Wunreachable-code \
+	-Wvariadic-macros \
+	-Wvla \
+	-Wwrite-strings
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
