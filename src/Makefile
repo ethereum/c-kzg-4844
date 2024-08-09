@@ -34,7 +34,6 @@ CFLAGS += \
 	-Wc++11-compat \
 	-Wcast-align \
 	-Wcast-qual \
-	-Wconditional-uninitialized \
 	-Wconversion \
 	-Wdisabled-optimization \
 	-Wdouble-promotion \
