@@ -873,7 +873,7 @@ static void test_compute_powers__succeeds_expected_powers(void) {
     C_KZG_RET ret;
     Bytes32 field_element_bytes;
     fr_t field_element_fr;
-    const int n = 3;
+    const size_t n = 3;
     int diff;
     fr_t powers[n];
     Bytes32 powers_bytes[n];
@@ -910,7 +910,7 @@ static void test_compute_powers__succeeds_expected_powers(void) {
         &expected_bytes[2], "2f417bcb88693ff8bc5d61b6d44503f3a99e8c3df3891e0040dee96047458a0e"
     );
 
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         bytes_from_bls_field(&powers_bytes[i], &powers[i]);
         diff = memcmp(powers_bytes[i].bytes, expected_bytes[i].bytes, sizeof(Bytes32));
         ASSERT_EQUALS(diff, 0);
@@ -1501,14 +1501,14 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
 static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
     C_KZG_RET ret;
-    const int n_cells = 2;
+    const size_t n_cells = 2;
     Bytes48 proofs[n_cells];
     KZGCommitment commitments[n_cells];
     Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_cells; i++) {
+    for (size_t i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1526,14 +1526,14 @@ static void test_verify_kzg_proof_batch__fails_with_incorrect_proof(void) {
 
 static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_cells = 2;
+    const size_t n_cells = 2;
     Bytes48 proofs[n_cells];
     KZGCommitment commitments[n_cells];
     Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_cells; i++) {
+    for (size_t i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1554,14 +1554,14 @@ static void test_verify_kzg_proof_batch__fails_proof_not_in_g1(void) {
 
 static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
     C_KZG_RET ret;
-    const int n_cells = 2;
+    const size_t n_cells = 2;
     Bytes48 proofs[n_cells];
     KZGCommitment commitments[n_cells];
     Blob blobs[n_cells];
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_cells; i++) {
+    for (size_t i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1582,7 +1582,7 @@ static void test_verify_kzg_proof_batch__fails_commitment_not_in_g1(void) {
 
 static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     C_KZG_RET ret;
-    const int n_cells = 2;
+    const size_t n_cells = 2;
     Bytes48 proofs[n_cells];
     KZGCommitment commitments[n_cells];
     Blob blobs[n_cells];
@@ -1590,7 +1590,7 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
     bool ok;
 
     /* Some preparation */
-    for (int i = 0; i < n_cells; i++) {
+    for (size_t i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);

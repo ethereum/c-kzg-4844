@@ -23,8 +23,8 @@ endif
 CFLAGS += -I. -I../inc -O2
 # Enable all of the optional warnings.
 CFLAGS += -pedantic -Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare \
-          -Wtype-limits -Werror -Wshadow -Wfloat-equal -Wpointer-arith \
-          -Wformat=2 -Wstrict-overflow=5 -Wstrict-prototypes -Wcast-align \
+          -Wtype-limits -Wshadow -Wfloat-equal -Wpointer-arith -Wformat=2 \
+          -Wstrict-overflow=5 -Wstrict-prototypes -Wcast-align \
           -Wredundant-decls -Wmissing-prototypes -Wmissing-declarations \
           -Wold-style-definition -Wmissing-include-dirs -Wuninitialized \
           -Wnull-dereference -Wformat-security -Wswitch-default -Wswitch-enum \

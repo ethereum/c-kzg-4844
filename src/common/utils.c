@@ -17,6 +17,7 @@
 #include "common/utils.h"
 #include "common/alloc.h"
 
+#include <stddef.h> /* For size_t */
 #include <stdlib.h> /* For NULL */
 #include <string.h> /* For memcpy */
 
@@ -90,8 +91,7 @@ uint64_t reverse_bits_limited(uint64_t n, uint64_t value) {
  *
  * @param[in,out] values The array, which is re-ordered in-place
  * @param[in]     size   The size in bytes of an element of the array
- * @param[in]     n      The length of the array, must be a power of two
- *                       strictly greater than 1 and less than 2^32.
+ * @param[in]     n      The length of the array, must be a power of two strictly greater than 1
  *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in `size`.
@@ -102,7 +102,7 @@ uint64_t reverse_bits_limited(uint64_t n, uint64_t value) {
 C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     C_KZG_RET ret;
     byte *tmp = NULL;
-    byte *v = values;
+    byte *v = (byte *)values;
 
     /* Some sanity checks */
     if (n < 2 || !is_power_of_two(n)) {
@@ -140,9 +140,9 @@ out:
  *
  * @remark `out` is left untouched if `n == 0`.
  */
-void compute_powers(fr_t *out, const fr_t *x, uint64_t n) {
+void compute_powers(fr_t *out, const fr_t *x, size_t n) {
     fr_t current_power = FR_ONE;
-    for (uint64_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         out[i] = current_power;
         blst_fr_mul(&current_power, &current_power, x);
     }
