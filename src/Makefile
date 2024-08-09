@@ -81,7 +81,6 @@ CFLAGS += \
 	-Wuninitialized \
 	-Wunreachable-code \
 	-Wvariadic-macros \
-	-Wvla \
 	-Wwrite-strings
 
 # Cross-platform compilation settings.
