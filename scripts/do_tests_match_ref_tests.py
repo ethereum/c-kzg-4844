@@ -64,7 +64,7 @@ def create_normalized_file_to_hash_dict(files):
     This creates a dictionary of normalized_path:sha256hash. By normalized, we
     mean the parts of the path which are different between local/reference
     tests are removed. If both test directories contain the same tests, these
-    dictionaries are expected to be the same. If there a missing/extra tests,
+    dictionaries are expected to be the same. If there is a missing/extra test,
     it will be caught.
     """
     d = {}
