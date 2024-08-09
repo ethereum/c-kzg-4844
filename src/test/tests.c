@@ -99,10 +99,10 @@ static void bytes48_from_hex(Bytes48 *out, const char *hex) {
     }
 }
 
-static void get_rand_uint32(uint32_t *out) {
+static void get_rand_uint64(uint64_t *out) {
     Bytes32 b;
     get_rand_bytes32(&b);
-    *out = *(uint32_t *)(b.bytes);
+    memcpy(out, b.bytes, sizeof(*out));
 }
 
 static void eval_poly(fr_t *out, fr_t *poly_coefficients, fr_t *x) {
@@ -313,14 +313,14 @@ static void test_fr_batch_inv__test_zero(void) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_g1_mul__test_consistent(void) {
-    blst_scalar s;
+    blst_scalar scalar;
     Bytes32 b;
     fr_t f;
     g1_t g, r, check;
 
     get_rand_field_element(&b);
-    blst_scalar_from_lendian(&s, b.bytes);
-    blst_fr_from_scalar(&f, &s);
+    blst_scalar_from_lendian(&scalar, b.bytes);
+    blst_fr_from_scalar(&f, &scalar);
 
     get_rand_g1(&g);
 
@@ -346,13 +346,13 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     Bytes32 b;
     fr_t f, two;
     g1_t g, r, check;
-    blst_scalar s;
+    blst_scalar scalar;
 
     fr_from_uint64(&f, 1);
     fr_from_uint64(&two, 2);
-    blst_scalar_from_fr(&s, &f);
+    blst_scalar_from_fr(&scalar, &f);
     /* blst_p1_mult needs it to be little-endian */
-    blst_lendian_from_scalar(b.bytes, &s);
+    blst_lendian_from_scalar(b.bytes, &scalar);
 
     for (int i = 1; i < 255; i++) {
         get_rand_g1(&g);
@@ -363,8 +363,8 @@ static void test_g1_mul__test_different_bit_lengths(void) {
         ASSERT("points are equal", blst_p1_is_equal(&check, &r));
 
         blst_fr_mul(&f, &f, &two);
-        blst_scalar_from_fr(&s, &f);
-        blst_lendian_from_scalar(b.bytes, &s);
+        blst_scalar_from_fr(&scalar, &f);
+        blst_lendian_from_scalar(b.bytes, &scalar);
     }
 }
 
@@ -373,33 +373,33 @@ static void test_g1_mul__test_different_bit_lengths(void) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_pairings_verify__good_pairing(void) {
-    fr_t s;
+    fr_t f;
     g1_t g1, sg1;
     g2_t g2, sg2;
 
-    get_rand_fr(&s);
+    get_rand_fr(&f);
 
     get_rand_g1(&g1);
     get_rand_g2(&g2);
 
-    g1_mul(&sg1, &g1, &s);
-    g2_mul(&sg2, &g2, &s);
+    g1_mul(&sg1, &g1, &f);
+    g2_mul(&sg2, &g2, &f);
 
     ASSERT("pairings verify", pairings_verify(&g1, &sg2, &sg1, &g2));
 }
 
 static void test_pairings_verify__bad_pairing(void) {
-    fr_t s, splusone;
+    fr_t f, splusone;
     g1_t g1, sg1;
     g2_t g2, s1g2;
 
-    get_rand_fr(&s);
-    blst_fr_add(&splusone, &s, &FR_ONE);
+    get_rand_fr(&f);
+    blst_fr_add(&splusone, &f, &FR_ONE);
 
     get_rand_g1(&g1);
     get_rand_g2(&g2);
 
-    g1_mul(&sg1, &g1, &s);
+    g1_mul(&sg1, &g1, &f);
     g2_mul(&s1g2, &g2, &splusone);
 
     ASSERT("pairings fail", !pairings_verify(&g1, &s1g2, &sg1, &g2));
@@ -750,31 +750,31 @@ static void test_validate_kzg_g1__fails_with_mask_bits_001(void) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_reverse_bits__succeeds_round_trip(void) {
-    uint32_t original;
-    uint32_t reversed;
-    uint32_t reversed_reversed;
+    uint64_t original;
+    uint64_t reversed;
+    uint64_t reversed_reversed;
 
-    get_rand_uint32(&original);
+    get_rand_uint64(&original);
     reversed = reverse_bits(original);
     reversed_reversed = reverse_bits(reversed);
     ASSERT_EQUALS(reversed_reversed, original);
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_zero(void) {
-    uint32_t original = 0;
-    uint32_t reversed = 0;
+    uint64_t original = 0;
+    uint64_t reversed = 0;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_some_bits_are_one(void) {
-    uint32_t original = 2826829826;
-    uint32_t reversed = 1073774101;
+    uint64_t original = 17004747765872328575ULL;
+    uint64_t reversed = 18374677679283584983ULL;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
 static void test_reverse_bits__succeeds_all_bits_are_one(void) {
-    uint32_t original = 4294967295;
-    uint32_t reversed = 4294967295;
+    uint64_t original = 18446744073709551615ULL;
+    uint64_t reversed = 18446744073709551615ULL;
     ASSERT_EQUALS(reverse_bits(original), reversed);
 }
 
@@ -784,16 +784,16 @@ static void test_reverse_bits__succeeds_all_bits_are_one(void) {
 
 static void test_bit_reversal_permutation__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    uint32_t original[128];
-    uint32_t reversed_reversed[128];
+    uint64_t original[128];
+    uint64_t reversed_reversed[128];
 
     for (size_t i = 0; i < 128; i++) {
-        get_rand_uint32(&original[i]);
+        get_rand_uint64(&original[i]);
         reversed_reversed[i] = original[i];
     }
-    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint64_t), 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
-    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint32_t), 128);
+    ret = bit_reversal_permutation(&reversed_reversed, sizeof(uint64_t), 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
     for (size_t i = 0; i < 128; i++) {
         ASSERT_EQUALS(reversed_reversed[i], original[i]);
@@ -802,14 +802,14 @@ static void test_bit_reversal_permutation__succeeds_round_trip(void) {
 
 static void test_bit_reversal_permutation__specific_items(void) {
     C_KZG_RET ret;
-    uint32_t original[128];
-    uint32_t reversed[128];
+    uint64_t original[128];
+    uint64_t reversed[128];
 
     for (size_t i = 0; i < 128; i++) {
-        get_rand_uint32(&original[i]);
+        get_rand_uint64(&original[i]);
         reversed[i] = original[i];
     }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 128);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint64_t), 128);
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     // Test the first 8 elements of the bit reversal permutation
@@ -827,14 +827,14 @@ static void test_bit_reversal_permutation__specific_items(void) {
 
 static void test_bit_reversal_permutation__coset_structure(void) {
     C_KZG_RET ret;
-    uint32_t original[256];
-    uint32_t reversed[256];
+    uint64_t original[256];
+    uint64_t reversed[256];
 
     for (size_t i = 0; i < 256; i++) {
         original[i] = i % 16;
         reversed[i] = original[i];
     }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 256);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint64_t), 256);
     ASSERT_EQUALS(ret, C_KZG_OK);
     for (size_t i = 0; i < 16; i++) {
         for (size_t j = 1; j < 16; j++) {
@@ -843,36 +843,25 @@ static void test_bit_reversal_permutation__coset_structure(void) {
     }
 }
 
-static void test_bit_reversal_permutation__fails_n_too_large(void) {
-    C_KZG_RET ret;
-    uint32_t reversed[256];
-
-    for (size_t i = 0; i < 256; i++) {
-        reversed[i] = 0;
-    }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), (uint64_t)1 << 32);
-    ASSERT_EQUALS(ret, C_KZG_BADARGS);
-}
-
 static void test_bit_reversal_permutation__fails_n_not_power_of_two(void) {
     C_KZG_RET ret;
-    uint32_t reversed[256];
+    uint64_t reversed[256];
 
     for (size_t i = 0; i < 256; i++) {
         reversed[i] = 0;
     }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 255);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint64_t), 255);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
 static void test_bit_reversal_permutation__fails_n_is_one(void) {
     C_KZG_RET ret;
-    uint32_t reversed[1];
+    uint64_t reversed[1];
 
     for (size_t i = 0; i < 1; i++) {
         reversed[i] = 0;
     }
-    ret = bit_reversal_permutation(&reversed, sizeof(uint32_t), 1);
+    ret = bit_reversal_permutation(&reversed, sizeof(uint64_t), 1);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
@@ -1028,8 +1017,8 @@ static void test_evaluate_polynomial_in_evaluation_form__random_polynomial(void)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static void test_log2_pow2__succeeds_expected_values(void) {
-    uint32_t x = 1;
-    for (int i = 0; i < 31; i++) {
+    uint64_t x = 1;
+    for (size_t i = 0; i < 31; i++) {
         ASSERT_EQUALS(i, log2_pow2(x));
         x <<= 1;
     }
@@ -1041,7 +1030,7 @@ static void test_log2_pow2__succeeds_expected_values(void) {
 
 static void test_is_power_of_two__succeeds_powers_of_two(void) {
     uint64_t x = 1;
-    for (int i = 0; i < 63; i++) {
+    for (size_t i = 0; i < 63; i++) {
         ASSERT("is_power_of_two good", is_power_of_two(x));
         x <<= 1;
     }
@@ -1049,7 +1038,7 @@ static void test_is_power_of_two__succeeds_powers_of_two(void) {
 
 static void test_is_power_of_two__fails_not_powers_of_two(void) {
     uint64_t x = 4;
-    for (int i = 2; i < 63; i++) {
+    for (size_t i = 2; i < 63; i++) {
         ASSERT("is_power_of_two bad", !is_power_of_two(x + 1));
         ASSERT("is_power_of_two bad", !is_power_of_two(x - 1));
         x <<= 1;
@@ -1479,7 +1468,7 @@ static void test_compute_and_verify_blob_kzg_proof__fails_invalid_blob(void) {
 
 static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     C_KZG_RET ret;
-    const int n_cells = 16;
+    const size_t n_cells = 16;
     Bytes48 proofs[n_cells];
     KZGCommitment commitments[n_cells];
     Blob *blobs = NULL;
@@ -1490,7 +1479,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 
     /* Some preparation */
-    for (int i = 0; i < n_cells; i++) {
+    for (size_t i = 0; i < n_cells; i++) {
         get_rand_blob(&blobs[i]);
         ret = blob_to_kzg_commitment(&commitments[i], &blobs[i], &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
@@ -1500,7 +1489,7 @@ static void test_verify_kzg_proof_batch__succeeds_round_trip(void) {
 
     /* Verify batched proofs for 0,1,2..16 blobs */
     /* This should still work with zero blobs */
-    for (int count = 0; count <= n_cells; count++) {
+    for (size_t count = 0; count <= n_cells; count++) {
         ret = verify_blob_kzg_proof_batch(&ok, blobs, commitments, proofs, count, &s);
         ASSERT_EQUALS(ret, C_KZG_OK);
         ASSERT_EQUALS(ok, true);
@@ -1794,8 +1783,8 @@ static void test_deduplicate_commitments__all_duplicates(void) {
 }
 
 static void test_deduplicate_commitments__no_commitments(void) {
-    Bytes48 commitments[0];
-    uint64_t indices[0];
+    Bytes48 *commitments = NULL;
+    uint64_t *indices = NULL;
     size_t count = 0;
 
     deduplicate_commitments(commitments, indices, &count);
@@ -2250,7 +2239,6 @@ int main(void) {
     RUN(test_bit_reversal_permutation__succeeds_round_trip);
     RUN(test_bit_reversal_permutation__specific_items);
     RUN(test_bit_reversal_permutation__coset_structure);
-    RUN(test_bit_reversal_permutation__fails_n_too_large);
     RUN(test_bit_reversal_permutation__fails_n_not_power_of_two);
     RUN(test_bit_reversal_permutation__fails_n_is_one);
     RUN(test_compute_powers__succeeds_expected_powers);

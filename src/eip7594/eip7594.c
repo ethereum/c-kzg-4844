@@ -227,7 +227,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
             /* Convert the untrusted bytes to a field element */
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(field, (Bytes32 *)&cells[i].bytes[offset]);
+            ret = bytes_to_bls_field(field, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
         }
     }
@@ -636,7 +636,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             fr_t field, scaled;
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(&field, (Bytes32 *)&cells[i].bytes[offset]);
+            ret = bytes_to_bls_field(&field, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
             blst_fr_mul(&scaled, &field, &r_powers[i]);
             size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
@@ -684,7 +684,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
          * To unscale, divide by the coset. It's faster to multiply with the inverse. We can skip
          * the first iteration because its dividing by one.
          */
-        uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
+        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
         blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
         shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
@@ -713,7 +713,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     for (size_t i = 0; i < num_cells; i++) {
-        uint32_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
+        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
         fr_t coset_factor = s->roots_of_unity[pos];
         fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);

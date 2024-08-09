@@ -29,7 +29,7 @@
 C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
     C_KZG_RET ret;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        ret = bytes_to_bls_field(&p[i], (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
+        ret = bytes_to_bls_field(&p[i], (const Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT]);
         if (ret != C_KZG_OK) return ret;
     }
     return C_KZG_OK;
@@ -42,7 +42,7 @@ C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
  */
 void print_blob(const Blob *blob) {
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        Bytes32 *field = (Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        const Bytes32 *field = (const Bytes32 *)&blob->bytes[i * BYTES_PER_FIELD_ELEMENT];
         print_bytes32(field);
     }
 }

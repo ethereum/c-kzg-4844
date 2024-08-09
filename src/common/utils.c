@@ -46,23 +46,23 @@ bool is_power_of_two(uint64_t n) {
  * @remark Works only for n a power of two, and only for n up to 2^31.
  * @remark Not the fastest implementation, but it doesn't need to be fast.
  */
-int log2_pow2(uint32_t n) {
-    int position = 0;
+uint64_t log2_pow2(uint64_t n) {
+    uint64_t position = 0;
     while (n >>= 1)
         position++;
     return position;
 }
 
 /**
- * Reverse the bit order in a 32-bit integer.
+ * Reverse the bit order in a 64-bit integer.
  *
  * @param[in]   n   The integer to be reversed
  *
  * @return An integer with the bits of `n` reversed.
  */
-uint32_t reverse_bits(uint32_t n) {
-    uint32_t result = 0;
-    for (int i = 0; i < 32; ++i) {
+uint64_t reverse_bits(uint64_t n) {
+    uint64_t result = 0;
+    for (size_t i = 0; i < 64; ++i) {
         result <<= 1;
         result |= (n & 1);
         n >>= 1;
@@ -80,8 +80,8 @@ uint32_t reverse_bits(uint32_t n) {
  *
  * @remark n must be a power of two.
  */
-uint32_t reverse_bits_limited(uint32_t n, uint32_t value) {
-    size_t unused_bit_len = 32 - log2_pow2(n);
+uint64_t reverse_bits_limited(uint64_t n, uint64_t value) {
+    size_t unused_bit_len = 64 - log2_pow2(n);
     return reverse_bits(value) >> unused_bit_len;
 }
 
@@ -105,7 +105,7 @@ C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     byte *v = values;
 
     /* Some sanity checks */
-    if (n < 2 || n >= UINT32_MAX || !is_power_of_two(n)) {
+    if (n < 2 || !is_power_of_two(n)) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -115,9 +115,9 @@ C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
     if (ret != C_KZG_OK) goto out;
 
     /* Reorder elements */
-    int unused_bit_len = 32 - log2_pow2(n);
-    for (uint32_t i = 0; i < n; i++) {
-        uint32_t r = reverse_bits(i) >> unused_bit_len;
+    uint64_t unused_bit_len = 64 - log2_pow2(n);
+    for (uint64_t i = 0; i < n; i++) {
+        uint64_t r = reverse_bits(i) >> unused_bit_len;
         if (r > i) {
             /* Swap the two elements */
             memcpy(tmp, v + (i * size), size);

@@ -20,7 +20,16 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2 -Wall -Wextra
+CFLAGS += -I. -I../inc -O2
+# Enable all of the optional warnings.
+CFLAGS += -pedantic -Wall -Wextra -Wconversion -Wsign-conversion -Wsign-compare \
+          -Wtype-limits -Werror -Wshadow -Wfloat-equal -Wpointer-arith \
+          -Wformat=2 -Wstrict-overflow=5 -Wstrict-prototypes -Wcast-align \
+          -Wredundant-decls -Wmissing-prototypes -Wmissing-declarations \
+          -Wold-style-definition -Wmissing-include-dirs -Wuninitialized \
+          -Wnull-dereference -Wformat-security -Wswitch-default -Wswitch-enum \
+          -Wundef -Walloca -Warray-bounds -Wcast-qual -Wstrict-aliasing=2 \
+          -Wc++-compat -Wpacked
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)

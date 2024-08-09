@@ -71,7 +71,7 @@ const char* tt_current_expression = NULL;
 const char* tt_current_file = NULL;
 int tt_current_line = 0;
 
-void tt_execute(const char* name, void (*test_function)(void))
+static void tt_execute(const char* name, void (*test_function)(void))
 {
   tt_current_test_failed = 0;
   test_function();
@@ -84,7 +84,7 @@ void tt_execute(const char* name, void (*test_function)(void))
   }
 }
 
-int tt_assert(const char* file, int line, const char* msg, const char* expression, int pass)
+static int tt_assert(const char* file, int line, const char* msg, const char* expression, int pass)
 {
   tt_current_msg = msg;
   tt_current_expression = expression;
@@ -94,7 +94,7 @@ int tt_assert(const char* file, int line, const char* msg, const char* expressio
   return pass;
 }
 
-int tt_report(void)
+static int tt_report(void)
 {
   if (tt_fails) {
     printf("%c%sFAILED%c%s [%s] (passed:%d, failed:%d, total:%d)\n",
