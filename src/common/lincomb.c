@@ -88,7 +88,7 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
 
     /* Allocate space for Pippenger scratch */
     size_t scratch_size = blst_p1s_mult_pippenger_scratch_sizeof(len);
-    ret = c_kzg_malloc((void *)&scratch, scratch_size);
+    ret = c_kzg_malloc((void **)&scratch, scratch_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Transform the field elements to 256-bit scalars */
