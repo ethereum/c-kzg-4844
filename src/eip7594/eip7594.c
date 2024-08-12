@@ -174,7 +174,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     C_KZG_RET ret;
     fr_t *recovered_cells_fr = NULL;
     g1_t *recovered_proofs_g1 = NULL;
-    Blob *blob = NULL;
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
@@ -200,8 +199,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     ret = new_fr_array(&recovered_cells_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&recovered_proofs_g1, CELLS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-    ret = c_kzg_malloc((void **)&blob, BYTES_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Initialize all cells as missing */
@@ -282,7 +279,6 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 out:
     c_kzg_free(recovered_cells_fr);
     c_kzg_free(recovered_proofs_g1);
-    c_kzg_free(blob);
     return ret;
 }
 
