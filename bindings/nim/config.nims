@@ -18,9 +18,9 @@ proc runTests*() =
   echo ">>>>>>>>>>>>>>>> Run tests in DEBUG mode <<<<<<<<<<<<<<<<"
   test "-d:debug", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE mode <<<<<<<<<<<<<<<<"
-  test "-d:release", testPath & "/tests"
+  test "-d:release --opt:none", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE and THREADS ON mode <<<<<<<<<<<<<<<<"
-  test "--threads:on -d:release", testPath & "/tests"
+  test "--threads:on -d:release --opt:none", testPath & "/tests"
 
 task test, "Run tests":
   runTests()
