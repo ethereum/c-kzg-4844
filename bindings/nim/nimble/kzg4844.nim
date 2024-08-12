@@ -1,7 +1,5 @@
 import
-  kzg4844/kzg,
-  kzg4844/kzg_ex
+  kzg4844/kzg
 
 export
-  kzg,
-  kzg_ex
+  kzg
