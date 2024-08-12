@@ -1,4 +1,4 @@
-name: Sanity
+name: Spec Consistency
 on:
   push:
     branches:
