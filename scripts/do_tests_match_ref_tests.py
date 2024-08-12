@@ -28,6 +28,7 @@ def download_latest_tests(output_dir):
 
     return file_name
 
+
 def extract_tarfile(tests_tarfile, temp_dir):
     """
     The release artifact is a tar.gz file, this will extract it.
