@@ -62,18 +62,19 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 # Public functions
 ##############################################################
 
-proc loadTrustedSetup*(input: File, precompute: Natural): Result[void, string] =
+proc loadTrustedSetup*(input: File, precompute: Natural): Result[void, string] {.gcsafe.} =
   if gCtx.initialized:
     return err(TrustedSetupAlreadyLoadedErr)
   gCtx.settings = cast[ptr KzgSettings](alloc0(sizeof(KzgSettings)))
   let res = load_trusted_setup_file(gCtx.settings, input, precompute.csize_t)
   if res != KZG_OK:
     dealloc(gCtx.settings)
+    gCtx.settings = nil
     return err($res)
   gCtx.initialized = true
   return ok()
 
-proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[void, string] =
+proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[void, string] {.gcsafe.} =
   try:
     let file = open(fileName)
     result = file.loadTrustedSetup(precompute)
@@ -85,7 +86,7 @@ proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
                        g1LagrangeBytes: openArray[byte],
                        g2MonomialBytes: openArray[byte],
                        precompute: Natural):
-                         Result[void, string] =
+                         Result[void, string] {.gcsafe.} =
   if gCtx.initialized:
     return err(TrustedSetupAlreadyLoadedErr)
   if g1MonomialBytes.len == 0 or g1LagrangeBytes.len == 0 or g2MonomialBytes.len == 0:
@@ -102,11 +103,12 @@ proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
       precompute.csize_t)
   if res != KZG_OK:
     dealloc(gCtx.settings)
+    gCtx.settings = nil
     return err($res)
   gCtx.initialized = true
   return ok()
 
-proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[void, string] =
+proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[void, string] {.gcsafe.} =
   const
     NumG1 = FIELD_ELEMENTS_PER_BLOB
     NumG2 = 65
@@ -156,8 +158,9 @@ proc freeTrustedSetup*(): Result[void, string] {.gcsafe.} =
   if not gCtx.initialized:
     return err(TrustedSetupNotLoadedErr)
   free_trusted_setup(gCtx.settings)
-  dealloc(gCtx.settings)
   gCtx.initialized = false
+  dealloc(gCtx.settings)
+  gCtx.settings = nil
   return ok()
 
 proc blobToKzgCommitment*(blob: KzgBlob): Result[KzgCommitment, string] {.gcsafe.} =
