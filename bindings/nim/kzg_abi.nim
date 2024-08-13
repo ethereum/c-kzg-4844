@@ -84,7 +84,7 @@ type
 
   # A single cell for a blob.
   KzgCell* {.importc: "Cell",
-    header: "ckzg.h".} = object
+    header: "ckzg.h"., completeStruct.} = object
     bytes*: array[BYTES_PER_CELL, uint8]
 
 {.pragma: kzg_abi, importc, cdecl, header: "ckzg.h".}
