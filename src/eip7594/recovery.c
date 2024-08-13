@@ -252,7 +252,7 @@ C_KZG_RET recover_cells(
         /* Iterate over each cell index and check if we have received it */
         if (!is_in_array(cell_indices, num_cells, i)) {
             /* If the cell is missing, bit reverse the index and add it to the missing array */
-            uint32_t brp_i = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
+            uint64_t brp_i = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
             missing_cell_indices[len_missing++] = brp_i;
         }
     }

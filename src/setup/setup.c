@@ -94,7 +94,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     C_KZG_RET ret;
     fr_t root_of_unity;
 
-    uint32_t max_scale = 0;
+    size_t max_scale = 0;
     while ((1ULL << max_scale) < FIELD_ELEMENTS_PER_EXT_BLOB)
         max_scale++;
 
@@ -382,7 +382,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* 1<<max_scale is the smallest power of 2 >= n1 */
-    uint32_t max_scale = 0;
+    size_t max_scale = 0;
     while ((1ULL << max_scale) < NUM_G1_POINTS)
         max_scale++;
 

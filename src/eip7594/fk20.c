@@ -73,7 +73,7 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
     fr_t *toeplitz_coeffs_fft = NULL;
     g1_t *h = NULL;
     g1_t *h_ext_fft = NULL;
-    void *scratch = NULL;
+    limb_t *scratch = NULL;
     bool precompute = s->wbits != 0;
 
     /* Initialize length variables */
@@ -92,7 +92,7 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
 
     if (precompute) {
         /* Allocations for fixed-base MSM */
-        ret = c_kzg_malloc(&scratch, s->scratch_size);
+        ret = c_kzg_malloc((void **)&scratch, s->scratch_size);
         if (ret != C_KZG_OK) goto out;
         ret = c_kzg_calloc((void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar));
         if (ret != C_KZG_OK) goto out;
