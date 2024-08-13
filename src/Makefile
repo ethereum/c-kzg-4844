@@ -93,7 +93,7 @@ endif
 
 # Settings for blst.
 BLST_DIR = ../blst
-BLST_HASH := $(shell git -C $(BLST_DIR) rev-parse HEAD)
+BLST_HASH = $(shell git -C $(BLST_DIR) rev-parse HEAD)
 BLST_HASH_FILE = .blst_hash
 BLST_LIBRARY = ../lib/libblst.a
 BLST_BUILDSCRIPT = ../blst/build.sh
@@ -105,7 +105,6 @@ LIBS = $(BLST_LIBRARY)
 # Create file lists.
 SOURCE_FILES := $(shell find . -name '*.c' | sed 's|^\./||' | sort)
 HEADER_FILES := $(shell find . -name '*.h' | sed 's|^\./||' | sort)
-OBJECT_FILES := $(patsubst %.c, %.o, $(SOURCE_FILES))
 
 # There is no tests header file.
 HEADER_FILES := $(filter-out test/tests.h, $(HEADER_FILES))
