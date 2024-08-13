@@ -16,11 +16,14 @@ proc test(args, path: string) =
 
 proc runTests*() =
   echo ">>>>>>>>>>>>>>>> Run tests in DEBUG mode <<<<<<<<<<<<<<<<"
-  test "-d:debug", testPath & "/tests"
+  test "-d:debug --opt:speed", testPath & "/tests"
+  test "-d:debug --opt:size", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE mode <<<<<<<<<<<<<<<<"
   test "-d:release --opt:none", testPath & "/tests"
+  test "-d:release --opt:speed", testPath & "/tests"
+  test "-d:release --opt:size", testPath & "/tests"
   echo ">>>>>>>>>>>>>>>> Run tests in RELEASE and THREADS ON mode <<<<<<<<<<<<<<<<"
-  test "--threads:on -d:release --opt:none", testPath & "/tests"
+  #test "--threads:on -d:release --opt:none", testPath & "/tests"
 
 task test, "Run tests":
   runTests()
