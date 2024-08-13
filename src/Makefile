@@ -92,6 +92,9 @@ else
 endif
 
 # Settings for blst.
+BLST_DIR = ../blst
+BLST_HASH := $(shell git -C $(BLST_DIR) rev-parse HEAD)
+BLST_HASH_FILE = .blst_hash
 BLST_LIBRARY = ../lib/libblst.a
 BLST_BUILDSCRIPT = ../blst/build.sh
 BLST_BUILDSCRIPT_FLAGS = -D__BLST_PORTABLE__
@@ -113,26 +116,49 @@ HEADER_FILES := $(filter-out test/tinytest.h, $(HEADER_FILES))
 # Core
 ###############################################################################
 
-all: $(OBJECT_FILES) test
+all: test
 
+# This will populate the blst directory will files.
 $(BLST_BUILDSCRIPT):
+	@echo "[+] initializing blst submodule"
 	@git submodule update --init
 
-$(BLST_LIBRARY): $(BLST_BUILDSCRIPT)
+# This will build blst without condition.
+# It will also copy the header files to our include directory.
+.PHONY: build_blst
+build_blst:
+	@echo "[+] building blst"
 	@cd $(dir $(BLST_BUILDSCRIPT)) && \
 	./$(notdir $(BLST_BUILDSCRIPT)) $(BLST_BUILDSCRIPT_FLAGS) && \
 	cp $(notdir $(BLST_LIBRARY)) ../lib && \
 	cp bindings/*.h ../inc
 
+# This will build blst if the module is out of date.
+# We track this with a hidden file.
 .PHONY: blst
-blst: $(BLST_LIBRARY)
+blst: $(BLST_BUILDSCRIPT)
+	@if [ -f $(BLST_HASH_FILE) ]; then \
+		LAST_HASH=$$(cat $(BLST_HASH_FILE)); \
+		if [ "$(BLST_HASH)" != "$$LAST_HASH" ]; then \
+			$(MAKE) build_blst; \
+			echo $(BLST_HASH) > $(BLST_HASH_FILE); \
+		fi \
+	else \
+		$(MAKE) build_blst; \
+		echo $(BLST_HASH) > $(BLST_HASH_FILE); \
+	fi
 
+# This compiles the tests with optimizations disabled.
+# It will re-build if any of our source/header files change.
 tests: CFLAGS += -O0
-tests: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
+tests: blst $(SOURCE_FILES) $(HEADER_FILES)
+	@echo "[+] building tests"
 	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
+# This simply runs the test suite.
 .PHONY: test
 test: tests
+	@echo "[+] executing tests"
 	@./tests
 
 ###############################################################################
@@ -140,11 +166,13 @@ test: tests
 ###############################################################################
 
 tests_cov: CFLAGS += -O0 -fprofile-instr-generate -fcoverage-mapping
-tests_cov: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
+tests_cov: blst $(SOURCE_FILES) $(HEADER_FILES)
+	@echo "[+] building tests with coverage"
 	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
 .PHONY: coverage
 coverage: tests_cov
+	@echo "[+] executing tests with coverage"
 	@LLVM_PROFILE_FILE="ckzg.profraw" ./$<
 	@$(XCRUN) llvm-profdata merge --sparse ckzg.profraw -o ckzg.profdata
 	@$(XCRUN) llvm-cov show --instr-profile=ckzg.profdata --format=html \
@@ -162,16 +190,18 @@ ifeq ($(PLATFORM),Darwin)
 tests_prof: CFLAGS += -L$(shell brew --prefix gperftools)/lib
 tests_prof: CFLAGS += -I$(shell brew --prefix gperftools)/include
 endif
-tests_prof: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
+tests_prof: blst $(SOURCE_FILES) $(HEADER_FILES)
+	@echo "[+] building tests with profiler"
 	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
 
 .PHONY: run_profiler
 run_profiler: tests_prof
+	@echo "[+] executing tests with profiler"
 	@CPUPROFILE_FREQUENCY=1000000000 ./$<
 
 .PHONY: profile_%
 profile_%: run_profiler
-	@echo Profiling $*...
+	@echo "[+] generating profiling graph for $*"
 	@pprof --pdf --nodefraction=0.00001 --edgefraction=0.00001 \
 	    ./tests_prof $*.prof > $*.pdf
 
@@ -193,9 +223,10 @@ profile: \
 
 .PHONY: sanitize_%
 sanitize_%: CFLAGS += -O0 -fsanitize=$*
-sanitize_%: $(SOURCE_FILES) $(HEADER_FILES) $(BLST_LIBRARY)
-	@echo Running sanitize=$*...
+sanitize_%: blst $(SOURCE_FILES) $(HEADER_FILES)
+	@echo "[+] building tests with $* sanitizer"
 	@$(CC) $(CFLAGS) -o $@ test/tests.c $(LIBS)
+	@echo "[+] executing tests with $* sanitizer"
 	@ASAN_OPTIONS=allocator_may_return_null=1 \
 	    LSAN_OPTIONS=allocator_may_return_null=1 \
 	    ./$@; rm $@
@@ -218,10 +249,10 @@ endif
 ###############################################################################
 
 .PHONY: analyze
-analyze: $(SOURCE_FILES)
+analyze: blst $(SOURCE_FILES)
 	@rm -rf analysis-report
-	@for src in $^; do \
-		echo "Analyzing $$src..."; \
+	@for src in $(SOURCE_FILES); do \
+		echo "[+] analyzing $$src..."; \
 		$(CC) --analyze -Xanalyzer -analyzer-output=html -o analysis-report $(CFLAGS) -c $$src; \
 		[ -d analysis-report ] && exit 1; true; \
 	done
@@ -232,10 +263,12 @@ analyze: $(SOURCE_FILES)
 
 .PHONY: format
 format:
+	@echo "[+] executing formatter"
 	@clang-format -i --sort-includes $(SOURCE_FILES) $(HEADER_FILES)
 
 .PHONY: clean
 clean:
+	@echo "[+] cleaning"
 	@rm -f *.o */*.o *.profraw *.profdata *.html xray-log.* *.prof *.pdf \
-	    tests tests_cov tests_prof
+	    tests tests_cov tests_prof .blst_hash
 	@rm -rf analysis-report
