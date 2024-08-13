@@ -131,20 +131,15 @@ build_blst:
 	./$(notdir $(BLST_BUILDSCRIPT)) $(BLST_BUILDSCRIPT_FLAGS) && \
 	cp $(notdir $(BLST_LIBRARY)) ../lib && \
 	cp bindings/*.h ../inc
+	@echo $(BLST_HASH) > $(BLST_HASH_FILE)
 
 # This will build blst if the module is out of date.
 # We track this with a hidden file.
 .PHONY: blst
 blst: $(BLST_BUILDSCRIPT)
-	@if [ -f $(BLST_HASH_FILE) ]; then \
-		LAST_HASH=$$(cat $(BLST_HASH_FILE)); \
-		if [ "$(BLST_HASH)" != "$$LAST_HASH" ]; then \
+	@if [ ! -f $(BLST_HASH_FILE) ] || \
+		[ "$(BLST_HASH)" != "$$(cat $(BLST_HASH_FILE))" ]; then \
 			$(MAKE) build_blst; \
-			echo $(BLST_HASH) > $(BLST_HASH_FILE); \
-		fi \
-	else \
-		$(MAKE) build_blst; \
-		echo $(BLST_HASH) > $(BLST_HASH_FILE); \
 	fi
 
 # This compiles the tests with optimizations disabled.
