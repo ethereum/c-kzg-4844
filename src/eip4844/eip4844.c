@@ -754,7 +754,7 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Blob *blobs,
     const Bytes48 *commitments_bytes,
     const Bytes48 *proofs_bytes,
-    size_t n,
+    uint64_t n,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;

@@ -341,12 +341,12 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t 
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
-    size_t num_g1_monomial_bytes,
+    uint64_t num_g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_lagrange_bytes,
+    uint64_t num_g1_lagrange_bytes,
     const uint8_t *g2_monomial_bytes,
-    size_t num_g2_monomial_bytes,
-    size_t precompute
+    uint64_t num_g2_monomial_bytes,
+    uint64_t precompute
 ) {
     C_KZG_RET ret;
 
@@ -473,7 +473,7 @@ out_success:
  * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where the first two numbers
  * are in decimal and the remainder are hexstrings and any whitespace can be used as separators.
  */
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, uint64_t precompute) {
     C_KZG_RET ret;
     int num_matches;
     uint64_t i;

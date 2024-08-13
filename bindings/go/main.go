@@ -145,12 +145,12 @@ LoadTrustedSetup is the binding for:
 	C_KZG_RET load_trusted_setup(
 	    KZGSettings *out,
 	    const uint8_t *g1_monomial_bytes,
-	    size_t num_g1_monomial_bytes,
+	    uint64_t num_g1_monomial_bytes,
 	    const uint8_t *g1_lagrange_bytes,
-	    size_t num_g1_lagrange_bytes,
+	    uint64_t num_g1_lagrange_bytes,
 	    const uint8_t *g2_monomial_bytes,
-	    size_t num_g2_monomial_bytes,
-	    size_t precompute);
+	    uint64_t num_g2_monomial_bytes,
+	    uint64_t precompute);
 */
 func LoadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes []byte, precompute uint) error {
 	if loaded {
@@ -159,12 +159,12 @@ func LoadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes []byte, 
 	ret := C.load_trusted_setup(
 		&settings,
 		*(**C.uint8_t)(unsafe.Pointer(&g1MonomialBytes)),
-		(C.size_t)(len(g1MonomialBytes)),
+		(C.uint64_t)(len(g1MonomialBytes)),
 		*(**C.uint8_t)(unsafe.Pointer(&g1LagrangeBytes)),
-		(C.size_t)(len(g1LagrangeBytes)),
+		(C.uint64_t)(len(g1LagrangeBytes)),
 		*(**C.uint8_t)(unsafe.Pointer(&g2MonomialBytes)),
-		(C.size_t)(len(g2MonomialBytes)),
-		(C.size_t)(precompute))
+		(C.uint64_t)(len(g2MonomialBytes)),
+		(C.uint64_t)(precompute))
 	if ret == C.C_KZG_OK {
 		loaded = true
 		return nil
@@ -178,7 +178,7 @@ LoadTrustedSetupFile is the binding for:
 	C_KZG_RET load_trusted_setup_file(
 	    KZGSettings *out,
 	    FILE *in,
-	    size_t precompute);
+	    uint64_t precompute);
 */
 func LoadTrustedSetupFile(trustedSetupFile string, precompute uint) error {
 	if loaded {
@@ -192,7 +192,7 @@ func LoadTrustedSetupFile(trustedSetupFile string, precompute uint) error {
 	if fp == nil {
 		panic("error reading trusted setup")
 	}
-	ret := C.load_trusted_setup_file(&settings, fp, (C.size_t)(precompute))
+	ret := C.load_trusted_setup_file(&settings, fp, (C.uint64_t)(precompute))
 	C.fclose(fp)
 	if ret == C.C_KZG_OK {
 		loaded = true
@@ -390,7 +390,7 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 		*(**C.Blob)(unsafe.Pointer(&blobs)),
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
-		(C.size_t)(len(blobs)),
+		(C.uint64_t)(len(blobs)),
 		&settings)
 
 	if ret != C.C_KZG_OK {
@@ -435,7 +435,7 @@ RecoverCellsAndKZGProofs is the binding for:
 	    KZGProof *recovered_proofs,
 	    const uint64_t *cell_indices,
 	    const Cell *cells,
-	    size_t num_cells,
+	    uint64_t num_cells,
 	    const KZGSettings *s);
 */
 func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
@@ -453,7 +453,7 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtB
 		(*C.KZGProof)(unsafe.Pointer(&recoveredProofs)),
 		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
-		(C.size_t)(len(cells)),
+		(C.uint64_t)(len(cells)),
 		&settings)
 
 	if ret != C.C_KZG_OK {
@@ -471,7 +471,7 @@ VerifyCellKZGProofBatch is the binding for:
 	    const uint64_t *cell_indices,
 	    const Cell *cells,
 	    const Bytes48 *proofs_bytes,
-	    size_t num_cells,
+	    uint64_t num_cells,
 	    const KZGSettings *s);
 */
 func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, cells []Cell, proofsBytes []Bytes48) (bool, error) {
@@ -489,7 +489,7 @@ func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, c
 		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
-		(C.size_t)(len(cells)),
+		(C.uint64_t)(len(cells)),
 		&settings)
 
 	if ret != C.C_KZG_OK {
