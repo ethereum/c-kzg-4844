@@ -57,7 +57,7 @@ export function loadTrustedSetup(precompute: number, filePath?: string): void;
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function blobToKzgCommitment(blob: Blob): KZGCommitment;
+export function blobToKZGCommitment(blob: Blob): KZGCommitment;
 
 /**
  * Compute KZG proof for polynomial in Lagrange form at position z.
@@ -70,7 +70,7 @@ export function blobToKzgCommitment(blob: Blob): KZGCommitment;
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
+export function computeKZGProof(blob: Blob, zBytes: Bytes32): ProofResult;
 
 /**
  * Given a blob, return the KZG proof that is used to verify it against the
@@ -83,7 +83,7 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
+export function computeBlobKZGProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
 
 /**
  * Verify a KZG poof claiming that `p(z) == y`.
@@ -97,7 +97,7 @@ export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGPr
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyKzgProof(
+export function verifyKZGProof(
   commitmentBytes: Bytes48,
   zBytes: Bytes32,
   yBytes: Bytes32,
@@ -116,7 +116,7 @@ export function verifyKzgProof(
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
+export function verifyBlobKZGProof(blob: Blob, commitmentBytes: Bytes48, proofBytes: Bytes48): boolean;
 
 /**
  * Given an array of blobs and their proofs, verify that they correspond to their
@@ -132,7 +132,7 @@ export function verifyBlobKzgProof(blob: Blob, commitmentBytes: Bytes48, proofBy
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
+export function verifyBlobKZGProofBatch(blobs: Blob[], commitmentsBytes: Bytes48[], proofsBytes: Bytes48[]): boolean;
 
 /**
  * Get the cells and proofs for a given blob.
@@ -143,7 +143,7 @@ export function verifyBlobKzgProofBatch(blobs: Blob[], commitmentsBytes: Bytes48
  *
  * @throws {Error} - Failure to allocate or compute cells and proofs
  */
-export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
+export function computeCellsAndKZGProofs(blob: Blob): [Cell[], KZGProof[]];
 
 /**
  * Given at least 50% of cells, reconstruct the missing cells/proofs.
@@ -156,7 +156,7 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
+export function recoverCellsAndKZGProofs(cellIndices: number[], cells: Cell[]): [Cell[], KZGProof[]];
 
 /**
  * Verify that multiple cells' proofs are valid.
@@ -170,7 +170,7 @@ export function recoverCellsAndKzgProofs(cellIndices: number[], cells: Cell[]): 
  *
  * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
  */
-export function verifyCellKzgProofBatch(
+export function verifyCellKZGProofBatch(
   commitmentsBytes: Bytes48[],
   cellIndices: number[],
   cells: Cell[],

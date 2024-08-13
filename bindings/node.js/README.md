@@ -34,9 +34,9 @@ import {
   BYTES_PER_BLOB,
   Blob,
   Bytes48,
-  blobToKzgCommitment,
-  computeBlobKzgProof,
-  verifyBlobKzgProofBatch,
+  blobToKZGCommitment,
+  computeBlobKZGProof,
+  verifyBlobKZGProofBatch,
 } from "c-kzg";
 
 const blobs = [] as Blob[];
@@ -45,11 +45,11 @@ const proofs = [] as Bytes48[];
 
 for (let i = 0; i < BATCH_SIZE; i++) {
   blobs.push(Buffer.alloc(BYTES_PER_BLOB, "*"));
-  commitments.push(blobToKzgCommitment(blobs[i]));
-  proofs.push(computeBlobKzgProof(blobs[i], commitments[i]));
+  commitments.push(blobToKZGCommitment(blobs[i]));
+  proofs.push(computeBlobKZGProof(blobs[i], commitments[i]));
 }
 
-const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
+const isValid = verifyBlobKZGProofBatch(blobs, commitments, proofs);
 ```
 
 ## API
@@ -78,7 +78,7 @@ const isValid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
 loadTrustedSetup(filePath: string): void;
 ```
 
-### `blobToKzgCommitment`
+### `blobToKZGCommitment`
 
 ```ts
 /**
@@ -86,10 +86,10 @@ loadTrustedSetup(filePath: string): void;
  *
  * @param {Blob} blob - The blob representing the polynomial to be committed to
  */
-blobToKzgCommitment(blob: Blob): KZGCommitment;
+blobToKZGCommitment(blob: Blob): KZGCommitment;
 ```
 
-### `computeKzgProof`
+### `computeKZGProof`
 
 ```ts
 /**
@@ -101,10 +101,10 @@ blobToKzgCommitment(blob: Blob): KZGCommitment;
  * @return {ProofResult} - Tuple containing the resulting proof and evaluation
  *                         of the polynomial at the evaluation point z
  */
-computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
+computeKZGProof(blob: Blob, zBytes: Bytes32): ProofResult;
 ```
 
-### `computeBlobKzgProof`
+### `computeBlobKZGProof`
 
 ```ts
 /**
@@ -114,13 +114,13 @@ computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
  * @param {Blob}    blob - The blob (polynomial) to generate a proof for
  * @param {Bytes48} commitmentBytes - Commitment to verify
  */
-computeBlobKzgProof(
+computeBlobKZGProof(
   blob: Blob,
   commitmentBytes: Bytes48,
 ): KZGProof;
 ```
 
-### `verifyKzgProof`
+### `verifyKZGProof`
 
 ```ts
 /**
@@ -132,7 +132,7 @@ computeBlobKzgProof(
  * @param {Bytes32} yBytes - The serialized claimed evaluation result
  * @param {Bytes48} proofBytes - The serialized KZG proof
  */
-verifyKzgProof(
+verifyKZGProof(
   commitmentBytes: Bytes48,
   zBytes: Bytes32,
   yBytes: Bytes32,
@@ -140,7 +140,7 @@ verifyKzgProof(
 ): boolean;
 ```
 
-### `verifyBlobKzgProof`
+### `verifyBlobKZGProof`
 
 ```ts
 /**
@@ -151,14 +151,14 @@ verifyKzgProof(
  * @param {Bytes48} commitmentBytes - The serialized commitment to verify
  * @param {Bytes48} proofBytes - The serialized KZG proof for verification
  */
-verifyBlobKzgProof(
+verifyBlobKZGProof(
   blob: Blob,
   commitmentBytes: Bytes48,
   proofBytes: Bytes48,
 ): boolean;
 ```
 
-### `verifyBlobKzgProofBatch`
+### `verifyBlobKZGProofBatch`
 
 ```ts
 /**
@@ -173,14 +173,14 @@ verifyBlobKzgProof(
  * @param {Bytes48} proofBytes - An array of serialized KZG proofs for
  *                               verification
  */
-verifyBlobKzgProofBatch(
+verifyBlobKZGProofBatch(
   blobs: Blob[],
   commitmentsBytes: Bytes48[],
   proofsBytes: Bytes48[],
 ): boolean;
 ```
 
-### `computeCellsAndKzgProofs`
+### `computeCellsAndKZGProofs`
 
 ```ts
 /**
@@ -192,10 +192,10 @@ verifyBlobKzgProofBatch(
  *
  * @throws {Error} - Failure to allocate or compute cells and proofs
  */
-export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
+export function computeCellsAndKZGProofs(blob: Blob): [Cell[], KZGProof[]];
 ```
 
-### `recoverCellsAndKzgProofs`
+### `recoverCellsAndKZGProofs`
 
 ```ts
 /**
@@ -209,13 +209,13 @@ export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-export function recoverCellsAndKzgProofs(
+export function recoverCellsAndKZGProofs(
   cellIndices: number[],
   cells: Cell[],
 ): [Cell[], KZGProof[]];
 ```
 
-### `verifyCellKzgProofBatch`
+### `verifyCellKZGProofBatch`
 
 ```ts
 /**
@@ -230,7 +230,7 @@ export function recoverCellsAndKzgProofs(
  *
  * @throws {Error} - Invalid input, failure to allocate memory, or errors verifying batch
  */
-export function verifyCellKzgProofBatch(
+export function verifyCellKZGProofBatch(
   commitmentsBytes: Bytes48[],
   cellIndices: number[],
   cells: Cell[],

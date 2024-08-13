@@ -77,13 +77,13 @@ suite "verify proof (extended version)":
     # only test if those templates can be compiled successfully
     check Kzg.freeTrustedSetup().isOk
     check Kzg.loadTrustedSetupFile(trustedSetupFile, 0).isOk
-    discard blobToKzgCommitment(blob)
-    let kp = computeKzgProof(blob, inputPoint)
-    discard computeBlobKzgProof(blob, commitment)
-    discard verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
-    discard verifyBlobKzgProof(blob, commitment, proof)
+    discard blobToKZGCommitment(blob)
+    let kp = computeKZGProof(blob, inputPoint)
+    discard computeBlobKZGProof(blob, commitment)
+    discard verifyKZGProof(commitment, inputPoint, claimedValue, kp.get.proof)
+    discard verifyBlobKZGProof(blob, commitment, proof)
     let kb = createKateBlobs(1)
-    discard verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+    discard verifyBlobKZGProofBatch(kb.blobs, kb.kates, [kp.get.proof])
 
   test "load trusted setup more than once":
     let res = Kzg.loadTrustedSetupFromString(trustedSetup, 0)

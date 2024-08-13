@@ -2,7 +2,7 @@ package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class VerifyKzgProofTest {
+public class VerifyKZGProofTest {
   public static class Input {
     private String commitment;
     private String z;

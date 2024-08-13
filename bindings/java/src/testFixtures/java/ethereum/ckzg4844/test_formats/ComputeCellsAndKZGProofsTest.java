@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.tuweni.bytes.Bytes;
 
-public class ComputeCellsAndKzgProofsTest {
+public class ComputeCellsAndKZGProofsTest {
   public static class Input {
     private String blob;
 

@@ -49,7 +49,7 @@ public static partial class Ckzg
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void BlobToKzgCommitment(Span<byte> commitment, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    public static unsafe void BlobToKZGCommitment(Span<byte> commitment, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(commitment, nameof(commitment), BytesPerCommitment);
@@ -57,7 +57,7 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, blobPtr = blob)
         {
-            KzgResult result = BlobToKzgCommitment(commitmentPtr, blobPtr, ckzgSetup);
+            KzgResult result = BlobToKZGCommitment(commitmentPtr, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -73,7 +73,7 @@ public static partial class Ckzg
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void ComputeKzgProof(Span<byte> proof, Span<byte> y, ReadOnlySpan<byte> blob,
+    public static unsafe void ComputeKZGProof(Span<byte> proof, Span<byte> y, ReadOnlySpan<byte> blob,
         ReadOnlySpan<byte> z, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -84,7 +84,7 @@ public static partial class Ckzg
 
         fixed (byte* proofPtr = proof, yPtr = y, blobPtr = blob, zPtr = z)
         {
-            KzgResult result = ComputeKzgProof(proofPtr, yPtr, blobPtr, zPtr, ckzgSetup);
+            KzgResult result = ComputeKZGProof(proofPtr, yPtr, blobPtr, zPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -99,7 +99,7 @@ public static partial class Ckzg
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void ComputeBlobKzgProof(Span<byte> proof, ReadOnlySpan<byte> blob,
+    public static unsafe void ComputeBlobKZGProof(Span<byte> proof, ReadOnlySpan<byte> blob,
         ReadOnlySpan<byte> commitment, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -109,7 +109,7 @@ public static partial class Ckzg
 
         fixed (byte* proofPtr = proof, blobPtr = blob, commitmentPtr = commitment)
         {
-            KzgResult result = ComputeBlobKzgProof(proofPtr, blobPtr, commitmentPtr, ckzgSetup);
+            KzgResult result = ComputeBlobKZGProof(proofPtr, blobPtr, commitmentPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -126,7 +126,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     /// <returns>Verification result</returns>
-    public static unsafe bool VerifyKzgProof(ReadOnlySpan<byte> commitment, ReadOnlySpan<byte> z, ReadOnlySpan<byte> y,
+    public static unsafe bool VerifyKZGProof(ReadOnlySpan<byte> commitment, ReadOnlySpan<byte> z, ReadOnlySpan<byte> y,
         ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
 
@@ -138,7 +138,7 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, zPtr = z, yPtr = y, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyKzgProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
+            KzgResult kzgResult = VerifyKZGProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -155,7 +155,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     /// <returns>Verification result</returns>
-    public static unsafe bool VerifyBlobKzgProof(ReadOnlySpan<byte> blob, ReadOnlySpan<byte> commitment,
+    public static unsafe bool VerifyBlobKZGProof(ReadOnlySpan<byte> blob, ReadOnlySpan<byte> commitment,
         ReadOnlySpan<byte> proof, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -165,7 +165,7 @@ public static partial class Ckzg
 
         fixed (byte* blobPtr = blob, commitmentPtr = commitment, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyBlobKzgProof(out var result, blobPtr, commitmentPtr, proofPtr, ckzgSetup);
+            KzgResult kzgResult = VerifyBlobKZGProof(out var result, blobPtr, commitmentPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -183,7 +183,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     /// <returns>Verification result</returns>
-    public static unsafe bool VerifyBlobKzgProofBatch(ReadOnlySpan<byte> blobs, ReadOnlySpan<byte> commitments,
+    public static unsafe bool VerifyBlobKZGProofBatch(ReadOnlySpan<byte> blobs, ReadOnlySpan<byte> commitments,
         ReadOnlySpan<byte> proofs, int count, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -194,7 +194,7 @@ public static partial class Ckzg
         fixed (byte* blobsPtr = blobs, commitmentsPtr = commitments, proofsPtr = proofs)
         {
             KzgResult kzgResult =
-                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (ulong)count, ckzgSetup);
+                VerifyBlobKZGProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (ulong)count, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -210,7 +210,7 @@ public static partial class Ckzg
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void ComputeCellsAndKzgProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
+    public static unsafe void ComputeCellsAndKZGProofs(Span<byte> cells, Span<byte> proofs, ReadOnlySpan<byte> blob,
             IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -220,7 +220,7 @@ public static partial class Ckzg
 
         fixed (byte* cellsPtr = cells, proofsPtr = proofs, blobPtr = blob)
         {
-            KzgResult result = ComputeCellsAndKzgProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
+            KzgResult result = ComputeCellsAndKZGProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -237,7 +237,7 @@ public static partial class Ckzg
     /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
-    public static unsafe void RecoverCellsAndKzgProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
+    public static unsafe void RecoverCellsAndKZGProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
             ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -250,7 +250,7 @@ public static partial class Ckzg
         {
             fixed(ulong* cellIndicesPtr = cellIndices)
             {
-                KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
+                KzgResult result = RecoverCellsAndKZGProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
                     cellsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(result);
             }
@@ -270,7 +270,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     /// <returns>Verification result</returns>
-    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> cellIndices,
+    public static unsafe bool VerifyCellKZGProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> cellIndices,
             ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -283,7 +283,7 @@ public static partial class Ckzg
         {
             fixed (ulong* cellIndicesPtr = cellIndices)
             {
-                KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, commitmentsPtr,
+                KzgResult kzgResult = VerifyCellKZGProofBatch(out var result, commitmentsPtr,
                     cellIndicesPtr, cellsPtr, proofsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;

@@ -116,12 +116,12 @@ proc verifyProofs*(blobs: openArray[KzgBlob],
   verifyCtx:
     gCtx.verifyProofs(blobs, commitments, proofs)
 
-proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+proc computeCellsAndProofs*(blob: KzgBlob): Result[KzgCellsAndKZGProofs, string] {.gcsafe.} =
   verifyCtx:
     gCtx.computeCellsAndProofs(blob)
 
 proc recoverCellsAndProofs*(cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKZGProofs, string] {.gcsafe.} =
   verifyCtx:
     gCtx.recoverCellsAndProofs(cellIndices, cells)
 
@@ -139,40 +139,40 @@ proc verifyProofs*(commitments: openArray[KzgBytes48],
 template loadTrustedSetupFile*(T: type Kzg, input: File | string, precompute: Natural): untyped =
   loadTrustedSetup(T, input, precompute)
 
-template blobToKzgCommitment*(blob: KzgBlob): untyped =
+template blobToKZGCommitment*(blob: KzgBlob): untyped =
   toCommitment(blob)
 
-template computeKzgProof*(blob: KzgBlob, z: KzgBytes32): untyped =
+template computeKZGProof*(blob: KzgBlob, z: KzgBytes32): untyped =
   computeProof(blob, z)
 
-template computeBlobKzgProof*(blob: KzgBlob,
+template computeBlobKZGProof*(blob: KzgBlob,
                    commitmentBytes: KzgBytes48): untyped =
   computeProof(blob, commitmentBytes)
 
-template verifyKzgProof*(commitment: KzgBytes48,
+template verifyKZGProof*(commitment: KzgBytes48,
                    z: KzgBytes32, # Input Point
                    y: KzgBytes32, # Claimed Value
                    proof: KzgBytes48): untyped =
   verifyProof(commitment, z, y, proof)
 
-template verifyBlobKzgProof*(blob: KzgBlob,
+template verifyBlobKZGProof*(blob: KzgBlob,
                    commitment: KzgBytes48,
                    proof: KzgBytes48): untyped =
   verifyProof(blob, commitment, proof)
 
-template verifyBlobKzgProofBatch*(blobs: openArray[KzgBlob],
+template verifyBlobKZGProofBatch*(blobs: openArray[KzgBlob],
                    commitments: openArray[KzgBytes48],
                    proofs: openArray[KzgBytes48]): untyped =
   verifyProofs(blobs, commitments, proofs)
 
-template computeCellsAndKzgProofs*(blob: KzgBlob): untyped =
+template computeCellsAndKZGProofs*(blob: KzgBlob): untyped =
   computeCellsAndProofs(blob)
 
-template recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
+template recoverCellsAndKZGProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): untyped =
   recoverCellsAndProofs(cellIndices, cells)
 
-template verifyCellKzgProofBatch*(commitments: openArray[KzgBytes48],
+template verifyCellKZGProofBatch*(commitments: openArray[KzgBytes48],
                    cellIndices: openArray[uint64],
                    cells: openArray[KzgCell],
                    proofs: openArray[KzgBytes48]): untyped =

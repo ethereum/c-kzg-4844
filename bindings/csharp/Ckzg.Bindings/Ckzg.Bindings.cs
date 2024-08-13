@@ -40,35 +40,35 @@ public static partial class Ckzg
     private static extern void InternalFreeTrustedSetup(IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult BlobToKzgCommitment(byte* commitment, byte* blob, IntPtr ts);
+    private static extern unsafe KzgResult BlobToKZGCommitment(byte* commitment, byte* blob, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeKzgProof(byte* proof_out, byte* y_out, byte* blob, byte* z, IntPtr ts);
+    private static extern unsafe KzgResult ComputeKZGProof(byte* proof_out, byte* y_out, byte* blob, byte* z, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeBlobKzgProof(byte* proof, byte* blob, byte* commitment, IntPtr ts);
+    private static extern unsafe KzgResult ComputeBlobKZGProof(byte* proof, byte* blob, byte* commitment, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyKzgProof(out bool result, byte* commitment, byte* z,
+    private static extern unsafe KzgResult VerifyKZGProof(out bool result, byte* commitment, byte* z,
         byte* y, byte* proof, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyBlobKzgProof(out bool result, byte* blob, byte* commitment,
+    private static extern unsafe KzgResult VerifyBlobKZGProof(out bool result, byte* blob, byte* commitment,
         byte* proof, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyBlobKzgProofBatch(out bool result, byte* blobs, byte* commitments,
+    private static extern unsafe KzgResult VerifyBlobKZGProofBatch(out bool result, byte* blobs, byte* commitments,
         byte* proofs, ulong count, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult ComputeCellsAndKzgProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
+    private static extern unsafe KzgResult ComputeCellsAndKZGProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "recover_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult RecoverCellsAndKzgProofs(byte* recovered_cells, byte* recovered_proofs,
+    private static extern unsafe KzgResult RecoverCellsAndKZGProofs(byte* recovered_cells, byte* recovered_proofs,
         ulong* cell_indices, byte* cells, ulong num_cells, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    private static extern unsafe KzgResult VerifyCellKzgProofBatch(out bool result, byte* commitments,
+    private static extern unsafe KzgResult VerifyCellKZGProofBatch(out bool result, byte* commitments,
         ulong* cell_indices, byte* cells, byte* proofs, ulong num_cells, IntPtr ts);
 
     private enum KzgResult

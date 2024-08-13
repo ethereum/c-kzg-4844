@@ -82,11 +82,11 @@ suite "verify proof (high-level)":
     check res.isOk
     ctx = res.get
 
-    discard ctx.blobToKzgCommitment(blob)
-    let kp = ctx.computeKzgProof(blob, inputPoint)
-    discard ctx.computeBlobKzgProof(blob, commitment)
-    discard ctx.verifyKzgProof(commitment, inputPoint, claimedValue, kp.get.proof)
-    discard ctx.verifyBlobKzgProof(blob, commitment, proof)
+    discard ctx.blobToKZGCommitment(blob)
+    let kp = ctx.computeKZGProof(blob, inputPoint)
+    discard ctx.computeBlobKZGProof(blob, commitment)
+    discard ctx.verifyKZGProof(commitment, inputPoint, claimedValue, kp.get.proof)
+    discard ctx.verifyBlobKZGProof(blob, commitment, proof)
 
     let kb = ctx.createKateBlobs(1)
-    discard ctx.verifyBlobKzgProofBatch(kb.blobs, kb.kates, [kp.get.proof])
+    discard ctx.verifyBlobKZGProofBatch(kb.blobs, kb.kates, [kp.get.proof])

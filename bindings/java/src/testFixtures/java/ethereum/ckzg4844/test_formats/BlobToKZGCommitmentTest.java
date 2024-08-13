@@ -2,7 +2,7 @@ package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class BlobToKzgCommitmentTest {
+public class BlobToKZGCommitmentTest {
   public static class Input {
     private String blob;
 

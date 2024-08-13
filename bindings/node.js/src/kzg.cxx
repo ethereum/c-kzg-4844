@@ -229,7 +229,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - For invalid arguments or failure of the native library
  */
-Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
+Napi::Value BlobToKZGCommitment(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
@@ -265,7 +265,7 @@ Napi::Value BlobToKzgCommitment(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
-Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
+Napi::Value ComputeKZGProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
@@ -314,7 +314,7 @@ Napi::Value ComputeKzgProof(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
-Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
+Napi::Value ComputeBlobKZGProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Blob *blob = get_blob(env, info[0]);
     if (blob == nullptr) {
@@ -336,7 +336,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
 
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in computeBlobKzgProof: " << from_c_kzg_ret(ret);
+        msg << "Error in computeBlobKZGProof: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         return env.Undefined();
     }
@@ -359,7 +359,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
-Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info) {
+Napi::Value VerifyKZGProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Bytes48 *commitment_bytes = get_bytes48(env, info[0], "commitmentBytes");
     if (commitment_bytes == nullptr) {
@@ -409,7 +409,7 @@ Napi::Value VerifyKzgProof(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
-Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
+Napi::Value VerifyBlobKZGProof(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Blob *blob_bytes = get_blob(env, info[0]);
     if (blob_bytes == nullptr) {
@@ -435,7 +435,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
 
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in verifyBlobKzgProof: " << from_c_kzg_ret(ret);
+        msg << "Error in verifyBlobKZGProof: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         return env.Undefined();
     }
@@ -459,7 +459,7 @@ Napi::Value VerifyBlobKzgProof(const Napi::CallbackInfo &info) {
  *
  * @throws {TypeError} - for invalid arguments or failure of the native library
  */
-Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
+Napi::Value VerifyBlobKZGProofBatch(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     C_KZG_RET ret;
     Blob *blobs = NULL;
@@ -537,7 +537,7 @@ Napi::Value VerifyBlobKzgProofBatch(const Napi::CallbackInfo &info) {
 
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in verifyBlobKzgProofBatch: " << from_c_kzg_ret(ret);
+        msg << "Error in verifyBlobKZGProofBatch: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -560,7 +560,7 @@ out:
  *
  * @throws {Error} - Failure to allocate or compute cells and proofs
  */
-Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
+Napi::Value ComputeCellsAndKZGProofs(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
     Blob *blob = get_blob(env, info[0]);
@@ -582,7 +582,7 @@ Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
     if (cells == nullptr) {
         std::ostringstream msg;
-        msg << "Failed to allocate cells in computeCellsAndKzgProofs";
+        msg << "Failed to allocate cells in computeCellsAndKZGProofs";
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -590,7 +590,7 @@ Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     proofs = (KZGProof *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_PROOF);
     if (proofs == nullptr) {
         std::ostringstream msg;
-        msg << "Failed to allocate proofs in computeCellsAndKzgProofs";
+        msg << "Failed to allocate proofs in computeCellsAndKZGProofs";
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -598,7 +598,7 @@ Napi::Value ComputeCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     ret = compute_cells_and_kzg_proofs(cells, proofs, blob, kzg_settings);
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in computeCellsAndKzgProofs: " << from_c_kzg_ret(ret);
+        msg << "Error in computeCellsAndKZGProofs: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -642,7 +642,7 @@ out:
  * @throws {Error} - Invalid input, failure to allocate or error recovering
  * cells and proofs
  */
-Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
+Napi::Value RecoverCellsAndKZGProofs(const Napi::CallbackInfo &info) {
     C_KZG_RET ret;
     uint64_t *cell_indices = NULL;
     Cell *cells = NULL;
@@ -734,7 +734,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in recoverCellsAndKzgProofs: " << from_c_kzg_ret(ret);
+        msg << "Error in recoverCellsAndKZGProofs: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -786,7 +786,7 @@ out:
  * @throws {Error} - Invalid input, failure to allocate memory, or errors
  * verifying batch
  */
-Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
+Napi::Value VerifyCellKZGProofBatch(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
     if (!(info[0].IsArray() && info[1].IsArray() && info[2].IsArray() &&
@@ -885,7 +885,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     );
     if (ret != C_KZG_OK) {
         std::ostringstream msg;
-        msg << "Error in verifyCellKzgProofBatch: " << from_c_kzg_ret(ret);
+        msg << "Error in verifyCellKZGProofBatch: " << from_c_kzg_ret(ret);
         Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
         goto out;
     }
@@ -922,32 +922,32 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     exports["loadTrustedSetup"] = Napi::Function::New(
         env, LoadTrustedSetup, "setup"
     );
-    exports["blobToKzgCommitment"] = Napi::Function::New(
-        env, BlobToKzgCommitment, "blobToKzgCommitment"
+    exports["blobToKZGCommitment"] = Napi::Function::New(
+        env, BlobToKZGCommitment, "blobToKZGCommitment"
     );
-    exports["computeKzgProof"] = Napi::Function::New(
-        env, ComputeKzgProof, "computeKzgProof"
+    exports["computeKZGProof"] = Napi::Function::New(
+        env, ComputeKZGProof, "computeKZGProof"
     );
-    exports["computeBlobKzgProof"] = Napi::Function::New(
-        env, ComputeBlobKzgProof, "computeBlobKzgProof"
+    exports["computeBlobKZGProof"] = Napi::Function::New(
+        env, ComputeBlobKZGProof, "computeBlobKZGProof"
     );
-    exports["verifyKzgProof"] = Napi::Function::New(
-        env, VerifyKzgProof, "verifyKzgProof"
+    exports["verifyKZGProof"] = Napi::Function::New(
+        env, VerifyKZGProof, "verifyKZGProof"
     );
-    exports["verifyBlobKzgProof"] = Napi::Function::New(
-        env, VerifyBlobKzgProof, "verifyBlobKzgProof"
+    exports["verifyBlobKZGProof"] = Napi::Function::New(
+        env, VerifyBlobKZGProof, "verifyBlobKZGProof"
     );
-    exports["verifyBlobKzgProofBatch"] = Napi::Function::New(
-        env, VerifyBlobKzgProofBatch, "verifyBlobKzgProofBatch"
+    exports["verifyBlobKZGProofBatch"] = Napi::Function::New(
+        env, VerifyBlobKZGProofBatch, "verifyBlobKZGProofBatch"
     );
-    exports["computeCellsAndKzgProofs"] = Napi::Function::New(
-        env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"
+    exports["computeCellsAndKZGProofs"] = Napi::Function::New(
+        env, ComputeCellsAndKZGProofs, "computeCellsAndKZGProofs"
     );
-    exports["recoverCellsAndKzgProofs"] = Napi::Function::New(
-        env, RecoverCellsAndKzgProofs, "recoverCellsAndKzgProofs"
+    exports["recoverCellsAndKZGProofs"] = Napi::Function::New(
+        env, RecoverCellsAndKZGProofs, "recoverCellsAndKZGProofs"
     );
-    exports["verifyCellKzgProofBatch"] = Napi::Function::New(
-        env, VerifyCellKzgProofBatch, "verifyCellKzgProofBatch"
+    exports["verifyCellKZGProofBatch"] = Napi::Function::New(
+        env, VerifyCellKZGProofBatch, "verifyCellKZGProofBatch"
     );
 
     // Constants

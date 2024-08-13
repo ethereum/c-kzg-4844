@@ -141,7 +141,7 @@ public class CKZG4844JNI {
    * @return the commitment
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] blobToKzgCommitment(byte[] blob);
+  public static native byte[] blobToKZGCommitment(byte[] blob);
 
   /**
    * Compute proof at point z for the polynomial represented by blob.
@@ -151,7 +151,7 @@ public class CKZG4844JNI {
    * @return an instance of {@link ProofAndY} holding the proof and the value y = f(z)
    * @throws CKZGException if there is a crypto error
    */
-  public static native ProofAndY computeKzgProof(byte[] blob, byte[] zBytes);
+  public static native ProofAndY computeKZGProof(byte[] blob, byte[] zBytes);
 
   /**
    * Given a blob, return the KZG proof that is used to verify it against the commitment
@@ -161,7 +161,7 @@ public class CKZG4844JNI {
    * @return the proof
    * @throws CKZGException if there is a crypto error
    */
-  public static native byte[] computeBlobKzgProof(byte[] blob, byte[] commitmentBytes);
+  public static native byte[] computeBlobKZGProof(byte[] blob, byte[] commitmentBytes);
 
   /**
    * Verify the proof by point evaluation for the given commitment
@@ -173,7 +173,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyKzgProof(
+  public static native boolean verifyKZGProof(
       byte[] commitmentBytes, byte[] zBytes, byte[] yBytes, byte[] proofBytes);
 
   /**
@@ -185,7 +185,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyBlobKzgProof(
+  public static native boolean verifyBlobKZGProof(
       byte[] blob, byte[] commitmentBytes, byte[] proofBytes);
 
   /**
@@ -199,7 +199,7 @@ public class CKZG4844JNI {
    * @return true if the proof is valid and false otherwise
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyBlobKzgProofBatch(
+  public static native boolean verifyBlobKZGProofBatch(
       byte[] blobs, byte[] commitmentsBytes, byte[] proofsBytes, long count);
 
   /**
@@ -209,7 +209,7 @@ public class CKZG4844JNI {
    * @return a CellsAndProofs object
    * @throws CKZGException if there is a crypto error
    */
-  public static native CellsAndProofs computeCellsAndKzgProofs(byte[] blob);
+  public static native CellsAndProofs computeCellsAndKZGProofs(byte[] blob);
 
   /**
    * Given at least 50% of cells, reconstruct the missing cells/proofs.
@@ -219,7 +219,7 @@ public class CKZG4844JNI {
    * @return all cells/proofs for that blob
    * @throws CKZGException if there is a crypto error
    */
-  public static native CellsAndProofs recoverCellsAndKzgProofs(long[] cellIndices, byte[] cells);
+  public static native CellsAndProofs recoverCellsAndKZGProofs(long[] cellIndices, byte[] cells);
 
   /**
    * Verify that multiple cells' proofs are valid.
@@ -231,6 +231,6 @@ public class CKZG4844JNI {
    * @return true if the cells are valid with respect to the given commitments
    * @throws CKZGException if there is a crypto error
    */
-  public static native boolean verifyCellKzgProofBatch(
+  public static native boolean verifyCellKZGProofBatch(
       byte[] commitmentsBytes, long[] cellIndices, byte[] cells, byte[] proofsBytes);
 }

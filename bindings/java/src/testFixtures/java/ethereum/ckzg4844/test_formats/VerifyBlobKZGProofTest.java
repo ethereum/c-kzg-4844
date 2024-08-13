@@ -2,10 +2,11 @@ package ethereum.ckzg4844.test_formats;
 
 import org.apache.tuweni.bytes.Bytes;
 
-public class ComputeBlobKzgProofTest {
+public class VerifyBlobKZGProofTest {
   public static class Input {
     private String blob;
     private String commitment;
+    private String proof;
 
     public byte[] getBlob() {
       return Bytes.fromHexString(blob).toArrayUnsafe();
@@ -14,19 +15,20 @@ public class ComputeBlobKzgProofTest {
     public byte[] getCommitment() {
       return Bytes.fromHexString(commitment).toArray();
     }
+
+    public byte[] getProof() {
+      return Bytes.fromHexString(proof).toArray();
+    }
   }
 
   private Input input;
-  private String output;
+  private Boolean output;
 
   public Input getInput() {
     return input;
   }
 
-  public byte[] getOutput() {
-    if (output == null) {
-      return null;
-    }
-    return Bytes.fromHexString(output).toArray();
+  public Boolean getOutput() {
+    return output;
   }
 }

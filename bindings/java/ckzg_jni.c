@@ -146,7 +146,7 @@ JNIEXPORT void JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_freeTrustedSetup(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env,
+Java_ethereum_ckzg4844_CKZG4844JNI_blobToKZGCommitment(JNIEnv *env,
                                                        jclass thisCls,
                                                        jbyteArray blob) {
   if (settings == NULL) {
@@ -175,14 +175,14 @@ Java_ethereum_ckzg4844_CKZG4844JNI_blobToKzgCommitment(JNIEnv *env,
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in blobToKzgCommitment.");
+                          "There was an error in blobToKZGCommitment.");
     return NULL;
   }
 
   return commitment;
 }
 
-JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKZGProof(
     JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray z_bytes) {
   if (settings == NULL) {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -225,7 +225,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
   (*env)->ReleaseByteArrayElements(env, z_bytes, (jbyte *)z_native, JNI_ABORT);
 
   if (ret != C_KZG_OK) {
-    throw_c_kzg_exception(env, ret, "There was an error in computeKzgProof.");
+    throw_c_kzg_exception(env, ret, "There was an error in computeKZGProof.");
     return NULL;
   }
 
@@ -254,7 +254,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(
+Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKZGProof(
     JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes) {
   if (settings == NULL) {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -294,14 +294,14 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in computeBlobKzgProof.");
+                          "There was an error in computeBlobKZGProof.");
     return NULL;
   }
 
   return proof;
 }
 
-JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(
+JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKZGProof(
     JNIEnv *env, jclass thisCls, jbyteArray commitment_bytes,
     jbyteArray z_bytes, jbyteArray y_bytes, jbyteArray proof_bytes) {
   if (settings == NULL) {
@@ -359,7 +359,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(
                                    JNI_ABORT);
 
   if (ret != C_KZG_OK) {
-    throw_c_kzg_exception(env, ret, "There was an error in verifyKzgProof.");
+    throw_c_kzg_exception(env, ret, "There was an error in verifyKZGProof.");
     return 0;
   }
 
@@ -367,7 +367,7 @@ JNIEXPORT jboolean JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_verifyKzgProof(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(
+Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKZGProof(
     JNIEnv *env, jclass thisCls, jbyteArray blob, jbyteArray commitment_bytes,
     jbyteArray proof_bytes) {
   if (settings == NULL) {
@@ -415,7 +415,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in verifyBlobKzgProof.");
+                          "There was an error in verifyBlobKZGProof.");
     return 0;
   }
 
@@ -423,7 +423,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProof(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
+Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKZGProofBatch(
     JNIEnv *env, jclass thisCls, jbyteArray blobs, jbyteArray commitments_bytes,
     jbyteArray proofs_bytes, jlong count) {
   if (settings == NULL) {
@@ -475,7 +475,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in verifyBlobKzgProofBatch.");
+                          "There was an error in verifyBlobKZGProofBatch.");
     return 0;
   }
 
@@ -483,7 +483,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
 }
 
 JNIEXPORT jobject JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
+Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKZGProofs(JNIEnv *env,
                                                             jclass thisCls,
                                                             jbyteArray blob) {
   if (settings == NULL) {
@@ -519,7 +519,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in computeCellsAndKzgProofs.");
+                          "There was an error in computeCellsAndKZGProofs.");
     return NULL;
   }
 
@@ -551,7 +551,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
 }
 
 JNIEXPORT jbyteArray JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
+Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKZGProofs(
     JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells) {
   if (settings == NULL) {
     throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
@@ -593,7 +593,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in recoverCellsAndKzgProofs.");
+                          "There was an error in recoverCellsAndKZGProofs.");
     return NULL;
   }
 
@@ -625,7 +625,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(
+Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKZGProofBatch(
     JNIEnv *env, jclass thisCls, jbyteArray commitments_bytes,
     jlongArray cell_indices, jbyteArray cells, jbyteArray proofs_bytes) {
   if (settings == NULL) {
@@ -689,7 +689,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(
 
   if (ret != C_KZG_OK) {
     throw_c_kzg_exception(env, ret,
-                          "There was an error in verifyCellKzgProofBatch.");
+                          "There was an error in verifyCellKZGProofBatch.");
     return 0;
   }
 
