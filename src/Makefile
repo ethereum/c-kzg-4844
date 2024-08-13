@@ -125,7 +125,7 @@ $(BLST_BUILDSCRIPT):
 # This will build blst without condition.
 # It will also copy the header files to our include directory.
 .PHONY: build_blst
-build_blst:
+build_blst: $(BLST_BUILDSCRIPT)
 	@echo "[+] building blst"
 	@cd $(dir $(BLST_BUILDSCRIPT)) && \
 	./$(notdir $(BLST_BUILDSCRIPT)) $(BLST_BUILDSCRIPT_FLAGS) && \
@@ -136,7 +136,7 @@ build_blst:
 # This will build blst if the module is out of date.
 # We track this with a hidden file.
 .PHONY: blst
-blst: $(BLST_BUILDSCRIPT)
+blst:
 	@if [ ! -f $(BLST_HASH_FILE) ] || \
 		[ "$(BLST_HASH)" != "$$(cat $(BLST_HASH_FILE))" ]; then \
 			$(MAKE) build_blst; \
