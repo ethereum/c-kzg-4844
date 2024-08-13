@@ -8,7 +8,7 @@ ifeq ($(OS),Windows_NT)
 	LOCATION ?= win-x64
 	CLANG_EXECUTABLE = clang
 	EXTENSION ?= ".dll"
-	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg$(EXTENSION)
+	CKZG_LIBRARY_PATH = CKZG.Bindings\runtimes\$(LOCATION)\native\ckzg$(EXTENSION)
 	CFLAGS += -Wl,/def:ckzg_wrap.def
 else
 	BLST_BUILDSCRIPT = ./build.sh
@@ -35,7 +35,7 @@ else
 		endif
 	endif
 
-	CKZG_LIBRARY_PATH = Ckzg.Bindings/runtimes/$(LOCATION)/native/ckzg$(EXTENSION)
+	CKZG_LIBRARY_PATH = CKZG.Bindings/runtimes/$(LOCATION)/native/ckzg$(EXTENSION)
 endif
 
 INCLUDE_DIRS = ../../src ../../blst/bindings

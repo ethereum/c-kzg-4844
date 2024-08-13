@@ -1,6 +1,6 @@
-namespace Ckzg;
+namespace CKZG;
 
-public static partial class Ckzg
+public static partial class CKZG
 {
     public const int BytesPerBlob = FieldElementsPerBlob * BytesPerFieldElement;
     public const int BytesPerCell = FieldElementsPerCell * BytesPerFieldElement;
@@ -57,7 +57,7 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, blobPtr = blob)
         {
-            KzgResult result = BlobToKZGCommitment(commitmentPtr, blobPtr, ckzgSetup);
+            KZGResult result = BlobToKZGCommitment(commitmentPtr, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -84,7 +84,7 @@ public static partial class Ckzg
 
         fixed (byte* proofPtr = proof, yPtr = y, blobPtr = blob, zPtr = z)
         {
-            KzgResult result = ComputeKZGProof(proofPtr, yPtr, blobPtr, zPtr, ckzgSetup);
+            KZGResult result = ComputeKZGProof(proofPtr, yPtr, blobPtr, zPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -109,7 +109,7 @@ public static partial class Ckzg
 
         fixed (byte* proofPtr = proof, blobPtr = blob, commitmentPtr = commitment)
         {
-            KzgResult result = ComputeBlobKZGProof(proofPtr, blobPtr, commitmentPtr, ckzgSetup);
+            KZGResult result = ComputeBlobKZGProof(proofPtr, blobPtr, commitmentPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -138,7 +138,7 @@ public static partial class Ckzg
 
         fixed (byte* commitmentPtr = commitment, zPtr = z, yPtr = y, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyKZGProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
+            KZGResult kzgResult = VerifyKZGProof(out var result, commitmentPtr, zPtr, yPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -165,7 +165,7 @@ public static partial class Ckzg
 
         fixed (byte* blobPtr = blob, commitmentPtr = commitment, proofPtr = proof)
         {
-            KzgResult kzgResult = VerifyBlobKZGProof(out var result, blobPtr, commitmentPtr, proofPtr, ckzgSetup);
+            KZGResult kzgResult = VerifyBlobKZGProof(out var result, blobPtr, commitmentPtr, proofPtr, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -193,7 +193,7 @@ public static partial class Ckzg
 
         fixed (byte* blobsPtr = blobs, commitmentsPtr = commitments, proofsPtr = proofs)
         {
-            KzgResult kzgResult =
+            KZGResult kzgResult =
                 VerifyBlobKZGProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (ulong)count, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
@@ -220,7 +220,7 @@ public static partial class Ckzg
 
         fixed (byte* cellsPtr = cells, proofsPtr = proofs, blobPtr = blob)
         {
-            KzgResult result = ComputeCellsAndKZGProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
+            KZGResult result = ComputeCellsAndKZGProofs(cellsPtr, proofsPtr, blobPtr, ckzgSetup);
             ThrowOnError(result);
         }
     }
@@ -250,7 +250,7 @@ public static partial class Ckzg
         {
             fixed(ulong* cellIndicesPtr = cellIndices)
             {
-                KzgResult result = RecoverCellsAndKZGProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
+                KZGResult result = RecoverCellsAndKZGProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
                     cellsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(result);
             }
@@ -283,7 +283,7 @@ public static partial class Ckzg
         {
             fixed (ulong* cellIndicesPtr = cellIndices)
             {
-                KzgResult kzgResult = VerifyCellKZGProofBatch(out var result, commitmentsPtr,
+                KZGResult kzgResult = VerifyCellKZGProofBatch(out var result, commitmentsPtr,
                     cellIndicesPtr, cellsPtr, proofsPtr, (ulong)numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;
@@ -292,13 +292,13 @@ public static partial class Ckzg
     }
 
     #region Argument verification helpers
-    private static void ThrowOnError(KzgResult result)
+    private static void ThrowOnError(KZGResult result)
     {
         switch (result)
         {
-            case KzgResult.BadArgs: throw new ArgumentException();
-            case KzgResult.Malloc: throw new InsufficientMemoryException();
-            case KzgResult.Ok:
+            case KZGResult.BadArgs: throw new ArgumentException();
+            case KZGResult.Malloc: throw new InsufficientMemoryException();
+            case KZGResult.Ok:
                 return;
             default:
                 throw new ApplicationException("KZG returned unexpected result");

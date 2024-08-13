@@ -16,10 +16,10 @@ use std::sync::{Arc, OnceLock};
 ///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
-    static ref KZG_SETTINGS: c_kzg::KzgSettings = {
+    static ref KZG_SETTINGS: c_kzg::KZGSettings = {
         let root_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
         let trusted_setup_file = root_dir.join("..").join("src").join("trusted_setup.txt");
-        c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
+        c_kzg::KZGSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
 }
 

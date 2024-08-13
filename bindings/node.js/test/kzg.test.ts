@@ -58,7 +58,7 @@ type ComputeKZGProofTest = TestMeta<{blob: string; z: string}, string[]>;
 type ComputeBlobKZGProofTest = TestMeta<{blob: string; commitment: string}, string>;
 type VerifyKZGProofTest = TestMeta<{commitment: string; y: string; z: string; proof: string}, boolean>;
 type VerifyBlobKZGProofTest = TestMeta<{blob: string; commitment: string; proof: string}, boolean>;
-type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
+type VerifyBatchKZGProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
 type ComputeCellsAndKZGProofsTest = TestMeta<{blob: string}, string[][]>;
 type RecoverCellsAndKZGProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
@@ -345,7 +345,7 @@ describe("C-KZG", () => {
       expect(tests.length).toBeGreaterThan(0);
 
       tests.forEach((testFile: string) => {
-        const test: VerifyBatchKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+        const test: VerifyBatchKZGProofTest = yaml.load(readFileSync(testFile, "ascii"));
 
         let valid;
         const blobs = test.input.blobs.map(bytesFromHex);
@@ -613,7 +613,7 @@ describe("C-KZG", () => {
 
   describe("edge cases for verifyBlobKZGProofBatch", () => {
     describe("check argument count", () => {
-      const test: VerifyBatchKzgProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+      const test: VerifyBatchKZGProofTest = getValidTest(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
       const blobs = test.input.blobs.map(bytesFromHex);
       const commitments = test.input.commitments.map(bytesFromHex);
       const proofs = test.input.proofs.map(bytesFromHex);

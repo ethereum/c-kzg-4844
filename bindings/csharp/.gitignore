@@ -5,7 +5,7 @@
 .vscode
 *.DotSettings.user
 
-Ckzg.Bindings/runtimes/*/native/*
+CKZG.Bindings/runtimes/*/native/*
 !**/.gitkeep
 test_ckzg*
 *.so

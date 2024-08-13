@@ -5,8 +5,8 @@ import
   ../kzg,
   ./types
 
-proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
-  var blob: KzgBlob
+proc createKateBlobs(ctx: KZGCtx, n: int): KateBlobs =
+  var blob: KZGBlob
   for i in 0..<n:
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
@@ -21,7 +21,7 @@ proc createKateBlobs(ctx: KzgCtx, n: int): KateBlobs =
     result.kates.add(res.get)
 
 suite "verify proof (high-level)":
-  var ctx: KzgCtx
+  var ctx: KZGCtx
 
   test "load trusted setup from string":
     let res = loadTrustedSetupFromString(trustedSetup, 0)
@@ -30,7 +30,7 @@ suite "verify proof (high-level)":
 
   test "verify batch proof success":
     let kb = ctx.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = ctx.computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
@@ -42,14 +42,14 @@ suite "verify proof (high-level)":
 
   test "verify batch proof failure":
     let kb = ctx.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = ctx.computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
     let other = ctx.createKateBlobs(nblobs)
-    var badProofs: array[nblobs, KzgProof]
+    var badProofs: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = ctx.computeProof(other.blobs[i], other.kates[i])
       check pres.isOk

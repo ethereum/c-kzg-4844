@@ -7,8 +7,8 @@ from os import DirSep
 
 type
   KateBlobs* = object
-    kates*: seq[KzgCommitment]
-    blobs*: seq[KzgBlob]
+    kates*: seq[KZGCommitment]
+    blobs*: seq[KZGBlob]
 
 const
   kzgPath* = currentSourcePath.rsplit(DirSep, 4)[0] & "/"
@@ -23,11 +23,11 @@ const
   trustedSetup* = staticRead(trustedSetupFile)
 
 var
-  blob* = KzgBlob(bytes: blobBytes)
-  commitment* = KzgCommitment(bytes: commitmentBytes)
-  proof* = KzgProof(bytes: proofBytes)
-  inputPoint* = KzgBytes32(bytes: inputPointBytes)
-  claimedValue* = KzgBytes32(bytes: claimedValueBytes)
+  blob* = KZGBlob(bytes: blobBytes)
+  commitment* = KZGCommitment(bytes: commitmentBytes)
+  proof* = KZGProof(bytes: proofBytes)
+  inputPoint* = KZGBytes32(bytes: inputPointBytes)
+  claimedValue* = KZGBytes32(bytes: claimedValueBytes)
 
 when (NimMajor, NimMinor) > (1, 4):
   import std/sysrand

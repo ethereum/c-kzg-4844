@@ -13,18 +13,18 @@ export
   kzg_abi
 
 type
-  KzgCtx* = ref object
+  KZGCtx* = ref object
     valFreed: bool
-    val: KzgSettings
+    val: KZGSettings
 
-  KzgProofAndY* = object
-    proof*: KzgProof
-    y*: KzgBytes32
+  KZGProofAndY* = object
+    proof*: KZGProof
+    y*: KZGBytes32
 
-  KzgCells* = array[CELLS_PER_EXT_BLOB, KzgCell]
-  KzgCellsAndKZGProofs* = object
-    cells*: array[CELLS_PER_EXT_BLOB, KzgCell]
-    proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
+  KZGCells* = array[CELLS_PER_EXT_BLOB, KZGCell]
+  KZGCellsAndKZGProofs* = object
+    cells*: array[CELLS_PER_EXT_BLOB, KZGCell]
+    proofs*: array[CELLS_PER_EXT_BLOB, KZGProof]
 
 when (NimMajor, NimMinor) < (1, 4):
   {.push raises: [Defect].}
@@ -35,7 +35,7 @@ else:
 # Private helpers
 ##############################################################
 
-proc destroy*(x: KzgCtx) =
+proc destroy*(x: KZGCtx) =
   # Prevent Nim GC to call free_trusted_setup
   # if user already done it before.
   # Otherwise, the program will crash with segfault.
@@ -43,7 +43,7 @@ proc destroy*(x: KzgCtx) =
     free_trusted_setup(x.val)
   x.valFreed = true
 
-proc newKzgCtx(): KzgCtx =
+proc newKZGCtx(): KZGCtx =
   # Nim finalizer is still broken(v1.6)
   # consider to call destroy directly
   new(result, destroy)
@@ -63,13 +63,13 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 # Public functions
 ##############################################################
 
-proc loadTrustedSetup*(input: File, precompute: Natural): Result[KzgCtx, string] =
+proc loadTrustedSetup*(input: File, precompute: Natural): Result[KZGCtx, string] =
   let
-    ctx = newKzgCtx()
+    ctx = newKZGCtx()
     res = load_trusted_setup_file(ctx.val, input, precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KzgCtx, string] =
+proc loadTrustedSetup*(fileName: string, precompute: Natural): Result[KZGCtx, string] =
   try:
     let file = open(fileName)
     result = file.loadTrustedSetup(precompute)
@@ -81,12 +81,12 @@ proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
                        g1LagrangeBytes: openArray[byte],
                        g2MonomialBytes: openArray[byte],
                        precompute: Natural):
-                         Result[KzgCtx, string] =
+                         Result[KZGCtx, string] =
   if g1MonomialBytes.len == 0 or g1LagrangeBytes.len == 0 or g2MonomialBytes.len == 0:
     return err($KZG_BADARGS)
 
   let
-    ctx = newKzgCtx()
+    ctx = newKZGCtx()
     res = load_trusted_setup(ctx.val,
       g1MonomialBytes[0].getPtr,
       g1MonomialBytes.len.csize_t,
@@ -97,7 +97,7 @@ proc loadTrustedSetup*(g1MonomialBytes: openArray[byte],
       precompute.csize_t)
   verify(res, ctx)
 
-proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KzgCtx, string] =
+proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[KZGCtx, string] =
   const
     NumG1 = FIELD_ELEMENTS_PER_BLOB
     NumG2 = 65
@@ -143,17 +143,17 @@ proc loadTrustedSetupFromString*(input: string, precompute: Natural): Result[Kzg
 
   loadTrustedSetup(g1MonomialBytes, g1LagrangeBytes, g2MonomialBytes, precompute)
 
-proc toCommitment*(ctx: KzgCtx,
-                   blob: KzgBlob):
-                     Result[KzgCommitment, string] {.gcsafe.} =
-  var ret: KzgCommitment
+proc toCommitment*(ctx: KZGCtx,
+                   blob: KZGBlob):
+                     Result[KZGCommitment, string] {.gcsafe.} =
+  var ret: KZGCommitment
   let res = blob_to_kzg_commitment(ret, blob.getPtr, ctx.val)
   verify(res, ret)
 
-proc computeProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
-                   z: KzgBytes32): Result[KzgProofAndY, string] {.gcsafe.} =
-  var ret: KzgProofAndY
+proc computeProof*(ctx: KZGCtx,
+                   blob: KZGBlob,
+                   z: KZGBytes32): Result[KZGProofAndY, string] {.gcsafe.} =
+  var ret: KZGProofAndY
   let res = compute_kzg_proof(
     ret.proof,
     ret.y,
@@ -162,10 +162,10 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, ret)
 
-proc computeProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
-                   commitmentBytes: KzgBytes48): Result[KzgProof, string] {.gcsafe.} =
-  var proof: KzgProof
+proc computeProof*(ctx: KZGCtx,
+                   blob: KZGBlob,
+                   commitmentBytes: KZGBytes48): Result[KZGProof, string] {.gcsafe.} =
+  var proof: KZGProof
   let res = compute_blob_kzg_proof(
     proof,
     blob.getPtr,
@@ -173,11 +173,11 @@ proc computeProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, proof)
 
-proc verifyProof*(ctx: KzgCtx,
-                  commitment: KzgBytes48,
-                  z: KzgBytes32, # Input Point
-                  y: KzgBytes32, # Claimed Value
-                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
+proc verifyProof*(ctx: KZGCtx,
+                  commitment: KZGBytes48,
+                  z: KZGBytes32, # Input Point
+                  y: KZGBytes32, # Claimed Value
+                  proof: KZGBytes48): Result[bool, string] {.gcsafe.} =
   var valid: bool
   let res = verify_kzg_proof(
     valid,
@@ -188,10 +188,10 @@ proc verifyProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
-proc verifyProof*(ctx: KzgCtx,
-                  blob: KzgBlob,
-                  commitment: KzgBytes48,
-                  proof: KzgBytes48): Result[bool, string] {.gcsafe.} =
+proc verifyProof*(ctx: KZGCtx,
+                  blob: KZGBlob,
+                  commitment: KZGBytes48,
+                  proof: KZGBytes48): Result[bool, string] {.gcsafe.} =
   var valid: bool
   let res = verify_blob_kzg_proof(
     valid,
@@ -201,10 +201,10 @@ proc verifyProof*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
-proc verifyProofs*(ctx: KzgCtx,
-                  blobs: openArray[KzgBlob],
-                  commitments: openArray[KzgBytes48],
-                  proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+proc verifyProofs*(ctx: KZGCtx,
+                  blobs: openArray[KZGBlob],
+                  commitments: openArray[KZGBytes48],
+                  proofs: openArray[KZGBytes48]): Result[bool, string] {.gcsafe.} =
   if blobs.len != commitments.len:
     return err($KZG_BADARGS)
 
@@ -224,11 +224,11 @@ proc verifyProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, valid)
 
-proc computeCellsAndProofs*(ctx: KzgCtx,
-                   blob: KzgBlob): Result[KzgCellsAndKZGProofs, string] {.gcsafe.} =
-  var ret: KzgCellsAndKZGProofs
-  var cellsPtr: ptr KzgCell = ret.cells[0].getPtr
-  var proofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+proc computeCellsAndProofs*(ctx: KZGCtx,
+                   blob: KZGBlob): Result[KZGCellsAndKZGProofs, string] {.gcsafe.} =
+  var ret: KZGCellsAndKZGProofs
+  var cellsPtr: ptr KZGCell = ret.cells[0].getPtr
+  var proofsPtr: ptr KZGProof = ret.proofs[0].getPtr
   let res = compute_cells_and_kzg_proofs(
     cellsPtr,
     proofsPtr,
@@ -236,18 +236,18 @@ proc computeCellsAndProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, ret)
 
-proc recoverCellsAndProofs*(ctx: KzgCtx,
+proc recoverCellsAndProofs*(ctx: KZGCtx,
                    cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCellsAndKZGProofs, string] {.gcsafe.} =
+                   cells: openArray[KZGCell]): Result[KZGCellsAndKZGProofs, string] {.gcsafe.} =
   if cells.len != cellIndices.len:
     return err($KZG_BADARGS)
 
   if cells.len == 0:
     return err($KZG_BADARGS)
 
-  var ret: KzgCellsAndKZGProofs
-  var recoveredCellsPtr: ptr KzgCell = ret.cells[0].getPtr
-  var recoveredProofsPtr: ptr KzgProof = ret.proofs[0].getPtr
+  var ret: KZGCellsAndKZGProofs
+  var recoveredCellsPtr: ptr KZGCell = ret.cells[0].getPtr
+  var recoveredProofsPtr: ptr KZGProof = ret.proofs[0].getPtr
   let res = recover_cells_and_kzg_proofs(
     recoveredCellsPtr,
     recoveredProofsPtr,
@@ -257,11 +257,11 @@ proc recoverCellsAndProofs*(ctx: KzgCtx,
     ctx.val)
   verify(res, ret)
 
-proc verifyProofs*(ctx: KzgCtx,
-                   commitments: openArray[KzgBytes48],
+proc verifyProofs*(ctx: KZGCtx,
+                   commitments: openArray[KZGBytes48],
                    cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+                   cells: openArray[KZGCell],
+                   proofs: openArray[KZGBytes48]): Result[bool, string] {.gcsafe.} =
   if commitments.len != cells.len:
     return err($KZG_BADARGS)
 
@@ -292,56 +292,56 @@ proc verifyProofs*(ctx: KzgCtx,
 template loadTrustedSetupFile*(input: File | string, precompute: Natural): untyped =
   loadTrustedSetup(input, precompute)
 
-template freeTrustedSetup*(ctx: KzgCtx) =
+template freeTrustedSetup*(ctx: KZGCtx) =
   destroy(ctx)
 
-template blobToKZGCommitment*(ctx: KzgCtx,
-                   blob: KzgBlob): untyped =
+template blobToKZGCommitment*(ctx: KZGCtx,
+                   blob: KZGBlob): untyped =
   toCommitment(ctx, blob)
 
-template computeKZGProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
-                   z: KzgBytes32): untyped =
+template computeKZGProof*(ctx: KZGCtx,
+                   blob: KZGBlob,
+                   z: KZGBytes32): untyped =
   computeProof(ctx, blob, z)
 
-template computeBlobKZGProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
-                   commitmentBytes: KzgBytes48): untyped =
+template computeBlobKZGProof*(ctx: KZGCtx,
+                   blob: KZGBlob,
+                   commitmentBytes: KZGBytes48): untyped =
   computeProof(ctx, blob, commitmentBytes)
 
-template verifyKZGProof*(ctx: KzgCtx,
-                   commitment: KzgBytes48,
-                   z: KzgBytes32, # Input Point
-                   y: KzgBytes32, # Claimed Value
-                   proof: KzgBytes48): untyped =
+template verifyKZGProof*(ctx: KZGCtx,
+                   commitment: KZGBytes48,
+                   z: KZGBytes32, # Input Point
+                   y: KZGBytes32, # Claimed Value
+                   proof: KZGBytes48): untyped =
   verifyProof(ctx, commitment, z, y, proof)
 
-template verifyBlobKZGProof*(ctx: KzgCtx,
-                   blob: KzgBlob,
-                   commitment: KzgBytes48,
-                   proof: KzgBytes48): untyped =
+template verifyBlobKZGProof*(ctx: KZGCtx,
+                   blob: KZGBlob,
+                   commitment: KZGBytes48,
+                   proof: KZGBytes48): untyped =
   verifyProof(ctx, blob, commitment, proof)
 
-template verifyBlobKZGProofBatch*(ctx: KzgCtx,
-                   blobs: openArray[KzgBlob],
-                   commitments: openArray[KzgBytes48],
-                   proofs: openArray[KzgBytes48]): untyped =
+template verifyBlobKZGProofBatch*(ctx: KZGCtx,
+                   blobs: openArray[KZGBlob],
+                   commitments: openArray[KZGBytes48],
+                   proofs: openArray[KZGBytes48]): untyped =
   verifyProofs(ctx, blobs, commitments, proofs)
 
-template computeCellsAndKZGProofs*(ctx: KzgCtx,
-                   blob: KzgBlob): untyped =
+template computeCellsAndKZGProofs*(ctx: KZGCtx,
+                   blob: KZGBlob): untyped =
   computeCellsAndProofs(ctx, blob)
 
-template recoverCellsAndKZGProofs*(ctx: KzgCtx,
+template recoverCellsAndKZGProofs*(ctx: KZGCtx,
                    cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell]): untyped =
+                   cells: openArray[KZGCell]): untyped =
   recoverCellsAndProofs(ctx, cellIndices, cells)
 
-template verifyCellKZGProofBatch*(ctx: KzgCtx,
-                   commitments: openArray[KzgBytes48],
+template verifyCellKZGProofBatch*(ctx: KZGCtx,
+                   commitments: openArray[KZGBytes48],
                    cellIndices: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): untyped =
+                   cells: openArray[KZGCell],
+                   proofs: openArray[KZGBytes48]): untyped =
   verifyProofs(ctx, commitments, cellIndices, cells, proofs)
 
 {. pop .}

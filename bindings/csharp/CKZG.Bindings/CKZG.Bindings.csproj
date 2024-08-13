@@ -6,7 +6,7 @@
 		<LangVersion>latest</LangVersion>
 		<Nullable>enable</Nullable>
 		<OutputType>Library</OutputType>
-		<RootNamespace>Ckzg</RootNamespace>
+		<RootNamespace>CKZG</RootNamespace>
 		<TargetFramework>net6.0</TargetFramework>
 	</PropertyGroup>
 
@@ -16,7 +16,7 @@
 		<Description>The C# bindings for the Polynomial Commitments API library for EIP-4844 and EIP-7594</Description>
 		<EmbedUntrackedSources>true</EmbedUntrackedSources>
 		<IncludeSymbols>true</IncludeSymbols>
-		<PackageId>Ckzg.Bindings</PackageId>
+		<PackageId>CKZG.Bindings</PackageId>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageTags>c-kzg eip-4844 eip-7594</PackageTags>

@@ -7,7 +7,7 @@ import
   ../kzg_abi,
   ./types
 
-proc readSetup(): KzgSettings =
+proc readSetup(): KZGSettings =
   var s = newFileStream(trustedSetupFile)
 
   doAssert(s.isNil.not,
@@ -45,15 +45,15 @@ proc readSetup(): KzgSettings =
   doAssert(res == KZG_OK,
     "ERROR: " & $res)
 
-proc readSetup(filename: string): KzgSettings =
+proc readSetup(filename: string): KZGSettings =
   var file = open(filename)
   let ret =  load_trusted_setup_file(result, file, 0)
   doAssert ret == KZG_OK
   file.close()
 
-proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
+proc createKateBlobs(s: KZGSettings, n: int): KateBlobs =
   for i in 0..<n:
-    var blob: KzgBlob
+    var blob: KZGBlob
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
       # don't overflow modulus
@@ -62,7 +62,7 @@ proc createKateBlobs(s: KzgSettings, n: int): KateBlobs =
     result.blobs.add(blob)
 
   for i in 0..<n:
-    var kate: KzgCommitment
+    var kate: KZGCommitment
     doAssert blob_to_kzg_commitment(kate, result.blobs[i].addr, s) == KZG_OK
     result.kates.add(kate)
 
@@ -75,7 +75,7 @@ suite "verify proof (abi)":
 
   test "verify batch proof success":
     var kb = kzgs.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
 
     for i in 0..<nblobs:
       let res = compute_blob_kzg_proof(kp[i], kb.blobs[i].addr, kb.kates[i].addr, kzgs)
@@ -93,7 +93,7 @@ suite "verify proof (abi)":
 
   test "verify batch proof failure":
     var kb = kzgs.createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
 
     for i in 0..<nblobs:
       let res = compute_blob_kzg_proof(kp[i], kb.blobs[i].addr, kb.kates[i].addr, kzgs)
@@ -115,7 +115,7 @@ suite "verify proof (abi)":
     check ok == false
 
   test "verify blob proof":
-    var kp: KzgProof
+    var kp: KZGProof
     var res = compute_blob_kzg_proof(kp, blob.addr, commitment.addr, kzgs)
     check res == KZG_OK
 
@@ -125,8 +125,8 @@ suite "verify proof (abi)":
     check ok
 
   test "verify proof":
-    var kp: KzgProof
-    var ky: KzgBytes32
+    var kp: KZGProof
+    var ky: KZGBytes32
     var res = compute_kzg_proof(kp, ky, blob.addr, inputPoint.addr, kzgs)
     check res == KZG_OK
     check kp == proof

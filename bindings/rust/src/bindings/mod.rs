@@ -62,15 +62,15 @@ pub enum Error {
     /// The hex string is invalid.
     InvalidHexFormat(String),
     /// The KZG proof is invalid.
-    InvalidKzgProof(String),
+    InvalidKZGProof(String),
     /// The KZG commitment is invalid.
-    InvalidKzgCommitment(String),
+    InvalidKZGCommitment(String),
     /// The provided trusted setup is invalid.
     InvalidTrustedSetup(String),
     /// Paired arguments have different lengths.
     MismatchLength(String),
     /// Loading the trusted setup failed.
-    LoadingTrustedSetupFailed(KzgErrors),
+    LoadingTrustedSetupFailed(KZGErrors),
     /// The underlying c-kzg library returned an error.
     CError(C_KZG_RET),
 }
@@ -83,24 +83,24 @@ impl fmt::Display for Error {
         match self {
             Self::InvalidBytesLength(s)
             | Self::InvalidHexFormat(s)
-            | Self::InvalidKzgProof(s)
-            | Self::InvalidKzgCommitment(s)
+            | Self::InvalidKZGProof(s)
+            | Self::InvalidKZGCommitment(s)
             | Self::InvalidTrustedSetup(s)
             | Self::MismatchLength(s) => f.write_str(s),
-            Self::LoadingTrustedSetupFailed(s) => write!(f, "KzgErrors: {:?}", s),
+            Self::LoadingTrustedSetupFailed(s) => write!(f, "KZGErrors: {:?}", s),
             Self::CError(s) => fmt::Debug::fmt(s, f),
         }
     }
 }
 
-impl From<KzgErrors> for Error {
-    fn from(e: KzgErrors) -> Self {
+impl From<KZGErrors> for Error {
+    fn from(e: KZGErrors) -> Self {
         Error::LoadingTrustedSetupFailed(e)
     }
 }
 
 #[derive(Debug)]
-pub enum KzgErrors {
+pub enum KZGErrors {
     /// Failed to get current directory.
     FailedCurrentDirectory,
     /// The specified path does not exist.
@@ -185,28 +185,28 @@ impl KZGSettings {
         Self::load_trusted_setup_file_inner(&file_path, precompute)
     }
 
-    /// Parses the contents of a KZG trusted setup file into a KzgSettings.
+    /// Parses the contents of a KZG trusted setup file into a KZGSettings.
     pub fn parse_kzg_trusted_setup(trusted_setup: &str, precompute: usize) -> Result<Self, Error> {
         let mut lines = trusted_setup.lines();
 
         // Load number of g1 points
         let n_g1 = lines
             .next()
-            .ok_or(KzgErrors::FileFormatError)?
+            .ok_or(KZGErrors::FileFormatError)?
             .parse::<usize>()
-            .map_err(|_| KzgErrors::ParseError)?;
+            .map_err(|_| KZGErrors::ParseError)?;
         if n_g1 != NUM_G1_POINTS {
-            return Err(KzgErrors::MismatchedNumberOfPoints.into());
+            return Err(KZGErrors::MismatchedNumberOfPoints.into());
         }
 
         // Load number of g2 points
         let n_g2 = lines
             .next()
-            .ok_or(KzgErrors::FileFormatError)?
+            .ok_or(KZGErrors::FileFormatError)?
             .parse::<usize>()
-            .map_err(|_| KzgErrors::ParseError)?;
+            .map_err(|_| KZGErrors::ParseError)?;
         if n_g2 != NUM_G2_POINTS {
-            return Err(KzgErrors::MismatchedNumberOfPoints.into());
+            return Err(KZGErrors::MismatchedNumberOfPoints.into());
         }
 
         let mut g1_lagrange_bytes = alloc::boxed::Box::new([0; BYTES_PER_G1_POINT * NUM_G1_POINTS]);
@@ -217,31 +217,31 @@ impl KZGSettings {
         g1_lagrange_bytes
             .chunks_mut(BYTES_PER_G1_POINT)
             .map(|chunk| {
-                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
-                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+                let line = lines.next().ok_or(KZGErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KZGErrors::ParseError)
             })
-            .collect::<Result<(), KzgErrors>>()?;
+            .collect::<Result<(), KZGErrors>>()?;
 
         // Load g2 monomial bytes
         g2_monomial_bytes
             .chunks_mut(BYTES_PER_G2_POINT)
             .map(|chunk| {
-                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
-                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+                let line = lines.next().ok_or(KZGErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KZGErrors::ParseError)
             })
-            .collect::<Result<(), KzgErrors>>()?;
+            .collect::<Result<(), KZGErrors>>()?;
 
         // Load g1 monomial bytes
         g1_monomial_bytes
             .chunks_mut(BYTES_PER_G1_POINT)
             .map(|chunk| {
-                let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
-                hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
+                let line = lines.next().ok_or(KZGErrors::FileFormatError)?;
+                hex::decode_to_slice(line, chunk).map_err(|_| KZGErrors::ParseError)
             })
-            .collect::<Result<(), KzgErrors>>()?;
+            .collect::<Result<(), KZGErrors>>()?;
 
         if lines.next().is_some() {
-            return Err(KzgErrors::FileFormatError.into());
+            return Err(KZGErrors::FileFormatError.into());
         }
 
         Self::load_trusted_setup(
@@ -649,7 +649,7 @@ impl Bytes48 {
 impl KZGProof {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_PROOF {
-            return Err(Error::InvalidKzgProof(format!(
+            return Err(Error::InvalidKZGProof(format!(
                 "Invalid byte length. Expected {} got {}",
                 BYTES_PER_PROOF,
                 bytes.len(),
@@ -672,7 +672,7 @@ impl KZGProof {
 impl KZGCommitment {
     pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != BYTES_PER_COMMITMENT {
-            return Err(Error::InvalidKzgCommitment(format!(
+            return Err(Error::InvalidKZGCommitment(format!(
                 "Invalid byte length. Expected {} got {}",
                 BYTES_PER_PROOF,
                 bytes.len(),

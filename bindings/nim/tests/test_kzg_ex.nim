@@ -6,7 +6,7 @@ import
   ./types
 
 proc createKateBlobs(n: int): KateBlobs =
-  var blob: KzgBlob
+  var blob: KZGBlob
   for i in 0..<n:
     discard urandom(blob.bytes)
     for i in 0..<blob.bytes.len:
@@ -22,12 +22,12 @@ proc createKateBlobs(n: int): KateBlobs =
 
 suite "verify proof (extended version)":
   test "load trusted setup from string":
-    let res = Kzg.loadTrustedSetupFromString(trustedSetup, 0)
+    let res = KZG.loadTrustedSetupFromString(trustedSetup, 0)
     check res.isOk
 
   test "verify batch proof success":
     let kb = createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
@@ -39,14 +39,14 @@ suite "verify proof (extended version)":
 
   test "verify batch proof failure":
     let kb = createKateBlobs(nblobs)
-    var kp: array[nblobs, KzgProof]
+    var kp: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = computeProof(kb.blobs[i], kb.kates[i])
       check pres.isOk
       kp[i] = pres.get
 
     let other = createKateBlobs(nblobs)
-    var badProofs: array[nblobs, KzgProof]
+    var badProofs: array[nblobs, KZGProof]
     for i in 0..<nblobs:
       let pres = computeProof(other.blobs[i], other.kates[i])
       check pres.isOk
@@ -75,8 +75,8 @@ suite "verify proof (extended version)":
   test "template aliases":
     # no need to check return value
     # only test if those templates can be compiled successfully
-    check Kzg.freeTrustedSetup().isOk
-    check Kzg.loadTrustedSetupFile(trustedSetupFile, 0).isOk
+    check KZG.freeTrustedSetup().isOk
+    check KZG.loadTrustedSetupFile(trustedSetupFile, 0).isOk
     discard blobToKZGCommitment(blob)
     let kp = computeKZGProof(blob, inputPoint)
     discard computeBlobKZGProof(blob, commitment)
@@ -86,5 +86,5 @@ suite "verify proof (extended version)":
     discard verifyBlobKZGProofBatch(kb.blobs, kb.kates, [kp.get.proof])
 
   test "load trusted setup more than once":
-    let res = Kzg.loadTrustedSetupFromString(trustedSetup, 0)
+    let res = KZG.loadTrustedSetupFromString(trustedSetup, 0)
     check res.isErr

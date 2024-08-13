@@ -15,8 +15,8 @@ mod ethereum_kzg_settings;
 
 // Expose relevant types with idiomatic names.
 pub use bindings::{
-    KZGCommitment as KzgCommitment, KZGProof as KzgProof, KZGSettings as KzgSettings,
-    C_KZG_RET as CkzgError,
+    KZGCommitment as KZGCommitment, KZGProof as KZGProof, KZGSettings as KZGSettings,
+    C_KZG_RET as CKZGError,
 };
 
 // Expose the default settings.

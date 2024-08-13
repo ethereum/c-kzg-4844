@@ -3,7 +3,7 @@ using NUnit.Framework;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Ckzg.Test;
+namespace CKZG.Test;
 
 [TestFixture]
 public class ReferenceTests
@@ -15,13 +15,13 @@ public class ReferenceTests
     [OneTimeSetUp]
     public void Setup()
     {
-        _ts = Ckzg.LoadTrustedSetup("trusted_setup.txt", 0);
+        _ts = CKZG.LoadTrustedSetup("trusted_setup.txt", 0);
     }
 
     [OneTimeTearDown]
     public void Teardown()
     {
-        Ckzg.FreeTrustedSetup(_ts);
+        CKZG.FreeTrustedSetup(_ts);
     }
 
     [TestCase]
@@ -99,7 +99,7 @@ public class ReferenceTests
 
             try
             {
-                Ckzg.BlobToKZGCommitment(commitment, blob, _ts);
+                CKZG.BlobToKZGCommitment(commitment, blob, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCommitment = GetBytes(test.Output);
                 Assert.That(commitment, Is.EqualTo(expectedCommitment));
@@ -149,7 +149,7 @@ public class ReferenceTests
 
             try
             {
-                Ckzg.ComputeKZGProof(proof, y, blob, z, _ts);
+                CKZG.ComputeKZGProof(proof, y, blob, z, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedProof = GetBytes(test.Output.ElementAt(0));
                 Assert.That(proof, Is.EqualTo(expectedProof));
@@ -200,7 +200,7 @@ public class ReferenceTests
 
             try
             {
-                Ckzg.ComputeBlobKZGProof(proof, blob, commitment, _ts);
+                CKZG.ComputeBlobKZGProof(proof, blob, commitment, _ts);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedProof = GetBytes(test.Output);
                 Assert.That(proof, Is.EqualTo(expectedProof));
@@ -252,7 +252,7 @@ public class ReferenceTests
 
             try
             {
-                bool isCorrect = Ckzg.VerifyKZGProof(commitment, z, y, proof, _ts);
+                bool isCorrect = CKZG.VerifyKZGProof(commitment, z, y, proof, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -299,7 +299,7 @@ public class ReferenceTests
             byte[] proof = GetBytes(test.Input.Proof);
             try
             {
-                bool isCorrect = Ckzg.VerifyBlobKZGProof(blob, commitment, proof, _ts);
+                bool isCorrect = CKZG.VerifyBlobKZGProof(blob, commitment, proof, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -344,11 +344,11 @@ public class ReferenceTests
             byte[] blobs = GetFlatBytes(test.Input.Blobs);
             byte[] commitments = GetFlatBytes(test.Input.Commitments);
             byte[] proofs = GetFlatBytes(test.Input.Proofs);
-            int count = blobs.Length / Ckzg.BytesPerBlob;
+            int count = blobs.Length / CKZG.BytesPerBlob;
 
             try
             {
-                bool isCorrect = Ckzg.VerifyBlobKZGProofBatch(blobs, commitments, proofs, count, _ts);
+                bool isCorrect = CKZG.VerifyBlobKZGProofBatch(blobs, commitments, proofs, count, _ts);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -391,13 +391,13 @@ public class ReferenceTests
     [Test, TestCaseSource(nameof(GetComputeCellsAndKZGProofsTests))]
     public void TestComputeCellsAndKZGProofs(ComputeCellsAndKZGProofsTest test)
     {
-        byte[] cells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
-        byte[] proofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
+        byte[] cells = new byte[CellsPerExtBlob * CKZG.BytesPerCell];
+        byte[] proofs = new byte[CellsPerExtBlob * CKZG.BytesPerProof];
         byte[] blob = GetBytes(test.Input.Blob);
 
         try
         {
-            Ckzg.ComputeCellsAndKZGProofs(cells, proofs, blob, _ts);
+            CKZG.ComputeCellsAndKZGProofs(cells, proofs, blob, _ts);
             Assert.That(test.Output, Is.Not.EqualTo(null));
             byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
             Assert.That(cells, Is.EqualTo(expectedCells));
@@ -443,15 +443,15 @@ public class ReferenceTests
     [Test, TestCaseSource(nameof(GetRecoverCellsAndKZGProofsTests))]
     public void TestRecoverCellsAndKZGProofs(RecoverCellsAndKZGProofsTest test)
     {
-        byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
-        byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
+        byte[] recoveredCells = new byte[CellsPerExtBlob * CKZG.BytesPerCell];
+        byte[] recoveredProofs = new byte[CellsPerExtBlob * CKZG.BytesPerProof];
         ulong[] cellIndices = test.Input.CellIndices.ToArray();
         byte[] cells = GetFlatBytes(test.Input.Cells);
-        int numCells = cells.Length / Ckzg.BytesPerCell;
+        int numCells = cells.Length / CKZG.BytesPerCell;
 
         try
         {
-            Ckzg.RecoverCellsAndKZGProofs(recoveredCells, recoveredProofs, cellIndices, cells, numCells, _ts);
+            CKZG.RecoverCellsAndKZGProofs(recoveredCells, recoveredProofs, cellIndices, cells, numCells, _ts);
             Assert.That(test.Output, Is.Not.EqualTo(null));
             byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
             Assert.That(recoveredCells, Is.EqualTo(expectedCells));
@@ -503,11 +503,11 @@ public class ReferenceTests
         ulong[] cellIndices = test.Input.CellIndices.ToArray();
         byte[] cells = GetFlatBytes(test.Input.Cells);
         byte[] proofs = GetFlatBytes(test.Input.Proofs);
-        int numCells = cells.Length / Ckzg.BytesPerCell;
+        int numCells = cells.Length / CKZG.BytesPerCell;
 
         try
         {
-            bool isCorrect = Ckzg.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs, numCells, _ts);
+            bool isCorrect = CKZG.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs, numCells, _ts);
             Assert.That(isCorrect, Is.EqualTo(test.Output));
         }
         catch

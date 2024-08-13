@@ -43,7 +43,7 @@ std::string from_c_kzg_ret(C_KZG_RET ret) {
 typedef struct {
     bool is_setup;
     KZGSettings settings;
-} KzgAddonData;
+} KZGAddonData;
 
 /**
  * This cleanup function follows the `napi_finalize` interface and will be
@@ -54,12 +54,12 @@ typedef struct {
  *         the cleanup.
  *
  * @param[in] env  (unused)
- * @param[in] data Pointer KzgAddonData stored by the runtime
+ * @param[in] data Pointer KZGAddonData stored by the runtime
  * @param[in] hint (unused)
  */
 void delete_kzg_addon_data(napi_env /*env*/, void *data, void * /*hint*/) {
-    if (((KzgAddonData *)data)->is_setup) {
-        free_trusted_setup(&((KzgAddonData *)data)->settings);
+    if (((KZGAddonData *)data)->is_setup) {
+        free_trusted_setup(&((KZGAddonData *)data)->settings);
     }
     free(data);
 }
@@ -81,7 +81,7 @@ void delete_kzg_addon_data(napi_env /*env*/, void *data, void * /*hint*/) {
  * @return - Pointer to the KZGSettings
  */
 KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
-    KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
+    KZGAddonData *data = env.GetInstanceData<KZGAddonData>();
     if (!data->is_setup) {
         Napi::Error::New(
             env,
@@ -179,7 +179,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
     Napi::Env env = info.Env();
 
     // Check if the trusted setup is already loaded
-    KzgAddonData *data = env.GetInstanceData<KzgAddonData>();
+    KZGAddonData *data = env.GetInstanceData<KZGAddonData>();
     if (data->is_setup) {
         Napi::Error::New(env, "Error trusted setup is already loaded")
             .ThrowAsJavaScriptException();
@@ -902,7 +902,7 @@ out:
 }
 
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
-    KzgAddonData *data = (KzgAddonData *)malloc(sizeof(KzgAddonData));
+    KZGAddonData *data = (KZGAddonData *)malloc(sizeof(KZGAddonData));
     if (data == nullptr) {
         Napi::Error::New(env, "Error allocating memory for kzg setup handle")
             .ThrowAsJavaScriptException();

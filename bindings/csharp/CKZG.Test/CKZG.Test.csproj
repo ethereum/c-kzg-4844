@@ -21,7 +21,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Ckzg.Bindings\Ckzg.Bindings.csproj" />
+        <ProjectReference Include="..\CKZG.Bindings\CKZG.Bindings.csproj" />
     </ItemGroup>
 
     <ItemGroup>

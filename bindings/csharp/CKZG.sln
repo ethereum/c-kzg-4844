@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ckzg.Bindings", "Ckzg.Bindings\Ckzg.Bindings.csproj", "{4BE5C759-C998-47AB-A7F3-FA5E115A06DD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CKZG.Bindings", "CKZG.Bindings\CKZG.Bindings.csproj", "{4BE5C759-C998-47AB-A7F3-FA5E115A06DD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ckzg.Test", "Ckzg.Test\Ckzg.Test.csproj", "{B7A7291F-3DBC-4D9C-A5F1-B036C2EAA41C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CKZG.Test", "CKZG.Test\CKZG.Test.csproj", "{B7A7291F-3DBC-4D9C-A5F1-B036C2EAA41C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
