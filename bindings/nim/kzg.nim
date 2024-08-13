@@ -10,7 +10,12 @@ import
 
 export
   results,
-  kzg_abi
+  kzg_abi.KzgBlob,
+  kzg_abi.KzgBytes32,
+  kzg_abi.KzgBytes48,
+  kzg_abi.KzgCell,
+  kzg_abi.KzgCommitment,
+  kzg_abi.KzgProof
 
 const
   TrustedSetupNotLoadedErr* = "Trusted setup is not loaded."
