@@ -60,7 +60,7 @@ template verify(res: KZG_RET, ret: untyped): untyped =
 ##############################################################
 
 proc loadTrustedSetup*(input: File, precompute: Natural): Result[void, string] =
-  if gCtx == nil:
+  if gCtx != nil:
     return err(TrustedSetupAlreadyLoadedErr)
   gCtx = new(KzgCtx)
   let res = load_trusted_setup_file(gCtx.val, input, precompute.csize_t)
