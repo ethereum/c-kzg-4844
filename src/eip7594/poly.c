@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "poly.h"
 #include "common/alloc.h"
 #include "common/ec.h"
 #include "common/ret.h"

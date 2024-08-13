@@ -20,7 +20,67 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2 -Wall -Wextra
+CFLAGS += -I. -I../inc -O2
+# Enable a bunch of optional warnings.
+CFLAGS += \
+	-pedantic \
+	-Wall \
+	-Wextra \
+	-Waggregate-return \
+	-Walloca \
+	-Warray-bounds \
+	-Wbad-function-cast \
+	-Wc++-compat \
+	-Wc++11-compat \
+	-Wcast-align \
+	-Wcast-qual \
+	-Wconversion \
+	-Wdisabled-optimization \
+	-Wdouble-promotion \
+	-Wenum-compare \
+	-Wfloat-equal \
+	-Wformat-nonliteral \
+	-Wformat-security \
+	-Wformat-y2k \
+	-Wformat=2 \
+	-Wframe-larger-than=1048576 \
+	-Wimplicit \
+	-Wimplicit-fallthrough \
+	-Winit-self \
+	-Winline \
+	-Winvalid-pch \
+	-Wlarger-than=512 \
+	-Wlong-long \
+	-Wmissing-declarations \
+	-Wmissing-field-initializers \
+	-Wmissing-format-attribute \
+	-Wmissing-include-dirs \
+	-Wmissing-noreturn \
+	-Wmissing-prototypes \
+	-Wnested-externs \
+	-Wnull-dereference \
+	-Wold-style-definition \
+	-Woverlength-strings \
+	-Wpacked \
+	-Wpadded \
+	-Wpointer-arith \
+	-Wredundant-decls \
+	-Wredundant-move \
+	-Wshadow \
+	-Wsign-compare \
+	-Wsign-conversion \
+	-Wstack-protector \
+	-Wstrict-aliasing=2 \
+	-Wstrict-overflow=5 \
+	-Wstrict-prototypes \
+	-Wswitch-default \
+	-Wswitch-enum \
+	-Wtype-limits \
+	-Wundef \
+	-Wuninitialized \
+	-Wunreachable-code \
+	-Wvariadic-macros \
+	-Wwrite-strings
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
