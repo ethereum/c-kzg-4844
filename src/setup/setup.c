@@ -46,6 +46,43 @@
 #define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * This is the root of unity associated with FIELD_ELEMENTS_PER_BLOB.
+ *
+ * Compute this constant with the scripts below:
+ *
+ * @code{.py}
+ * import math
+ *
+ * FIELD_ELEMENTS_PER_EXT_BLOB = 8192
+ * PRIMITIVE_ROOT_OF_UNITY = 7
+ * BLS_MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+ *
+ * order = int(math.log2(FIELD_ELEMENTS_PER_EXT_BLOB))
+ * root_of_unity = pow(PRIMITIVE_ROOT_OF_UNITY, (BLS_MODULUS - 1) // (2**order), BLS_MODULUS)
+ * uint64s = [(root_of_unity >> (64 * i)) & 0xFFFFFFFFFFFFFFFF for i in range(4)]
+ * values = [f"0x{uint64:016x}L" for uint64 in uint64s]
+ * print(f"{{{', '.join(values)}}}")
+ * @endcode
+ *
+ * Then paste the output into the following:
+ *
+ * @code{.c}
+ * fr_t root_of_unity;
+ * uint64_t values[4] = <output-from-python>;
+ * blst_fr_from_uint64(&root_of_unity, values);
+ * for (size_t i = 0; i < 4; i++)
+ *     printf("%#018llxL,\n", root_of_unity.l[i]);
+ * @endcode
+ */
+static const fr_t ROOT_OF_UNITY = {
+    0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Trusted Setup Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -92,22 +129,9 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t widt
  */
 static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     C_KZG_RET ret;
-    fr_t root_of_unity;
-
-    size_t max_scale = 0;
-    while ((1ULL << max_scale) < FIELD_ELEMENTS_PER_EXT_BLOB)
-        max_scale++;
-
-    /* Ensure this element will exist */
-    if (max_scale >= NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY)) {
-        return C_KZG_BADARGS;
-    }
-
-    /* Get the right subgroup generator */
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(s->roots_of_unity, &root_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
+    ret = expand_root_of_unity(s->roots_of_unity, &ROOT_OF_UNITY, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */

@@ -260,17 +260,6 @@ static void test_fr_pow__test_power_of_two(void) {
     ASSERT_EQUALS(ok, true);
 }
 
-static void test_fr_pow__test_inverse_on_root_of_unity(void) {
-    fr_t a, r;
-
-    blst_fr_from_uint64(&a, SCALE2_ROOT_OF_UNITY[31]);
-
-    fr_pow(&r, &a, 1ULL << 31);
-
-    bool ok = fr_equal(&r, &FR_ONE);
-    ASSERT_EQUALS(ok, true);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for fr_batch_inv
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1612,31 +1601,11 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
 // Tests for expand_root_of_unity
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static void test_expand_root_of_unity__succeeds_with_root(void) {
-    C_KZG_RET ret;
-    fr_t roots[257], root_of_unity;
-
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[8]);
-
-    ret = expand_root_of_unity(roots, &root_of_unity, 256);
-    ASSERT_EQUALS(ret, C_KZG_OK);
-}
-
 static void test_expand_root_of_unity__fails_not_root_of_unity(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
 
     fr_from_uint64(&root_of_unity, 3);
-
-    ret = expand_root_of_unity(roots, &root_of_unity, 256);
-    ASSERT_EQUALS(ret, C_KZG_BADARGS);
-}
-
-static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
-    C_KZG_RET ret;
-    fr_t roots[257], root_of_unity;
-
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[7]);
 
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
@@ -2204,7 +2173,6 @@ int main(void) {
     RUN(test_fr_div__specific_value);
     RUN(test_fr_div__succeeds_round_trip);
     RUN(test_fr_pow__test_power_of_two);
-    RUN(test_fr_pow__test_inverse_on_root_of_unity);
     RUN(test_fr_batch_inv__test_consistent);
     RUN(test_fr_batch_inv__test_zero);
     RUN(test_g1_mul__test_consistent);
@@ -2268,9 +2236,7 @@ int main(void) {
     RUN(test_verify_kzg_proof_batch__fails_proof_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_commitment_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_invalid_blob);
-    RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
-    RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
     RUN(test_fft);
     RUN(test_coset_fft);
     RUN(test_deduplicate_commitments__one_duplicate);
