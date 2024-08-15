@@ -1,3 +1,4 @@
+src/.blst_hash
 src/tests
 src/tests_*
 coverage.html

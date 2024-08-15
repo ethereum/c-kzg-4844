@@ -2069,7 +2069,7 @@ static void profile_verify_blob_kzg_proof(void) {
 }
 
 static void profile_verify_blob_kzg_proof_batch(void) {
-    const int n = 16;
+    const int n = 4;
     Blob blobs[n];
     Bytes48 commitments[n];
     Bytes48 proofs[n];
