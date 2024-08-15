@@ -44,4 +44,4 @@ Install via nimble:
 nimble install https://github.com/ethereum/c-kzg-4844
 ```
 
-Then import one of `kzg4844/kzg`, `kzg4844/kzg_abi`, or `kzg4844/kzg_ex` into your project.
+Then import `kzg4844/kzg` or `kzg4844/kzg_abi` into your project.
