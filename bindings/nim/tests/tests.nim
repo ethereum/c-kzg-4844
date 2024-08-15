@@ -3,14 +3,16 @@
 import
   std/[os, sequtils, strutils, streams],
   unittest2, yaml,
-  ../kzg,
-  ./types
+  ../kzg
 
 # we want to use our own fromHex
 import
   stew/byteutils except fromHex
 
 const
+  kzgPath = currentSourcePath.rsplit(DirSep, 4)[0] & "/"
+  trustedSetupFile = kzgPath & "src/trusted_setup.txt"
+  trustedSetup* = staticRead(trustedSetupFile)
   testBase = kzgPath & "tests/"
   BLOB_TO_KZG_COMMITMENT_TESTS       = testBase & "blob_to_kzg_commitment"
   COMPUTE_KZG_PROOF_TESTS            = testBase & "compute_kzg_proof"
@@ -62,6 +64,7 @@ template runTests(folder: string, body: untyped) =
 
 template checkRes(res, body: untyped) =
   if res.isErr:
+    check res.error != TrustedSetupNotLoadedErr
     check n["output"].content == "null"
   else:
     body
@@ -76,24 +79,21 @@ template checkBytes48(res: untyped) =
     check bytes == res.get
 
 suite "yaml tests":
-  var ctx: KzgCtx
-
   test "load trusted setup from string":
     let res = loadTrustedSetupFromString(trustedSetup, 8)
     check res.isOk
-    ctx = res.get
 
   runTests(BLOB_TO_KZG_COMMITMENT_TESTS):
     let
       blob = KzgBlob.fromHex(n["input"]["blob"])
-      res = ctx.toCommitment(blob)
+      res = blobToKzgCommitment(blob)
     checkBytes48(res)
 
   runTests(COMPUTE_KZG_PROOF_TESTS):
     let
       blob = KzgBlob.fromHex(n["input"]["blob"])
       zBytes = KzgBytes32.fromHex(n["input"]["z"])
-      res = ctx.computeProof(blob, zBytes)
+      res = computeKzgProof(blob, zBytes)
 
     checkRes(res):
       let proof = KzgProof.fromHex(n["output"][0])
@@ -105,7 +105,7 @@ suite "yaml tests":
     let
       blob = KzgBlob.fromHex(n["input"]["blob"])
       commitment = KzgCommitment.fromHex(n["input"]["commitment"])
-      res = ctx.computeProof(blob, commitment)
+      res = computeBlobKzgProof(blob, commitment)
     checkBytes48(res)
 
   runTests(VERIFY_KZG_PROOF_TESTS):
@@ -114,7 +114,7 @@ suite "yaml tests":
       z = KzgBytes32.fromHex(n["input"]["z"])
       y = KzgBytes32.fromHex(n["input"]["y"])
       proof = KzgProof.fromHex(n["input"]["proof"])
-      res = ctx.verifyProof(commitment, z, y, proof)
+      res = verifyKzgProof(commitment, z, y, proof)
     checkBool(res)
 
   runTests(VERIFY_BLOB_KZG_PROOF_TESTS):
@@ -122,7 +122,7 @@ suite "yaml tests":
       blob = KzgBlob.fromHex(n["input"]["blob"])
       commitment = KzgCommitment.fromHex(n["input"]["commitment"])
       proof = KzgProof.fromHex(n["input"]["proof"])
-      res = ctx.verifyProof(blob, commitment, proof)
+      res = verifyBlobKzgProof(blob, commitment, proof)
     checkBool(res)
 
   runTests(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS):
@@ -130,13 +130,13 @@ suite "yaml tests":
       blobs = KzgBlob.fromHexList(n["input"]["blobs"])
       commitments = KzgCommitment.fromHexList(n["input"]["commitments"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
-      res = ctx.verifyProofs(blobs, commitments, proofs)
+      res = verifyBlobKzgProofBatch(blobs, commitments, proofs)
     checkBool(res)
 
   runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
     let
       blob = KzgBlob.fromHex(n["input"]["blob"])
-      res = ctx.computeCellsAndProofs(blob)
+      res = computeCellsAndKzgProofs(blob)
 
     checkRes(res):
       let cells = KzgCell.fromHexList(n["output"][0])
@@ -148,7 +148,7 @@ suite "yaml tests":
     let
       cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
-      res = ctx.recoverCellsAndProofs(cellIndices, cells)
+      res = recoverCellsAndKzgProofs(cellIndices, cells)
 
     checkRes(res):
       let expectedCells = KzgCell.fromHexList(n["output"][0])
@@ -162,5 +162,9 @@ suite "yaml tests":
       cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
-      res = ctx.verifyProofs(commitments, cellIndices, cells, proofs)
+      res = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs)
     checkBool(res)
+
+  test "free trusted setup":
+    let res = freeTrustedSetup()
+    check res.isOk
