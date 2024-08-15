@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2
+CFLAGS += -I. -I../inc -O2 -Werror
 # Enable a bunch of optional warnings.
 CFLAGS += \
 	-pedantic \
@@ -30,8 +30,6 @@ CFLAGS += \
 	-Walloca \
 	-Warray-bounds \
 	-Wbad-function-cast \
-	-Wc++-compat \
-	-Wc++11-compat \
 	-Wcast-align \
 	-Wcast-qual \
 	-Wconversion \
@@ -39,18 +37,12 @@ CFLAGS += \
 	-Wdouble-promotion \
 	-Wenum-compare \
 	-Wfloat-equal \
-	-Wformat-nonliteral \
-	-Wformat-security \
-	-Wformat-y2k \
-	-Wformat=2 \
 	-Wframe-larger-than=1048576 \
 	-Wimplicit \
 	-Wimplicit-fallthrough \
 	-Winit-self \
 	-Winline \
 	-Winvalid-pch \
-	-Wlarger-than=512 \
-	-Wlong-long \
 	-Wmissing-declarations \
 	-Wmissing-field-initializers \
 	-Wmissing-format-attribute \
@@ -65,7 +57,6 @@ CFLAGS += \
 	-Wpadded \
 	-Wpointer-arith \
 	-Wredundant-decls \
-	-Wredundant-move \
 	-Wshadow \
 	-Wsign-compare \
 	-Wsign-conversion \
@@ -86,9 +77,11 @@ CFLAGS += \
 ifeq ($(PLATFORM),Windows)
 	CC = gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
+	CFLAGS += -Wno-missing-braces -Wno-format
 else
 	CC = clang
-	CFLAGS += -fPIC -Werror
+	CFLAGS += -fPIC
+	CFLAGS += -Wmissing-braces -Wformat=2
 endif
 
 # Settings for blst.
