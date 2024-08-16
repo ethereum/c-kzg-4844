@@ -167,7 +167,7 @@ void free_trusted_setup(KZGSettings *s) {
 
     /*
      * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
-     * structure, we don't want to deference these 2d arrays.  Without these NULL checks, it's
+     * structure, we don't want to deference these 2d arrays. Without these NULL checks, it's
      * possible for there to be a segmentation fault via null pointer dereference.
      */
     if (s->x_ext_fft_columns != NULL) {
