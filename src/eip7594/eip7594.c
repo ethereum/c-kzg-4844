@@ -455,6 +455,121 @@ out:
 }
 
 /**
+ * Aggregate columns, compute the sum of interpolation polynomials, and commit to the result.
+ *
+ * This function computes: [sum_k r^k interpolation_poly_k(s)]
+ *
+ * This function first aggregates cells from the same column by scaling them with the corresponding
+ * powers of the random challenge. It then computes the sum of the interpolation polynomials from
+ * the aggregated columns and finally commits to the aggregated interpolation polynomial.
+ *
+ * @param[out]  evaluation_out              Commitment to the aggregated interpolation poly
+ * @param[in]   r_powers                    Precomputed powers of the random challenge
+ * @param[in]   cell_indices                Indices of the cells
+ * @param[in]   cells                       Array of cells
+ * @param[in]   num_cells                   Number of cells
+ * @param[in]   s                           The trusted setup
+ */
+static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
+    g1_t *evaluation,
+    const fr_t *r_powers,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    size_t num_cells,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *aggregated_column_cells = NULL;
+    fr_t *column_interpolation_poly = NULL;
+    fr_t *aggregated_interpolation_poly = NULL;
+    bool *is_cell_used = NULL;
+
+    // Allocate memory
+    ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&column_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+
+    // Initialize aggregated columns and usage flags
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+            aggregated_column_cells[index] = FR_ZERO;
+        }
+    }
+
+    // Aggregate the cells by scaling and summing
+    for (size_t i = 0; i < num_cells; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            fr_t cell_fr, scaled_fr;
+            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+            ret = bytes_to_bls_field(&cell_fr, (const Bytes32 *)&cells[i].bytes[offset]);
+            if (ret != C_KZG_OK) goto out;
+            blst_fr_mul(&scaled_fr, &cell_fr, &r_powers[i]);
+            size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
+            blst_fr_add(
+                &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
+            );
+
+            // Mark the cell as being used
+            is_cell_used[index] = true;
+        }
+    }
+
+    // Initialize aggregated interpolation polynomial
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        aggregated_interpolation_poly[i] = FR_ZERO;
+    }
+
+    // Sum the interpolation polynomials
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        size_t index = i * FIELD_ELEMENTS_PER_CELL;
+
+        if (!is_cell_used[index]) continue;
+
+        ret = bit_reversal_permutation(
+            &aggregated_column_cells[index], sizeof(fr_t), FIELD_ELEMENTS_PER_CELL
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        ret = fr_ifft(
+            column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
+        );
+        if (ret != C_KZG_OK) goto out;
+
+        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
+        fr_t inv_coset_factor;
+        blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
+        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
+
+        for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
+            blst_fr_add(
+                &aggregated_interpolation_poly[k],
+                &aggregated_interpolation_poly[k],
+                &column_interpolation_poly[k]
+            );
+        }
+    }
+
+    // Commit to the final aggregated interpolation polynomial
+    ret = g1_lincomb_fast(
+        evaluation, s->g1_values_monomial, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL
+    );
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(aggregated_column_cells);
+    c_kzg_free(column_interpolation_poly);
+    c_kzg_free(aggregated_interpolation_poly);
+    c_kzg_free(is_cell_used);
+    return ret;
+}
+
+/**
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
@@ -487,10 +602,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Arrays */
     Bytes48 *unique_commitments = NULL;
     uint64_t *commitment_indices = NULL;
-    bool *is_cell_used = NULL;
-    fr_t *aggregated_column_cells = NULL;
-    fr_t *aggregated_interpolation_poly = NULL;
-    fr_t *column_interpolation_poly = NULL;
     fr_t *commitment_weights = NULL;
     fr_t *r_powers = NULL;
     fr_t *weighted_powers_of_r = NULL;
@@ -537,14 +648,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Array allocations
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&column_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&commitment_weights, num_commitments);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_powers, num_cells);
@@ -615,90 +718,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Compute aggregated columns
+    // Commmit to aggregated interpolation polynomial: [sum_k r^k interpolation_poly_k(s)]
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /* Start with zeroed out columns */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
-            aggregated_column_cells[index] = FR_ZERO;
-        }
-    }
-
-    /* Scale each cell's data points */
-    for (size_t i = 0; i < num_cells; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t cell_fr, scaled_fr;
-            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(&cell_fr, (const Bytes32 *)&cells[i].bytes[offset]);
-            if (ret != C_KZG_OK) goto out;
-            blst_fr_mul(&scaled_fr, &cell_fr, &r_powers[i]);
-            size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
-            blst_fr_add(
-                &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
-            );
-
-            /* Mark the cell as being used */
-            is_cell_used[index] = true;
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Compute sum of the interpolation polynomials
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /* Start with a zeroed out poly */
-    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        aggregated_interpolation_poly[i] = FR_ZERO;
-    }
-
-    /* Interpolate each column */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        /* Offset to the first cell for this column */
-        size_t index = i * FIELD_ELEMENTS_PER_CELL;
-
-        /* We only care about initialized cells */
-        if (!is_cell_used[index]) continue;
-
-        /* We don't need to copy this because it's not used again */
-        ret = bit_reversal_permutation(
-            &aggregated_column_cells[index], sizeof(fr_t), FIELD_ELEMENTS_PER_CELL
-        );
-        if (ret != C_KZG_OK) goto out;
-
-        /*
-         * Get interpolation polynomial for this column. To do so we first do an IDFT over the roots
-         * of unity and then we scale by the coset factor.  We can't do an IDFT directly over the
-         * coset because it's not a subgroup.
-         */
-        ret = fr_ifft(
-            column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
-        );
-        if (ret != C_KZG_OK) goto out;
-
-        /*
-         * To unscale, divide by the coset. It's faster to multiply with the inverse. We can skip
-         * the first iteration because its dividing by one.
-         */
-        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
-        fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
-        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
-
-        /* Update the aggregated poly */
-        for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
-            blst_fr_add(
-                &aggregated_interpolation_poly[k],
-                &aggregated_interpolation_poly[k],
-                &column_interpolation_poly[k]
-            );
-        }
-    }
-
-    /* Commit to the final aggregated interpolation polynomial */
-    ret = g1_lincomb_fast(
-        &evaluation, s->g1_values_monomial, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL
+    /* Aggregated cells from same columns, sum interpolation polynomials, and commit */
+    ret = compute_commitment_to_aggregated_interpolation_poly(
+        &evaluation, r_powers, cell_indices, cells, num_cells, s
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -730,10 +755,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 out:
     c_kzg_free(unique_commitments);
     c_kzg_free(commitment_indices);
-    c_kzg_free(is_cell_used);
-    c_kzg_free(aggregated_column_cells);
-    c_kzg_free(aggregated_interpolation_poly);
-    c_kzg_free(column_interpolation_poly);
     c_kzg_free(commitment_weights);
     c_kzg_free(r_powers);
     c_kzg_free(weighted_powers_of_r);
