@@ -519,7 +519,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
                 &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
             );
 
-            // Mark the cell as being used
+            /* Mark the cell as being used */
             is_cell_used[index] = true;
         }
     }
