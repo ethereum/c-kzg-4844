@@ -459,12 +459,12 @@ out:
  *
  * This function computes `RLI = [sum_k r^k interpolation_poly_k(s)]` from the spec.
  *
- * @param[out]  commitment_out      Commitment to the aggregated interpolation poly
- * @param[in]   r_powers            Precomputed powers of the random challenge
- * @param[in]   cell_indices        Indices of the cells
- * @param[in]   cells               Array of cells
- * @param[in]   num_cells           Number of cells
- * @param[in]   s                   The trusted setup
+ * @param[out]  commitment_out  Commitment to the aggregated interpolation poly
+ * @param[in]   r_powers        Precomputed powers of the random challenge
+ * @param[in]   cell_indices    Indices of the cells
+ * @param[in]   cells           Array of cells
+ * @param[in]   num_cells       Number of cells
+ * @param[in]   s               The trusted setup
  */
 static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     g1_t *commitment_out,
