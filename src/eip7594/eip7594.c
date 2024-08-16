@@ -480,14 +480,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     fr_t *aggregated_interpolation_poly = NULL;
     bool *is_cell_used = NULL;
 
-    /*
-     * This function first aggregates cells from the same column by scaling them with the
-     * corresponding powers of the random challenge. It then computes interpolation polynomials
-     * using the aggregated cells. It finally sums up the interpolation polynomials and commits to
-     * the aggregated interpolation polynomial.
-     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Array allocations
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /* Allocate memory */
     ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&column_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
@@ -496,6 +492,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     if (ret != C_KZG_OK) goto out;
     ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Aggregates cells from the same column
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Start with zeroed out columns */
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -523,6 +523,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
             is_cell_used[index] = true;
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Compute interpolation polynomials using the aggregated cells
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Start with a zeroed out poly */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
@@ -571,6 +575,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
             );
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Commit to the aggregated interpolation polynomial
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Commit to the final aggregated interpolation polynomial */
     ret = g1_lincomb_fast(
