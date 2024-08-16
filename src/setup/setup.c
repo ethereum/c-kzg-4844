@@ -47,7 +47,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * This is the root of unity associated with FIELD_ELEMENTS_PER_BLOB.
+ * This is the root of unity associated with FIELD_ELEMENTS_PER_EXT_BLOB.
  *
  * Compute this constant with the scripts below:
  *
