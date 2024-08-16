@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len);
+void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
 C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len);
 
 #ifdef __cplusplus

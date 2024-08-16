@@ -99,7 +99,7 @@ uint64_t reverse_bits_limited(uint64_t n, uint64_t value) {
  * output array and n' is obtained from n by bit-reversing n. As opposed to reverse_bits, this
  * bit-reversal operates on log2(n)-bit numbers.
  */
-C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
+C_KZG_RET bit_reversal_permutation(void *values, size_t size, size_t n) {
     C_KZG_RET ret;
     byte *tmp = NULL;
     byte *v = (byte *)values;
@@ -116,7 +116,7 @@ C_KZG_RET bit_reversal_permutation(void *values, size_t size, uint64_t n) {
 
     /* Reorder elements */
     uint64_t unused_bit_len = 64 - log2_pow2(n);
-    for (uint64_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         uint64_t r = reverse_bits(i) >> unused_bit_len;
         if (r > i) {
             /* Swap the two elements */

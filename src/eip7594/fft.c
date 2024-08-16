@@ -160,14 +160,14 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  * @param[in]  n            Length of the FFT, must be a power of two
  */
 static void g1_fft_fast(
-    g1_t *out, const g1_t *in, uint64_t stride, const fr_t *roots, uint64_t roots_stride, uint64_t n
+    g1_t *out, const g1_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n
 ) {
     g1_t y_times_root;
-    uint64_t half = n / 2;
+    size_t half = n / 2;
     if (half > 0) { /* Tunable parameter */
         g1_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         g1_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
-        for (uint64_t i = 0; i < half; i++) {
+        for (size_t i = 0; i < half; i++) {
             /* If the point is infinity, we can skip the calculation */
             if (blst_p1_is_inf(&out[i + half])) {
                 out[i + half] = out[i];
@@ -204,7 +204,7 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    size_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->roots_of_unity, roots_stride, n);
 
     return C_KZG_OK;
@@ -227,13 +227,13 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
         return C_KZG_BADARGS;
     }
 
-    uint64_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_len;
     fr_from_uint64(&inv_len, n);
     blst_fr_eucl_inverse(&inv_len, &inv_len);
-    for (uint64_t i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         g1_mul(&out[i], &out[i], &inv_len);
     }
 
