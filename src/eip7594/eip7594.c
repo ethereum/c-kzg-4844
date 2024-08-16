@@ -551,7 +551,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
     /* Interpolate each column */
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        /* We only care about initialized cells */
+        /* We can skip columns without any cells */
         if (!is_cell_used[i]) continue;
 
         /* Offset to the first cell for this column */
