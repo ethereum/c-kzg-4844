@@ -402,11 +402,6 @@ C_KZG_RET load_trusted_setup(
         goto out_error;
     }
 
-    /* 1<<max_scale is the smallest power of 2 >= n1 */
-    size_t max_scale = 0;
-    while ((1ULL << max_scale) < NUM_G1_POINTS)
-        max_scale++;
-
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out_error;
