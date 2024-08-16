@@ -475,22 +475,22 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    bool *is_cell_used = NULL;
     fr_t *aggregated_column_cells = NULL;
     fr_t *column_interpolation_poly = NULL;
     fr_t *aggregated_interpolation_poly = NULL;
-    bool *is_cell_used = NULL;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Array allocations
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&column_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -590,10 +590,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     if (ret != C_KZG_OK) goto out;
 
 out:
+    c_kzg_free(is_cell_used);
     c_kzg_free(aggregated_column_cells);
     c_kzg_free(column_interpolation_poly);
     c_kzg_free(aggregated_interpolation_poly);
-    c_kzg_free(is_cell_used);
     return ret;
 }
 
