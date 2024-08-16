@@ -506,14 +506,20 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         }
     }
 
-    /* Scale each cell's data points */
+    /* Scale each cell with the corresponding powers of the random challenge */
     for (uint64_t i = 0; i < num_cells; i++) {
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t cell_fr, scaled_fr;
+            fr_t original_fr, scaled_fr;
+
+            /* Get the field element at this offset */
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(&cell_fr, (const Bytes32 *)&cells[i].bytes[offset]);
+            ret = bytes_to_bls_field(&original_fr, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
-            blst_fr_mul(&scaled_fr, &cell_fr, &r_powers[i]);
+
+            /* Scale the field element by the power for that cell */
+            blst_fr_mul(&scaled_fr, &original_fr, &r_powers[i]);
+
+            /* Aggregate the scaled field element into the column */
             size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
             blst_fr_add(
                 &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
@@ -549,7 +555,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
         /*
          * Get interpolation polynomial for this column. To do so we first do an IDFT over the roots
-         * of unity and then we scale by the coset factor.  We can't do an IDFT directly over the
+         * of unity and then we scale by the coset factor. We can't do an IDFT directly over the
          * coset because it's not a subgroup.
          */
         ret = fr_ifft(
