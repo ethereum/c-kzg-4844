@@ -85,17 +85,17 @@ pub struct Blob {
 #[repr(C)]
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct KZGSettings {
-    #[doc = " Roots of unity for the subgroup of size `domain_size`.\n\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
+    #[doc = " Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB`.\n\n The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.\n The array starts and ends with Fr::one()."]
     roots_of_unity: *mut fr_t,
-    #[doc = " Roots of unity for the subgroup of size `domain_size` in bit-reversed order.\n\n This array is derived by applying a bit-reversal permutation to `roots_of_unity`\n excluding the last element. Essentially:\n   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`\n\n The array contains `domain_size` elements."]
+    #[doc = " Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in bit-reversed order.\n\n This array is derived by applying a bit-reversal permutation to `roots_of_unity`\n excluding the last element. Essentially:\n   `brp_roots_of_unity = bit_reversal_permutation(roots_of_unity[:-1])`\n\n The array contains `FIELD_ELEMENTS_PER_EXT_BLOB` elements."]
     brp_roots_of_unity: *mut fr_t,
-    #[doc = " Roots of unity for the subgroup of size `domain_size` in reversed order.\n\n It is the reversed version of `roots_of_unity`. Essentially:\n    `reverse_roots_of_unity = reverse(roots_of_unity)`\n\n This array is primarily used in FFTs.\n The array contains `domain_size + 1` elements, it starts and ends with Fr::one()."]
+    #[doc = " Roots of unity for the subgroup of size `FIELD_ELEMENTS_PER_EXT_BLOB` in reversed order.\n\n It is the reversed version of `roots_of_unity`. Essentially:\n    `reverse_roots_of_unity = reverse(roots_of_unity)`\n\n This array is primarily used in FFTs.\n The array contains `FIELD_ELEMENTS_PER_EXT_BLOB + 1` elements.\n The array starts and ends with Fr::one()."]
     reverse_roots_of_unity: *mut fr_t,
-    #[doc = " G1 group elements from the trusted setup in monomial form."]
+    #[doc = " G1 group elements from the trusted setup in monomial form.\n The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements."]
     g1_values_monomial: *mut g1_t,
-    #[doc = " G1 group elements from the trusted setup in Lagrange form and bit-reversed order."]
+    #[doc = " G1 group elements from the trusted setup in Lagrange form and bit-reversed order.\n The array contains `NUM_G1_POINTS = FIELD_ELEMENTS_PER_BLOB` elements."]
     g1_values_lagrange_brp: *mut g1_t,
-    #[doc = " G2 group elements from the trusted setup in monomial form."]
+    #[doc = " G2 group elements from the trusted setup in monomial form.\n The array contains `NUM_G2_POINTS` elements."]
     g2_values_monomial: *mut g2_t,
     #[doc = " Data used during FK20 proof generation."]
     x_ext_fft_columns: *mut *mut g1_t,
