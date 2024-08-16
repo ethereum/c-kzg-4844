@@ -463,7 +463,7 @@ out:
  * powers of the random challenge. It then computes the sum of the interpolation polynomials from
  * the aggregated columns and finally commits to the aggregated interpolation polynomial.
  *
- * @param[out]  evaluation_out              Commitment to the aggregated interpolation poly
+ * @param[out]  commitment_out              Commitment to the aggregated interpolation poly
  * @param[in]   r_powers                    Precomputed powers of the random challenge
  * @param[in]   cell_indices                Indices of the cells
  * @param[in]   cells                       Array of cells
@@ -471,7 +471,7 @@ out:
  * @param[in]   s                           The trusted setup
  */
 static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
-    g1_t *evaluation,
+    g1_t *commitment_out,
     const fr_t *r_powers,
     const uint64_t *cell_indices,
     const Cell *cells,
@@ -499,6 +499,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
             aggregated_column_cells[index] = FR_ZERO;
+            is_cell_used[index] = false;
         }
     }
 
@@ -557,7 +558,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
     // Commit to the final aggregated interpolation polynomial
     ret = g1_lincomb_fast(
-        evaluation, s->g1_values_monomial, aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL
+        commitment_out,
+        s->g1_values_monomial,
+        aggregated_interpolation_poly,
+        FIELD_ELEMENTS_PER_CELL
     );
     if (ret != C_KZG_OK) goto out;
 
@@ -592,7 +596,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    g1_t evaluation;
+    g1_t interpolation_poly_commit;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
     g1_t weighted_proof_lincomb;
@@ -723,12 +727,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 
     /* Aggregated cells from same columns, sum interpolation polynomials, and commit */
     ret = compute_commitment_to_aggregated_interpolation_poly(
-        &evaluation, r_powers, cell_indices, cells, num_cells, s
+        &interpolation_poly_commit, r_powers, cell_indices, cells, num_cells, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    blst_p1_cneg(&evaluation, true);
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &evaluation);
+    blst_p1_cneg(&interpolation_poly_commit, true);
+    blst_p1_add(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Compute sum of the proofs scaled by the coset factors
