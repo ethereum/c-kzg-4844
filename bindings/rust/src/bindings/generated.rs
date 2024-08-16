@@ -177,8 +177,6 @@ extern "C" {
         num_cells: u64,
         s: *const KZGSettings,
     ) -> C_KZG_RET;
-    #[doc = " The first 32 roots of unity in the finite field F_r. SCALE2_ROOT_OF_UNITY[i] is a 2^i'th root of\n unity.\n\n For element `{A, B, C, D}`, the field element value is `A + B * 2^64 + C * 2^128 + D * 2^192`.\n This format may be converted to an `fr_t` type via the blst_fr_from_uint64() function.\n\n The decimal values may be calculated with the following Python code:\n @code{.py}\n MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513\n PRIMITIVE_ROOT = 7\n [pow(PRIMITIVE_ROOT, (MODULUS - 1) // (2**i), MODULUS) for i in range(32)]\n @endcode\n\n Note: Being a \"primitive root\" in this context means that `r^k != 1` for any `k < q-1` where q is\n the modulus. So powers of r generate the field. This is also known as being a \"primitive\n element\".\n\n In the formula above, the restriction can be slightly relaxed to `r` being a non-square. This is\n easy to check: We just require that r^((q-1)/2) == -1. Instead of 7, we could use 10, 13, 14, 15,\n 20... to create the 2^i'th roots of unity below. Generally, there are a lot of primitive roots:\n https://crypto.stanford.edu/pbc/notes/numbertheory/gen.html"]
-    pub static mut SCALE2_ROOT_OF_UNITY: [[u64; 4usize]; 32usize];
     pub fn load_trusted_setup(
         out: *mut KZGSettings,
         g1_monomial_bytes: *const u8,

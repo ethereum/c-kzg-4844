@@ -261,11 +261,10 @@ static void test_fr_pow__test_power_of_two(void) {
 }
 
 static void test_fr_pow__test_inverse_on_root_of_unity(void) {
-    fr_t a, r;
+    fr_t r;
 
-    blst_fr_from_uint64(&a, SCALE2_ROOT_OF_UNITY[31]);
-
-    fr_pow(&r, &a, 1ULL << 31);
+    size_t order = log2_pow2(FIELD_ELEMENTS_PER_EXT_BLOB);
+    fr_pow(&r, &ROOT_OF_UNITY, 1ULL << order);
 
     bool ok = fr_equal(&r, &FR_ONE);
     ASSERT_EQUALS(ok, true);
@@ -1612,12 +1611,44 @@ static void test_verify_kzg_proof_batch__fails_invalid_blob(void) {
 // Tests for expand_root_of_unity
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/** The 2**7th (128th) root of unity. */
+static uint64_t root_of_unity_parts_7[] = {
+    0x5130c2c1660125beL, 0x98d0caac87f5713cL, 0xb7c68b4d7fdd60d0L, 0x6898111413588742L
+};
+
+/** The 2**8th (256th) root of unity. */
+static uint64_t root_of_unity_parts_8[] = {
+    0x4935bd2f817f694bL, 0x0a0865a899e8deffL, 0x6b368121ac0cf4adL, 0x4f9b4098e2e9f12eL
+};
+
+/**
+ * The 2**13th (8192th) root of unity.
+ *
+ * @note We are removing the SCALE2_ROOT_OF_UNITY array and only exposing the root of unity we need,
+ * but in fr_t form directly. For posterity, we have added this test to ensure the new value
+ * matches. For EIP-7594, we need the 8192th root of unity, order of log2(8192)=13. Please confirm
+ * that this value matches SCALE2_ROOT_OF_UNITY[13] as defined here:
+ * https://github.com/ethereum/c-kzg-4844/blob/e3ef368c67c7877636c66d6c66beb1bcbf883493/src/setup/setup.h#L64
+ */
+static uint64_t root_of_unity_parts_13[] = {
+    0x6fdd00bfc78c8967L, 0x146b58bc434906acL, 0x2ccddea2972e89edL, 0x485d512737b1da3dL
+};
+
+static void test_expand_root_of_unity__global_matches_expected(void) {
+    fr_t root_of_unity;
+
+    /* The global value*/
+    blst_fr_from_uint64(&root_of_unity, root_of_unity_parts_13);
+    ASSERT_EQUALS(fr_equal(&ROOT_OF_UNITY, &root_of_unity), true);
+}
+
 static void test_expand_root_of_unity__succeeds_with_root(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
 
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[8]);
+    blst_fr_from_uint64(&root_of_unity, root_of_unity_parts_8);
 
+    /* We gave it the correct root of unity, so this should succeed */
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
@@ -1628,6 +1659,7 @@ static void test_expand_root_of_unity__fails_not_root_of_unity(void) {
 
     fr_from_uint64(&root_of_unity, 3);
 
+    /* We gave it a bogus root of unity, so this should fail */
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -1636,8 +1668,9 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
     C_KZG_RET ret;
     fr_t roots[257], root_of_unity;
 
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[7]);
+    blst_fr_from_uint64(&root_of_unity, root_of_unity_parts_7);
 
+    /* We expected the 2**8th root of unity, so this should fail */
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
@@ -2268,6 +2301,7 @@ int main(void) {
     RUN(test_verify_kzg_proof_batch__fails_proof_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_commitment_not_in_g1);
     RUN(test_verify_kzg_proof_batch__fails_invalid_blob);
+    RUN(test_expand_root_of_unity__global_matches_expected);
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
