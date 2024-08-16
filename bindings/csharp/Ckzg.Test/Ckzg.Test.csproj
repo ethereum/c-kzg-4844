@@ -6,6 +6,8 @@
         <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
         <IsPackable>false</IsPackable>
+        <!-- Disable the warnings about using UInt64-->
+        <NoWarn>$(NoWarn);IDE0049</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>

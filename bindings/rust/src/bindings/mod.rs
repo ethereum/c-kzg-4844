@@ -133,18 +133,18 @@ impl KZGSettings {
         g1_monomial_bytes: &[u8],
         g1_lagrange_bytes: &[u8],
         g2_monomial_bytes: &[u8],
-        precompute: usize,
+        precompute: u64,
     ) -> Result<Self, Error> {
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
         unsafe {
             let res = load_trusted_setup(
                 kzg_settings.as_mut_ptr(),
                 g1_monomial_bytes.as_ptr().cast(),
-                g1_monomial_bytes.len(),
+                g1_monomial_bytes.len() as u64,
                 g1_lagrange_bytes.as_ptr().cast(),
-                g1_lagrange_bytes.len(),
+                g1_lagrange_bytes.len() as u64,
                 g2_monomial_bytes.as_ptr().cast(),
-                g2_monomial_bytes.len(),
+                g2_monomial_bytes.len() as u64,
                 precompute,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -165,7 +165,7 @@ impl KZGSettings {
     /// 65 g2 byte values in monomial form
     /// FIELD_ELEMENT_PER_BLOB g1 byte values in monomial form
     #[cfg(feature = "std")]
-    pub fn load_trusted_setup_file(file_path: &Path, precompute: usize) -> Result<Self, Error> {
+    pub fn load_trusted_setup_file(file_path: &Path, precompute: u64) -> Result<Self, Error> {
         #[cfg(unix)]
         let file_path_bytes = {
             use std::os::unix::prelude::OsStrExt;
@@ -186,7 +186,7 @@ impl KZGSettings {
     }
 
     /// Parses the contents of a KZG trusted setup file into a KzgSettings.
-    pub fn parse_kzg_trusted_setup(trusted_setup: &str, precompute: usize) -> Result<Self, Error> {
+    pub fn parse_kzg_trusted_setup(trusted_setup: &str, precompute: u64) -> Result<Self, Error> {
         let mut lines = trusted_setup.lines();
 
         // Load number of g1 points
@@ -260,7 +260,7 @@ impl KZGSettings {
     /// 65 g2 byte values in monomial form
     /// FIELD_ELEMENT_PER_BLOB g1 byte values in monomial form
     #[cfg(not(feature = "std"))]
-    pub fn load_trusted_setup_file(file_path: &CStr, precompute: usize) -> Result<Self, Error> {
+    pub fn load_trusted_setup_file(file_path: &CStr, precompute: u64) -> Result<Self, Error> {
         Self::load_trusted_setup_file_inner(file_path, precompute)
     }
 
@@ -271,7 +271,7 @@ impl KZGSettings {
     /// .
     pub fn load_trusted_setup_file_inner(
         file_path: &CStr,
-        precompute: usize,
+        precompute: u64,
     ) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
         const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
@@ -435,7 +435,7 @@ impl KZGSettings {
                 blobs.as_ptr(),
                 commitments_bytes.as_ptr(),
                 proofs_bytes.as_ptr(),
-                blobs.len(),
+                blobs.len() as u64,
                 self,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -495,7 +495,7 @@ impl KZGSettings {
                 recovered_proofs.as_mut_ptr(),
                 cell_indices.as_ptr(),
                 cells.as_ptr(),
-                cells.len(),
+                cells.len() as u64,
                 self,
             );
             if let C_KZG_RET::C_KZG_OK = res {
@@ -542,7 +542,7 @@ impl KZGSettings {
                 cell_indices.as_ptr(),
                 cells.as_ptr(),
                 proofs_bytes.as_ptr(),
-                cells.len(),
+                cells.len() as u64,
                 self,
             );
             if let C_KZG_RET::C_KZG_OK = res {

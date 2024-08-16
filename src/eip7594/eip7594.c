@@ -168,7 +168,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     KZGProof *recovered_proofs,
     const uint64_t *cell_indices,
     const Cell *cells,
-    size_t num_cells,
+    uint64_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -375,7 +375,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
-    size_t num_cells
+    uint64_t num_cells
 ) {
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
@@ -474,7 +474,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
-    size_t num_cells,
+    uint64_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;

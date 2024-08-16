@@ -23,7 +23,7 @@ public static partial class Ckzg
     {
         if (!File.Exists(filepath)) throw new ArgumentException("Trusted setup file does not exist", nameof(filepath));
 
-        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath, (ulong)precompute);
+        IntPtr ckzgSetup = InternalLoadTrustedSetup(filepath, (UInt64)precompute);
 
         if (ckzgSetup == IntPtr.Zero) throw new InvalidOperationException("Unable to load trusted setup");
         return ckzgSetup;
@@ -194,7 +194,7 @@ public static partial class Ckzg
         fixed (byte* blobsPtr = blobs, commitmentsPtr = commitments, proofsPtr = proofs)
         {
             KzgResult kzgResult =
-                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (ulong)count, ckzgSetup);
+                VerifyBlobKzgProofBatch(out var result, blobsPtr, commitmentsPtr, proofsPtr, (UInt64)count, ckzgSetup);
             ThrowOnError(kzgResult);
             return result;
         }
@@ -230,7 +230,7 @@ public static partial class Ckzg
     /// </summary>
     /// <param name="recoveredCells">Recovered cells as a flattened byte array</param>
     /// <param name="recoveredProofs">Recovered proofs as a flattened byte array</param>
-    /// <param name="cellIndices">Cell indices as a flattened ulong array</param>
+    /// <param name="cellIndices">Cell indices as a flattened UInt64 array</param>
     /// <param name="cells">Cells as a flattened byte array</param>
     /// <param name="numCells">The number of cells provided</param>
     /// <param name="ckzgSetup">Trusted setup settings</param>
@@ -238,7 +238,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     public static unsafe void RecoverCellsAndKzgProofs(Span<byte> recoveredCells, Span<byte> recoveredProofs,
-            ReadOnlySpan<ulong> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
+            ReadOnlySpan<UInt64> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
         ThrowOnInvalidLength(recoveredCells, nameof(recoveredCells), BytesPerCell * CellsPerExtBlob);
@@ -248,10 +248,10 @@ public static partial class Ckzg
 
         fixed (byte* recoveredCellsPtr = recoveredCells, recoveredProofsPtr = recoveredProofs, cellsPtr = cells)
         {
-            fixed(ulong* cellIndicesPtr = cellIndices)
+            fixed(UInt64* cellIndicesPtr = cellIndices)
             {
                 KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, recoveredProofsPtr, cellIndicesPtr,
-                    cellsPtr, (ulong)numCells, ckzgSetup);
+                    cellsPtr, (UInt64)numCells, ckzgSetup);
                 ThrowOnError(result);
             }
         }
@@ -261,7 +261,7 @@ public static partial class Ckzg
     ///     Given some cells, verify that their proofs are valid.
     /// </summary>
     /// <param name="commitmentsBytes">The commitments associated with the rows</param>
-    /// <param name="cellIndices">Cell indices as a flattened ulong array</param>
+    /// <param name="cellIndices">Cell indices as a flattened UInt64 array</param>
     /// <param name="cells">Cells as a flattened byte array</param>
     /// <param name="proofsBytes">Proofs as a flattened byte array</param>
     /// <param name="numCells">The number of cells provided</param>
@@ -270,7 +270,7 @@ public static partial class Ckzg
     /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
     /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
     /// <returns>Verification result</returns>
-    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<ulong> cellIndices,
+    public static unsafe bool VerifyCellKzgProofBatch(ReadOnlySpan<byte> commitments, ReadOnlySpan<UInt64> cellIndices,
             ReadOnlySpan<byte> cells, ReadOnlySpan<byte> proofs, int numCells, IntPtr ckzgSetup)
     {
         ThrowOnUninitializedTrustedSetup(ckzgSetup);
@@ -281,10 +281,10 @@ public static partial class Ckzg
 
         fixed (byte* commitmentsPtr = commitments, cellsPtr = cells, proofsPtr = proofs)
         {
-            fixed (ulong* cellIndicesPtr = cellIndices)
+            fixed (UInt64* cellIndicesPtr = cellIndices)
             {
                 KzgResult kzgResult = VerifyCellKzgProofBatch(out var result, commitmentsPtr,
-                    cellIndicesPtr, cellsPtr, proofsPtr, (ulong)numCells, ckzgSetup);
+                    cellIndicesPtr, cellsPtr, proofsPtr, (UInt64)numCells, ckzgSetup);
                 ThrowOnError(kzgResult);
                 return result;
             }
@@ -317,7 +317,7 @@ public static partial class Ckzg
             throw new ArgumentException($"Invalid data size, got {data.Length}, expected {expectedLength}", fieldName);
     }
 
-    private static void ThrowOnInvalidLength(ReadOnlySpan<ulong> data, string fieldName, int expectedLength)
+    private static void ThrowOnInvalidLength(ReadOnlySpan<UInt64> data, string fieldName, int expectedLength)
     {
         if (data.Length != expectedLength)
             throw new ArgumentException($"Invalid data size, got {data.Length}, expected {expectedLength}", fieldName);

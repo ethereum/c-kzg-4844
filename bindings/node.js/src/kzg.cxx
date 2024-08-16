@@ -187,7 +187,7 @@ Napi::Value LoadTrustedSetup(const Napi::CallbackInfo &info) {
     }
 
     // Parse the precompute value
-    size_t precompute = static_cast<size_t>(
+    uint64_t precompute = static_cast<uint64_t>(
         info[0].As<Napi::Number>().Int64Value()
     );
 
@@ -651,7 +651,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
     Napi::Array tuple;
     Napi::Array cellArray;
     Napi::Array proofArray;
-    size_t num_cells;
+    uint64_t num_cells;
 
     Napi::Env env = info.Env();
     Napi::Value result = env.Null();
@@ -711,7 +711,7 @@ Napi::Value RecoverCellsAndKzgProofs(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    for (size_t i = 0; i < num_cells; i++) {
+    for (uint64_t i = 0; i < num_cells; i++) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
@@ -813,7 +813,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
     Cell *cells = NULL;
     Bytes48 *proofs = NULL;
 
-    size_t num_cells = cells_param.Length();
+    uint64_t num_cells = cells_param.Length();
 
     if (commitments_param.Length() != num_cells ||
         cell_indices_param.Length() != num_cells ||
@@ -856,7 +856,7 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    for (size_t i = 0; i < num_cells; i++) {
+    for (uint64_t i = 0; i < num_cells; i++) {
         // add HandleScope here to release reference to temp values
         // after each iteration since data is being memcpy
         Napi::HandleScope scope{env};
