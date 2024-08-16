@@ -260,6 +260,16 @@ static void test_fr_pow__test_power_of_two(void) {
     ASSERT_EQUALS(ok, true);
 }
 
+static void test_fr_pow__test_inverse_on_root_of_unity(void) {
+    fr_t r;
+
+    size_t order = log2_pow2(FIELD_ELEMENTS_PER_EXT_BLOB);
+    fr_pow(&r, &ROOT_OF_UNITY, 1ULL << order);
+
+    bool ok = fr_equal(&r, &FR_ONE);
+    ASSERT_EQUALS(ok, true);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for fr_batch_inv
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2173,6 +2183,7 @@ int main(void) {
     RUN(test_fr_div__specific_value);
     RUN(test_fr_div__succeeds_round_trip);
     RUN(test_fr_pow__test_power_of_two);
+    RUN(test_fr_pow__test_inverse_on_root_of_unity);
     RUN(test_fr_batch_inv__test_consistent);
     RUN(test_fr_batch_inv__test_zero);
     RUN(test_g1_mul__test_consistent);
