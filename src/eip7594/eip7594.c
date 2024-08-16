@@ -484,7 +484,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     // Array allocations
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = new_bool_array(&is_cell_used, FIELD_ELEMENTS_PER_EXT_BLOB);
+    ret = new_bool_array(&is_cell_used, CELLS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_column_cells, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -492,6 +492,20 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&aggregated_interpolation_poly, FIELD_ELEMENTS_PER_CELL);
     if (ret != C_KZG_OK) goto out;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Determine which cells are used
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* Start with false values */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        is_cell_used[i] = false;
+    }
+
+    /* Mark each cell index as used */
+    for (uint64_t i = 0; i < num_cells; i++) {
+        is_cell_used[cell_indices[i]] = true;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Aggregates cells from the same column
@@ -502,7 +516,6 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
             size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
             aggregated_column_cells[index] = FR_ZERO;
-            is_cell_used[index] = false;
         }
     }
 
@@ -524,9 +537,6 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
             blst_fr_add(
                 &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
             );
-
-            /* Mark the cell as being used */
-            is_cell_used[index] = true;
         }
     }
 
@@ -541,11 +551,11 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
     /* Interpolate each column */
     for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        /* We only care about initialized cells */
+        if (!is_cell_used[i]) continue;
+
         /* Offset to the first cell for this column */
         size_t index = i * FIELD_ELEMENTS_PER_CELL;
-
-        /* We only care about initialized cells */
-        if (!is_cell_used[index]) continue;
 
         /* We don't need to copy this because it's not used again */
         ret = bit_reversal_permutation(
