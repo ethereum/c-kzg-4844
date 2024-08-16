@@ -34,7 +34,7 @@ public static partial class Ckzg
     }
 
     [DllImport("ckzg", EntryPoint = "load_trusted_setup_wrap")]
-    private static extern IntPtr InternalLoadTrustedSetup(string filename, ulong precompute);
+    private static extern IntPtr InternalLoadTrustedSetup(string filename, UInt64 precompute);
 
     [DllImport("ckzg", EntryPoint = "free_trusted_setup_wrap", CallingConvention = CallingConvention.Cdecl)]
     private static extern void InternalFreeTrustedSetup(IntPtr ts);
@@ -58,18 +58,18 @@ public static partial class Ckzg
 
     [DllImport("ckzg", EntryPoint = "verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult VerifyBlobKzgProofBatch(out bool result, byte* blobs, byte* commitments,
-        byte* proofs, ulong count, IntPtr ts);
+        byte* proofs, UInt64 count, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult ComputeCellsAndKzgProofs(byte* cells, byte* proofs, byte* blob, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "recover_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult RecoverCellsAndKzgProofs(byte* recovered_cells, byte* recovered_proofs,
-        ulong* cell_indices, byte* cells, ulong num_cells, IntPtr ts);
+        UInt64* cell_indices, byte* cells, UInt64 num_cells, IntPtr ts);
 
     [DllImport("ckzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
     private static extern unsafe KzgResult VerifyCellKzgProofBatch(out bool result, byte* commitments,
-        ulong* cell_indices, byte* cells, byte* proofs, ulong num_cells, IntPtr ts);
+        UInt64* cell_indices, byte* cells, byte* proofs, UInt64 num_cells, IntPtr ts);
 
     private enum KzgResult
     {
