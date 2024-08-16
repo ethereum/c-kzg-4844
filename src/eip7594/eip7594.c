@@ -580,7 +580,6 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     // Commit to the aggregated interpolation polynomial
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /* Commit to the final aggregated interpolation polynomial */
     ret = g1_lincomb_fast(
         commitment_out,
         s->g1_values_monomial,
