@@ -39,10 +39,9 @@
  * @param[in,out]   poly_len     The length of poly
  * @param[in]       roots        The array of roots
  * @param[in]       roots_len    The number of roots
- * @param[in]       s            The trusted setup
  *
  * @remark These do not have to be roots of unity. They are roots of a polynomial.
- * @remark `poly_len` must be at least `roots_len + 1` in length.
+ * @remark The `poly` array must be at least `roots_len + 1` in length.
  */
 static C_KZG_RET compute_vanishing_polynomial_from_roots(
     fr_t *poly, size_t *poly_len, const fr_t *roots, size_t roots_len
@@ -83,7 +82,7 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * then the i'th root of unity from `roots_of_unity` will be zero on the polynomial
  * computed, along with every `CELLS_PER_EXT_BLOB` spaced root of unity in the domain.
  *
- * @param[in,out]   vanishing_poly          The vanishing polynomial
+ * @param[in,out]   vanishing_poly          The output vanishing polynomial
  * @param[in]       missing_cell_indices    The array of missing cell indices
  * @param[in]       len_missing_cells       The number of missing cell indices
  * @param[in]       s                       The trusted setup
@@ -135,7 +134,7 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Zero out all the coefficients */
+    /* Zero out all the coefficients of the output poly */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         vanishing_poly[i] = FR_ZERO;
     }
@@ -188,18 +187,19 @@ static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
 }
 
 /**
- * Given a dataset with up to half the entries missing, return the reconstructed original. Assumes
- * that the inverse FFT of the original data has the upper half of its values equal to zero.
+ * Given a set of cells with up to half the entries missing, return the reconstructed
+ * original. Assumes that the inverse FFT of the original data has the upper half of its values
+ * equal to zero.
  *
- * @param[out]  reconstructed_data_out   Preallocated array for recovered cells
- * @param[in]   cell_indices             The cell indices you have
- * @param[in]   num_cells                The number of cells that you have
- * @param[in]   cells                    The cells that you have
+ * @param[out]  reconstructed_data_out   Array of size FIELD_ELEMENTS_PER_EXT_BLOB to recover cells
+ * @param[in]   cell_indices             An array with the available cell indices we have
+ * @param[in]   num_cells                The size of the `cell_indices` array
+ * @param[in]   cells                    An array of size FIELD_ELEMENTS_PER_EXT_BLOB with the cells
  * @param[in]   s                        The trusted setup
  *
- * @remark `recovered` and `cells` can point to the same memory.
- * @remark The array of cells must be 2n length and in the correct order.
- * @remark Missing cells should be equal to FR_NULL.
+ * @remark `reconstructed_data_out` and `cells` can point to the same memory.
+ * @remark The array `cells` must be in the correct order (according to cell_indices).
+ * @remark Missing cells in `cells` should be equal to FR_NULL.
  */
 C_KZG_RET recover_cells(
     fr_t *reconstructed_data_out,
@@ -260,7 +260,10 @@ C_KZG_RET recover_cells(
     /* Check that we have enough cells */
     assert(len_missing <= CELLS_PER_EXT_BLOB / 2);
 
-    /* Compute Z(x) in monomial form */
+    /*
+     * Compute Z(x) in monomial form.
+     * Z(x) is the polynomial which vanishes on all of the evaluations which are missing.
+     */
     ret = vanishing_polynomial_for_missing_cells(
         vanishing_poly_coeff, missing_cell_indices, len_missing, s
     );
@@ -270,7 +273,12 @@ C_KZG_RET recover_cells(
     ret = fr_fft(vanishing_poly_eval, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain */
+    /*
+     * Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain.
+     *
+     * Note: over the FFT domain, the polynomials (E*Z)(x) and (P*Z)(x) agree, where
+     * P(x) is the polynomial we want to reconstruct (degree FIELD_ELEMENTS_PER_BLOB - 1).
+     */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (fr_is_null(&cells_brp[i])) {
             extended_evaluation_times_zero[i] = FR_ZERO;
@@ -279,7 +287,14 @@ C_KZG_RET recover_cells(
         }
     }
 
-    /* Convert (E*Z)(x) to monomial form  */
+    /*
+     * Convert (E*Z)(x) to monomial form.
+     *
+     * We know that (E*Z)(x) and (P*Z)(x) agree over the FFT domain,
+     * and we know that (P*Z)(x) has degree at most FIELD_ELEMENTS_PER_EXT_BLOB - 1.
+     * Thus, an inverse FFT of the evaluations of (E*Z)(x) (= evaluations of (P*Z)(x))
+     * yields the coefficient form of (P*Z)(x).
+     */
     ret = fr_ifft(
         extended_evaluation_times_zero_coeffs,
         extended_evaluation_times_zero,
@@ -289,10 +304,10 @@ C_KZG_RET recover_cells(
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * Polynomial division by convolution: Q3 = Q1 / Q2 where
-     *   Q1 = (D * Z_r,I)(k * x)
-     *   Q2 = Z_r,I(k * x)
-     *   Q3 = D(k * x)
+     * Next step is to divide the polynomial (P*Z)(x) by polynomial Z(x) to get P(x).
+     * We do this in evaluation form over a coset of the FFT domain to avoid division by 0.
+     *
+     * Convert (P*Z)(x) to evaluation form over a coset of the FFT domain.
      */
     ret = coset_fft(
         extended_evaluations_over_coset,
@@ -302,12 +317,13 @@ C_KZG_RET recover_cells(
     );
     if (ret != C_KZG_OK) goto out;
 
+    /* Convert Z(x) to evaluation form over a coset of the FFT domain */
     ret = coset_fft(
         vanishing_poly_over_coset, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* The result of the division is Q3 */
+    /* Compute P(x) = (P*Z)(x) / Z(x) in evaluation form over a coset of the FFT domain */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         fr_div(
             &extended_evaluations_over_coset[i],
@@ -321,14 +337,14 @@ C_KZG_RET recover_cells(
      * polynomial as reconstructed_poly_over_coset in the spec.
      */
 
-    /* Convert the evaluations back to coefficents */
+    /* Convert P(x) to coefficient form */
     ret = coset_ifft(
         reconstructed_poly_coeff, extended_evaluations_over_coset, FIELD_ELEMENTS_PER_EXT_BLOB, s
     );
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * After unscaling the reconstructed polynomial, we have D(x) which evaluates to our original
+     * After unscaling the reconstructed polynomial, we have P(x) which evaluates to our original
      * data at the roots of unity. Next, we evaluate the polynomial to get the original data.
      */
     ret = fr_fft(reconstructed_data_out, reconstructed_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s);

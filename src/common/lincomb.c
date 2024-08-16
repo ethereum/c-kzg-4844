@@ -22,15 +22,14 @@
 /**
  * Calculate a linear combination of G1 group elements.
  *
- * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n`
- * where `n` is `len - 1`.
+ * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
  *
  * This function computes the result naively without using Pippenger's algorithm.
  */
-void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, uint64_t len) {
+void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
     g1_t tmp;
     *out = G1_IDENTITY;
-    for (uint64_t i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         g1_mul(&tmp, &p[i], &coeffs[i]);
         blst_p1_add_or_double(out, out, &tmp);
     }

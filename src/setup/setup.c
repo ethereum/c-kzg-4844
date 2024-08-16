@@ -42,8 +42,42 @@
 /** The number of g2 points in a trusted setup. */
 #define NUM_G2_POINTS 65
 
-/** Returns number of elements in a statically defined array. */
-#define NUM_ELEMENTS(a) (sizeof(a) / sizeof(a[0]))
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// Constants
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * This is the root of unity associated with FIELD_ELEMENTS_PER_EXT_BLOB.
+ *
+ * Compute this constant with the scripts below:
+ *
+ * @code{.py}
+ * import math
+ *
+ * FIELD_ELEMENTS_PER_EXT_BLOB = 8192
+ * PRIMITIVE_ROOT_OF_UNITY = 7
+ * BLS_MODULUS = 52435875175126190479447740508185965837690552500527637822603658699938581184513
+ *
+ * order = int(math.log2(FIELD_ELEMENTS_PER_EXT_BLOB))
+ * root_of_unity = pow(PRIMITIVE_ROOT_OF_UNITY, (BLS_MODULUS - 1) // (2**order), BLS_MODULUS)
+ * uint64s = [(root_of_unity >> (64 * i)) & 0xFFFFFFFFFFFFFFFF for i in range(4)]
+ * values = [f"0x{uint64:016x}L" for uint64 in uint64s]
+ * print(f"{{{', '.join(values)}}}")
+ * @endcode
+ *
+ * Then paste the output into the following:
+ *
+ * @code{.c}
+ * fr_t root_of_unity;
+ * uint64_t values[4] = <output-from-python>;
+ * blst_fr_from_uint64(&root_of_unity, values);
+ * for (size_t i = 0; i < 4; i++)
+ *     printf("%#018llxL,\n", root_of_unity.l[i]);
+ * @endcode
+ */
+static const fr_t ROOT_OF_UNITY = {
+    0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Trusted Setup Functions
@@ -59,8 +93,8 @@
  * @remark `root` must be such that `root ^ width` is equal to one, but no smaller power of `root`
  * is equal to one.
  */
-static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t width) {
-    uint64_t i;
+static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, size_t width) {
+    size_t i;
 
     /* We assume it's at least two */
     if (width < 2) {
@@ -92,22 +126,9 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, uint64_t widt
  */
 static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     C_KZG_RET ret;
-    fr_t root_of_unity;
-
-    size_t max_scale = 0;
-    while ((1ULL << max_scale) < FIELD_ELEMENTS_PER_EXT_BLOB)
-        max_scale++;
-
-    /* Ensure this element will exist */
-    if (max_scale >= NUM_ELEMENTS(SCALE2_ROOT_OF_UNITY)) {
-        return C_KZG_BADARGS;
-    }
-
-    /* Get the right subgroup generator */
-    blst_fr_from_uint64(&root_of_unity, SCALE2_ROOT_OF_UNITY[max_scale]);
 
     /* Populate the roots of unity */
-    ret = expand_root_of_unity(s->roots_of_unity, &root_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
+    ret = expand_root_of_unity(s->roots_of_unity, &ROOT_OF_UNITY, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy all but the last root to the roots of unity */
@@ -120,7 +141,7 @@ static C_KZG_RET compute_roots_of_unity(KZGSettings *s) {
     if (ret != C_KZG_OK) goto out;
 
     /* Populate reverse roots of unity */
-    for (uint64_t i = 0; i <= FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
+    for (size_t i = 0; i <= FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         s->reverse_roots_of_unity[i] = s->roots_of_unity[FIELD_ELEMENTS_PER_EXT_BLOB - i];
     }
 
@@ -146,7 +167,7 @@ void free_trusted_setup(KZGSettings *s) {
 
     /*
      * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
-     * structure, we don't want to deference these 2d arrays.  Without these NULL checks, it's
+     * structure, we don't want to deference these 2d arrays. Without these NULL checks, it's
      * possible for there to be a segmentation fault via null pointer dereference.
      */
     if (s->x_ext_fft_columns != NULL) {
@@ -207,7 +228,7 @@ out:
  */
 static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     C_KZG_RET ret;
-    uint64_t n, k, k2;
+    size_t n, k, k2;
     g1_t *x = NULL;
     g1_t *points = NULL;
     blst_p1_affine *p_affine = NULL;
@@ -341,12 +362,12 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t 
 C_KZG_RET load_trusted_setup(
     KZGSettings *out,
     const uint8_t *g1_monomial_bytes,
-    size_t num_g1_monomial_bytes,
+    uint64_t num_g1_monomial_bytes,
     const uint8_t *g1_lagrange_bytes,
-    size_t num_g1_lagrange_bytes,
+    uint64_t num_g1_lagrange_bytes,
     const uint8_t *g2_monomial_bytes,
-    size_t num_g2_monomial_bytes,
-    size_t precompute
+    uint64_t num_g2_monomial_bytes,
+    uint64_t precompute
 ) {
     C_KZG_RET ret;
 
@@ -381,11 +402,6 @@ C_KZG_RET load_trusted_setup(
         goto out_error;
     }
 
-    /* 1<<max_scale is the smallest power of 2 >= n1 */
-    size_t max_scale = 0;
-    while ((1ULL << max_scale) < NUM_G1_POINTS)
-        max_scale++;
-
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out_error;
@@ -401,7 +417,7 @@ C_KZG_RET load_trusted_setup(
     if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 monomial bytes to g1 points */
-    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
+    for (size_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_monomial_bytes[BYTES_PER_G1 * i]);
         if (err != BLST_SUCCESS) {
@@ -412,7 +428,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Convert all g1 Lagrange bytes to g1 points */
-    for (uint64_t i = 0; i < NUM_G1_POINTS; i++) {
+    for (size_t i = 0; i < NUM_G1_POINTS; i++) {
         blst_p1_affine g1_affine;
         BLST_ERROR err = blst_p1_uncompress(&g1_affine, &g1_lagrange_bytes[BYTES_PER_G1 * i]);
         if (err != BLST_SUCCESS) {
@@ -423,7 +439,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Convert all g2 bytes to g2 points */
-    for (uint64_t i = 0; i < NUM_G2_POINTS; i++) {
+    for (size_t i = 0; i < NUM_G2_POINTS; i++) {
         blst_p2_affine g2_affine;
         BLST_ERROR err = blst_p2_uncompress(&g2_affine, &g2_monomial_bytes[BYTES_PER_G2 * i]);
         if (err != BLST_SUCCESS) {
@@ -473,10 +489,11 @@ out_success:
  * @remark The file format is `n1 n2 g1_1 g1_2 ... g1_n1 g2_1 ... g2_n2` where the first two numbers
  * are in decimal and the remainder are hexstrings and any whitespace can be used as separators.
  */
-C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute) {
+C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, uint64_t precompute) {
     C_KZG_RET ret;
     int num_matches;
-    uint64_t i;
+    uint64_t num_g1_points;
+    uint64_t num_g2_points;
     uint8_t *g1_monomial_bytes = NULL;
     uint8_t *g1_lagrange_bytes = NULL;
     uint8_t *g2_monomial_bytes = NULL;
@@ -490,21 +507,21 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute)
     if (ret != C_KZG_OK) goto out;
 
     /* Read the number of g1 points */
-    num_matches = fscanf(in, "%" SCNu64, &i);
-    if (num_matches != 1 || i != NUM_G1_POINTS) {
+    num_matches = fscanf(in, "%" SCNu64, &num_g1_points);
+    if (num_matches != 1 || num_g1_points != NUM_G1_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Read the number of g2 points */
-    num_matches = fscanf(in, "%" SCNu64, &i);
-    if (num_matches != 1 || i != NUM_G2_POINTS) {
+    num_matches = fscanf(in, "%" SCNu64, &num_g2_points);
+    if (num_matches != 1 || num_g2_points != NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
         goto out;
     }
 
     /* Read all of the g1 points in Lagrange form, byte by byte */
-    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
+    for (size_t i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_lagrange_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;
@@ -513,7 +530,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute)
     }
 
     /* Read all of the g2 points in monomial form, byte by byte */
-    for (i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
+    for (size_t i = 0; i < NUM_G2_POINTS * BYTES_PER_G2; i++) {
         num_matches = fscanf(in, "%2hhx", &g2_monomial_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;
@@ -523,7 +540,7 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, size_t precompute)
 
     /* Read all of the g1 points in monomial form, byte by byte */
     /* Note: this is last because it is an extension for EIP-7594 */
-    for (i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
+    for (size_t i = 0; i < NUM_G1_POINTS * BYTES_PER_G1; i++) {
         num_matches = fscanf(in, "%2hhx", &g1_monomial_bytes[i]);
         if (num_matches != 1) {
             ret = C_KZG_BADARGS;

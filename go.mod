@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/stretchr/testify v1.8.1
-	github.com/supranational/blst v0.3.11
+	github.com/supranational/blst v0.3.12
 	gopkg.in/yaml.v3 v3.0.1
 )
 

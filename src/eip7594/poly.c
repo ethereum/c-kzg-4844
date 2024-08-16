@@ -46,11 +46,12 @@ void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
 /**
  * Bit reverses and converts a polynomial in lagrange form to monomial form.
  *
- * @param[out]  monomial    The result, an array of `len` fields
- * @param[in]   lagrange    The input poly, an array of `len` fields
- * @param[in]   len         The length of both polynomials
- * @param[in]   s           The trusted setup
+ * @param[out]  monomial_out    The result, an array of `len` fields
+ * @param[in]   lagrange        The input poly, an array of `len` fields
+ * @param[in]   len             The length of both polynomials
+ * @param[in]   s               The trusted setup
  *
+ * @remark `monomial_out` and `lagrange` can point to the same memory.
  * @remark This method converts a lagrange-form polynomial to a monomial-form polynomial, by inverse
  * FFTing the bit-reverse-permuted lagrange polynomial.
  */

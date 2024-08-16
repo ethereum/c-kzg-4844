@@ -24,6 +24,8 @@
 		<RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<Version>0.2.0.0</Version>
+		<!-- Disable the warnings about using UInt64-->
+		<NoWarn>$(NoWarn);IDE0049</NoWarn>
 	</PropertyGroup>
 
 	<ItemGroup>

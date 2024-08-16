@@ -422,7 +422,7 @@ public class ReferenceTests
 
     public class RecoverCellsAndKzgProofsInput
     {
-        public List<ulong> CellIndices { get; set; } = null!;
+        public List<UInt64> CellIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
     }
 
@@ -451,7 +451,7 @@ public class ReferenceTests
     {
         byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
         byte[] recoveredProofs = new byte[CellsPerExtBlob * Ckzg.BytesPerProof];
-        ulong[] cellIndices = test.Input.CellIndices.ToArray();
+        UInt64[] cellIndices = test.Input.CellIndices.ToArray();
         byte[] cells = GetFlatBytes(test.Input.Cells);
         int numCells = cells.Length / Ckzg.BytesPerCell;
 
@@ -477,7 +477,7 @@ public class ReferenceTests
     public class VerifyCellKzgProofBatchInput
     {
         public List<string> Commitments { get; set; } = null!;
-        public List<ulong> CellIndices { get; set; } = null!;
+        public List<UInt64> CellIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
         public List<string> Proofs { get; set; } = null!;
     }
@@ -506,7 +506,7 @@ public class ReferenceTests
     public void TestVerifyCellKzgProofBatch(VerifyCellKzgProofBatchTest test)
     {
         byte[] commitments = GetFlatBytes(test.Input.Commitments);
-        ulong[] cellIndices = test.Input.CellIndices.ToArray();
+        UInt64[] cellIndices = test.Input.CellIndices.ToArray();
         byte[] cells = GetFlatBytes(test.Input.Cells);
         byte[] proofs = GetFlatBytes(test.Input.Proofs);
         int numCells = cells.Length / Ckzg.BytesPerCell;

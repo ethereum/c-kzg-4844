@@ -46,15 +46,13 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGC
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Given a blob, get all of its cells and proofs.
+ * Given a blob, compute all of its cells and proofs.
  *
  * @param[out]  cells   An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  proofs  An array of CELLS_PER_EXT_BLOB proofs
  * @param[in]   blob    The blob to get cells/proofs for
  * @param[in]   s       The trusted setup
  *
- * @remark Up to half of these cells may be lost.
- * @remark Use recover_cells_and_kzg_proofs for recovery.
  * @remark If cells is NULL, they won't be computed.
  * @remark If proofs is NULL, they won't be computed.
  * @remark Will return an error if both cells & proofs are NULL.
@@ -81,8 +79,9 @@ C_KZG_RET compute_cells_and_kzg_proofs(
 
     /*
      * Convert the blob to a polynomial in lagrange form. Note that only the first 4096 fields of
-     * the polynomial will be set. The upper 4096 fields will remain zero. This is required because
-     * the polynomial will be evaluated with 8192 roots of unity.
+     * the polynomial will be set. The upper 4096 fields will remain zero. The extra space is
+     * required because the polynomial will be evaluated to the extended domain (8192 roots of
+     * unity).
      */
     ret = blob_to_polynomial(poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
@@ -155,9 +154,9 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices        The cell indices for the cells
- * @param[in]   cells               The cells to check
- * @param[in]   num_cells           The number of cells provided
+ * @param[in]   cell_indices        The cell indices for the available cells
+ * @param[in]   cells               The available cells we recover from
+ * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
  * @remark Recovery is faster if there are fewer missing cells.
@@ -168,7 +167,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     KZGProof *recovered_proofs,
     const uint64_t *cell_indices,
     const Cell *cells,
-    size_t num_cells,
+    uint64_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -206,25 +205,25 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         recovered_cells_fr[i] = FR_NULL;
     }
 
-    /* Update with existing cells */
+    /* Populate recovered_cells_fr with available cells at the right places */
     for (size_t i = 0; i < num_cells; i++) {
         size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t *field = &recovered_cells_fr[index + j];
+            fr_t *ptr = &recovered_cells_fr[index + j];
 
             /*
              * Check if the field has already been set. If it has, there was a duplicate cell index
              * and we can return an error. The compiler will optimize this and the overhead is
              * practically zero.
              */
-            if (!fr_is_null(field)) {
+            if (!fr_is_null(ptr)) {
                 ret = C_KZG_BADARGS;
                 goto out;
             }
 
-            /* Convert the untrusted bytes to a field element */
+            /* Convert the untrusted input bytes to a field element */
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(field, (const Bytes32 *)&cells[i].bytes[offset]);
+            ret = bytes_to_bls_field(ptr, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
         }
     }
@@ -375,7 +374,7 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
-    size_t num_cells
+    uint64_t num_cells
 ) {
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
@@ -474,7 +473,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
-    size_t num_cells,
+    uint64_t num_cells,
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
@@ -630,13 +629,15 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Scale each cell's data points */
     for (size_t i = 0; i < num_cells; i++) {
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t field, scaled;
+            fr_t cell_fr, scaled_fr;
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(&field, (const Bytes32 *)&cells[i].bytes[offset]);
+            ret = bytes_to_bls_field(&cell_fr, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
-            blst_fr_mul(&scaled, &field, &r_powers[i]);
+            blst_fr_mul(&scaled_fr, &cell_fr, &r_powers[i]);
             size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
-            blst_fr_add(&aggregated_column_cells[index], &aggregated_column_cells[index], &scaled);
+            blst_fr_add(
+                &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
+            );
 
             /* Mark the cell as being used */
             is_cell_used[index] = true;
