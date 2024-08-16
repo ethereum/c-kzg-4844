@@ -494,20 +494,6 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Determine which cells are used
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /* Start with false values */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-        is_cell_used[i] = false;
-    }
-
-    /* Mark each cell index as used */
-    for (uint64_t i = 0; i < num_cells; i++) {
-        is_cell_used[cell_indices[i]] = true;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
     // Aggregates cells from the same column
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -538,6 +524,20 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
                 &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
             );
         }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Determine which cells are used
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /* Start with false values */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        is_cell_used[i] = false;
+    }
+
+    /* Mark each cell index as used */
+    for (uint64_t i = 0; i < num_cells; i++) {
+        is_cell_used[cell_indices[i]] = true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
