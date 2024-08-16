@@ -192,13 +192,13 @@ static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
  * equal to zero.
  *
  * @param[out]  reconstructed_data_out   Array of size FIELD_ELEMENTS_PER_EXT_BLOB to recover cells
- * @param[in]   cell_indices             An array with the avaibable cell indices we have
+ * @param[in]   cell_indices             An array with the available cell indices we have
  * @param[in]   num_cells                The size of the `cell_indices` array
  * @param[in]   cells                    An array of size FIELD_ELEMENTS_PER_EXT_BLOB with the cells
  * @param[in]   s                        The trusted setup
  *
  * @remark `reconstructed_data_out` and `cells` can point to the same memory.
- * @remark The array `cells` must be in the correct order (according to cell_indices)
+ * @remark The array `cells` must be in the correct order (according to cell_indices).
  * @remark Missing cells in `cells` should be equal to FR_NULL.
  */
 C_KZG_RET recover_cells(
