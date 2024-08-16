@@ -1670,7 +1670,7 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 
     blst_fr_from_uint64(&root_of_unity, root_of_unity_parts_7);
 
-    /* We expected the 2**7th root of unity, so this should fail */
+    /* We expected the 2**8th root of unity, so this should fail */
     ret = expand_root_of_unity(roots, &root_of_unity, 256);
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
