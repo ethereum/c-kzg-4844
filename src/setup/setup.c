@@ -86,9 +86,9 @@ static const fr_t ROOT_OF_UNITY = {
 /**
  * Generate powers of a root of unity in the field.
  *
- * @param[out] out   The roots of unity (length `width + 1`)
- * @param[in]  root  A root of unity
- * @param[in]  width One less than the size of `out`
+ * @param[out]  out     The roots of unity (length `width + 1`)
+ * @param[in]   root    A root of unity
+ * @param[in]   width   One less than the size of `out`
  *
  * @remark `root` must be such that `root ^ width` is equal to one, but no smaller power of `root`
  * is equal to one.
@@ -152,7 +152,7 @@ out:
 /**
  * Free a trusted setup (KZGSettings).
  *
- * @param[in] s The trusted setup to free
+ * @param[in]   s   The trusted setup to free
  *
  * @remark This does nothing if `s` is NULL.
  */
@@ -320,9 +320,9 @@ out:
 /**
  * Basic sanity check that the trusted setup was loaded in Lagrange form.
  *
- * @param[in] s  Pointer to the stored trusted setup data
- * @param[in] n1 Number of `g1` points in trusted_setup
- * @param[in] n2 Number of `g2` points in trusted_setup
+ * @param[in]   s   Pointer to the stored trusted setup data
+ * @param[in]   n1  Number of G1 points in the trusted setup
+ * @param[in]   n2  Number of G2 points in the trusted setup
  */
 static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t n1, size_t n2) {
     /* Trusted setup is too small; we can't work with this */

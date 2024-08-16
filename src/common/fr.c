@@ -26,8 +26,8 @@
  * @param[in]   a   The first element
  * @param[in]   b   The second element
  *
- * @retval true     The two elements are equal.
- * @retval false    The two elements are not equal.
+ * @retval  true    The two elements are equal.
+ * @retval  false   The two elements are not equal.
  */
 bool fr_equal(const fr_t *a, const fr_t *b) {
     uint64_t _a[4], _b[4];
@@ -39,10 +39,10 @@ bool fr_equal(const fr_t *a, const fr_t *b) {
 /**
  * Test whether the operand is one in the finite field.
  *
- * @param[in] p The field element to be checked
+ * @param[in]   p   The field element to be checked
  *
- * @retval true  The element is one
- * @retval false The element is not one
+ * @retval  true    The element is one
+ * @retval  false   The element is not one
  */
 bool fr_is_one(const fr_t *p) {
     uint64_t a[4];
@@ -53,10 +53,10 @@ bool fr_is_one(const fr_t *p) {
 /**
  * Test whether the operand is null (all 0xff's).
  *
- * @param[in] p The field element to be checked
+ * @param[in]   p   The field element to be checked
  *
- * @retval true  The element is null
- * @retval false The element is not null
+ * @retval  true    The element is null
+ * @retval  false   The element is not null
  */
 bool fr_is_null(const fr_t *p) {
     return fr_equal(p, &FR_NULL);
@@ -65,9 +65,9 @@ bool fr_is_null(const fr_t *p) {
 /**
  * Divide a field element by another.
  *
- * @param[out] out `a` divided by `b` in the field
- * @param[in]  a   The dividend
- * @param[in]  b   The divisor
+ * @param[out]  out The result, `a / b`
+ * @param[in]   a   The dividend
+ * @param[in]   b   The divisor
  *
  * @remark The behavior for `b == 0` is unspecified.
  * @remark This function supports in-place computation.
@@ -83,9 +83,9 @@ void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
  *
  * Uses square and multiply for log(n) performance.
  *
- * @param[out] out `a` raised to the power of `n`
- * @param[in]  a   The field element to be exponentiated
- * @param[in]  n   The exponent
+ * @param[out]  out The result, `a**n`
+ * @param[in]   a   The field element to be exponentiated
+ * @param[in]   n   The exponent
  *
  * @remark A 64-bit exponent is sufficient for our needs here.
  * @remark This function does support in-place computation.
@@ -106,8 +106,8 @@ void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
 /**
  * Create a field element from a single 64-bit unsigned integer.
  *
- * @param[out] out The field element equivalent of `n`
- * @param[in]  n   The 64-bit integer to be converted
+ * @param[out]  out The field element equivalent of `n`
+ * @param[in]   n   The 64-bit integer to be converted
  *
  * @remark This can only generate a tiny fraction of possible field elements,
  *         and is mostly useful for testing.

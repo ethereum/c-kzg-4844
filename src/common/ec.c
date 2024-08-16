@@ -22,9 +22,9 @@
 /**
  * Subtraction of G1 group elements.
  *
- * @param[out] out `a - b`
- * @param[in]  a   A G1 group element
- * @param[in]  b   The G1 group element to be subtracted
+ * @param[out]  out The result, `a - b`
+ * @param[in]   a   A G1 group element
+ * @param[in]   b   The G1 group element to be subtracted
  */
 void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
     g1_t bneg = *b;
@@ -35,9 +35,9 @@ void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
 /**
  * Multiply a G1 group element by a field element.
  *
- * @param[out] out  `a * b`
- * @param[in]  a    The G1 group element
- * @param[in]  b    The multiplier
+ * @param[out]  out The result, `a * b`
+ * @param[in]   a   The G1 group element
+ * @param[in]   b   The multiplier
  */
 void g1_mul(g1_t *out, const g1_t *a, const fr_t *b) {
     blst_scalar s;
