@@ -21,8 +21,8 @@
 /**
  * Serialize a 64-bit unsigned integer into bytes.
  *
- * @param[out] out An 8-byte array to store the serialized integer
- * @param[in]  n   The integer to be serialized
+ * @param[out]  out An 8-byte array to store the serialized integer
+ * @param[in]   n   The integer to be serialized
  *
  * @remark The output format is big-endian.
  */
@@ -36,8 +36,8 @@ void bytes_from_uint64(uint8_t out[8], uint64_t n) {
 /**
  * Serialize a G1 group element into bytes.
  *
- * @param[out] out A 48-byte array to store the serialized G1 element
- * @param[in]  in  The G1 element to be serialized
+ * @param[out]  out A 48-byte array to store the serialized G1 element
+ * @param[in]   in  The G1 element to be serialized
  */
 void bytes_from_g1(Bytes48 *out, const g1_t *in) {
     blst_p1_compress(out->bytes, in);
@@ -46,8 +46,8 @@ void bytes_from_g1(Bytes48 *out, const g1_t *in) {
 /**
  * Serialize a BLS field element into bytes.
  *
- * @param[out] out A 32-byte array to store the serialized field element
- * @param[in] in The field element to be serialized
+ * @param[out]  out A 32-byte array to store the serialized field element
+ * @param[in]   in  The field element to be serialized
  */
 void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
     blst_scalar s;
@@ -58,8 +58,8 @@ void bytes_from_bls_field(Bytes32 *out, const fr_t *in) {
 /**
  * Convert untrusted bytes to a trusted and validated BLS scalar field element.
  *
- * @param[out] out The field element to store the deserialized data
- * @param[in]  b   A 32-byte array containing the serialized field element
+ * @param[out]  out The field element to store the deserialized data
+ * @param[in]   b   A 32-byte array containing the serialized field element
  */
 C_KZG_RET bytes_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;

@@ -63,10 +63,10 @@ typedef struct {
 /**
  * Test whether the operand is zero in the finite field.
  *
- * @param[in] p The field element to be checked
+ * @param[in]   p   The field element to be checked
  *
- * @retval true  The element is zero
- * @retval false The element is not zero
+ * @retval  true    The element is zero
+ * @retval  false   The element is not zero
  */
 static bool fr_is_zero(const fr_t *p) {
     uint64_t a[4];
@@ -77,9 +77,9 @@ static bool fr_is_zero(const fr_t *p) {
 /**
  * Montgomery batch inversion in finite field.
  *
- * @param[out] out The inverses of `a`, length `len`
- * @param[in]  a   A vector of field elements, length `len`
- * @param[in]  len The number of field elements
+ * @param[out]  out The inverses of `a`, length `len`
+ * @param[in]   a   A vector of field elements, length `len`
+ * @param[in]   len The number of field elements
  *
  * @remark This function only supports len > 0.
  * @remark This function does NOT support in-place computation.
@@ -117,9 +117,9 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 /**
  * Multiply a G2 group element by a field element.
  *
- * @param[out] out `a * b`
- * @param[in]  a   The G2 group element
- * @param[in]  b   The multiplier
+ * @param[out]  out The result, `a * b`
+ * @param[in]   a   The G2 group element
+ * @param[in]   b   The multiplier
  */
 static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
     blst_scalar s;
@@ -130,9 +130,9 @@ static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
 /**
  * Subtraction of G2 group elements.
  *
- * @param[out] out `a - b`
- * @param[in]  a   A G2 group element
- * @param[in]  b   The G2 group element to be subtracted
+ * @param[out]  out The result, `a - b`
+ * @param[in]   a   A G2 group element
+ * @param[in]   b   The G2 group element to be subtracted
  */
 static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
     g2_t bneg = *b;
@@ -147,9 +147,9 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
 /**
  * Return the Fiat-Shamir challenge required to verify `blob` and `commitment`.
  *
- * @param[out] eval_challenge_out The evaluation challenge
- * @param[in]  blob               A blob
- * @param[in]  commitment         A commitment
+ * @param[out]  eval_challenge_out  The evaluation challenge
+ * @param[in]   blob                A blob
+ * @param[in]   commitment          A commitment
  *
  * @remark This function should compute challenges even if `n == 0`.
  */
@@ -193,10 +193,10 @@ static void compute_challenge(fr_t *eval_challenge_out, const Blob *blob, const 
 /**
  * Evaluate a polynomial in evaluation form at a given point.
  *
- * @param[out] out The result of the evaluation
- * @param[in]  p   The polynomial in evaluation form
- * @param[in]  x   The point to evaluate the polynomial at
- * @param[in]  s   The trusted setup
+ * @param[out]  out The result of the evaluation
+ * @param[in]   p   The polynomial in evaluation form
+ * @param[in]   x   The point to evaluate the polynomial at
+ * @param[in]   s   The trusted setup
  */
 static C_KZG_RET evaluate_polynomial_in_evaluation_form(
     fr_t *out, const Polynomial *p, const fr_t *x, const KZGSettings *s
@@ -255,9 +255,9 @@ out:
 /**
  * Compute a KZG commitment from a polynomial.
  *
- * @param[out] out The resulting commitment
- * @param[in]  p   The polynomial to commit to
- * @param[in]  s   The trusted setup
+ * @param[out]  out The resulting commitment
+ * @param[in]   p   The polynomial to commit to
+ * @param[in]   s   The trusted setup
  */
 static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZGSettings *s) {
     return g1_lincomb_fast(
@@ -268,9 +268,9 @@ static C_KZG_RET poly_to_kzg_commitment(g1_t *out, const Polynomial *p, const KZ
 /**
  * Convert a blob to a KZG commitment.
  *
- * @param[out] out  The resulting commitment
- * @param[in]  blob The blob representing the polynomial to be committed to
- * @param[in]  s    The trusted setup
+ * @param[out]  out     The resulting commitment
+ * @param[in]   blob    The blob representing the polynomial to be committed to
+ * @param[in]   s       The trusted setup
  */
 C_KZG_RET blob_to_kzg_commitment(KZGCommitment *out, const Blob *blob, const KZGSettings *s) {
     C_KZG_RET ret;
@@ -298,12 +298,12 @@ static C_KZG_RET verify_kzg_proof_impl(
 /**
  * Verify a KZG proof claiming that `p(z) == y`.
  *
- * @param[out] ok         True if the proofs are valid, otherwise false
- * @param[in]  commitment The KZG commitment corresponding to poly p(x)
- * @param[in]  z          The evaluation point
- * @param[in]  y          The claimed evaluation result
- * @param[in]  kzg_proof  The KZG proof
- * @param[in]  s          The trusted setup
+ * @param[out]  ok          True if the proofs are valid, otherwise false
+ * @param[in]   commitment  The KZG commitment corresponding to poly p(x)
+ * @param[in]   z           The evaluation point
+ * @param[in]   y           The claimed evaluation result
+ * @param[in]   kzg_proof   The KZG proof
+ * @param[in]   s           The trusted setup
  */
 C_KZG_RET verify_kzg_proof(
     bool *ok,
@@ -383,11 +383,11 @@ static C_KZG_RET compute_kzg_proof_impl(
 /**
  * Compute KZG proof for polynomial in Lagrange form at position z.
  *
- * @param[out] proof_out The combined proof as a single G1 element
- * @param[out] y_out     The evaluation of the polynomial at the evaluation point z
- * @param[in]  blob      The blob (polynomial) to generate a proof for
- * @param[in]  z         The generator z-value for the evaluation points
- * @param[in]  s         The trusted setup
+ * @param[out]  proof_out   The combined proof as a single G1 element
+ * @param[out]  y_out       The evaluation of the polynomial at the evaluation point z
+ * @param[in]   blob        The blob (polynomial) to generate a proof for
+ * @param[in]   z           The generator z-value for the evaluation points
+ * @param[in]   s           The trusted setup
  */
 C_KZG_RET compute_kzg_proof(
     KZGProof *proof_out,
@@ -415,11 +415,11 @@ out:
 /**
  * Helper function for compute_kzg_proof() and compute_blob_kzg_proof().
  *
- * @param[out] proof_out  The combined proof as a single G1 element
- * @param[out] y_out      The evaluation of the polynomial at the evaluation point z
- * @param[in]  polynomial The polynomial in Lagrange form
- * @param[in]  z          The evaluation point
- * @param[in]  s          The trusted setup
+ * @param[out]  proof_out   The combined proof as a single G1 element
+ * @param[out]  y_out       The evaluation of the polynomial at the evaluation point z
+ * @param[in]   polynomial  The polynomial in Lagrange form
+ * @param[in]   z           The evaluation point
+ * @param[in]   s           The trusted setup
  */
 static C_KZG_RET compute_kzg_proof_impl(
     KZGProof *proof_out,
@@ -508,10 +508,10 @@ out:
  * commitment. This function does not verify that the commitment is correct with respect to the
  * blob.
  *
- * @param[out] out              The resulting proof
- * @param[in]  blob             A blob
- * @param[in]  commitment_bytes Commitment to verify
- * @param[in]  s                The trusted setup
+ * @param[out]  out                 The resulting proof
+ * @param[in]   blob                A blob
+ * @param[in]   commitment_bytes    Commitment to verify
+ * @param[in]   s                   The trusted setup
  */
 C_KZG_RET compute_blob_kzg_proof(
     KZGProof *out, const Blob *blob, const Bytes48 *commitment_bytes, const KZGSettings *s
@@ -542,11 +542,11 @@ out:
 /**
  * Given a blob and its proof, verify that it corresponds to the provided commitment.
  *
- * @param[out] ok               True if the proofs are valid, otherwise false
- * @param[in]  blob             Blob to verify
- * @param[in]  commitment_bytes Commitment to verify
- * @param[in]  proof_bytes      Proof used for verification
- * @param[in]  s                The trusted setup
+ * @param[out]  ok                  True if the proofs are valid, otherwise false
+ * @param[in]   blob                Blob to verify
+ * @param[in]   commitment_bytes    Commitment to verify
+ * @param[in]   proof_bytes         Proof used for verification
+ * @param[in]   s                   The trusted setup
  */
 C_KZG_RET verify_blob_kzg_proof(
     bool *ok,
@@ -584,11 +584,11 @@ C_KZG_RET verify_blob_kzg_proof(
 /**
  * Compute random linear combination challenge scalars for batch verification.
  *
- * @param[out]  r_powers_out   The output challenges
- * @param[in]   commitments_g1 The input commitments
- * @param[in]   zs_fr          The input evaluation points
- * @param[in]   ys_fr          The input evaluation results
- * @param[in]   proofs_g1      The input proofs
+ * @param[out]  r_powers_out    The output challenges
+ * @param[in]   commitments_g1  The input commitments
+ * @param[in]   zs_fr           The input evaluation points
+ * @param[in]   ys_fr           The input evaluation results
+ * @param[in]   proofs_g1       The input proofs
  */
 static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     fr_t *r_powers_out,
@@ -659,13 +659,13 @@ out:
 /**
  * Helper function for verify_blob_kzg_proof_batch(): actually perform the verification.
  *
- * @param[out] ok             True if the proofs are valid, otherwise false
- * @param[in]  commitments_g1 Array of commitments to verify
- * @param[in]  zs_fr          Array of evaluation points for the KZG proofs
- * @param[in]  ys_fr          Array of evaluation results for the KZG proofs
- * @param[in]  proofs_g1      Array of proofs used for verification
- * @param[in]  n              The number of blobs/commitments/proofs
- * @param[in]  s              The trusted setup
+ * @param[out]  ok              True if the proofs are valid, otherwise false
+ * @param[in]   commitments_g1  Array of commitments to verify
+ * @param[in]   zs_fr           Array of evaluation points for the KZG proofs
+ * @param[in]   ys_fr           Array of evaluation results for the KZG proofs
+ * @param[in]   proofs_g1       Array of proofs used for verification
+ * @param[in]   n               The number of blobs/commitments/proofs
+ * @param[in]   s               The trusted setup
  *
  * @remark This function only works for `n > 0`.
  * @remark This function assumes that `n` is trusted and that all input arrays contain `n` elements.
@@ -738,12 +738,12 @@ out:
  * Given a list of blobs and blob KZG proofs, verify that they correspond to the provided
  * commitments.
  *
- * @param[out] ok                True if the proofs are valid, otherwise false
- * @param[in]  blobs             Array of blobs to verify
- * @param[in]  commitments_bytes Array of commitments to verify
- * @param[in]  proofs_bytes      Array of proofs used for verification
- * @param[in]  n                 The number of blobs/commitments/proofs
- * @param[in]  s                 The trusted setup
+ * @param[out]  ok                  True if the proofs are valid, otherwise false
+ * @param[in]   blobs               Array of blobs to verify
+ * @param[in]   commitments_bytes   Array of commitments to verify
+ * @param[in]   proofs_bytes        Array of proofs used for verification
+ * @param[in]   n                   The number of blobs/commitments/proofs
+ * @param[in]   s                   The trusted setup
  *
  * @remark This function accepts if called with `n==0`.
  * @remark This function assumes that `n` is trusted and that all input arrays contain `n` elements.

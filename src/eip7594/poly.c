@@ -31,9 +31,9 @@
  * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that
  * evaluates at `x * shift_factor` rather than `x`.
  *
- * @param[in,out]   p            The polynomial coefficients to be scaled
- * @param[in]       len          Length of the polynomial coefficients
- * @param[in]       shift_factor Shift factor
+ * @param[in,out]   p               The polynomial coefficients to be scaled
+ * @param[in]       len             Length of the polynomial coefficients
+ * @param[in]       shift_factor    Shift factor
  */
 void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
     fr_t factor_power = FR_ONE;

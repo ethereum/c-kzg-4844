@@ -146,12 +146,12 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  *
  * Recursively divide and conquer.
  *
- * @param[out] out          The results (length `n`)
- * @param[in]  in           The input data (length `n * stride`)
- * @param[in]  stride       The input data stride
- * @param[in]  roots        Roots of unity (length `n * roots_stride`)
- * @param[in]  roots_stride The stride interval among the roots of unity
- * @param[in]  n            Length of the FFT, must be a power of two
+ * @param[out]  out             The results (length `n`)
+ * @param[in]   in              The input data (length `n * stride`)
+ * @param[in]   stride          The input data stride
+ * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots_stride    The stride interval among the roots of unity
+ * @param[in]   n               Length of the FFT, must be a power of two
  */
 static void g1_fft_fast(
     g1_t *out, const g1_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n

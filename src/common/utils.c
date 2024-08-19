@@ -24,7 +24,7 @@
 /**
  * Utility function to test whether the argument is a power of two.
  *
- * @param[in] n The number to test
+ * @param[in]   n   The number to test
  *
  * @return True if `n` is zero or a power of two, otherwise false.
  *
@@ -39,7 +39,7 @@ bool is_power_of_two(uint64_t n) {
 /**
  * Calculate log base two of a power of two.
  *
- * @param[in] n The power of two
+ * @param[in]   n   The power of two
  *
  * @return The log base two of n.
  *
@@ -89,9 +89,9 @@ uint64_t reverse_bits_limited(uint64_t n, uint64_t value) {
 /**
  * Reorder an array in reverse bit order of its indices.
  *
- * @param[in,out] values The array, which is re-ordered in-place
- * @param[in]     size   The size in bytes of an element of the array
- * @param[in]     n      The length of the array, must be a power of two strictly greater than 1
+ * @param[in,out]   values  The array, which is re-ordered in-place
+ * @param[in]       size    The size in bytes of an element of the array
+ * @param[in]       n       The length of the array, must be a power of two strictly greater than 1
  *
  * @remark Operates in-place on the array.
  * @remark Can handle arrays of any type: provide the element size in `size`.
@@ -153,10 +153,10 @@ void compute_powers(fr_t *out, const fr_t *x, size_t n) {
  *
  * Tests whether `e(a1, a2) == e(b1, b2)`.
  *
- * @param[in] a1 A G1 group point for the first pairing
- * @param[in] a2 A G2 group point for the first pairing
- * @param[in] b1 A G1 group point for the second pairing
- * @param[in] b2 A G2 group point for the second pairing
+ * @param[in]   a1  A G1 group point for the first pairing
+ * @param[in]   a2  A G2 group point for the first pairing
+ * @param[in]   b1  A G1 group point for the second pairing
+ * @param[in]   b2  A G2 group point for the second pairing
  *
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal

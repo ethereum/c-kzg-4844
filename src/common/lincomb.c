@@ -24,7 +24,12 @@
  *
  * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
  *
- * This function computes the result naively without using Pippenger's algorithm.
+ * @param[out]  out     The resulting sum-product
+ * @param[in]   p       Array of G1 group elements, length `len`
+ * @param[in]   coeffs  Array of field elements, length `len`
+ * @param[in]   len     The number of group/field elements
+ *
+ * @remark This function computes the result naively without using Pippenger's algorithm.
  */
 void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
     g1_t tmp;
@@ -40,10 +45,10 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) 
  *
  * Calculates `[coeffs_0]p_0 + [coeffs_1]p_1 + ... + [coeffs_n]p_n` where `n` is `len - 1`.
  *
- * @param[out] out    The resulting sum-product
- * @param[in]  p      Array of G1 group elements, length `len`
- * @param[in]  coeffs Array of field elements, length `len`
- * @param[in]  len    The number of group/field elements
+ * @param[out]  out     The resulting sum-product
+ * @param[in]   p       Array of G1 group elements, length `len`
+ * @param[in]   coeffs  Array of field elements, length `len`
+ * @param[in]   len     The number of group/field elements
  *
  * @remark This function CAN be called with the point at infinity in `p`.
  * @remark While this function is significantly faster than g1_lincomb_naive(), we refrain from
