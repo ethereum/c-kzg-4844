@@ -1,8 +1,8 @@
 # C-KZG-4844
 
-A minimal implementation of the [Polynomial
-Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
-API for EIP-4844 and EIP-7594, written in C.
+A minimal implementation of the Polynomial Commitments API for
+[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) and
+[EIP-7594](https://eips.ethereum.org/EIPS/eip-7594), written in C.
 
 ## Bindings
 
@@ -45,9 +45,7 @@ For EIP-7594:
 This library also provides functions for loading and freeing the trusted setup,
 which are not defined in the specification. These functions are intended to be
 executed once during the initialization process. As the name suggests, the
-[trusted setup
-file](https://github.com/ethereum/c-kzg-4844/blob/main/src/trusted_setup.txt) is
-considered to be trustworthy.
+[trusted setup file](src/trusted_setup.txt) is considered to be trustworthy.
 
 - `load_trusted_setup`
 - `load_trusted_setup_file`
@@ -57,11 +55,10 @@ considered to be trustworthy.
 
 ### Tests
 
-All the bindings are tested against the [KZG reference
-tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg),
-which are defined in the consensus-spec-tests. Additionally, a suite of unit
-tests for internal C functions is located
-[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/tests.c).
+All bindings are tested against the KZG reference tests, which are defined in
+the [consensus-spec-tests](https://github.com/ethereum/consensus-spec-tests)
+repository. Additionally, a suite of unit tests for internal C functions is
+located [here](src/test/tests.c).
 
 ### Parallelization
 
@@ -90,7 +87,7 @@ C-KZG-4844 is not expected to be used outside the bindings.
 
 The source code of C-KZG-4844 was audited by [Sigma
 Prime](https://sigmaprime.io/) in June 2023. You can find the [audit
-report](https://github.com/ethereum/c-kzg-4844/blob/main/doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
+report](doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
 in the `doc/audit/` directory. Notably, the audit was for commit `fd24cf8` and 
 code introduced for EIP-7594 *has not been audited yet*. 
 
