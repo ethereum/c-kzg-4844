@@ -1,8 +1,8 @@
 # C-KZG-4844
 
-A minimal implementation of the [Polynomial
-Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
-API for EIP-4844 and EIP-7594, written in C.
+A minimal implementation of the Polynomial Commitments API for
+[EIP-4844](https://eips.ethereum.org/EIPS/eip-4844) and
+[EIP-7594](https://eips.ethereum.org/EIPS/eip-7594), written in C.
 
 ## Bindings
 
@@ -57,11 +57,11 @@ considered to be trustworthy.
 
 ### Tests
 
-All the bindings are tested against the [KZG reference
-tests](https://github.com/ethereum/consensus-spec-tests/tree/master/tests/general/deneb/kzg),
-which are defined in the consensus-spec-tests. Additionally, a suite of unit
-tests for internal C functions is located
-[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/tests.c).
+All bindings are tested against the KZG reference tests, which are defined in
+the [consensus-spec-tests](https://github.com/ethereum/consensus-spec-tests)
+repository. Additionally, a suite of unit tests for internal C functions is
+located
+[here](https://github.com/ethereum/c-kzg-4844/blob/main/src/test/tests.c).
 
 ### Parallelization
 
