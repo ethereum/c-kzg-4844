@@ -508,14 +508,12 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     /*
      * Vertically collapse cells of the 2D matrix into a single array: `aggregated_column_cells`.
      *
-     * For each provided cell, go over its field elements, and scale them by the appropriate
-     * power of r.
-     *
-     * Then aggregate all field elements on the same vertical slice into a single array.
+     * For each provided cell, go over its field elements, and scale them by the appropriate power
+     * of r. Then aggregate all field elements on the same vertical slice into a single array.
      */
     for (uint64_t cell_index = 0; cell_index < num_cells; cell_index++) {
         /* Determine which column this cell belongs to */
-        size_t column_index = cell_indices[cell_index];
+        uint64_t column_index = cell_indices[cell_index];
 
         /* Iterate over every field element of this cell: scale it and aggregate it */
         for (size_t fr_index = 0; fr_index < FIELD_ELEMENTS_PER_CELL; fr_index++) {
@@ -592,7 +590,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         );
         if (ret != C_KZG_OK) goto out;
 
-        /* Now divide by the coset shift factor. */
+        /* Now divide by the coset shift factor */
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
         blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
