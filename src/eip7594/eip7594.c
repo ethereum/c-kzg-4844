@@ -820,7 +820,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute random linear combination of the proofs
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /* Do the linear combination */
     ret = g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, num_cells);
     if (ret != C_KZG_OK) goto out;
 
