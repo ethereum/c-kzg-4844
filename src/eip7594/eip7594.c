@@ -734,8 +734,6 @@ out:
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
- *
- * @remark cells[i] is associated with commitments_bytes[commitment_indices[i]].
  */
 C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,
