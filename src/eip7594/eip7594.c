@@ -670,6 +670,48 @@ out:
 }
 
 /**
+ * Compute weighted sum of proofs
+ *
+ * @param[out] weighted_proof_lincomb The resulting G1 sum of the proofs scaled by coset factors
+ * @param[in]  proofs_g1              Array of G1 elements representing the proofs
+ * @param[in]  r_powers               Array of powers of r used for weighting
+ * @param[in]  cell_indices           Array of cell indices
+ * @param[in]  num_cells              The number of cells
+ * @param[in]  s                      The trusted setup containing roots of unity
+ */
+static C_KZG_RET computed_weighted_sum_of_proofs(
+    g1_t *weighted_proof_sum_out,
+    const g1_t *proofs_g1,
+    const fr_t *r_powers,
+    const uint64_t *cell_indices,
+    uint64_t num_cells,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *weights = NULL;
+    fr_t *weighted_powers_of_r = NULL;
+
+    ret = new_fr_array(&weights, num_cells);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&weighted_powers_of_r, num_cells);
+    if (ret != C_KZG_OK) goto out;
+
+    for (size_t i = 0; i < num_cells; i++) {
+        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
+        fr_t coset_factor = s->roots_of_unity[pos];
+        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
+        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
+    }
+
+    ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
+
+out:
+    c_kzg_free(weights);
+    c_kzg_free(weighted_powers_of_r);
+    return ret;
+}
+
+/**
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
@@ -703,8 +745,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     Bytes48 *unique_commitments = NULL;
     uint64_t *commitment_indices = NULL;
     fr_t *r_powers = NULL;
-    fr_t *weighted_powers_of_r = NULL;
-    fr_t *weights = NULL;
     g1_t *proofs_g1 = NULL;
 
     *ok = false;
@@ -747,10 +787,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     ret = new_fr_array(&r_powers, num_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weighted_powers_of_r, num_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&weights, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&proofs_g1, num_cells);
     if (ret != C_KZG_OK) goto out;
@@ -811,14 +847,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute sum of the proofs scaled by the coset factors
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    for (size_t i = 0; i < num_cells; i++) {
-        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
-        fr_t coset_factor = s->roots_of_unity[pos];
-        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
-    }
-
-    ret = g1_lincomb_fast(&weighted_proof_lincomb, proofs_g1, weighted_powers_of_r, num_cells);
+    ret = computed_weighted_sum_of_proofs(&weighted_proof_lincomb,
+                                         proofs_g1,
+                                         r_powers,
+                                         cell_indices,
+                                         num_cells,
+                                         s);
     if (ret != C_KZG_OK) goto out;
 
     blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
@@ -833,8 +867,6 @@ out:
     c_kzg_free(unique_commitments);
     c_kzg_free(commitment_indices);
     c_kzg_free(r_powers);
-    c_kzg_free(weighted_powers_of_r);
-    c_kzg_free(weights);
     c_kzg_free(proofs_g1);
     return ret;
 }
