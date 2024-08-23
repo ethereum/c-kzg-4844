@@ -697,7 +697,7 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
     for (size_t i = 0; i < num_cells; i++) {
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
         fr_t coset_factor = s->roots_of_unity[pos];
-        // Compute h_k^n
+        // Compute h_k^n, with h_k and n as in the spec.
         fr_pow(&coset_factor_pow, &coset_factor, FIELD_ELEMENTS_PER_CELL);
         // Compute the scalar array for the MSM
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
