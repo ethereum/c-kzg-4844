@@ -464,13 +464,13 @@ out:
  * @param[in]  num_commitments          The number of unique commitments
  * @param[in]  num_cells                The number of cells
  */
-static C_KZG_RET compute_commitment_sum(
+static C_KZG_RET compute_weighted_sum_of_commitments(
     g1_t *sum_of_commitments_out,
     const Bytes48 *unique_commitments,
     const uint64_t *commitment_indices,
     const fr_t *r_powers,
     size_t num_commitments,
-    size_t num_cells
+    uint64_t num_cells
 ) {
     C_KZG_RET ret;
     g1_t *commitments_g1 = NULL;
@@ -491,7 +491,7 @@ static C_KZG_RET compute_commitment_sum(
     }
 
     /* Update commitment weights */
-    for (size_t i = 0; i < num_cells; i++) {
+    for (uint64_t i = 0; i < num_cells; i++) {
         blst_fr_add(
             &commitment_weights[commitment_indices[i]],
             &commitment_weights[commitment_indices[i]],
@@ -670,7 +670,7 @@ out:
 }
 
 /**
- * Compute weighted sum of proofs
+ * Compute weighted sum of proofs.
  *
  * @param[out] weighted_proof_lincomb The resulting G1 sum of the proofs scaled by coset factors
  * @param[in]  proofs_g1              Array of G1 elements representing the proofs
@@ -694,7 +694,7 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
 
-    for (size_t i = 0; i < num_cells; i++) {
+    for (uint64_t i = 0; i < num_cells; i++) {
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
         fr_t coset_factor = s->roots_of_unity[pos];
         // Compute h_k^n, with h_k and n as in the spec.
@@ -827,7 +827,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute sum of the commitments
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = compute_commitment_sum(
+    ret = compute_weighted_sum_of_commitments(
         &final_g1_sum, unique_commitments, commitment_indices, r_powers, num_commitments, num_cells
     );
     if (ret != C_KZG_OK) goto out;
