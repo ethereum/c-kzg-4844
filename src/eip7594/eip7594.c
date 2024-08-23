@@ -494,7 +494,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Aggregates cells from the same column
+    // Aggregate cells from the same column
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Start with zeroed out columns */
@@ -505,23 +505,39 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         }
     }
 
-    /* Scale each cell with the corresponding powers of the random challenge */
-    for (uint64_t i = 0; i < num_cells; i++) {
-        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+    /*
+     * Vertically collapse cells of the 2D matrix into a single array: `aggregated_column_cells`.
+     *
+     * For each provided cell, go over its field elements, and scale them by the appropriate
+     * power of r.
+     *
+     * Then aggregate all field elements on the same vertical slice into a single array.
+     */
+    for (uint64_t cell_index = 0; cell_index < num_cells; cell_index++) {
+        /* Determine which column this cell belongs to */
+        size_t column_index = cell_indices[cell_index];
+
+        /* Iterate over every field element of this cell: scale it and aggregate it */
+        for (size_t fr_index = 0; fr_index < FIELD_ELEMENTS_PER_CELL; fr_index++) {
             fr_t original_fr, scaled_fr;
 
             /* Get the field element at this offset */
-            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
-            ret = bytes_to_bls_field(&original_fr, (const Bytes32 *)&cells[i].bytes[offset]);
+            size_t offset = fr_index * BYTES_PER_FIELD_ELEMENT;
+            ret = bytes_to_bls_field(
+                &original_fr, (const Bytes32 *)&cells[cell_index].bytes[offset]
+            );
             if (ret != C_KZG_OK) goto out;
 
-            /* Scale the field element by the power for that cell */
-            blst_fr_mul(&scaled_fr, &original_fr, &r_powers[i]);
+            /* Scale the field element by the appropriate power of r */
+            blst_fr_mul(&scaled_fr, &original_fr, &r_powers[cell_index]);
 
-            /* Aggregate the scaled field element into the column */
-            size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL + j;
+            /* Figure out the right index for this field element within the extended array */
+            size_t array_index = column_index * FIELD_ELEMENTS_PER_CELL + fr_index;
+            /* Aggregate the scaled field element into the array */
             blst_fr_add(
-                &aggregated_column_cells[index], &aggregated_column_cells[index], &scaled_fr
+                &aggregated_column_cells[array_index],
+                &aggregated_column_cells[array_index],
+                &scaled_fr
             );
         }
     }
@@ -557,7 +573,10 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         /* Offset to the first cell for this column */
         size_t index = i * FIELD_ELEMENTS_PER_CELL;
 
-        /* We don't need to copy this because it's not used again */
+        /*
+         * Reach into the big array and permute the right column.
+         * No need to copy the data, we are not gonna use them again.
+         */
         ret = bit_reversal_permutation(
             &aggregated_column_cells[index], sizeof(fr_t), FIELD_ELEMENTS_PER_CELL
         );
@@ -565,18 +584,15 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
         /*
          * Get interpolation polynomial for this column. To do so we first do an IDFT over the roots
-         * of unity and then we scale by the coset factor. We can't do an IDFT directly over the
-         * coset because it's not a subgroup.
+         * of unity and then we scale the coefficients by the coset factor. We can't do an IDFT
+         * directly over the coset because it's not a subgroup.
          */
         ret = fr_ifft(
             column_interpolation_poly, &aggregated_column_cells[index], FIELD_ELEMENTS_PER_CELL, s
         );
         if (ret != C_KZG_OK) goto out;
 
-        /*
-         * To unscale, divide by the coset. It's faster to multiply with the inverse. We can skip
-         * the first iteration because its dividing by one.
-         */
+        /* Now divide by the coset shift factor. */
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
         fr_t inv_coset_factor;
         blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
