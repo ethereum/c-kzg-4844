@@ -699,7 +699,7 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
         fr_t coset_factor = s->roots_of_unity[pos];
         // Compute h_k^n, with h_k and n as in the spec.
         fr_pow(&coset_factor_pow, &coset_factor, FIELD_ELEMENTS_PER_CELL);
-        // Compute the scalar array for the MSM
+        // Scale the power of r by h_k^n
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
     }
 
