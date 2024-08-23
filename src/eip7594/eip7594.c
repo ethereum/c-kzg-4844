@@ -688,25 +688,24 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *weights = NULL;
+    fr_t coset_factor_pow;
     fr_t *weighted_powers_of_r = NULL;
 
-    ret = new_fr_array(&weights, num_cells);
-    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < num_cells; i++) {
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
         fr_t coset_factor = s->roots_of_unity[pos];
-        fr_pow(&weights[i], &coset_factor, FIELD_ELEMENTS_PER_CELL);
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &weights[i]);
+        // Compute h_k^n
+        fr_pow(&coset_factor_pow, &coset_factor, FIELD_ELEMENTS_PER_CELL);
+        // Compute the scalar array for the MSM
+        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
     }
 
     ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
 
 out:
-    c_kzg_free(weights);
     c_kzg_free(weighted_powers_of_r);
     return ret;
 }
