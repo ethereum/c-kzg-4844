@@ -457,17 +457,15 @@ out:
 /**
  * Compute the sum of the commitments weighted by the powers of r.
  *
- * @param[out] final_g1_sum         The resulting G1 sum of the commitments
- * @param[in]  unique_commitments   Array of unique commitments
- * @param[in]  commitment_indices   Indices mapping cells to unique commitments
- * @param[in]  r_powers             Array of powers of r used for weighting
- * @param[in]  num_commitments      The number of unique commitments
- * @param[in]  num_cells            The number of cells
- *
- * @return                          C_KZG_OK on success, otherwise error code
+ * @param[out] sum_of_commitments_out   The resulting G1 sum of the commitments
+ * @param[in]  unique_commitments       Array of unique commitments
+ * @param[in]  commitment_indices       Indices mapping to unique commitments
+ * @param[in]  r_powers                 Array of powers of r used for weighting
+ * @param[in]  num_commitments          The number of unique commitments
+ * @param[in]  num_cells                The number of cells
  */
 static C_KZG_RET compute_commitment_sum(
-    g1_t *final_g1_sum,
+    g1_t *sum_of_commitments_out,
     const Bytes48 *unique_commitments,
     const uint64_t *commitment_indices,
     const fr_t *r_powers,
@@ -502,7 +500,9 @@ static C_KZG_RET compute_commitment_sum(
     }
 
     /* Compute commitment sum */
-    ret = g1_lincomb_fast(final_g1_sum, commitments_g1, commitment_weights, num_commitments);
+    ret = g1_lincomb_fast(
+        sum_of_commitments_out, commitments_g1, commitment_weights, num_commitments
+    );
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -736,7 +736,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     g1_t interpolation_poly_commit;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
-    g1_t weighted_proof_lincomb;
+    g1_t weighted_sum_of_proofs;
     g2_t power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
     size_t num_commitments;
 
@@ -791,7 +791,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Compute random linear combination of the proofs
+    // Compute powers of r, and extract KZG proofs out of input bytes
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /*
@@ -815,6 +815,10 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         ret = bytes_to_kzg_proof(&proofs_g1[i], &proofs_bytes[i]);
         if (ret != C_KZG_OK) goto out;
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    // Compute random linear combination of the proofs
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Do the linear combination */
     ret = g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, num_cells);
@@ -846,15 +850,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute sum of the proofs scaled by the coset factors
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = computed_weighted_sum_of_proofs(&weighted_proof_lincomb,
-                                         proofs_g1,
-                                         r_powers,
-                                         cell_indices,
-                                         num_cells,
-                                         s);
+    ret = computed_weighted_sum_of_proofs(
+        &weighted_sum_of_proofs, proofs_g1, r_powers, cell_indices, num_cells, s
+    );
     if (ret != C_KZG_OK) goto out;
 
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_proof_lincomb);
+    blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Do the final pairing check
