@@ -42,7 +42,7 @@ jobs:
       - name: Check param formatting
         if: matrix.os == 'ubuntu-latest'
         run: |
-          python3 ./scripts/format_c_params.py
+          python3 ../scripts/format_c_params.py
           git diff --exit-code
 
       # Run tests.
