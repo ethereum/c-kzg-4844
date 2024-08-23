@@ -455,6 +455,63 @@ out:
 }
 
 /**
+ * Compute the sum of the commitments weighted by the powers of r.
+ *
+ * @param[out] final_g1_sum         The resulting G1 sum of the commitments
+ * @param[in]  unique_commitments   Array of unique commitments
+ * @param[in]  commitment_indices   Indices mapping cells to unique commitments
+ * @param[in]  r_powers             Array of powers of r used for weighting
+ * @param[in]  num_commitments      The number of unique commitments
+ * @param[in]  num_cells            The number of cells
+ *
+ * @return                          C_KZG_OK on success, otherwise error code
+ */
+static C_KZG_RET compute_commitment_sum(
+    g1_t *final_g1_sum,
+    const Bytes48 *unique_commitments,
+    const uint64_t *commitment_indices,
+    const fr_t *r_powers,
+    size_t num_commitments,
+    size_t num_cells
+) {
+    C_KZG_RET ret;
+    g1_t *commitments_g1 = NULL;
+    fr_t *commitment_weights = NULL;
+
+    ret = new_fr_array(&commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_g1_array(&commitments_g1, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+
+    for (size_t i = 0; i < num_commitments; i++) {
+        /* Convert & validate commitment */
+        ret = bytes_to_kzg_commitment(&commitments_g1[i], &unique_commitments[i]);
+        if (ret != C_KZG_OK) goto out;
+
+        /* Initialize the weight to zero */
+        commitment_weights[i] = FR_ZERO;
+    }
+
+    /* Update commitment weights */
+    for (size_t i = 0; i < num_cells; i++) {
+        blst_fr_add(
+            &commitment_weights[commitment_indices[i]],
+            &commitment_weights[commitment_indices[i]],
+            &r_powers[i]
+        );
+    }
+
+    /* Compute commitment sum */
+    ret = g1_lincomb_fast(final_g1_sum, commitments_g1, commitment_weights, num_commitments);
+    if (ret != C_KZG_OK) goto out;
+
+out:
+    c_kzg_free(commitment_weights);
+    c_kzg_free(commitments_g1);
+    return ret;
+}
+
+/**
  * Aggregate columns, compute the sum of interpolation polynomials, and commit to the result.
  *
  * This function computes `RLI = [sum_k r^k interpolation_poly_k(s)]` from the spec.
@@ -645,11 +702,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Arrays */
     Bytes48 *unique_commitments = NULL;
     uint64_t *commitment_indices = NULL;
-    fr_t *commitment_weights = NULL;
     fr_t *r_powers = NULL;
     fr_t *weighted_powers_of_r = NULL;
     fr_t *weights = NULL;
-    g1_t *commitments_g1 = NULL;
     g1_t *proofs_g1 = NULL;
 
     *ok = false;
@@ -691,15 +746,11 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Array allocations
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = new_fr_array(&commitment_weights, num_commitments);
-    if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_powers, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&weights, num_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&commitments_g1, num_commitments);
     if (ret != C_KZG_OK) goto out;
     ret = new_g1_array(&proofs_g1, num_cells);
     if (ret != C_KZG_OK) goto out;
@@ -738,26 +789,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute sum of the commitments
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    for (size_t i = 0; i < num_commitments; i++) {
-        /* Convert & validate commitment */
-        ret = bytes_to_kzg_commitment(&commitments_g1[i], &unique_commitments[i]);
-        if (ret != C_KZG_OK) goto out;
-
-        /* Initialize the weight to zero */
-        commitment_weights[i] = FR_ZERO;
-    }
-
-    /* Update commitment weights */
-    for (size_t i = 0; i < num_cells; i++) {
-        blst_fr_add(
-            &commitment_weights[commitment_indices[i]],
-            &commitment_weights[commitment_indices[i]],
-            &r_powers[i]
-        );
-    }
-
-    /* Compute commitment sum */
-    ret = g1_lincomb_fast(&final_g1_sum, commitments_g1, commitment_weights, num_commitments);
+    ret = compute_commitment_sum(
+        &final_g1_sum, unique_commitments, commitment_indices, r_powers, num_commitments, num_cells
+    );
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -798,11 +832,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 out:
     c_kzg_free(unique_commitments);
     c_kzg_free(commitment_indices);
-    c_kzg_free(commitment_weights);
     c_kzg_free(r_powers);
     c_kzg_free(weighted_powers_of_r);
     c_kzg_free(weights);
-    c_kzg_free(commitments_g1);
     c_kzg_free(proofs_g1);
     return ret;
 }
