@@ -44,17 +44,6 @@ build: install clean
 	@$(YARN) node-gyp --loglevel=warn configure
 	@$(YARN) node-gyp --loglevel=warn build
 
-# Bundle the distribution, also helpful for cross compatibility checks
-.PHONY: bundle
-bundle: build
-	@mkdir dist
-	@mv deps dist
-	@cp -r lib dist/lib
-	@cp -r src dist/src
-	@cp README.md dist/README.md
-	@cp package.json dist/package.json
-	@cp binding.gyp dist/binding.gyp
-
 # Run unit tests and ref-tests
 .PHONY: test
 test: install
@@ -69,13 +58,12 @@ format: install
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
-publish: build bundle
-	@cd dist
-	@npm publish
+publish: build
+	@npm pack
 
 # Run ref-tests in linux environment for cross-compatibility check
 .PHONY: linux-test
-linux-test: bundle
+linux-test: build
 	@# Docker cannot copy from outside this dir
 	@cp -r ../../tests ref-tests
 	@docker build -t "linux-test" .
