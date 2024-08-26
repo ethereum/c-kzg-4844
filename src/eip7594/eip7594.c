@@ -300,8 +300,8 @@ static bool commitments_equal(const Bytes48 *a, const Bytes48 *b) {
 /**
  * Helper function to copy one commitment's bytes to another.
  *
- * @param[in]   dst   The destination commitment
- * @param[in]   src   The source commitment
+ * @param[in]   dst The destination commitment
+ * @param[in]   src The source commitment
  */
 static void commitments_copy(Bytes48 *dst, const Bytes48 *src) {
     memcpy(dst->bytes, src->bytes, BYTES_PER_COMMITMENT);
@@ -457,12 +457,12 @@ out:
 /**
  * Compute the sum of the commitments weighted by the powers of r.
  *
- * @param[out] sum_of_commitments_out   The resulting G1 sum of the commitments
- * @param[in]  unique_commitments       Array of unique commitments
- * @param[in]  commitment_indices       Indices mapping to unique commitments
- * @param[in]  r_powers                 Array of powers of r used for weighting
- * @param[in]  num_commitments          The number of unique commitments
- * @param[in]  num_cells                The number of cells
+ * @param[out]  sum_of_commitments_out  The resulting G1 sum of the commitments
+ * @param[in]   unique_commitments      Array of unique commitments
+ * @param[in]   commitment_indices      Indices mapping to unique commitments
+ * @param[in]   r_powers                Array of powers of r used for weighting
+ * @param[in]   num_commitments         The number of unique commitments
+ * @param[in]   num_cells               The number of cells
  */
 static C_KZG_RET compute_weighted_sum_of_commitments(
     g1_t *sum_of_commitments_out,
@@ -686,12 +686,12 @@ out:
 /**
  * Compute weighted sum of proofs.
  *
- * @param[out] weighted_proof_lincomb The resulting G1 sum of the proofs scaled by coset factors
- * @param[in]  proofs_g1              Array of G1 elements representing the proofs
- * @param[in]  r_powers               Array of powers of r used for weighting
- * @param[in]  cell_indices           Array of cell indices
- * @param[in]  num_cells              The number of cells
- * @param[in]  s                      The trusted setup containing roots of unity
+ * @param[out]  weighted_proof_lincomb  The resulting G1 sum of the proofs scaled by coset factors
+ * @param[in]   proofs_g1               Array of G1 elements representing the proofs
+ * @param[in]   r_powers                Array of powers of r used for weighting
+ * @param[in]   cell_indices            Array of cell indices
+ * @param[in]   num_cells               The number of cells
+ * @param[in]   s                       The trusted setup containing roots of unity
  */
 static C_KZG_RET computed_weighted_sum_of_proofs(
     g1_t *weighted_proof_sum_out,
@@ -734,8 +734,6 @@ out:
  * @param[in]   proofs_bytes        The proofs for the cells
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
- *
- * @remark cells[i] is associated with commitments_bytes[commitment_indices[i]].
  */
 C_KZG_RET verify_cell_kzg_proof_batch(
     bool *ok,

@@ -251,6 +251,7 @@ analyze: blst $(SOURCE_FILES)
 .PHONY: format
 format:
 	@echo "[+] executing formatter"
+	@python3 ../scripts/format_c_params.py
 	@clang-format -i --sort-includes $(SOURCE_FILES) $(HEADER_FILES)
 
 .PHONY: clean

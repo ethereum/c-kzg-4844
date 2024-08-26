@@ -117,8 +117,8 @@ C_KZG_RET bytes_to_kzg_proof(g1_t *out, const Bytes48 *b) {
 /**
  * Map bytes to a BLS field element.
  *
- * @param[out] out The field element to store the result
- * @param[in]  b   A 32-byte array containing the input
+ * @param[out]  out The field element to store the result
+ * @param[in]   b   A 32-byte array containing the input
  */
 void hash_to_bls_field(fr_t *out, const Bytes32 *b) {
     blst_scalar tmp;

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -6,7 +6,9 @@ from typing import TextIO
 
 
 def convert(ts_json: TextIO, ts_text: TextIO) -> None:
-    """Convert trusted setup to text format."""
+    """
+    Convert trusted setup to text format.
+    """
     trusted_setup = json.load(ts_json)
     g1_monomial = trusted_setup["g1_monomial"]
     g1_lagrange = trusted_setup["g1_lagrange"]

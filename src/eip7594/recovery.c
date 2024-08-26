@@ -35,10 +35,10 @@
  * Uses straightforward long multiplication to calculate the product of `(x - r_i)` where `r_i` is
  * the i'th root. This results in a poly of degree roots_len.
  *
- * @param[in,out]   poly         The zero polynomial for roots
- * @param[in,out]   poly_len     The length of poly
- * @param[in]       roots        The array of roots
- * @param[in]       roots_len    The number of roots
+ * @param[in,out]   poly        The zero polynomial for roots
+ * @param[in,out]   poly_len    The length of poly
+ * @param[in]       roots       The array of roots
+ * @param[in]       roots_len   The number of roots
  *
  * @remark These do not have to be roots of unity. They are roots of a polynomial.
  * @remark The `poly` array must be at least `roots_len + 1` in length.
@@ -191,11 +191,11 @@ static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
  * original. Assumes that the inverse FFT of the original data has the upper half of its values
  * equal to zero.
  *
- * @param[out]  reconstructed_data_out   Array of size FIELD_ELEMENTS_PER_EXT_BLOB to recover cells
- * @param[in]   cell_indices             An array with the available cell indices we have
- * @param[in]   num_cells                The size of the `cell_indices` array
- * @param[in]   cells                    An array of size FIELD_ELEMENTS_PER_EXT_BLOB with the cells
- * @param[in]   s                        The trusted setup
+ * @param[out]  reconstructed_data_out  Array of size FIELD_ELEMENTS_PER_EXT_BLOB to recover cells
+ * @param[in]   cell_indices            An array with the available cell indices we have
+ * @param[in]   num_cells               The size of the `cell_indices` array
+ * @param[in]   cells                   An array of size FIELD_ELEMENTS_PER_EXT_BLOB with the cells
+ * @param[in]   s                       The trusted setup
  *
  * @remark `reconstructed_data_out` and `cells` can point to the same memory.
  * @remark The array `cells` must be in the correct order (according to cell_indices).

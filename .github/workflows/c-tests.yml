@@ -37,6 +37,14 @@ jobs:
           check-path: 'src'
           exclude-regex: 'tinytest.h'
 
+      # Check param formatting.
+      # Only need to check this once.
+      - name: Check param formatting
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python3 ../scripts/format_c_params.py
+          git diff --exit-code
+
       # Run tests.
       - name: Test
         run: make test
