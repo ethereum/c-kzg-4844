@@ -2,7 +2,7 @@
 YARN = yarn --silent
 
 .PHONY: all
-all: format build test bundle
+all: format build test
 
 # Cleans native dependency, bindings and typescript artifacts
 .PHONY: clean
