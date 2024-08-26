@@ -58,8 +58,8 @@ format: install
 
 # Publish package to npm (requires an auth token)
 .PHONY: publish
-publish: build
-	@npm pack
+publish: build test
+	@npm publish
 
 # Run ref-tests in linux environment for cross-compatibility check
 .PHONY: linux-test
