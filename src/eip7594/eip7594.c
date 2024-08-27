@@ -845,7 +845,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Commmit to aggregated interpolation polynomial
+    // Commit to aggregated interpolation polynomial
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Aggregate cells from same columns, sum interpolation polynomials, and commit */
