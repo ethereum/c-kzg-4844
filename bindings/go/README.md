@@ -6,7 +6,7 @@ exported functions in [C-KZG-4844](https://github.com/ethereum/c-kzg-4844).
 ## Installation
 
 ```
-go get github.com/ethereum/c-kzg-4844
+go get github.com/ethereum/c-kzg-4844/v2
 ```
 
 ## Go version
