@@ -1,4 +1,4 @@
-module github.com/ethereum/c-kzg-4844
+module github.com/ethereum/c-kzg-4844/v2
 
 go 1.19
 
