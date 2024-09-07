@@ -10,7 +10,7 @@ took, but it will help you determine which functions are the most expensive.
 
 On Linux (Debian), you need to install:
 ```
-sudo apt install gperftools graphviz
+sudo apt install google-perftools graphviz
 ```
 
 On macOS, you need to install (via [homebrew](https://brew.sh)):
