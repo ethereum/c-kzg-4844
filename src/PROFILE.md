@@ -10,8 +10,14 @@ took, but it will help you determine which functions are the most expensive.
 
 On Linux (Debian), you need to install:
 ```
-sudo apt install gperftools graphviz
+sudo apt install libgoogle-perftools-dev graphviz
 ```
+Assuming you have Go installed, get `pprof` from:
+```
+go install github.com/google/pprof@latest
+```
+Depending on your shell, edit the corresponding configuration file to 
+add the Go binary path (`$HOME/go/bin`) to your `PATH`.
 
 On macOS, you need to install (via [homebrew](https://brew.sh)):
 ```
