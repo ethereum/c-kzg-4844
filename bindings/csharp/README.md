@@ -1,4 +1,4 @@
-# C# bindings
+# C# Bindings for the C-KZG Library
 
 This directory contains C# bindings for the C-KZG-4844 library.
 

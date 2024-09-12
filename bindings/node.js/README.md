@@ -1,15 +1,6 @@
-# C-KZG-4844
+# Node.js Bindings for the C-KZG Library
 
-This is a TypeScript library for EIP-4844 and EIP-7594 that implements the
-[Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
-API. The core functionality was originally a stripped-down copy of
-[C-KZG](https://github.com/benjaminion/c-kzg), but has been heavily modified
-since then. This package wraps that native `c-kzg` C code in C/C++ NAPI
-bindings for use in node.js applications.
-
-Important Links:
-[EIP-4844 - Polynomial Commitments](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
-[EIP-7594 - Polynomial Commitments Sampling](https://github.com/ethereum/consensus-specs/blob/dev/specs/_features/eip7594/polynomial-commitments-sampling.md)
+This directory contains Node.js bindings for the C-KZG-4844 library.
 
 ## Prerequisites
 

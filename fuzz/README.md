@@ -7,7 +7,7 @@ there is a `fuzz_<function>.rs` file for each target. These use
 can provide the reference tests as the starting corpus, which gives `arbitrary` a better idea of
 what inputs should be. This will differentially fuzz EIP-4844 functions with
 [Constantine](https://github.com/mratsim/constantine) and EIP-7594 functions with
-[Rust-Eth-KZG](https://github.com/crate-crypto/rust-eth-kzg(https://github.com/crate-crypto/peerdas-kzg).
+[Rust-Eth-KZG](https://github.com/crate-crypto/rust-eth-kzg).
 
 ## Dependencies
 
@@ -30,6 +30,8 @@ cargo install cargo-fuzz
 ```
 
 # Nim dependencies
+
+Get and build `nim v1.6` like this:
 
 ```
 git clone git@github.com:nim-lang/Nim.git

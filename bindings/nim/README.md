@@ -1,8 +1,8 @@
-# Nim bindings
+# Nim Bindings for the C-KZG Library
 
-This directory contains Nim bindings for the c-kzg-4844 library.
+This directory contains Nim bindings for the C-KZG-4844 library.
 
-## Requirements
+## Prerequisites
 
 These bindings support Nim compiler version 1.2, 1.4, 1.6, and devel.
 
@@ -11,6 +11,14 @@ You also need to install dependencies:
 ```
 nimble install stew
 ```
+
+## Installation
+Install via nimble:
+
+```
+nimble install https://github.com/ethereum/c-kzg-4844
+```
+
 
 ## Tests
 
@@ -36,12 +44,6 @@ Or from c-kzg-4844 root folder:
 nimble test
 ```
 
-## How to use these bindings in your project
+## Usage
 
-Install via nimble:
-
-```
-nimble install https://github.com/ethereum/c-kzg-4844
-```
-
-Then import `kzg4844/kzg` or `kzg4844/kzg_abi` into your project.
+After installation, import `kzg4844/kzg` or `kzg4844/kzg_abi` into your project.

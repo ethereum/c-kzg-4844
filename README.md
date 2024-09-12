@@ -11,6 +11,14 @@ high-level languages, providing convenient wrappers around C functions. These
 bindings are intended to be used by Ethereum clients, to avoid re-implementation
 of crucial cryptographic functions.
 
+For all bindings, you first need to make sure that the `blst` submodule is correctly pulled after clone.
+To do so, you may need to run:
+
+```
+git submodule update --init
+```
+
+
 | Language | Link                                 |
 |----------|--------------------------------------|
 | C#       | [README](bindings/csharp/README.md)  |
@@ -88,8 +96,8 @@ C-KZG-4844 is not expected to be used outside the bindings.
 The source code of C-KZG-4844 was audited by [Sigma
 Prime](https://sigmaprime.io/) in June 2023. You can find the [audit
 report](doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
-in the `doc/audit/` directory. Notably, the audit was for commit `fd24cf8` and 
-code introduced for EIP-7594 *has not been audited yet*. 
+in the `doc/audit/` directory. Notably, the audit was for commit `fd24cf8` and
+code introduced for EIP-7594 *has not been audited yet*.
 
 ### Why C?
 
