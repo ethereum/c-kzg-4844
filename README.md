@@ -18,7 +18,6 @@ To do so, you may need to run:
 git submodule update --init
 ```
 
-
 | Language | Link                                 |
 |----------|--------------------------------------|
 | C#       | [README](bindings/csharp/README.md)  |

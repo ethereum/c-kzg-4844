@@ -1,7 +1,6 @@
 # Go Bindings for the C-KZG Library
 
 This directory contains Go bindings for the C-KZG-4844 library.
-The bindings use [Cgo](https://go.dev/blog/cgo).
 
 ## Prerequisites
 

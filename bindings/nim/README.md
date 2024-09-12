@@ -13,12 +13,12 @@ nimble install stew
 ```
 
 ## Installation
+
 Install via nimble:
 
 ```
 nimble install https://github.com/ethereum/c-kzg-4844
 ```
-
 
 ## Tests
 

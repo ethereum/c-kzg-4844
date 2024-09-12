@@ -27,5 +27,5 @@ make test
 
 ## Public Maven Repo
 
-The library which uses this binding and publishes a package to a public maven repo
+The library which uses this binding and publishes a package to a [public maven repo](https://central.sonatype.com/artifact/io.consensys.protocols/jc-kzg-4844)
 is [jc-kzg-4844](https://github.com/ConsenSys/jc-kzg-4844).
