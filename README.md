@@ -11,13 +11,6 @@ high-level languages, providing convenient wrappers around C functions. These
 bindings are intended to be used by Ethereum clients, to avoid re-implementation
 of crucial cryptographic functions.
 
-For all bindings, you first need to make sure that the `blst` submodule is correctly pulled after clone.
-To do so, you may need to run:
-
-```
-git submodule update --init
-```
-
 | Language | Link                                 |
 |----------|--------------------------------------|
 | C#       | [README](bindings/csharp/README.md)  |
