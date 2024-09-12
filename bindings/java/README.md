@@ -1,13 +1,13 @@
-# Java binding
+# Java Bindings for the C-KZG Library
 
-## Build shared library
+This directory contains Java bindings for the C-KZG-4844 library.
 
-### Prerequisites
+## Prerequisites
 
 * Build blst by running `make blst` in the [library source directory](../../src).
 * Set `JAVA_HOME` environment variable to a JDK with an `include` folder containing a `jni.h` file.
 
-### Build
+## Build
 
 ```bash
 make build
@@ -25,7 +25,7 @@ the [Makefile](./Makefile).
 make test
 ```
 
-## Library
+## Public Maven Repo
 
-The library which uses this binding and publishes a package to a public maven repo
+The library which uses this binding and publishes a package to a [public maven repo](https://central.sonatype.com/artifact/io.consensys.protocols/jc-kzg-4844)
 is [jc-kzg-4844](https://github.com/ConsenSys/jc-kzg-4844).

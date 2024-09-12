@@ -1,19 +1,18 @@
-# Go bindings
+# Go Bindings for the C-KZG Library
 
-This package implements Go bindings (using [Cgo](https://go.dev/blog/cgo)) for the
-exported functions in [C-KZG-4844](https://github.com/ethereum/c-kzg-4844).
+This directory contains Go bindings for the C-KZG-4844 library.
+
+## Prerequisites
+
+This package requires `1.19rc1` or later. Version `1.19beta1` and before will
+not work. These versions have a linking issue and are unable to see `blst`
+functions.
 
 ## Installation
 
 ```
 go get github.com/ethereum/c-kzg-4844/v2
 ```
-
-## Go version
-
-This package requires `1.19rc1` or later. Version `1.19beta1` and before will
-not work. These versions have a linking issue and are unable to see `blst`
-functions.
 
 ## Tests
 

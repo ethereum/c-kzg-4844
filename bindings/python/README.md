@@ -1,10 +1,10 @@
-# Python bindings
+# Python Bindings for the C-KZG Library
 
 This directory contains Python bindings for the C-KZG-4844 library.
 
 ## Prerequisites
 
-These bindings require `python3` and `PyYAML`.
+These bindings require `python3`, `PyYAML` and `make`.
 ```
 sudo apt install python3 python3-pip
 python3 -m pip install PyYAML
