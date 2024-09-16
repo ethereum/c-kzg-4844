@@ -7,7 +7,7 @@ This directory contains Python bindings for the C-KZG-4844 library.
 These bindings require `python3`, `PyYAML` and `make`.
 ```
 sudo apt install python3 python3-pip
-python3 -m pip install PyYAML
+python3 -m pip install build PyYAML
 ```
 
 ## Build & test

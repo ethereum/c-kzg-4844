@@ -123,8 +123,8 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = new_g1_array(&proofs_g1, CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs, provide only the first half */
-        ret = compute_fk20_proofs(proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s);
+        /* Compute the proofs, only uses the first half of the polynomial */
+        ret = compute_fk20_cell_proofs(proofs_g1, poly_monomial, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
@@ -159,6 +159,7 @@ out:
  * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
+ * @remark At least 50% of CELLS_PER_EXT_BLOB cells must be provided.
  * @remark Recovery is faster if there are fewer missing cells.
  * @remark If recovered_proofs is NULL, they will not be recomputed.
  */
@@ -259,10 +260,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         );
         if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs, provide only the first half */
-        ret = compute_fk20_proofs(
-            recovered_proofs_g1, recovered_cells_fr, FIELD_ELEMENTS_PER_BLOB, s
-        );
+        /* Compute the proofs, only uses the first half of the polynomial */
+        ret = compute_fk20_cell_proofs(recovered_proofs_g1, recovered_cells_fr, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
@@ -517,9 +516,9 @@ out:
  * This function computes `RLI = [sum_k r^k interpolation_poly_k(s)]` from the spec.
  *
  * @param[out]  commitment_out  Commitment to the aggregated interpolation poly
- * @param[in]   r_powers        Precomputed powers of the random challenge
- * @param[in]   cell_indices    Indices of the cells
- * @param[in]   cells           Array of cells
+ * @param[in]   r_powers        Precomputed powers of the random challenge, length `num_cells`
+ * @param[in]   cell_indices    Indices of the cells, length `num_cells`
+ * @param[in]   cells           Array of cells, length `num_cells`
  * @param[in]   num_cells       Number of cells
  * @param[in]   s               The trusted setup
  */
@@ -710,10 +709,9 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
 
     for (uint64_t i = 0; i < num_cells; i++) {
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
-        fr_t coset_factor = s->roots_of_unity[pos];
-        // Compute h_k^n, with h_k and n as in the spec.
-        fr_pow(&coset_factor_pow, &coset_factor, FIELD_ELEMENTS_PER_CELL);
-        // Scale the power of r by h_k^n
+        /* Compute h_k^n, with h_k and n as in the spec */
+        coset_factor_pow = s->roots_of_unity[pos * FIELD_ELEMENTS_PER_CELL];
+        /* Scale the power of r by h_k^n */
         blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
     }
 

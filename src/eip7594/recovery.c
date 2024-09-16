@@ -281,6 +281,12 @@ C_KZG_RET recover_cells(
      */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (fr_is_null(&cells_brp[i])) {
+            /*
+             * We handle this situation differently because FR_NULL is an invalid value. The right
+             * hand side, vanishing_poly_eval[i], will always be zero when cells_brp[i] is null, so
+             * the multiplication would still be result in zero, but we shouldn't depend on blst
+             * handling invalid values like this.
+             */
             extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
             blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);

@@ -26,7 +26,7 @@
  */
 void print_cell(const Cell *cell) {
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        const Bytes32 *field = (const Bytes32 *)&cell->bytes[i * BYTES_PER_FIELD_ELEMENT];
-        print_bytes32(field);
+        const Bytes32 *field_element = (const Bytes32 *)&cell->bytes[i * BYTES_PER_FIELD_ELEMENT];
+        print_bytes32(field_element);
     }
 }

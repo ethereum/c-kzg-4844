@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s);
+C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s);
 
 #ifdef __cplusplus
 }

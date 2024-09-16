@@ -56,14 +56,13 @@ static C_KZG_RET toeplitz_coeffs_stride(
  * Compute FK20 cell-proofs for a polynomial.
  *
  * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   p   The polynomial, an array of coefficients
- * @param[in]   n   The length of the polynomial
+ * @param[in]   p   The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
  * @param[in]   s   The trusted setup
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
-C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s) {
+C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t k, k2;
 
@@ -77,7 +76,7 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
     bool precompute = s->wbits != 0;
 
     /* Initialize length variables */
-    k = n / FIELD_ELEMENTS_PER_CELL;
+    k = FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
     /* Do allocations */
@@ -113,7 +112,9 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
 
     /* Compute toeplitz coefficients and organize by column */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL);
+        ret = toeplitz_coeffs_stride(
+            toeplitz_coeffs, p, FIELD_ELEMENTS_PER_BLOB, i, FIELD_ELEMENTS_PER_CELL
+        );
         if (ret != C_KZG_OK) goto out;
         ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
