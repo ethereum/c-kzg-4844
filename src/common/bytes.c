@@ -82,7 +82,7 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     blst_p1_affine p1_affine;
 
     /* Convert the bytes to a p1 point */
-    /* The uncompress routine checks that the posize_t is on the curve */
+    /* The uncompress routine checks that the point is on the curve */
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS) return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 
