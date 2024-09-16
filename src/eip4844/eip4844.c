@@ -86,15 +86,13 @@ static bool fr_is_zero(const fr_t *p) {
  * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
  *         the `out` output array has already been mutated.
  */
-static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
-    int i;
-
+static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     assert(len > 0);
     assert(a != out);
 
     fr_t accumulator = FR_ONE;
 
-    for (i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         out[i] = accumulator;
         blst_fr_mul(&accumulator, &accumulator, &a[i]);
     }
@@ -106,9 +104,10 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 
     blst_fr_eucl_inverse(&accumulator, &accumulator);
 
-    for (i = len - 1; i >= 0; i--) {
-        blst_fr_mul(&out[i], &out[i], &accumulator);
-        blst_fr_mul(&accumulator, &accumulator, &a[i]);
+    for (size_t i = len; i > 0; i--) {
+        size_t index = i - 1;
+        blst_fr_mul(&out[index], &out[index], &accumulator);
+        blst_fr_mul(&accumulator, &accumulator, &a[index]);
     }
 
     return C_KZG_OK;

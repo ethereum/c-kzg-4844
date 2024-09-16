@@ -27,8 +27,8 @@
  * @remark The output format is big-endian.
  */
 void bytes_from_uint64(uint8_t out[8], uint64_t n) {
-    for (int i = 7; i >= 0; i--) {
-        out[i] = n & 0xFF;
+    for (size_t i = 0; i < 8; i++) {
+        out[7 - i] = n & 0xFF;
         n >>= 8;
     }
 }
@@ -82,7 +82,7 @@ static C_KZG_RET validate_kzg_g1(g1_t *out, const Bytes48 *b) {
     blst_p1_affine p1_affine;
 
     /* Convert the bytes to a p1 point */
-    /* The uncompress routine checks that the point is on the curve */
+    /* The uncompress routine checks that the posize_t is on the curve */
     if (blst_p1_uncompress(&p1_affine, b->bytes) != BLST_SUCCESS) return C_KZG_BADARGS;
     blst_p1_from_affine(out, &p1_affine);
 

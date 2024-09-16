@@ -49,7 +49,7 @@ static void get_rand_fr(fr_t *out) {
 }
 
 static void get_rand_blob(Blob *out) {
-    for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
     }
 }
@@ -353,7 +353,7 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     /* blst_p1_mult needs it to be little-endian */
     blst_lendian_from_scalar(b.bytes, &scalar);
 
-    for (int i = 1; i < 255; i++) {
+    for (size_t i = 1; i < 255; i++) {
         get_rand_g1(&g);
 
         blst_p1_mult(&check, &g, b.bytes, 256);
@@ -1150,7 +1150,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
 }
 
 static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
-    for (int i = 0; i < 25; i++) {
+    for (size_t i = 0; i < 25; i++) {
         C_KZG_RET ret;
         Blob blob;
         KZGCommitment c;
@@ -2032,7 +2032,7 @@ static void profile_blob_to_kzg_commitment(void) {
     get_rand_blob(&blob);
 
     ProfilerStart("blob_to_kzg_commitment.prof");
-    for (int i = 0; i < 1000; i++) {
+    for (size_t i = 0; i < 1000; i++) {
         blob_to_kzg_commitment(&c, &blob, &s);
     }
     ProfilerStop();
@@ -2047,7 +2047,7 @@ static void profile_compute_kzg_proof(void) {
     get_rand_field_element(&z);
 
     ProfilerStart("compute_kzg_proof.prof");
-    for (int i = 0; i < 100; i++) {
+    for (size_t i = 0; i < 100; i++) {
         compute_kzg_proof(&proof_out, &y_out, &blob, &z, &s);
     }
     ProfilerStop();
@@ -2062,7 +2062,7 @@ static void profile_compute_blob_kzg_proof(void) {
     get_rand_g1_bytes(&commitment);
 
     ProfilerStart("compute_blob_kzg_proof.prof");
-    for (int i = 0; i < 10; i++) {
+    for (size_t i = 0; i < 10; i++) {
         compute_blob_kzg_proof(&out, &blob, &commitment, &s);
     }
     ProfilerStop();
@@ -2079,7 +2079,7 @@ static void profile_verify_kzg_proof(void) {
     get_rand_g1_bytes(&proof);
 
     ProfilerStart("verify_kzg_proof.prof");
-    for (int i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 5000; i++) {
         verify_kzg_proof(&out, &commitment, &z, &y, &proof, &s);
     }
     ProfilerStop();
@@ -2095,7 +2095,7 @@ static void profile_verify_blob_kzg_proof(void) {
     get_rand_g1_bytes(&proof);
 
     ProfilerStart("verify_blob_kzg_proof.prof");
-    for (int i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 5000; i++) {
         verify_blob_kzg_proof(&out, &blob, &commitment, &proof, &s);
     }
     ProfilerStop();
@@ -2108,14 +2108,14 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     Bytes48 proofs[n];
     bool out;
 
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         get_rand_blob(&blobs[i]);
         get_rand_g1_bytes(&commitments[i]);
         get_rand_g1_bytes(&proofs[i]);
     }
 
     ProfilerStart("verify_blob_kzg_proof_batch.prof");
-    for (int i = 0; i < 1000; i++) {
+    for (size_t i = 0; i < 1000; i++) {
         verify_blob_kzg_proof_batch(&out, blobs, commitments, proofs, n, &s);
     }
     ProfilerStop();
@@ -2130,7 +2130,7 @@ static void profile_compute_cells_and_kzg_proofs(void) {
     get_rand_blob(&blob);
 
     ProfilerStart("compute_cells_and_kzg_proofs.prof");
-    for (int i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 5; i++) {
         compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     }
     ProfilerStop();
@@ -2158,7 +2158,7 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     }
 
     ProfilerStart("recover_cells_and_kzg_proofs.prof");
-    for (int i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 5; i++) {
         recover_cells_and_kzg_proofs(cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s);
     }
     ProfilerStop();
@@ -2191,7 +2191,7 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     }
 
     ProfilerStart("verify_cell_kzg_proof_batch.prof");
-    for (int i = 0; i < 100; i++) {
+    for (size_t i = 0; i < 100; i++) {
         verify_cell_kzg_proof_batch(
             &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
         );
