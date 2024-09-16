@@ -81,7 +81,6 @@ static bool fr_is_zero(const fr_t *p) {
  * @param[in]   a   A vector of field elements, length `len`
  * @param[in]   len The number of field elements
  *
- * @remark This function only supports len > 0.
  * @remark This function does NOT support in-place computation.
  * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
  *         the `out` output array has already been mutated.

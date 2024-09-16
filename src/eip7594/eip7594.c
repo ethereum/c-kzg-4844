@@ -648,9 +648,8 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
         /* Now divide by the coset shift factor */
         uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
-        fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
-        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
+        uint64_t idx = FIELD_ELEMENTS_PER_EXT_BLOB - pos % FIELD_ELEMENTS_PER_EXT_BLOB;
+        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &s->roots_of_unity[idx]);
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
