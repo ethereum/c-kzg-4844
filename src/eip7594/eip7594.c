@@ -74,8 +74,7 @@ static const uint64_t CELL_INDICES_RBL[CELLS_PER_EXT_BLOB] = {
  * @remark If proofs is NULL, they won't be computed.
  * @remark Will return an error if both cells & proofs are NULL.
  */
-C_KZG_RET
-compute_cells_and_kzg_proofs(
+C_KZG_RET compute_cells_and_kzg_proofs(
     Cell *cells, KZGProof *proofs, const Blob *blob, const KZGSettings *s
 ) {
     C_KZG_RET ret;
