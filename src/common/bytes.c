@@ -27,8 +27,8 @@
  * @remark The output format is big-endian.
  */
 void bytes_from_uint64(uint8_t out[8], uint64_t n) {
-    for (size_t i = 0; i < 8; i++) {
-        out[7 - i] = n & 0xFF;
+    for (int i = 7; i >= 0; i--) {
+        out[i] = n & 0xFF;
         n >>= 8;
     }
 }
