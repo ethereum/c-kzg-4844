@@ -136,11 +136,11 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
-    fr_t inv_len;
-    fr_from_uint64(&inv_len, n);
-    blst_fr_eucl_inverse(&inv_len, &inv_len);
+    fr_t inv_n;
+    fr_from_uint64(&inv_n, n);
+    blst_fr_eucl_inverse(&inv_n, &inv_n);
     for (size_t i = 0; i < n; i++) {
-        blst_fr_mul(&out[i], &out[i], &inv_len);
+        blst_fr_mul(&out[i], &out[i], &inv_n);
     }
     return C_KZG_OK;
 }
@@ -235,11 +235,11 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
-    fr_t inv_len;
-    fr_from_uint64(&inv_len, n);
-    blst_fr_eucl_inverse(&inv_len, &inv_len);
+    fr_t inv_n;
+    fr_from_uint64(&inv_n, n);
+    blst_fr_eucl_inverse(&inv_n, &inv_n);
     for (size_t i = 0; i < n; i++) {
-        g1_mul(&out[i], &out[i], &inv_len);
+        g1_mul(&out[i], &out[i], &inv_n);
     }
 
     return C_KZG_OK;
