@@ -17,7 +17,7 @@
 #include "eip7594/fft.h"
 #include "common/alloc.h"
 #include "common/utils.h"
-#include "eip4844/blob.h"
+#include "eip7594/cell.h"
 #include "eip7594/poly.h"
 
 #include <string.h> /* For memcpy */
