@@ -666,9 +666,12 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         );
         if (ret != C_KZG_OK) goto out;
 
+        /* Calculate index to the inverse root of unity for this cell index */
+        uint64_t inv_coset_factor_idx = -CELL_INDICES_RBL[i] % FIELD_ELEMENTS_PER_EXT_BLOB;
+        /* For readability, assign root to variable using our index */
+        fr_t *inv_coset_factor = &s->roots_of_unity[inv_coset_factor_idx];
         /* Now divide by the coset shift factor */
-        uint64_t pos = -CELL_INDICES_RBL[i] % FIELD_ELEMENTS_PER_EXT_BLOB;
-        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &s->roots_of_unity[pos]);
+        shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, inv_coset_factor);
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
@@ -719,19 +722,18 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t coset_factor_pow;
     fr_t *weighted_powers_of_r = NULL;
 
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
 
     for (uint64_t i = 0; i < num_cells; i++) {
-        /* Compute h_k^n, with h_k and n as in the spec */
-        uint64_t pos = CELL_INDICES_RBL[cell_indices[i]];
-        coset_factor_pow = s->roots_of_unity[pos * FIELD_ELEMENTS_PER_CELL];
-
+        /* Calculate index to h_k^n; a root to some power is another root */
+        uint64_t h_k_pow_idx = CELL_INDICES_RBL[cell_indices[i]] * FIELD_ELEMENTS_PER_CELL;
+        /* For readability, assign root to variable using our index */
+        fr_t *h_k_pow = &s->roots_of_unity[h_k_pow_idx];
         /* Scale the power of r by h_k^n */
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
+        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], h_k_pow);
     }
 
     ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
