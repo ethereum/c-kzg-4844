@@ -60,10 +60,10 @@ static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
  *
  * Recursively divide and conquer.
  *
- * @param[out]  out             The results (length `n`)
- * @param[in]   in              The input data (length `n * stride`)
+ * @param[out]  out             The results, length `n`
+ * @param[in]   in              The input data, length `n * stride`
  * @param[in]   stride          The input data stride
- * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots           Roots of unity, length `n * roots_stride`
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
  */
@@ -88,8 +88,8 @@ static void fr_fft_fast(
 /**
  * The entry point for forward FFT over field elements.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
@@ -115,8 +115,8 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
 /**
  * The entry point for inverse FFT over field elements.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
@@ -154,10 +154,10 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  *
  * Recursively divide and conquer.
  *
- * @param[out]  out             The results (length `n`)
- * @param[in]   in              The input data (length `n * stride`)
+ * @param[out]  out             The results, length `n`
+ * @param[in]   in              The input data, length `n * stride`
  * @param[in]   stride          The input data stride
- * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots           Roots of unity, length `n * roots_stride`
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
  */
@@ -187,8 +187,8 @@ static void g1_fft_fast(
 /**
  * The entry point for forward FFT over G1 points.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
@@ -214,8 +214,8 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 /**
  * The entry point for inverse FFT over G1 points.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
@@ -252,8 +252,8 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 /**
  * Do an FFT over a coset of the roots of unity.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
@@ -284,8 +284,8 @@ out:
 /**
  * Do an inverse FFT over a coset of the roots of unity.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *

@@ -171,8 +171,8 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices        The cell indices for the available cells
- * @param[in]   cells               The available cells we recover from
+ * @param[in]   cell_indices        The cell indices for the available cells, length `num_cells`
+ * @param[in]   cells               The available cells we recover from, length `num_cells`
  * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
@@ -373,13 +373,13 @@ static void deduplicate_commitments(
  * Compute random linear combination challenge scalars for verify_cell_kzg_proof_batch. In this, we
  * must hash EVERYTHING that the prover can control.
  *
- * @param[out]  r_powers_out        The output challenges
- * @param[in]   commitments_bytes   The input commitments
+ * @param[out]  r_powers_out        The output challenges, length `num_cells`
+ * @param[in]   commitments_bytes   The input commitments, length `num_commitments`
  * @param[in]   num_commitments     The number of commitments
- * @param[in]   commitment_indices  The cell commitment indices
- * @param[in]   cell_indices        The cell indices
- * @param[in]   cells               The cell
- * @param[in]   proofs_bytes        The cell proof
+ * @param[in]   commitment_indices  The cell commitment indices, length `num_cells`
+ * @param[in]   cell_indices        The cell indices, length `num_cells`
+ * @param[in]   cells               The cell, length `num_cells`
+ * @param[in]   proofs_bytes        The cell proof, length `num_cells`
  * @param[in]   num_cells           The number of cells
  */
 static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
@@ -477,9 +477,9 @@ out:
  * Compute the sum of the commitments weighted by the powers of r.
  *
  * @param[out]  sum_of_commitments_out  The resulting G1 sum of the commitments
- * @param[in]   unique_commitments      Array of unique commitments
- * @param[in]   commitment_indices      Indices mapping to unique commitments
- * @param[in]   r_powers                Array of powers of r used for weighting
+ * @param[in]   unique_commitments      Array of unique commitments, length `num_commitments`
+ * @param[in]   commitment_indices      Indices mapping to unique commitments, length `num_cells`
+ * @param[in]   r_powers                Array of powers of r used for weighting, length `num_cells`
  * @param[in]   num_commitments         The number of unique commitments
  * @param[in]   num_cells               The number of cells
  */
@@ -707,11 +707,11 @@ out:
  * Compute weighted sum of proofs.
  *
  * @param[out]  weighted_proof_lincomb  The resulting G1 sum of the proofs scaled by coset factors
- * @param[in]   proofs_g1               Array of G1 elements representing the proofs
- * @param[in]   r_powers                Array of powers of r used for weighting
- * @param[in]   cell_indices            Array of cell indices
+ * @param[in]   proofs_g1               Array of proofs, length `num_cells`
+ * @param[in]   r_powers                Array of powers of r used for weighting, length `num_cells`
+ * @param[in]   cell_indices            Array of cell indices, length `num_cells`
  * @param[in]   num_cells               The number of cells
- * @param[in]   s                       The trusted setup containing roots of unity
+ * @param[in]   s                       The trusted setup
  */
 static C_KZG_RET computed_weighted_sum_of_proofs(
     g1_t *weighted_proof_sum_out,
