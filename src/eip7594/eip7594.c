@@ -176,7 +176,7 @@ out:
  * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
- * @remark At least CELLS_PER_EXT_BLOB/EXPANSION_FACTOR cells must be provided.
+ * @remark At least 50% of CELLS_PER_EXT_BLOB cells must be provided.
  * @remark Recovery is faster if there are fewer missing cells.
  * @remark If recovered_proofs is NULL, they will not be recomputed.
  */
@@ -199,7 +199,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     }
 
     /* Check if it's possible to recover */
-    if (num_cells < CELLS_PER_EXT_BLOB / EXPANSION_FACTOR) {
+    if (num_cells < CELLS_PER_EXT_BLOB / 2) {
         ret = C_KZG_BADARGS;
         goto out;
     }

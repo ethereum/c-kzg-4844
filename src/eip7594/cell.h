@@ -30,11 +30,8 @@
 /** The number of bytes in a single cell. */
 #define BYTES_PER_CELL (FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT)
 
-/** The Reed-Solomon erasure coding expansion factor. */
-#define EXPANSION_FACTOR 2
-
 /** The number of field elements in an extended blob. */
-#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * EXPANSION_FACTOR)
+#define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * 2)
 
 /** The number of cells in a blob. */
 #define CELLS_PER_BLOB (FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL)

@@ -73,7 +73,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /* Initialize length variables */
     k = FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
-    k2 = k * EXPANSION_FACTOR;
+    k2 = k * 2;
 
     /* Do allocations */
     ret = new_fr_array(&toeplitz_coeffs, k2);
