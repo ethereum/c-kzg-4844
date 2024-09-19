@@ -33,7 +33,7 @@
 /** The Reed-Solomon erasure coding expansion factor. */
 #define EXPANSION_FACTOR 2
 
-/** The number of field elements in an extended blob */
+/** The number of field elements in an extended blob. */
 #define FIELD_ELEMENTS_PER_EXT_BLOB (FIELD_ELEMENTS_PER_BLOB * EXPANSION_FACTOR)
 
 /** The number of cells in a blob. */
