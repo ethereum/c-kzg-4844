@@ -31,7 +31,7 @@
  * Multiplies each coefficient by `shift_factor ^ i`. Equivalent to creating a polynomial that
  * evaluates at `x * shift_factor` rather than `x`.
  *
- * @param[in,out]   p               The polynomial coefficients to be scaled, length `p`
+ * @param[in,out]   p               The polynomial coefficients to be scaled, length `len`
  * @param[in]       len             Length of the polynomial coefficients
  * @param[in]       shift_factor    Shift factor
  */
