@@ -47,8 +47,9 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGC
  * for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++)
  *   printf("%#04llx,\n", reverse_bits_limited(CELLS_PER_EXT_BLOB, i));
  *
- * Because of the way our evaluation domain is defined, we can use CELL_INDICES_RBL to find the coset factor of a
- * cell. In particular, for cell i, its coset factor is roots_of_unity[CELLS_INDICES_RBL[i]]
+ * Because of the way our evaluation domain is defined, we can use CELL_INDICES_RBL to find the
+ * coset factor of a cell. In particular, for cell i, its coset factor is
+ * roots_of_unity[CELLS_INDICES_RBL[i]].
  */
 static const uint64_t CELL_INDICES_RBL[CELLS_PER_EXT_BLOB] = {
     0x00, 0x40, 0x20, 0x60, 0x10, 0x50, 0x30, 0x70, 0x08, 0x48, 0x28, 0x68, 0x18, 0x58, 0x38, 0x78,
@@ -535,16 +536,14 @@ out:
 
 /**
  * Compute the inverse coset factor h_k^{-1},
-*  where `h_k` is the coset factor for cell with index `k`.
+ *  where `h_k` is the coset factor for cell with index `k`.
  *
  * @param[out]  inv_coset_factor_out  Pointer to store the computed inverse coset factor
  * @param[in]   cell_index            The index of the cell
  * @param[in]   s                     The trusted setup
  */
 static void get_inv_coset_shift_for_cell(
-    fr_t *inv_coset_factor_out,
-    uint64_t cell_index,
-    const KZGSettings *s
+    fr_t *inv_coset_factor_out, uint64_t cell_index, const KZGSettings *s
 ) {
     /*
      * Get the cell index in reverse-bit order.
@@ -557,16 +556,16 @@ static void get_inv_coset_shift_for_cell(
      * accessing its reflected element.
      *
      * For example, consider a multiplicative subgroup with eight elements:
-     * roots = {w^0, w^1, w^2, ... w^7, w^0}
+     *   roots = {w^0, w^1, w^2, ... w^7, w^0}
      * For a root of unity in roots[i], we can find its inverse in roots[-i].
      */
+    assert(cell_idx_rbl <= FIELD_ELEMENTS_PER_EXT_BLOB);
     uint64_t inv_coset_factor_idx = FIELD_ELEMENTS_PER_EXT_BLOB - cell_idx_rbl;
 
     /* Get h_k^{-1} using the index */
     assert(inv_coset_factor_idx < FIELD_ELEMENTS_PER_EXT_BLOB + 1);
     *inv_coset_factor_out = s->roots_of_unity[inv_coset_factor_idx];
 }
-
 
 /**
  * Compute h_k^{n}, where `h_k` is the coset factor for cell with index `k`.
@@ -576,9 +575,7 @@ static void get_inv_coset_shift_for_cell(
  * @param[in]   s                 The trusted setup
  */
 static void get_coset_shift_pow_for_cell(
-    fr_t *coset_factor_out,
-    uint64_t cell_index,
-    const KZGSettings *s
+    fr_t *coset_factor_out, uint64_t cell_index, const KZGSettings *s
 ) {
     /*
      * Get the cell index in reverse-bit order.
