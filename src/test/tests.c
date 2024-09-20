@@ -1839,6 +1839,52 @@ static void test_deduplicate_commitments__one_commitment(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Tests for coset shift factors
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void test_shift_factors__succeeds(void) {
+    fr_t expected_inv_coset_factor, computed_inv_coset_factor, h_k;
+    fr_t expected_coset_factor_pow, computed_coset_factor_pow;
+    static uint64_t n = FIELD_ELEMENTS_PER_CELL;
+
+    /* Loop over all cells */
+    for (uint64_t cell_index = 0; cell_index < CELLS_PER_EXT_BLOB; cell_index++) {
+        /* Get the cell index in reverse-bit order */
+        uint64_t cell_idx_rbl = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_index);
+
+        /* Ensure the index is within bounds */
+        assert(cell_idx_rbl < FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+
+        /* Get h_k for this cell */
+        h_k = s.roots_of_unity[cell_idx_rbl];
+
+        /* First we test get_inv_coset_shift_for_cell() */
+
+        /* Compute the expected inverse coset factor */
+        blst_fr_eucl_inverse(&expected_inv_coset_factor, &h_k);
+
+        /* Call the function we are testing */
+        get_inv_coset_shift_for_cell(&computed_inv_coset_factor, cell_index, &s);
+
+        /* Compare the expected and computed inverse coset factors */
+        bool ok = fr_equal(&expected_inv_coset_factor, &computed_inv_coset_factor);
+        ASSERT_EQUALS(ok, true);
+
+        /* Now we test get_coset_shift_pow_for_cell() */
+
+        /* Compute the expected coset factor h_k^n */
+        fr_pow(&expected_coset_factor_pow, &h_k, n);
+
+        /* Now call the function we are testing */
+        get_coset_shift_pow_for_cell(&computed_coset_factor_pow, cell_index, &s);
+
+        /* Compare the expected and computed inverse coset factors */
+        ok = fr_equal(&expected_coset_factor_pow, &computed_coset_factor_pow);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for recover_cells_and_kzg_proofs
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2313,6 +2359,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
