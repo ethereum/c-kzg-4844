@@ -538,9 +538,9 @@ out:
  * Compute the inverse coset factor h_k^{-1},
  *  where `h_k` is the coset factor for cell with index `k`.
  *
- * @param[out]  inv_coset_factor_out  Pointer to store the computed inverse coset factor
- * @param[in]   cell_index            The index of the cell
- * @param[in]   s                     The trusted setup
+ * @param[out]  inv_coset_factor_out    Pointer to store the computed inverse coset factor
+ * @param[in]   cell_index              The index of the cell
+ * @param[in]   s                       The trusted setup
  */
 static void get_inv_coset_shift_for_cell(
     fr_t *inv_coset_factor_out, uint64_t cell_index, const KZGSettings *s
@@ -570,9 +570,9 @@ static void get_inv_coset_shift_for_cell(
 /**
  * Compute h_k^{n}, where `h_k` is the coset factor for cell with index `k`.
  *
- * @param[out]  coset_factor_out  Pointer to store h_k^{n}
- * @param[in]   cell_index        The index of the cell
- * @param[in]   s                 The trusted setup
+ * @param[out]  coset_factor_out    Pointer to store h_k^{n}
+ * @param[in]   cell_index          The index of the cell
+ * @param[in]   s                   The trusted setup
  */
 static void get_coset_shift_pow_for_cell(
     fr_t *coset_factor_out, uint64_t cell_index, const KZGSettings *s
