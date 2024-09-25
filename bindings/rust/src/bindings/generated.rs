@@ -7,9 +7,9 @@ pub const BYTES_PER_COMMITMENT: usize = 48;
 pub const BYTES_PER_PROOF: usize = 48;
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 pub const BYTES_PER_BLOB: usize = 131072;
-pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 pub const BYTES_PER_CELL: usize = 2048;
+pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
 pub const CELLS_PER_EXT_BLOB: usize = 128;
 pub type limb_t = u64;
 #[repr(C)]

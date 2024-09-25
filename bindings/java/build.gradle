@@ -2,7 +2,7 @@ plugins {
     id "application"
     id "java-test-fixtures"
     id "me.champeau.jmh" version "0.7.0"
-    id "com.diffplug.spotless" version "6.17.0"
+    id "com.diffplug.spotless" version "6.25.0"
 }
 
 repositories {

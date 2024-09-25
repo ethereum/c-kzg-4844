@@ -17,7 +17,7 @@
 #include "eip7594/fft.h"
 #include "common/alloc.h"
 #include "common/utils.h"
-#include "eip4844/blob.h"
+#include "eip7594/cell.h"
 #include "eip7594/poly.h"
 
 #include <string.h> /* For memcpy */
@@ -60,10 +60,10 @@ static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
  *
  * Recursively divide and conquer.
  *
- * @param[out]  out             The results (length `n`)
- * @param[in]   in              The input data (length `n * stride`)
+ * @param[out]  out             The results, length `n`
+ * @param[in]   in              The input data, length `n * stride`
  * @param[in]   stride          The input data stride
- * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots           Roots of unity, length `n * roots_stride`
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
  */
@@ -88,15 +88,19 @@ static void fr_fft_fast(
 /**
  * The entry point for forward FFT over field elements.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use fr_ifft() for inverse transformation.
  */
 C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
+
     /* Ensure the length is valid */
     if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -111,15 +115,19 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
 /**
  * The entry point for inverse FFT over field elements.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use fr_fft() for forward transformation.
  */
 C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
+
     /* Ensure the length is valid */
     if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -128,11 +136,11 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
-    fr_t inv_len;
-    fr_from_uint64(&inv_len, n);
-    blst_fr_inverse(&inv_len, &inv_len);
+    fr_t inv_n;
+    fr_from_uint64(&inv_n, n);
+    blst_fr_eucl_inverse(&inv_n, &inv_n);
     for (size_t i = 0; i < n; i++) {
-        blst_fr_mul(&out[i], &out[i], &inv_len);
+        blst_fr_mul(&out[i], &out[i], &inv_n);
     }
     return C_KZG_OK;
 }
@@ -146,10 +154,10 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
  *
  * Recursively divide and conquer.
  *
- * @param[out]  out             The results (length `n`)
- * @param[in]   in              The input data (length `n * stride`)
+ * @param[out]  out             The results, length `n`
+ * @param[in]   in              The input data, length `n * stride`
  * @param[in]   stride          The input data stride
- * @param[in]   roots           Roots of unity (length `n * roots_stride`)
+ * @param[in]   roots           Roots of unity, length `n * roots_stride`
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
  */
@@ -162,19 +170,14 @@ static void g1_fft_fast(
         g1_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         g1_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (size_t i = 0; i < half; i++) {
-            /* If the point is infinity, we can skip the calculation */
-            if (blst_p1_is_inf(&out[i + half])) {
-                out[i + half] = out[i];
+            /* If the scalar is one, we can skip the multiplication */
+            if (fr_is_one(&roots[i * roots_stride])) {
+                y_times_root = out[i + half];
             } else {
-                /* If the scalar is one, we can skip the multiplication */
-                if (fr_is_one(&roots[i * roots_stride])) {
-                    y_times_root = out[i + half];
-                } else {
-                    g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-                }
-                g1_sub(&out[i + half], &out[i], &y_times_root);
-                blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
+                g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
             }
+            g1_sub(&out[i + half], &out[i], &y_times_root);
+            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;
@@ -184,15 +187,19 @@ static void g1_fft_fast(
 /**
  * The entry point for forward FFT over G1 points.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use g1_ifft() for inverse transformation.
  */
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
+
     /* Ensure the length is valid */
     if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -207,15 +214,19 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 /**
  * The entry point for inverse FFT over G1 points.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use g1_fft() for forward transformation.
  */
 C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
+
     /* Ensure the length is valid */
     if (n > FIELD_ELEMENTS_PER_EXT_BLOB || !is_power_of_two(n)) {
         return C_KZG_BADARGS;
@@ -224,11 +235,11 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
 
-    fr_t inv_len;
-    fr_from_uint64(&inv_len, n);
-    blst_fr_eucl_inverse(&inv_len, &inv_len);
+    fr_t inv_n;
+    fr_from_uint64(&inv_n, n);
+    blst_fr_eucl_inverse(&inv_n, &inv_n);
     for (size_t i = 0; i < n; i++) {
-        g1_mul(&out[i], &out[i], &inv_len);
+        g1_mul(&out[i], &out[i], &inv_n);
     }
 
     return C_KZG_OK;
@@ -241,19 +252,21 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 /**
  * Do an FFT over a coset of the roots of unity.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR.
  */
 C_KZG_RET coset_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
-    C_KZG_RET ret;
-    fr_t *in_shifted = NULL;
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
 
     /* Create some room to shift the polynomial */
-    ret = new_fr_array(&in_shifted, n);
+    fr_t *in_shifted = NULL;
+    C_KZG_RET ret = new_fr_array(&in_shifted, n);
     if (ret != C_KZG_OK) goto out;
 
     /* Shift the poly */
@@ -271,18 +284,20 @@ out:
 /**
  * Do an inverse FFT over a coset of the roots of unity.
  *
- * @param[out]  out The results (array of length n)
- * @param[in]   in  The input data (array of length n)
+ * @param[out]  out The results, length `n`
+ * @param[in]   in  The input data, length `n`
  * @param[in]   n   Length of the arrays
  * @param[in]   s   The trusted setup
  *
+ * @remark Will do nothing if given a zero length array.
  * @remark The coset shift factor is RECOVERY_SHIFT_FACTOR. In this function we use its inverse to
  * implement the IFFT.
  */
 C_KZG_RET coset_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
-    C_KZG_RET ret;
+    /* Handle zero length input */
+    if (n == 0) return C_KZG_OK;
 
-    ret = fr_ifft(out, in, n, s);
+    C_KZG_RET ret = fr_ifft(out, in, n, s);
     if (ret != C_KZG_OK) goto out;
 
     shift_poly(out, n, &INV_RECOVERY_SHIFT_FACTOR);

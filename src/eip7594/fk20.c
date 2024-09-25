@@ -25,45 +25,40 @@
 /**
  * Reorder and extend polynomial coefficients for the toeplitz method, strided version.
  *
- * @param[out]  out     The reordered polynomial, size `n * 2 / stride`
- * @param[in]   in      The input polynomial, size `n`
- * @param[in]   n       The size of the input polynomial
+ * @param[out]  out     The reordered polynomial, length `CELLS_PER_EXT_BLOB`
+ * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
  * @param[in]   offset  The offset
- * @param[in]   stride  The stride
  */
-static C_KZG_RET toeplitz_coeffs_stride(
-    fr_t *out, const fr_t *in, size_t n, size_t offset, size_t stride
-) {
-    size_t k, k2;
+static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
+    /* Calculate starting indices */
+    size_t out_start = CELLS_PER_BLOB + 2;
+    size_t in_start = CELLS_PER_EXT_BLOB - offset - 1;
 
-    if (stride == 0) return C_KZG_BADARGS;
+    /* Set the first element */
+    out[0] = in[FIELD_ELEMENTS_PER_BLOB - 1 - offset];
 
-    k = n / stride;
-    k2 = k * 2;
-
-    out[0] = in[n - 1 - offset];
-    for (size_t i = 1; i <= k + 1 && i < k2; i++) {
+    /* Initialize these elements to zero */
+    for (size_t i = 1; i < out_start; i++) {
         out[i] = FR_ZERO;
     }
-    for (size_t i = k + 2, j = 2 * stride - offset - 1; i < k2; i++, j += stride) {
-        out[i] = in[j];
-    }
 
-    return C_KZG_OK;
+    /* Copy elements with a fixed stride */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB - out_start; i++) {
+        out[out_start + i] = in[in_start + i * FIELD_ELEMENTS_PER_CELL];
+    }
 }
 
 /**
  * Compute FK20 cell-proofs for a polynomial.
  *
  * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   p   The polynomial, an array of coefficients
- * @param[in]   n   The length of the polynomial
+ * @param[in]   p   The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
  * @param[in]   s   The trusted setup
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
-C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSettings *s) {
+C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t k, k2;
 
@@ -77,7 +72,7 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
     bool precompute = s->wbits != 0;
 
     /* Initialize length variables */
-    k = n / FIELD_ELEMENTS_PER_CELL;
+    k = FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
     k2 = k * 2;
 
     /* Do allocations */
@@ -113,8 +108,7 @@ C_KZG_RET compute_fk20_proofs(g1_t *out, const fr_t *p, size_t n, const KZGSetti
 
     /* Compute toeplitz coefficients and organize by column */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        ret = toeplitz_coeffs_stride(toeplitz_coeffs, p, n, i, FIELD_ELEMENTS_PER_CELL);
-        if (ret != C_KZG_OK) goto out;
+        toeplitz_coeffs_stride(toeplitz_coeffs, p, i);
         ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
         if (ret != C_KZG_OK) goto out;
         for (size_t j = 0; j < k2; j++) {

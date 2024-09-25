@@ -25,7 +25,7 @@
 
 #include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
-#include <string.h> /* For memcpy */
+#include <string.h> /* For memcpy & strlen */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -611,6 +611,9 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
+
+    /* Ensure that the domain string is the correct length */
+    assert(strlen(RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH) == DOMAIN_STR_LENGTH);
 
     /* Copy domain separator */
     memcpy(offset, RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH, DOMAIN_STR_LENGTH);

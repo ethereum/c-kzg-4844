@@ -49,7 +49,7 @@ static void get_rand_fr(fr_t *out) {
 }
 
 static void get_rand_blob(Blob *out) {
-    for (int i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
         get_rand_field_element((Bytes32 *)&out->bytes[i * 32]);
     }
 }
@@ -353,7 +353,7 @@ static void test_g1_mul__test_different_bit_lengths(void) {
     /* blst_p1_mult needs it to be little-endian */
     blst_lendian_from_scalar(b.bytes, &scalar);
 
-    for (int i = 1; i < 255; i++) {
+    for (size_t i = 1; i < 255; i++) {
         get_rand_g1(&g);
 
         blst_p1_mult(&check, &g, b.bytes, 256);
@@ -1150,7 +1150,7 @@ static void test_compute_and_verify_kzg_proof__succeeds_round_trip(void) {
 }
 
 static void test_compute_and_verify_kzg_proof__succeeds_within_domain(void) {
-    for (int i = 0; i < 25; i++) {
+    for (size_t i = 0; i < 25; i++) {
         C_KZG_RET ret;
         Blob blob;
         KZGCommitment c;
@@ -1839,6 +1839,52 @@ static void test_deduplicate_commitments__one_commitment(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Tests for coset shift factors
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static void test_shift_factors__succeeds(void) {
+    fr_t expected_inv_coset_factor, computed_inv_coset_factor, h_k;
+    fr_t expected_coset_factor_pow, computed_coset_factor_pow;
+    static uint64_t n = FIELD_ELEMENTS_PER_CELL;
+
+    /* Loop over all cells */
+    for (uint64_t cell_index = 0; cell_index < CELLS_PER_EXT_BLOB; cell_index++) {
+        /* Get the cell index in reverse-bit order */
+        uint64_t cell_idx_rbl = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_index);
+
+        /* Ensure the index is within bounds */
+        assert(cell_idx_rbl < FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+
+        /* Get h_k for this cell */
+        h_k = s.roots_of_unity[cell_idx_rbl];
+
+        /* First we test get_inv_coset_shift_for_cell() */
+
+        /* Compute the expected inverse coset factor */
+        blst_fr_eucl_inverse(&expected_inv_coset_factor, &h_k);
+
+        /* Call the function we are testing */
+        get_inv_coset_shift_for_cell(&computed_inv_coset_factor, cell_index, &s);
+
+        /* Compare the expected and computed inverse coset factors */
+        bool ok = fr_equal(&expected_inv_coset_factor, &computed_inv_coset_factor);
+        ASSERT_EQUALS(ok, true);
+
+        /* Now we test get_coset_shift_pow_for_cell() */
+
+        /* Compute the expected coset factor h_k^n */
+        fr_pow(&expected_coset_factor_pow, &h_k, n);
+
+        /* Now call the function we are testing */
+        get_coset_shift_pow_for_cell(&computed_coset_factor_pow, cell_index, &s);
+
+        /* Compare the expected and computed inverse coset factors */
+        ok = fr_equal(&expected_coset_factor_pow, &computed_coset_factor_pow);
+        ASSERT_EQUALS(ok, true);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for recover_cells_and_kzg_proofs
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2032,7 +2078,7 @@ static void profile_blob_to_kzg_commitment(void) {
     get_rand_blob(&blob);
 
     ProfilerStart("blob_to_kzg_commitment.prof");
-    for (int i = 0; i < 1000; i++) {
+    for (size_t i = 0; i < 1000; i++) {
         blob_to_kzg_commitment(&c, &blob, &s);
     }
     ProfilerStop();
@@ -2047,7 +2093,7 @@ static void profile_compute_kzg_proof(void) {
     get_rand_field_element(&z);
 
     ProfilerStart("compute_kzg_proof.prof");
-    for (int i = 0; i < 100; i++) {
+    for (size_t i = 0; i < 100; i++) {
         compute_kzg_proof(&proof_out, &y_out, &blob, &z, &s);
     }
     ProfilerStop();
@@ -2062,7 +2108,7 @@ static void profile_compute_blob_kzg_proof(void) {
     get_rand_g1_bytes(&commitment);
 
     ProfilerStart("compute_blob_kzg_proof.prof");
-    for (int i = 0; i < 10; i++) {
+    for (size_t i = 0; i < 10; i++) {
         compute_blob_kzg_proof(&out, &blob, &commitment, &s);
     }
     ProfilerStop();
@@ -2079,7 +2125,7 @@ static void profile_verify_kzg_proof(void) {
     get_rand_g1_bytes(&proof);
 
     ProfilerStart("verify_kzg_proof.prof");
-    for (int i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 5000; i++) {
         verify_kzg_proof(&out, &commitment, &z, &y, &proof, &s);
     }
     ProfilerStop();
@@ -2095,7 +2141,7 @@ static void profile_verify_blob_kzg_proof(void) {
     get_rand_g1_bytes(&proof);
 
     ProfilerStart("verify_blob_kzg_proof.prof");
-    for (int i = 0; i < 5000; i++) {
+    for (size_t i = 0; i < 5000; i++) {
         verify_blob_kzg_proof(&out, &blob, &commitment, &proof, &s);
     }
     ProfilerStop();
@@ -2108,14 +2154,14 @@ static void profile_verify_blob_kzg_proof_batch(void) {
     Bytes48 proofs[n];
     bool out;
 
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         get_rand_blob(&blobs[i]);
         get_rand_g1_bytes(&commitments[i]);
         get_rand_g1_bytes(&proofs[i]);
     }
 
     ProfilerStart("verify_blob_kzg_proof_batch.prof");
-    for (int i = 0; i < 1000; i++) {
+    for (size_t i = 0; i < 1000; i++) {
         verify_blob_kzg_proof_batch(&out, blobs, commitments, proofs, n, &s);
     }
     ProfilerStop();
@@ -2130,7 +2176,7 @@ static void profile_compute_cells_and_kzg_proofs(void) {
     get_rand_blob(&blob);
 
     ProfilerStart("compute_cells_and_kzg_proofs.prof");
-    for (int i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 5; i++) {
         compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
     }
     ProfilerStop();
@@ -2158,7 +2204,7 @@ static void profile_recover_cells_and_kzg_proofs(void) {
     }
 
     ProfilerStart("recover_cells_and_kzg_proofs.prof");
-    for (int i = 0; i < 5; i++) {
+    for (size_t i = 0; i < 5; i++) {
         recover_cells_and_kzg_proofs(cells, NULL, cell_indices, cells, CELLS_PER_EXT_BLOB / 2, &s);
     }
     ProfilerStop();
@@ -2191,7 +2237,7 @@ static void profile_verify_cell_kzg_proof_batch(void) {
     }
 
     ProfilerStart("verify_cell_kzg_proof_batch.prof");
-    for (int i = 0; i < 100; i++) {
+    for (size_t i = 0; i < 100; i++) {
         verify_cell_kzg_proof_batch(
             &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
         );
@@ -2313,6 +2359,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);

@@ -35,9 +35,9 @@
  * Uses straightforward long multiplication to calculate the product of `(x - r_i)` where `r_i` is
  * the i'th root. This results in a poly of degree roots_len.
  *
- * @param[in,out]   poly        The zero polynomial for roots
+ * @param[in,out]   poly        The zero polynomial for roots, length `poly_len`
  * @param[in,out]   poly_len    The length of poly
- * @param[in]       roots       The array of roots
+ * @param[in]       roots       The array of roots, length `roots_len`
  * @param[in]       roots_len   The number of roots
  *
  * @remark These do not have to be roots of unity. They are roots of a polynomial.
@@ -87,11 +87,8 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * @param[in]       len_missing_cells       The number of missing cell indices
  * @param[in]       s                       The trusted setup
  *
- * @remark When all of the cells are missing, this algorithm has an edge case. We return
- * C_KZG_BADARGS in that case.
- * @remark When none of the cells are missing, recovery is trivial. We expect the caller to handle
- * this case, and return C_KZG_BADARGS if not.
- * @remark `missing_cell_indices` are assumed to be less than `CELLS_PER_EXT_BLOB`.
+ * @remark If no cells are missing, recovery is trivial; we expect the caller to handle this.
+ * @remark If all cells are missing, we return C_KZG_BADARGS; the algorithm has an edge case.
  */
 static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *vanishing_poly,
@@ -105,7 +102,7 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     size_t short_vanishing_poly_len = 0;
 
     /* Return early if none or all of the cells are missing */
-    if (len_missing_cells == 0 || len_missing_cells == CELLS_PER_EXT_BLOB) {
+    if (len_missing_cells == 0 || len_missing_cells >= CELLS_PER_EXT_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
@@ -192,7 +189,7 @@ static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
  * equal to zero.
  *
  * @param[out]  reconstructed_data_out  Array of size FIELD_ELEMENTS_PER_EXT_BLOB to recover cells
- * @param[in]   cell_indices            An array with the available cell indices we have
+ * @param[in]   cell_indices            An array with the available cell indices, length `num_cells`
  * @param[in]   num_cells               The size of the `cell_indices` array
  * @param[in]   cells                   An array of size FIELD_ELEMENTS_PER_EXT_BLOB with the cells
  * @param[in]   s                       The trusted setup
@@ -281,6 +278,12 @@ C_KZG_RET recover_cells(
      */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (fr_is_null(&cells_brp[i])) {
+            /*
+             * We handle this situation differently because FR_NULL is an invalid value. The right
+             * hand side, vanishing_poly_eval[i], will always be zero when cells_brp[i] is null, so
+             * the multiplication would still be result in zero, but we shouldn't depend on blst
+             * handling invalid values like this.
+             */
             extended_evaluation_times_zero[i] = FR_ZERO;
         } else {
             blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);

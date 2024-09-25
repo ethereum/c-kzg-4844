@@ -25,7 +25,7 @@
 #include "eip7594/recovery.h"
 
 #include <assert.h> /* For assert */
-#include <string.h> /* For memcpy */
+#include <string.h> /* For memcpy & strlen */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -40,6 +40,27 @@
 
 /** The domain separator for verify_cell_kzg_proof_batch's random challenge. */
 static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH = "RCKZGCBATCH__V1_";
+
+/**
+ * This is a precomputed map of cell index to reverse-bits-limited cell index.
+ *
+ * for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++)
+ *   printf("%#04llx,\n", reverse_bits_limited(CELLS_PER_EXT_BLOB, i));
+ *
+ * Because of the way our evaluation domain is defined, we can use CELL_INDICES_RBL to find the
+ * coset factor of a cell. In particular, for cell i, its coset factor is
+ * roots_of_unity[CELLS_INDICES_RBL[i]].
+ */
+static const uint64_t CELL_INDICES_RBL[CELLS_PER_EXT_BLOB] = {
+    0x00, 0x40, 0x20, 0x60, 0x10, 0x50, 0x30, 0x70, 0x08, 0x48, 0x28, 0x68, 0x18, 0x58, 0x38, 0x78,
+    0x04, 0x44, 0x24, 0x64, 0x14, 0x54, 0x34, 0x74, 0x0c, 0x4c, 0x2c, 0x6c, 0x1c, 0x5c, 0x3c, 0x7c,
+    0x02, 0x42, 0x22, 0x62, 0x12, 0x52, 0x32, 0x72, 0x0a, 0x4a, 0x2a, 0x6a, 0x1a, 0x5a, 0x3a, 0x7a,
+    0x06, 0x46, 0x26, 0x66, 0x16, 0x56, 0x36, 0x76, 0x0e, 0x4e, 0x2e, 0x6e, 0x1e, 0x5e, 0x3e, 0x7e,
+    0x01, 0x41, 0x21, 0x61, 0x11, 0x51, 0x31, 0x71, 0x09, 0x49, 0x29, 0x69, 0x19, 0x59, 0x39, 0x79,
+    0x05, 0x45, 0x25, 0x65, 0x15, 0x55, 0x35, 0x75, 0x0d, 0x4d, 0x2d, 0x6d, 0x1d, 0x5d, 0x3d, 0x7d,
+    0x03, 0x43, 0x23, 0x63, 0x13, 0x53, 0x33, 0x73, 0x0b, 0x4b, 0x2b, 0x6b, 0x1b, 0x5b, 0x3b, 0x7b,
+    0x07, 0x47, 0x27, 0x67, 0x17, 0x57, 0x37, 0x77, 0x0f, 0x4f, 0x2f, 0x6f, 0x1f, 0x5f, 0x3f, 0x7f,
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Compute
@@ -90,9 +111,9 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Ensure the upper half of the field elements are zero */
+    /* Ensure the upper half of the field elements are still zero */
     for (size_t i = FIELD_ELEMENTS_PER_BLOB; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        poly_monomial[i] = FR_ZERO;
+        assert(fr_equal(&poly_monomial[i], &FR_ZERO));
     }
 
     if (cells != NULL) {
@@ -123,8 +144,8 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = new_g1_array(&proofs_g1, CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs, provide only the first half */
-        ret = compute_fk20_proofs(proofs_g1, poly_monomial, FIELD_ELEMENTS_PER_BLOB, s);
+        /* Compute the proofs, only uses the first half of the polynomial */
+        ret = compute_fk20_cell_proofs(proofs_g1, poly_monomial, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
@@ -154,11 +175,12 @@ out:
  *
  * @param[out]  recovered_cells     An array of CELLS_PER_EXT_BLOB cells
  * @param[out]  recovered_proofs    An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   cell_indices        The cell indices for the available cells
- * @param[in]   cells               The available cells we recover from
+ * @param[in]   cell_indices        The cell indices for the available cells, length `num_cells`
+ * @param[in]   cells               The available cells we recover from, length `num_cells`
  * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
+ * @remark At least 50% of CELLS_PER_EXT_BLOB cells must be provided.
  * @remark Recovery is faster if there are fewer missing cells.
  * @remark If recovered_proofs is NULL, they will not be recomputed.
  */
@@ -259,10 +281,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         );
         if (ret != C_KZG_OK) goto out;
 
-        /* Compute the proofs, provide only the first half */
-        ret = compute_fk20_proofs(
-            recovered_proofs_g1, recovered_cells_fr, FIELD_ELEMENTS_PER_BLOB, s
-        );
+        /* Compute the proofs, only uses the first half of the polynomial */
+        ret = compute_fk20_cell_proofs(recovered_proofs_g1, recovered_cells_fr, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the proofs */
@@ -357,13 +377,13 @@ static void deduplicate_commitments(
  * Compute random linear combination challenge scalars for verify_cell_kzg_proof_batch. In this, we
  * must hash EVERYTHING that the prover can control.
  *
- * @param[out]  r_powers_out        The output challenges
- * @param[in]   commitments_bytes   The input commitments
+ * @param[out]  r_powers_out        The output challenges, length `num_cells`
+ * @param[in]   commitments_bytes   The input commitments, length `num_commitments`
  * @param[in]   num_commitments     The number of commitments
- * @param[in]   commitment_indices  The cell commitment indices
- * @param[in]   cell_indices        The cell indices
- * @param[in]   cells               The cell
- * @param[in]   proofs_bytes        The cell proof
+ * @param[in]   commitment_indices  The cell commitment indices, length `num_cells`
+ * @param[in]   cell_indices        The cell indices, length `num_cells`
+ * @param[in]   cells               The cell, length `num_cells`
+ * @param[in]   proofs_bytes        The cell proof, length `num_cells`
  * @param[in]   num_cells           The number of cells
  */
 static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
@@ -398,6 +418,9 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;
+
+    /* Ensure that the domain string is the correct length */
+    assert(strlen(RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH) == DOMAIN_STR_LENGTH);
 
     /* Copy domain separator */
     memcpy(offset, RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH, DOMAIN_STR_LENGTH);
@@ -458,9 +481,9 @@ out:
  * Compute the sum of the commitments weighted by the powers of r.
  *
  * @param[out]  sum_of_commitments_out  The resulting G1 sum of the commitments
- * @param[in]   unique_commitments      Array of unique commitments
- * @param[in]   commitment_indices      Indices mapping to unique commitments
- * @param[in]   r_powers                Array of powers of r used for weighting
+ * @param[in]   unique_commitments      Array of unique commitments, length `num_commitments`
+ * @param[in]   commitment_indices      Indices mapping to unique commitments, length `num_cells`
+ * @param[in]   r_powers                Array of powers of r used for weighting, length `num_cells`
  * @param[in]   num_commitments         The number of unique commitments
  * @param[in]   num_cells               The number of cells
  */
@@ -512,14 +535,76 @@ out:
 }
 
 /**
+ * Compute the inverse coset factor h_k^{-1},
+ *  where `h_k` is the coset factor for cell with index `k`.
+ *
+ * @param[out]  inv_coset_factor_out    Pointer to store the computed inverse coset factor
+ * @param[in]   cell_index              The index of the cell
+ * @param[in]   s                       The trusted setup
+ */
+static void get_inv_coset_shift_for_cell(
+    fr_t *inv_coset_factor_out, uint64_t cell_index, const KZGSettings *s
+) {
+    /*
+     * Get the cell index in reverse-bit order.
+     * This index points to this cell's coset factor h_k in the roots_of_unity array.
+     */
+    uint64_t cell_idx_rbl = CELL_INDICES_RBL[cell_index];
+
+    /*
+     * Observe that for every element in roots_of_unity, we can find its inverse by
+     * accessing its reflected element.
+     *
+     * For example, consider a multiplicative subgroup with eight elements:
+     *   roots = {w^0, w^1, w^2, ... w^7, w^0}
+     * For a root of unity in roots[i], we can find its inverse in roots[-i].
+     */
+    assert(cell_idx_rbl <= FIELD_ELEMENTS_PER_EXT_BLOB);
+    uint64_t inv_coset_factor_idx = FIELD_ELEMENTS_PER_EXT_BLOB - cell_idx_rbl;
+
+    /* Get h_k^{-1} using the index */
+    assert(inv_coset_factor_idx < FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+    *inv_coset_factor_out = s->roots_of_unity[inv_coset_factor_idx];
+}
+
+/**
+ * Compute h_k^{n}, where `h_k` is the coset factor for cell with index `k`.
+ *
+ * @param[out]  coset_factor_out    Pointer to store h_k^{n}
+ * @param[in]   cell_index          The index of the cell
+ * @param[in]   s                   The trusted setup
+ */
+static void get_coset_shift_pow_for_cell(
+    fr_t *coset_factor_out, uint64_t cell_index, const KZGSettings *s
+) {
+    /*
+     * Get the cell index in reverse-bit order.
+     * This index points to this cell's coset factor h_k in the roots_of_unity array.
+     */
+    uint64_t cell_idx_rbl = CELL_INDICES_RBL[cell_index];
+
+    /*
+     * Get the index to h_k^n in the roots_of_unity array.
+     *
+     * Multiplying the index of h_k by n, effectively raises h_k to the n-th power,
+     * because advancing in the roots_of_unity array corresponds to increasing exponents.
+     */
+    uint64_t h_k_pow_idx = cell_idx_rbl * FIELD_ELEMENTS_PER_CELL;
+
+    /* Get h_k^n using the index */
+    assert(h_k_pow_idx < FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+    *coset_factor_out = s->roots_of_unity[h_k_pow_idx];
+}
+
+/**
  * Aggregate columns, compute the sum of interpolation polynomials, and commit to the result.
  *
  * This function computes `RLI = [sum_k r^k interpolation_poly_k(s)]` from the spec.
  *
  * @param[out]  commitment_out  Commitment to the aggregated interpolation poly
- * @param[in]   r_powers        Precomputed powers of the random challenge
- * @param[in]   cell_indices    Indices of the cells
- * @param[in]   cells           Array of cells
+ * @param[in]   r_powers        Precomputed powers of the random challenge, length `num_cells`
+ * @param[in]   cell_indices    Indices of the cells, length `num_cells`
+ * @param[in]   cells           Array of cells, length `num_cells`
  * @param[in]   num_cells       Number of cells
  * @param[in]   s               The trusted setup
  */
@@ -647,10 +732,9 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
         );
         if (ret != C_KZG_OK) goto out;
 
-        /* Now divide by the coset shift factor */
-        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, i);
+        /* Shift the poly by h_k^{-1} where h_k is the coset factor for this cell */
         fr_t inv_coset_factor;
-        blst_fr_eucl_inverse(&inv_coset_factor, &s->roots_of_unity[pos]);
+        get_inv_coset_shift_for_cell(&inv_coset_factor, i, s);
         shift_poly(column_interpolation_poly, FIELD_ELEMENTS_PER_CELL, &inv_coset_factor);
 
         /* Update the aggregated poly */
@@ -687,11 +771,11 @@ out:
  * Compute weighted sum of proofs.
  *
  * @param[out]  weighted_proof_lincomb  The resulting G1 sum of the proofs scaled by coset factors
- * @param[in]   proofs_g1               Array of G1 elements representing the proofs
- * @param[in]   r_powers                Array of powers of r used for weighting
- * @param[in]   cell_indices            Array of cell indices
+ * @param[in]   proofs_g1               Array of proofs, length `num_cells`
+ * @param[in]   r_powers                Array of powers of r used for weighting, length `num_cells`
+ * @param[in]   cell_indices            Array of cell indices, length `num_cells`
  * @param[in]   num_cells               The number of cells
- * @param[in]   s                       The trusted setup containing roots of unity
+ * @param[in]   s                       The trusted setup
  */
 static C_KZG_RET computed_weighted_sum_of_proofs(
     g1_t *weighted_proof_sum_out,
@@ -702,19 +786,18 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t coset_factor_pow;
     fr_t *weighted_powers_of_r = NULL;
 
     ret = new_fr_array(&weighted_powers_of_r, num_cells);
     if (ret != C_KZG_OK) goto out;
 
     for (uint64_t i = 0; i < num_cells; i++) {
-        uint64_t pos = reverse_bits_limited(CELLS_PER_EXT_BLOB, cell_indices[i]);
-        fr_t coset_factor = s->roots_of_unity[pos];
-        // Compute h_k^n, with h_k and n as in the spec.
-        fr_pow(&coset_factor_pow, &coset_factor, FIELD_ELEMENTS_PER_CELL);
-        // Scale the power of r by h_k^n
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &coset_factor_pow);
+        /* Get scaling factor h_k^n where h_k is the coset factor for this cell */
+        fr_t h_k_pow;
+        get_coset_shift_pow_for_cell(&h_k_pow, cell_indices[i], s);
+
+        /* Scale the power of r by h_k^n */
+        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &h_k_pow);
     }
 
     ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
@@ -728,10 +811,10 @@ out:
  * Given some cells, verify that their proofs are valid.
  *
  * @param[out]  ok                  True if the proofs are valid
- * @param[in]   commitments_bytes   The commitments for the cells
- * @param[in]   cell_indices        The cell indices for the cells
- * @param[in]   cells               The cells to check
- * @param[in]   proofs_bytes        The proofs for the cells
+ * @param[in]   commitments_bytes   The commitments for the cells, length `num_cells`
+ * @param[in]   cell_indices        The indices for the cells, length `num_cells`
+ * @param[in]   cells               The cells to check, length `num_cells`
+ * @param[in]   proofs_bytes        The proofs for the cells, length `num_cells`
  * @param[in]   num_cells           The number of cells provided
  * @param[in]   s                   The trusted setup
  */
@@ -854,6 +937,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
     if (ret != C_KZG_OK) goto out;
 
+    /* Subtract commitment from sum by adding the negated commitment */
     blst_p1_cneg(&interpolation_poly_commit, true);
     blst_p1_add(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
 
