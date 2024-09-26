@@ -637,7 +637,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(
       (size_t)(*env)->GetArrayLength(env, commitments_bytes);
   if (commitments_size % BYTES_PER_COMMITMENT != 0) {
     throw_invalid_size_exception(env, "Invalid commitments size.",
-                                 commitments_size % BYTES_PER_COMMITMENT,
+                                 commitments_size,
                                  BYTES_PER_COMMITMENT);
     return 0;
   }
