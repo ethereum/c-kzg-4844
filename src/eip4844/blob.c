@@ -24,7 +24,9 @@
  *
  * @param[out]  p       The output polynomial (array of field elements)
  * @param[in]   blob    The blob (an array of bytes)
- * @param[in]   n       The number of field elements in the polynomial/blob
+ *
+ * @remark The polynomial is of degree (at most) FIELD_ELEMENTS_PER_BLOB - 1. That is,
+ * the function will set the first FIELD_ELEMENTS_PER_BLOB elements of p.
  */
 C_KZG_RET blob_to_polynomial(fr_t *p, const Blob *blob) {
     C_KZG_RET ret;
