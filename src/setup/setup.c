@@ -200,6 +200,11 @@ void free_trusted_setup(KZGSettings *s) {
  */
 static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
+    /*
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
+     * Instead, it is related to circulant matrices used in FK20, see
+     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     */
     size_t n2 = n * 2;
     g1_t *x_ext;
 
@@ -237,8 +242,13 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     blst_p1_affine *p_affine = NULL;
     bool precompute = s->wbits != 0;
 
-    n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
+    n = FIELD_ELEMENTS_PER_BLOB;
     k = n / FIELD_ELEMENTS_PER_CELL;
+    /*
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
+     * Instead, it is related to circulant matrices used in FK20, see
+     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     */
     k2 = 2 * k;
 
     if (FIELD_ELEMENTS_PER_CELL >= NUM_G2_POINTS) {

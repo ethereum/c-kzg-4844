@@ -73,6 +73,11 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /* Initialize length variables */
     k = FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
+    /*
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
+     * Instead, it is related to circulant matrices used in FK20, see
+     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     */
     k2 = k * 2;
 
     /* Do allocations */
