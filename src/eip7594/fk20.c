@@ -60,7 +60,7 @@ static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
     C_KZG_RET ret;
-    size_t k, size_circ_domain;
+    size_t circulant_domain_size;
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
@@ -71,23 +71,21 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     limb_t *scratch = NULL;
     bool precompute = s->wbits != 0;
 
-    /* Initialize length variables */
-    k = CELLS_PER_BLOB;
     /*
      * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
      * Instead, it is related to circulant matrices used in FK20, see
      * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
      */
-    size_circ_domain = k * 2;
+    circulant_domain_size = CELLS_PER_BLOB * 2;
 
     /* Do allocations */
-    ret = new_fr_array(&toeplitz_coeffs, size_circ_domain);
+    ret = new_fr_array(&toeplitz_coeffs, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&toeplitz_coeffs_fft, size_circ_domain);
+    ret = new_fr_array(&toeplitz_coeffs_fft, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h_ext_fft, size_circ_domain);
+    ret = new_g1_array(&h_ext_fft, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h, size_circ_domain);
+    ret = new_g1_array(&h, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     if (precompute) {
@@ -99,30 +97,30 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     }
 
     /* Allocate 2d array for coefficients by column */
-    ret = c_kzg_calloc((void **)&coeffs, size_circ_domain, sizeof(void *));
+    ret = c_kzg_calloc((void **)&coeffs, circulant_domain_size, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < size_circ_domain; i++) {
-        ret = new_fr_array(&coeffs[i], k);
+    for (size_t i = 0; i < circulant_domain_size; i++) {
+        ret = new_fr_array(&coeffs[i], CELLS_PER_BLOB);
         if (ret != C_KZG_OK) goto out;
     }
 
     /* Initialize values to zero */
-    for (size_t i = 0; i < size_circ_domain; i++) {
+    for (size_t i = 0; i < circulant_domain_size; i++) {
         h_ext_fft[i] = G1_IDENTITY;
     }
 
     /* Compute toeplitz coefficients and organize by column */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         toeplitz_coeffs_stride(toeplitz_coeffs, p, i);
-        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, size_circ_domain, s);
+        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
-        for (size_t j = 0; j < size_circ_domain; j++) {
+        for (size_t j = 0; j < circulant_domain_size; j++) {
             coeffs[j][i] = toeplitz_coeffs_fft[j];
         }
     }
 
     /* Compute h_ext_fft via MSM */
-    for (size_t i = 0; i < size_circ_domain; i++) {
+    for (size_t i = 0; i < circulant_domain_size; i++) {
         if (precompute) {
             /* Transform the field elements to 255-bit scalars */
             for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
@@ -149,21 +147,21 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         }
     }
 
-    ret = g1_ifft(h, h_ext_fft, size_circ_domain, s);
+    ret = g1_ifft(h, h_ext_fft, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Zero the second half of h */
-    for (size_t i = k; i < size_circ_domain; i++) {
+    for (size_t i = CELLS_PER_BLOB; i < circulant_domain_size; i++) {
         h[i] = G1_IDENTITY;
     }
 
-    ret = g1_fft(out, h, size_circ_domain, s);
+    ret = g1_fft(out, h, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(scalars);
     if (coeffs != NULL) {
-        for (size_t i = 0; i < size_circ_domain; i++) {
+        for (size_t i = 0; i < circulant_domain_size; i++) {
             c_kzg_free(coeffs[i]);
         }
         c_kzg_free(coeffs);

@@ -200,6 +200,7 @@ void free_trusted_setup(KZGSettings *s) {
  */
 static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
+
     /*
      * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
      * Instead, it is related to circulant matrices used in FK20, see
@@ -236,20 +237,18 @@ out:
  */
 static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     C_KZG_RET ret;
-    size_t n, k, size_circ_domain;
+    size_t circulant_domain_size;
     g1_t *x = NULL;
     g1_t *points = NULL;
     blst_p1_affine *p_affine = NULL;
     bool precompute = s->wbits != 0;
 
-    n = FIELD_ELEMENTS_PER_BLOB;
-    k = CELLS_PER_BLOB;
     /*
      * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
      * Instead, it is related to circulant matrices used in FK20, see
      * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
      */
-    size_circ_domain = 2 * k;
+    circulant_domain_size = 2 * CELLS_PER_BLOB;
 
     if (FIELD_ELEMENTS_PER_CELL >= NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
@@ -257,41 +256,41 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     }
 
     /* Allocate space for arrays */
-    ret = new_g1_array(&x, k);
+    ret = new_g1_array(&x, CELLS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&points, size_circ_domain);
+    ret = new_g1_array(&points, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for array of pointers, this is a 2D array */
-    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, size_circ_domain, sizeof(void *));
+    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, circulant_domain_size, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < size_circ_domain; i++) {
+    for (size_t i = 0; i < circulant_domain_size; i++) {
         ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
     for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
         /* Compute x, sections of the g1 values */
-        size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-        for (size_t i = 0; i < k - 1; i++) {
+        size_t start = FIELD_ELEMENTS_PER_BLOB - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (size_t i = 0; i < CELLS_PER_BLOB - 1; i++) {
             size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
             x[i] = s->g1_values_monomial[j];
         }
-        x[k - 1] = G1_IDENTITY;
+        x[CELLS_PER_BLOB - 1] = G1_IDENTITY;
 
         /* Compute points, the fft of an extended x */
-        ret = toeplitz_part_1(points, x, k, s);
+        ret = toeplitz_part_1(points, x, CELLS_PER_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Reorganize from rows into columns */
-        for (size_t row = 0; row < size_circ_domain; row++) {
+        for (size_t row = 0; row < circulant_domain_size; row++) {
             s->x_ext_fft_columns[row][offset] = points[row];
         }
     }
 
     if (precompute) {
         /* Allocate space for precomputed tables */
-        ret = c_kzg_calloc((void **)&s->tables, size_circ_domain, sizeof(void *));
+        ret = c_kzg_calloc((void **)&s->tables, circulant_domain_size, sizeof(void *));
         if (ret != C_KZG_OK) goto out;
 
         /* Allocate space for points in affine representation */
@@ -303,7 +302,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
             s->wbits, FIELD_ELEMENTS_PER_CELL
         );
 
-        for (size_t i = 0; i < size_circ_domain; i++) {
+        for (size_t i = 0; i < circulant_domain_size; i++) {
             /* Transform the points to affine representation */
             const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
             blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
