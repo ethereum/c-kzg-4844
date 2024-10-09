@@ -74,6 +74,9 @@
  * for (size_t i = 0; i < 4; i++)
  *     printf("%#018llxL,\n", root_of_unity.l[i]);
  * @endcode
+ *
+ * @remark this constant is tied to LOG_EXPANSION_FACTOR = 1, i.e., if the expansion
+ * factor changes, this constant is no longer correct.
  */
 static const fr_t ROOT_OF_UNITY = {
     0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L

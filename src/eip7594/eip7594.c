@@ -111,7 +111,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Ensure the upper half of the field elements are still zero */
+    /* Ensure that only the first FIELD_ELEMENTS_PER_BLOB elements can be non-zero */
     for (size_t i = FIELD_ELEMENTS_PER_BLOB; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         assert(fr_equal(&poly_monomial[i], &FR_ZERO));
     }
@@ -180,7 +180,7 @@ out:
  * @param[in]   num_cells           The number of available cells provided
  * @param[in]   s                   The trusted setup
  *
- * @remark At least 50% of CELLS_PER_EXT_BLOB cells must be provided.
+ * @remark At least CELLS_PER_BLOB cells must be provided.
  * @remark Recovery is faster if there are fewer missing cells.
  * @remark If recovered_proofs is NULL, they will not be recomputed.
  */
@@ -203,7 +203,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     }
 
     /* Check if it's possible to recover */
-    if (num_cells < CELLS_PER_EXT_BLOB / 2) {
+    if (num_cells < CELLS_PER_BLOB) {
         ret = C_KZG_BADARGS;
         goto out;
     }
