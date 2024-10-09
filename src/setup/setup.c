@@ -206,23 +206,23 @@ static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSe
      * Instead, it is related to circulant matrices used in FK20, see
      * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
      */
-    size_t size_circ_domain = n * 2;
+    size_t circulant_domain_size = n * 2;
     g1_t *x_ext;
 
     /* Create extended array of points */
-    ret = new_g1_array(&x_ext, size_circ_domain);
+    ret = new_g1_array(&x_ext, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy x & extend with zero */
     for (size_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
-    for (size_t i = n; i < size_circ_domain; i++) {
+    for (size_t i = n; i < circulant_domain_size; i++) {
         x_ext[i] = G1_IDENTITY;
     }
 
     /* Peform forward transformation */
-    ret = g1_fft(out, x_ext, size_circ_domain, s);
+    ret = g1_fft(out, x_ext, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
