@@ -60,7 +60,7 @@ static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
     C_KZG_RET ret;
-    size_t k, k2;
+    size_t k, size_circ_domain;
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
@@ -72,22 +72,22 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     bool precompute = s->wbits != 0;
 
     /* Initialize length variables */
-    k = FIELD_ELEMENTS_PER_BLOB / FIELD_ELEMENTS_PER_CELL;
+    k = CELLS_PER_BLOB;
     /*
      * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
      * Instead, it is related to circulant matrices used in FK20, see
      * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
      */
-    k2 = k * 2;
+    size_circ_domain = k * 2;
 
     /* Do allocations */
-    ret = new_fr_array(&toeplitz_coeffs, k2);
+    ret = new_fr_array(&toeplitz_coeffs, size_circ_domain);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&toeplitz_coeffs_fft, k2);
+    ret = new_fr_array(&toeplitz_coeffs_fft, size_circ_domain);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h_ext_fft, k2);
+    ret = new_g1_array(&h_ext_fft, size_circ_domain);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h, k2);
+    ret = new_g1_array(&h, size_circ_domain);
     if (ret != C_KZG_OK) goto out;
 
     if (precompute) {
@@ -99,30 +99,30 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     }
 
     /* Allocate 2d array for coefficients by column */
-    ret = c_kzg_calloc((void **)&coeffs, k2, sizeof(void *));
+    ret = c_kzg_calloc((void **)&coeffs, size_circ_domain, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < k2; i++) {
+    for (size_t i = 0; i < size_circ_domain; i++) {
         ret = new_fr_array(&coeffs[i], k);
         if (ret != C_KZG_OK) goto out;
     }
 
     /* Initialize values to zero */
-    for (size_t i = 0; i < k2; i++) {
+    for (size_t i = 0; i < size_circ_domain; i++) {
         h_ext_fft[i] = G1_IDENTITY;
     }
 
     /* Compute toeplitz coefficients and organize by column */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         toeplitz_coeffs_stride(toeplitz_coeffs, p, i);
-        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, k2, s);
+        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, size_circ_domain, s);
         if (ret != C_KZG_OK) goto out;
-        for (size_t j = 0; j < k2; j++) {
+        for (size_t j = 0; j < size_circ_domain; j++) {
             coeffs[j][i] = toeplitz_coeffs_fft[j];
         }
     }
 
     /* Compute h_ext_fft via MSM */
-    for (size_t i = 0; i < k2; i++) {
+    for (size_t i = 0; i < size_circ_domain; i++) {
         if (precompute) {
             /* Transform the field elements to 255-bit scalars */
             for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
@@ -149,21 +149,21 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         }
     }
 
-    ret = g1_ifft(h, h_ext_fft, k2, s);
+    ret = g1_ifft(h, h_ext_fft, size_circ_domain, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Zero the second half of h */
-    for (size_t i = k; i < k2; i++) {
+    for (size_t i = k; i < size_circ_domain; i++) {
         h[i] = G1_IDENTITY;
     }
 
-    ret = g1_fft(out, h, k2, s);
+    ret = g1_fft(out, h, size_circ_domain, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
     c_kzg_free(scalars);
     if (coeffs != NULL) {
-        for (size_t i = 0; i < k2; i++) {
+        for (size_t i = 0; i < size_circ_domain; i++) {
             c_kzg_free(coeffs[i]);
         }
         c_kzg_free(coeffs);
