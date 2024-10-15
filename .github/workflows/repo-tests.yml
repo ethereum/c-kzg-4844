@@ -1,0 +1,25 @@
+name: Repo
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  whitespace:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Check for trailing whitespace
+        run: |
+          if git grep -I -n '[[:blank:]]$'; then
+            echo "Trailing whitespace found. Please fix it."
+            exit 1
+          fi

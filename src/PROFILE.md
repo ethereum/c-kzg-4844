@@ -16,7 +16,7 @@ Assuming you have Go installed, get `pprof` from:
 ```
 go install github.com/google/pprof@latest
 ```
-Depending on your shell, edit the corresponding configuration file to 
+Depending on your shell, edit the corresponding configuration file to
 add the Go binary path (`$HOME/go/bin`) to your `PATH`.
 
 On macOS, you need to install (via [homebrew](https://brew.sh)):
@@ -71,7 +71,7 @@ These might not make much sense without guidance. From a high-level, this works
 by polling the instruction pointer (what's being executed) at a specific rate
 (like once every 5 nanoseconds) and tracking this information. From this, you
 can infer the relative time each function uses by counting the number of samples
-that are in each function. 
+that are in each function.
 
 Given a box containing:
 ```

@@ -60,7 +60,7 @@ def format_param_lines(lines: Sequence[str]) -> Sequence[str]:
     for line in lines:
         index = find_space_after(line, line.find("@param"))
         valid_var_index = max(valid_var_index, tab(index))
-        
+
     new_lines = []
     for line in lines:
         var_index = next_word_index(line, line.find('@param'))
@@ -90,7 +90,7 @@ def format_param_lines(lines: Sequence[str]) -> Sequence[str]:
         new_lines.append(line)
 
     return new_lines
-    
+
 
 def format_params(file_path: str):
     """
