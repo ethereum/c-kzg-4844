@@ -254,8 +254,11 @@ C_KZG_RET recover_cells(
         }
     }
 
-    /* Check that we have enough cells */
-    assert(len_missing <= CELLS_PER_EXT_BLOB / 2);
+    /*
+     * Check that we have enough cells to recover.
+     * Concretely, we need to have at least CELLS_PER_BLOB many cells.
+     */
+    assert(CELLS_PER_EXT_BLOB - len_missing >= CELLS_PER_BLOB);
 
     /*
      * Compute Z(x) in monomial form.

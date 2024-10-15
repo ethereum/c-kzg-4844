@@ -74,6 +74,9 @@
  * for (size_t i = 0; i < 4; i++)
  *     printf("%#018llxL,\n", root_of_unity.l[i]);
  * @endcode
+ *
+ * @remark this constant is tied to LOG_EXPANSION_FACTOR = 1, i.e., if the expansion
+ * factor changes, this constant is no longer correct.
  */
 static const fr_t ROOT_OF_UNITY = {
     0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L
@@ -197,23 +200,29 @@ void free_trusted_setup(KZGSettings *s) {
  */
 static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSettings *s) {
     C_KZG_RET ret;
-    size_t n2 = n * 2;
+
+    /*
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
+     * Instead, it is related to circulant matrices used in FK20, see
+     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     */
+    size_t circulant_domain_size = n * 2;
     g1_t *x_ext;
 
     /* Create extended array of points */
-    ret = new_g1_array(&x_ext, n2);
+    ret = new_g1_array(&x_ext, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Copy x & extend with zero */
     for (size_t i = 0; i < n; i++) {
         x_ext[i] = x[i];
     }
-    for (size_t i = n; i < n2; i++) {
+    for (size_t i = n; i < circulant_domain_size; i++) {
         x_ext[i] = G1_IDENTITY;
     }
 
     /* Peform forward transformation */
-    ret = g1_fft(out, x_ext, n2, s);
+    ret = g1_fft(out, x_ext, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -228,15 +237,18 @@ out:
  */
 static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     C_KZG_RET ret;
-    size_t n, k, k2;
+    size_t circulant_domain_size;
     g1_t *x = NULL;
     g1_t *points = NULL;
     blst_p1_affine *p_affine = NULL;
     bool precompute = s->wbits != 0;
 
-    n = FIELD_ELEMENTS_PER_EXT_BLOB / 2;
-    k = n / FIELD_ELEMENTS_PER_CELL;
-    k2 = 2 * k;
+    /*
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
+     * Instead, it is related to circulant matrices used in FK20, see
+     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     */
+    circulant_domain_size = 2 * CELLS_PER_BLOB;
 
     if (FIELD_ELEMENTS_PER_CELL >= NUM_G2_POINTS) {
         ret = C_KZG_BADARGS;
@@ -244,41 +256,41 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
     }
 
     /* Allocate space for arrays */
-    ret = new_g1_array(&x, k);
+    ret = new_g1_array(&x, CELLS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&points, k2);
+    ret = new_g1_array(&points, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     /* Allocate space for array of pointers, this is a 2D array */
-    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, k2, sizeof(void *));
+    ret = c_kzg_calloc((void **)&s->x_ext_fft_columns, circulant_domain_size, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
-    for (size_t i = 0; i < k2; i++) {
+    for (size_t i = 0; i < circulant_domain_size; i++) {
         ret = new_g1_array(&s->x_ext_fft_columns[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
     for (size_t offset = 0; offset < FIELD_ELEMENTS_PER_CELL; offset++) {
         /* Compute x, sections of the g1 values */
-        size_t start = n - FIELD_ELEMENTS_PER_CELL - 1 - offset;
-        for (size_t i = 0; i < k - 1; i++) {
+        size_t start = FIELD_ELEMENTS_PER_BLOB - FIELD_ELEMENTS_PER_CELL - 1 - offset;
+        for (size_t i = 0; i < CELLS_PER_BLOB - 1; i++) {
             size_t j = start - i * FIELD_ELEMENTS_PER_CELL;
             x[i] = s->g1_values_monomial[j];
         }
-        x[k - 1] = G1_IDENTITY;
+        x[CELLS_PER_BLOB - 1] = G1_IDENTITY;
 
         /* Compute points, the fft of an extended x */
-        ret = toeplitz_part_1(points, x, k, s);
+        ret = toeplitz_part_1(points, x, CELLS_PER_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Reorganize from rows into columns */
-        for (size_t row = 0; row < k2; row++) {
+        for (size_t row = 0; row < circulant_domain_size; row++) {
             s->x_ext_fft_columns[row][offset] = points[row];
         }
     }
 
     if (precompute) {
         /* Allocate space for precomputed tables */
-        ret = c_kzg_calloc((void **)&s->tables, k2, sizeof(void *));
+        ret = c_kzg_calloc((void **)&s->tables, circulant_domain_size, sizeof(void *));
         if (ret != C_KZG_OK) goto out;
 
         /* Allocate space for points in affine representation */
@@ -290,7 +302,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
             s->wbits, FIELD_ELEMENTS_PER_CELL
         );
 
-        for (size_t i = 0; i < k2; i++) {
+        for (size_t i = 0; i < circulant_domain_size; i++) {
             /* Transform the points to affine representation */
             const blst_p1 *p_arg[2] = {s->x_ext_fft_columns[i], NULL};
             blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);

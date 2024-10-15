@@ -17,6 +17,7 @@
 #include "common/utils.h"
 #include "common/alloc.h"
 
+#include <assert.h> /* For assert */
 #include <stddef.h> /* For size_t */
 #include <stdlib.h> /* For NULL */
 #include <string.h> /* For memcpy */
@@ -116,6 +117,7 @@ C_KZG_RET bit_reversal_permutation(void *values, size_t size, size_t n) {
 
     /* Reorder elements */
     uint64_t unused_bit_len = 64 - log2_pow2(n);
+    assert(unused_bit_len <= 63);
     for (size_t i = 0; i < n; i++) {
         uint64_t r = reverse_bits(i) >> unused_bit_len;
         if (r > i) {
