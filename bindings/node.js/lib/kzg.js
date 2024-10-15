@@ -9,16 +9,16 @@ const bindings = require("bindings")("kzg");
 /**
  * NOTE: This path is only exported for testing purposes. It is not announced in
  * the type file.
- * 
+ *
  * It is critical that this path is kept in sync with where the trusted setup
  * file will be found. The path is dictated by the `build` command in the
  * Makefile in the bindings/node.js folder.
- * 
+ *
  * This path works for two situations:
  * 1) Production case
  * - this file in BUNDLE_ROOT/dist/lib/kzg.js
  * - trusted_setup in BUNDLE_ROOT/dist/deps/c-kzg/trusted_setup.txt
- * 
+ *
  *  2) Post `build` state before `bundle` command works
  * - this file in bindings/node.js/lib/kzg.js
  * - trusted_setup in bindings/node.js/deps/c-kzg/trusted_setup.txt
