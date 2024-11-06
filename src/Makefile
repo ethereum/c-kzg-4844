@@ -79,7 +79,7 @@ ifeq ($(PLATFORM),Windows)
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 	CFLAGS += -Wno-missing-braces -Wno-format
 else
-	CC = clang
+	CC ?= clang
 	CFLAGS += -fPIC
 	CFLAGS += -Wmissing-braces -Wformat=2
 endif
