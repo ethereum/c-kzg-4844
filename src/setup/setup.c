@@ -221,7 +221,7 @@ static C_KZG_RET toeplitz_part_1(g1_t *out, const g1_t *x, size_t n, const KZGSe
         x_ext[i] = G1_IDENTITY;
     }
 
-    /* Peform forward transformation */
+    /* Perform forward transformation */
     ret = g1_fft(out, x_ext, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
