@@ -12,7 +12,7 @@ On Linux (Debian), you need to install:
 ```
 sudo apt install libgoogle-perftools-dev graphviz
 ```
-Assuming you have Go installed, get `pprof` from:
+Assuming you have Go installed, get `pprof` from ([pprof documentation](https://github.com/google/pprof)):
 ```
 go install github.com/google/pprof@latest
 ```
