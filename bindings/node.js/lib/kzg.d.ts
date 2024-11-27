@@ -1,6 +1,6 @@
 /**
  * The public interface of this module exposes the functions as specified by
- * https://github.com/ethereum/consensus-specs/blob/dev/specs/eip4844/polynomial-commitments.md#kzg
+ * https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md#kzg
  */
 export type Bytes32 = Uint8Array; // 32 bytes
 export type Bytes48 = Uint8Array; // 48 bytes
