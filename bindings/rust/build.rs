@@ -103,7 +103,7 @@ fn make_bindings(
         .blocklist_type("FILE")
         // Inject rust code using libc's FILE
         .raw_line("use libc::FILE;")
-        // Do no generate layout tests.
+        // Do not generate layout tests.
         .layout_tests(false)
         // Extern functions do not need individual extern blocks.
         .merge_extern_blocks(true)
