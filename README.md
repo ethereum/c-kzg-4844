@@ -8,7 +8,7 @@ A minimal implementation of the Polynomial Commitments API for
 
 While the core implementation is in C, bindings are available for various
 high-level languages, providing convenient wrappers around C functions. These
- are intended to be used by Ethereum clients to avoid re-implementation
+bindings are intended to be used by Ethereum clients to avoid re-implementation
 of crucial cryptographic functions.
 
 | Language | Link                                 |
