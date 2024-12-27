@@ -347,7 +347,7 @@ Napi::Value ComputeBlobKzgProof(const Napi::CallbackInfo &info) {
 }
 
 /**
- * Verify a KZG poof claiming that `p(z) == y`.
+ * Verify a KZG proof claiming that `p(z) == y`.
  *
  * @param[in] {Bytes48} commitmentBytes - The serialized commitment
  * corresponding to polynomial p(x)
