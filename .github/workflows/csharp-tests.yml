@@ -58,7 +58,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ckzg-library-wrapper-${{ matrix.target.location }}
+        name: ckzg-library-wrapper-${{ matrix.target.location }}-${{ matrix.target.arch || 'default' }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
 
   test-ckzg-dotnet:
@@ -84,8 +84,9 @@ jobs:
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@v4
       with:
-        name: ckzg-library-wrapper-${{ matrix.target.location }}
+        pattern: '**/runtimes/ckzg-library-wrapper-*/native/*'
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
+        merge-multiple: true
     - name: Test
       run: dotnet test -c release bindings/csharp/Ckzg.sln
 
@@ -97,11 +98,11 @@ jobs:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
       with:
-        name: ckzg-library-wrapper-linux-x64
+        name: ckzg-library-wrapper-linux-x64-x86_64-linux-gnu
         path: bindings/csharp/Ckzg.Bindings/runtimes/linux-x64/native
     - uses: actions/download-artifact@v4
       with:
-        name: ckzg-library-wrapper-osx-x64
+        name: ckzg-library-wrapper-osx-x64-x86_64-darwin
         path: bindings/csharp/Ckzg.Bindings/runtimes/osx-x64/native
     - uses: actions/download-artifact@v4
       with:
