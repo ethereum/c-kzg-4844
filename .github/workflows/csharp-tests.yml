@@ -47,7 +47,7 @@ jobs:
             reqs:
     steps:
     - uses: ilammy/msvc-dev-cmd@v1
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
     - name: Install requirements
@@ -56,7 +56,7 @@ jobs:
     - name: Build native library for ${{ matrix.target.location }} using native capabilities
       run: make ckzg -C bindings/csharp CC=clang EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
@@ -75,14 +75,14 @@ jobs:
           - host: windows-latest
             location: win-x64
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: recursive
     - name: Set up .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
@@ -94,35 +94,35 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-ckzg-dotnet
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-linux-x64
         path: bindings/csharp/Ckzg.Bindings/runtimes/linux-x64/native
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-osx-x64
         path: bindings/csharp/Ckzg.Bindings/runtimes/osx-x64/native
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-win-x64
         path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-osx-arm64
         path: bindings/csharp/Ckzg.Bindings/runtimes/osx-arm64/native
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-linux-arm64
         path: bindings/csharp/Ckzg.Bindings/runtimes/linux-arm64/native
     - name: Set up .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
     - name: Build
       run: cd bindings/csharp && dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
