@@ -94,20 +94,28 @@ jobs:
     name: Build .NET wrapper
     runs-on: ubuntu-latest
     needs: test-ckzg-dotnet
-    strategy:
-      matrix:
-        runtime:
-          - linux-x64
-          - osx-x64
-          - win-x64
-          - osx-arm64
-          - linux-arm64
     steps:
     - uses: actions/checkout@v4
     - uses: actions/download-artifact@v4
       with:
         pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.runtime }}/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-x64/native
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ckzg-library-wrapper-*
+        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-x64/native
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ckzg-library-wrapper-*
+        path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ckzg-library-wrapper-*
+        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-arm64/native
+    - uses: actions/download-artifact@v4
+      with:
+        pattern: ckzg-library-wrapper-*
+        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-arm64/native
     - name: Set up .NET
       uses: actions/setup-dotnet@v4
     - name: Install dependencies
