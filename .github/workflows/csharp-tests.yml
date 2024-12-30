@@ -107,7 +107,7 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-win-x64
-        path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64-default/native
     - uses: actions/download-artifact@v4
       with:
         name: ckzg-library-wrapper-osx-arm64
