@@ -84,7 +84,7 @@ jobs:
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@v4
       with:
-        pattern: '**/runtimes/ckzg-library-wrapper-*/native/*'
+        pattern: '**/runtimes/${{ matrix.target.location }}/native/*'
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
         merge-multiple: true
     - name: Test
