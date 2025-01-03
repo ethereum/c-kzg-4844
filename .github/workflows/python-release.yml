@@ -73,9 +73,9 @@ jobs:
             make -C src blst
 
       - name: Upload wheels as artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.os }}
           path: wheelhouse/*
 
   # Build the source distribution under Linux
@@ -97,20 +97,22 @@ jobs:
         run: python setup.py sdist
 
       - name: Store artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
-          name: wheels
+          name: sdist-${{ matrix.os }}
+
 
   publish:
     needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: wheels-${{ matrix.os }}
           path: wheelhouse
+          merge-multiple: true
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
