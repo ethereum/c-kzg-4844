@@ -86,7 +86,7 @@ export function computeKzgProof(blob: Blob, zBytes: Bytes32): ProofResult;
 export function computeBlobKzgProof(blob: Blob, commitmentBytes: Bytes48): KZGProof;
 
 /**
- * Verify a KZG poof claiming that `p(z) == y`.
+ * Verify a KZG proof claiming that `p(z) == y`.
  *
  * @param {Bytes48} commitmentBytes - The serialized commitment corresponding to polynomial p(x)
  * @param {Bytes32} zBytes - The serialized evaluation point
