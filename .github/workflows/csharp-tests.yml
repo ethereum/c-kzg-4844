@@ -58,7 +58,7 @@ jobs:
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: ckzg-library-wrapper-${{ matrix.target.location }}-${{ matrix.target.arch || 'default' }}
+        name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
 
   test-ckzg-dotnet:
@@ -68,7 +68,7 @@ jobs:
     strategy:
       matrix:
         target:
-          - host: ubuntu-22.04
+          - host: ubuntu-latest
             location: linux-x64
           - host: macos-latest
             location: osx-arm64
@@ -84,9 +84,16 @@ jobs:
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@v4
       with:
-        pattern: 'ckzg-library-wrapper-${{ matrix.target.location }}-*'
-        path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
-        merge-multiple: true
+        pattern: ckzg-library-wrapper-*
+        path: bindings/csharp/Ckzg.Bindings/runtimes
+    - name: Move artifacts
+      working-directory: bindings/csharp/Ckzg.Bindings/runtimes
+      run: |
+        mv ckzg-library-wrapper-linux-arm64/ckzg.so linux-arm64/native/ckzg.so
+        mv ckzg-library-wrapper-linux-x64/ckzg.so linux-x64/native/ckzg.so
+        mv ckzg-library-wrapper-osx-arm64/ckzg.dylib osx-arm64/native/ckzg.dylib
+        mv ckzg-library-wrapper-osx-x64/ckzg.dylib osx-x64/native/ckzg.dylib
+        mv ckzg-library-wrapper-win-x64/ckzg.dll win-x64/native/ckzg.dll
     - name: Test
       run: dotnet test -c release bindings/csharp/Ckzg.sln
 
@@ -99,34 +106,25 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-x64/native
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-x64/native
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/win-x64/native
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/osx-arm64/native
-    - uses: actions/download-artifact@v4
-      with:
-        pattern: ckzg-library-wrapper-*
-        path: bindings/csharp/Ckzg.Bindings/runtimes/linux-arm64/native
+        path: bindings/csharp/Ckzg.Bindings/runtimes
+    - name: Move artifacts
+      working-directory: bindings/csharp/Ckzg.Bindings/runtimes
+      run: |
+        mv -f ckzg-library-wrapper-linux-arm64/ckzg.so linux-arm64/native/ckzg.so
+        mv -f ckzg-library-wrapper-linux-x64/ckzg.so linux-x64/native/ckzg.so
+        mv -f ckzg-library-wrapper-osx-arm64/ckzg.dylib osx-arm64/native/ckzg.dylib
+        mv -f ckzg-library-wrapper-osx-x64/ckzg.dylib osx-x64/native/ckzg.dylib
+        mv -f ckzg-library-wrapper-win-x64/ckzg.dll win-x64/native/ckzg.dll
     - name: Set up .NET
       uses: actions/setup-dotnet@v4
-    - name: Install dependencies
-      run: cd bindings/csharp && dotnet restore
-    - name: Build
-      run: cd bindings/csharp && dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
+    - name: Pack
+      working-directory: bindings/csharp
+      run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
       uses: actions/upload-artifact@v4
       with:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
-    - name: Publish .NET package
+    - name: Publish package
       if: github.ref == 'refs/heads/main'
       run: dotnet nuget push bindings/csharp/nupkgs/*.nupkg -k ${{ secrets.CSHARP_NUGET_APIKEY }} -s https://api.nuget.org/v3/index.json
