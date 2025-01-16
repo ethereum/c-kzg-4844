@@ -149,131 +149,177 @@ static PyObject *compute_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
 static PyObject *verify_kzg_proof_wrap(PyObject *self, PyObject *args) {
   PyObject *c, *z, *y, *p, *s;
 
+  // Check the arguments and their types
   if (!PyArg_UnpackTuple(args, "verify_kzg_proof", 5, 5, &c, &z, &y, &p, &s) ||
       !PyBytes_Check(c) || !PyBytes_Check(z) || !PyBytes_Check(y) ||
-      !PyBytes_Check(p) || !PyCapsule_IsValid(s, "KZGSettings"))
-    return PyErr_Format(PyExc_ValueError,
-                        "expected bytes, bytes, bytes, bytes, trusted setup");
+      !PyBytes_Check(p) || !PyCapsule_IsValid(s, "KZGSettings")) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected bytes, bytes, bytes, bytes, trusted setup");
+  }
 
-  if (PyBytes_Size(c) != BYTES_PER_COMMITMENT)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected commitment to be BYTES_PER_COMMITMENT bytes");
-  if (PyBytes_Size(z) != BYTES_PER_FIELD_ELEMENT)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected z to be BYTES_PER_FIELD_ELEMENT bytes");
-  if (PyBytes_Size(y) != BYTES_PER_FIELD_ELEMENT)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected y to be BYTES_PER_FIELD_ELEMENT bytes");
-  if (PyBytes_Size(p) != BYTES_PER_PROOF)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected proof to be BYTES_PER_PROOF bytes");
+  // Validate sizes of input byte arrays
+  if (PyBytes_Size(c) != BYTES_PER_COMMITMENT) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected commitment to be BYTES_PER_COMMITMENT bytes");
+  }
+  if (PyBytes_Size(z) != BYTES_PER_FIELD_ELEMENT) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected z to be BYTES_PER_FIELD_ELEMENT bytes");
+  }
+  if (PyBytes_Size(y) != BYTES_PER_FIELD_ELEMENT) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected y to be BYTES_PER_FIELD_ELEMENT bytes");
+  }
+  if (PyBytes_Size(p) != BYTES_PER_PROOF) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected proof to be BYTES_PER_PROOF bytes");
+  }
 
+  // Extract raw byte pointers
   const Bytes48 *commitment_bytes = (Bytes48 *)PyBytes_AsString(c);
   const Bytes32 *z_bytes = (Bytes32 *)PyBytes_AsString(z);
   const Bytes32 *y_bytes = (Bytes32 *)PyBytes_AsString(y);
   const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
 
+  // Perform verification
   bool ok;
-  if (verify_kzg_proof(&ok, commitment_bytes, z_bytes, y_bytes, proof_bytes,
-                       PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed");
+  int result = verify_kzg_proof(&ok, commitment_bytes, z_bytes, y_bytes,
+                                proof_bytes, PyCapsule_GetPointer(s, "KZGSettings"));
+
+  if (result != C_KZG_OK) {
+      return PyErr_Format(PyExc_RuntimeError, "verify_kzg_proof failed");
   }
 
-  if (ok)
-    Py_RETURN_TRUE;
-  else
-    Py_RETURN_FALSE;
+  // Return appropriate Python boolean object
+  if (ok) {
+      return Py_True; // Explicit return of Py_True
+  } else {
+      return Py_False; // Explicit return of Py_False
+  }
+
+  // This will never be reached but ensures all paths return a value
+  return NULL;
 }
 
 static PyObject *verify_blob_kzg_proof_wrap(PyObject *self, PyObject *args) {
   PyObject *b, *c, *p, *s;
 
+  // Check the arguments and their types
   if (!PyArg_UnpackTuple(args, "verify_blob_kzg_proof", 4, 4, &b, &c, &p, &s) ||
       !PyBytes_Check(b) || !PyBytes_Check(c) || !PyBytes_Check(p) ||
-      !PyCapsule_IsValid(s, "KZGSettings"))
-    return PyErr_Format(PyExc_ValueError,
-                        "expected bytes, bytes, bytes, trusted setup");
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected bytes, bytes, bytes, trusted setup");
+  }
 
-  if (PyBytes_Size(b) != BYTES_PER_BLOB)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected blob to be BYTES_PER_BLOB bytes");
-  if (PyBytes_Size(c) != BYTES_PER_COMMITMENT)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected commitment to be BYTES_PER_COMMITMENT bytes");
-  if (PyBytes_Size(p) != BYTES_PER_PROOF)
-    return PyErr_Format(PyExc_ValueError,
-                        "expected proof to be BYTES_PER_PROOF bytes");
+  // Validate sizes of input byte arrays
+  if (PyBytes_Size(b) != BYTES_PER_BLOB) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected blob to be BYTES_PER_BLOB bytes");
+  }
+  if (PyBytes_Size(c) != BYTES_PER_COMMITMENT) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected commitment to be BYTES_PER_COMMITMENT bytes");
+  }
+  if (PyBytes_Size(p) != BYTES_PER_PROOF) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected proof to be BYTES_PER_PROOF bytes");
+  }
 
+  // Extract raw byte pointers
   const Blob *blob_bytes = (Blob *)PyBytes_AsString(b);
   const Bytes48 *commitment_bytes = (Bytes48 *)PyBytes_AsString(c);
   const Bytes48 *proof_bytes = (Bytes48 *)PyBytes_AsString(p);
 
+  // Perform verification
   bool ok;
-  if (verify_blob_kzg_proof(&ok, blob_bytes, commitment_bytes, proof_bytes,
-                            PyCapsule_GetPointer(s, "KZGSettings")) !=
-      C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof failed");
+  int result = verify_blob_kzg_proof(&ok, blob_bytes, commitment_bytes, proof_bytes,
+                                     PyCapsule_GetPointer(s, "KZGSettings"));
+
+  if (result != C_KZG_OK) {
+      return PyErr_Format(PyExc_RuntimeError, "verify_blob_kzg_proof failed");
   }
 
-  if (ok)
-    Py_RETURN_TRUE;
-  else
-    Py_RETURN_FALSE;
+  // Return appropriate Python boolean object
+  if (ok) {
+      return Py_True; // Explicit return of Py_True
+  } else {
+      return Py_False; // Explicit return of Py_False
+  }
+
+  // This will never be reached but ensures all paths return a value
+  return NULL;
 }
 
-static PyObject *verify_blob_kzg_proof_batch_wrap(PyObject *self,
-                                                  PyObject *args) {
+static PyObject *verify_blob_kzg_proof_batch_wrap(PyObject *self, PyObject *args) {
   PyObject *b, *c, *p, *s;
 
-  if (!PyArg_UnpackTuple(args, "verify_blob_kzg_proof_batch", 4, 4, &b, &c, &p,
-                         &s) ||
+  // Check the arguments and their types
+  if (!PyArg_UnpackTuple(args, "verify_blob_kzg_proof_batch", 4, 4, &b, &c, &p, &s) ||
       !PyBytes_Check(b) || !PyBytes_Check(c) || !PyBytes_Check(p) ||
-      !PyCapsule_IsValid(s, "KZGSettings"))
-    return PyErr_Format(PyExc_ValueError,
-                        "expected bytes, bytes, bytes, trusted setup");
-
-  Py_ssize_t blobs_count = PyBytes_Size(b);
-  if (blobs_count % BYTES_PER_BLOB != 0)
-    return PyErr_Format(
-        PyExc_ValueError,
-        "expected blobs to be a multiple of BYTES_PER_BLOB bytes");
-  blobs_count = blobs_count / BYTES_PER_BLOB;
-
-  Py_ssize_t commitments_count = PyBytes_Size(c);
-  if (commitments_count % BYTES_PER_COMMITMENT != 0)
-    return PyErr_Format(
-        PyExc_ValueError,
-        "expected commitments to be a multiple of BYTES_PER_COMMITMENT bytes");
-  commitments_count = commitments_count / BYTES_PER_COMMITMENT;
-
-  Py_ssize_t proofs_count = PyBytes_Size(p);
-  if (proofs_count % BYTES_PER_PROOF != 0)
-    return PyErr_Format(
-        PyExc_ValueError,
-        "expected blobs to be a multiple of BYTES_PER_PROOF bytes");
-  proofs_count = proofs_count / BYTES_PER_PROOF;
-
-  if (blobs_count != commitments_count || blobs_count != proofs_count) {
-    return PyErr_Format(PyExc_ValueError,
-                        "expected same number of blobs/commitments/proofs");
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected bytes, bytes, bytes, trusted setup");
   }
 
+  // Validate the size of blobs
+  Py_ssize_t blobs_count = PyBytes_Size(b);
+  if (blobs_count % BYTES_PER_BLOB != 0) {
+      return PyErr_Format(
+          PyExc_ValueError,
+          "expected blobs to be a multiple of BYTES_PER_BLOB bytes");
+  }
+  blobs_count = blobs_count / BYTES_PER_BLOB;
+
+  // Validate the size of commitments
+  Py_ssize_t commitments_count = PyBytes_Size(c);
+  if (commitments_count % BYTES_PER_COMMITMENT != 0) {
+      return PyErr_Format(
+          PyExc_ValueError,
+          "expected commitments to be a multiple of BYTES_PER_COMMITMENT bytes");
+  }
+  commitments_count = commitments_count / BYTES_PER_COMMITMENT;
+
+  // Validate the size of proofs
+  Py_ssize_t proofs_count = PyBytes_Size(p);
+  if (proofs_count % BYTES_PER_PROOF != 0) {
+      return PyErr_Format(
+          PyExc_ValueError,
+          "expected blobs to be a multiple of BYTES_PER_PROOF bytes");
+  }
+  proofs_count = proofs_count / BYTES_PER_PROOF;
+
+  // Ensure the counts match
+  if (blobs_count != commitments_count || blobs_count != proofs_count) {
+      return PyErr_Format(PyExc_ValueError,
+                          "expected same number of blobs/commitments/proofs");
+  }
+
+  // Extract raw byte pointers
   const Blob *blobs_bytes = (Blob *)PyBytes_AsString(b);
   const Bytes48 *commitments_bytes = (Bytes48 *)PyBytes_AsString(c);
   const Bytes48 *proofs_bytes = (Bytes48 *)PyBytes_AsString(p);
 
+  // Perform verification
   bool ok;
-  if (verify_blob_kzg_proof_batch(
-          &ok, blobs_bytes, commitments_bytes, proofs_bytes, blobs_count,
-          PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
-    return PyErr_Format(PyExc_RuntimeError,
-                        "verify_blob_kzg_proof_batch failed");
+  int result = verify_blob_kzg_proof_batch(
+      &ok, blobs_bytes, commitments_bytes, proofs_bytes, blobs_count,
+      PyCapsule_GetPointer(s, "KZGSettings"));
+
+  if (result != C_KZG_OK) {
+      return PyErr_Format(PyExc_RuntimeError,
+                          "verify_blob_kzg_proof_batch failed");
   }
 
-  if (ok)
-    Py_RETURN_TRUE;
-  else
-    Py_RETURN_FALSE;
+  // Return appropriate Python boolean object
+  if (ok) {
+      return Py_True; // Explicit return of Py_True
+  } else {
+      return Py_False; // Explicit return of Py_False
+  }
+
+  // This will never be reached but ensures all paths return a value
+  return NULL;
 }
 
 static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
