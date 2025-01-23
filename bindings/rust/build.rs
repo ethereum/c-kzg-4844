@@ -19,7 +19,12 @@ fn main() {
         // an int. There is a bug in bindgen associated with this. It assumes that a bool in C is
         // the same size as a bool in Rust. This is the root cause of the issues on Windows. If/when
         // this is fixed in bindgen, it should be safe to remove this compiler flag.
-        cc.flag("/std:c11");
+
+        // This flag is for MSVC
+        cc.flag_if_supported("/std:c11");
+
+        // This is for GCC
+        cc.flag_if_supported("-std=c11");
     }
 
     cc.include(c_src_dir.clone());
@@ -155,7 +160,7 @@ fn make_bindings(
 #[cfg(feature = "generate-bindings")]
 fn replace_ckzg_ret_repr(mut bindings: String) -> String {
     let target = env::var("TARGET").unwrap_or_default();
-    let repr_to_replace = if target.contains("windows") {
+    let repr_to_replace = if target.contains("windows") && target.contains("msvc") {
         "#[repr(i32)]"
     } else {
         "#[repr(u32)]"
