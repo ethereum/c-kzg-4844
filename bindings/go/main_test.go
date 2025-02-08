@@ -806,43 +806,6 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
-	for i := 1; i <= length; i *= 2 {
-		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
-			var cellCommitments []Bytes48
-			var cellIndices []uint64
-			var cells []Cell
-			var cellProofs []Bytes48
-			for rowIndex, blobCell := range blobCells {
-				if rowIndex == i {
-					break
-				}
-				for cellIndex, cell := range blobCell {
-					cellCommitments = append(cellCommitments, commitments[rowIndex])
-					cellIndices = append(cellIndices, uint64(cellIndex))
-					cells = append(cells, cell)
-					cellProofs = append(cellProofs, blobCellProofs[rowIndex][cellIndex])
-				}
-			}
-			b.ResetTimer()
-			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
-				require.NoError(b, err)
-				require.True(b, ok)
-			}
-		})
-	}
-
-	for i := 1; i <= CellsPerExtBlob; i *= 2 {
-		cellCommitments, cellIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], i)
-		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
-			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
-				require.NoError(b, err)
-				require.True(b, ok)
-			}
-		})
-	}
-
 	b.Run("VerifyCellKZGProofBatchParallel", func(b *testing.B) {
 		// Determine the ideal group count
 		numGroups := runtime.NumCPU()
@@ -908,4 +871,41 @@ func Benchmark(b *testing.B) {
 			wg.Wait()
 		}
 	})
+
+	for i := 1; i <= length; i *= 2 {
+		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
+			var cellCommitments []Bytes48
+			var cellIndices []uint64
+			var cells []Cell
+			var cellProofs []Bytes48
+			for rowIndex, blobCell := range blobCells {
+				if rowIndex == i {
+					break
+				}
+				for cellIndex, cell := range blobCell {
+					cellCommitments = append(cellCommitments, commitments[rowIndex])
+					cellIndices = append(cellIndices, uint64(cellIndex))
+					cells = append(cells, cell)
+					cellProofs = append(cellProofs, blobCellProofs[rowIndex][cellIndex])
+				}
+			}
+			b.ResetTimer()
+			for n := 0; n < b.N; n++ {
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
+				require.NoError(b, err)
+				require.True(b, ok)
+			}
+		})
+	}
+
+	for i := 1; i <= CellsPerExtBlob; i *= 2 {
+		cellCommitments, cellIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], i)
+		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
+				require.NoError(b, err)
+				require.True(b, ok)
+			}
+		})
+	}
 }
