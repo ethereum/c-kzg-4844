@@ -806,6 +806,72 @@ func Benchmark(b *testing.B) {
 		}
 	})
 
+	b.Run("VerifyCellKZGProofBatchParallel", func(b *testing.B) {
+		// Determine the ideal group count
+		numGroups := runtime.NumCPU()
+		if numGroups > length {
+			numGroups = length
+		}
+		// Decrementing until each group has equal blobs
+		for numGroups > 0 && length%numGroups != 0 {
+			numGroups--
+		}
+		blobsPerGroup := length / numGroups
+
+		// Pre-partition the cell data into groups
+		type groupData struct {
+			cellCommitments []Bytes48
+			cellIndices     []uint64
+			cells           []Cell
+			cellProofs      []Bytes48
+		}
+		groups := make([]groupData, numGroups)
+		for group := 0; group < numGroups; group++ {
+			startBlob := group * blobsPerGroup
+			endBlob := startBlob + blobsPerGroup
+
+			var groupCommitments []Bytes48
+			var groupIndices []uint64
+			var groupCells []Cell
+			var groupProofs []Bytes48
+
+			for blobIndex := startBlob; blobIndex < endBlob; blobIndex++ {
+				for cellIndex, cell := range blobCells[blobIndex] {
+					groupCommitments = append(groupCommitments, commitments[blobIndex])
+					groupIndices = append(groupIndices, uint64(cellIndex))
+					groupCells = append(groupCells, cell)
+					groupProofs = append(groupProofs, blobCellProofs[blobIndex][cellIndex])
+				}
+			}
+			groups[group] = groupData{
+				cellCommitments: groupCommitments,
+				cellIndices:     groupIndices,
+				cells:           groupCells,
+				cellProofs:      groupProofs,
+			}
+		}
+
+		b.ResetTimer()
+		for n := 0; n < b.N; n++ {
+			var wg sync.WaitGroup
+			for group := 0; group < numGroups; group++ {
+				wg.Add(1)
+				go func(group int) {
+					defer wg.Done()
+					ok, err := VerifyCellKZGProofBatch(
+						groups[group].cellCommitments,
+						groups[group].cellIndices,
+						groups[group].cells,
+						groups[group].cellProofs,
+					)
+					require.NoError(b, err)
+					require.True(b, ok)
+				}(group)
+			}
+			wg.Wait()
+		}
+	})
+
 	for i := 1; i <= length; i *= 2 {
 		b.Run(fmt.Sprintf("VerifyRows(count=%v)", i), func(b *testing.B) {
 			var cellCommitments []Bytes48
