@@ -725,6 +725,13 @@ func Benchmark(b *testing.B) {
 		})
 	}
 
+	b.Run("ComputeCells", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			_, err := ComputeCells(&blobs[0])
+			require.NoError(b, err)
+		}
+	})
+
 	FreeTrustedSetup()
 	for i := 0; i <= 8; i++ {
 		if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i)); err != nil {

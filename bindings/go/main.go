@@ -408,6 +408,33 @@ ComputeCellsAndKZGProofs is the binding for:
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
+func ComputeCells(blob *Blob) ([CellsPerExtBlob]Cell, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+
+	cells := [CellsPerExtBlob]Cell{}
+	ret := C.compute_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&cells)),
+		(*C.KZGProof)(nil),
+		(*C.Blob)(unsafe.Pointer(blob)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
+	}
+	return cells, nil
+}
+
+/*
+ComputeCellsAndKZGProofs is the binding for:
+
+	C_KZG_RET compute_cells_and_kzg_proofs(
+	    Cell *cells,
+	    KZGProof *proofs,
+	    const Blob *blob,
+	    const KZGSettings *s);
+*/
 func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
