@@ -96,6 +96,7 @@ var (
 	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
 	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
 	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsTests             = filepath.Join(testDir, "compute_cells/*/*/*")
 	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
 	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
 	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
@@ -419,6 +420,53 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+func TestComputeCells(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob string `yaml:"blob"`
+		}
+		Output *[]string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeCellsTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			cells, err := ComputeCells(&blob)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				var expectedCells []Cell
+				for _, cellStr := range *test.Output {
+					var cell Cell
+					err := cell.UnmarshalText([]byte(cellStr))
+					require.NoError(t, err)
+					expectedCells = append(expectedCells, cell)
+				}
+				require.Equal(t, expectedCells, cells[:])
+
 			} else {
 				require.Nil(t, test.Output)
 			}
