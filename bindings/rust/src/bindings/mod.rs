@@ -19,6 +19,7 @@ use core::ffi::CStr;
 use core::fmt;
 use core::mem::MaybeUninit;
 use core::ops::{Deref, DerefMut};
+use core::ptr;
 
 #[cfg(feature = "std")]
 use alloc::ffi::CString;
@@ -446,8 +447,7 @@ impl KZGSettings {
     pub fn compute_cells(&self, blob: &Blob) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
         let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
-            let res =
-                compute_cells_and_kzg_proofs(cells.as_mut_ptr(), std::ptr::null_mut(), blob, self);
+            let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(Box::new(cells))
             } else {
