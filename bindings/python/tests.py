@@ -16,6 +16,7 @@ VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml"
 VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml"
 
 # EIP-7594
+COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml"
 COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml"
 RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml"
 VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml"
@@ -162,6 +163,26 @@ def test_verify_blob_kzg_proof_batch(ts):
 
         expected_valid = test["output"]
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
+
+
+def test_compute_cells(ts):
+    test_files = glob.glob(COMPUTE_CELLS_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        blob = bytes_from_hex(test["input"]["blob"])
+
+        try:
+            cells = ckzg.compute_cells(blob, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_cells = list(map(bytes_from_hex, test["output"]))
+        assert cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
 
 
 def test_compute_cells_and_kzg_proofs(ts):
