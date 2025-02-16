@@ -75,13 +75,20 @@ static inline ERL_NIF_TERM make_kzg_error(ErlNifEnv *env, C_KZG_RET ret) {
     return make_error(env, atom);
 }
 
-static void KZGSettings_destructor(ErlNifEnv * /*env*/, void *res) {
+static void KZGSettings_destructor(ErlNifEnv *env, void *res) {
+    // Unused.
+    (void)env;
+
     KZGSettings *settings = (KZGSettings *)res;
     free_trusted_setup(settings);
 }
 
 // NIF entrypoint
-static int load(ErlNifEnv *env, void ** /*priv_data*/, ERL_NIF_TERM /*load_info*/) {
+static int load(ErlNifEnv *env, void **priv_data, ERL_NIF_TERM load_info) {
+    // Unused.
+    (void)priv_data;
+    (void)load_info;
+
     KZGSETTINGS_RES_TYPE = enif_open_resource_type(
         env,
         NULL,
@@ -185,20 +192,20 @@ static ERL_NIF_TERM blob_to_kzg_commitment_nif(
 
     if (blob.size != BYTES_PER_BLOB) return make_error(env, ckzg_atoms.invalid_blob_length);
 
-    ErlNifBinary commitment;
-    if (!enif_alloc_binary(sizeof(KZGCommitment), &commitment))
-        return make_error(env, ckzg_atoms.out_of_memory);
-
     KZGSettings *settings;
     if (!enif_get_resource(env, argv[1], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
+    ERL_NIF_TERM commitment_term;
+    unsigned char *commitment = enif_make_new_binary(env, sizeof(KZGCommitment), &commitment_term);
+    if (commitment == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+
     C_KZG_RET ret = blob_to_kzg_commitment(
-        (KZGCommitment *)commitment.data, (Blob *)blob.data, settings
+        (KZGCommitment *)commitment, (Blob *)blob.data, settings
     );
     if (ret != C_KZG_OK) return make_kzg_error(env, ret);
 
-    return make_success(env, enif_make_binary(env, &commitment));
+    return make_success(env, commitment_term);
 }
 
 static ERL_NIF_TERM compute_kzg_proof_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
@@ -215,39 +222,24 @@ static ERL_NIF_TERM compute_kzg_proof_nif(ErlNifEnv *env, int argc, const ERL_NI
 
     if (z.size != BYTES_PER_FIELD_ELEMENT) return make_error(env, ckzg_atoms.invalid_z_length);
 
-    ErlNifBinary y_bytes;
-    if (!enif_alloc_binary(sizeof(Bytes32), &y_bytes))
-        return make_error(env, ckzg_atoms.out_of_memory);
-
-    ErlNifBinary proof_bytes;
-    if (!enif_alloc_binary(sizeof(KZGProof), &proof_bytes)) {
-        enif_release_binary(&y_bytes);
-        return make_error(env, ckzg_atoms.out_of_memory);
-    }
-
     KZGSettings *settings;
-    if (!enif_get_resource(env, argv[2], KZGSETTINGS_RES_TYPE, (void **)&settings)) {
-        enif_release_binary(&y_bytes);
-        enif_release_binary(&proof_bytes);
+    if (!enif_get_resource(env, argv[2], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
-    }
+
+    ERL_NIF_TERM y_term;
+    unsigned char *y_bytes = enif_make_new_binary(env, sizeof(Bytes32), &y_term);
+    if (y_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+
+    ERL_NIF_TERM proof_term;
+    unsigned char *proof_bytes = enif_make_new_binary(env, sizeof(KZGProof), &proof_term);
+    if (proof_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = compute_kzg_proof(
-        (KZGProof *)proof_bytes.data,
-        (Bytes32 *)y_bytes.data,
-        (Blob *)blob.data,
-        (Bytes32 *)z.data,
-        settings
+        (KZGProof *)proof_bytes, (Bytes32 *)y_bytes, (Blob *)blob.data, (Bytes32 *)z.data, settings
     );
-    if (ret != C_KZG_OK) {
-        enif_release_binary(&y_bytes);
-        enif_release_binary(&proof_bytes);
-        return make_kzg_error(env, ret);
-    }
+    if (ret != C_KZG_OK) return make_kzg_error(env, ret);
 
-    return enif_make_tuple3(
-        env, ckzg_atoms.ok, enif_make_binary(env, &proof_bytes), enif_make_binary(env, &y_bytes)
-    );
+    return enif_make_tuple3(env, ckzg_atoms.ok, proof_term, y_term);
 }
 
 static ERL_NIF_TERM compute_blob_kzg_proof_nif(
@@ -268,13 +260,13 @@ static ERL_NIF_TERM compute_blob_kzg_proof_nif(
     if (commitment.size != BYTES_PER_COMMITMENT)
         return make_error(env, ckzg_atoms.invalid_commitment_length);
 
-    ERL_NIF_TERM proof_term;
-    unsigned char *proof = enif_make_new_binary(env, sizeof(KZGProof), &proof_term);
-    if (proof == NULL) return make_error(env, ckzg_atoms.out_of_memory);
-
     KZGSettings *settings;
     if (!enif_get_resource(env, argv[2], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
+
+    ERL_NIF_TERM proof_term;
+    unsigned char *proof = enif_make_new_binary(env, sizeof(KZGProof), &proof_term);
+    if (proof == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = compute_blob_kzg_proof(
         (KZGProof *)proof, (Blob *)blob.data, (Bytes48 *)commitment.data, settings
@@ -426,32 +418,24 @@ static ERL_NIF_TERM compute_cells_and_kzg_proofs_nif(
     if (!enif_get_resource(env, argv[1], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
-    ErlNifBinary cells_bytes;
-    if (!enif_alloc_binary(CELLS_PER_EXT_BLOB * BYTES_PER_CELL, &cells_bytes))
-        return make_error(env, ckzg_atoms.out_of_memory);
+    ERL_NIF_TERM cells_term;
+    unsigned char *cells_bytes = enif_make_new_binary(
+        env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL, &cells_term
+    );
+    if (cells_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
-    ErlNifBinary proofs_bytes;
-    if (!enif_alloc_binary(CELLS_PER_EXT_BLOB * BYTES_PER_PROOF, &proofs_bytes)) {
-        enif_release_binary(&cells_bytes);
-        return make_error(env, ckzg_atoms.out_of_memory);
-    }
+    ERL_NIF_TERM proofs_term;
+    unsigned char *proofs_bytes = enif_make_new_binary(
+        env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF, &proofs_term
+    );
+    if (proofs_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = compute_cells_and_kzg_proofs(
-        (Cell *)cells_bytes.data, (KZGProof *)proofs_bytes.data, (Blob *)blob.data, settings
+        (Cell *)cells_bytes, (KZGProof *)proofs_bytes, (Blob *)blob.data, settings
     );
-    if (ret != C_KZG_OK) {
-        enif_release_binary(&cells_bytes);
-        enif_release_binary(&proofs_bytes);
+    if (ret != C_KZG_OK) return make_kzg_error(env, ret);
 
-        return make_kzg_error(env, ret);
-    }
-
-    return enif_make_tuple3(
-        env,
-        ckzg_atoms.ok,
-        enif_make_binary(env, &cells_bytes),
-        enif_make_binary(env, &proofs_bytes)
-    );
+    return enif_make_tuple3(env, ckzg_atoms.ok, cells_term, proofs_term);
 }
 
 static ERL_NIF_TERM recover_cells_and_kzg_proofs_nif(
