@@ -1,15 +1,23 @@
-defmodule KZG.MixProject do
+defmodule CKZG.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "2.0.1"
 
   def project do
+    [File.cwd!(), "bindings", "elixir"]
+    |> Path.join()
+    |> File.cd!()
+
     [
-      app: :kzg,
+      app: :ckzg,
       compilers: [:elixir_make] ++ Mix.compilers(),
+      make_precompiler_url:
+        "https://github.com/ethereum/c-kzg-4844/releases/download/v#{@version}/@{artefact_filename}",
+      make_precompiler_filename: "nif",
       make_precompiler: {:nif, CCPrecompiler},
       make_precompiler_priv_paths: ["ckzg_nif.*"],
       version: @version,
+      force_build: Mix.env() != :prod,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps()

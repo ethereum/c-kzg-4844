@@ -12,7 +12,7 @@ bindings are intended to be used by Ethereum clients to avoid re-implementation
 of crucial cryptographic functions.
 
 | Language | Link                                 |
-|----------|--------------------------------------|
+| -------- | ------------------------------------ |
 | C#       | [README](bindings/csharp/README.md)  |
 | Go       | [README](bindings/go/README.md)      |
 | Java     | [README](bindings/java/README.md)    |
@@ -20,6 +20,7 @@ of crucial cryptographic functions.
 | Node.js  | [README](bindings/node.js/README.md) |
 | Python   | [README](bindings/python/README.md)  |
 | Rust     | [README](bindings/rust/README.md)    |
+| Elixir   | [README](bindings/elixir/README.md)  |
 
 ## Interface functions
 

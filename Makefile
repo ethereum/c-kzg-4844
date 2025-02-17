@@ -37,4 +37,4 @@ rust:
 
 .PHONY: elixir
 elixir:
-	@cd bindings/elixir && mix deps.get && mix test
+	@mix deps.get && mix test

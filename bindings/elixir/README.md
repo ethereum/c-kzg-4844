@@ -1,6 +1,10 @@
-# KZG
+# Elixir Bindings for the C-KZG Library
 
-**TODO: Add description**
+This directory contains Elixir bindings for the C-KZG-4844 library.
+
+## Prerequisites
+
+Make sure `elixir` and `erlang` are installed. You can learn how to do so [here](https://elixir-lang.org/install.html).
 
 ## Installation
 
@@ -10,11 +14,20 @@ by adding `ckzg` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ckzg, "~> 0.1.0"}
+    {:ckzg, "~> 0.2.1"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at <https://hexdocs.pm/kzg>.
+## Build
+
+```sh
+mix deps.get
+mix compile
+```
+
+## Test
+
+```sh
+mix test
+```
