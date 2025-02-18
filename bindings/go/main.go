@@ -400,11 +400,11 @@ func VerifyBlobKZGProofBatch(blobs []Blob, commitmentsBytes, proofsBytes []Bytes
 }
 
 /*
-ComputeCellsAndKZGProofs is the binding for:
+ComputeCells is the binding for:
 
 	C_KZG_RET compute_cells_and_kzg_proofs(
 	    Cell *cells,
-	    KZGProof *proofs,
+	    KZGProof *proofs, // Disable proof computation with NULL
 	    const Blob *blob,
 	    const KZGSettings *s);
 */
