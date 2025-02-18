@@ -26,6 +26,7 @@ const {
   BYTES_PER_PROOF,
 
   // EIP-7594
+  computeCells,
   computeCellsAndKzgProofs,
   verifyCellKzgProofBatch,
   recoverCellsAndKzgProofs,
@@ -47,6 +48,7 @@ const VERIFY_KZG_PROOF_TESTS = "../../tests/verify_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_TESTS = "../../tests/verify_blob_kzg_proof/*/*/data.yaml";
 const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../tests/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
+const COMPUTE_CELLS_TESTS = "../../tests/compute_cells/*/*/data.yaml";
 const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/compute_cells_and_kzg_proofs/*/*/data.yaml";
 const RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../tests/recover_cells_and_kzg_proofs/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*/data.yaml";
@@ -60,6 +62,7 @@ type VerifyKzgProofTest = TestMeta<{commitment: string; y: string; z: string; pr
 type VerifyBlobKzgProofTest = TestMeta<{blob: string; commitment: string; proof: string}, boolean>;
 type VerifyBatchKzgProofTest = TestMeta<{blobs: string[]; commitments: string[]; proofs: string[]}, boolean>;
 
+type ComputeCellsTest = TestMeta<{blob: string}, string[]>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{blob: string}, string[][]>;
 type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
 type VerifyCellKzgProofBatchTest = TestMeta<
@@ -360,6 +363,32 @@ describe("C-KZG", () => {
         }
 
         expect(valid).toEqual(test.output);
+      });
+    });
+
+    it("reference tests for computeCells should pass", () => {
+      const tests = globSync(COMPUTE_CELLS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: ComputeCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let cells;
+        const blob = bytesFromHex(test.input.blob);
+
+        try {
+          cells = computeCells(blob);
+        } catch (err) {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        const expectedCells = test.output.map(bytesFromHex);
+        expect(cells.length).toBe(expectedCells.length);
+        for (let i = 0; i < cells.length; i++) {
+          assertBytesEqual(cells[i], expectedCells[i]);
+        }
       });
     });
 

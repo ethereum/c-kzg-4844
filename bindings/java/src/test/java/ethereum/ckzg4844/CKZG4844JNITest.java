@@ -121,6 +121,17 @@ public class CKZG4844JNITest {
   }
 
   @ParameterizedTest
+  @MethodSource("getComputeCellsTests")
+  public void verifyComputeCellsTests(final ComputeCellsTest test) {
+    try {
+      byte[] cells = CKZG4844JNI.computeCells(test.getInput().getBlob());
+      assertArrayEquals(test.getOutput(), cells);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
   @MethodSource("getComputeCellsAndKzgProofsTests")
   public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
     try {
@@ -520,6 +531,11 @@ public class CKZG4844JNITest {
     loadTrustedSetup();
     return TestUtils.getVerifyBlobKzgProofBatchTests().stream()
         .onClose(CKZG4844JNI::freeTrustedSetup);
+  }
+
+  private static Stream<ComputeCellsTest> getComputeCellsTests() {
+    loadTrustedSetup();
+    return TestUtils.getComputeCellsTests().stream().onClose(CKZG4844JNI::freeTrustedSetup);
   }
 
   private static Stream<ComputeCellsAndKzgProofsTest> getComputeCellsAndKzgProofsTests() {

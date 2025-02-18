@@ -215,6 +215,15 @@ public class CKZG4844JNI {
       byte[] blobs, byte[] commitmentsBytes, byte[] proofsBytes, long count);
 
   /**
+   * Get the cells for a given blob.
+   *
+   * @param blob the blob to get cells for
+   * @return the cells
+   * @throws CKZGException if there is a crypto error
+   */
+  public static native byte[] computeCells(byte[] blob);
+
+  /**
    * Get the cells and proofs for a given blob.
    *
    * @param blob the blob to get cells/proofs for

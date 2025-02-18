@@ -20,6 +20,7 @@ const
   VERIFY_KZG_PROOF_TESTS             = testBase & "verify_kzg_proof"
   VERIFY_BLOB_KZG_PROOF_TESTS        = testBase & "verify_blob_kzg_proof"
   VERIFY_BLOB_KZG_PROOF_BATCH_TESTS  = testBase & "verify_blob_kzg_proof_batch"
+  COMPUTE_CELLS_TESTS                = testBase & "compute_cells"
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
   RECOVER_CELLS_AND_KZG_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS  = testBase & "verify_cell_kzg_proof_batch"
@@ -132,6 +133,15 @@ suite "yaml tests":
       proofs = KzgProof.fromHexList(n["input"]["proofs"])
       res = verifyBlobKzgProofBatch(blobs, commitments, proofs)
     checkBool(res)
+
+  runTests(COMPUTE_CELLS_TESTS):
+    let
+      blob = KzgBlob.fromHex(n["input"]["blob"])
+      res = computeCells(blob)
+
+    checkRes(res):
+      let cells = KzgCell.fromHexList(n["output"])
+      check cells == res.get
 
   runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
     let

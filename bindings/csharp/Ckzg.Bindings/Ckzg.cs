@@ -201,6 +201,28 @@ public static partial class Ckzg
     }
 
     /// <summary>
+    ///     Given a blob, get all of its cells.
+    /// </summary>
+    /// <param name="cells">Cells as a flattened byte array</param>
+    /// <param name="blob">Blob bytes</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    public static unsafe void ComputeCells(Span<byte> cells, ReadOnlySpan<byte> blob, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * CellsPerExtBlob);
+        ThrowOnInvalidLength(blob, nameof(blob), BytesPerBlob);
+
+        fixed (byte* cellsPtr = cells, blobPtr = blob)
+        {
+            KzgResult result = ComputeCellsAndKzgProofs(cellsPtr, null, blobPtr, ckzgSetup);
+            ThrowOnError(result);
+        }
+    }
+
+    /// <summary>
     ///     Given a blob, get all of its cells and proofs.
     /// </summary>
     /// <param name="cells">Cells as a flattened byte array</param>

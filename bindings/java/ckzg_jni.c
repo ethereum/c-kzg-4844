@@ -482,6 +482,42 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyBlobKzgProofBatch(
   return (jboolean)out;
 }
 
+JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCells(
+    JNIEnv *env, jclass thisCls, jbyteArray blob) {
+  if (settings == NULL) {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t blob_size = (size_t)(*env)->GetArrayLength(env, blob);
+  if (blob_size != BYTES_PER_BLOB) {
+    throw_invalid_size_exception(env, "Invalid blob size.", blob_size,
+                                 BYTES_PER_BLOB);
+    return NULL;
+  }
+
+  /* The output cells */
+  jbyteArray cells =
+      (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+
+  /* The native variables */
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+  Blob *blob_native = (Blob *)(*env)->GetByteArrayElements(env, blob, NULL);
+
+  C_KZG_RET ret =
+      compute_cells_and_kzg_proofs(cells_native, NULL, blob_native, settings);
+
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native, 0);
+  (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
+
+  if (ret != C_KZG_OK) {
+    throw_c_kzg_exception(env, ret, "There was an error in computeCells.");
+    return NULL;
+  }
+
+  return cells;
+}
+
 JNIEXPORT jobject JNICALL
 Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
                                                             jclass thisCls,
@@ -637,8 +673,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_verifyCellKzgProofBatch(
       (size_t)(*env)->GetArrayLength(env, commitments_bytes);
   if (commitments_size % BYTES_PER_COMMITMENT != 0) {
     throw_invalid_size_exception(env, "Invalid commitments size.",
-                                 commitments_size,
-                                 BYTES_PER_COMMITMENT);
+                                 commitments_size, BYTES_PER_COMMITMENT);
     return 0;
   }
   size_t num_commitments = commitments_size / BYTES_PER_COMMITMENT;
