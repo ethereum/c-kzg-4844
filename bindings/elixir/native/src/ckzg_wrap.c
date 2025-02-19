@@ -403,6 +403,55 @@ static ERL_NIF_TERM verify_blob_kzg_proof_batch_nif(
     return make_success(env, ok ? ckzg_atoms.a_true : ckzg_atoms.a_false);
 }
 
+static ERL_NIF_TERM compute_cells_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    if (argc != 2) return make_error(env, ckzg_atoms.incorrect_arg_count);
+
+    ErlNifBinary blob;
+    if (!enif_inspect_binary(env, argv[0], &blob))
+        return make_error(env, ckzg_atoms.blob_not_binary);
+
+    if (blob.size != BYTES_PER_BLOB) return make_error(env, ckzg_atoms.invalid_blob_length);
+
+    KZGSettings *settings;
+    if (!enif_get_resource(env, argv[1], KZGSETTINGS_RES_TYPE, (void **)&settings))
+        return make_error(env, ckzg_atoms.failed_get_settings_resource);
+
+    Cell *cells = enif_alloc(BYTES_PER_CELL* CELLS_PER_EXT_BLOB);
+    if (cells == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+
+    C_KZG_RET ret = compute_cells_and_kzg_proofs(cells, NULL, (Blob *)blob.data, settings);
+    if (ret != C_KZG_OK) {
+        enif_free(cells);
+        return make_kzg_error(env, ret);
+    }
+
+    ERL_NIF_TERM *cells_list = enif_alloc(sizeof(ERL_NIF_TERM) * CELLS_PER_EXT_BLOB);
+    if (cells_list == NULL) {
+        enif_free(cells);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
+
+    for (int i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        ERL_NIF_TERM cell_term;
+        unsigned char *cell_bytes = enif_make_new_binary(env, BYTES_PER_CELL, &cell_term);
+        if (cell_bytes == NULL) {
+            enif_free(cells);
+            enif_free(cells_list);
+            return make_error(env, ckzg_atoms.out_of_memory);
+        }
+        
+        memcpy(cell_bytes, &cells[i], BYTES_PER_CELL);
+        cells_list[i] = cell_term;
+    }
+
+    ERL_NIF_TERM cells_term = enif_make_list_from_array(env, cells_list, CELLS_PER_EXT_BLOB);
+
+    enif_free(cells);
+    enif_free(cells_list);
+
+    return make_success(env, cells_term);
+}
+
 static ERL_NIF_TERM compute_cells_and_kzg_proofs_nif(
     ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
 ) {
@@ -418,22 +467,72 @@ static ERL_NIF_TERM compute_cells_and_kzg_proofs_nif(
     if (!enif_get_resource(env, argv[1], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
-    ERL_NIF_TERM cells_term;
-    unsigned char *cells_bytes = enif_make_new_binary(
-        env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL, &cells_term
-    );
-    if (cells_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+    ERL_NIF_TERM *cells_list = enif_alloc(sizeof(ERL_NIF_TERM) * CELLS_PER_EXT_BLOB);
+    if (cells_list == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
-    ERL_NIF_TERM proofs_term;
-    unsigned char *proofs_bytes = enif_make_new_binary(
-        env, CELLS_PER_EXT_BLOB * BYTES_PER_PROOF, &proofs_term
-    );
-    if (proofs_bytes == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+    ERL_NIF_TERM *proofs_list = enif_alloc(sizeof(ERL_NIF_TERM) * CELLS_PER_EXT_BLOB);
+    if (proofs_list == NULL) {
+        enif_free(cells_list);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
 
-    C_KZG_RET ret = compute_cells_and_kzg_proofs(
-        (Cell *)cells_bytes, (KZGProof *)proofs_bytes, (Blob *)blob.data, settings
-    );
-    if (ret != C_KZG_OK) return make_kzg_error(env, ret);
+    Cell *cells = enif_alloc(BYTES_PER_CELL * CELLS_PER_EXT_BLOB);
+    if (cells == NULL) {
+        enif_free(cells_list);
+        enif_free(proofs_list);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
+
+    KZGProof *proofs = enif_alloc(BYTES_PER_PROOF * CELLS_PER_EXT_BLOB);
+    if (proofs == NULL) {
+        enif_free(cells_list);
+        enif_free(proofs_list);
+        enif_free(cells);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
+
+    C_KZG_RET ret = compute_cells_and_kzg_proofs(cells, proofs, (Blob *)blob.data, settings);
+    if (ret != C_KZG_OK) {
+        enif_free(cells_list);
+        enif_free(proofs_list);
+        enif_free(cells);
+        enif_free(proofs);
+        return make_kzg_error(env, ret);
+    }
+
+    for (int i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        ERL_NIF_TERM cell_term;
+        unsigned char *cell_bytes = enif_make_new_binary(env, BYTES_PER_CELL, &cell_term);
+        if (cell_bytes == NULL) {
+            enif_free(cells_list);
+            enif_free(proofs_list);
+            enif_free(cells);
+            enif_free(proofs);
+            return make_error(env, ckzg_atoms.out_of_memory);
+        }
+        memcpy(cell_bytes, &cells[i], BYTES_PER_CELL);
+        cells_list[i] = cell_term;
+
+        ERL_NIF_TERM proof_term;
+        unsigned char *proof_bytes = enif_make_new_binary(env, BYTES_PER_PROOF, &proof_term);
+        if (proof_bytes == NULL) {
+            enif_free(cells_list);
+            enif_free(proofs_list);
+            enif_free(cells);
+            enif_free(proofs);
+            return make_error(env, ckzg_atoms.out_of_memory);
+        }
+        memcpy(proof_bytes, &proofs[i], BYTES_PER_PROOF);
+        proofs_list[i] = proof_term;
+    }
+
+    ERL_NIF_TERM cells_term = enif_make_list_from_array(env, cells_list, CELLS_PER_EXT_BLOB);
+    ERL_NIF_TERM proofs_term = enif_make_list_from_array(env, proofs_list, CELLS_PER_EXT_BLOB);
+
+    enif_free(cells_list);
+    enif_free(proofs_list);
+    enif_free(cells);
+    enif_free(proofs);
 
     return enif_make_tuple3(env, ckzg_atoms.ok, cells_term, proofs_term);
 }
@@ -669,6 +768,7 @@ static ErlNifFunc nif_funcs[] = {
     {"verify_blob_kzg_proof", 4, verify_blob_kzg_proof_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"verify_blob_kzg_proof_batch", 4, verify_blob_kzg_proof_batch_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND
     },
+    {"compute_cells", 2, compute_cells_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"compute_cells_and_kzg_proofs",
      2,
      compute_cells_and_kzg_proofs_nif,

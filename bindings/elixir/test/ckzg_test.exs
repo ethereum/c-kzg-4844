@@ -12,6 +12,7 @@ defmodule KZGTest do
   @verify_blob_kzg_proof_batch_tests Path.wildcard(
                                        @root <> "verify_blob_kzg_proof_batch/*/*/data.yaml"
                                      )
+  @compute_cells_tests Path.wildcard(@root <> "compute_cells/*/*/data.yaml")
   @compute_cells_and_kzg_proofs_tests Path.wildcard(
                                         @root <> "compute_cells_and_kzg_proofs/*/*/data.yaml"
                                       )
@@ -174,6 +175,26 @@ defmodule KZGTest do
     end
   end
 
+  test "compute_cells/2 tests", %{setup: setup} do
+    assert length(@compute_cells_tests) > 0
+
+    for file <- @compute_cells_tests do
+      {:ok, test_data} = YamlElixir.read_from_file(file)
+      blob = bytes_from_hex(test_data["input"]["blob"])
+
+      case KZG.compute_cells(blob, setup) do
+        {:error, _} ->
+          assert test_data["output"] == nil
+
+        {:ok, cells} ->
+          expected_cells = Enum.map(test_data["output"], &bytes_from_hex/1)
+
+          assert cells == expected_cells,
+                 "#{file}\nCells #{inspect(cells)} do not match expected #{inspect(expected_cells)}"
+      end
+    end
+  end
+
   test "compute_cells_and_kzg_proofs/2 tests", %{setup: setup} do
     assert length(@compute_cells_and_kzg_proofs_tests) > 0
 
@@ -255,9 +276,7 @@ defmodule KZGTest do
         test_data["input"]["proofs"] |> Enum.map(&bytes_from_hex/1) |> :erlang.iolist_to_binary()
 
       case KZG.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, setup) do
-        {:error, x} ->
-          IO.inspect(commitments)
-          IO.inspect(x)
+        {:error, _} ->
           assert test_data["output"] == nil
 
         {:ok, valid} ->

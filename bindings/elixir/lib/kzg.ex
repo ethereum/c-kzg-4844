@@ -25,7 +25,7 @@ defmodule KZG do
 
   @on_load :on_load
   def on_load do
-    path = :filename.join([:code.priv_dir(:kzg), "ckzg_nif"])
+    path = :filename.join([:code.priv_dir(:ckzg), "ckzg_nif"])
     :erlang.load_nif(path, 0)
   end
 
@@ -193,6 +193,24 @@ defmodule KZG do
   @spec verify_blob_kzg_proof_batch(binary, binary, binary, settings) ::
           {:ok, boolean} | {:error, atom()}
   def verify_blob_kzg_proof_batch(_blobs, _commitments, _proofs, _setup) do
+    :erlang.nif_error(:not_loaded)
+  end
+
+  @doc """
+  Computes cells from a blob.
+
+  ## Parameters
+
+    - `blob` is the binary blob.
+    - `setup` is the trusted setup reference.
+
+  ## Returns
+
+    - `{:ok, cells_binary}` on success, where `cells_binary` is a binary containing all cells.
+    - `{:error, reason}` on error.
+  """
+  @spec compute_cells(blob, settings) :: {:ok, binary} | {:error, atom()}
+  def compute_cells(_blob, _setup) do
     :erlang.nif_error(:not_loaded)
   end
 
