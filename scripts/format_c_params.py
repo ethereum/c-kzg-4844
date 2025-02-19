@@ -35,6 +35,7 @@ def find_space_after(line: str, start_index: int) -> int:
     for index, c in enumerate(line[start_index:]):
         if c == " ":
             return index + start_index
+    return -1
 
 
 def next_word_index(line: str, start_index: int) -> int:
