@@ -197,7 +197,7 @@ static ERL_NIF_TERM blob_to_kzg_commitment_nif(
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
     ERL_NIF_TERM commitment_term;
-    unsigned char *commitment = enif_make_new_binary(env, sizeof(KZGCommitment), &commitment_term);
+    unsigned char *commitment = enif_make_new_binary(env, BYTES_PER_COMMITMENT, &commitment_term);
     if (commitment == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = blob_to_kzg_commitment(
@@ -265,7 +265,7 @@ static ERL_NIF_TERM compute_blob_kzg_proof_nif(
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
     ERL_NIF_TERM proof_term;
-    unsigned char *proof = enif_make_new_binary(env, sizeof(KZGProof), &proof_term);
+    unsigned char *proof = enif_make_new_binary(env, BYTES_PER_PROOF, &proof_term);
     if (proof == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = compute_blob_kzg_proof(
@@ -416,7 +416,7 @@ static ERL_NIF_TERM compute_cells_nif(ErlNifEnv *env, int argc, const ERL_NIF_TE
     if (!enif_get_resource(env, argv[1], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
-    Cell *cells = enif_alloc(BYTES_PER_CELL* CELLS_PER_EXT_BLOB);
+    Cell *cells = enif_alloc(BYTES_PER_CELL * CELLS_PER_EXT_BLOB);
     if (cells == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     C_KZG_RET ret = compute_cells_and_kzg_proofs(cells, NULL, (Blob *)blob.data, settings);
@@ -439,7 +439,7 @@ static ERL_NIF_TERM compute_cells_nif(ErlNifEnv *env, int argc, const ERL_NIF_TE
             enif_free(cells_list);
             return make_error(env, ckzg_atoms.out_of_memory);
         }
-        
+
         memcpy(cell_bytes, &cells[i], BYTES_PER_CELL);
         cells_list[i] = cell_term;
     }
@@ -510,6 +510,7 @@ static ERL_NIF_TERM compute_cells_and_kzg_proofs_nif(
             enif_free(proofs);
             return make_error(env, ckzg_atoms.out_of_memory);
         }
+
         memcpy(cell_bytes, &cells[i], BYTES_PER_CELL);
         cells_list[i] = cell_term;
 
@@ -522,6 +523,7 @@ static ERL_NIF_TERM compute_cells_and_kzg_proofs_nif(
             enif_free(proofs);
             return make_error(env, ckzg_atoms.out_of_memory);
         }
+
         memcpy(proof_bytes, &proofs[i], BYTES_PER_PROOF);
         proofs_list[i] = proof_term;
     }
@@ -703,10 +705,10 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
 
     ERL_NIF_TERM head;
     ERL_NIF_TERM tail = argv[1];
-    uint64_t current_u;
 
     // Check every cell index is an integer then store as native C type.
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        uint64_t current_u;
         if (!enif_get_uint64(env, head, &current_u)) {
             enif_free(cell_indices);
             return make_error(env, ckzg_atoms.cell_indices_value_not_uint64);
@@ -722,9 +724,9 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
     }
 
     tail = argv[2];
-    ErlNifBinary current_b;
     // Check every cell is bytes and then store as native C type.
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifBinary current_b;
         if (!enif_inspect_binary(env, head, &current_b)) {
             enif_free(cell_indices);
             enif_free(cells);
