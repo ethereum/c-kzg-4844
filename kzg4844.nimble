@@ -16,7 +16,8 @@ skipDirs      = @[
   "bindings/java",
   "bindings/node.js",
   "bindings/python",
-  "bindings/rust"
+  "bindings/rust",
+  "bindings/elixir"
   ]
 installDirs   = @[
   "blst",

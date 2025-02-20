@@ -1,5 +1,5 @@
 .PHONY: all
-all: c csharp go java nim nodejs python rust
+all: c csharp go java nim nodejs python rust elixir
 
 .PHONY: c
 c:
@@ -34,3 +34,7 @@ rust:
 	@cargo test --features generate-bindings
 	@cargo bench --no-run
 	@cd fuzz && cargo build
+
+.PHONY: elixir
+elixir:
+	@mix deps.get && mix test
