@@ -23,9 +23,13 @@ of crucial cryptographic functions.
 
 ## Interface functions
 
-The C-KZG-4844 library provides implementations of the public KZG functions that
-are defined in the Polynomial Commitments specification. The aim is to align
-these functions as closely as possible with the specification.
+The C-KZG-4844 library provides implementations of the public KZG functions
+that are specified in the Polynomial Commitments API for
+[Deneb](https://github.com/ethereum/consensus-specs/blob/dev/specs/deneb/polynomial-commitments.md)
+and
+[Fulu](https://github.com/ethereum/consensus-specs/blob/dev/specs/fulu/polynomial-commitments-sampling.md).
+The aim is to align these functions as closely as possible with the
+specifications.
 
 For EIP-4844:
 
@@ -38,12 +42,13 @@ For EIP-4844:
 
 For EIP-7594:
 
+- `compute_cells`
 - `compute_cells_and_kzg_proofs`
 - `recover_cells_and_kzg_proofs`
 - `verify_cell_kzg_proof_batch`
 
 This library also provides functions for loading and freeing the trusted setup,
-which are not defined in the specification. These functions are intended to be
+which are not defined in the API. The loading functions are intended to be
 executed once during the initialization process. As the name suggests, the
 [trusted setup file](src/trusted_setup.txt) is considered to be trustworthy.
 
