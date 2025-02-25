@@ -43,7 +43,7 @@ else
 		endif
 	endif
 	ifeq ($(UNAME_S),Darwin)
-		EXTENSION ?= ".dylib"
+		EXTENSION ?= ".so"
 		ifeq ($(UNAME_M),arm64)
 			LOCATION ?= osx-arm64
 		else
