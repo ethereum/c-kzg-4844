@@ -39,6 +39,8 @@ typedef struct {
     ERL_NIF_TERM cell_indices_value_not_uint64;
     ERL_NIF_TERM cells_value_not_binary;
     ERL_NIF_TERM invalid_cell_length;
+    ERL_NIF_TERM commitments_not_list;
+    ERL_NIF_TERM proofs_not_list;
 } ckzg_atoms_t;
 
 ErlNifResourceType *KZGSETTINGS_RES_TYPE;
@@ -133,6 +135,8 @@ static int load(ErlNifEnv *env, void **priv_data, ERL_NIF_TERM load_info) {
     ckzg_atoms.cell_indices_value_not_uint64 = enif_make_atom(env, "cell_indices_value_not_uint64");
     ckzg_atoms.cells_value_not_binary = enif_make_atom(env, "cells_value_not_binary");
     ckzg_atoms.invalid_cell_length = enif_make_atom(env, "invalid_cell_length");
+    ckzg_atoms.commitments_not_list = enif_make_atom(env, "commitments_not_list");
+    ckzg_atoms.proofs_not_list = enif_make_atom(env, "proofs_not_list");
 
     return 0;
 }
@@ -680,9 +684,9 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
 ) {
     if (argc != 5) return make_error(env, ckzg_atoms.incorrect_arg_count);
 
-    ErlNifBinary commitments;
-    if (!enif_inspect_binary(env, argv[0], &commitments))
-        return make_error(env, ckzg_atoms.commitment_not_binary);
+    unsigned int commitments_len;
+    if (!enif_get_list_length(env, argv[0], &commitments_len))
+        return make_error(env, ckzg_atoms.commitments_not_list);
 
     unsigned int cell_indices_len;
     if (!enif_get_list_length(env, argv[1], &cell_indices_len))
@@ -692,24 +696,51 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
     if (!enif_get_list_length(env, argv[2], &cells_len))
         return make_error(env, ckzg_atoms.cells_not_list);
 
-    ErlNifBinary proofs;
-    if (!enif_inspect_binary(env, argv[3], &proofs))
-        return make_error(env, ckzg_atoms.proof_not_binary);
+    unsigned int proofs_len;
+    if (!enif_get_list_length(env, argv[3], &proofs_len))
+        return make_error(env, ckzg_atoms.proofs_not_list);
+
+    if (proofs_len != cells_len || cells_len != cell_indices_len ||
+        cell_indices_len != commitments_len)
+        return make_error(env, ckzg_atoms.expected_same_array_size);
 
     KZGSettings *settings;
     if (!enif_get_resource(env, argv[4], KZGSETTINGS_RES_TYPE, (void **)&settings))
         return make_error(env, ckzg_atoms.failed_get_settings_resource);
 
-    uint64_t *cell_indices = enif_alloc(cell_indices_len * sizeof(uint64_t));
-    if (cell_indices == NULL) return make_error(env, ckzg_atoms.out_of_memory);
+    Bytes48 *commitments = enif_alloc(commitments_len * BYTES_PER_COMMITMENT);
+    if (commitments == NULL) return make_error(env, ckzg_atoms.out_of_memory);
 
     ERL_NIF_TERM head;
-    ERL_NIF_TERM tail = argv[1];
+    ERL_NIF_TERM tail = argv[0];
 
+    for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifBinary current_b;
+        if (!enif_inspect_binary(env, head, &current_b)) {
+            enif_free(commitments);
+            return make_error(env, ckzg_atoms.commitment_not_binary);
+        }
+
+        if (current_b.size != BYTES_PER_COMMITMENT) {
+            enif_free(commitments);
+            return make_error(env, ckzg_atoms.commitment_not_binary);
+        }
+
+        memcpy(&commitments[i], current_b.data, BYTES_PER_COMMITMENT);
+    }
+
+    uint64_t *cell_indices = enif_alloc(cell_indices_len * sizeof(uint64_t));
+    if (cell_indices == NULL) {
+        enif_free(commitments);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
+
+    tail = argv[1];
     // Check every cell index is an integer then store as native C type.
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
         uint64_t current_u;
         if (!enif_get_uint64(env, head, &current_u)) {
+            enif_free(commitments);
             enif_free(cell_indices);
             return make_error(env, ckzg_atoms.cell_indices_value_not_uint64);
         }
@@ -719,6 +750,7 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
 
     Cell *cells = enif_alloc(cells_len * BYTES_PER_CELL);
     if (cells == NULL) {
+        enif_free(commitments);
         enif_free(cell_indices);
         return make_error(env, ckzg_atoms.out_of_memory);
     }
@@ -728,12 +760,14 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
         ErlNifBinary current_b;
         if (!enif_inspect_binary(env, head, &current_b)) {
+            enif_free(commitments);
             enif_free(cell_indices);
             enif_free(cells);
             return make_error(env, ckzg_atoms.cells_value_not_binary);
         }
 
         if (current_b.size != BYTES_PER_CELL) {
+            enif_free(commitments);
             enif_free(cell_indices);
             enif_free(cells);
             return make_error(env, ckzg_atoms.invalid_cell_length);
@@ -742,19 +776,46 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
         memcpy(&cells[i], current_b.data, BYTES_PER_CELL);
     }
 
+    Bytes48 *proofs = enif_alloc(proofs_len * BYTES_PER_PROOF);
+    if (proofs == NULL) {
+        enif_free(commitments);
+        enif_free(cell_indices);
+        enif_free(cells);
+        return make_error(env, ckzg_atoms.out_of_memory);
+    }
+
+    tail = argv[3];
+    // Check every cell is bytes and then store as native C type.
+    for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifBinary current_b;
+        if (!enif_inspect_binary(env, head, &current_b)) {
+            enif_free(commitments);
+            enif_free(cell_indices);
+            enif_free(cells);
+            enif_free(proofs);
+            return make_error(env, ckzg_atoms.proof_not_binary);
+        }
+
+        if (current_b.size != BYTES_PER_PROOF) {
+            enif_free(commitments);
+            enif_free(cell_indices);
+            enif_free(cells);
+            enif_free(proofs);
+            return make_error(env, ckzg_atoms.invalid_proof_length);
+        }
+
+        memcpy(&proofs[i], current_b.data, BYTES_PER_PROOF);
+    }
+
     bool ok;
     C_KZG_RET ret = verify_cell_kzg_proof_batch(
-        &ok,
-        (Bytes48 *)commitments.data,
-        cell_indices,
-        (Cell *)cells,
-        (Bytes48 *)proofs.data,
-        cells_len,
-        settings
+        &ok, commitments, cell_indices, cells, proofs, cells_len, settings
     );
 
+    enif_free(commitments);
     enif_free(cell_indices);
     enif_free(cells);
+    enif_free(proofs);
 
     if (ret != C_KZG_OK) return make_kzg_error(env, ret);
 

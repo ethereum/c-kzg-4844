@@ -265,15 +265,15 @@ defmodule KZGTest do
       {:ok, test_data} = YamlElixir.read_from_file(file)
 
       commitments =
-        test_data["input"]["commitments"]
-        |> Enum.map(&bytes_from_hex/1)
-        |> :erlang.iolist_to_binary()
+        Enum.map(
+          test_data["input"]["commitments"],
+          &bytes_from_hex/1
+        )
 
       cell_indices = test_data["input"]["cell_indices"]
       cells = Enum.map(test_data["input"]["cells"], &bytes_from_hex/1)
 
-      proofs =
-        test_data["input"]["proofs"] |> Enum.map(&bytes_from_hex/1) |> :erlang.iolist_to_binary()
+      proofs = Enum.map(test_data["input"]["proofs"], &bytes_from_hex/1)
 
       case KZG.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, setup) do
         {:error, _} ->

@@ -1,6 +1,5 @@
 CC = clang
 PRIV_DIR = $(MIX_APP_PATH)/priv
-NIF_SO = $(PRIV_DIR)/ckzg_nif.so
 SRC_ROOT = $(shell pwd)
 C_SRC = $(SRC_ROOT)/native/src
 
@@ -26,16 +25,15 @@ ifeq ($(OS),Windows_NT)
 	LOCATION ?= win-x64
 	EXTENSION ?= ".dll"
 	CKZG_LIBRARY_PATH = $(PRIV_DIR)/ckzg_nif$(EXTENSION)
-
 else
 	BLST_BUILDSCRIPT = ./build.sh
 	BLST_OBJ = libblst.a
 	CFLAGS += -fPIC
+	EXTENSION ?= ".so"
 
 	UNAME_S := $(shell uname -s)
 	UNAME_M := $(shell uname -m)
 	ifeq ($(UNAME_S),Linux)
-		EXTENSION ?= ".so"
 		ifeq ($(UNAME_M),x86_64)
 			LOCATION ?= linux-x64
 		else
@@ -43,7 +41,6 @@ else
 		endif
 	endif
 	ifeq ($(UNAME_S),Darwin)
-		EXTENSION ?= ".so"
 		ifeq ($(UNAME_M),arm64)
 			LOCATION ?= osx-arm64
 		else
