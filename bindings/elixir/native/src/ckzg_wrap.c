@@ -17,7 +17,6 @@ typedef struct {
     ERL_NIF_TERM kzg_unknown_error;
     ERL_NIF_TERM incorrect_arg_count;
     ERL_NIF_TERM invalid_precompute_arg;
-    ERL_NIF_TERM bad_file_string_length;
     ERL_NIF_TERM out_of_memory;
     ERL_NIF_TERM bad_file_string_arg;
     ERL_NIF_TERM failed_to_open_file;
@@ -111,7 +110,6 @@ static int load(ErlNifEnv *env, void **priv_data, ERL_NIF_TERM load_info) {
     ckzg_atoms.kzg_unknown_error = enif_make_atom(env, "kzg_unknown_error");
     ckzg_atoms.incorrect_arg_count = enif_make_atom(env, "incorrect_arg_count");
     ckzg_atoms.invalid_precompute_arg = enif_make_atom(env, "invalid_precompute_arg");
-    ckzg_atoms.bad_file_string_length = enif_make_atom(env, "bad_file_string_length");
     ckzg_atoms.out_of_memory = enif_make_atom(env, "out_of_memory");
     ckzg_atoms.bad_file_string_arg = enif_make_atom(env, "bad_file_string_arg");
     ckzg_atoms.failed_to_open_file = enif_make_atom(env, "failed_to_open_file");
@@ -148,20 +146,16 @@ static ERL_NIF_TERM load_trusted_setup_nif(ErlNifEnv *env, int argc, const ERL_N
     if (!enif_get_ulong(env, argv[1], &precompute))
         return make_error(env, ckzg_atoms.invalid_precompute_arg);
 
-    unsigned int len;
-    if (!enif_get_string_length(env, argv[0], &len, ERL_NIF_LATIN1))
-        return make_error(env, ckzg_atoms.bad_file_string_length);
-
-    char *file = enif_alloc(len + 1);
-    if (file == NULL) return make_error(env, ckzg_atoms.out_of_memory);
-
-    if (enif_get_string(env, argv[0], file, len + 1, ERL_NIF_LATIN1) < 0) {
-        enif_free(file);
+    ErlNifBinary file;
+    if (!enif_inspect_binary(env, argv[0], &file)) {
         return make_error(env, ckzg_atoms.bad_file_string_arg);
     }
 
-    FILE *fp = fopen(file, "r");
-    enif_free(file);
+    char *name = enif_alloc(file.size + 1);
+    memcpy(name, file.data, file.size);
+    name[file.size] = '\0';
+
+    FILE *fp = fopen(name, "r");
 
     if (fp == NULL) return make_error(env, ckzg_atoms.failed_to_open_file);
 

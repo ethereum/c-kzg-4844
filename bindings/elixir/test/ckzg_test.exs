@@ -24,7 +24,7 @@ defmodule KZGTest do
                                      )
 
   setup do
-    {:ok, setup} = KZG.load_trusted_setup(~c"../../src/trusted_setup.txt", 0)
+    {:ok, setup} = KZG.load_trusted_setup("../../src/trusted_setup.txt", 0)
     {:ok, setup: setup}
   end
 
