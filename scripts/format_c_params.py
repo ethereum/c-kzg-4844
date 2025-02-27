@@ -43,7 +43,8 @@ def next_word_index(line: str, start_index: int) -> int:
     Find the next word. Assumes start index is not a space.
     """
     space_index = line.find(" ", start_index)
-    assert space_index != -1
+    if space_index == -1:
+        raise Exception(f"missing param documentation: {repr(line)}")
 
     # Find the first non-space character after the space
     non_space_index = space_index + 1
