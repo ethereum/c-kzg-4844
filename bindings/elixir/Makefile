@@ -12,7 +12,7 @@ endif
 endif
 
 ifeq ($(TARGET_ABI),darwin)
-	CFLAGS += -undefined dynamic_lookup -flat_namespace -undefined suppress
+	CFLAGS += -undefined dynamic_lookup -flat_namespace
 endif
 
 ifeq ($(OS),Windows_NT)
