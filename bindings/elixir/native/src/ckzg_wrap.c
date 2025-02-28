@@ -561,10 +561,10 @@ static ERL_NIF_TERM recover_cells_and_kzg_proofs_nif(
 
     ERL_NIF_TERM head;
     ERL_NIF_TERM tail = argv[0];
-    unsigned long current_u;
 
     // Check every cell index is an integer then store as native C type.
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifUInt64 current_u;
         if (!enif_get_uint64(env, head, &current_u))
             return make_error(env, ckzg_atoms.cell_indices_value_not_uint64);
 
@@ -732,7 +732,7 @@ static ERL_NIF_TERM verify_cell_kzg_proof_batch_nif(
     tail = argv[1];
     // Check every cell index is an integer then store as native C type.
     for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
-        unsigned long current_u;
+        ErlNifUInt64 current_u;
         if (!enif_get_uint64(env, head, &current_u)) {
             enif_free(commitments);
             enif_free(cell_indices);
