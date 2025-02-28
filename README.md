@@ -14,13 +14,13 @@ of crucial cryptographic functions.
 | Language | Link                                 |
 | -------- | ------------------------------------ |
 | C#       | [README](bindings/csharp/README.md)  |
+| Elixir   | [README](bindings/elixir/README.md)  |
 | Go       | [README](bindings/go/README.md)      |
 | Java     | [README](bindings/java/README.md)    |
 | Nim      | [README](bindings/nim/README.md)     |
 | Node.js  | [README](bindings/node.js/README.md) |
 | Python   | [README](bindings/python/README.md)  |
 | Rust     | [README](bindings/rust/README.md)    |
-| Elixir   | [README](bindings/elixir/README.md)  |
 
 ## Interface functions
 
