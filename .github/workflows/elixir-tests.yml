@@ -19,7 +19,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
-          - macos-latest
+          # erlef/setup-beam doesn't support macOS
         variation:
           - otp: "27.x"
             elixir: "1.18"
