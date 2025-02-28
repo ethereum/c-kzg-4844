@@ -35,6 +35,10 @@ jobs:
           otp-version: ${{matrix.variation.otp}}
           elixir-version: ${{matrix.variation.elixir}}
 
+      - name: Install CL on Windows
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Restore dependencies cache
         uses: actions/cache@v3
         with:
