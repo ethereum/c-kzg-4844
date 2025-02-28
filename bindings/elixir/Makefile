@@ -72,7 +72,7 @@ all: blst ckzg
 
 .PHONY: blst
 blst:
-	cd ../../blst && $(BLST_BUILDSCRIPT) $(BLST_BUILDSCRIPT_FLAGS)
+	$(MAKE) -C ../../ blst
 
 .PHONY: ckzg
 ckzg: blst

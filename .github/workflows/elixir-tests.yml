@@ -13,13 +13,9 @@ defaults:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-          # erlef/setup-beam doesn't support macOS
         variation:
           - otp: "27.x"
             elixir: "1.18"
@@ -34,10 +30,6 @@ jobs:
         with:
           otp-version: ${{matrix.variation.otp}}
           elixir-version: ${{matrix.variation.elixir}}
-
-      - name: Install CL on Windows
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Restore dependencies cache
         uses: actions/cache@v3
