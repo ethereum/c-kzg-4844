@@ -420,7 +420,7 @@ static C_KZG_RET compute_kzg_proof_impl(
     C_KZG_RET ret;
     fr_t *inverses_in = NULL;
     fr_t *inverses = NULL;
-    fr_t *q = NULL;
+    fr_t *q_poly = NULL;
 
     ret = evaluate_polynomial_in_evaluation_form(y_out, poly, z, s);
     if (ret != C_KZG_OK) goto out;
@@ -435,7 +435,7 @@ static C_KZG_RET compute_kzg_proof_impl(
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&inverses, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&q, FIELD_ELEMENTS_PER_BLOB);
+    ret = new_fr_array(&q_poly, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
@@ -446,7 +446,7 @@ static C_KZG_RET compute_kzg_proof_impl(
             continue;
         }
         // (p_i - y) / (ω_i - z)
-        blst_fr_sub(&q[i], &poly[i], y_out);
+        blst_fr_sub(&q_poly[i], &poly[i], y_out);
         blst_fr_sub(&inverses_in[i], &brp_roots_of_unity[i], z);
     }
 
@@ -454,11 +454,11 @@ static C_KZG_RET compute_kzg_proof_impl(
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        blst_fr_mul(&q[i], &q[i], &inverses[i]);
+        blst_fr_mul(&q_poly[i], &q_poly[i], &inverses[i]);
     }
 
     if (m != 0) { /* ω_{m-1} == z */
-        q[--m] = FR_ZERO;
+        q_poly[--m] = FR_ZERO;
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             /* Build denominator: z * (z - ω_i) */
@@ -476,12 +476,12 @@ static C_KZG_RET compute_kzg_proof_impl(
             blst_fr_mul(&tmp, &tmp, &brp_roots_of_unity[i]);
             /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
             blst_fr_mul(&tmp, &tmp, &inverses[i]);
-            blst_fr_add(&q[m], &q[m], &tmp);
+            blst_fr_add(&q_poly[m], &q_poly[m], &tmp);
         }
     }
 
     g1_t out_g1;
-    ret = g1_lincomb_fast(&out_g1, s->g1_values_lagrange_brp, q, FIELD_ELEMENTS_PER_BLOB);
+    ret = g1_lincomb_fast(&out_g1, s->g1_values_lagrange_brp, q_poly, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     bytes_from_g1(proof_out, &out_g1);
@@ -489,7 +489,7 @@ static C_KZG_RET compute_kzg_proof_impl(
 out:
     c_kzg_free(inverses_in);
     c_kzg_free(inverses);
-    c_kzg_free(q);
+    c_kzg_free(q_poly);
     return ret;
 }
 
