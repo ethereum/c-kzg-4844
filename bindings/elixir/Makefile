@@ -72,7 +72,7 @@ all: blst ckzg
 
 .PHONY: blst
 blst:
-	$(MAKE) -C ../../ blst
+	$(MAKE) -C ../../src blst
 
 .PHONY: ckzg
 ckzg: blst
