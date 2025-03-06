@@ -12,8 +12,9 @@ bindings are intended to be used by Ethereum clients to avoid re-implementation
 of crucial cryptographic functions.
 
 | Language | Link                                 |
-|----------|--------------------------------------|
+| -------- | ------------------------------------ |
 | C#       | [README](bindings/csharp/README.md)  |
+| Elixir   | [README](bindings/elixir/README.md)  |
 | Go       | [README](bindings/go/README.md)      |
 | Java     | [README](bindings/java/README.md)    |
 | Nim      | [README](bindings/nim/README.md)     |
