@@ -39,6 +39,7 @@ defmodule KZGTest do
 
     for file <- @blob_to_kzg_commitment_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
 
       case KZG.blob_to_kzg_commitment(blob, setup) do
@@ -59,6 +60,7 @@ defmodule KZGTest do
 
     for file <- @compute_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
       z = bytes_from_hex(test_data["input"]["z"])
 
@@ -85,6 +87,7 @@ defmodule KZGTest do
 
     for file <- @compute_blob_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
       commitment = bytes_from_hex(test_data["input"]["commitment"])
 
@@ -106,6 +109,7 @@ defmodule KZGTest do
 
     for file <- @verify_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       commitment = bytes_from_hex(test_data["input"]["commitment"])
       z = bytes_from_hex(test_data["input"]["z"])
       y = bytes_from_hex(test_data["input"]["y"])
@@ -127,6 +131,7 @@ defmodule KZGTest do
 
     for file <- @verify_blob_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
       commitment = bytes_from_hex(test_data["input"]["commitment"])
       proof = bytes_from_hex(test_data["input"]["proof"])
@@ -180,6 +185,7 @@ defmodule KZGTest do
 
     for file <- @compute_cells_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
 
       case KZG.compute_cells(blob, setup) do
@@ -200,6 +206,7 @@ defmodule KZGTest do
 
     for file <- @compute_cells_and_kzg_proofs_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       blob = bytes_from_hex(test_data["input"]["blob"])
 
       case KZG.compute_cells_and_kzg_proofs(blob, setup) do
@@ -209,7 +216,7 @@ defmodule KZGTest do
         {:ok, cells, proofs} ->
           expected_cells =
             test_data["output"]
-            |> hd()
+            |> List.first()
             |> Enum.map(&bytes_from_hex/1)
 
           expected_proofs =
@@ -231,6 +238,7 @@ defmodule KZGTest do
 
     for file <- @recover_cells_and_kzg_proofs_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
+
       cell_indices = test_data["input"]["cell_indices"]
       cells = Enum.map(test_data["input"]["cells"], &bytes_from_hex/1)
 
@@ -241,7 +249,7 @@ defmodule KZGTest do
         {:ok, recovered_cells, recovered_proofs} ->
           expected_cells =
             test_data["output"]
-            |> hd()
+            |> List.first()
             |> Enum.map(&bytes_from_hex/1)
 
           expected_proofs =
@@ -272,7 +280,6 @@ defmodule KZGTest do
 
       cell_indices = test_data["input"]["cell_indices"]
       cells = Enum.map(test_data["input"]["cells"], &bytes_from_hex/1)
-
       proofs = Enum.map(test_data["input"]["proofs"], &bytes_from_hex/1)
 
       case KZG.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs, setup) do

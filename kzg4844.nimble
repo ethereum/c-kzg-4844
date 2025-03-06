@@ -12,12 +12,12 @@ license       = "Apache License 2.0"
 skipDirs      = @[
   "tests", "lib", "inc", "fuzz",
   "bindings/csharp",
+  "bindings/elixir",
   "bindings/go",
   "bindings/java",
   "bindings/node.js",
   "bindings/python",
-  "bindings/rust",
-  "bindings/elixir"
+  "bindings/rust"
   ]
 installDirs   = @[
   "blst",

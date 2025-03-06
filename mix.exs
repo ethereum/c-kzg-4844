@@ -16,8 +16,8 @@ defmodule CKZG.MixProject do
       make_precompiler_filename: "nif",
       make_precompiler: {:nif, CCPrecompiler},
       make_precompiler_priv_paths: ["ckzg_nif.*"],
+      make_force_build: Mix.env() == :test,
       version: @version,
-      force_build: Mix.env() != :prod,
       elixir: "~> 1.18",
       start_permanent: Mix.env() == :prod,
       deps: deps()
