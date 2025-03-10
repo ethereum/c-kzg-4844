@@ -17,8 +17,8 @@ jobs:
           - macos-latest
           - windows-latest
         node:
-          - 18
           - 20
+          - 21
           - 22
     steps:
       - uses: actions/checkout@v3
