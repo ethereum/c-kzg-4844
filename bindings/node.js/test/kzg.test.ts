@@ -70,14 +70,14 @@ type VerifyCellKzgProofBatchTest = TestMeta<
   boolean
 >;
 
-const blobValidLength = randomBytes(BYTES_PER_BLOB);
-const blobBadLength = randomBytes(BYTES_PER_BLOB - 1);
-const commitmentValidLength = randomBytes(BYTES_PER_COMMITMENT);
-const commitmentBadLength = randomBytes(BYTES_PER_COMMITMENT - 1);
-const proofValidLength = randomBytes(BYTES_PER_PROOF);
-const proofBadLength = randomBytes(BYTES_PER_PROOF - 1);
-const fieldElementValidLength = randomBytes(BYTES_PER_FIELD_ELEMENT);
-const fieldElementBadLength = randomBytes(BYTES_PER_FIELD_ELEMENT - 1);
+const blobValidLength = new Uint8Array(randomBytes(BYTES_PER_BLOB));
+const blobBadLength = new Uint8Array(randomBytes(BYTES_PER_BLOB - 1));
+const commitmentValidLength = new Uint8Array(randomBytes(BYTES_PER_COMMITMENT));
+const commitmentBadLength = new Uint8Array(randomBytes(BYTES_PER_COMMITMENT - 1));
+const proofValidLength = new Uint8Array(randomBytes(BYTES_PER_PROOF));
+const proofBadLength = new Uint8Array(randomBytes(BYTES_PER_PROOF - 1));
+const fieldElementValidLength = new Uint8Array(randomBytes(BYTES_PER_FIELD_ELEMENT));
+const fieldElementBadLength = new Uint8Array(randomBytes(BYTES_PER_FIELD_ELEMENT - 1));
 
 /**
  * Generates a random blob of the correct length for the KZG library
@@ -233,7 +233,7 @@ describe("C-KZG", () => {
 
         try {
           commitment = blobToKzgCommitment(blob);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -257,7 +257,7 @@ describe("C-KZG", () => {
 
         try {
           proof = computeKzgProof(blob, z);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -285,7 +285,7 @@ describe("C-KZG", () => {
 
         try {
           proof = computeBlobKzgProof(blob, commitment);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -311,7 +311,7 @@ describe("C-KZG", () => {
 
         try {
           valid = verifyKzgProof(commitment, z, y, proof);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -334,7 +334,7 @@ describe("C-KZG", () => {
 
         try {
           valid = verifyBlobKzgProof(blob, commitment, proof);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -357,7 +357,7 @@ describe("C-KZG", () => {
 
         try {
           valid = verifyBlobKzgProofBatch(blobs, commitments, proofs);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -378,7 +378,7 @@ describe("C-KZG", () => {
 
         try {
           cells = computeCells(blob);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -405,7 +405,7 @@ describe("C-KZG", () => {
 
         try {
           [cells, proofs] = computeCellsAndKzgProofs(blob);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -439,7 +439,7 @@ describe("C-KZG", () => {
 
         try {
           [recoveredCells, recoveredProofs] = recoverCellsAndKzgProofs(cellIndices, cells);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }
@@ -474,7 +474,7 @@ describe("C-KZG", () => {
 
         try {
           valid = verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
-        } catch (err) {
+        } catch {
           expect(test.output).toBeNull();
           return;
         }

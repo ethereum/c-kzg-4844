@@ -121,9 +121,7 @@ KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
  * @return - native pointer to first byte in ArrayBuffer
  */
 inline uint8_t *get_bytes(
-    const Napi::Env &env,
-    const Napi::Value &val,
-    size_t length,
+    const Napi::Env &env, const Napi::Value &val, size_t length,
     std::string_view name
 ) {
     if (!val.IsTypedArray() ||
@@ -885,17 +883,15 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    commitments = (Bytes48 *)calloc(
-        commitments_param.Length(), sizeof(Bytes48)
-    );
+    commitments = (Bytes48 *
+    )calloc(commitments_param.Length(), sizeof(Bytes48));
     if (commitments == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for commitments")
             .ThrowAsJavaScriptException();
         goto out;
     }
-    cell_indices = (uint64_t *)calloc(
-        cell_indices_param.Length(), sizeof(uint64_t)
-    );
+    cell_indices = (uint64_t *
+    )calloc(cell_indices_param.Length(), sizeof(uint64_t));
     if (cell_indices == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for cell_indices")
             .ThrowAsJavaScriptException();

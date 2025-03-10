@@ -9,13 +9,13 @@ edition = "2018"
 cargo-fuzz = true
 
 [build-dependencies]
-cc = "1.0"
+cc = "1.2"
 
 [dependencies]
-arbitrary = "1.0"
+arbitrary = "1.4"
 rust_eth_kzg = { git = "https://github.com/crate-crypto/rust-eth-kzg" }
 constantine = { git = "https://github.com/mratsim/constantine", package = "constantine-ethereum-kzg" }
-lazy_static = "1.4"
+lazy_static = "1.5"
 libfuzzer-sys = "0.4"
 
 [dependencies.c-kzg]

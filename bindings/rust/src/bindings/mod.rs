@@ -930,11 +930,11 @@ mod tests {
     }
 
     fn test_simple(trusted_setup_file: &Path) {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         assert!(trusted_setup_file.exists());
         let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
 
-        let num_blobs: usize = rng.gen_range(1..16);
+        let num_blobs: usize = rng.random_range(1..16);
         let mut blobs: Vec<Blob> = (0..num_blobs)
             .map(|_| generate_random_blob(&mut rng))
             .collect();
