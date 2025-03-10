@@ -58,6 +58,7 @@ List available targets like this:
 $ cargo fuzz list
 fuzz_blob_to_kzg_commitment
 fuzz_compute_blob_kzg_proof
+fuzz_compute_cells
 fuzz_compute_cells_and_kzg_proofs
 fuzz_compute_kzg_proof
 fuzz_recover_cells_and_kzg_proofs
