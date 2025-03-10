@@ -55,7 +55,7 @@ once_cell = { version = "1.19", default-features = false, features = [
 [dev-dependencies]
 criterion = "0.5.1"
 glob = "0.3.1"
-rand = "0.8.5"
+rand = "0.9.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.105"
 serde_yaml = "0.9.17"
