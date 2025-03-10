@@ -35,7 +35,7 @@ fuzz_target!(|input: Input| {
 
     let ckzg_result = KZG_SETTINGS
         .recover_cells_and_kzg_proofs(input.cell_indices.as_slice(), input.cells.as_slice());
-    let rkzg_result = DAS_CONTEXT.recover_cells_and_proofs(input.cell_indices, cells_bytes);
+    let rkzg_result = DAS_CONTEXT.recover_cells_and_kzg_proofs(input.cell_indices, cells_bytes);
 
     match (&ckzg_result, &rkzg_result) {
         (Ok((ckzg_cells, ckzg_proofs)), Ok((rkzg_cells, rkzg_proofs))) => {
