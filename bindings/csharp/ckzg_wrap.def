@@ -12,7 +12,6 @@ EXPORTS
 	verify_kzg_proof
 	verify_blob_kzg_proof
 	verify_blob_kzg_proof_batch
-	compute_cells
 	compute_cells_and_kzg_proofs
 	recover_cells_and_kzg_proofs
 	verify_cell_kzg_proof_batch
