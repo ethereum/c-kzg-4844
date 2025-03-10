@@ -62,6 +62,12 @@ test = false
 doc = false
 
 [[bin]]
+name = "fuzz_compute_cells"
+path = "fuzz_targets/fuzz_compute_cells.rs"
+test = false
+doc = false
+
+[[bin]]
 name = "fuzz_compute_cells_and_kzg_proofs"
 path = "fuzz_targets/fuzz_compute_cells_and_kzg_proofs.rs"
 test = false
