@@ -39,7 +39,7 @@ bindings.DEFAULT_TRUSTED_SETUP_PATH = path.resolve(__dirname, "..", "deps", "c-k
  */
 function transformTrustedSetupJson(filePath) {
   const trustedSetup = JSON.parse(fs.readFileSync(filePath, "utf8"));
-  if(trustedSetup.g1_lagrange.length != trustedSetup.g1_monomial.length) {
+  if (trustedSetup.g1_lagrange.length != trustedSetup.g1_monomial.length) {
     throw new TypeError("g1_lagrange & g1_monomial must have the same number of values");
   }
   const setupText =
