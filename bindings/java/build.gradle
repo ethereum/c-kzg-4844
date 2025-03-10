@@ -1,8 +1,8 @@
 plugins {
     id "application"
     id "java-test-fixtures"
-    id "me.champeau.jmh" version "0.7.0"
-    id "com.diffplug.spotless" version "6.25.0"
+    id "me.champeau.jmh" version "0.7.3"
+    id "com.diffplug.spotless" version "7.0.2"
 }
 
 repositories {
@@ -15,12 +15,12 @@ java {
 }
 
 dependencies {
-
-    def junitVersion = "5.9.2"
-    def jacksonVersion = "2.14.2"
+    def junitVersion = "5.12.0"
+    def jacksonVersion = "2.16.1"
 
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     testFixturesImplementation("org.apache.tuweni:tuweni-units:2.3.1")
     testFixturesImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
