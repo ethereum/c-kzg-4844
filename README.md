@@ -108,3 +108,36 @@ Compared to Rust, C offers a lighter memory and binary footprint. Furthermore, C
 serves as the de facto language for
 [FFI](https://en.wikipedia.org/wiki/Foreign_function_interface), so we could not
 have completely avoided using C anyway.
+
+### Precompute
+
+Introduced in v2.0.0, a `precompute` parameter was added to the functions which
+load the trusted setup. When a non-zero value is provided, a fixed-base
+multi-scalar multiplication function (instead of Pippenger's algorithm) is used
+to compute cell KZG proofs. Note that the `precompute` parameter only affects
+the performance of `compute_cells_and_kzg_proofs` and
+`recover_cells_and_kzg_proofs`. If your application does not use these
+functions, we recommend using `precompute=0`. For applications that do, we
+recommend using `precompute=8` or `precompute=9`, which offer an optimal balance
+between performance and memory usage.
+
+For reference, benchmarks from a system with an Apple M1 CPU:
+
+| Precompute | Load Time | Compute Time | Memory Size |
+| ---------: | --------: | -----------: | ----------: |
+|          0 |    1.69 s |    311.15 ms |       0 KiB |
+|          1 |    1.70 s |    891.29 ms |     768 KiB |
+|          2 |    1.69 s |    480.85 ms |    1536 KiB |
+|          3 |    1.71 s |    344.99 ms |       3 MiB |
+|          4 |    1.74 s |    277.46 ms |       6 MiB |
+|          5 |    1.77 s |    239.71 ms |      12 MiB |
+|          6 |    1.82 s |    212.18 ms |      24 MiB |
+|          7 |    1.97 s |    196.78 ms |      48 MiB |
+|          8 |    2.26 s |    180.71 ms |      96 MiB |
+|          9 |    2.82 s |    169.72 ms |     192 MiB |
+|         10 |    3.95 s |    159.83 ms |     384 MiB |
+|         11 |    6.19 s |    155.72 ms |     768 MiB |
+|         12 |   10.78 s |    148.54 ms |    1536 MiB |
+|         13 |   19.66 s |    141.83 ms |       3 GiB |
+|         14 |   37.83 s |    135.94 ms |       6 GiB |
+|         15 |   74.95 s |    134.50 ms |      12 GiB |
