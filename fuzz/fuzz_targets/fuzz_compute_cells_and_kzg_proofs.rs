@@ -9,16 +9,41 @@ use c_kzg::KzgSettings;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
 use rust_eth_kzg::DASContext;
+use std::env;
 use std::path::PathBuf;
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper Functions
+///////////////////////////////////////////////////////////////////////////////
+
+fn get_root_dir() -> PathBuf {
+    if let Ok(manifest) = env::var("CARGO_MANIFEST_DIR") {
+        // When running locally
+        PathBuf::from(manifest)
+            .parent()
+            .expect("CARGO_MANIFEST_DIR has no parent")
+            .to_path_buf()
+    } else {
+        // When running with oss-fuzz
+        env::current_dir().expect("Failed to get current directory")
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Initialization
+///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
     static ref KZG_SETTINGS: KzgSettings = {
-        let root_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-        let trusted_setup_file = root_dir.join("..").join("src").join("trusted_setup.txt");
+        let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         KzgSettings::load_trusted_setup_file(&trusted_setup_file, 8).unwrap()
     };
     static ref DAS_CONTEXT: DASContext = DASContext::default();
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Fuzz Target
+///////////////////////////////////////////////////////////////////////////////
 
 fuzz_target!(|blob: Blob| {
     let ckzg_result = KZG_SETTINGS.compute_cells_and_kzg_proofs(&blob);

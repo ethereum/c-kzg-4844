@@ -7,8 +7,26 @@ extern crate core;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
 use std::cell::UnsafeCell;
+use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
+
+///////////////////////////////////////////////////////////////////////////////
+// Helper Functions
+///////////////////////////////////////////////////////////////////////////////
+
+fn get_root_dir() -> PathBuf {
+    if let Ok(manifest) = env::var("CARGO_MANIFEST_DIR") {
+        // When running locally
+        PathBuf::from(manifest)
+            .parent()
+            .expect("CARGO_MANIFEST_DIR has no parent")
+            .to_path_buf()
+    } else {
+        // When running with oss-fuzz
+        env::current_dir().expect("Failed to get current directory")
+    }
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CKZG Initialization
@@ -16,8 +34,7 @@ use std::sync::{Arc, OnceLock};
 
 lazy_static! {
     static ref KZG_SETTINGS: c_kzg::KzgSettings = {
-        let root_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-        let trusted_setup_file = root_dir.join("..").join("src").join("trusted_setup.txt");
+        let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
 }
@@ -47,8 +64,7 @@ impl SafeEthKzgContext {
 static CONSTANTINE_CTX: OnceLock<Arc<SafeEthKzgContext>> = OnceLock::new();
 
 fn initialize_constantine_ctx() -> Arc<SafeEthKzgContext> {
-    let root_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    let trusted_setup_file = root_dir.join("..").join("src").join("trusted_setup.txt");
+    let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
     let eth_kzg_context =
         constantine::EthKzgContext::load_trusted_setup(&trusted_setup_file).unwrap();
     Arc::new(SafeEthKzgContext::new(eth_kzg_context))
