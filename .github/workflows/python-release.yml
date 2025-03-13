@@ -100,23 +100,30 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
-          name: sdist-${{ matrix.os }}
+          name: sdist
 
 
   publish:
     needs: [build-wheels, build-sdist]
     runs-on: ubuntu-latest
     steps:
-      - name: Download artifacts
+      - name: Download wheel artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: wheels-${{ matrix.os }}
-          path: wheelhouse
+          pattern: wheels-*
+          path: publish-dist
+          merge-multiple: true
+
+      - name: Download sdist artifact
+        uses: actions/download-artifact@v4
+        with:
+          pattern: sdist
+          path: publish-dist
           merge-multiple: true
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_PASSWORD }}
-          packages-dir: wheelhouse
+          packages-dir: publish-dist
 
