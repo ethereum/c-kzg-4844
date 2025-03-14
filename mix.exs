@@ -4,9 +4,14 @@ defmodule CKZG.MixProject do
   @version "2.1.0"
 
   def project do
-    [File.cwd!(), "bindings", "elixir"]
-    |> Path.join()
-    |> File.cd!()
+    # Make cwd always `bindings/elixir`.
+    cwd = File.cwd!()
+    elixir_path = Path.join(["bindings", "elixir"])
+
+    with false <- String.ends_with?(cwd, elixir_path),
+         true <- File.dir?(Path.join(cwd, elixir_path)) do
+      File.cd!(Path.join(cwd, elixir_path))
+    end
 
     [
       app: :ckzg,
