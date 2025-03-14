@@ -25,6 +25,5 @@ jobs:
         run: cmp src/trusted_setup.txt trusted_setup.txt
 
       # Check that our tests match the reference tests from the spec
-      # TODO(jtraglia): Re-enable this when the next specs release comes out.
-      #- name: Compare Tests
-      #  run: python3 ./scripts/do_tests_match_ref_tests.py
+      - name: Compare Tests
+        run: python3 ./scripts/do_tests_match_ref_tests.py
