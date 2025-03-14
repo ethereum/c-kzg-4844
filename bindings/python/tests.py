@@ -267,6 +267,7 @@ if __name__ == "__main__":
     test_verify_blob_kzg_proof(ts)
     test_verify_blob_kzg_proof_batch(ts)
 
+    test_compute_cells(ts)
     test_compute_cells_and_kzg_proofs(ts)
     test_recover_cells_and_kzg_proofs(ts)
     test_verify_cell_kzg_proof_batch(ts)
