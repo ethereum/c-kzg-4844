@@ -216,30 +216,24 @@ impl KZGSettings {
 
         // Load g1 Lagrange bytes
         g1_lagrange_bytes
-            .chunks_mut(BYTES_PER_G1_POINT)
-            .map(|chunk| {
+            .chunks_mut(BYTES_PER_G1_POINT).try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
-            })
-            .collect::<Result<(), KzgErrors>>()?;
+            })?;
 
         // Load g2 monomial bytes
         g2_monomial_bytes
-            .chunks_mut(BYTES_PER_G2_POINT)
-            .map(|chunk| {
+            .chunks_mut(BYTES_PER_G2_POINT).try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
-            })
-            .collect::<Result<(), KzgErrors>>()?;
+            })?;
 
         // Load g1 monomial bytes
         g1_monomial_bytes
-            .chunks_mut(BYTES_PER_G1_POINT)
-            .map(|chunk| {
+            .chunks_mut(BYTES_PER_G1_POINT).try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
-            })
-            .collect::<Result<(), KzgErrors>>()?;
+            })?;
 
         if lines.next().is_some() {
             return Err(KzgErrors::FileFormatError.into());
@@ -272,7 +266,7 @@ impl KZGSettings {
     /// .
     pub fn load_trusted_setup_file_inner(file_path: &CStr, precompute: u64) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
-        const MODE: &CStr = unsafe { CStr::from_bytes_with_nul_unchecked(b"r\0") };
+        const MODE: &CStr = unsafe { c"r" };
 
         // SAFETY:
         // - .as_ptr(): pointer is not dangling because file_path has not been dropped.
@@ -291,7 +285,9 @@ impl KZGSettings {
             )));
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
-        let result = unsafe {
+        
+
+        unsafe {
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr, precompute);
             let _unchecked_close_result = libc::fclose(file_ptr);
 
@@ -302,9 +298,7 @@ impl KZGSettings {
                     "Invalid trusted setup: {res:?}"
                 )))
             }
-        };
-
-        result
+        }
     }
 
     pub fn blob_to_kzg_commitment(&self, blob: &Blob) -> Result<KZGCommitment, Error> {
