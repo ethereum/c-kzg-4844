@@ -65,7 +65,7 @@ pub enum C_KZG_RET {
 }
 #[doc = " An array of 32 bytes. Represents an untrusted (potentially invalid) field element."]
 #[repr(C)]
-#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Bytes32 {
     bytes: [u8; 32usize],
 }

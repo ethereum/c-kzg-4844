@@ -100,6 +100,9 @@ impl From<KzgErrors> for Error {
     }
 }
 
+pub type CallsPerExtBlob = [Cell; CELLS_PER_EXT_BLOB];
+pub type ProofsPerExtBlob = [KZGProof; CELLS_PER_EXT_BLOB];
+
 #[derive(Debug)]
 pub enum KzgErrors {
     /// Failed to get current directory.
@@ -216,21 +219,24 @@ impl KZGSettings {
 
         // Load g1 Lagrange bytes
         g1_lagrange_bytes
-            .chunks_mut(BYTES_PER_G1_POINT).try_for_each(|chunk| {
+            .chunks_mut(BYTES_PER_G1_POINT)
+            .try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
             })?;
 
         // Load g2 monomial bytes
         g2_monomial_bytes
-            .chunks_mut(BYTES_PER_G2_POINT).try_for_each(|chunk| {
+            .chunks_mut(BYTES_PER_G2_POINT)
+            .try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
             })?;
 
         // Load g1 monomial bytes
         g1_monomial_bytes
-            .chunks_mut(BYTES_PER_G1_POINT).try_for_each(|chunk| {
+            .chunks_mut(BYTES_PER_G1_POINT)
+            .try_for_each(|chunk| {
                 let line = lines.next().ok_or(KzgErrors::FileFormatError)?;
                 hex::decode_to_slice(line, chunk).map_err(|_| KzgErrors::ParseError)
             })?;
@@ -266,7 +272,7 @@ impl KZGSettings {
     /// .
     pub fn load_trusted_setup_file_inner(file_path: &CStr, precompute: u64) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
-        const MODE: &CStr = unsafe { c"r" };
+        const MODE: &CStr = c"r";
 
         // SAFETY:
         // - .as_ptr(): pointer is not dangling because file_path has not been dropped.
@@ -285,7 +291,6 @@ impl KZGSettings {
             )));
         }
         let mut kzg_settings = MaybeUninit::<KZGSettings>::uninit();
-        
 
         unsafe {
             let res = load_trusted_setup_file(kzg_settings.as_mut_ptr(), file_ptr, precompute);
@@ -438,7 +443,7 @@ impl KZGSettings {
         }
     }
 
-    pub fn compute_cells(&self, blob: &Blob) -> Result<Box<[Cell; CELLS_PER_EXT_BLOB]>, Error> {
+    pub fn compute_cells(&self, blob: &Blob) -> Result<Box<CallsPerExtBlob>, Error> {
         let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
             let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
@@ -453,13 +458,7 @@ impl KZGSettings {
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: &Blob,
-    ) -> Result<
-        (
-            Box<[Cell; CELLS_PER_EXT_BLOB]>,
-            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
-        ),
-        Error,
-    > {
+    ) -> Result<(Box<CallsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
         let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
         unsafe {
@@ -477,13 +476,7 @@ impl KZGSettings {
         &self,
         cell_indices: &[u64],
         cells: &[Cell],
-    ) -> Result<
-        (
-            Box<[Cell; CELLS_PER_EXT_BLOB]>,
-            Box<[KZGProof; CELLS_PER_EXT_BLOB]>,
-        ),
-        Error,
-    > {
+    ) -> Result<(Box<CallsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
         if cell_indices.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cell indices and {} cells",
@@ -815,12 +808,6 @@ impl Deref for KZGCommitment {
     type Target = [u8; BYTES_PER_COMMITMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
-    }
-}
-
-impl Default for Bytes32 {
-    fn default() -> Self {
-        Bytes32 { bytes: [0; 32] }
     }
 }
 
