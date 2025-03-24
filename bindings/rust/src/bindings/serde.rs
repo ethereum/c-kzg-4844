@@ -90,14 +90,15 @@ mod tests {
         // load setup so we can create commitments and blobs
         let trusted_setup_file = trusted_setup_file();
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
 
         // generate blob, commitment, proof
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
-        let proof =
-            KZGProof::compute_blob_kzg_proof(&blob, &commitment.to_bytes(), &kzg_settings).unwrap();
+        let commitment = kzg_settings.blob_to_kzg_commitment(&blob).unwrap();
+        let proof = kzg_settings
+            .compute_blob_kzg_proof(&blob, &commitment.to_bytes())
+            .unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&blob).unwrap();
@@ -119,7 +120,7 @@ mod tests {
     #[test]
     fn test_serialize_blob_with_prefix() {
         // generate blob
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let blob = generate_random_blob(&mut rng);
 
         // check blob serialization
@@ -140,12 +141,12 @@ mod tests {
         // load setup so we can create a commitments
         let trusted_setup_file = trusted_setup_file();
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file).unwrap();
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
 
         // generate blob just to calculate a commitment
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let blob = generate_random_blob(&mut rng);
-        let commitment = KZGCommitment::blob_to_kzg_commitment(&blob, &kzg_settings).unwrap();
+        let commitment = kzg_settings.blob_to_kzg_commitment(&blob).unwrap();
 
         // check blob serialization
         let blob_serialized = serde_json::to_string(&commitment.to_bytes()).unwrap();
