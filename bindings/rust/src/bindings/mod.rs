@@ -269,7 +269,6 @@ impl KZGSettings {
     ///
     /// Same as [`load_trusted_setup_file`](Self::load_trusted_setup_file)
     #[cfg_attr(not(feature = "std"), doc = ", but takes a `CStr` instead of a `Path`")]
-    /// .
     pub fn load_trusted_setup_file_inner(file_path: &CStr, precompute: u64) -> Result<Self, Error> {
         // SAFETY: `b"r\0"` is a valid null-terminated string.
         const MODE: &CStr = c"r";
@@ -808,6 +807,13 @@ impl Deref for KZGCommitment {
     type Target = [u8; BYTES_PER_COMMITMENT];
     fn deref(&self) -> &Self::Target {
         &self.bytes
+    }
+}
+
+#[allow(clippy::derivable_impls)]
+impl Default for Bytes32 {
+    fn default() -> Self {
+        Bytes32 { bytes: [0; 32] }
     }
 }
 
