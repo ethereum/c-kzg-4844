@@ -100,7 +100,7 @@ impl From<KzgErrors> for Error {
     }
 }
 
-pub type CallsPerExtBlob = [Cell; CELLS_PER_EXT_BLOB];
+pub type CellsPerExtBlob = [Cell; CELLS_PER_EXT_BLOB];
 pub type ProofsPerExtBlob = [KZGProof; CELLS_PER_EXT_BLOB];
 
 #[derive(Debug)]
@@ -442,7 +442,7 @@ impl KZGSettings {
         }
     }
 
-    pub fn compute_cells(&self, blob: &Blob) -> Result<Box<CallsPerExtBlob>, Error> {
+    pub fn compute_cells(&self, blob: &Blob) -> Result<Box<CellsPerExtBlob>, Error> {
         let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         unsafe {
             let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
@@ -457,7 +457,7 @@ impl KZGSettings {
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: &Blob,
-    ) -> Result<(Box<CallsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
+    ) -> Result<(Box<CellsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
         let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
         let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
         unsafe {
@@ -475,7 +475,7 @@ impl KZGSettings {
         &self,
         cell_indices: &[u64],
         cells: &[Cell],
-    ) -> Result<(Box<CallsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
+    ) -> Result<(Box<CellsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
         if cell_indices.len() != cells.len() {
             return Err(Error::MismatchLength(format!(
                 "There are {} cell indices and {} cells",
