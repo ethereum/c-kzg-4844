@@ -8,9 +8,6 @@ mod serde;
 #[cfg(test)]
 mod test_formats;
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
-
 include!("./generated.rs");
 
 use alloc::boxed::Box;
@@ -857,7 +854,7 @@ impl Default for Cell {
 }
 
 #[cfg(feature = "arbitrary")]
-impl Arbitrary<'_> for Bytes32 {
+impl arbitrary::Arbitrary<'_> for Bytes32 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let mut bytes = [0u8; 32];
         u.fill_buffer(&mut bytes)?;
@@ -866,7 +863,7 @@ impl Arbitrary<'_> for Bytes32 {
 }
 
 #[cfg(feature = "arbitrary")]
-impl Arbitrary<'_> for Bytes48 {
+impl arbitrary::Arbitrary<'_> for Bytes48 {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let mut bytes = [0u8; 48];
         u.fill_buffer(&mut bytes)?;
@@ -875,7 +872,7 @@ impl Arbitrary<'_> for Bytes48 {
 }
 
 #[cfg(feature = "arbitrary")]
-impl Arbitrary<'_> for Blob {
+impl arbitrary::Arbitrary<'_> for Blob {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let mut bytes = [0u8; BYTES_PER_BLOB];
         u.fill_buffer(&mut bytes)?;
@@ -884,7 +881,7 @@ impl Arbitrary<'_> for Blob {
 }
 
 #[cfg(feature = "arbitrary")]
-impl Arbitrary<'_> for Cell {
+impl arbitrary::Arbitrary<'_> for Cell {
     fn arbitrary(u: &mut arbitrary::Unstructured<'_>) -> arbitrary::Result<Self> {
         let mut bytes = [0u8; BYTES_PER_CELL];
         u.fill_buffer(&mut bytes)?;
