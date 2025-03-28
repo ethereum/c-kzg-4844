@@ -22,7 +22,7 @@ jobs:
         with:
           go-version: stable
         id: go
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Test
