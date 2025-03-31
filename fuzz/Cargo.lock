@@ -68,7 +68,7 @@ checksum = "7575182f7272186991736b70173b0ea045398f984bf5ebbb3804736ce1330c9d"
 
 [[package]]
 name = "c-kzg"
-version = "2.1.0"
+version = "2.1.1"
 dependencies = [
  "arbitrary",
  "blst",
