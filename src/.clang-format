@@ -7,7 +7,7 @@ AlignAfterOpenBracket: BlockIndent
 AlignEscapedNewlines: DontAlign
 AlwaysBreakAfterDefinitionReturnType: None
 BinPackArguments: False
-BinPackParameters: False
+BinPackParameters: OnePerLine
 PenaltyReturnTypeOnItsOwnLine: 1000
 PenaltyBreakAssignment: 100
 ColumnLimit: 100
