@@ -37,8 +37,10 @@ jobs:
           pip install setuptools
       - name: Check formatting
         if: matrix.os == 'ubuntu-latest'
-        working-directory: bindings/node.js
-        run: make format
+        uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # v4.15.0
+        with:
+          clang-format-version: '20'
+          check-path: 'bindings/node.js'
       - name: Build/test bindings
         working-directory: bindings/node.js
         run: make build test
