@@ -121,7 +121,9 @@ KZGSettings *get_kzg_settings(Napi::Env &env, const Napi::CallbackInfo &info) {
  * @return - native pointer to first byte in ArrayBuffer
  */
 inline uint8_t *get_bytes(
-    const Napi::Env &env, const Napi::Value &val, size_t length,
+    const Napi::Env &env,
+    const Napi::Value &val,
+    size_t length,
     std::string_view name
 ) {
     if (!val.IsTypedArray() ||
