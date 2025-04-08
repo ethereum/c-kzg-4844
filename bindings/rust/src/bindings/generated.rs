@@ -112,7 +112,7 @@ pub struct KZGSettings {
 pub struct Cell {
     bytes: [u8; 2048usize],
 }
-unsafe extern "C" {
+extern "C" {
     pub fn blob_to_kzg_commitment(
         out: *mut KZGCommitment,
         blob: *const Blob,
