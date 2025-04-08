@@ -144,6 +144,9 @@ fn make_bindings(
         .unwrap();
 
     let mut bindings = bindings.to_string();
+    // Remove unsafe from `unsafe extern "C"` from the bindings
+    // Having unsafe extern will break compilation in newer versions of rust.
+    bindings = bindings.replace("unsafe extern", "extern");
     bindings = replace_ckzg_ret_repr(bindings);
     std::fs::write(bindings_out_path, bindings).expect("Failed to write bindings");
 }
