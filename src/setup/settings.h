@@ -19,8 +19,6 @@
 #include "common/ec.h"
 #include "common/fr.h"
 
-#include <stdatomic.h> /* For atomic_flag */
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -79,7 +77,7 @@ typedef struct {
     /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
     /** A lock for the commitment cache. */
-    atomic_flag *comm_cache_lock;
+    uint8_t *comm_cache_lock;
     /** The bytes used as the commitment cache key. */
     uint8_t *comm_cache_key;
     /** The bytes used as the commitment cache value. */

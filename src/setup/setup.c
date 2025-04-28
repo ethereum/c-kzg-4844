@@ -20,12 +20,11 @@
 #include "eip7594/eip7594.h"
 #include "eip7594/fft.h"
 
-#include <assert.h>    /* For assert */
-#include <inttypes.h>  /* For SCNu64 */
-#include <stdatomic.h> /* For atomic_flag */
-#include <stdio.h>     /* For FILE */
-#include <stdlib.h>    /* For NULL */
-#include <string.h>    /* For memcpy */
+#include <assert.h>   /* For assert */
+#include <inttypes.h> /* For SCNu64 */
+#include <stdio.h>    /* For FILE */
+#include <stdlib.h>   /* For NULL */
+#include <string.h>   /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -422,9 +421,9 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Initialize lock for cell verification commitment cache */
-    ret = c_kzg_malloc((void **)&out->comm_cache_lock, sizeof(atomic_flag));
+    ret = c_kzg_malloc((void **)&out->comm_cache_lock, sizeof(uint8_t));
     if (ret != C_KZG_OK) goto out_error;
-    atomic_flag_clear_explicit(out->comm_cache_lock, memory_order_relaxed);
+    *out->comm_cache_lock = 0;
 
     /* Set the max cache size to a high value */
     out->comm_cache_size = 4096;

@@ -105,6 +105,14 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
+    #[doc = " A lock for the commitment cache."]
+    comm_cache_lock: *mut u8,
+    #[doc = " The bytes used as the commitment cache key."]
+    comm_cache_key: *mut u8,
+    #[doc = " The bytes used as the commitment cache value."]
+    comm_cache_value: *mut u8,
+    #[doc = " The max number of commitments the cache supports."]
+    comm_cache_size: u64,
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]

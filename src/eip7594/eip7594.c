@@ -496,7 +496,7 @@ static C_KZG_RET cached_commitment_validation(
      * time. Even though ckzg is single-threaded, we expect its functions to be called from a
      * multi-threaded context.
      */
-    while (atomic_flag_test_and_set_explicit(s->comm_cache_lock, memory_order_acquire)) {
+    while (__atomic_test_and_set(s->comm_cache_lock, __ATOMIC_ACQUIRE)) {
         /* Wait for the lock to be released */
     }
 
@@ -528,7 +528,7 @@ static C_KZG_RET cached_commitment_validation(
 
 out:
     /* Clear the lock */
-    atomic_flag_clear_explicit(s->comm_cache_lock, memory_order_release);
+    __atomic_clear(s->comm_cache_lock, __ATOMIC_RELEASE);
     return ret;
 }
 
