@@ -853,7 +853,13 @@ static void test_bit_reversal_permutation__fails_n_not_power_of_two(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
-static void test_bit_reversal_permutation__fails_n_is_one(void) {
+static void test_bit_reversal_permutation__n_is_zero(void) {
+    C_KZG_RET ret;
+    ret = bit_reversal_permutation(NULL, sizeof(uint64_t), 0);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+}
+
+static void test_bit_reversal_permutation__n_is_one(void) {
     C_KZG_RET ret;
     uint64_t reversed[1];
 
@@ -861,7 +867,7 @@ static void test_bit_reversal_permutation__fails_n_is_one(void) {
         reversed[i] = 0;
     }
     ret = bit_reversal_permutation(&reversed, sizeof(uint64_t), 1);
-    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+    ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2319,7 +2325,8 @@ int main(void) {
     RUN(test_bit_reversal_permutation__specific_items);
     RUN(test_bit_reversal_permutation__coset_structure);
     RUN(test_bit_reversal_permutation__fails_n_not_power_of_two);
-    RUN(test_bit_reversal_permutation__fails_n_is_one);
+    RUN(test_bit_reversal_permutation__n_is_zero);
+    RUN(test_bit_reversal_permutation__n_is_one);
     RUN(test_compute_powers__succeeds_expected_powers);
     RUN(test_g1_lincomb__verify_consistent);
     RUN(test_evaluate_polynomial_in_evaluation_form__constant_polynomial);
