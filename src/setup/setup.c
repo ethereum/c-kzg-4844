@@ -20,11 +20,12 @@
 #include "eip7594/eip7594.h"
 #include "eip7594/fft.h"
 
-#include <assert.h>   /* For assert */
-#include <inttypes.h> /* For SCNu64 */
-#include <stdio.h>    /* For FILE */
-#include <stdlib.h>   /* For NULL */
-#include <string.h>   /* For memcpy */
+#include <assert.h>    /* For assert */
+#include <inttypes.h>  /* For SCNu64 */
+#include <stdatomic.h> /* For atomic_flag */
+#include <stdio.h>     /* For FILE */
+#include <stdlib.h>    /* For NULL */
+#include <string.h>    /* For memcpy */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
@@ -167,6 +168,9 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values_monomial);
     c_kzg_free(s->g1_values_lagrange_brp);
     c_kzg_free(s->g2_values_monomial);
+    c_kzg_free(s->comm_cache_lock);
+    c_kzg_free(s->comm_cache_key);
+    c_kzg_free(s->comm_cache_value);
 
     /*
      * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
@@ -187,6 +191,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->tables);
     s->wbits = 0;
     s->scratch_size = 0;
+    s->comm_cache_size = 0;
 }
 
 /**
@@ -391,6 +396,8 @@ C_KZG_RET load_trusted_setup(
     out->g2_values_monomial = NULL;
     out->x_ext_fft_columns = NULL;
     out->tables = NULL;
+    out->comm_cache_key = NULL;
+    out->comm_cache_value = NULL;
 
     /* It seems that blst limits the input to 15 */
     if (precompute > 15) {
@@ -414,6 +421,14 @@ C_KZG_RET load_trusted_setup(
         goto out_error;
     }
 
+    /* Initialize lock for cell verification commitment cache */
+    ret = c_kzg_malloc((void **)&out->comm_cache_lock, sizeof(atomic_flag));
+    if (ret != C_KZG_OK) goto out_error;
+    atomic_flag_clear_explicit(out->comm_cache_lock, memory_order_relaxed);
+
+    /* Set the max cache size to a high value */
+    out->comm_cache_size = 4096;
+
     /* Allocate all of our arrays */
     ret = new_fr_array(&out->brp_roots_of_unity, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out_error;
@@ -426,6 +441,10 @@ C_KZG_RET load_trusted_setup(
     ret = new_g1_array(&out->g1_values_lagrange_brp, NUM_G1_POINTS);
     if (ret != C_KZG_OK) goto out_error;
     ret = new_g2_array(&out->g2_values_monomial, NUM_G2_POINTS);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = c_kzg_calloc((void **)&out->comm_cache_key, out->comm_cache_size, BYTES_PER_COMMITMENT);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = c_kzg_calloc((void **)&out->comm_cache_value, out->comm_cache_size, sizeof(g1_t));
     if (ret != C_KZG_OK) goto out_error;
 
     /* Convert all g1 monomial bytes to g1 points */

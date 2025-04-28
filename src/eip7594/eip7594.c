@@ -478,6 +478,61 @@ out:
 }
 
 /**
+ * Decodes and validates a list of commitments. If the commitments are already in the cache, they
+ * are returned from there.
+ *
+ * @param[out]  out             The decoded commitments
+ * @param[in]   commitments     The input commitments, length `num_commitments`
+ * @param[in]   num_commitments The number of commitments
+ * @param[in]   s               The trusted setup
+ */
+static C_KZG_RET cached_commitment_validation(
+    g1_t *out, const Bytes48 *commitments, size_t num_commitments, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+
+    /*
+     * We use an atomic flag to ensure the cache is not accessed by multiple threads at the same
+     * time. Even though ckzg is single-threaded, we expect its functions to be called from a
+     * multi-threaded context.
+     */
+    while (atomic_flag_test_and_set_explicit(s->comm_cache_lock, memory_order_acquire)) {
+        /* Wait for the lock to be released */
+    }
+
+    /* Only do cache lookups if the commitments fit in our cache */
+    if (num_commitments <= s->comm_cache_size) {
+        /* Check if the commitments are in the cache */
+        if (memcmp(s->comm_cache_key, commitments, num_commitments * BYTES_PER_COMMITMENT) == 0) {
+            /* Cache hit, return the values */
+            memcpy(out, s->comm_cache_value, num_commitments * sizeof(g1_t));
+            ret = C_KZG_OK;
+            goto out;
+        }
+    }
+
+    /* The commitments were not in the cache */
+    for (size_t i = 0; i < num_commitments; i++) {
+        /* Convert & validate commitment */
+        ret = bytes_to_kzg_commitment(&out[i], &commitments[i]);
+        if (ret != C_KZG_OK) goto out;
+    }
+
+    if (num_commitments <= s->comm_cache_size) {
+        /* Add the commitments to the cache */
+        memcpy(s->comm_cache_key, commitments, num_commitments * sizeof(Bytes48));
+        memcpy(s->comm_cache_value, out, num_commitments * sizeof(g1_t));
+    }
+
+    ret = C_KZG_OK;
+
+out:
+    /* Clear the lock */
+    atomic_flag_clear_explicit(s->comm_cache_lock, memory_order_release);
+    return ret;
+}
+
+/**
  * Compute the sum of the commitments weighted by the powers of r.
  *
  * @param[out]  sum_of_commitments_out  The resulting G1 sum of the commitments
@@ -493,7 +548,8 @@ static C_KZG_RET compute_weighted_sum_of_commitments(
     const uint64_t *commitment_indices,
     const fr_t *r_powers,
     size_t num_commitments,
-    uint64_t num_cells
+    uint64_t num_cells,
+    const KZGSettings *s
 ) {
     C_KZG_RET ret;
     g1_t *commitments_g1 = NULL;
@@ -504,11 +560,10 @@ static C_KZG_RET compute_weighted_sum_of_commitments(
     ret = new_g1_array(&commitments_g1, num_commitments);
     if (ret != C_KZG_OK) goto out;
 
-    for (size_t i = 0; i < num_commitments; i++) {
-        /* Convert & validate commitment */
-        ret = bytes_to_kzg_commitment(&commitments_g1[i], &unique_commitments[i]);
-        if (ret != C_KZG_OK) goto out;
+    ret = cached_commitment_validation(commitments_g1, unique_commitments, num_commitments, s);
+    if (ret != C_KZG_OK) goto out;
 
+    for (size_t i = 0; i < num_commitments; i++) {
         /* Initialize the weight to zero */
         commitment_weights[i] = FR_ZERO;
     }
@@ -923,7 +978,13 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     ret = compute_weighted_sum_of_commitments(
-        &final_g1_sum, unique_commitments, commitment_indices, r_powers, num_commitments, num_cells
+        &final_g1_sum,
+        unique_commitments,
+        commitment_indices,
+        r_powers,
+        num_commitments,
+        num_cells,
+        s
     );
     if (ret != C_KZG_OK) goto out;
 
