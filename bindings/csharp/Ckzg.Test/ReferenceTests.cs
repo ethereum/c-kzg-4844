@@ -3,7 +3,7 @@ using NUnit.Framework;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Ckzg.Test;
+namespace CkzgLib.Test;
 
 [TestFixture]
 public class ReferenceTests

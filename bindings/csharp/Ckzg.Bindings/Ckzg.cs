@@ -1,4 +1,4 @@
-namespace Ckzg;
+namespace CkzgLib;
 
 public static partial class Ckzg
 {
