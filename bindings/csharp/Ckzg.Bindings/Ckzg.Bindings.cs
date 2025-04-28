@@ -2,7 +2,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-namespace Ckzg;
+namespace CkzgLib;
 
 public static partial class Ckzg
 {
