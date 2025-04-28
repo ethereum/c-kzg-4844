@@ -13,12 +13,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func TestMain(m *testing.M) {
+var ctx *Context
 
-	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 0); err != nil {
+func TestMain(m *testing.M) {
+	var err error
+	ctx, err = LoadTrustedSetupFile("../../src/trusted_setup.txt", 0)
+	if err != nil {
 		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
-	defer FreeTrustedSetup()
+	defer ctx.FreeTrustedSetup()
 	code := m.Run()
 	os.Exit(code)
 }
@@ -130,7 +133,7 @@ func TestBlobToKZGCommitment(t *testing.T) {
 				return
 			}
 
-			commitment, err := BlobToKZGCommitment(blob)
+			commitment, err := ctx.BlobToKZGCommitment(blob)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], commitment[:])
@@ -177,7 +180,7 @@ func TestComputeKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, y, err := ComputeKZGProof(blob, z)
+			proof, y, err := ctx.ComputeKZGProof(blob, z)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedProof Bytes48
@@ -231,7 +234,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			proof, err := ComputeBlobKZGProof(blob, commitment)
+			proof, err := ctx.ComputeBlobKZGProof(blob, commitment)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], proof[:])
@@ -294,7 +297,7 @@ func TestVerifyKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, err := VerifyKZGProof(commitment, z, y, proof)
+			valid, err := ctx.VerifyKZGProof(commitment, z, y, proof)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -349,7 +352,7 @@ func TestVerifyBlobKZGProof(t *testing.T) {
 				return
 			}
 
-			valid, err := VerifyBlobKZGProof(blob, commitment, proof)
+			valid, err := ctx.VerifyBlobKZGProof(blob, commitment, proof)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -416,7 +419,7 @@ func TestVerifyBlobKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyBlobKZGProofBatch(blobs, commitments, proofs)
+			valid, err := ctx.VerifyBlobKZGProofBatch(blobs, commitments, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -455,7 +458,7 @@ func TestComputeCells(t *testing.T) {
 				return
 			}
 
-			cells, err := ComputeCells(&blob)
+			cells, err := ctx.ComputeCells(&blob)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -502,7 +505,7 @@ func TestComputeCellsAndKZGProofs(t *testing.T) {
 				return
 			}
 
-			cells, proofs, err := ComputeCellsAndKZGProofs(&blob)
+			cells, proofs, err := ctx.ComputeCellsAndKZGProofs(&blob)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -588,7 +591,7 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 				proofs = append(proofs, proof)
 			}
 
-			valid, err := VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs)
+			valid, err := ctx.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				require.Equal(t, *test.Output, valid)
@@ -635,7 +638,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 				cells = append(cells, cell)
 			}
 
-			recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIndices, cells)
+			recoveredCells, recoveredProofs, err := ctx.RecoverCellsAndKZGProofs(cellIndices, cells)
 			if err == nil {
 				require.NotNil(t, test.Output)
 				var expectedCells []Cell
@@ -665,13 +668,13 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 func TestPartialRecover(t *testing.T) {
 	var blob Blob
 	fillBlobRandom(&blob, 27)
-	cells, proofs, err := ComputeCellsAndKZGProofs(&blob)
+	cells, proofs, err := ctx.ComputeCellsAndKZGProofs(&blob)
 	require.NoError(t, err)
 
 	for i := 1; i <= 5; i++ {
 		mod := divideRoundUp(CellsPerExtBlob, i)
 		cellIndices, partialCells := getPartialCells(cells, mod)
-		recoveredCells, recoveredProofs, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
+		recoveredCells, recoveredProofs, err := ctx.RecoverCellsAndKZGProofs(cellIndices, partialCells)
 		require.NoError(t, err)
 		require.EqualValues(t, cells, recoveredCells)
 		require.EqualValues(t, proofs, recoveredProofs)
@@ -695,15 +698,15 @@ func Benchmark(b *testing.B) {
 		var blob Blob
 		fillBlobRandom(&blob, int64(i))
 		blobs[i] = blob
-		commitment, err := BlobToKZGCommitment(&blob)
+		commitment, err := ctx.BlobToKZGCommitment(&blob)
 		commitments[i] = Bytes48(commitment)
 		require.NoError(b, err)
-		proof, err := ComputeBlobKZGProof(&blob, Bytes48(commitment))
+		proof, err := ctx.ComputeBlobKZGProof(&blob, Bytes48(commitment))
 		require.NoError(b, err)
 		proofs[i] = Bytes48(proof)
 
 		tProofs := [CellsPerExtBlob]KZGProof{}
-		blobCells[i], tProofs, err = ComputeCellsAndKZGProofs(&blobs[i])
+		blobCells[i], tProofs, err = ctx.ComputeCellsAndKZGProofs(&blobs[i])
 		require.NoError(b, err)
 		blobCellProofs[i] = [CellsPerExtBlob]Bytes48{}
 		for j, p := range tProofs {
@@ -711,55 +714,49 @@ func Benchmark(b *testing.B) {
 		}
 	}
 
-	FreeTrustedSetup()
 	for i := 0; i <= 8; i++ {
 		b.Run(fmt.Sprintf("LoadTrustedSetupFile(precompute=%d)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				b.StartTimer()
-				err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i))
+				tmpCtx, err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i))
+				defer tmpCtx.FreeTrustedSetup()
 				b.StopTimer()
 				require.NoError(b, err)
-				FreeTrustedSetup()
 			}
 		})
 	}
 
-	/* Reload the trusted setup */
-	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 8); err != nil {
-		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
-	}
-
 	b.Run("BlobToKZGCommitment", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := BlobToKZGCommitment(&blobs[0])
+			_, err := ctx.BlobToKZGCommitment(&blobs[0])
 			require.NoError(b, err)
 		}
 	})
 
 	b.Run("ComputeKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, _, err := ComputeKZGProof(&blobs[0], fields[0])
+			_, _, err := ctx.ComputeKZGProof(&blobs[0], fields[0])
 			require.NoError(b, err)
 		}
 	})
 
 	b.Run("ComputeBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := ComputeBlobKZGProof(&blobs[0], commitments[0])
+			_, err := ctx.ComputeBlobKZGProof(&blobs[0], commitments[0])
 			require.NoError(b, err)
 		}
 	})
 
 	b.Run("VerifyKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
+			_, err := ctx.VerifyKZGProof(commitments[0], fields[0], fields[1], proofs[0])
 			require.NoError(b, err)
 		}
 	})
 
 	b.Run("VerifyBlobKZGProof", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
+			_, err := ctx.VerifyBlobKZGProof(&blobs[0], commitments[0], proofs[0])
 			require.NoError(b, err)
 		}
 	})
@@ -767,7 +764,7 @@ func Benchmark(b *testing.B) {
 	for i := 1; i <= len(blobs); i *= 2 {
 		b.Run(fmt.Sprintf("VerifyBlobKZGProofBatch(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, err := VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
+				_, err := ctx.VerifyBlobKZGProofBatch(blobs[:i], commitments[:i], proofs[:i])
 				require.NoError(b, err)
 			}
 		})
@@ -775,28 +772,23 @@ func Benchmark(b *testing.B) {
 
 	b.Run("ComputeCells", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
-			_, err := ComputeCells(&blobs[0])
+			_, err := ctx.ComputeCells(&blobs[0])
 			require.NoError(b, err)
 		}
 	})
 
-	FreeTrustedSetup()
 	for i := 0; i <= 8; i++ {
-		if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i)); err != nil {
+		tmpCtx, err := LoadTrustedSetupFile("../../src/trusted_setup.txt", uint(i))
+		if err != nil {
 			panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 		}
+		defer tmpCtx.FreeTrustedSetup()
 		b.Run(fmt.Sprintf("ComputeCellsAndKZGProofs(precompute=%d)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := ComputeCellsAndKZGProofs(&blobs[0])
+				_, _, err := tmpCtx.ComputeCellsAndKZGProofs(&blobs[0])
 				require.NoError(b, err)
 			}
 		})
-		FreeTrustedSetup()
-	}
-
-	/* Reload the trusted setup */
-	if err := LoadTrustedSetupFile("../../src/trusted_setup.txt", 8); err != nil {
-		panic(fmt.Sprintf("failed to load trusted setup: %v", err))
 	}
 
 	count := runtime.NumCPU()
@@ -810,7 +802,7 @@ func Benchmark(b *testing.B) {
 				wg.Add(1)
 				go func(x *Blob) {
 					defer wg.Done()
-					_, _, err := ComputeCellsAndKZGProofs(x)
+					_, _, err := ctx.ComputeCellsAndKZGProofs(x)
 					require.NoError(b, err)
 				}(&blobs[i])
 			}
@@ -823,7 +815,7 @@ func Benchmark(b *testing.B) {
 		cellIndices, partialCells := getPartialCells(blobCells[0], i)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
+				_, _, err := ctx.RecoverCellsAndKZGProofs(cellIndices, partialCells)
 				require.NoError(b, err)
 			}
 		})
@@ -834,7 +826,7 @@ func Benchmark(b *testing.B) {
 		cellIndices, partialCells := getPartialCells(blobCells[0], mod)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				_, _, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
+				_, _, err := ctx.RecoverCellsAndKZGProofs(cellIndices, partialCells)
 				require.NoError(b, err)
 			}
 		})
@@ -855,7 +847,7 @@ func Benchmark(b *testing.B) {
 		}
 		b.ResetTimer()
 		for n := 0; n < b.N; n++ {
-			ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
+			ok, err := ctx.VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
 			require.NoError(b, err)
 			require.True(b, ok)
 		}
@@ -913,7 +905,7 @@ func Benchmark(b *testing.B) {
 				wg.Add(1)
 				go func(group int) {
 					defer wg.Done()
-					ok, err := VerifyCellKZGProofBatch(
+					ok, err := ctx.VerifyCellKZGProofBatch(
 						groups[group].cellCommitments,
 						groups[group].cellIndices,
 						groups[group].cells,
@@ -946,7 +938,7 @@ func Benchmark(b *testing.B) {
 			}
 			b.ResetTimer()
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
+				ok, err := ctx.VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
@@ -957,7 +949,7 @@ func Benchmark(b *testing.B) {
 		cellCommitments, cellIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], i)
 		b.Run(fmt.Sprintf("VerifyColumns(count=%v)", i), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				ok, err := VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
+				ok, err := ctx.VerifyCellKZGProofBatch(cellCommitments, cellIndices, cells, cellProofs)
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
