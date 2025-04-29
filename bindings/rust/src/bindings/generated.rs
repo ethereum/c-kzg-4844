@@ -106,7 +106,7 @@ pub struct KZGSettings {
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
     #[doc = " A lock for the commitment cache."]
-    comm_cache_lock: *mut u8,
+    comm_cache_lock: *mut ::std::os::raw::c_long,
     #[doc = " The bytes used as the commitment cache key."]
     comm_cache_key: *mut u8,
     #[doc = " The bytes used as the commitment cache value."]

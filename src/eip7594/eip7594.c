@@ -27,6 +27,10 @@
 #include <assert.h> /* For assert */
 #include <string.h> /* For memcpy & strlen */
 
+#ifdef _WIN32
+#include <Windows.h> /* For InterlockedExchange */
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Macros
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -477,6 +481,24 @@ out:
     return ret;
 }
 
+static inline void spinlock_lock(volatile long *l) {
+#ifdef _WIN32
+    while (InterlockedExchange(l, 1) != 0) {
+#else
+    while (__atomic_exchange_n(l, 1, __ATOMIC_ACQUIRE) != 0) {
+#endif
+        /* Wait for the lock to be released */
+    }
+}
+
+static inline void spinlock_unlock(volatile long *l) {
+#ifdef _WIN32
+    InterlockedExchange(l, 0);
+#else
+    __atomic_store_n(l, 0, __ATOMIC_RELEASE);
+#endif
+}
+
 /**
  * Decodes and validates a list of commitments. If the commitments are already in the cache, they
  * are returned from there.
@@ -496,9 +518,7 @@ static C_KZG_RET cached_commitment_validation(
      * time. Even though ckzg is single-threaded, we expect its functions to be called from a
      * multi-threaded context.
      */
-    while (__atomic_test_and_set(s->comm_cache_lock, __ATOMIC_ACQUIRE)) {
-        /* Wait for the lock to be released */
-    }
+    spinlock_lock(s->comm_cache_lock);
 
     /* Only do cache lookups if the commitments fit in our cache */
     if (num_commitments <= s->comm_cache_size) {
@@ -527,8 +547,7 @@ static C_KZG_RET cached_commitment_validation(
     ret = C_KZG_OK;
 
 out:
-    /* Clear the lock */
-    __atomic_clear(s->comm_cache_lock, __ATOMIC_RELEASE);
+    spinlock_unlock(s->comm_cache_lock);
     return ret;
 }
 

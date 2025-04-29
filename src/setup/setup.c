@@ -421,7 +421,7 @@ C_KZG_RET load_trusted_setup(
     }
 
     /* Initialize lock for cell verification commitment cache */
-    ret = c_kzg_malloc((void **)&out->comm_cache_lock, sizeof(uint8_t));
+    ret = c_kzg_malloc((void **)&out->comm_cache_lock, sizeof(long));
     if (ret != C_KZG_OK) goto out_error;
     *out->comm_cache_lock = 0;
 
