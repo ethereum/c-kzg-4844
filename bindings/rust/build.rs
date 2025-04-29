@@ -102,6 +102,8 @@ fn make_bindings(
         /*
          * Cleanup instructions.
          */
+        // Use core::ffi for ctypes
+        .ctypes_prefix("core::ffi")
         // Remove stdio definitions related to FILE.
         .opaque_type("FILE")
         // Remove the definition of FILE to use the libc one, which is more convenient.
