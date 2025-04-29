@@ -395,6 +395,7 @@ C_KZG_RET load_trusted_setup(
     out->g2_values_monomial = NULL;
     out->x_ext_fft_columns = NULL;
     out->tables = NULL;
+    out->comm_cache_lock = NULL;
     out->comm_cache_key = NULL;
     out->comm_cache_value = NULL;
 
