@@ -362,6 +362,28 @@ static C_KZG_RET is_trusted_setup_in_lagrange_form(const KZGSettings *s, size_t 
 }
 
 /**
+ * Initialize all fields in KZGSettings to null/zero.
+ *
+ * @param[out]  out The KZGSettings to initialize.
+ */
+static void init_settings(KZGSettings *out) {
+    out->roots_of_unity = NULL;
+    out->brp_roots_of_unity = NULL;
+    out->reverse_roots_of_unity = NULL;
+    out->g1_values_monomial = NULL;
+    out->g1_values_lagrange_brp = NULL;
+    out->g2_values_monomial = NULL;
+    out->x_ext_fft_columns = NULL;
+    out->tables = NULL;
+    out->wbits = 0;
+    out->scratch_size = 0;
+    out->comm_cache_lock = NULL;
+    out->comm_cache_key = NULL;
+    out->comm_cache_value = NULL;
+    out->comm_cache_size = 0;
+}
+
+/**
  * Load trusted setup into a KZGSettings.
  *
  * @param[out]  out                     Pointer to the stored trusted setup
@@ -387,17 +409,11 @@ C_KZG_RET load_trusted_setup(
 ) {
     C_KZG_RET ret;
 
-    out->brp_roots_of_unity = NULL;
-    out->roots_of_unity = NULL;
-    out->reverse_roots_of_unity = NULL;
-    out->g1_values_monomial = NULL;
-    out->g1_values_lagrange_brp = NULL;
-    out->g2_values_monomial = NULL;
-    out->x_ext_fft_columns = NULL;
-    out->tables = NULL;
-    out->comm_cache_lock = NULL;
-    out->comm_cache_key = NULL;
-    out->comm_cache_value = NULL;
+    /*
+     * Initialize all fields to null/zero so that if there's an error, we can can call
+     * free_trusted_setup() without worrying about freeing a random pointer.
+     */
+    init_settings(out);
 
     /* It seems that blst limits the input to 15 */
     if (precompute > 15) {
@@ -528,6 +544,12 @@ C_KZG_RET load_trusted_setup_file(KZGSettings *out, FILE *in, uint64_t precomput
     uint8_t *g1_monomial_bytes = NULL;
     uint8_t *g1_lagrange_bytes = NULL;
     uint8_t *g2_monomial_bytes = NULL;
+
+    /*
+     * Initialize all fields to null/zero so that if there's an error, we can can call
+     * free_trusted_setup() without worrying about freeing a random pointer.
+     */
+    init_settings(out);
 
     /* Allocate space for points */
     ret = c_kzg_calloc((void **)&g1_monomial_bytes, NUM_G1_POINTS, BYTES_PER_G1);
