@@ -481,21 +481,31 @@ out:
     return ret;
 }
 
-static inline void spinlock_lock(volatile long *l) {
+/**
+ * Lock a spinlock.
+ *
+ * @param[in]   lock    The spinlock to lock
+ */
+static inline void spinlock_lock(volatile long *lock) {
 #ifdef _WIN32
-    while (InterlockedExchange(l, 1) != 0) {
+    while (InterlockedExchange(lock, 1) != 0) {
 #else
-    while (__atomic_exchange_n(l, 1, __ATOMIC_ACQUIRE) != 0) {
+    while (__atomic_exchange_n(lock, 1, __ATOMIC_ACQUIRE) != 0) {
 #endif
         /* Wait for the lock to be released */
     }
 }
 
-static inline void spinlock_unlock(volatile long *l) {
+/**
+ * Unlock a spinlock.
+ *
+ * @param[in]   lock    The spinlock to unlock
+ */
+static inline void spinlock_unlock(volatile long *lock) {
 #ifdef _WIN32
-    InterlockedExchange(l, 0);
+    InterlockedExchange(lock, 0);
 #else
-    __atomic_store_n(l, 0, __ATOMIC_RELEASE);
+    __atomic_store_n(lock, 0, __ATOMIC_RELEASE);
 #endif
 }
 
