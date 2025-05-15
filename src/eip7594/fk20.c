@@ -29,17 +29,22 @@
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
  * @param[in]   offset  The offset
  */
-static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, uint64_t offset, uint64_t stride) {
-    uint64_t n = FIELD_ELEMENTS_PER_BLOB;
-    uint64_t k = n / stride;
-    uint64_t k2 = k * 2;
+static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
+    /* Calculate starting indices */
+    size_t out_start = CELLS_PER_BLOB + 2;
+    size_t in_start = 2*FIELD_ELEMENTS_PER_CELL - offset - 1;
 
-    out[0] = in[n - 1 - offset];
-    for (uint64_t i = 1; i <= k + 1 && i < k2; i++) {
+    /* Set the first element */
+    out[0] = in[FIELD_ELEMENTS_PER_BLOB - 1 - offset];
+
+    /* Initialize these elements to zero */
+    for (size_t i = 1; i < out_start; i++) {
         out[i] = FR_ZERO;
     }
-    for (uint64_t i = k + 2, j = 2 * stride - offset - 1; i < k2; i++, j += stride) {
-        out[i] = in[j];
+
+    /* Copy elements with a fixed stride */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB - out_start; i++) {
+        out[out_start + i] = in[in_start + i * FIELD_ELEMENTS_PER_CELL];
     }
 }
 
@@ -106,7 +111,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /* Compute toeplitz coefficients and organize by column */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        toeplitz_coeffs_stride(toeplitz_coeffs, p, i, FIELD_ELEMENTS_PER_CELL);
+        toeplitz_coeffs_stride(toeplitz_coeffs, p, i);
         ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
         for (size_t j = 0; j < circulant_domain_size; j++) {
