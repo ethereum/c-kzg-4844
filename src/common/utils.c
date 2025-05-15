@@ -105,8 +105,14 @@ C_KZG_RET bit_reversal_permutation(void *values, size_t size, size_t n) {
     byte *tmp = NULL;
     byte *v = (byte *)values;
 
-    /* Some sanity checks */
-    if (n < 2 || !is_power_of_two(n)) {
+    /* In these cases, do nothing */
+    if (n == 0 || n == 1) {
+        ret = C_KZG_OK;
+        goto out;
+    }
+
+    /* Ensure n is a power of two */
+    if (!is_power_of_two(n)) {
         ret = C_KZG_BADARGS;
         goto out;
     }

@@ -95,7 +95,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     ret = c_kzg_calloc((void **)&coeffs, circulant_domain_size, sizeof(void *));
     if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < circulant_domain_size; i++) {
-        ret = new_fr_array(&coeffs[i], CELLS_PER_BLOB);
+        ret = new_fr_array(&coeffs[i], FIELD_ELEMENTS_PER_CELL);
         if (ret != C_KZG_OK) goto out;
     }
 
