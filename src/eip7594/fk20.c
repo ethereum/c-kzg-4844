@@ -32,7 +32,7 @@
 static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     /* Calculate starting indices */
     size_t out_start = CELLS_PER_BLOB + 2;
-    size_t in_start = 2*FIELD_ELEMENTS_PER_CELL - offset - 1;
+    size_t in_start = 2 * FIELD_ELEMENTS_PER_CELL - offset - 1;
 
     /* Set the first element */
     out[0] = in[FIELD_ELEMENTS_PER_BLOB - 1 - offset];
