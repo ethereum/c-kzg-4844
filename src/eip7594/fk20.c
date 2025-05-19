@@ -25,14 +25,30 @@
 /**
  * Reorder and extend polynomial coefficients for the toeplitz method, strided version.
  *
- * @param[out]  out     The reordered polynomial, length `CELLS_PER_EXT_BLOB`
+ * This is an auxiliary function that selects the polynomial coefficient for the circulant matrix
+ * in the FK20 multiproof algorithm (Section 3)
+ *
+ * The constants in this function correspond to the FK20 notation as follows:
+ * FIELD_ELEMENTS_PER_CELL =  `l`
+ * CELLS_PER_BLOB = `r`
+ * CELLS_PER_EXT_BLOB = `n`
+ * FIELD_ELEMENTS_PER_BLOB = `d` +1
+ * @offset = `i`
+ *
+ * This function outputs the first column of the circulant matrix `F''_i`,
+ * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
+ * the size 2r*2r
+ *
+ * It is supposed to output (in[d-i],0,...,0 (`r` zeros),p[d-(r-2)l-i,p[d-(r-3)l-i,...,p[d-l-i])
+ *
+ * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
- * @param[in]   offset  The offset
+ * @param[in]   offset  The offset, the integer between 0 and FIELD_ELEMENTS_PER_BLOB-1, inclusive
  */
-static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
+static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     /* Calculate starting indices */
     size_t out_start = CELLS_PER_BLOB + 2;
-    size_t in_start = CELLS_PER_EXT_BLOB - offset - 1;
+    size_t in_start = 2*CELLS_PER_BLOB - offset - 1;
 
     /* Set the first element */
     out[0] = in[FIELD_ELEMENTS_PER_BLOB - 1 - offset];
@@ -49,7 +65,57 @@ static void toeplitz_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
 }
 
 /**
- * Compute FK20 cell-proofs for a polynomial.
+ * Compute FK20 cell-proofs for a polynomial. Each cell-proof is a KZG multi-proof
+ * that proves that the input polynomial takes certain values in several points, concretely in
+ * FIELD_ELEMENTS_PER_CELL points.
+ *
+ * A naive way to construct the proofs would take time quadratic in the number of proofs.
+ * A more efficient way is to use an algorithm called FK20, documented in https://eprint.iacr.org/2023/033.pdf
+ *
+ * The constants in this function correspond to the FK20 notation as follows:
+ * FIELD_ELEMENTS_PER_CELL =  `l`
+ * CELLS_PER_BLOB = `r`
+ * CELLS_PER_EXT_BLOB = `n`
+ * FIELD_ELEMENTS_PER_BLOB = `d` +1
+ *
+ * The FK20 algorithm for `n` multi-proofs,
+ * each covering `l` evaluation points of a polynomial degree `d`, dictates
+ *  (Theorem 2 and Proposition 4) to proceed in two phases:
+ *      Phase 1: compute the coefficients of a polynomial `v(X)` of degree `r-1`,
+ *          where each coefficient is a group element;
+ *      Phase 2: evaluate the polynomial at `n` points (each a field element)
+ *
+ * In turn, the two Phases are done as follows:
+ * Phase 1:
+ *      Observations:
+ *      1) The coefficients are computed as a sum of `l` matrix-vector products,
+ *          where each matrix is a Toeplitz matrix of size (r-1)*(r-1) (zeros below the main diagonal)
+ *          composed from certain coefficients of @p
+ *          and a vector is a subvector of the KZG setup @s .
+ *      2) Each matrix-vector product is reduced to the product of a bigger circulant matrix
+ *          by a twice longer vector `s_i`.
+ *      3) The circulant matrix-vector product is best computed via FFT, so that the matrix is 2r*2r
+ *          (which are powers of two), thus little bigger than twice the Toeplitz matrix.
+ *      Actual computing:
+ *      4) We then compute the FFT of each circulant vector `c_i` and each setup subvector `s_i`,
+ *          getting `w_i` and `y_i` respectively.
+ *          In this protocol the `y_i` vector is used multiple times and had been computed and stored
+ *          in @s ;
+ *      5) `w_i` and `y_i` are multiplied componentwise
+ *          (this is effectively a scalar multiplication in a group),
+ *          then the resulting `l` vectors are summed to `u`.
+ *      6) The inverse FFT transformation is applied to `u`, which gives us a vector of `2r` group
+ *          elements, with first `r-1` element being the coefficients of `v(X)`.
+ *  Phase 2:
+ *      Evaluate `v(X)` at `n` points. As those are selected to be the `n`-th roots of unity, and `n`
+ *      in this particular protocol is a power of two, we just apply an FFT of size `n`.
+ *
+ *  The total complexity of the algorithm is 2rl log 2r (Phase 1) plus n log n (Phase 2).
+ *
+ *  IMPORTANT: The configuration of this protocol currently (19th May 2025) assumes `r`=`l` and `2r`=`n`.
+ *          This may result in some optimizations, not particularly suited for `r` being much different to `l`.
+ *          However, the code is supposed to work also for `l`=1,
+ *          which is the case of FK20 regular (single) proofs.
  *
  * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
  * @param[in]   p   The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
@@ -64,28 +130,28 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
-    fr_t *toeplitz_coeffs = NULL;
-    fr_t *toeplitz_coeffs_fft = NULL;
-    g1_t *h = NULL;
-    g1_t *h_ext_fft = NULL;
+    fr_t *circulant_coeffs = NULL;  /*the vectors `c_i`*/
+    fr_t *circulant_coeffs_fft = NULL;/* the vectors `w_i`*/
+    g1_t *v = NULL;
+    g1_t *u = NULL;
     limb_t *scratch = NULL;
     bool precompute = s->wbits != 0;
 
     /*
      * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
-     * Instead, it is related to circulant matrices used in FK20, see
-     * Section 2.2 and 3.2 in https://eprint.iacr.org/2023/033.pdf.
+     * Instead, it is to produce a circulant matrix of size `2r`  in FK20, see
+     * Section 3 in https://eprint.iacr.org/2023/033.pdf.
      */
     circulant_domain_size = CELLS_PER_BLOB * 2;
 
     /* Do allocations */
-    ret = new_fr_array(&toeplitz_coeffs, circulant_domain_size);
+    ret = new_fr_array(&circulant_coeffs, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&toeplitz_coeffs_fft, circulant_domain_size);
+    ret = new_fr_array(&circulant_coeffs_fft, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h_ext_fft, circulant_domain_size);
+    ret = new_g1_array(&u, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&h, circulant_domain_size);
+    ret = new_g1_array(&v, circulant_domain_size);
     if (ret != C_KZG_OK) goto out;
 
     if (precompute) {
@@ -106,20 +172,35 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /* Initialize values to zero */
     for (size_t i = 0; i < circulant_domain_size; i++) {
-        h_ext_fft[i] = G1_IDENTITY;
+        u[i] = G1_IDENTITY;
     }
 
-    /* Compute toeplitz coefficients and organize by column */
+    /* Step 4 of Phase 1:
+    * Compute the `w_i` columns
+    */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        toeplitz_coeffs_stride(toeplitz_coeffs, p, i);
-        ret = fr_fft(toeplitz_coeffs_fft, toeplitz_coeffs, circulant_domain_size, s);
+        /* Select the coefficients `c_i` of @p that form the i-th circulant matrix*/
+        circulant_coeffs_stride(circulant_coeffs, p, i);
+        /* Apply FFT to get `w_i` */
+        ret = fr_fft(circulant_coeffs_fft, circulant_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
         for (size_t j = 0; j < circulant_domain_size; j++) {
-            coeffs[j][i] = toeplitz_coeffs_fft[j];
+            coeffs[j][i] = circulant_coeffs_fft[j];
         }
     }
 
-    /* Compute h_ext_fft via MSM */
+    /* Step 5 of Phase 1:
+    *  Compute u (the `u` vector) via MSM
+    *  The `y_i` vectors had been computed beforehand.
+    *  To compute `u` there are two options:
+    *  `precompute': the  scalar products `[q]y_i[j]`
+    *       are stored for small q in @s->tables;
+    *       then we compute each component of the `u` vector
+    *       as a fixed-based MSM of size `l` with precomputation
+    *  `else`:
+    *       the `y_i` vectors are stored in @s->x_ext_fft_columns
+    *       then each component of the `u` vector is just an MSM of size `l`
+    */
     for (size_t i = 0; i < circulant_domain_size; i++) {
         if (precompute) {
             /* Transform the field elements to 255-bit scalars */
@@ -130,7 +211,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
             /* A fixed-base MSM with precomputation */
             blst_p1s_mult_wbits(
-                &h_ext_fft[i],
+                &u[i],
                 s->tables[i],
                 s->wbits,
                 FIELD_ELEMENTS_PER_CELL,
@@ -141,21 +222,31 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         } else {
             /* A pretty fast MSM without precomputation */
             ret = g1_lincomb_fast(
-                &h_ext_fft[i], s->x_ext_fft_columns[i], coeffs[i], FIELD_ELEMENTS_PER_CELL
+                &u[i], s->x_ext_fft_columns[i], coeffs[i], FIELD_ELEMENTS_PER_CELL
             );
             if (ret != C_KZG_OK) goto out;
         }
     }
 
-    ret = g1_ifft(h, h_ext_fft, circulant_domain_size, s);
+    /* Step 6 of Phase 1:
+    * Apply the inverse FFT to the `u` vector.
+    * The result is "almost" the final `v` vector: the second half
+    * of the vector should be set to the identity elements (=commitments to zero coefficients)
+    * The `v` polynomial actually has degree `r-1`, which is guaranteed
+    * by setting the last `r+1` elements of `c_i` vectors to be identities.
+    */
+    ret = g1_ifft(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Zero the second half of h */
+    /* Zero the second half of v to get the polynomial of degree `r`.
+    * We do not need to zero the `r`-th element as it is guaranteed to be zero.
+      */
     for (size_t i = CELLS_PER_BLOB; i < circulant_domain_size; i++) {
-        h[i] = G1_IDENTITY;
+        v[i] = G1_IDENTITY;
     }
 
-    ret = g1_fft(out, h, circulant_domain_size, s);
+    /* Phase 2: evaluate the polynomial `v(X)` at `n` points*/
+    ret = g1_fft(out, v, CELLS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
 out:
@@ -166,10 +257,10 @@ out:
         }
         c_kzg_free(coeffs);
     }
-    c_kzg_free(toeplitz_coeffs);
-    c_kzg_free(toeplitz_coeffs_fft);
-    c_kzg_free(h);
-    c_kzg_free(h_ext_fft);
+    c_kzg_free(circulant_coeffs);
+    c_kzg_free(circulant_coeffs_fft);
+    c_kzg_free(v);
+    c_kzg_free(u);
     c_kzg_free(scratch);
     return ret;
 }
