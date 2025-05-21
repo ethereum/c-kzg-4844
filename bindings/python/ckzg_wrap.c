@@ -86,7 +86,7 @@ static PyObject *compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
                         "expected blobs to be BYTES_PER_BLOB bytes");
   if (PyBytes_Size(z) != BYTES_PER_FIELD_ELEMENT)
     return PyErr_Format(PyExc_ValueError,
-                        "expected blobs to be BYTES_PER_FIELD_ELEMENT bytes");
+                        "expected z to be BYTES_PER_FIELD_ELEMENT bytes");
 
   PyObject *py_y = PyBytes_FromStringAndSize(NULL, BYTES_PER_FIELD_ELEMENT);
   if (py_y == NULL)
@@ -250,7 +250,7 @@ static PyObject *verify_blob_kzg_proof_batch_wrap(PyObject *self,
   if (proofs_count % BYTES_PER_PROOF != 0)
     return PyErr_Format(
         PyExc_ValueError,
-        "expected blobs to be a multiple of BYTES_PER_PROOF bytes");
+        "expected proofs to be a multiple of BYTES_PER_PROOF bytes");
   proofs_count = proofs_count / BYTES_PER_PROOF;
 
   if (blobs_count != commitments_count || blobs_count != proofs_count) {
