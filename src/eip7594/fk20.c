@@ -23,10 +23,9 @@
 #include <stdlib.h> /* For NULL */
 
 /**
- * Reorder and extend polynomial coefficients for the toeplitz method, strided version.
- *
- * This is an auxiliary function that selects the polynomial coefficient for the circulant matrix
+ * This is an auxiliary function that selects the values for the circulant matrix
  * in the FK20 multiproof algorithm (Section 3)
+ * taking them from the coefficients of the input polynomial (for which the proofs are created)
  *
  * The constants in this function correspond to the FK20 notation as follows:
  * FIELD_ELEMENTS_PER_CELL =  `l`
@@ -39,29 +38,28 @@
  * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
  * the size 2r*2r
  *
- * It is supposed to output (in[d-i],0,...,0 (`r` zeros),p[d-(r-2)l-i,p[d-(r-3)l-i,...,p[d-l-i])
+ * It is supposed to output (in[d-i],0,...,0 (`r`+1 zeros),in[d-(r-2)l-i], in[d-(r-3)l-i],...,in[d-l-i])
+ * with d,l,i to be constants/input variables as referenced above
  *
  * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
  * @param[in]   offset  The offset, the integer between 0 and FIELD_ELEMENTS_PER_BLOB-1, inclusive
  */
 static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
-    /* Calculate starting indices */
-    size_t out_start = CELLS_PER_BLOB + 2;
-    size_t in_start = 2*CELLS_PER_BLOB - offset - 1;
 
-    /* Set the first element */
-    out[0] = in[FIELD_ELEMENTS_PER_BLOB - 1 - offset];
+    /*1: first element is in[d-i]*/
+    out[0] = in[(FIELD_ELEMENTS_PER_BLOB-1) - offset];
 
-    /* Initialize these elements to zero */
-    for (size_t i = 1; i < out_start; i++) {
-        out[i] = FR_ZERO;
+    /* 2: then (r+1) zero elements */
+    for (size_t j = 1; j <= CELLS_PER_BLOB+1; j++){
+        out[j] = FR_ZERO;
     }
 
-    /* Copy elements with a fixed stride */
-    for (size_t i = 0; i < CELLS_PER_EXT_BLOB - out_start; i++) {
-        out[out_start + i] = in[in_start + i * FIELD_ELEMENTS_PER_CELL];
+    /* 3: then (r-2) elements: from in[d-(r-2)l-i] to in[d-l-i] */
+    for (size_t j = CELLS_PER_BLOB-2; j >= 1; j--){
+        out[2*CELLS_PER_BLOB - j] = in[(FIELD_ELEMENTS_PER_BLOB-1) - j*FIELD_ELEMENTS_PER_CELL - offset];
     }
+
 }
 
 /**
