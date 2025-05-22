@@ -38,28 +38,45 @@
  * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
  * the size 2r*2r
  *
- * It is supposed to output (in[d-i],0,...,0 (`r`+1 zeros),in[d-(r-2)l-i], in[d-(r-3)l-i],...,in[d-l-i])
- * with d,l,i to be constants/input variables as referenced above
+ * It is supposed to output an array of size 2r that looks as follows:
+ *
+ *  out[0]           =  in[d-i]
+ *  out[1 .. r+1]    =  0                       (r + 1 zeros)
+ *  out[r + 2]       =  in[d - (r - 2)l - i]
+ *  out[r + 3]       =  in[d - (r - 3)l - i]
+ *  out[r + 4]       =  in[d - (r - 4)l - i]
+ *  ...
+ *  out[2r - 2]    =  in[d - 2l - i]
+ *  out[2r - 1]    =  in[d - 1l - i]
+ *
+ * with d,r,l,i to be constants/input variables as referenced above
  *
  * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
  * @param[in]   offset  The offset, the integer between 0 and FIELD_ELEMENTS_PER_BLOB-1, inclusive
  */
 static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
+    const size_t r = CELLS_PER_BLOB;
+    const size_t l = FIELD_ELEMENTS_PER_CELL;
+    const size_t d = FIELD_ELEMENTS_PER_BLOB - 1;
+    const size_t d_minus_i = d - offset; /* Shortcut for: d-i */
 
-    /*1: first element is in[d-i]*/
-    out[0] = in[(FIELD_ELEMENTS_PER_BLOB-1) - offset];
+    assert(d >= offset);
 
-    /* 2: then (r+1) zero elements */
-    for (size_t j = 1; j <= CELLS_PER_BLOB+1; j++){
+    /* Let's zero-initialise the whole output vector (length 2r)  */
+    for (size_t j = 0; j < 2 * r; j++) {
         out[j] = FR_ZERO;
     }
 
-    /* 3: then (r-2) elements: from in[d-(r-2)l-i] to in[d-l-i] */
-    for (size_t j = CELLS_PER_BLOB-2; j >= 1; j--){
-        out[2*CELLS_PER_BLOB - j] = in[(FIELD_ELEMENTS_PER_BLOB-1) - j*FIELD_ELEMENTS_PER_CELL - offset];
-    }
+    /* First non-zero element is in[d-i]*/
+    out[0] = in[d_minus_i];
 
+    /* Now we need to fill the remaining non-zero entries,
+     * which start at out[r + 2] and finish at the end of the buffer out[2r - 1].
+     * That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i] */
+    for (size_t j = 1; j < r - 1; j++) {        /* j = 1 … r-2      */
+        out[2*r - j] = in[d_minus_i - j*l];
+    }
 }
 
 /**
