@@ -27,31 +27,29 @@
  * multiproof algorithm (Section 3) taking them from the coefficients of the input polynomial (for
  * which the proofs are created).
  *
- * This function outputs the first column of the circulant matrix `F''_i`.
- * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
- * the size 2r*2r.
+ * This function outputs the first column of the circulant matrix F''_i. The matrix F''_i is the
+ * padding of the Toeplitz matrix of size (r-1)(r-1) to the size (2r)(2r). It is supposed to output
+ * an array of size 2r that looks as follows:
  *
- * It is supposed to output an array of size 2r that looks as follows:
- *
- *  out[0]        = in[d-i]
- *  out[1 .. r+1] = 0
- *  out[r+2]      = in[d-(r-2)l-i]
- *  out[r+3]      = in[d-(r-3)l-i]
- *  out[r+4]      = in[d-(r-4)l-i]
- *  ...
- *  out[2r-2]     = in[d-2l-i]
- *  out[2r-1]     = in[d-1l-i]
+ *   out[0]      = in[d-i]
+ *   out[1..r+1] = 0
+ *   out[r+2]    = in[d-(r-2)l-i]
+ *   out[r+3]    = in[d-(r-3)l-i]
+ *   out[r+4]    = in[d-(r-4)l-i]
+ *   ...
+ *   out[2r-2]   = in[d-2l-i]
+ *   out[2r-1]   = in[d-1l-i]
  *
  * Where the following constants are:
+ *
  *   d = FIELD_ELEMENTS_PER_BLOB-1
  *   r = CELLS_PER_BLOB
  *   l = FIELD_ELEMENTS_PER_CELL
  *   i = offset
  *
- *
- * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
- * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
- * @param[in]   offset  The offset, the integer between 0 and FIELD_ELEMENTS_PER_BLOB-1, inclusive
+ * @param[out]  out     The reordered polynomial, length 2*CELLS_PER_BLOB
+ * @param[in]   in      The input polynomial, length FIELD_ELEMENTS_PER_BLOB
+ * @param[in]   offset  The offset, an integer between 0 and FIELD_ELEMENTS_PER_BLOB-1, inclusive
  */
 static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     const size_t r = CELLS_PER_BLOB;
