@@ -91,26 +91,26 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *
  *   Phase 1: Compute the coefficients of a polynomial v(X) of degree r-1.
  *
- *      Observations:
+ *     Observations:
  *
- *      1) The coefficients are computed as a sum of l matrix-vector products, where each matrix is
- *         a Toeplitz matrix of size (r-1)·(r-1) (zeros below the main diagonal) composed from
- *         certain coefficients of the input polynomial and a vector is a subvector of the KZG
- *         trusted setup.
- *      2) Each matrix-vector product is reduced to the product of a bigger circulant matrix by a
- *         twice longer vector s_i.
- *      3) The circulant matrix-vector product is best computed via FFT, so that the matrix is 2r·2r
- *         (which are powers of two), thus little bigger than twice the Toeplitz matrix.
+ *     1) The coefficients are computed as a sum of l matrix-vector products, where each matrix is
+ *        a Toeplitz matrix of size (r-1)·(r-1) (zeros below the main diagonal) composed from
+ *        certain coefficients of the input polynomial and a vector is a subvector of the KZG
+ *        trusted setup.
+ *     2) Each matrix-vector product is reduced to the product of a bigger circulant matrix by a
+ *        twice longer vector s_i.
+ *     3) The circulant matrix-vector product is best computed via FFT, so that the matrix is 2r·2r
+ *        (which are powers of two), thus little bigger than twice the Toeplitz matrix.
  *
- *      Computations:
+ *     Computations:
  *
- *      4) We then compute the FFT of each circulant vector c_i and each setup subvector s_i,
- *         getting w_i and y_i respectively. In this protocol, the y_i vector is used multiple times
- *         and is computed and stored in the KZG trusted setup during initialization.
- *      5) w_i and y_i are multiplied componentwise (this is effectively a scalar multiplication in
- *         a group), then the resulting l vectors are summed to u.
- *      6) The inverse FFT transformation is applied to u, which gives us a vector of 2r group
- *         elements, with first r-1 element being the coefficients of v(X).
+ *     4) We then compute the FFT of each circulant vector c_i and each setup subvector s_i,
+ *        getting w_i and y_i respectively. In this protocol, the y_i vector is used multiple times
+ *        and is computed and stored in the KZG trusted setup during initialization.
+ *     5) w_i and y_i are multiplied componentwise (this is effectively a scalar multiplication in
+ *        a group), then the resulting l vectors are summed to u.
+ *     6) The inverse FFT transformation is applied to u, which gives us a vector of 2r group
+ *        elements, with first r-1 element being the coefficients of v(X).
  *
  *   Phase 2: Evaluate the polynomial at n points.
  *
@@ -141,16 +141,16 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
-    fr_t *circulant_coeffs = NULL;     /* The vectors `c_i` */
-    fr_t *circulant_coeffs_fft = NULL; /* The vectors `w_i` */
+    fr_t *circulant_coeffs = NULL;     /* The vectors c_i */
+    fr_t *circulant_coeffs_fft = NULL; /* The vectors w_i */
     g1_t *v = NULL;
     g1_t *u = NULL;
     limb_t *scratch = NULL;
     bool precompute = s->wbits != 0;
 
     /*
-     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`. Instead, it is to produce a
-     * circulant matrix of size `2r` in FK20, see Section 3 in https://eprint.iacr.org/2023/033.pdf.
+     * Note: this constant 2 is not related to LOG_EXPANSION_FACTOR. Instead, it is to produce a
+     * circulant matrix of size 2r in FK20, see Section 3 in https://eprint.iacr.org/2023/033.pdf.
      */
     circulant_domain_size = CELLS_PER_BLOB * 2;
 
@@ -185,11 +185,11 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
         u[i] = G1_IDENTITY;
     }
 
-    /* Phase 1, step 4: Compute the `w_i` columns */
+    /* Phase 1, step 4: Compute the w_i columns */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        /* Select the coefficients `c_i` of poly that form the i-th circulant matrix */
+        /* Select the coefficients c_i of poly that form the i-th circulant matrix */
         circulant_coeffs_stride(circulant_coeffs, poly, i);
-        /* Apply FFT to get `w_i` */
+        /* Apply FFT to get w_i */
         ret = fr_fft(circulant_coeffs_fft, circulant_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
         for (size_t j = 0; j < circulant_domain_size; j++) {
@@ -198,18 +198,16 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
     }
 
     /*
-     * Phase 1, step 5:
+     * Phase 1, step 5: Compute the u vector via MSM. The y_i vectors are computed beforehand.
      *
-     * Compute the `u` vector via MSM. The `y_i` vectors are computed beforehand.
+     * There are two ways to compute the u vector:
      *
-     * There are two ways to compute the `u` vector:
+     *   1) Fixed-base MSM with precompute: the scalar products [q]y_i[j] are stored for small q in
+     *      s->tables; then we compute each component of the u vector as a fixed-based MSM of size l
+     *      with precomputation.
      *
-     * (1) fixed-base MSM with precompute: the scalar products `[q]y_i[j]` are stored for small q in
-     * @s->tables; then we compute each component of the `u` vector as a fixed-based MSM of size `l`
-     * with precomputation.
-     *
-     * (2) pippenger MSM without precompute: the `y_i` vectors are stored in `s->x_ext_fft_columns`
-     * then each component of the `u` vector is just an MSM of size `l`.
+     *   2) Pippenger MSM without precompute: the y_i vectors are stored in s->x_ext_fft_columns
+     *      then each component of the u vector is just an MSM of size l.
      */
     for (size_t i = 0; i < circulant_domain_size; i++) {
         if (precompute) {
@@ -239,25 +237,24 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
     }
 
     /*
-     * Phase 1, step 6:
+     * Phase 1, step 6: Apply the inverse FFT to the u vector.
      *
-     * Apply the inverse FFT to the `u` vector. The result is "almost" the final `v` vector: the
-     * second half of the vector should be set to the identity elements (=commitments to zero
-     * coefficients). The `v` polynomial actually has degree `r-1`, which is guaranteed by setting
-     * the last `r+1` elements of `c_i` vectors to be identities.
+     * The result is almost the final v vector: the second half of the vector should be set to the
+     * identity elements (commitments to zero coefficients). The v polynomial actually has degree
+     * r-1, which is guaranteed by setting the last r+1 elements of c_i vectors to be identities.
      */
     ret = g1_ifft(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
-     * Zero the second half of v to get the polynomial of degree `r`.
-     * We do not need to zero the `r`-th element as it is guaranteed to be zero.
+     * Zero the second half of v to get the polynomial of degree r.
+     * We do not need to zero the r-th element as it is guaranteed to be zero.
      */
     for (size_t i = CELLS_PER_BLOB; i < circulant_domain_size; i++) {
         v[i] = G1_IDENTITY;
     }
 
-    /* Phase 2: evaluate the polynomial `v(X)` at `n` points */
+    /* Phase 2: Evaluate the polynomial v(X) at n points */
     ret = g1_fft(out, v, CELLS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
