@@ -81,6 +81,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     }
 }
 
+/* clang-format off */
 /**
  * Compute FK20 cell-proofs for a polynomial. Each cell-proof is a KZG multi-proof
  * that proves that the input polynomial takes certain values in several points, concretely in
@@ -142,6 +143,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
+/* clang-format on */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t circulant_domain_size;
