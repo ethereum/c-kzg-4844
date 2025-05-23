@@ -68,9 +68,8 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     out[0] = in[d_minus_i];
 
     /*
-     * Now we need to fill the remaining non-zero entries,
-     * which start at out[r+2] and finish at the end of the buffer out[2r-1].
-     * That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i]
+     * Now we need to fill the remaining non-zero entries, which start at out[r+2] and finish at the
+     * end of the buffer out[2r-1]. That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i].
      */
     for (size_t j = 1; j < r - 1; j++) { /* j = 1 ... r-2 */
         out[2 * r - j] = in[d_minus_i - j * l];
