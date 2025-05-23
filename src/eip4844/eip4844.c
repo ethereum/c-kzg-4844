@@ -608,8 +608,8 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     fr_t r;
 
     size_t input_size = DOMAIN_STR_LENGTH + sizeof(uint64_t) + sizeof(uint64_t) +
-                        (n *
-                         (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF));
+                        (n * (BYTES_PER_COMMITMENT + 2 * BYTES_PER_FIELD_ELEMENT + BYTES_PER_PROOF)
+                        );
     ret = c_kzg_malloc((void **)&bytes, input_size);
     if (ret != C_KZG_OK) goto out;
 

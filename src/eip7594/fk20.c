@@ -76,10 +76,9 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
     }
 }
 
-/* clang-format off */
 /**
- * Compute FK20 cell-proofs for a polynomial. Each cell-proof is a KZG multi-proof
- * that proves that the input polynomial takes certain values in several points, concretely in
+ * Compute FK20 cell-proofs for a polynomial. Each cell-proof is a KZG multi-proof that proves that
+ * the input polynomial takes certain values in several points, concretely in
  * FIELD_ELEMENTS_PER_CELL points.
  *
  * A naive way to construct the proofs would take time quadratic in the number of proofs. A more
@@ -87,35 +86,36 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * https://eprint.iacr.org/2023/033.pdf.
  *
  * The FK20 algorithm for n multi-proofs, each covering l evaluation points of a polynomial of
- * degree d, dictates (Theorem 2 and Proposition 4) to proceed in two phases:
+ * degree d, dictates (Theorem 2 and Proposition 4) to proceed in two phases. The total complexity
+ * of this algorithm is 2rl·log(2r) for Phase 1, plus n·log(n) for Phase 2.
  *
  *   Phase 1: Compute the coefficients of a polynomial v(X) of degree r-1.
+ *
+ *      Observations:
+ *
+ *      1) The coefficients are computed as a sum of l matrix-vector products, where each matrix is
+ *         a Toeplitz matrix of size (r-1)·(r-1) (zeros below the main diagonal) composed from
+ *         certain coefficients of the input polynomial and a vector is a subvector of the KZG
+ *         trusted setup.
+ *      2) Each matrix-vector product is reduced to the product of a bigger circulant matrix by a
+ *         twice longer vector s_i.
+ *      3) The circulant matrix-vector product is best computed via FFT, so that the matrix is 2r·2r
+ *         (which are powers of two), thus little bigger than twice the Toeplitz matrix.
+ *
+ *      Computations:
+ *
+ *      4) We then compute the FFT of each circulant vector c_i and each setup subvector s_i,
+ *         getting w_i and y_i respectively. In this protocol, the y_i vector is used multiple times
+ *         and is computed and stored in the KZG trusted setup during initialization.
+ *      5) w_i and y_i are multiplied componentwise (this is effectively a scalar multiplication in
+ *         a group), then the resulting l vectors are summed to u.
+ *      6) The inverse FFT transformation is applied to u, which gives us a vector of 2r group
+ *         elements, with first r-1 element being the coefficients of v(X).
+ *
  *   Phase 2: Evaluate the polynomial at n points.
  *
- * In turn, the two Phases are done as follows:
- * Phase 1:
- *      Observations:
- *      1) The coefficients are computed as a sum of `l` matrix-vector products,
- *          where each matrix is a Toeplitz matrix of size (r-1)*(r-1) (zeros below the main diagonal)
- *          composed from certain coefficients of poly
- *          and a vector is a subvector of the KZG setup @s .
- *      2) Each matrix-vector product is reduced to the product of a bigger circulant matrix
- *          by a twice longer vector `s_i`.
- *      3) The circulant matrix-vector product is best computed via FFT, so that the matrix is 2r*2r
- *          (which are powers of two), thus little bigger than twice the Toeplitz matrix.
- *      Actual computing:
- *      4) We then compute the FFT of each circulant vector `c_i` and each setup subvector `s_i`,
- *          getting `w_i` and `y_i` respectively.
- *          In this protocol the `y_i` vector is used multiple times and had been computed and stored
- *          in @s ;
- *      5) `w_i` and `y_i` are multiplied componentwise
- *          (this is effectively a scalar multiplication in a group),
- *          then the resulting `l` vectors are summed to `u`.
- *      6) The inverse FFT transformation is applied to `u`, which gives us a vector of `2r` group
- *          elements, with first `r-1` element being the coefficients of `v(X)`.
- *  Phase 2:
- *      Evaluate `v(X)` at `n` points. As those are selected to be the `n`-th roots of unity, and `n`
- *      in this particular protocol is a power of two, we just apply an FFT of size `n`.
+ *     1) Evaluate v(X) at n points. As those are selected to be the n-th roots of unity, and n in
+ *        this particular protocol is a power of two, we just apply an FFT of size n.
  *
  * Where the following constants are:
  *
@@ -134,10 +134,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
- *
- * @remark The total complexity is 2rl·log(2r) for Phase 1, plus n·log(n) for Phase 2.
  */
-/* clang-format on */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t circulant_domain_size;
