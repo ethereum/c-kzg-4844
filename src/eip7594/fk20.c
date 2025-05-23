@@ -124,16 +124,16 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *   n = CELLS_PER_EXT_BLOB
  *   l = FIELD_ELEMENTS_PER_CELL
  *
- * IMPORTANT: The configuration of this protocol currently (May 2025) assumes r=l and 2r=n. This may
- *   result in some optimizations, not particularly suited for r being much different to l. However,
- *   the code is supposed to work also for l=1, which is the case of FK20 regular (single) proofs.
- *
  * @param[out]  out     An array of CELLS_PER_EXT_BLOB proofs
  * @param[in]   poly    The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
  * @param[in]   s       The trusted setup
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
+ *
+ * @remark The configuration of this protocol currently (May 2025) assumes r=l and 2r=n. This may
+ * result in some optimizations, not particularly suited for r being much different to l. However,
+ * the code is supposed to work also for l=1, which is the case of FK20 regular (single) proofs.
  */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSettings *s) {
     C_KZG_RET ret;
