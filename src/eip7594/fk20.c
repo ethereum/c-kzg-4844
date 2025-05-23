@@ -27,29 +27,27 @@
  * multiproof algorithm (Section 3) taking them from the coefficients of the input polynomial (for
  * which the proofs are created).
  *
- * The constants in this function correspond to the FK20 notation as follows:
- * FIELD_ELEMENTS_PER_CELL =  `l`
- * CELLS_PER_BLOB = `r`
- * CELLS_PER_EXT_BLOB = `n`
- * FIELD_ELEMENTS_PER_BLOB = `d` +1
- * @offset = `i`
- *
- * This function outputs the first column of the circulant matrix `F''_i`,
+ * This function outputs the first column of the circulant matrix `F''_i`.
  * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
  * the size 2r*2r.
  *
  * It is supposed to output an array of size 2r that looks as follows:
  *
- *  out[0]           =  in[d-i]
- *  out[1 .. r+1]    =  0                       (r + 1 zeros)
- *  out[r + 2]       =  in[d - (r - 2)l - i]
- *  out[r + 3]       =  in[d - (r - 3)l - i]
- *  out[r + 4]       =  in[d - (r - 4)l - i]
+ *  out[0]        = in[d-i]
+ *  out[1 .. r+1] = 0
+ *  out[r+2]      = in[d-(r-2)l-i]
+ *  out[r+3]      = in[d-(r-3)l-i]
+ *  out[r+4]      = in[d-(r-4)l-i]
  *  ...
- *  out[2r - 2]    =  in[d - 2l - i]
- *  out[2r - 1]    =  in[d - 1l - i]
+ *  out[2r-2]     = in[d-2l-i]
+ *  out[2r-1]     = in[d-1l-i]
  *
- * with d,r,l,i to be constants/input variables as referenced above.
+ * Where the following constants are:
+ *   d = FIELD_ELEMENTS_PER_BLOB-1
+ *   r = CELLS_PER_BLOB
+ *   l = FIELD_ELEMENTS_PER_CELL
+ *   i = offset
+ *
  *
  * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
@@ -73,7 +71,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
 
     /*
      * Now we need to fill the remaining non-zero entries,
-     * which start at out[r + 2] and finish at the end of the buffer out[2r - 1].
+     * which start at out[r+2] and finish at the end of the buffer out[2r-1].
      * That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i]
      */
     for (size_t j = 1; j < r - 1; j++) { /* j = 1 ... r-2 */
