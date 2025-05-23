@@ -150,17 +150,16 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
-    fr_t *circulant_coeffs = NULL;     /*the vectors `c_i`*/
-    fr_t *circulant_coeffs_fft = NULL; /* the vectors `w_i`*/
+    fr_t *circulant_coeffs = NULL;     /* The vectors `c_i` */
+    fr_t *circulant_coeffs_fft = NULL; /* The vectors `w_i` */
     g1_t *v = NULL;
     g1_t *u = NULL;
     limb_t *scratch = NULL;
     bool precompute = s->wbits != 0;
 
     /*
-     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`.
-     * Instead, it is to produce a circulant matrix of size `2r`  in FK20, see
-     * Section 3 in https://eprint.iacr.org/2023/033.pdf.
+     * Note: this constant 2 is not related to `LOG_EXPANSION_FACTOR`. Instead, it is to produce a
+     * circulant matrix of size `2r` in FK20, see Section 3 in https://eprint.iacr.org/2023/033.pdf.
      */
     circulant_domain_size = CELLS_PER_BLOB * 2;
 
@@ -195,11 +194,9 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         u[i] = G1_IDENTITY;
     }
 
-    /* Step 4 of Phase 1:
-     * Compute the `w_i` columns
-     */
+    /* Step 4 of Phase 1: Compute the `w_i` columns */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        /* Select the coefficients `c_i` of @p that form the i-th circulant matrix*/
+        /* Select the coefficients `c_i` of @p that form the i-th circulant matrix */
         circulant_coeffs_stride(circulant_coeffs, p, i);
         /* Apply FFT to get `w_i` */
         ret = fr_fft(circulant_coeffs_fft, circulant_coeffs, circulant_domain_size, s);
@@ -211,16 +208,17 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /*
      * Step 5 of Phase 1:
-     *  Compute u (the `u` vector) via MSM
-     *  The `y_i` vectors had been computed beforehand.
-     *  To compute `u` there are two options:
-     *  `precompute': the  scalar products `[q]y_i[j]`
-     *       are stored for small q in @s->tables;
-     *       then we compute each component of the `u` vector
-     *       as a fixed-based MSM of size `l` with precomputation
-     *  `else`:
-     *       the `y_i` vectors are stored in @s->x_ext_fft_columns
-     *       then each component of the `u` vector is just an MSM of size `l`
+     *
+     * Compute the `u` vector via MSM. The `y_i` vectors are computed beforehand.
+     *
+     * There are two ways to compute the `u` vector:
+     *
+     * (1) fixed-base MSM with precompute: the scalar products `[q]y_i[j]` are stored for small q in
+     * @s->tables; then we compute each component of the `u` vector as a fixed-based MSM of size `l`
+     * with precomputation.
+     *
+     * (2) pippenger MSM without precompute: the `y_i` vectors are stored in `s->x_ext_fft_columns`
+     * then each component of the `u` vector is just an MSM of size `l`.
      */
     for (size_t i = 0; i < circulant_domain_size; i++) {
         if (precompute) {
@@ -251,23 +249,24 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /*
      * Step 6 of Phase 1:
-     * Apply the inverse FFT to the `u` vector.
-     * The result is "almost" the final `v` vector: the second half
-     * of the vector should be set to the identity elements (=commitments to zero coefficients)
-     * The `v` polynomial actually has degree `r-1`, which is guaranteed
-     * by setting the last `r+1` elements of `c_i` vectors to be identities.
+     *
+     * Apply the inverse FFT to the `u` vector. The result is "almost" the final `v` vector: the
+     * second half of the vector should be set to the identity elements (=commitments to zero
+     * coefficients). The `v` polynomial actually has degree `r-1`, which is guaranteed by setting
+     * the last `r+1` elements of `c_i` vectors to be identities.
      */
     ret = g1_ifft(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Zero the second half of v to get the polynomial of degree `r`.
+    /*
+     * Zero the second half of v to get the polynomial of degree `r`.
      * We do not need to zero the `r`-th element as it is guaranteed to be zero.
      */
     for (size_t i = CELLS_PER_BLOB; i < circulant_domain_size; i++) {
         v[i] = G1_IDENTITY;
     }
 
-    /* Phase 2: evaluate the polynomial `v(X)` at `n` points*/
+    /* Phase 2: evaluate the polynomial `v(X)` at `n` points */
     ret = g1_fft(out, v, CELLS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
