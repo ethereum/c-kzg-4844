@@ -23,9 +23,9 @@
 #include <stdlib.h> /* For NULL */
 
 /**
- * This is an auxiliary function that selects the values for the circulant matrix
- * in the FK20 multiproof algorithm (Section 3)
- * taking them from the coefficients of the input polynomial (for which the proofs are created)
+ * This is an auxiliary function that selects the values for the circulant matrix in the FK20
+ * multiproof algorithm (Section 3) taking them from the coefficients of the input polynomial (for
+ * which the proofs are created).
  *
  * The constants in this function correspond to the FK20 notation as follows:
  * FIELD_ELEMENTS_PER_CELL =  `l`
@@ -36,7 +36,7 @@
  *
  * This function outputs the first column of the circulant matrix `F''_i`,
  * The matrix `F''_i` is the padding of the Toeplitz matrix of size (r-1)*(r-1) to
- * the size 2r*2r
+ * the size 2r*2r.
  *
  * It is supposed to output an array of size 2r that looks as follows:
  *
@@ -49,7 +49,7 @@
  *  out[2r - 2]    =  in[d - 2l - i]
  *  out[2r - 1]    =  in[d - 1l - i]
  *
- * with d,r,l,i to be constants/input variables as referenced above
+ * with d,r,l,i to be constants/input variables as referenced above.
  *
  * @param[out]  out     The reordered polynomial, length `2*CELLS_PER_BLOB`
  * @param[in]   in      The input polynomial, length `FIELD_ELEMENTS_PER_BLOB`
@@ -63,19 +63,21 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
 
     assert(d >= offset);
 
-    /* Let's zero-initialise the whole output vector (length 2r)  */
+    /* Let's zero-initialise the whole output vector (length 2r) */
     for (size_t j = 0; j < 2 * r; j++) {
         out[j] = FR_ZERO;
     }
 
-    /* First non-zero element is in[d-i]*/
+    /* First non-zero element is in[d-i] */
     out[0] = in[d_minus_i];
 
-    /* Now we need to fill the remaining non-zero entries,
+    /*
+     * Now we need to fill the remaining non-zero entries,
      * which start at out[r + 2] and finish at the end of the buffer out[2r - 1].
-     * That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i] */
-    for (size_t j = 1; j < r - 1; j++) {        /* j = 1 … r-2      */
-        out[2*r - j] = in[d_minus_i - j*l];
+     * That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i]
+     */
+    for (size_t j = 1; j < r - 1; j++) { /* j = 1 ... r-2 */
+        out[2 * r - j] = in[d_minus_i - j * l];
     }
 }
 
@@ -85,7 +87,8 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * FIELD_ELEMENTS_PER_CELL points.
  *
  * A naive way to construct the proofs would take time quadratic in the number of proofs.
- * A more efficient way is to use an algorithm called FK20, documented in https://eprint.iacr.org/2023/033.pdf
+ * A more efficient way is to use an algorithm called FK20, documented in
+ * https://eprint.iacr.org/2023/033.pdf
  *
  * The constants in this function correspond to the FK20 notation as follows:
  * FIELD_ELEMENTS_PER_CELL =  `l`
@@ -145,8 +148,8 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
-    fr_t *circulant_coeffs = NULL;  /*the vectors `c_i`*/
-    fr_t *circulant_coeffs_fft = NULL;/* the vectors `w_i`*/
+    fr_t *circulant_coeffs = NULL;     /*the vectors `c_i`*/
+    fr_t *circulant_coeffs_fft = NULL; /* the vectors `w_i`*/
     g1_t *v = NULL;
     g1_t *u = NULL;
     limb_t *scratch = NULL;
@@ -191,8 +194,8 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     }
 
     /* Step 4 of Phase 1:
-    * Compute the `w_i` columns
-    */
+     * Compute the `w_i` columns
+     */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         /* Select the coefficients `c_i` of @p that form the i-th circulant matrix*/
         circulant_coeffs_stride(circulant_coeffs, p, i);
@@ -204,18 +207,19 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         }
     }
 
-    /* Step 5 of Phase 1:
-    *  Compute u (the `u` vector) via MSM
-    *  The `y_i` vectors had been computed beforehand.
-    *  To compute `u` there are two options:
-    *  `precompute': the  scalar products `[q]y_i[j]`
-    *       are stored for small q in @s->tables;
-    *       then we compute each component of the `u` vector
-    *       as a fixed-based MSM of size `l` with precomputation
-    *  `else`:
-    *       the `y_i` vectors are stored in @s->x_ext_fft_columns
-    *       then each component of the `u` vector is just an MSM of size `l`
-    */
+    /*
+     * Step 5 of Phase 1:
+     *  Compute u (the `u` vector) via MSM
+     *  The `y_i` vectors had been computed beforehand.
+     *  To compute `u` there are two options:
+     *  `precompute': the  scalar products `[q]y_i[j]`
+     *       are stored for small q in @s->tables;
+     *       then we compute each component of the `u` vector
+     *       as a fixed-based MSM of size `l` with precomputation
+     *  `else`:
+     *       the `y_i` vectors are stored in @s->x_ext_fft_columns
+     *       then each component of the `u` vector is just an MSM of size `l`
+     */
     for (size_t i = 0; i < circulant_domain_size; i++) {
         if (precompute) {
             /* Transform the field elements to 255-bit scalars */
@@ -243,19 +247,20 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         }
     }
 
-    /* Step 6 of Phase 1:
-    * Apply the inverse FFT to the `u` vector.
-    * The result is "almost" the final `v` vector: the second half
-    * of the vector should be set to the identity elements (=commitments to zero coefficients)
-    * The `v` polynomial actually has degree `r-1`, which is guaranteed
-    * by setting the last `r+1` elements of `c_i` vectors to be identities.
-    */
+    /*
+     * Step 6 of Phase 1:
+     * Apply the inverse FFT to the `u` vector.
+     * The result is "almost" the final `v` vector: the second half
+     * of the vector should be set to the identity elements (=commitments to zero coefficients)
+     * The `v` polynomial actually has degree `r-1`, which is guaranteed
+     * by setting the last `r+1` elements of `c_i` vectors to be identities.
+     */
     ret = g1_ifft(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
     /* Zero the second half of v to get the polynomial of degree `r`.
-    * We do not need to zero the `r`-th element as it is guaranteed to be zero.
-      */
+     * We do not need to zero the `r`-th element as it is guaranteed to be zero.
+     */
     for (size_t i = CELLS_PER_BLOB; i < circulant_domain_size; i++) {
         v[i] = G1_IDENTITY;
     }
