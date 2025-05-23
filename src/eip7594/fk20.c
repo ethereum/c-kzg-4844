@@ -86,18 +86,11 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * efficient way is to use an algorithm called FK20, documented in
  * https://eprint.iacr.org/2023/033.pdf.
  *
- * The constants in this function correspond to the FK20 notation as follows:
- * FIELD_ELEMENTS_PER_CELL =  `l`
- * CELLS_PER_BLOB = `r`
- * CELLS_PER_EXT_BLOB = `n`
- * FIELD_ELEMENTS_PER_BLOB = `d` +1
+ * The FK20 algorithm for n multi-proofs, each covering l evaluation points of a polynomial of
+ * degree d, dictates (Theorem 2 and Proposition 4) to proceed in two phases:
  *
- * The FK20 algorithm for `n` multi-proofs,
- * each covering `l` evaluation points of a polynomial degree `d`, dictates
- *  (Theorem 2 and Proposition 4) to proceed in two phases:
- *      Phase 1: compute the coefficients of a polynomial `v(X)` of degree `r-1`,
- *          where each coefficient is a group element;
- *      Phase 2: evaluate the polynomial at `n` points (each a field element)
+ *   Phase 1: Compute the coefficients of a polynomial v(X) of degree r-1.
+ *   Phase 2: Evaluate the polynomial at n points.
  *
  * In turn, the two Phases are done as follows:
  * Phase 1:
@@ -124,12 +117,16 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *      Evaluate `v(X)` at `n` points. As those are selected to be the `n`-th roots of unity, and `n`
  *      in this particular protocol is a power of two, we just apply an FFT of size `n`.
  *
- *  The total complexity of the algorithm is 2rl log 2r (Phase 1) plus n log n (Phase 2).
+ * Where the following constants are:
  *
- *  IMPORTANT: The configuration of this protocol currently (19th May 2025) assumes `r`=`l` and `2r`=`n`.
- *          This may result in some optimizations, not particularly suited for `r` being much different to `l`.
- *          However, the code is supposed to work also for `l`=1,
- *          which is the case of FK20 regular (single) proofs.
+ *   d = FIELD_ELEMENTS_PER_BLOB-1
+ *   r = CELLS_PER_BLOB
+ *   n = CELLS_PER_EXT_BLOB
+ *   l = FIELD_ELEMENTS_PER_CELL
+ *
+ * IMPORTANT: The configuration of this protocol currently (May 2025) assumes r=l and 2r=n. This may
+ *   result in some optimizations, not particularly suited for r being much different to l. However,
+ *   the code is supposed to work also for l=1, which is the case of FK20 regular (single) proofs.
  *
  * @param[out]  out     An array of CELLS_PER_EXT_BLOB proofs
  * @param[in]   poly    The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
@@ -137,6 +134,8 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
+ *
+ * @remark The total complexity is 2rl·log(2r) for Phase 1, plus n·log(n) for Phase 2.
  */
 /* clang-format on */
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSettings *s) {
