@@ -28,7 +28,7 @@
  * which the proofs are created).
  *
  * This function outputs the first column of the circulant matrix F''_i. The matrix F''_i is the
- * padding of the Toeplitz matrix of size (r-1)(r-1) to the size (2r)(2r). It is supposed to output
+ * padding of the Toeplitz matrix of size (r-1)·(r-1) to the size 2r·2r. It is supposed to output
  * an array of size 2r that looks as follows:
  *
  *   out[0]      = in[d-i]
@@ -69,7 +69,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
 
     /*
      * Now we need to fill the remaining non-zero entries, which start at out[r+2] and finish at the
-     * end of the buffer out[2r-1]. That's (r-2) elements from in[d-(r-2)l-i] to in[d-l-i].
+     * end of the buffer out[2r-1]. That's r-2 elements from in[d-(r-2)l-i] to in[d-l-i].
      */
     for (size_t j = 1; j < r - 1; j++) { /* j = 1 ... r-2 */
         out[2 * r - j] = in[d_minus_i - j * l];
@@ -131,7 +131,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  *
- * @remark The configuration of this protocol currently (May 2025) assumes r=l and 2r=n. This may
+ * @remark The configuration of this protocol currently (May 2025) assumes r=l and n=2r. This may
  * result in some optimizations, not particularly suited for r being much different to l. However,
  * the code is supposed to work also for l=1, which is the case of FK20 regular (single) proofs.
  */
