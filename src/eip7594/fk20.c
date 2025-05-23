@@ -202,10 +202,10 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
      *
      * There are two ways to compute the u vector:
      *
-     *   1) Fixed-base MSM with precompute: the scalar products [q]y_i[j] are stored for small q in
-     *      s->tables; then we compute each component of the u vector as a fixed-based MSM of size l
-     *      with precomputation.
-     *   2) Pippenger MSM without precompute: the y_i vectors are stored in s->x_ext_fft_columns
+     *   1) Fixed-base MSM with precompution: the scalar products [q]y_i[j] are stored for small q
+     *      in s->tables; then we compute each component of the u vector as a fixed-based MSM of
+     *      size l with precomputation.
+     *   2) Pippenger MSM without precompution: the y_i vectors are stored in s->x_ext_fft_columns
      *      then each component of the u vector is just an MSM of size l.
      */
     for (size_t i = 0; i < circulant_domain_size; i++) {
