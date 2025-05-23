@@ -82,9 +82,9 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  * that proves that the input polynomial takes certain values in several points, concretely in
  * FIELD_ELEMENTS_PER_CELL points.
  *
- * A naive way to construct the proofs would take time quadratic in the number of proofs.
- * A more efficient way is to use an algorithm called FK20, documented in
- * https://eprint.iacr.org/2023/033.pdf
+ * A naive way to construct the proofs would take time quadratic in the number of proofs. A more
+ * efficient way is to use an algorithm called FK20, documented in
+ * https://eprint.iacr.org/2023/033.pdf.
  *
  * The constants in this function correspond to the FK20 notation as follows:
  * FIELD_ELEMENTS_PER_CELL =  `l`
@@ -104,7 +104,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *      Observations:
  *      1) The coefficients are computed as a sum of `l` matrix-vector products,
  *          where each matrix is a Toeplitz matrix of size (r-1)*(r-1) (zeros below the main diagonal)
- *          composed from certain coefficients of @p
+ *          composed from certain coefficients of poly
  *          and a vector is a subvector of the KZG setup @s .
  *      2) Each matrix-vector product is reduced to the product of a bigger circulant matrix
  *          by a twice longer vector `s_i`.
@@ -131,15 +131,15 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
  *          However, the code is supposed to work also for `l`=1,
  *          which is the case of FK20 regular (single) proofs.
  *
- * @param[out]  out An array of CELLS_PER_EXT_BLOB proofs
- * @param[in]   p   The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
- * @param[in]   s   The trusted setup
+ * @param[out]  out     An array of CELLS_PER_EXT_BLOB proofs
+ * @param[in]   poly    The polynomial, an array of FIELD_ELEMENTS_PER_BLOB coefficients
+ * @param[in]   s       The trusted setup
  *
  * @remark The polynomial should have FIELD_ELEMENTS_PER_BLOB coefficients. Only the lower half of
  * the extended polynomial is supplied because the upper half is assumed to be zero.
  */
 /* clang-format on */
-C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *s) {
+C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t circulant_domain_size;
 
@@ -191,8 +191,8 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
 
     /* Phase 1, step 4: Compute the `w_i` columns */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
-        /* Select the coefficients `c_i` of @p that form the i-th circulant matrix */
-        circulant_coeffs_stride(circulant_coeffs, p, i);
+        /* Select the coefficients `c_i` of poly that form the i-th circulant matrix */
+        circulant_coeffs_stride(circulant_coeffs, poly, i);
         /* Apply FFT to get `w_i` */
         ret = fr_fft(circulant_coeffs_fft, circulant_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
