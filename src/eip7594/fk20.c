@@ -194,7 +194,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
         u[i] = G1_IDENTITY;
     }
 
-    /* Step 4 of Phase 1: Compute the `w_i` columns */
+    /* Phase 1, step 4: Compute the `w_i` columns */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         /* Select the coefficients `c_i` of @p that form the i-th circulant matrix */
         circulant_coeffs_stride(circulant_coeffs, p, i);
@@ -207,7 +207,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     }
 
     /*
-     * Step 5 of Phase 1:
+     * Phase 1, step 5:
      *
      * Compute the `u` vector via MSM. The `y_i` vectors are computed beforehand.
      *
@@ -248,7 +248,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *p, const KZGSettings *
     }
 
     /*
-     * Step 6 of Phase 1:
+     * Phase 1, step 6:
      *
      * Apply the inverse FFT to the `u` vector. The result is "almost" the final `v` vector: the
      * second half of the vector should be set to the identity elements (=commitments to zero
