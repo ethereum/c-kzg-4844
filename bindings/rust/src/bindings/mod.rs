@@ -182,7 +182,7 @@ impl KZGSettings {
         }
 
         if self.wbits != 0 {
-            assert!(self.tables.is_null() == false);
+            assert!(!self.tables.is_null());
             assert!(self.table_size != 0);
             for i in 0..CELLS_PER_EXT_BLOB {
                 let tbl = unsafe { *self.tables.add(i) };
@@ -195,23 +195,29 @@ impl KZGSettings {
 
     /// Deserialize KZGSettings from bytes.
     pub fn from_bytes(data: Vec<u8>) -> Self {
-        use core::{mem, slice};
         let data = data.as_slice();
         let mut off = 0;
 
         macro_rules! alloc_and_fill {
             ($t:ty, $count:expr) => {{
-                let mut v = Vec::<$t>::with_capacity($count);
+                use core::mem::{self, MaybeUninit};
+                let num_bytes = $count * mem::size_of::<$t>();
+
+                let mut v: Vec<MaybeUninit<$t>> = Vec::with_capacity($count);
+                let dst = unsafe {
+                    core::slice::from_raw_parts_mut(v.as_mut_ptr() as *mut u8, num_bytes)
+                };
+
+                dst.copy_from_slice(&data[off..off + num_bytes]);
+                off += num_bytes;
+
                 unsafe {
                     v.set_len($count);
+                    let v = mem::transmute::<Vec<MaybeUninit<$t>>, Vec<$t>>(v);
+                    let ptr = v.as_ptr() as *mut $t;
+                    mem::forget(v);
+                    ptr
                 }
-                let ptr = v.as_mut_ptr();
-                let bytes = $count * mem::size_of::<$t>();
-                let dst = unsafe { slice::from_raw_parts_mut(ptr as *mut u8, bytes) };
-                dst.copy_from_slice(&data[off..off + bytes]);
-                off += bytes;
-                core::mem::forget(v);
-                ptr
             }};
         }
 
