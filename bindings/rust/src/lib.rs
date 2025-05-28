@@ -14,8 +14,8 @@ mod bindings;
 mod ethereum_kzg_settings;
 
 // Expose our malloc/calloc/free definitions.
-#[cfg(feature = "custom-allocs")]
-mod allocs;
+#[cfg(target_os = "zkvm")]
+mod zkvm_allocs;
 
 // Expose relevant types with idiomatic names.
 pub use bindings::{
