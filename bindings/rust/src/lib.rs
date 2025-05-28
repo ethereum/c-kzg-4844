@@ -13,6 +13,10 @@ mod bindings;
 #[cfg(feature = "ethereum_kzg_settings")]
 mod ethereum_kzg_settings;
 
+// Expose our malloc/calloc/free definitions.
+#[cfg(feature = "custom-allocs")]
+mod allocs;
+
 // Expose relevant types with idiomatic names.
 pub use bindings::{
     KZGCommitment as KzgCommitment, KZGProof as KzgProof, KZGSettings as KzgSettings,
