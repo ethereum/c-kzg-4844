@@ -145,6 +145,7 @@ fn make_bindings(
 
     let mut bindings = bindings.to_string();
     bindings = replace_ckzg_ret_repr(bindings);
+    bindings = add_zkvm_preproc(bindings);
     std::fs::write(bindings_out_path, bindings).expect("Failed to write bindings");
 }
 
@@ -177,4 +178,17 @@ fn replace_ckzg_ret_repr(mut bindings: String) -> String {
     bindings.replace_range(repr_start..repr_start + repr_to_replace.len(), "#[repr(C)]");
 
     bindings
+}
+
+#[cfg(feature = "generate-bindings")]
+fn add_zkvm_preproc(bindings: String) -> String {
+    return bindings
+        .replace(
+            "use libc::FILE;",
+            "#[cfg(not(target_os = \"zkvm\"))]\nuse libc::FILE;",
+        )
+        .replace(
+            "pub fn load_trusted_setup_file(",
+            "#[cfg(not(target_os = \"zkvm\"))]\n\tpub fn load_trusted_setup_file(",
+        );
 }
