@@ -105,6 +105,8 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
+    #[doc = " The size (in bytes) of each table in tables."]
+    table_size: usize,
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]

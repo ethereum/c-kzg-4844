@@ -128,6 +128,148 @@ pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
 
 /// Holds the parameters of a kzg trusted setup ceremony.
 impl KZGSettings {
+    /// Serialize KZGSettings to bytes.
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut out = Vec::new();
+
+        macro_rules! dump {
+            ($ptr:expr, $count:expr, $elem_sz:expr) => {{
+                let bytes = $count * $elem_sz;
+                let src = unsafe { core::slice::from_raw_parts($ptr as *const u8, bytes) };
+                out.extend_from_slice(src);
+            }};
+        }
+
+        out.extend_from_slice(&self.wbits.to_be_bytes());
+        out.extend_from_slice(&self.scratch_size.to_be_bytes());
+        out.extend_from_slice(&self.table_size.to_be_bytes());
+
+        dump!(
+            self.roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+            core::mem::size_of::<fr_t>()
+        );
+        dump!(
+            self.brp_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            core::mem::size_of::<fr_t>()
+        );
+        dump!(
+            self.reverse_roots_of_unity,
+            FIELD_ELEMENTS_PER_EXT_BLOB + 1,
+            core::mem::size_of::<fr_t>()
+        );
+        dump!(
+            self.g1_values_monomial,
+            NUM_G1_POINTS,
+            core::mem::size_of::<g1_t>()
+        );
+        dump!(
+            self.g1_values_lagrange_brp,
+            NUM_G1_POINTS,
+            core::mem::size_of::<g1_t>()
+        );
+        dump!(
+            self.g2_values_monomial,
+            NUM_G2_POINTS,
+            core::mem::size_of::<g2_t>()
+        );
+
+        for i in 0..CELLS_PER_EXT_BLOB {
+            let col = unsafe { *self.x_ext_fft_columns.add(i) };
+            dump!(col, FIELD_ELEMENTS_PER_CELL, core::mem::size_of::<g1_t>());
+        }
+
+        if self.wbits != 0 {
+            assert!(self.tables.is_null() == false);
+            assert!(self.table_size != 0);
+            for i in 0..CELLS_PER_EXT_BLOB {
+                let tbl = unsafe { *self.tables.add(i) };
+                dump!(tbl, self.table_size, core::mem::size_of::<u8>());
+            }
+        }
+
+        out
+    }
+
+    /// Deserialize KZGSettings from bytes.
+    pub fn from_bytes(data: Vec<u8>) -> Self {
+        use core::{mem, slice};
+        let data = data.as_slice();
+        let mut off = 0;
+
+        macro_rules! alloc_and_fill {
+            ($t:ty, $count:expr) => {{
+                let mut v = Vec::<$t>::with_capacity($count);
+                unsafe {
+                    v.set_len($count);
+                }
+                let ptr = v.as_mut_ptr();
+                let bytes = $count * mem::size_of::<$t>();
+                let dst = unsafe { slice::from_raw_parts_mut(ptr as *mut u8, bytes) };
+                dst.copy_from_slice(&data[off..off + bytes]);
+                off += bytes;
+                core::mem::forget(v);
+                ptr
+            }};
+        }
+
+        let mut buf = [0u8; core::mem::size_of::<usize>()];
+        let blen = buf.len();
+        buf.copy_from_slice(&data[off..off + blen]);
+        let wbits = usize::from_be_bytes(buf);
+        off += blen;
+        buf.copy_from_slice(&data[off..off + blen]);
+        let scratch_size = usize::from_be_bytes(buf);
+        off += blen;
+        buf.copy_from_slice(&data[off..off + blen]);
+        let table_size = usize::from_be_bytes(buf);
+        off += blen;
+
+        let roots_of_unity = alloc_and_fill!(fr_t, FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+        let brp_roots_of_unity = alloc_and_fill!(fr_t, FIELD_ELEMENTS_PER_EXT_BLOB);
+        let reverse_roots_of_unity = alloc_and_fill!(fr_t, FIELD_ELEMENTS_PER_EXT_BLOB + 1);
+        let g1_values_monomial = alloc_and_fill!(g1_t, NUM_G1_POINTS);
+        let g1_values_lagrange_brp = alloc_and_fill!(g1_t, NUM_G1_POINTS);
+        let g2_values_monomial = alloc_and_fill!(g2_t, NUM_G2_POINTS);
+
+        let mut x_vec = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+        for _ in 0..CELLS_PER_EXT_BLOB {
+            let col_ptr = alloc_and_fill!(g1_t, FIELD_ELEMENTS_PER_CELL);
+            x_vec.push(col_ptr);
+        }
+        let x_ext_fft_columns = x_vec.as_mut_ptr();
+        core::mem::forget(x_vec);
+
+        let mut tables: *mut *mut blst_p1_affine = core::ptr::null_mut();
+        if wbits != 0 {
+            let mut t_vec = Vec::with_capacity(CELLS_PER_EXT_BLOB);
+            for _ in 0..CELLS_PER_EXT_BLOB {
+                let tbl_ptr = alloc_and_fill!(
+                    blst_p1_affine,
+                    table_size / core::mem::size_of::<blst_p1_affine>()
+                );
+                t_vec.push(tbl_ptr);
+            }
+            tables = t_vec.as_mut_ptr();
+            core::mem::forget(t_vec);
+        }
+
+        KZGSettings {
+            roots_of_unity,
+            brp_roots_of_unity,
+            reverse_roots_of_unity,
+            g1_values_monomial,
+            g1_values_lagrange_brp,
+            g2_values_monomial,
+            x_ext_fft_columns,
+            tables,
+            table_size,
+            wbits,
+            scratch_size,
+        }
+    }
+
     /// Initializes a trusted setup from a flat array of `FIELD_ELEMENTS_PER_BLOB` G1 points in monomial form, a flat
     /// array of `FIELD_ELEMENTS_PER_BLOB` G1 points in Lagrange form, and a flat array of 65 G2 points in monomial
     /// form.
@@ -1042,6 +1184,10 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
+
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
@@ -1087,6 +1233,10 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
+
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
@@ -1129,6 +1279,10 @@ mod tests {
             .map(Result::unwrap)
             .collect();
         assert!(!test_files.is_empty());
+
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
 
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
@@ -1179,6 +1333,10 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
+
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
@@ -1225,6 +1383,10 @@ mod tests {
             .map(Result::unwrap)
             .collect();
         assert!(!test_files.is_empty());
+
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
 
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
@@ -1279,6 +1441,10 @@ mod tests {
             .collect();
         assert!(!test_files.is_empty());
 
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
+
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
             let yaml_data = fs::read_to_string(test_file).unwrap();
@@ -1313,12 +1479,16 @@ mod tests {
     fn test_compute_cells_and_kzg_proofs() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 8).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS)
             .unwrap()
             .map(Result::unwrap)
             .collect();
         assert!(!test_files.is_empty());
+
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
 
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
@@ -1361,12 +1531,16 @@ mod tests {
     fn test_recover_cells_and_kzg_proofs() {
         let trusted_setup_file = Path::new("src/trusted_setup.txt");
         assert!(trusted_setup_file.exists());
-        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 8).unwrap();
         let test_files: Vec<PathBuf> = glob::glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
             .unwrap()
             .map(Result::unwrap)
             .collect();
         assert!(!test_files.is_empty());
+
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
 
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
@@ -1422,6 +1596,10 @@ mod tests {
             .map(Result::unwrap)
             .collect();
         assert!(!test_files.is_empty());
+
+        /* Test serialization of KZG settings */
+        let serialized_kzg_settings = kzg_settings.to_bytes();
+        let kzg_settings = KZGSettings::from_bytes(serialized_kzg_settings);
 
         #[allow(unused_variables)]
         for (index, test_file) in test_files.iter().enumerate() {
