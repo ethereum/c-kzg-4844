@@ -76,4 +76,6 @@ typedef struct {
     size_t wbits;
     /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
+    /** The size (in bytes) of each table in tables. */
+    size_t table_size;
 } KZGSettings;
