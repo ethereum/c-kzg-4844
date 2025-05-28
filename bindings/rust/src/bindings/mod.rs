@@ -265,9 +265,9 @@ impl KZGSettings {
             g2_values_monomial,
             x_ext_fft_columns,
             tables,
-            table_size,
             wbits,
             scratch_size,
+            table_size,
         }
     }
 
