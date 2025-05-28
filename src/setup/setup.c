@@ -299,9 +299,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
 
         /* Calculate the size of each table, this can be re-used */
-        s->table_size = blst_p1s_mult_wbits_precompute_sizeof(
-            s->wbits, FIELD_ELEMENTS_PER_CELL
-        );
+        s->table_size = blst_p1s_mult_wbits_precompute_sizeof(s->wbits, FIELD_ELEMENTS_PER_CELL);
 
         for (size_t i = 0; i < circulant_domain_size; i++) {
             /* Transform the points to affine representation */
