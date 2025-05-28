@@ -182,7 +182,7 @@ fn replace_ckzg_ret_repr(mut bindings: String) -> String {
 
 #[cfg(feature = "generate-bindings")]
 fn add_zkvm_preproc(bindings: String) -> String {
-    return bindings
+    bindings
         .replace(
             "use libc::FILE;",
             "#[cfg(not(target_os = \"zkvm\"))]\nuse libc::FILE;",
@@ -190,5 +190,5 @@ fn add_zkvm_preproc(bindings: String) -> String {
         .replace(
             "pub fn load_trusted_setup_file(",
             "#[cfg(not(target_os = \"zkvm\"))]\n\tpub fn load_trusted_setup_file(",
-        );
+        )
 }
