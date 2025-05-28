@@ -187,6 +187,7 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->tables);
     s->wbits = 0;
     s->scratch_size = 0;
+    s->table_size = 0;
 }
 
 /**
@@ -298,7 +299,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
         if (ret != C_KZG_OK) goto out;
 
         /* Calculate the size of each table, this can be re-used */
-        size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
+        s->table_size = blst_p1s_mult_wbits_precompute_sizeof(
             s->wbits, FIELD_ELEMENTS_PER_CELL
         );
 
@@ -309,7 +310,7 @@ static C_KZG_RET init_fk20_multi_settings(KZGSettings *s) {
             const blst_p1_affine *points_arg[2] = {p_affine, NULL};
 
             /* Allocate space for the table */
-            ret = c_kzg_malloc((void **)&s->tables[i], table_size);
+            ret = c_kzg_malloc((void **)&s->tables[i], s->table_size);
             if (ret != C_KZG_OK) goto out;
 
             /* Compute table for fixed-base MSM */
@@ -373,6 +374,7 @@ static void init_settings(KZGSettings *out) {
     out->tables = NULL;
     out->wbits = 0;
     out->scratch_size = 0;
+    out->table_size = 0;
 }
 
 /**
