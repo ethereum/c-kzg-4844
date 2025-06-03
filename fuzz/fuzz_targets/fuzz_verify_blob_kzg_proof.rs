@@ -7,6 +7,7 @@ extern crate core;
 use arbitrary::Arbitrary;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::cell::UnsafeCell;
 use std::env;
 use std::path::PathBuf;
@@ -30,7 +31,7 @@ fn get_root_dir() -> PathBuf {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CKZG Initialization
+// Initialization
 ///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
@@ -38,6 +39,7 @@ lazy_static! {
         let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
+    static ref DAS_CONTEXT: DASContext = DASContext::default();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -90,17 +92,31 @@ fuzz_target!(|input: Input| {
     let ckzg_result =
         KZG_SETTINGS.verify_blob_kzg_proof(&input.blob, &input.commitment, &input.proof);
     let cnst_result = cnst.verify_blob_kzg_proof(&input.blob, &input.commitment, &input.proof);
+    let rkzg_result =
+        DAS_CONTEXT.verify_blob_kzg_proof(&input.blob, &input.commitment, &input.proof);
 
-    match (&ckzg_result, &cnst_result) {
-        (Ok(ckzg_valid), Ok(cnst_valid)) => {
+    match (&ckzg_result, &cnst_result, &rkzg_result) {
+        (Ok(ckzg_valid), Ok(cnst_valid), Ok(())) => {
             assert_eq!(*ckzg_valid, *cnst_valid);
+            assert_eq!(*ckzg_valid, true);
         }
-        (Err(_), Err(_)) => {
+        (Ok(ckzg_valid), Ok(cnst_valid), Err(err)) => {
+            // If ckzg was Ok, ensure the proof was rejected.
+            assert_eq!(*ckzg_valid, false);
+            assert_eq!(*cnst_valid, false);
+            if !err.is_proof_invalid() {
+                panic!("Expected InvalidProof, got {:?}", err);
+            }
+        }
+        (Err(_), Err(_), Err(_)) => {
             // Cannot compare errors, they are unique.
         }
         _ => {
             // There is a disagreement.
-            panic!("mismatch {:?} and {:?}", &ckzg_result, &cnst_result);
+            panic!(
+                "mismatch: {:?}, {:?}, {:?}",
+                &ckzg_result, &cnst_result, rkzg_result
+            );
         }
     }
 });

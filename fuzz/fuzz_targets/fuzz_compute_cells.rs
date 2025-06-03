@@ -62,7 +62,7 @@ fuzz_target!(|blob: Blob| {
         _ => {
             // There is a disagreement.
             panic!(
-                "mismatch {:?} and {:?}",
+                "mismatch: {:?}, {:?}",
                 &ckzg_result.is_ok(),
                 &rkzg_result.is_ok()
             );

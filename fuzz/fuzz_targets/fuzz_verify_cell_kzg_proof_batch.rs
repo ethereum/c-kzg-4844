@@ -84,7 +84,7 @@ fuzz_target!(|input: Input| {
     );
     let rkzg_result = DAS_CONTEXT.verify_cell_kzg_proof_batch(
         commitments_bytes,
-        input.cell_indices,
+        &input.cell_indices,
         cells_bytes,
         proofs_bytes,
     );
@@ -97,7 +97,7 @@ fuzz_target!(|input: Input| {
         (Ok(ckzg_valid), Err(err)) => {
             // If ckzg was Ok, ensure the proof was rejected.
             assert_eq!(*ckzg_valid, false);
-            if !err.invalid_proof() {
+            if !err.is_proof_invalid() {
                 panic!("Expected InvalidProof, got {:?}", err);
             }
         }
@@ -106,7 +106,7 @@ fuzz_target!(|input: Input| {
         }
         _ => {
             // There is a disagreement.
-            panic!("mismatch {:?} and {:?}", &ckzg_result, &rkzg_result);
+            panic!("mismatch: {:?}, {:?}", &ckzg_result, &rkzg_result);
         }
     }
 });
