@@ -7,6 +7,7 @@ extern crate core;
 use arbitrary::Arbitrary;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::cell::UnsafeCell;
 use std::env;
 use std::path::PathBuf;
@@ -30,7 +31,7 @@ fn get_root_dir() -> PathBuf {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CKZG Initialization
+// Initialization
 ///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
@@ -38,11 +39,8 @@ lazy_static! {
         let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
+    static ref DAS_CONTEXT: DASContext = DASContext::default();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Constantine Initialization
-///////////////////////////////////////////////////////////////////////////////
 
 struct SafeEthKzgContext {
     inner: UnsafeCell<constantine::EthKzgContext<'static>>,
@@ -88,19 +86,25 @@ fuzz_target!(|input: Input| {
 
     let ckzg_result = KZG_SETTINGS.compute_kzg_proof(&input.blob, &input.z);
     let cnst_result = cnst.compute_kzg_proof(&input.blob, &input.z);
+    let rkzg_result = DAS_CONTEXT.compute_kzg_proof(&input.blob, *input.z);
 
-    match (&ckzg_result, &cnst_result) {
-        (Ok((ckzg_proof, ckzg_y)), Ok((cnst_proof, cnst_y))) => {
+    match (&ckzg_result, &cnst_result, &rkzg_result) {
+        (Ok((ckzg_proof, ckzg_y)), Ok((cnst_proof, cnst_y)), Ok((rkzg_proof, rkzg_y))) => {
             // Ensure the results are the same.
             assert_eq!(*ckzg_proof.as_slice(), *cnst_proof.as_slice());
+            assert_eq!(*ckzg_proof.as_slice(), *rkzg_proof.as_slice());
             assert_eq!(*ckzg_y.as_slice(), *cnst_y.as_slice());
+            assert_eq!(*ckzg_y.as_slice(), *rkzg_y.as_slice());
         }
-        (Err(_), Err(_)) => {
+        (Err(_), Err(_), Err(_)) => {
             // Cannot compare errors, they are unique.
         }
         _ => {
             // There is a disagreement.
-            panic!("mismatch {:?} and {:?}", &ckzg_result, &cnst_result);
+            panic!(
+                "mismatch: {:?}, {:?}, {:?}",
+                &ckzg_result, &cnst_result, &rkzg_result
+            );
         }
     }
 });

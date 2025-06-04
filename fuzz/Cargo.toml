@@ -13,13 +13,11 @@ cc = "1.2"
 
 [dependencies]
 arbitrary = "1.4"
-rust_eth_kzg = { git = "https://github.com/crate-crypto/rust-eth-kzg" }
+c-kzg = { path = "..", features = ["arbitrary"] }
 constantine = { git = "https://github.com/mratsim/constantine", package = "constantine-ethereum-kzg" }
 lazy_static = "1.5"
 libfuzzer-sys = "0.4"
-
-[dependencies.c-kzg]
-path = ".."
+rust_eth_kzg = { git = "https://github.com/crate-crypto/rust-eth-kzg" }
 
 # Prevent this from interfering with workspaces
 [workspace]

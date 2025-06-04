@@ -7,10 +7,11 @@ extern crate core;
 use arbitrary::Arbitrary;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::cell::UnsafeCell;
+use std::env;
 use std::path::PathBuf;
 use std::sync::{Arc, OnceLock};
-use std::env;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helper Functions
@@ -30,7 +31,7 @@ fn get_root_dir() -> PathBuf {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CKZG Initialization
+// Initialization
 ///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
@@ -38,11 +39,8 @@ lazy_static! {
         let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
+    static ref DAS_CONTEXT: DASContext = DASContext::default();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Constantine Initialization
-///////////////////////////////////////////////////////////////////////////////
 
 struct SafeEthKzgContext {
     inner: UnsafeCell<constantine::EthKzgContext<'static>>,
@@ -88,18 +86,23 @@ fuzz_target!(|input: Input| {
 
     let ckzg_result = KZG_SETTINGS.compute_blob_kzg_proof(&input.blob, &input.commitment);
     let cnst_result = cnst.compute_blob_kzg_proof(&input.blob, &input.commitment);
+    let rkzg_result = DAS_CONTEXT.compute_blob_kzg_proof(&input.blob, &input.commitment);
 
-    match (&ckzg_result, &cnst_result) {
-        (Ok(ckzg_proof), Ok(cnst_proof)) => {
+    match (&ckzg_result, &cnst_result, &rkzg_result) {
+        (Ok(ckzg_proof), Ok(cnst_proof), Ok(rkzg_proof)) => {
             // Ensure the results are the same.
             assert_eq!(*ckzg_proof.as_slice(), *cnst_proof.as_slice());
+            assert_eq!(*ckzg_proof.as_slice(), *rkzg_proof.as_slice());
         }
-        (Err(_), Err(_)) => {
+        (Err(_), Err(_), Err(_)) => {
             // Cannot compare errors, they are unique.
         }
         _ => {
             // There is a disagreement.
-            panic!("mismatch {:?} and {:?}", &ckzg_result, &cnst_result);
+            panic!(
+                "mismatch: {:?}, {:?}, {:?}",
+                &ckzg_result, &cnst_result, &rkzg_result
+            );
         }
     }
 });

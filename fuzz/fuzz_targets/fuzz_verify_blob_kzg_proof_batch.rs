@@ -7,6 +7,7 @@ extern crate core;
 use arbitrary::Arbitrary;
 use lazy_static::lazy_static;
 use libfuzzer_sys::fuzz_target;
+use rust_eth_kzg::DASContext;
 use std::cell::UnsafeCell;
 use std::env;
 use std::path::PathBuf;
@@ -30,7 +31,7 @@ fn get_root_dir() -> PathBuf {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CKZG Initialization
+// Initialization
 ///////////////////////////////////////////////////////////////////////////////
 
 lazy_static! {
@@ -38,11 +39,8 @@ lazy_static! {
         let trusted_setup_file = get_root_dir().join("src").join("trusted_setup.txt");
         c_kzg::KzgSettings::load_trusted_setup_file(&trusted_setup_file, 0).unwrap()
     };
+    static ref DAS_CONTEXT: DASContext = DASContext::default();
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// Constantine Initialization
-///////////////////////////////////////////////////////////////////////////////
 
 struct SafeEthKzgContext {
     inner: UnsafeCell<constantine::EthKzgContext<'static>>,
@@ -89,12 +87,25 @@ fuzz_target!(|input: Input| {
         .get_or_init(|| initialize_constantine_ctx())
         .get();
 
+    /* A version for constantine */
     let blobs: Vec<[u8; c_kzg::BYTES_PER_BLOB]> =
         input.blobs.iter().map(|b| b.clone().into_inner()).collect();
     let commitments: Vec<[u8; c_kzg::BYTES_PER_COMMITMENT]> =
         input.commitments.iter().map(|c| c.into_inner()).collect();
     let proofs: Vec<[u8; c_kzg::BYTES_PER_PROOF]> =
         input.proofs.iter().map(|p| p.into_inner()).collect();
+
+    /* A second version for rust-eth-kzg */
+    let blobs_vec: Vec<[u8; c_kzg::BYTES_PER_BLOB]> =
+        input.blobs.iter().map(|b| b.clone().into_inner()).collect();
+    let blobs_refs: Vec<&[u8; c_kzg::BYTES_PER_BLOB]> = blobs_vec.iter().collect();
+    let commitments_vec: Vec<[u8; c_kzg::BYTES_PER_COMMITMENT]> =
+        input.commitments.iter().map(|c| c.into_inner()).collect();
+    let commitments_refs: Vec<&[u8; c_kzg::BYTES_PER_COMMITMENT]> =
+        commitments_vec.iter().collect();
+    let proofs_vec: Vec<[u8; c_kzg::BYTES_PER_PROOF]> =
+        input.proofs.iter().map(|p| p.into_inner()).collect();
+    let proofs_refs: Vec<&[u8; c_kzg::BYTES_PER_PROOF]> = proofs_vec.iter().collect();
 
     let ckzg_result =
         KZG_SETTINGS.verify_blob_kzg_proof_batch(&input.blobs, &input.commitments, &input.proofs);
@@ -104,17 +115,32 @@ fuzz_target!(|input: Input| {
         proofs.as_slice(),
         &input.secure_random_bytes,
     );
+    let rkzg_result =
+        DAS_CONTEXT.verify_blob_kzg_proof_batch(blobs_refs, commitments_refs, proofs_refs);
 
-    match (&ckzg_result, &cnst_result) {
-        (Ok(ckzg_valid), Ok(cnst_valid)) => {
-            assert_eq!(*ckzg_valid, *cnst_valid);
+    match (&ckzg_result, &cnst_result, &rkzg_result) {
+        (Ok(ckzg_valid), Ok(cnst_valid), Ok(())) => {
+            // One returns a boolean, the other just says Ok.
+            assert_eq!(*ckzg_valid, true);
+            assert_eq!(*cnst_valid, true);
         }
-        (Err(_), Err(_)) => {
+        (Ok(ckzg_valid), Ok(cnst_valid), Err(err)) => {
+            // If ckzg was Ok, ensure the proof was rejected.
+            assert_eq!(*ckzg_valid, false);
+            assert_eq!(*cnst_valid, false);
+            if !err.is_proof_invalid() {
+                panic!("Expected InvalidProof, got {:?}", err);
+            }
+        }
+        (Err(_), Err(_), Err(_)) => {
             // Cannot compare errors, they are unique.
         }
         _ => {
             // There is a disagreement.
-            panic!("mismatch {:?} and {:?}", &ckzg_result, &cnst_result);
+            panic!(
+                "mismatch: {:?}, {:?}, {:?}",
+                &ckzg_result, &cnst_result, &rkzg_result
+            );
         }
     }
 });
