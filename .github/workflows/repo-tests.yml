@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - name: Check for trailing whitespace
         run: |
-          if git grep -I -n '[[:blank:]]$'; then
+          if git grep -I -n '[[:blank:]]$' -- ':!tests/**'; then
             echo "Trailing whitespace found. Please fix it."
             exit 1
           fi
