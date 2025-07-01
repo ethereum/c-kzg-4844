@@ -26,7 +26,7 @@ jobs:
           submodules: recursive
 
       - name: Set up Elixir
-        uses: erlef/setup-beam@8aa8a857c6be0daae6e97272bb299d5b942675a4 # v1.19.0
+        uses: erlef/setup-beam@75edbb82877ab10edeb12a99c3cf2f0909f3dc87 # v1.20.1
         with:
           otp-version: ${{matrix.variation.otp}}
           elixir-version: ${{matrix.variation.elixir}}
