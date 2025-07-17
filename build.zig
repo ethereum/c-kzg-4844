@@ -30,32 +30,23 @@ pub fn build(b: *std.Build) void {
     };
 
     if (!has_blst_submodule) {
-        // Try to initialize submodules automatically
-        std.log.info("blst submodule not found, attempting to initialize...", .{});
+        // Download blst at build time for zig fetch
+        std.log.info("Downloading blst library...", .{});
         
-        // Use std.process to run git submodule command synchronously at build time
-        var child = std.process.Child.init(&[_][]const u8{ "git", "submodule", "update", "--init", "--recursive" }, std.heap.page_allocator);
-        child.cwd_dir = std.fs.cwd();
-        const term = child.spawnAndWait() catch {
-            std.log.err("Failed to run git submodule command", .{});
-            std.log.err("Please run manually: git submodule update --init --recursive", .{});
-            std.process.exit(1);
-        };
+        const download_cmd = b.addSystemCommand(&[_][]const u8{
+            "curl", "-L", "-o", "blst.tar.gz",
+            "https://github.com/supranational/blst/archive/v0.3.15.tar.gz"
+        });
         
-        if (term != .Exited or term.Exited != 0) {
-            std.log.err("git submodule command failed with exit code", .{});
-            std.log.err("Please run manually: git submodule update --init --recursive", .{});
-            std.process.exit(1);
-        }
+        const extract_cmd = b.addSystemCommand(&[_][]const u8{
+            "tar", "xzf", "blst.tar.gz", "--strip-components=1", "-C", "blst"
+        });
+        extract_cmd.step.dependOn(&download_cmd.step);
         
-        // Check again after attempting to initialize
-        const file = std.fs.cwd().openFile("blst/src/server.c", .{}) catch {
-            std.log.err("blst submodule still not available after git submodule init", .{});
-            std.log.err("Please ensure you're in a git repository and have git access", .{});
-            std.process.exit(1);
-        };
-        file.close();
-        std.log.info("Successfully initialized submodules", .{});
+        const mkdir_cmd = b.addSystemCommand(&[_][]const u8{ "mkdir", "-p", "blst" });
+        download_cmd.step.dependOn(&mkdir_cmd.step);
+        
+        lib.step.dependOn(&extract_cmd.step);
     }
 
     // Build blst library from source
@@ -79,6 +70,9 @@ pub fn build(b: *std.Build) void {
     blst_lib.addIncludePath(b.path("blst/bindings"));
     blst_lib.linkLibC();
     
+    // Link with our built blst library
+    lib.linkLibrary(blst_lib);
+
     // Add C-KZG source files
     lib.addCSourceFile(.{
         .file = b.path("src/ckzg.c"),
@@ -89,9 +83,6 @@ pub fn build(b: *std.Build) void {
             "-DBLST_PORTABLE",
         },
     });
-    
-    // Link with our built blst library
-    lib.linkLibrary(blst_lib);
     
     lib.addIncludePath(b.path("src"));
     lib.addIncludePath(b.path("blst/bindings"));

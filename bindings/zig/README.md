@@ -14,15 +14,7 @@ Zig bindings for the C-KZG-4844 library, providing polynomial commitments for EI
 zig fetch https://github.com/ethereum/c-kzg-4844
 ```
 
-The build system will automatically initialize git submodules when needed.
-
-### Using git clone
-
-```bash
-git clone --recursive https://github.com/ethereum/c-kzg-4844
-cd c-kzg-4844
-zig build
-```
+The build system will automatically download the blst library when needed.
 
 ### Manual dependency
 
