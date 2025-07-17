@@ -29,24 +29,58 @@ pub fn build(b: *std.Build) void {
         break :blk true;
     };
 
+    var server_cmd: ?*std.Build.Step.Run = null;
+    
     if (!has_blst_submodule) {
         // Download blst at build time for zig fetch
         std.log.info("Downloading blst library...", .{});
+        
+        const mkdir_cmd = b.addSystemCommand(&[_][]const u8{ "mkdir", "-p", "blst" });
         
         const download_cmd = b.addSystemCommand(&[_][]const u8{
             "curl", "-L", "-o", "blst.tar.gz",
             "https://github.com/supranational/blst/archive/v0.3.15.tar.gz"
         });
+        download_cmd.step.dependOn(&mkdir_cmd.step);
         
         const extract_cmd = b.addSystemCommand(&[_][]const u8{
             "tar", "xzf", "blst.tar.gz", "--strip-components=1", "-C", "blst"
         });
         extract_cmd.step.dependOn(&download_cmd.step);
         
-        const mkdir_cmd = b.addSystemCommand(&[_][]const u8{ "mkdir", "-p", "blst" });
-        download_cmd.step.dependOn(&mkdir_cmd.step);
-        
-        lib.step.dependOn(&extract_cmd.step);
+        // Create server.c unity build file
+        server_cmd = b.addSystemCommand(&[_][]const u8{
+            "sh", "-c", 
+            \\cat > blst/src/server.c << 'EOF'
+            \\#include "keygen.c"
+            \\#include "hash_to_field.c"
+            \\#include "e1.c"
+            \\#include "map_to_g1.c"
+            \\#include "e2.c"
+            \\#include "map_to_g2.c"
+            \\#include "fp12_tower.c"
+            \\#include "pairing.c"
+            \\#include "aggregate.c"
+            \\#include "exp.c"
+            \\#include "sqrt.c"
+            \\#include "recip.c"
+            \\#include "bulk_addition.c"
+            \\#include "multi_scalar.c"
+            \\#include "consts.c"
+            \\#include "vect.c"
+            \\#include "exports.c"
+            \\#ifndef __BLST_CGO__
+            \\# include "rb_tree.c"
+            \\#endif
+            \\#ifdef BLST_FR_PENTAROOT
+            \\# include "pentaroot.c"
+            \\#endif
+            \\#ifndef __BLST_NO_CPUID__
+            \\# include "cpuid.c"
+            \\#endif
+            \\EOF
+        });
+        server_cmd.?.step.dependOn(&extract_cmd.step);
     }
 
     // Build blst library from source
@@ -55,6 +89,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    
+    // If we downloaded blst, make sure blst_lib waits for the download
+    if (server_cmd) |cmd| {
+        blst_lib.step.dependOn(&cmd.step);
+    }
     
     blst_lib.addCSourceFile(.{
         .file = b.path("blst/src/server.c"),
