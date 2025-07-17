@@ -68,7 +68,7 @@ pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
         14 => &CACHE_14,
         15 => &CACHE_15,
         _ => panic!(
-            "Unsupported precompute value: {}. Only values 0-15 are supported.",
+            "Unsupported precompute value: {}. Only values 0-15 (inclusive) are supported.",
             precompute
         ),
     };
