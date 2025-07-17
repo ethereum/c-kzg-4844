@@ -37,6 +37,8 @@ create_cache!(CACHE_15);
 /// Returns default Ethereum mainnet KZG settings.
 ///
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
+///
+/// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
     let arc = ethereum_kzg_settings_arc(precompute);
     // Intentionally leak the Arc to create a static reference.
@@ -48,6 +50,8 @@ pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
 ///
 /// It is useful for sharing the settings in multiple places.
+///
+/// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
     let cache_box = match precompute {
         0 => &CACHE_0,
@@ -67,8 +71,7 @@ pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
         14 => &CACHE_14,
         15 => &CACHE_15,
         _ => panic!(
-            "Unsupported precompute value: {}. Only values 0-15 (inclusive) are supported.",
-            precompute
+            "Unsupported precompute value: {precompute}. Only values 0-15 (inclusive) are supported."
         ),
     };
 
