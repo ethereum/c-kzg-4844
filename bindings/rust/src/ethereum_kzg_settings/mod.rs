@@ -39,11 +39,10 @@ create_cache!(CACHE_15);
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
 pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
     let arc = ethereum_kzg_settings_arc(precompute);
-    // SAFETY: We're converting a cached Arc to a static reference.
-    // This is safe because the Arc is cached and will live for the program's lifetime.
-    // The Arc's reference count won't go to zero because it's cached.
-    let ptr = Arc::into_raw(arc);
-    unsafe { &*ptr }
+    // Intentionally leak the Arc to create a static reference.
+    // This is safe because the settings are cached and meant to live for the program's lifetime.
+    // The memory will be cleaned up when the program terminates.
+    &*Box::leak(Box::new(arc))
 }
 
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
