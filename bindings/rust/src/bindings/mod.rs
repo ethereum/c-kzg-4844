@@ -86,7 +86,7 @@ impl fmt::Display for Error {
             | Self::InvalidKzgCommitment(s)
             | Self::InvalidTrustedSetup(s)
             | Self::MismatchLength(s) => f.write_str(s),
-            Self::LoadingTrustedSetupFailed(s) => write!(f, "KzgErrors: {:?}", s),
+            Self::LoadingTrustedSetupFailed(s) => write!(f, "KzgErrors: {s:?}"),
             Self::CError(s) => fmt::Debug::fmt(s, f),
         }
     }
@@ -123,7 +123,7 @@ pub enum KzgErrors {
 pub fn hex_to_bytes(hex_str: &str) -> Result<Vec<u8>, Error> {
     let trimmed_str = hex_str.strip_prefix("0x").unwrap_or(hex_str);
     hex::decode(trimmed_str)
-        .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {}", e)))
+        .map_err(|e| Error::InvalidHexFormat(format!("Failed to decode hex: {e}")))
 }
 
 /// Holds the parameters of a kzg trusted setup ceremony.
@@ -1011,7 +1011,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_blob_to_kzg_commitment");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
             }
@@ -1060,7 +1060,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_compute_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
                 file.write_all(&z.bytes).unwrap();
@@ -1106,7 +1106,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_compute_blob_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
                 file.write_all(&commitment.bytes).unwrap();
@@ -1153,7 +1153,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_verify_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&commitment.bytes).unwrap();
                 file.write_all(&z.bytes).unwrap();
@@ -1201,7 +1201,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_verify_blob_kzg_proof");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
                 file.write_all(&commitment.bytes).unwrap();
@@ -1248,7 +1248,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_verify_blob_kzg_proof_batch");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 for blob in &blobs {
                     file.write_all(&blob.bytes).unwrap();
@@ -1297,7 +1297,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_compute_cells");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
             }
@@ -1339,7 +1339,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_compute_cells_and_kzg_proofs");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 file.write_all(&blob.bytes).unwrap();
             }
@@ -1389,7 +1389,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_recover_cells_and_kzg_proofs");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 for cell_index in &cell_indices {
                     file.write_all(&cell_index.to_le_bytes()).unwrap();
@@ -1446,7 +1446,7 @@ mod tests {
                     .join("corpus")
                     .join("fuzz_verify_cell_kzg_proof_batch");
                 fs::create_dir_all(&dir_path).unwrap();
-                let file_path = dir_path.join(format!("data_{}.bin", index));
+                let file_path = dir_path.join(format!("data_{index}.bin"));
                 let mut file = File::create(&file_path).unwrap();
                 for commitment in &commitments {
                     file.write_all(&commitment.bytes).unwrap();

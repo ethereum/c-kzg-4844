@@ -2,7 +2,7 @@ use crate::KzgSettings;
 use alloc::{boxed::Box, sync::Arc};
 use once_cell::race::OnceBox;
 
-/// Default G1 Lagrange bytes.
+/// Default G1 monomial bytes.
 const ETH_G1_MONOMIAL_POINTS: &[u8] = include_bytes!("./g1_monomial_bytes.bin");
 /// Default G1 Lagrange bytes.
 const ETH_G1_LAGRANGE_POINTS: &[u8] = include_bytes!("./g1_lagrange_bytes.bin");
