@@ -9,32 +9,82 @@ const ETH_G1_LAGRANGE_POINTS: &[u8] = include_bytes!("./g1_lagrange_bytes.bin");
 /// Default G2 monomial bytes.
 const ETH_G2_MONOMIAL_POINTS: &[u8] = include_bytes!("./g2_monomial_bytes.bin");
 
+macro_rules! create_cache {
+    ($name:ident) => {
+        static $name: OnceBox<Arc<KzgSettings>> = OnceBox::new();
+    };
+}
+
+// We use separate OnceBox instances for each precompute value.
+// This avoids the need for any unsafe code or mutexes.
+create_cache!(CACHE_0);
+create_cache!(CACHE_1);
+create_cache!(CACHE_2);
+create_cache!(CACHE_3);
+create_cache!(CACHE_4);
+create_cache!(CACHE_5);
+create_cache!(CACHE_6);
+create_cache!(CACHE_7);
+create_cache!(CACHE_8);
+create_cache!(CACHE_9);
+create_cache!(CACHE_10);
+create_cache!(CACHE_11);
+create_cache!(CACHE_12);
+create_cache!(CACHE_13);
+create_cache!(CACHE_14);
+create_cache!(CACHE_15);
+
 /// Returns default Ethereum mainnet KZG settings.
 ///
 /// If you need a cloneable settings use `ethereum_kzg_settings_arc` instead.
 pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
-    ethereum_kzg_settings_inner(precompute).as_ref()
+    let arc = ethereum_kzg_settings_arc(precompute);
+    // SAFETY: We're converting a cached Arc to a static reference.
+    // This is safe because the Arc is cached and will live for the program's lifetime.
+    // The Arc's reference count won't go to zero because it's cached.
+    let ptr = Arc::into_raw(arc);
+    unsafe { &*ptr }
 }
 
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
 ///
 /// It is useful for sharing the settings in multiple places.
 pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
-    ethereum_kzg_settings_inner(precompute).clone()
-}
+    let cache_box = match precompute {
+        0 => &CACHE_0,
+        1 => &CACHE_1,
+        2 => &CACHE_2,
+        3 => &CACHE_3,
+        4 => &CACHE_4,
+        5 => &CACHE_5,
+        6 => &CACHE_6,
+        7 => &CACHE_7,
+        8 => &CACHE_8,
+        9 => &CACHE_9,
+        10 => &CACHE_10,
+        11 => &CACHE_11,
+        12 => &CACHE_12,
+        13 => &CACHE_13,
+        14 => &CACHE_14,
+        15 => &CACHE_15,
+        _ => panic!(
+            "Unsupported precompute value: {}. Only values 0-15 are supported.",
+            precompute
+        ),
+    };
 
-fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
-    static DEFAULT: OnceBox<Arc<KzgSettings>> = OnceBox::new();
-    DEFAULT.get_or_init(|| {
-        let settings = KzgSettings::load_trusted_setup(
-            ETH_G1_MONOMIAL_POINTS,
-            ETH_G1_LAGRANGE_POINTS,
-            ETH_G2_MONOMIAL_POINTS,
-            precompute,
-        )
-        .expect("failed to load default trusted setup");
-        Box::new(Arc::new(settings))
-    })
+    cache_box
+        .get_or_init(|| {
+            let settings = KzgSettings::load_trusted_setup(
+                ETH_G1_MONOMIAL_POINTS,
+                ETH_G1_LAGRANGE_POINTS,
+                ETH_G2_MONOMIAL_POINTS,
+                precompute,
+            )
+            .expect("failed to load trusted setup");
+            Box::new(Arc::new(settings))
+        })
+        .clone()
 }
 
 #[cfg(test)]
