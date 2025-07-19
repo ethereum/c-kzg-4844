@@ -82,7 +82,7 @@ fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
             ETH_G2_MONOMIAL_POINTS,
             precompute,
         )
-        .expect("failed to load trusted setup");
+        .expect("failed to load default trusted setup");
         Box::new(Arc::new(settings))
     })
 }
