@@ -40,11 +40,7 @@ create_cache!(CACHE_15);
 ///
 /// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
-    let arc = ethereum_kzg_settings_arc(precompute);
-    // Intentionally leak the Arc to create a static reference.
-    // This is safe because the settings are cached and meant to live for the program's lifetime.
-    // The memory will be cleaned up when the program terminates.
-    &*Box::leak(Box::new(arc))
+    ethereum_kzg_settings_inner(precompute).as_ref()
 }
 
 /// Returns default Ethereum mainnet KZG settings as an `Arc`.
@@ -53,6 +49,10 @@ pub fn ethereum_kzg_settings(precompute: u64) -> &'static KzgSettings {
 ///
 /// Note: Precompute values 0-15 (inclusive) are supported.
 pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
+    ethereum_kzg_settings_inner(precompute).clone()
+}
+
+fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
     let cache_box = match precompute {
         0 => &CACHE_0,
         1 => &CACHE_1,
@@ -75,18 +75,16 @@ pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
         ),
     };
 
-    cache_box
-        .get_or_init(|| {
-            let settings = KzgSettings::load_trusted_setup(
-                ETH_G1_MONOMIAL_POINTS,
-                ETH_G1_LAGRANGE_POINTS,
-                ETH_G2_MONOMIAL_POINTS,
-                precompute,
-            )
-            .expect("failed to load trusted setup");
-            Box::new(Arc::new(settings))
-        })
-        .clone()
+    cache_box.get_or_init(|| {
+        let settings = KzgSettings::load_trusted_setup(
+            ETH_G1_MONOMIAL_POINTS,
+            ETH_G1_LAGRANGE_POINTS,
+            ETH_G2_MONOMIAL_POINTS,
+            precompute,
+        )
+        .expect("failed to load trusted setup");
+        Box::new(Arc::new(settings))
+    })
 }
 
 #[cfg(test)]
