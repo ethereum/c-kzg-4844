@@ -19,6 +19,7 @@ void reset_trusted_setup(void) {
 void throw_exception(JNIEnv *env, const char *message) {
   jclass exception_class = (*env)->FindClass(env, "java/lang/RuntimeException");
   (*env)->ThrowNew(env, exception_class, message);
+  (*env)->DeleteLocalRef(env, exception_class);
 }
 
 void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code,
@@ -31,6 +32,9 @@ void throw_c_kzg_exception(JNIEnv *env, C_KZG_RET error_code,
   jobject exception = (*env)->NewObject(
       env, exception_class, exception_constructor, error_code, error_message);
   (*env)->Throw(env, exception);
+  (*env)->DeleteLocalRef(env, error_message);
+  (*env)->DeleteLocalRef(env, exception);
+  (*env)->DeleteLocalRef(env, exception_class);
 }
 
 void throw_invalid_size_exception(JNIEnv *env, const char *prefix, size_t size,
@@ -225,6 +229,8 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
   (*env)->ReleaseByteArrayElements(env, z_bytes, (jbyte *)z_native, JNI_ABORT);
 
   if (ret != C_KZG_OK) {
+    (*env)->DeleteLocalRef(env, proof);
+    (*env)->DeleteLocalRef(env, y);
     throw_c_kzg_exception(env, ret, "There was an error in computeKzgProof.");
     return NULL;
   }
@@ -232,6 +238,8 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
   jclass proof_and_y_class =
       (*env)->FindClass(env, "ethereum/ckzg4844/ProofAndY");
   if (proof_and_y_class == NULL) {
+    (*env)->DeleteLocalRef(env, proof);
+    (*env)->DeleteLocalRef(env, y);
     throw_exception(env, "Failed to find ProofAndY class.");
     return NULL;
   }
@@ -239,6 +247,9 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
   jmethodID proof_and_y_constructor =
       (*env)->GetMethodID(env, proof_and_y_class, "<init>", "([B[B)V");
   if (proof_and_y_constructor == NULL) {
+    (*env)->DeleteLocalRef(env, proof);
+    (*env)->DeleteLocalRef(env, y);
+    (*env)->DeleteLocalRef(env, proof_and_y_class);
     throw_exception(env, "Failed to find ProofAndY constructor.");
     return NULL;
   }
@@ -246,10 +257,16 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeKzgProof(
   jobject proof_and_y = (*env)->NewObject(env, proof_and_y_class,
                                           proof_and_y_constructor, proof, y);
   if (proof_and_y == NULL) {
+    (*env)->DeleteLocalRef(env, proof);
+    (*env)->DeleteLocalRef(env, y);
+    (*env)->DeleteLocalRef(env, proof_and_y_class);
     throw_exception(env, "Failed to instantiate new ProofAndY.");
     return NULL;
   }
 
+  (*env)->DeleteLocalRef(env, proof_and_y_class);
+  (*env)->DeleteLocalRef(env, proof);
+  (*env)->DeleteLocalRef(env, y);
   return proof_and_y;
 }
 
@@ -293,6 +310,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeBlobKzgProof(
   (*env)->ReleaseByteArrayElements(env, proof, (jbyte *)proof_native, 0);
 
   if (ret != C_KZG_OK) {
+    (*env)->DeleteLocalRef(env, proof);
     throw_c_kzg_exception(env, ret,
                           "There was an error in computeBlobKzgProof.");
     return NULL;
@@ -511,6 +529,7 @@ JNIEXPORT jobject JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_computeCells(
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
 
   if (ret != C_KZG_OK) {
+    (*env)->DeleteLocalRef(env, cells);
     throw_c_kzg_exception(env, ret, "There was an error in computeCells.");
     return NULL;
   }
@@ -554,6 +573,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   (*env)->ReleaseByteArrayElements(env, blob, (jbyte *)blob_native, JNI_ABORT);
 
   if (ret != C_KZG_OK) {
+    (*env)->DeleteLocalRef(env, cells);
+    (*env)->DeleteLocalRef(env, proofs);
     throw_c_kzg_exception(env, ret,
                           "There was an error in computeCellsAndKzgProofs.");
     return NULL;
@@ -562,6 +583,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   jclass caps_class =
       (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
   if (caps_class == NULL) {
+    (*env)->DeleteLocalRef(env, cells);
+    (*env)->DeleteLocalRef(env, proofs);
     throw_exception(env, "Failed to find CellsAndProofs class.");
     return NULL;
   }
@@ -569,6 +592,9 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   jmethodID caps_constructor =
       (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
   if (caps_constructor == NULL) {
+    (*env)->DeleteLocalRef(env, cells);
+    (*env)->DeleteLocalRef(env, proofs);
+    (*env)->DeleteLocalRef(env, caps_class);
     throw_exception(env, "Failed to find CellsAndProofs constructor.");
     return NULL;
   }
@@ -576,12 +602,16 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   jobject result =
       (*env)->NewObject(env, caps_class, caps_constructor, cells, proofs);
   if (result == NULL) {
+    (*env)->DeleteLocalRef(env, cells);
+    (*env)->DeleteLocalRef(env, proofs);
+    (*env)->DeleteLocalRef(env, caps_class);
     throw_exception(env, "Failed to instantiate CellsAndProofs object.");
     return NULL;
   }
 
   (*env)->DeleteLocalRef(env, cells);
   (*env)->DeleteLocalRef(env, proofs);
+  (*env)->DeleteLocalRef(env, caps_class);
 
   return result;
 }
@@ -628,6 +658,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
                                    JNI_ABORT);
 
   if (ret != C_KZG_OK) {
+    (*env)->DeleteLocalRef(env, recovered_cells);
+    (*env)->DeleteLocalRef(env, recovered_proofs);
     throw_c_kzg_exception(env, ret,
                           "There was an error in recoverCellsAndKzgProofs.");
     return NULL;
@@ -636,6 +668,8 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
   jclass caps_class =
       (*env)->FindClass(env, "ethereum/ckzg4844/CellsAndProofs");
   if (caps_class == NULL) {
+    (*env)->DeleteLocalRef(env, recovered_cells);
+    (*env)->DeleteLocalRef(env, recovered_proofs);
     throw_exception(env, "Failed to find CellsAndProofs class.");
     return NULL;
   }
@@ -643,6 +677,9 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
   jmethodID caps_constructor =
       (*env)->GetMethodID(env, caps_class, "<init>", "([B[B)V");
   if (caps_constructor == NULL) {
+    (*env)->DeleteLocalRef(env, recovered_cells);
+    (*env)->DeleteLocalRef(env, recovered_proofs);
+    (*env)->DeleteLocalRef(env, caps_class);
     throw_exception(env, "Failed to find CellsAndProofs constructor.");
     return NULL;
   }
@@ -650,12 +687,16 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
   jobject result = (*env)->NewObject(env, caps_class, caps_constructor,
                                      recovered_cells, recovered_proofs);
   if (result == NULL) {
+    (*env)->DeleteLocalRef(env, recovered_cells);
+    (*env)->DeleteLocalRef(env, recovered_proofs);
+    (*env)->DeleteLocalRef(env, caps_class);
     throw_exception(env, "Failed to instantiate CellsAndProof object.");
     return NULL;
   }
 
   (*env)->DeleteLocalRef(env, recovered_cells);
   (*env)->DeleteLocalRef(env, recovered_proofs);
+  (*env)->DeleteLocalRef(env, caps_class);
 
   return result;
 }
