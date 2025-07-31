@@ -412,6 +412,9 @@ func ComputeCells(blob *Blob) ([CellsPerExtBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
 	}
+	if blob == nil {
+		return [CellsPerExtBlob]Cell{}, ErrBadArgs
+	}
 
 	cells := [CellsPerExtBlob]Cell{}
 	ret := C.compute_cells_and_kzg_proofs(
@@ -438,6 +441,9 @@ ComputeCellsAndKZGProofs is the binding for:
 func ComputeCellsAndKZGProofs(blob *Blob) ([CellsPerExtBlob]Cell, [CellsPerExtBlob]KZGProof, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
+	}
+	if blob == nil {
+		return [CellsPerExtBlob]Cell{}, [CellsPerExtBlob]KZGProof{}, ErrBadArgs
 	}
 
 	cells := [CellsPerExtBlob]Cell{}
