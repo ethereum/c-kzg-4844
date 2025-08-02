@@ -21,6 +21,7 @@ of crucial cryptographic functions.
 | Node.js  | [README](bindings/node.js/README.md) |
 | Python   | [README](bindings/python/README.md)  |
 | Rust     | [README](bindings/rust/README.md)    |
+| Zig      | [README](bindings/zig/README.md)     |
 
 ## Interface functions
 
