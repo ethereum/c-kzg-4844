@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2 -Werror
+CFLAGS += -I. -I../inc
 # Enable a bunch of optional warnings.
 CFLAGS += \
 	-pedantic \
@@ -79,9 +79,9 @@ ifeq ($(PLATFORM),Windows)
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 	CFLAGS += -Wno-missing-braces -Wno-format
 else
-	CC = clang
+	CC ?= clang
 	CFLAGS += -fPIC
-	CFLAGS += -Wmissing-braces -Wformat=2
+	CFLAGS += -Wmissing-braces
 endif
 
 # Settings for blst.
