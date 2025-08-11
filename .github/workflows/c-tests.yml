@@ -23,7 +23,7 @@ jobs:
           - windows-latest
     steps:
       # Checkout repository and blst submodule.
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
 
