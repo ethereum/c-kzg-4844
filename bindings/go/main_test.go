@@ -1,6 +1,7 @@
 package ckzg4844
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -89,17 +90,18 @@ func divideRoundUp(a, b int) int {
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
-	testDir                       = "../../tests"
-	blobToKZGCommitmentTests      = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
-	computeKZGProofTests          = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
-	computeBlobKZGProofTests      = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
-	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
-	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
-	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
-	computeCellsTests             = filepath.Join(testDir, "compute_cells/*/*/*")
-	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
-	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
-	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
+	testDir                                      = "../../tests"
+	blobToKZGCommitmentTests                     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
+	computeKZGProofTests                         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
+	computeBlobKZGProofTests                     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
+	verifyKZGProofTests                          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
+	verifyBlobKZGProofTests                      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
+	verifyBlobKZGProofBatchTests                 = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsTests                            = filepath.Join(testDir, "compute_cells/*/*/*")
+	computeCellsAndKZGProofsTests                = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
+	recoverCellsAndKZGProofsTests                = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
+	verifyCellKZGProofBatchTests                 = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
+	computeVerifyCellKZGProofBatchChallengeTests = filepath.Join(testDir, "compute_verify_cell_kzg_proof_batch_challenge/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -656,6 +658,92 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 				require.Equal(t, expectedProofs, recoveredProofs[:])
 
 			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+func TestComputeVerifyCellKZGProofBatchChallenge(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitments       []string   `yaml:"commitments"`
+			CommitmentIndices []uint64   `yaml:"commitment_indices"`
+			CellIndices       []uint64   `yaml:"cell_indices"`
+			CosetsEvals       [][]string `yaml:"cosets_evals"`
+			Proofs            []string   `yaml:"proofs"`
+		}
+		Output *string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeVerifyCellKZGProofBatchChallengeTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var commitments []Bytes48
+			for _, c := range test.Input.Commitments {
+				var commitment Bytes48
+				err = commitment.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				commitments = append(commitments, commitment)
+			}
+
+			commitmentIndices := test.Input.CommitmentIndices
+			cellIndices := test.Input.CellIndices
+
+			var cells []Cell
+			for _, cosetEvals := range test.Input.CosetsEvals {
+				var cell Cell
+				if len(cosetEvals) != FieldElementsPerCell {
+					require.Nil(t, test.Output)
+					return
+				}
+
+				offset := 0
+				for _, fieldElemStr := range cosetEvals {
+					var fieldElem Bytes32
+					err = fieldElem.UnmarshalText([]byte(fieldElemStr))
+					if err != nil {
+						require.Nil(t, test.Output)
+						return
+					}
+					copy(cell[offset:offset+BytesPerFieldElement], fieldElem[:])
+					offset += BytesPerFieldElement
+				}
+				cells = append(cells, cell)
+			}
+
+			var proofs []Bytes48
+			for _, p := range test.Input.Proofs {
+				var proof Bytes48
+				err = proof.UnmarshalText([]byte(p))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				proofs = append(proofs, proof)
+			}
+
+			challenge, err := computeVerifyCellKZGProofBatchChallenge(
+				commitments, commitmentIndices, cellIndices, cells, proofs)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				challengeHex := "0x" + hex.EncodeToString(challenge[:])
+				require.Equal(t, *test.Output, challengeHex)
+			} else {
+				t.Log(err)
 				require.Nil(t, test.Output)
 			}
 		})
