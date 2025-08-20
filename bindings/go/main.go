@@ -536,6 +536,39 @@ func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, c
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
+computeChallenge is the binding for:
+
+	void compute_challenge(
+		fr_t *eval_challenge_out,
+		const Blob *blob,
+		const g1_t *commitment);
+*/
+func computeChallenge(blob *Blob, commitment Bytes48) (Bytes32, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+
+	// Convert commitment bytes to g1 point
+	var commitmentG1 C.g1_t
+	ret := C.bytes_to_kzg_commitment(&commitmentG1, (*C.Bytes48)(unsafe.Pointer(&commitment)))
+	if ret != C.C_KZG_OK {
+		return Bytes32{}, makeErrorFromRet(ret)
+	}
+
+	var challengeFr C.fr_t
+	C.compute_challenge(
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)),
+		(*C.Blob)(unsafe.Pointer(blob)),
+		&commitmentG1)
+
+	var challengeBytes Bytes32
+	C.bytes_from_bls_field(
+		(*C.Bytes32)(unsafe.Pointer(&challengeBytes)),
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)))
+	return challengeBytes, nil
+}
+
+/*
 computeVerifyCellKZGProofBatchChallenge is the binding for:
 
 	C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(

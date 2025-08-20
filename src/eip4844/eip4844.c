@@ -144,7 +144,7 @@ static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
  *
  * @remark This function should compute challenges even if `n == 0`.
  */
-static void compute_challenge(fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment) {
+void compute_challenge(fr_t *eval_challenge_out, const Blob *blob, const g1_t *commitment) {
     Bytes32 eval_challenge;
     uint8_t bytes[CHALLENGE_INPUT_SIZE];
 

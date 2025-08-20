@@ -17,6 +17,8 @@
 #pragma once
 
 #include "common/bytes.h"
+#include "common/ec.h"
+#include "common/fr.h"
 #include "eip4844/blob.h"
 #include "setup/settings.h"
 
@@ -76,6 +78,13 @@ C_KZG_RET verify_blob_kzg_proof_batch(
     const Bytes48 *proofs_bytes,
     uint64_t n,
     const KZGSettings *s
+);
+
+/* Internal function exposed for testing purposes */
+void compute_challenge(
+    fr_t *eval_challenge_out,
+    const Blob *blob,
+    const g1_t *commitment
 );
 
 #ifdef __cplusplus
