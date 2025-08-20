@@ -548,7 +548,6 @@ func computeChallenge(blob *Blob, commitment Bytes48) (Bytes32, error) {
 		panic("trusted setup isn't loaded")
 	}
 
-	// Convert commitment bytes to g1 point
 	var commitmentG1 C.g1_t
 	ret := C.bytes_to_kzg_commitment(&commitmentG1, (*C.Bytes48)(unsafe.Pointer(&commitment)))
 	if ret != C.C_KZG_OK {
@@ -588,6 +587,9 @@ func computeVerifyCellKZGProofBatchChallenge(
 	cells []Cell,
 	proofsBytes []Bytes48,
 ) (Bytes32, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
 	if len(commitmentIndices) != len(cells) || len(cellIndices) != len(cells) || len(proofsBytes) != len(cells) {
 		return Bytes32{}, ErrBadArgs
 	}
