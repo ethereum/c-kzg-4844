@@ -244,7 +244,7 @@ func TestComputeBlobKZGProof(t *testing.T) {
 		})
 	}
 }
-
+/* Test the EIP-4844 challenge computation */
 func TestComputeChallenge(t *testing.T) {
 	type Test struct {
 		Input struct {
