@@ -713,7 +713,7 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 		})
 	}
 }
-
+/* Test the EIP-7594 challenge computation */
 func TestComputeVerifyCellKZGProofBatchChallenge(t *testing.T) {
 	type Test struct {
 		Input struct {
