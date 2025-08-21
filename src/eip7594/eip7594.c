@@ -459,51 +459,6 @@ out:
 }
 
 /**
- * Compute random linear combination challenge scalars for verify_cell_kzg_proof_batch. In this, we
- * must hash EVERYTHING that the prover can control.
- *
- * @param[out]  r_powers_out        The output challenges, length `num_cells`
- * @param[in]   commitments_bytes   The input commitments, length `num_commitments`
- * @param[in]   num_commitments     The number of commitments
- * @param[in]   commitment_indices  The cell commitment indices, length `num_cells`
- * @param[in]   cell_indices        The cell indices, length `num_cells`
- * @param[in]   cells               The cell, length `num_cells`
- * @param[in]   proofs_bytes        The cell proof, length `num_cells`
- * @param[in]   num_cells           The number of cells
- */
-static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
-    fr_t *r_powers_out,
-    const Bytes48 *commitments_bytes,
-    size_t num_commitments,
-    const uint64_t *commitment_indices,
-    const uint64_t *cell_indices,
-    const Cell *cells,
-    const Bytes48 *proofs_bytes,
-    uint64_t num_cells
-) {
-    C_KZG_RET ret;
-    fr_t r;
-
-    /* Compute the challenge */
-    ret = compute_verify_cell_kzg_proof_batch_challenge(
-        &r,
-        commitments_bytes,
-        num_commitments,
-        commitment_indices,
-        cell_indices,
-        cells,
-        proofs_bytes,
-        num_cells
-    );
-    if (ret != C_KZG_OK) return ret;
-
-    /* Raise power of r for each cell */
-    compute_powers(r_powers_out, &r, num_cells);
-
-    return C_KZG_OK;
-}
-
-/**
  * Compute the sum of the commitments weighted by the powers of r.
  *
  * @param[out]  sum_of_commitments_out  The resulting G1 sum of the commitments
