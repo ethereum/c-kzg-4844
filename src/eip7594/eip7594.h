@@ -59,12 +59,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
     fr_t *challenge_out,
     const Bytes48 *commitments_bytes,
-    size_t num_commitments,
+    uint64_t num_commitments,
     const uint64_t *commitment_indices,
     const uint64_t *cell_indices,
     const Cell *cells,
     const Bytes48 *proofs_bytes,
-    size_t num_cells
+    uint64_t num_cells
 );
 
 #ifdef __cplusplus

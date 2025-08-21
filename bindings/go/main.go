@@ -573,12 +573,12 @@ computeVerifyCellKZGProofBatchChallenge is the binding for:
 	C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
 		fr_t *challenge_out,
 		const Bytes48 *commitments_bytes,
-		size_t num_commitments,
+		uint64_t num_commitments,
 		const uint64_t *commitment_indices,
 		const uint64_t *cell_indices,
 		const Cell *cells,
 		const Bytes48 *proofs_bytes,
-		size_t num_cells);
+		uint64_t num_cells);
 */
 func computeVerifyCellKZGProofBatchChallenge(
 	commitmentsBytes []Bytes48,
@@ -598,12 +598,12 @@ func computeVerifyCellKZGProofBatchChallenge(
 	ret := C.compute_verify_cell_kzg_proof_batch_challenge(
 		(*C.fr_t)(unsafe.Pointer(&challengeFr)),
 		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
-		(C.size_t)(len(commitmentsBytes)),
+		(C.uint64_t)(len(commitmentsBytes)),
 		*(**C.uint64_t)(unsafe.Pointer(&commitmentIndices)),
 		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
 		*(**C.Cell)(unsafe.Pointer(&cells)),
 		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
-		(C.size_t)(len(cells)))
+		(C.uint64_t)(len(cells)))
 
 	if ret != C.C_KZG_OK {
 		return Bytes32{}, makeErrorFromRet(ret)
