@@ -86,23 +86,21 @@ func divideRoundUp(a, b int) int {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Reference Tests
+// Reference Tests for Public Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
-	testDir                                      = "../../tests"
-	blobToKZGCommitmentTests                     = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
-	computeKZGProofTests                         = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
-	computeBlobKZGProofTests                     = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
-	verifyKZGProofTests                          = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
-	verifyBlobKZGProofTests                      = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
-	verifyBlobKZGProofBatchTests                 = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
-	computeChallengeTests                        = filepath.Join(testDir, "compute_challenge/*/*/*")
-	computeCellsTests                            = filepath.Join(testDir, "compute_cells/*/*/*")
-	computeCellsAndKZGProofsTests                = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
-	recoverCellsAndKZGProofsTests                = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
-	verifyCellKZGProofBatchTests                 = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
-	computeVerifyCellKZGProofBatchChallengeTests = filepath.Join(testDir, "compute_verify_cell_kzg_proof_batch_challenge/*/*/*")
+	testDir                       = "../../tests"
+	blobToKZGCommitmentTests      = filepath.Join(testDir, "blob_to_kzg_commitment/*/*/*")
+	computeKZGProofTests          = filepath.Join(testDir, "compute_kzg_proof/*/*/*")
+	computeBlobKZGProofTests      = filepath.Join(testDir, "compute_blob_kzg_proof/*/*/*")
+	verifyKZGProofTests           = filepath.Join(testDir, "verify_kzg_proof/*/*/*")
+	verifyBlobKZGProofTests       = filepath.Join(testDir, "verify_blob_kzg_proof/*/*/*")
+	verifyBlobKZGProofBatchTests  = filepath.Join(testDir, "verify_blob_kzg_proof_batch/*/*/*")
+	computeCellsTests             = filepath.Join(testDir, "compute_cells/*/*/*")
+	computeCellsAndKZGProofsTests = filepath.Join(testDir, "compute_cells_and_kzg_proofs/*/*/*")
+	recoverCellsAndKZGProofsTests = filepath.Join(testDir, "recover_cells_and_kzg_proofs/*/*/*")
+	verifyCellKZGProofBatchTests  = filepath.Join(testDir, "verify_cell_kzg_proof_batch/*/*/*")
 )
 
 func TestBlobToKZGCommitment(t *testing.T) {
@@ -239,55 +237,6 @@ func TestComputeBlobKZGProof(t *testing.T) {
 				require.NotNil(t, test.Output)
 				require.Equal(t, test.Output[:], proof[:])
 			} else {
-				require.Nil(t, test.Output)
-			}
-		})
-	}
-}
-/* Test the EIP-4844 challenge computation */
-func TestComputeChallenge(t *testing.T) {
-	type Test struct {
-		Input struct {
-			Blob       string `yaml:"blob"`
-			Commitment string `yaml:"commitment"`
-		}
-		Output *string `yaml:"output"`
-	}
-
-	tests, err := filepath.Glob(computeChallengeTests)
-	require.NoError(t, err)
-	require.True(t, len(tests) > 0)
-
-	for _, testPath := range tests {
-		t.Run(testPath, func(t *testing.T) {
-			testFile, err := os.Open(testPath)
-			require.NoError(t, err)
-			test := Test{}
-			err = yaml.NewDecoder(testFile).Decode(&test)
-			require.NoError(t, testFile.Close())
-			require.NoError(t, err)
-
-			var blob Blob
-			err = blob.UnmarshalText([]byte(test.Input.Blob))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			var commitment Bytes48
-			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
-			if err != nil {
-				require.Nil(t, test.Output)
-				return
-			}
-
-			challenge, err := computeChallenge(&blob, commitment)
-			if err == nil {
-				require.NotNil(t, test.Output)
-				challengeHex := "0x" + hex.EncodeToString(challenge[:])
-				require.Equal(t, *test.Output, challengeHex)
-			} else {
-				t.Log(err)
 				require.Nil(t, test.Output)
 			}
 		})
@@ -713,6 +662,66 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 		})
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Reference Tests for Internal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+var (
+	computeChallengeTests                        = filepath.Join(testDir, "compute_challenge/*/*/*")
+	computeVerifyCellKZGProofBatchChallengeTests = filepath.Join(testDir, "compute_verify_cell_kzg_proof_batch_challenge/*/*/*")
+)
+
+/* Test the EIP-4844 challenge computation */
+func TestComputeChallenge(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob       string `yaml:"blob"`
+			Commitment string `yaml:"commitment"`
+		}
+		Output *string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeChallengeTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			challenge, err := computeChallenge(&blob, commitment)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				challengeHex := "0x" + hex.EncodeToString(challenge[:])
+				require.Equal(t, *test.Output, challengeHex)
+			} else {
+				t.Log(err)
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
 /* Test the EIP-7594 challenge computation */
 func TestComputeVerifyCellKZGProofBatchChallenge(t *testing.T) {
 	type Test struct {
@@ -799,6 +808,10 @@ func TestComputeVerifyCellKZGProofBatchChallenge(t *testing.T) {
 		})
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Other Tests
+///////////////////////////////////////////////////////////////////////////////
 
 func TestPartialRecover(t *testing.T) {
 	var blob Blob
