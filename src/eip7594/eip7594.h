@@ -17,6 +17,7 @@
 #pragma once
 
 #include "common/bytes.h"
+#include "common/fr.h"
 #include "common/ret.h"
 #include "eip4844/blob.h"
 #include "eip4844/eip4844.h"
@@ -52,6 +53,18 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const Bytes48 *proofs_bytes,
     uint64_t num_cells,
     const KZGSettings *s
+);
+
+/* Internal function exposed for testing purposes */
+C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
+    fr_t *challenge_out,
+    const Bytes48 *commitments_bytes,
+    uint64_t num_commitments,
+    const uint64_t *commitment_indices,
+    const uint64_t *cell_indices,
+    const Cell *cells,
+    const Bytes48 *proofs_bytes,
+    uint64_t num_cells
 );
 
 #ifdef __cplusplus
