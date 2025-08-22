@@ -231,7 +231,10 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     if (num_cells == CELLS_PER_EXT_BLOB) {
         /* Nothing to recover, copy the cells */
-        memcpy(recovered_cells, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            uint64_t index = cell_indices[i];
+            recovered_cells[index] = cells[i];
+        }
     } else {
         /* Perform cell recovery */
         ret = recover_cells(recovered_cells_fr, cell_indices, num_cells, recovered_cells_fr, s);
