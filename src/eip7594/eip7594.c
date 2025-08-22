@@ -809,6 +809,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    fr_t r;
     g1_t interpolation_poly_commit;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
@@ -871,7 +872,6 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
     /* Compute the challenge */
-    fr_t r;
     ret = compute_verify_cell_kzg_proof_batch_challenge(
         &r,
         commitments_bytes,
@@ -882,7 +882,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         proofs_bytes,
         num_cells
     );
-    if (ret != C_KZG_OK) return ret;
+    if (ret != C_KZG_OK) goto out;
 
     /*
      * Derive random factors for the linear combination. The exponents start with 0. That is, they
