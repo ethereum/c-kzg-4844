@@ -84,10 +84,15 @@ pub fn build(b: *std.Build) void {
     }
 
     // Build blst library from source
-    const blst_lib = b.addStaticLibrary(.{
-        .name = "blst",
+    const blst_mod = b.createModule(.{
         .target = target,
         .optimize = optimize,
+    });
+    
+    const blst_lib = b.addLibrary(.{
+        .linkage = .static,
+        .name = "blst",
+        .root_module = blst_mod,
     });
     
     // If we downloaded blst, make sure blst_lib waits for the download
