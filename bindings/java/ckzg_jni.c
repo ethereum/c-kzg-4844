@@ -586,7 +586,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   return result;
 }
 
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jobject JNICALL
 Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
     JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells) {
   if (settings == NULL) {
