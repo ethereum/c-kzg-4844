@@ -446,8 +446,7 @@ impl KZGSettings {
             .try_into()
             .unwrap();
         unsafe {
-            let res: C_KZG_RET =
-                compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
+            let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
             if let C_KZG_RET::C_KZG_OK = res {
                 Ok(cells)
             } else {
