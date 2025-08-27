@@ -668,7 +668,7 @@ impl KZGCommitment {
         if bytes.len() != BYTES_PER_COMMITMENT {
             return Err(Error::InvalidKzgCommitment(format!(
                 "Invalid byte length. Expected {} got {}",
-                BYTES_PER_PROOF,
+                BYTES_PER_COMMITMENT,
                 bytes.len(),
             )));
         }
