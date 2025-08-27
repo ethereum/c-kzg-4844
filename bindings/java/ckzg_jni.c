@@ -599,7 +599,7 @@ Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
   if (cells_size != count * BYTES_PER_CELL) {
     throw_invalid_size_exception(env, "Invalid cells size.", cells_size,
                                  count * BYTES_PER_CELL);
-    return 0;
+    return NULL;
   }
 
   jbyteArray recovered_cells =
