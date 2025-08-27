@@ -193,7 +193,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
             ret = C_KZG_BADARGS;
             goto out;
         }
-        /* Check that indices are in ascending order */
+        /* Check that indices are in strictly ascending order */
         if (i > 0 && cell_indices[i] <= cell_indices[i - 1]) {
             ret = C_KZG_BADARGS;
             goto out;
