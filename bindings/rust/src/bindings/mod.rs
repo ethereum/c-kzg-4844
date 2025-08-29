@@ -441,11 +441,14 @@ impl KZGSettings {
     }
 
     pub fn compute_cells(&self, blob: &Blob) -> Result<Box<CellsPerExtBlob>, Error> {
-        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
+        let mut cells: Box<[Cell; CELLS_PER_EXT_BLOB]> = vec![Cell::default(); CELLS_PER_EXT_BLOB]
+            .into_boxed_slice()
+            .try_into()
+            .unwrap();
         unsafe {
             let res = compute_cells_and_kzg_proofs(cells.as_mut_ptr(), ptr::null_mut(), blob, self);
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok(Box::new(cells))
+                Ok(cells)
             } else {
                 Err(Error::CError(res))
             }
@@ -456,13 +459,20 @@ impl KZGSettings {
         &self,
         blob: &Blob,
     ) -> Result<(Box<CellsPerExtBlob>, Box<ProofsPerExtBlob>), Error> {
-        let mut cells = [Cell::default(); CELLS_PER_EXT_BLOB];
-        let mut proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
+        let mut cells: Box<[Cell; CELLS_PER_EXT_BLOB]> = vec![Cell::default(); CELLS_PER_EXT_BLOB]
+            .into_boxed_slice()
+            .try_into()
+            .unwrap();
+        let mut proofs: Box<[KZGProof; CELLS_PER_EXT_BLOB]> =
+            vec![KZGProof::default(); CELLS_PER_EXT_BLOB]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap();
         unsafe {
             let res =
                 compute_cells_and_kzg_proofs(cells.as_mut_ptr(), proofs.as_mut_ptr(), blob, self);
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok((Box::new(cells), Box::new(proofs)))
+                Ok((cells, proofs))
             } else {
                 Err(Error::CError(res))
             }
@@ -481,8 +491,16 @@ impl KZGSettings {
                 cells.len()
             )));
         }
-        let mut recovered_cells = [Cell::default(); CELLS_PER_EXT_BLOB];
-        let mut recovered_proofs = [KZGProof::default(); CELLS_PER_EXT_BLOB];
+        let mut recovered_cells: Box<[Cell; CELLS_PER_EXT_BLOB]> =
+            vec![Cell::default(); CELLS_PER_EXT_BLOB]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap();
+        let mut recovered_proofs: Box<[KZGProof; CELLS_PER_EXT_BLOB]> =
+            vec![KZGProof::default(); CELLS_PER_EXT_BLOB]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap();
         unsafe {
             let res = recover_cells_and_kzg_proofs(
                 recovered_cells.as_mut_ptr(),
@@ -493,7 +511,7 @@ impl KZGSettings {
                 self,
             );
             if let C_KZG_RET::C_KZG_OK = res {
-                Ok((Box::new(recovered_cells), Box::new(recovered_proofs)))
+                Ok((recovered_cells, recovered_proofs))
             } else {
                 Err(Error::CError(res))
             }
@@ -668,7 +686,7 @@ impl KZGCommitment {
         if bytes.len() != BYTES_PER_COMMITMENT {
             return Err(Error::InvalidKzgCommitment(format!(
                 "Invalid byte length. Expected {} got {}",
-                BYTES_PER_PROOF,
+                BYTES_PER_COMMITMENT,
                 bytes.len(),
             )));
         }
