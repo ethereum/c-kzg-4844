@@ -227,8 +227,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         /* Nothing to recover, copy the cells */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
             /*
-             * At this point, and based on our checks above, we know that all indices are in the right order.
-             * That is: cell_indices[i] == i
+             * At this point, and based on our checks above, we know that all indices are in the
+             * right order. That is: cell_indices[i] == i
              */
             recovered_cells[i] = cells[i];
         }
