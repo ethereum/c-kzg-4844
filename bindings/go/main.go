@@ -495,6 +495,30 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtB
 	return recoveredCells, recoveredProofs, nil
 }
 
+// RecoverCells is using recover_cells_and_kzg_proofs without asking for proofs
+func RecoverCells(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	if len(cellIndices) != len(cells) {
+		return [CellsPerExtBlob]Cell{}, ErrBadArgs
+	}
+
+	recoveredCells := [CellsPerExtBlob]Cell{}
+	ret := C.recover_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
+		(*C.KZGProof)(nil),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		(C.uint64_t)(len(cells)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
+	}
+	return recoveredCells, nil
+}
+
 /*
 VerifyCellKZGProofBatch is the binding for:
 
