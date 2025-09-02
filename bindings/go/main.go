@@ -495,7 +495,17 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtB
 	return recoveredCells, recoveredProofs, nil
 }
 
-// RecoverCells is using recover_cells_and_kzg_proofs without asking for proofs
+/*
+RecoverCells is the binding for:
+
+	C_KZG_RET recover_cells_and_kzg_proofs(
+	    Cell *recovered_cells,
+	    KZGProof *recovered_proofs, // Disable proof recovery with NULL
+	    const uint64_t *cell_indices,
+	    const Cell *cells,
+	    uint64_t num_cells,
+	    const KZGSettings *s);
+*/
 func RecoverCells(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, error) {
 	if !loaded {
 		panic("trusted setup isn't loaded")
