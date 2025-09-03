@@ -353,22 +353,21 @@ static void deduplicate_commitments(
 }
 
 /**
- * Compute random linear combination challenge scalars for verify_cell_kzg_proof_batch. In this, we
- * must hash EVERYTHING that the prover can control.
+ * Compute the challenge value used for batch verification of cell KZG proofs.
  *
- * @param[out]  r_powers_out        The output challenges, length `num_cells`
+ * @param[out]  challenge_out       The output challenge as a BLS field element
  * @param[in]   commitments_bytes   The input commitments, length `num_commitments`
  * @param[in]   num_commitments     The number of commitments
  * @param[in]   commitment_indices  The cell commitment indices, length `num_cells`
  * @param[in]   cell_indices        The cell indices, length `num_cells`
- * @param[in]   cells               The cell, length `num_cells`
- * @param[in]   proofs_bytes        The cell proof, length `num_cells`
+ * @param[in]   cells               The cells, length `num_cells`
+ * @param[in]   proofs_bytes        The cell proofs, length `num_cells`
  * @param[in]   num_cells           The number of cells
  */
-static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
-    fr_t *r_powers_out,
+C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
+    fr_t *challenge_out,
     const Bytes48 *commitments_bytes,
-    size_t num_commitments,
+    uint64_t num_commitments,
     const uint64_t *commitment_indices,
     const uint64_t *cell_indices,
     const Cell *cells,
@@ -378,10 +377,10 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     C_KZG_RET ret;
     uint8_t *bytes = NULL;
     Bytes32 r_bytes;
-    fr_t r;
 
     /* Calculate the size of the data we're going to hash */
     size_t input_size = DOMAIN_STR_LENGTH                          /* The domain separator */
+                        + sizeof(uint64_t)                         /* FIELD_ELEMENTS_PER_BLOB */
                         + sizeof(uint64_t)                         /* FIELD_ELEMENTS_PER_CELL */
                         + sizeof(uint64_t)                         /* num_commitments */
                         + sizeof(uint64_t)                         /* num_cells */
@@ -404,6 +403,10 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
     /* Copy domain separator */
     memcpy(offset, RANDOM_CHALLENGE_DOMAIN_VERIFY_CELL_KZG_PROOF_BATCH, DOMAIN_STR_LENGTH);
     offset += DOMAIN_STR_LENGTH;
+
+    /* Copy field elements per blob */
+    bytes_from_uint64(offset, FIELD_ELEMENTS_PER_BLOB);
+    offset += sizeof(uint64_t);
 
     /* Copy field elements per cell */
     bytes_from_uint64(offset, FIELD_ELEMENTS_PER_CELL);
@@ -441,15 +444,14 @@ static C_KZG_RET compute_r_powers_for_verify_cell_kzg_proof_batch(
         offset += BYTES_PER_PROOF;
     }
 
-    /* Now let's create the challenge! */
-    blst_sha256(r_bytes.bytes, bytes, input_size);
-    hash_to_bls_field(&r, &r_bytes);
-
-    /* Raise power of r for each cell */
-    compute_powers(r_powers_out, &r, num_cells);
-
     /* Make sure we wrote the entire buffer */
     assert(offset == bytes + input_size);
+
+    /* Create the challenge hash */
+    blst_sha256(r_bytes.bytes, bytes, input_size);
+
+    /* Convert to BLS field element */
+    hash_to_bls_field(challenge_out, &r_bytes);
 
 out:
     c_kzg_free(bytes);
@@ -807,6 +809,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
+    fr_t r;
     g1_t interpolation_poly_commit;
     g1_t final_g1_sum;
     g1_t proof_lincomb;
@@ -868,13 +871,10 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     // Compute powers of r, and extract KZG proofs out of input bytes
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /*
-     * Derive random factors for the linear combination. The exponents start with 0. That is, they
-     * are r^0, r^1, r^2, r^3, and so on.
-     */
-    ret = compute_r_powers_for_verify_cell_kzg_proof_batch(
-        r_powers,
-        unique_commitments,
+    /* Compute the challenge */
+    ret = compute_verify_cell_kzg_proof_batch_challenge(
+        &r,
+        commitments_bytes,
         num_commitments,
         commitment_indices,
         cell_indices,
@@ -883,6 +883,12 @@ C_KZG_RET verify_cell_kzg_proof_batch(
         num_cells
     );
     if (ret != C_KZG_OK) goto out;
+
+    /*
+     * Derive random factors for the linear combination. The exponents start with 0. That is, they
+     * are r^0, r^1, r^2, r^3, and so on.
+     */
+    compute_powers(r_powers, &r, num_cells);
 
     /* There should be a proof for each cell */
     for (size_t i = 0; i < num_cells; i++) {
