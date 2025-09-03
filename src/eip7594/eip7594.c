@@ -187,9 +187,14 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         goto out;
     }
 
-    /* Check that cell indices are valid */
     for (size_t i = 0; i < num_cells; i++) {
+        /* Check that cell indices are valid */
         if (cell_indices[i] >= CELLS_PER_EXT_BLOB) {
+            ret = C_KZG_BADARGS;
+            goto out;
+        }
+        /* Check that indices are in strictly ascending order */
+        if (i > 0 && cell_indices[i] <= cell_indices[i - 1]) {
             ret = C_KZG_BADARGS;
             goto out;
         }
@@ -210,19 +215,8 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     for (size_t i = 0; i < num_cells; i++) {
         size_t index = cell_indices[i] * FIELD_ELEMENTS_PER_CELL;
         for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
-            fr_t *ptr = &recovered_cells_fr[index + j];
-
-            /*
-             * Check if the field has already been set. If it has, there was a duplicate cell index
-             * and we can return an error. The compiler will optimize this and the overhead is
-             * practically zero.
-             */
-            if (!fr_is_null(ptr)) {
-                ret = C_KZG_BADARGS;
-                goto out;
-            }
-
             /* Convert the untrusted input bytes to a field element */
+            fr_t *ptr = &recovered_cells_fr[index + j];
             size_t offset = j * BYTES_PER_FIELD_ELEMENT;
             ret = bytes_to_bls_field(ptr, (const Bytes32 *)&cells[i].bytes[offset]);
             if (ret != C_KZG_OK) goto out;
@@ -231,7 +225,13 @@ C_KZG_RET recover_cells_and_kzg_proofs(
 
     if (num_cells == CELLS_PER_EXT_BLOB) {
         /* Nothing to recover, copy the cells */
-        memcpy(recovered_cells, cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+        for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+            /*
+             * At this point, and based on our checks above, we know that all indices are in the
+             * right order. That is: cell_indices[i] == i
+             */
+            recovered_cells[i] = cells[i];
+        }
     } else {
         /* Perform cell recovery */
         ret = recover_cells(recovered_cells_fr, cell_indices, num_cells, recovered_cells_fr, s);
