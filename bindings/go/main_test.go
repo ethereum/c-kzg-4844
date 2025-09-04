@@ -972,6 +972,28 @@ func Benchmark(b *testing.B) {
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100
 		cellIndices, partialCells := getPartialCells(blobCells[0], i)
+		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, err := RecoverCells(cellIndices, partialCells)
+				require.NoError(b, err)
+			}
+		})
+	}
+
+	for i := 1; i <= 2; i++ {
+		mod := divideRoundUp(CellsPerExtBlob, i)
+		cellIndices, partialCells := getPartialCells(blobCells[0], mod)
+		b.Run(fmt.Sprintf("RecoverCells(missing=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, err := RecoverCells(cellIndices, partialCells)
+				require.NoError(b, err)
+			}
+		})
+	}
+
+	for i := 2; i <= 8; i *= 2 {
+		percentMissing := (1.0 / float64(i)) * 100
+		cellIndices, partialCells := getPartialCells(blobCells[0], i)
 		b.Run(fmt.Sprintf("RecoverCellsAndKZGProofs(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
 				_, _, err := RecoverCellsAndKZGProofs(cellIndices, partialCells)
