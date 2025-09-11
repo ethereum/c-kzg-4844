@@ -1,6 +1,7 @@
 package ckzg4844
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -85,7 +86,7 @@ func divideRoundUp(a, b int) int {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Reference Tests
+// Reference Tests for Public Functions
 ///////////////////////////////////////////////////////////////////////////////
 
 var (
@@ -662,6 +663,156 @@ func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// Reference Tests for Internal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+var (
+	computeChallengeTests                        = filepath.Join(testDir, "compute_challenge/*/*/*")
+	computeVerifyCellKZGProofBatchChallengeTests = filepath.Join(testDir, "compute_verify_cell_kzg_proof_batch_challenge/*/*/*")
+)
+
+/* Test the EIP-4844 challenge computation */
+func TestComputeChallenge(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Blob       string `yaml:"blob"`
+			Commitment string `yaml:"commitment"`
+		}
+		Output *string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeChallengeTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var blob Blob
+			err = blob.UnmarshalText([]byte(test.Input.Blob))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			var commitment Bytes48
+			err = commitment.UnmarshalText([]byte(test.Input.Commitment))
+			if err != nil {
+				require.Nil(t, test.Output)
+				return
+			}
+
+			challenge, err := computeChallenge(&blob, commitment)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				challengeHex := "0x" + hex.EncodeToString(challenge[:])
+				require.Equal(t, *test.Output, challengeHex)
+			} else {
+				t.Log(err)
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+/* Test the EIP-7594 challenge computation */
+func TestComputeVerifyCellKZGProofBatchChallenge(t *testing.T) {
+	type Test struct {
+		Input struct {
+			Commitments       []string   `yaml:"commitments"`
+			CommitmentIndices []uint64   `yaml:"commitment_indices"`
+			CellIndices       []uint64   `yaml:"cell_indices"`
+			CosetsEvals       [][]string `yaml:"cosets_evals"`
+			Proofs            []string   `yaml:"proofs"`
+		}
+		Output *string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(computeVerifyCellKZGProofBatchChallengeTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			var commitments []Bytes48
+			for _, c := range test.Input.Commitments {
+				var commitment Bytes48
+				err = commitment.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				commitments = append(commitments, commitment)
+			}
+
+			commitmentIndices := test.Input.CommitmentIndices
+			cellIndices := test.Input.CellIndices
+
+			var cells []Cell
+			for _, cosetEvals := range test.Input.CosetsEvals {
+				var cell Cell
+				if len(cosetEvals) != FieldElementsPerCell {
+					require.Nil(t, test.Output)
+					return
+				}
+
+				offset := 0
+				for _, fieldElemStr := range cosetEvals {
+					var fieldElem Bytes32
+					err = fieldElem.UnmarshalText([]byte(fieldElemStr))
+					if err != nil {
+						require.Nil(t, test.Output)
+						return
+					}
+					copy(cell[offset:offset+BytesPerFieldElement], fieldElem[:])
+					offset += BytesPerFieldElement
+				}
+				cells = append(cells, cell)
+			}
+
+			var proofs []Bytes48
+			for _, p := range test.Input.Proofs {
+				var proof Bytes48
+				err = proof.UnmarshalText([]byte(p))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				proofs = append(proofs, proof)
+			}
+
+			challenge, err := computeVerifyCellKZGProofBatchChallenge(
+				commitments, commitmentIndices, cellIndices, cells, proofs)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				challengeHex := "0x" + hex.EncodeToString(challenge[:])
+				require.Equal(t, *test.Output, challengeHex)
+			} else {
+				t.Log(err)
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Other Tests
+///////////////////////////////////////////////////////////////////////////////
+
 func TestPartialRecover(t *testing.T) {
 	var blob Blob
 	fillBlobRandom(&blob, 27)
@@ -817,6 +968,28 @@ func Benchmark(b *testing.B) {
 			wg.Wait()
 		}
 	})
+
+	for i := 2; i <= 8; i *= 2 {
+		percentMissing := (1.0 / float64(i)) * 100
+		cellIndices, partialCells := getPartialCells(blobCells[0], i)
+		b.Run(fmt.Sprintf("RecoverCells(missing=%2.1f%%)", percentMissing), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, err := RecoverCells(cellIndices, partialCells)
+				require.NoError(b, err)
+			}
+		})
+	}
+
+	for i := 1; i <= 2; i++ {
+		mod := divideRoundUp(CellsPerExtBlob, i)
+		cellIndices, partialCells := getPartialCells(blobCells[0], mod)
+		b.Run(fmt.Sprintf("RecoverCells(missing=%v)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				_, err := RecoverCells(cellIndices, partialCells)
+				require.NoError(b, err)
+			}
+		})
+	}
 
 	for i := 2; i <= 8; i *= 2 {
 		percentMissing := (1.0 / float64(i)) * 100

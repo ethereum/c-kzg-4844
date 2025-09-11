@@ -496,6 +496,40 @@ func RecoverCellsAndKZGProofs(cellIndices []uint64, cells []Cell) ([CellsPerExtB
 }
 
 /*
+RecoverCells is the binding for:
+
+	C_KZG_RET recover_cells_and_kzg_proofs(
+	    Cell *recovered_cells,
+	    KZGProof *recovered_proofs, // Disable proof recovery with NULL
+	    const uint64_t *cell_indices,
+	    const Cell *cells,
+	    uint64_t num_cells,
+	    const KZGSettings *s);
+*/
+func RecoverCells(cellIndices []uint64, cells []Cell) ([CellsPerExtBlob]Cell, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	if len(cellIndices) != len(cells) {
+		return [CellsPerExtBlob]Cell{}, ErrBadArgs
+	}
+
+	recoveredCells := [CellsPerExtBlob]Cell{}
+	ret := C.recover_cells_and_kzg_proofs(
+		(*C.Cell)(unsafe.Pointer(&recoveredCells)),
+		(*C.KZGProof)(nil),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		(C.uint64_t)(len(cells)),
+		&settings)
+
+	if ret != C.C_KZG_OK {
+		return [CellsPerExtBlob]Cell{}, makeErrorFromRet(ret)
+	}
+	return recoveredCells, nil
+}
+
+/*
 VerifyCellKZGProofBatch is the binding for:
 
 	C_KZG_RET verify_cell_kzg_proof_batch(
@@ -529,4 +563,89 @@ func VerifyCellKZGProofBatch(commitmentsBytes []Bytes48, cellIndices []uint64, c
 		return false, makeErrorFromRet(ret)
 	}
 	return bool(result), nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Internal Functions
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+computeChallenge is the binding for:
+
+	void compute_challenge(
+		fr_t *eval_challenge_out,
+		const Blob *blob,
+		const g1_t *commitment);
+*/
+func computeChallenge(blob *Blob, commitment Bytes48) (Bytes32, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+
+	var commitmentG1 C.g1_t
+	ret := C.bytes_to_kzg_commitment(&commitmentG1, (*C.Bytes48)(unsafe.Pointer(&commitment)))
+	if ret != C.C_KZG_OK {
+		return Bytes32{}, makeErrorFromRet(ret)
+	}
+
+	var challengeFr C.fr_t
+	C.compute_challenge(
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)),
+		(*C.Blob)(unsafe.Pointer(blob)),
+		&commitmentG1)
+
+	var challengeBytes Bytes32
+	C.bytes_from_bls_field(
+		(*C.Bytes32)(unsafe.Pointer(&challengeBytes)),
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)))
+	return challengeBytes, nil
+}
+
+/*
+computeVerifyCellKZGProofBatchChallenge is the binding for:
+
+	C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
+		fr_t *challenge_out,
+		const Bytes48 *commitments_bytes,
+		uint64_t num_commitments,
+		const uint64_t *commitment_indices,
+		const uint64_t *cell_indices,
+		const Cell *cells,
+		const Bytes48 *proofs_bytes,
+		uint64_t num_cells);
+*/
+func computeVerifyCellKZGProofBatchChallenge(
+	commitmentsBytes []Bytes48,
+	commitmentIndices []uint64,
+	cellIndices []uint64,
+	cells []Cell,
+	proofsBytes []Bytes48,
+) (Bytes32, error) {
+	if !loaded {
+		panic("trusted setup isn't loaded")
+	}
+	if len(commitmentIndices) != len(cells) || len(cellIndices) != len(cells) || len(proofsBytes) != len(cells) {
+		return Bytes32{}, ErrBadArgs
+	}
+
+	var challengeFr C.fr_t
+	ret := C.compute_verify_cell_kzg_proof_batch_challenge(
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)),
+		*(**C.Bytes48)(unsafe.Pointer(&commitmentsBytes)),
+		(C.uint64_t)(len(commitmentsBytes)),
+		*(**C.uint64_t)(unsafe.Pointer(&commitmentIndices)),
+		*(**C.uint64_t)(unsafe.Pointer(&cellIndices)),
+		*(**C.Cell)(unsafe.Pointer(&cells)),
+		*(**C.Bytes48)(unsafe.Pointer(&proofsBytes)),
+		(C.uint64_t)(len(cells)))
+
+	if ret != C.C_KZG_OK {
+		return Bytes32{}, makeErrorFromRet(ret)
+	}
+
+	var challengeBytes Bytes32
+	C.bytes_from_bls_field(
+		(*C.Bytes32)(unsafe.Pointer(&challengeBytes)),
+		(*C.fr_t)(unsafe.Pointer(&challengeFr)))
+	return challengeBytes, nil
 }
