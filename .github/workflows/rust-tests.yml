@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
@@ -43,7 +43,7 @@ jobs:
           - host: macos-latest
             target: x86_64-apple-darwin
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
 
@@ -51,7 +51,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
 
-      - uses: taiki-e/setup-cross-toolchain-action@0123528f956f923e7a476f4cc04882bc005e7c89 # v1.29.1
+      - uses: taiki-e/setup-cross-toolchain-action@5084abba9e77b5db42d44a1420a56e7c1c7c8433 # v1.31.1
         with:
           target: ${{ matrix.target }}
 
@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
       - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
@@ -84,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
         with:
           components: rustfmt
