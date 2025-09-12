@@ -89,13 +89,12 @@ benchmarks in a high-level language and doing benchmarks in the bindings offers
 a more realistic performance overview, including FFI overhead. Additionally,
 C-KZG-4844 is not expected to be used outside the bindings.
 
-### Security audit
+### Audits
 
-The source code of C-KZG-4844 was audited by [Sigma
-Prime](https://sigmaprime.io/) in June 2023. You can find the [audit
-report](doc/audit/Sigma_Prime_Ethereum_Foundation_KZG_Implementations_Security_Assessment.pdf)
-in the `doc/audit/` directory. Notably, the audit was for commit `fd24cf8` and
-code introduced for EIP-7594 *has not been audited yet*.
+C-KZG-4844's implementation for EIP-4844 was audited by [Sigma
+Prime](https://sigmaprime.io/) in 2023 and its implementation for EIP-7594 was
+audited by [zkSecurity](https://www.zksecurity.xyz) in 2025. You can find the
+corresponding audit reports in the [`audits`](./audits/) directory.
 
 ### Why C?
 
