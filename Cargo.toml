@@ -42,7 +42,7 @@ no-threads = ["blst/no-threads"]
 
 [dependencies]
 arbitrary = { version = "1", features = ["derive"], optional = true }
-blst = { version = "0.3.15", default-features = false }
+blst = { git = "https://github.com/supranational/blst", rev = "f48500c1fdbefa7c0bf9800bccd65d28236799c1", default-features = false }
 hex = { version = "0.4.3", default-features = false, features = ["alloc"] }
 libc = { version = "0.2", default-features = false }
 serde = { version = "1.0", optional = true, default-features = false, features = [
