@@ -23,7 +23,7 @@
         <RepositoryType>git</RepositoryType>
         <RepositoryUrl>https://github.com/ethereum/c-kzg-4844</RepositoryUrl>
         <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-        <Version>0.2.1.2</Version>
+        <Version>0.2.1.3</Version>
         <!-- Disable the warnings about using UInt64-->
         <NoWarn>$(NoWarn);IDE0049</NoWarn>
     </PropertyGroup>
