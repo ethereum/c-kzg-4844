@@ -50,11 +50,6 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) 
  * @param[in]   coeffs  Array of field elements, length `len`
  * @param[in]   len     The number of group/field elements
  *
- * @remark This function CAN be called with the point at infinity in `p`.
- * @remark While this function is significantly faster than g1_lincomb_naive(), we refrain from
- * using it in security-critical places (like verification) because the blst Pippenger code has not
- * been audited. In those critical places, we prefer using g1_lincomb_naive() which is much simpler.
- *
  * For the benefit of future generations (since blst has no documentation to speak of), there are
  * two ways to pass the arrays of scalars and points into blst_p1s_mult_pippenger().
  *
@@ -70,16 +65,6 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
     limb_t *scratch = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
-
-    /* Tunable parameter: must be at least 2 since blst fails for 0 or 1 */
-    const size_t min_length_threshold = 8;
-
-    /* Use naive method if it's less than the threshold */
-    if (len < min_length_threshold) {
-        g1_lincomb_naive(out, p, coeffs, len);
-        ret = C_KZG_OK;
-        goto out;
-    }
 
     /* Allocate space for arrays */
     ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
