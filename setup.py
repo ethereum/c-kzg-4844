@@ -24,7 +24,7 @@ def main():
 
     setup(
         name="ckzg",
-        version="2.1.2",
+        version="2.1.3",
         author="Ethereum Foundation",
         author_email="security@ethereum.org",
         url="https://github.com/ethereum/c-kzg-4844",
