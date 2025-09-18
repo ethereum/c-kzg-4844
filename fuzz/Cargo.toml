@@ -23,9 +23,6 @@ rust_eth_kzg = { git = "https://github.com/crate-crypto/rust-eth-kzg" }
 [workspace]
 members = ["."]
 
-[patch.crates-io]
-blst = { git = "https://github.com/supranational/blst", rev = "f48500c1fdbefa7c0bf9800bccd65d28236799c1" }
-
 [[bin]]
 name = "fuzz_blob_to_kzg_commitment"
 path = "fuzz_targets/fuzz_blob_to_kzg_commitment.rs"
