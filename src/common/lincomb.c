@@ -63,10 +63,13 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) 
 C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
     C_KZG_RET ret;
     limb_t *scratch = NULL;
+    blst_p1 *p_filtered = NULL;
     blst_p1_affine *p_affine = NULL;
     blst_scalar *scalars = NULL;
 
     /* Allocate space for arrays */
+    ret = c_kzg_calloc((void **)&p_filtered, len, sizeof(blst_p1));
+    if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc((void **)&p_affine, len, sizeof(blst_p1_affine));
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_calloc((void **)&scalars, len, sizeof(blst_scalar));
@@ -82,18 +85,36 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
         blst_scalar_from_fr(&scalars[i], &coeffs[i]);
     }
 
+    /* Filter out zero points: make a new list p_filtered that contains only non-zero points */
+    size_t new_len = 0;
+    for (size_t i = 0; i < len; i++) {
+        if (!blst_p1_is_inf(&p[i])) {
+            /* Copy valid points to the new position */
+            p_filtered[new_len] = p[i];
+            scalars[new_len] = scalars[i];
+            new_len++;
+        }
+    }
+
+    /* Given zero inputs, we know what the result is */
+    if (new_len == 0) {
+        *out = G1_IDENTITY;
+        goto out;
+    }
+
     /* Transform the points to affine representation */
-    const blst_p1 *p_arg[2] = {p, NULL};
-    blst_p1s_to_affine(p_affine, p_arg, len);
+    const blst_p1 *p_arg[2] = {p_filtered, NULL};
+    blst_p1s_to_affine(p_affine, p_arg, new_len);
 
     /* Call the Pippenger implementation */
     const byte *scalars_arg[2] = {(byte *)scalars, NULL};
     const blst_p1_affine *points_arg[2] = {p_affine, NULL};
-    blst_p1s_mult_pippenger(out, points_arg, len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch);
+    blst_p1s_mult_pippenger(out, points_arg, new_len, scalars_arg, BITS_PER_FIELD_ELEMENT, scratch);
     ret = C_KZG_OK;
 
 out:
     c_kzg_free(scratch);
+    c_kzg_free(p_filtered);
     c_kzg_free(p_affine);
     c_kzg_free(scalars);
     return ret;
