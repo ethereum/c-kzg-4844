@@ -59,6 +59,8 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) 
  *    second is null, and similarly for scalars.
  *
  * We do the second of these to save memory here.
+ *
+ * @remark This function returns G1_IDENTITY if called with the empty set as input.
  */
 C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) {
     C_KZG_RET ret;
@@ -96,7 +98,7 @@ C_KZG_RET g1_lincomb_fast(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t l
         }
     }
 
-    /* Given zero inputs, we know what the result is */
+    /* We were either given no inputs, or all zero inputs: return the point at infinity */
     if (new_len == 0) {
         *out = G1_IDENTITY;
         goto out;
