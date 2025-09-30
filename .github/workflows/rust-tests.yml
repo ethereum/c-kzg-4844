@@ -15,10 +15,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
-      - uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921 # 1.0-6d653ac
-        with:
-          toolchain: 1.90.0
-          components: clippy, rustfmt
+      - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
       - uses: taiki-e/install-action@a092537a3547af99875d9fdf67ec85c08738a2f9 # biome-a092537
       - uses: Swatinem/rust-cache@98c8021b550208e191a6a3145459bfc9fb29c4c0 # v2.8.0
         with:
@@ -50,11 +47,9 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921 # 1.0-6d653ac
+      - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
         with:
-          toolchain: 1.90.0
           target: ${{ matrix.target }}
-          components: clippy, rustfmt
 
       - uses: taiki-e/setup-cross-toolchain-action@5084abba9e77b5db42d44a1420a56e7c1c7c8433 # v1.31.1
         with:
@@ -79,10 +74,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           submodules: recursive
-      - uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921 # 1.0-6d653ac
-        with:
-          toolchain: 1.90.0
-          components: clippy, rustfmt
+      - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
       - run: cargo clippy --workspace --all-targets --all-features
         env:
           RUSTFLAGS: -Dwarnings
@@ -93,8 +85,5 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: dtolnay/rust-toolchain@6d653acede28d24f02e3cd41383119e8b1b35921 # 1.0-6d653ac
-        with:
-          toolchain: 1.90.0
-          components: rustfmt
+      - uses: dtolnay/rust-toolchain@fcf085fcb4b4b8f63f96906cd713eb52181b5ea4 # 1.0-fcf085f
       - run: cargo fmt --all --check
