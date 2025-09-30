@@ -874,7 +874,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Compute the challenge */
     ret = compute_verify_cell_kzg_proof_batch_challenge(
         &r,
-        commitments_bytes,
+        unique_commitments,
         num_commitments,
         commitment_indices,
         cell_indices,
