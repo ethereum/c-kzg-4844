@@ -79,7 +79,7 @@ jobs:
       with:
         submodules: recursive
     - name: Set up .NET
-      uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
@@ -116,7 +116,7 @@ jobs:
         mv -f ckzg-library-wrapper-osx-x64/ckzg.dylib osx-x64/native/ckzg.dylib
         mv -f ckzg-library-wrapper-win-x64/ckzg.dll win-x64/native/ckzg.dll
     - name: Set up .NET
-      uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+      uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
     - name: Pack
       working-directory: bindings/csharp
       run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
