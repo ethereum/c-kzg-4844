@@ -56,7 +56,7 @@ jobs:
     - name: Build native library for ${{ matrix.target.location }} using native capabilities
       run: make ckzg -C bindings/csharp CC=clang EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
     - name: Upload artifacts
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
       with:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
@@ -82,7 +82,7 @@ jobs:
       uses: actions/setup-dotnet@d4c94342e560b34958eacfc5d055d21461ed1c5d # v5.0.0
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
-    - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+    - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
         pattern: ckzg-library-wrapper-*
         path: bindings/csharp/Ckzg.Bindings/runtimes
@@ -103,7 +103,7 @@ jobs:
     needs: test-ckzg-dotnet
     steps:
     - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-    - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+    - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
         pattern: ckzg-library-wrapper-*
         path: bindings/csharp/Ckzg.Bindings/runtimes
@@ -121,7 +121,7 @@ jobs:
       working-directory: bindings/csharp
       run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
       with:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
