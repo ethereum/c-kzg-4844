@@ -143,7 +143,8 @@ inline uint8_t *get_bytes(
     return array.Data();
 }
 inline Blob *get_blob(const Napi::Env &env, const Napi::Value &val) {
-    return reinterpret_cast<Blob *>(get_bytes(env, val, BYTES_PER_BLOB, "blob")
+    return reinterpret_cast<Blob *>(
+        get_bytes(env, val, BYTES_PER_BLOB, "blob")
     );
 }
 inline Bytes32 *get_bytes32(
@@ -161,7 +162,8 @@ inline Bytes48 *get_bytes48(
     );
 }
 inline Cell *get_cell(const Napi::Env &env, const Napi::Value &val) {
-    return reinterpret_cast<Cell *>(get_bytes(env, val, BYTES_PER_CELL, "cell")
+    return reinterpret_cast<Cell *>(
+        get_bytes(env, val, BYTES_PER_CELL, "cell")
     );
 }
 inline uint64_t get_cell_index(const Napi::Env &env, const Napi::Value &val) {
@@ -886,15 +888,17 @@ Napi::Value VerifyCellKzgProofBatch(const Napi::CallbackInfo &info) {
         goto out;
     }
 
-    commitments = (Bytes48 *
-    )calloc(commitments_param.Length(), sizeof(Bytes48));
+    commitments = (Bytes48 *)calloc(
+        commitments_param.Length(), sizeof(Bytes48)
+    );
     if (commitments == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for commitments")
             .ThrowAsJavaScriptException();
         goto out;
     }
-    cell_indices = (uint64_t *
-    )calloc(cell_indices_param.Length(), sizeof(uint64_t));
+    cell_indices = (uint64_t *)calloc(
+        cell_indices_param.Length(), sizeof(uint64_t)
+    );
     if (cell_indices == nullptr) {
         Napi::Error::New(env, "Error while allocating memory for cell_indices")
             .ThrowAsJavaScriptException();
