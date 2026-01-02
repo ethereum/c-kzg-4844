@@ -47,7 +47,7 @@ jobs:
             reqs:
     steps:
     - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         submodules: recursive
     - name: Install requirements
@@ -56,7 +56,7 @@ jobs:
     - name: Build native library for ${{ matrix.target.location }} using native capabilities
       run: make ckzg -C bindings/csharp CC=clang EXTENSION=${{matrix.target.ext}} LOCATION=${{matrix.target.location}} ARCH=${{matrix.target.arch}}
     - name: Upload artifacts
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: ckzg-library-wrapper-${{ matrix.target.location }}
         path: bindings/csharp/Ckzg.Bindings/runtimes/${{ matrix.target.location }}/native
@@ -75,14 +75,14 @@ jobs:
           - host: windows-latest
             location: win-x64
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         submodules: recursive
     - name: Set up .NET
       uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 # v5.0.1
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
-    - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         pattern: ckzg-library-wrapper-*
         path: bindings/csharp/Ckzg.Bindings/runtimes
@@ -102,8 +102,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-ckzg-dotnet
     steps:
-    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         pattern: ckzg-library-wrapper-*
         path: bindings/csharp/Ckzg.Bindings/runtimes
@@ -121,7 +121,7 @@ jobs:
       working-directory: bindings/csharp
       run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
     - name: Upload package
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
