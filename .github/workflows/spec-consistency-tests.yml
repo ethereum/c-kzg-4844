@@ -18,7 +18,7 @@ jobs:
 
       # Check that our trusted setup matches the one from the spec
       - name: Download Trusted Setup
-        run: wget -O trusted_setup.json https://github.com/ethereum/consensus-specs/raw/dev/presets/mainnet/trusted_setups/trusted_setup_4096.json
+        run: wget -O trusted_setup.json https://github.com/ethereum/consensus-specs/raw/master/presets/mainnet/trusted_setups/trusted_setup_4096.json
       - name: Convert Trusted Setup
         run: python3 ./scripts/convert_trusted_setup.py --input trusted_setup.json --output trusted_setup.txt
       - name: Compare Trusted Setup
