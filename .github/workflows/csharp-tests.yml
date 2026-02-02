@@ -47,7 +47,7 @@ jobs:
             reqs:
     steps:
     - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         submodules: recursive
     - name: Install requirements
@@ -75,11 +75,11 @@ jobs:
           - host: windows-latest
             location: win-x64
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         submodules: recursive
     - name: Set up .NET
-      uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 # v5.0.1
+      uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -102,7 +102,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: test-ckzg-dotnet
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         pattern: ckzg-library-wrapper-*
@@ -116,7 +116,7 @@ jobs:
         mv -f ckzg-library-wrapper-osx-x64/ckzg.dylib osx-x64/native/ckzg.dylib
         mv -f ckzg-library-wrapper-win-x64/ckzg.dll win-x64/native/ckzg.dll
     - name: Set up .NET
-      uses: actions/setup-dotnet@2016bd2012dba4e32de620c46fe006a3ac9f0602 # v5.0.1
+      uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
     - name: Pack
       working-directory: bindings/csharp
       run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true

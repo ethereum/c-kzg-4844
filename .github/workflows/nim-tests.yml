@@ -21,20 +21,20 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         submodules: true
 
     - name: Cache choosenim
       id: cache-choosenim
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ~/.choosenim
         key: ${{ runner.os }}-choosenim-${{ matrix.nim-version}}
 
     - name: Cache nimble
       id: cache-nimble
-      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
       with:
         path: ~/.nimble
         key: ${{ runner.os }}-nimble-${{ matrix.nim-version}}-${{ hashFiles('bindings/nim/kzg_abi.nim') }}
@@ -42,7 +42,7 @@ jobs:
           ${{ runner.os }}-nimble-${{ matrix.nim-version }}
 
     - name: Setup nim
-      uses: jiro4989/setup-nim-action@3a60cf06f20c1cf3a9becf76b30288c0361d5f1e # v2.2.2
+      uses: jiro4989/setup-nim-action@cb1fc1270b117457dd0d9f610ec981fad3369cec # v2.3.0
       with:
         nim-version: ${{ matrix.nim-version }}
 
