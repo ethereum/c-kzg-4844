@@ -27,4 +27,7 @@ build/
 # ccls cache dir
 .ccls-cache/
 
+# zig
+.zig-cache/
+
 target
