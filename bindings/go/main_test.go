@@ -834,7 +834,7 @@ func TestPartialRecover(t *testing.T) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func Benchmark(b *testing.B) {
-	const length = 64
+	const length = 128
 	blobs := [length]Blob{}
 	commitments := [length]Bytes48{}
 	proofs := [length]Bytes48{}
@@ -1134,6 +1134,15 @@ func Benchmark(b *testing.B) {
 				require.NoError(b, err)
 				require.True(b, ok)
 			}
+		})
+	}
+
+	for i := 1; i <= 129; i *= 2 {
+		cellCommitments, cellIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], 1)
+		b.Run(fmt.Sprintf("VerifyColumnWithNCells(n=%d)", i), func(t *testing.B) {
+			ok, err := VerifyCellKZGProofBatch(cellCommitments[0:i], cellIndices[0:i], cells[0:i], cellProofs[0:i])
+			require.NoError(b, err)
+			require.True(b, ok)
 		})
 	}
 }
