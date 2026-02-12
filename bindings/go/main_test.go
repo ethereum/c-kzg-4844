@@ -1139,10 +1139,12 @@ func Benchmark(b *testing.B) {
 
 	for i := 1; i <= 129; i *= 2 {
 		cellCommitments, cellIndices, cells, cellProofs := getColumns(commitments[:], blobCells[:], blobCellProofs[:], 1)
-		b.Run(fmt.Sprintf("VerifyColumnWithNCells(n=%d)", i), func(t *testing.B) {
-			ok, err := VerifyCellKZGProofBatch(cellCommitments[0:i], cellIndices[0:i], cells[0:i], cellProofs[0:i])
-			require.NoError(b, err)
-			require.True(b, ok)
+		b.Run(fmt.Sprintf("VerifyColumnWithNCells(n=%d)", i), func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				ok, err := VerifyCellKZGProofBatch(cellCommitments[0:i], cellIndices[0:i], cells[0:i], cellProofs[0:i])
+				require.NoError(b, err)
+				require.True(b, ok)
+			}
 		})
 	}
 }
