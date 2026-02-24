@@ -19,6 +19,7 @@
 
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
+#include <string.h>   /* For memcmp */
 
 /**
  * Test whether two field elements are equal.
@@ -30,36 +31,43 @@
  * @retval  false   The two elements are not equal.
  */
 bool fr_equal(const fr_t *a, const fr_t *b) {
-    uint64_t _a[4], _b[4];
-    blst_uint64_from_fr(_a, a);
-    blst_uint64_from_fr(_b, b);
-    return _a[0] == _b[0] && _a[1] == _b[1] && _a[2] == _b[2] && _a[3] == _b[3];
+    return memcmp(a, b, sizeof(fr_t)) == 0;
+}
+
+/**
+ * Test whether the operand is zero in the finite field.
+ *
+ * @param[in]   fr  The field element to be checked
+ *
+ * @retval  true    The element is zero
+ * @retval  false   The element is not zero
+ */
+bool fr_is_zero(const fr_t *fr) {
+    return memcmp(fr, &FR_ZERO, sizeof(fr_t)) == 0;
 }
 
 /**
  * Test whether the operand is one in the finite field.
  *
- * @param[in]   p   The field element to be checked
+ * @param[in]   fr  The field element to be checked
  *
  * @retval  true    The element is one
  * @retval  false   The element is not one
  */
-bool fr_is_one(const fr_t *p) {
-    uint64_t a[4];
-    blst_uint64_from_fr(a, p);
-    return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+bool fr_is_one(const fr_t *fr) {
+    return memcmp(fr, &FR_ONE, sizeof(fr_t)) == 0;
 }
 
 /**
  * Test whether the operand is null (all 0xff's).
  *
- * @param[in]   p   The field element to be checked
+ * @param[in]   fr  The field element to be checked
  *
  * @retval  true    The element is null
  * @retval  false   The element is not null
  */
-bool fr_is_null(const fr_t *p) {
-    return fr_equal(p, &FR_NULL);
+bool fr_is_null(const fr_t *fr) {
+    return memcmp(fr, &FR_NULL, sizeof(fr_t)) == 0;
 }
 
 /**

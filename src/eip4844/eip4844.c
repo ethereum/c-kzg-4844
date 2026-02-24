@@ -52,20 +52,6 @@ static const char *RANDOM_CHALLENGE_DOMAIN_VERIFY_BLOB_KZG_PROOF_BATCH = "RCKZGB
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Test whether the operand is zero in the finite field.
- *
- * @param[in]   fr  The field element to be checked
- *
- * @retval  true    The element is zero
- * @retval  false   The element is not zero
- */
-static bool fr_is_zero(const fr_t *fr) {
-    uint64_t a[4];
-    blst_uint64_from_fr(a, fr);
-    return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
-}
-
-/**
  * Montgomery batch inversion in finite field.
  *
  * @param[out]  out The inverses of `a`, length `len`
