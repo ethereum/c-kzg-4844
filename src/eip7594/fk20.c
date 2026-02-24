@@ -20,6 +20,7 @@
 #include "eip7594/cell.h"
 #include "eip7594/fft.h"
 
+#include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
 
 /**
