@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2 -Werror -Wno-gnu-folding-constant
+CFLAGS += -I. -I../inc -O2
 # Enable a bunch of optional warnings.
 CFLAGS += \
 	-pedantic \
@@ -75,13 +75,15 @@ CFLAGS += \
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
-	CC = gcc
+	CC ?= gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
 	CFLAGS += -Wno-missing-braces -Wno-format
 else
-	CC = clang
-	CFLAGS += -fPIC
-	CFLAGS += -Wmissing-braces -Wformat=2
+	CC ?= clang
+	CFLAGS += -fPIC -Wmissing-braces
+ifeq ($(CC),clang)
+	CFLAGS += -Werror -Wno-gnu-folding-constant -Wformat=2
+endif
 endif
 
 # Settings for blst.
