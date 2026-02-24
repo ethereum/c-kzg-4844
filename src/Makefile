@@ -43,6 +43,7 @@ CFLAGS += \
 	-Winit-self \
 	-Winline \
 	-Winvalid-pch \
+	-Wmissing-braces \
 	-Wmissing-declarations \
 	-Wmissing-field-initializers \
 	-Wmissing-format-attribute \
@@ -77,10 +78,10 @@ CFLAGS += \
 ifeq ($(PLATFORM),Windows)
 	CC ?= gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
-	CFLAGS += -Wno-missing-braces -Wno-format
+	CFLAGS += -Wno-format
 else
 	CC ?= clang
-	CFLAGS += -fPIC -Wmissing-braces
+	CFLAGS += -fPIC
 ifeq ($(CC),clang)
 	CFLAGS += -Werror -Wno-gnu-folding-constant -Wformat=2
 endif
