@@ -1,9 +1,21 @@
-from os import chdir
+from os import chdir, environ
 from pathlib import Path
 from platform import system
+from shutil import which
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from subprocess import check_call
+
+
+def get_make():
+    """Get the GNU make command. Honors $MAKE if set."""
+    if system() == "FreeBSD":
+        if not which("gmake"):
+            raise RuntimeError("GNU make (gmake) is required on FreeBSD")
+        return "gmake"
+    if "MAKE" in environ:
+        return environ["MAKE"]
+    return "make"
 
 
 class CustomBuild(build_ext):
@@ -13,7 +25,7 @@ class CustomBuild(build_ext):
                 check_call(["blst\\build.bat"])
             except Exception:
                 pass
-        check_call(["make", "-C", "src", "blst"])
+        check_call([get_make(), "-C", "src", "blst"])
         super().run()
 
 
