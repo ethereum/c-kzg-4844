@@ -1,6 +1,5 @@
 import { fixupConfigRules, fixupPluginRules } from "@eslint/compat";
 import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import _import from "eslint-plugin-import";
 import node from "eslint-plugin-node";
 import prettier from "eslint-plugin-prettier";
 import globals from "globals";
@@ -20,14 +19,10 @@ const compat = new FlatCompat({
 
 export default [...fixupConfigRules(compat.extends(
     "eslint:recommended",
-    "plugin:import/errors",
-    "plugin:import/warnings",
-    "plugin:import/typescript",
     "plugin:@typescript-eslint/recommended",
 )), {
     plugins: {
         "@typescript-eslint": fixupPluginRules(typescriptEslint),
-        import: fixupPluginRules(_import),
         node,
         prettier,
     },
@@ -47,17 +42,6 @@ export default [...fixupConfigRules(compat.extends(
         parserOptions: {
             project: "./tsconfig.json",
         },
-    },
-
-    settings: {
-        "import/core-modules": [
-            "node:child_process",
-            "node:crypto",
-            "node:fs",
-            "node:os",
-            "node:path",
-            "node:util",
-        ],
     },
 
     rules: {
@@ -85,13 +69,6 @@ export default [...fixupConfigRules(compat.extends(
         "@typescript-eslint/no-unsafe-call": "off",
         "@typescript-eslint/no-unsafe-return": "off",
 
-        "import/no-extraneous-dependencies": ["error", {
-            devDependencies: false,
-            optionalDependencies: false,
-            peerDependencies: false,
-        }],
-
-        "import/no-duplicates": "off",
         "new-parens": "error",
         "no-caller": "error",
         "no-bitwise": "off",
@@ -109,7 +86,6 @@ export default [...fixupConfigRules(compat.extends(
     files: ["**/test/**/*.ts"],
 
     rules: {
-        "import/no-extraneous-dependencies": "off",
         "@typescript-eslint/no-explicit-any": "off",
     },
 }, {
