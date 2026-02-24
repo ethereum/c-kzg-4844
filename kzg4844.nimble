@@ -5,7 +5,7 @@ mode = ScriptMode.Verbose
 ##################################################
 
 packageName   = "kzg4844"
-version       = "2.1.5"
+version       = "2.1.6"
 author        = "Andri Lim"
 description   = "Nim wrapper of c-kzg-4844"
 license       = "Apache License 2.0"
