@@ -3,8 +3,8 @@ module github.com/ethereum/c-kzg-4844/v2
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.10.0
-	github.com/supranational/blst v0.3.15
+	github.com/stretchr/testify v1.11.1
+	github.com/supranational/blst v0.3.16
 	gopkg.in/yaml.v3 v3.0.1
 )
 
