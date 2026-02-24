@@ -80,6 +80,8 @@ jobs:
         submodules: recursive
     - name: Set up .NET
       uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
+      with:
+        dotnet-version: '10.0.x'
     - name: Install dependencies
       run: cd bindings/csharp && dotnet restore
     - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
@@ -117,6 +119,8 @@ jobs:
         mv -f ckzg-library-wrapper-win-x64/ckzg.dll win-x64/native/ckzg.dll
     - name: Set up .NET
       uses: actions/setup-dotnet@baa11fbfe1d6520db94683bd5c7a3818018e4309 # v5.1.0
+      with:
+        dotnet-version: '10.0.x'
     - name: Pack
       working-directory: bindings/csharp
       run: dotnet pack -c release -o nupkgs -p:Version=${{ inputs.version || env.binding_build_number_based_version }} -p:ContinuousIntegrationBuild=true
