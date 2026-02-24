@@ -221,7 +221,10 @@ sanitize_%: blst $(SOURCE_FILES) $(HEADER_FILES)
 	    ./$@; rm $@
 
 .PHONY: sanitize
-ifeq ($(PLATFORM),Darwin)
+ifneq ($(CC),clang)
+sanitize:
+	$(error sanitize requires CC=clang)
+else ifeq ($(PLATFORM),Darwin)
 sanitize: \
 	sanitize_address \
 	sanitize_undefined

@@ -53,7 +53,7 @@ jobs:
       # Doesn't work on Windows.
       - name: Clang Sanitizers
         if: matrix.os != 'windows-latest'
-        run: make sanitize
+        run: CC=clang make sanitize
 
       # Run static analyzer.
       # Doesn't work on Windows.
