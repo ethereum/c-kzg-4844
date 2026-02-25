@@ -184,6 +184,7 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     C_KZG_RET ret;
     fr_t *recovered_cells_fr = NULL;
     g1_t *recovered_proofs_g1 = NULL;
+    blst_p1_affine *recovered_proofs_affine = NULL;
 
     /* Ensure only one blob's worth of cells was provided */
     if (num_cells > CELLS_PER_EXT_BLOB) {
@@ -278,15 +279,26 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         ret = bit_reversal_permutation(recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Convert all of the proofs to byte-form */
+        /* Batch convert proofs to affine */
+        ret = c_kzg_malloc(
+            (void **)&recovered_proofs_affine, CELLS_PER_EXT_BLOB * sizeof(blst_p1_affine)
+        );
+        if (ret != C_KZG_OK) goto out;
+        {
+            const blst_p1 *p_arg[2] = {recovered_proofs_g1, NULL};
+            blst_p1s_to_affine(recovered_proofs_affine, p_arg, CELLS_PER_EXT_BLOB);
+        }
+
+        /* Compress all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
-            bytes_from_g1(&recovered_proofs[i], &recovered_proofs_g1[i]);
+            blst_p1_affine_compress(recovered_proofs[i].bytes, &recovered_proofs_affine[i]);
         }
     }
 
 out:
     c_kzg_free(recovered_cells_fr);
     c_kzg_free(recovered_proofs_g1);
+    c_kzg_free(recovered_proofs_affine);
     return ret;
 }
 
