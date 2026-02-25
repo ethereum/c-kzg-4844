@@ -194,7 +194,7 @@ static void g1_fft_fast(
  *
  * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
- * @remark Use g1_ifft() for inverse transformation.
+ * @remark Use g1_ifft_unscaled() for inverse transformation.
  */
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Handle zero length input */
@@ -222,8 +222,9 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use g1_fft() for forward transformation.
+ * @remark The result is not scaled by 1/n. The caller must account for the missing factor.
  */
-C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET g1_ifft_unscaled(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Handle zero length input */
     if (n == 0) return C_KZG_OK;
 

@@ -253,7 +253,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
      * identity elements (commitments to zero coefficients). The v polynomial actually has degree
      * r-1, which is guaranteed by setting the last r+1 elements of c_i vectors to be identities.
      */
-    ret = g1_ifft(v, u, circulant_domain_size, s);
+    ret = g1_ifft_unscaled(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
     /*
