@@ -3,11 +3,11 @@ all: c csharp elixir go java nim nodejs python rust
 
 .PHONY: c
 c:
-	@make -C src
+	@$(MAKE) -C src
 
 .PHONY: csharp
 csharp:
-	@make -C bindings/csharp
+	@$(MAKE) -C bindings/csharp
 
 .PHONY: elixir
 elixir:
@@ -19,7 +19,7 @@ go:
 
 .PHONY: java
 java:
-	@make -C bindings/java build test
+	@$(MAKE) -C bindings/java build test
 
 .PHONY: nim
 nim:
@@ -27,11 +27,11 @@ nim:
 
 .PHONY: nodejs
 nodejs:
-	@make -C bindings/node.js
+	@$(MAKE) -C bindings/node.js
 
 .PHONY: python
 python:
-	@make -C bindings/python
+	@$(MAKE) -C bindings/python
 
 .PHONY: rust
 rust:

@@ -41,16 +41,16 @@ typedef blst_fr fr_t; /**< Internal Fr field element type. */
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /** The zero field element. */
-static const fr_t FR_ZERO = {0L, 0L, 0L, 0L};
+static const fr_t FR_ZERO = {{0L, 0L, 0L, 0L}};
 
 /** This is 1 in blst's `blst_fr` limb representation. Crazy but true. */
 static const fr_t FR_ONE = {
-    0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
+    {0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL}
 };
 
 /** This used to represent a missing element. It's an invalid value. */
 static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
+    {0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

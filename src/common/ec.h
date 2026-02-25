@@ -32,7 +32,7 @@ typedef blst_p2 g2_t; /**< Internal G2 group element type. */
 
 /** Deserialized form of the G1 identity/infinity point. */
 static const g1_t G1_IDENTITY = {
-    {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}, {0L, 0L, 0L, 0L, 0L, 0L}
+    {{0L, 0L, 0L, 0L, 0L, 0L}}, {{0L, 0L, 0L, 0L, 0L, 0L}}, {{0L, 0L, 0L, 0L, 0L, 0L}}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
