@@ -615,17 +615,17 @@ static C_KZG_RET compute_r_powers_for_verify_kzg_proof_batch(
     ret = c_kzg_malloc((void **)&bytes, input_size);
     if (ret != C_KZG_OK) goto out;
 
-    /* Batch convert commitments and proofs to affine */
+    /* Allocate space for affine commitments and proofs */
     ret = c_kzg_malloc((void **)&commitments_affine, n * sizeof(blst_p1_affine));
     if (ret != C_KZG_OK) goto out;
     ret = c_kzg_malloc((void **)&proofs_affine, n * sizeof(blst_p1_affine));
     if (ret != C_KZG_OK) goto out;
-    {
-        const blst_p1 *c_arg[2] = {commitments_g1, NULL};
-        blst_p1s_to_affine(commitments_affine, c_arg, n);
-        const blst_p1 *p_arg[2] = {proofs_g1, NULL};
-        blst_p1s_to_affine(proofs_affine, p_arg, n);
-    }
+
+    /* Batch convert commitments and proofs to affine */
+    const blst_p1 *commitments_arg[2] = {commitments_g1, NULL};
+    blst_p1s_to_affine(commitments_affine, commitments_arg, n);
+    const blst_p1 *proofs_arg[2] = {proofs_g1, NULL};
+    blst_p1s_to_affine(proofs_affine, proofs_arg, n);
 
     /* Pointer tracking `bytes` for writing on top of it */
     uint8_t *offset = bytes;

@@ -132,13 +132,13 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         ret = bit_reversal_permutation(proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Batch convert proofs to affine */
+        /* Allocate space for affine proofs */
         ret = c_kzg_malloc((void **)&proofs_affine, CELLS_PER_EXT_BLOB * sizeof(blst_p1_affine));
         if (ret != C_KZG_OK) goto out;
-        {
-            const blst_p1 *p_arg[2] = {proofs_g1, NULL};
-            blst_p1s_to_affine(proofs_affine, p_arg, CELLS_PER_EXT_BLOB);
-        }
+
+        /* Batch convert proofs to affine */
+        const blst_p1 *proofs_arg[2] = {proofs_g1, NULL};
+        blst_p1s_to_affine(proofs_affine, proofs_arg, CELLS_PER_EXT_BLOB);
 
         /* Compress all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
@@ -279,15 +279,15 @@ C_KZG_RET recover_cells_and_kzg_proofs(
         ret = bit_reversal_permutation(recovered_proofs_g1, sizeof(g1_t), CELLS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Batch convert proofs to affine */
+        /* Allocate space for affine proofs */
         ret = c_kzg_malloc(
             (void **)&recovered_proofs_affine, CELLS_PER_EXT_BLOB * sizeof(blst_p1_affine)
         );
         if (ret != C_KZG_OK) goto out;
-        {
-            const blst_p1 *p_arg[2] = {recovered_proofs_g1, NULL};
-            blst_p1s_to_affine(recovered_proofs_affine, p_arg, CELLS_PER_EXT_BLOB);
-        }
+
+        /* Batch convert proofs to affine */
+        const blst_p1 *recovered_proofs_arg[2] = {recovered_proofs_g1, NULL};
+        blst_p1s_to_affine(recovered_proofs_affine, recovered_proofs_arg, CELLS_PER_EXT_BLOB);
 
         /* Compress all of the proofs to byte-form */
         for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
