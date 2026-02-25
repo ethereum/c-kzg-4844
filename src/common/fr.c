@@ -35,30 +35,6 @@ bool fr_equal(const fr_t *a, const fr_t *b) {
 }
 
 /**
- * Test whether the operand is zero in the finite field.
- *
- * @param[in]   fr  The field element to be checked
- *
- * @retval  true    The element is zero
- * @retval  false   The element is not zero
- */
-bool fr_is_zero(const fr_t *fr) {
-    return memcmp(fr, &FR_ZERO, sizeof(fr_t)) == 0;
-}
-
-/**
- * Test whether the operand is one in the finite field.
- *
- * @param[in]   fr  The field element to be checked
- *
- * @retval  true    The element is one
- * @retval  false   The element is not one
- */
-bool fr_is_one(const fr_t *fr) {
-    return memcmp(fr, &FR_ONE, sizeof(fr_t)) == 0;
-}
-
-/**
  * Divide a field element by another.
  *
  * @param[out]  out The result, `a / b`

@@ -77,7 +77,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
     }
 
     /* Bail on any zero input */
-    if (fr_is_zero(&accumulator)) {
+    if (fr_equal(&accumulator, &FR_ZERO)) {
         return C_KZG_BADARGS;
     }
 

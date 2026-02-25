@@ -2027,9 +2027,9 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         if (i % CELLS_PER_EXT_BLOB == 1 || i % CELLS_PER_EXT_BLOB == 0) {
             /* Every CELLS_PER_EXT_BLOB-th evaluation should be zero */
-            ASSERT("evaluation is zero", fr_is_zero(&fft_result[i]));
+            ASSERT("evaluation is zero", fr_equal(&fft_result[i], &FR_ZERO));
         } else {
-            ASSERT("evaluation is not zero", !fr_is_zero(&fft_result[i]));
+            ASSERT("evaluation is not zero", !fr_equal(&fft_result[i], &FR_ZERO));
         }
     }
 }

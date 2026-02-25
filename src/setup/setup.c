@@ -111,11 +111,11 @@ static C_KZG_RET expand_root_of_unity(fr_t *out, const fr_t *root, size_t width)
     /* Compute powers of root */
     for (i = 2; i <= width; i++) {
         blst_fr_mul(&out[i], &out[i - 1], root);
-        if (fr_is_one(&out[i])) break;
+        if (fr_equal(&out[i], &FR_ONE)) break;
     }
 
     /* We expect the last entry to be one */
-    if (i != width || !fr_is_one(&out[width])) {
+    if (i != width || !fr_equal(&out[width], &FR_ONE)) {
         return C_KZG_BADARGS;
     }
 
