@@ -9,12 +9,12 @@ from subprocess import check_call
 
 def get_make():
     """Get the GNU make command. Honors $MAKE if set."""
+    if "MAKE" in environ:
+        return environ["MAKE"]
     if system() == "FreeBSD":
         if not which("gmake"):
             raise RuntimeError("GNU make (gmake) is required on FreeBSD")
         return "gmake"
-    if "MAKE" in environ:
-        return environ["MAKE"]
     return "make"
 
 
