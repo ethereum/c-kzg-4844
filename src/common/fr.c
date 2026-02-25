@@ -29,6 +29,8 @@
  *
  * @retval  true    The two elements are equal.
  * @retval  false   The two elements are not equal.
+ *
+ * @remark The field elements are assumed to be in reduced (canonical) form.
  */
 bool fr_equal(const fr_t *a, const fr_t *b) {
     return memcmp(a, b, sizeof(fr_t)) == 0;
