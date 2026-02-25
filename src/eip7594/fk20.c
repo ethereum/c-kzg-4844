@@ -20,6 +20,7 @@
 #include "eip7594/cell.h"
 #include "eip7594/fft.h"
 
+#include <assert.h> /* For assert */
 #include <stdlib.h> /* For NULL */
 
 /**
@@ -138,6 +139,7 @@ static void circulant_coeffs_stride(fr_t *out, const fr_t *in, size_t offset) {
 C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSettings *s) {
     C_KZG_RET ret;
     size_t circulant_domain_size;
+    fr_t inv_domain_size;
 
     blst_scalar *scalars = NULL;
     fr_t **coeffs = NULL;
@@ -185,15 +187,24 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
         u[i] = G1_IDENTITY;
     }
 
-    /* Phase 1, step 4: Compute the w_i columns */
+    /*
+     * Phase 1, step 4: Compute the w_i columns and prescale by 1/circulant_domain_size.
+     *
+     * The prescaling absorbs the 1/n factor from the IFFT (step 6) into cheap field
+     * multiplications, avoiding 128 expensive EC scalar multiplications that would otherwise be
+     * needed in the IFFT scaling step.
+     */
+    fr_from_uint64(&inv_domain_size, circulant_domain_size);
+    blst_fr_eucl_inverse(&inv_domain_size, &inv_domain_size);
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         /* Select the coefficients c_i of poly that form the i-th circulant matrix */
         circulant_coeffs_stride(circulant_coeffs, poly, i);
         /* Apply FFT to get w_i */
         ret = fr_fft(circulant_coeffs_fft, circulant_coeffs, circulant_domain_size, s);
         if (ret != C_KZG_OK) goto out;
+        /* Transpose and prescale by 1/n in one pass */
         for (size_t j = 0; j < circulant_domain_size; j++) {
-            coeffs[j][i] = circulant_coeffs_fft[j];
+            blst_fr_mul(&coeffs[j][i], &circulant_coeffs_fft[j], &inv_domain_size);
         }
     }
 
@@ -236,13 +247,14 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
     }
 
     /*
-     * Phase 1, step 6: Apply the inverse FFT to the u vector.
+     * Phase 1, step 6: Apply the inverse FFT to the u vector (without 1/n scaling, since we
+     * already prescaled the coefficients by 1/n in the field).
      *
      * The result is almost the final v vector: the second half of the vector should be set to the
      * identity elements (commitments to zero coefficients). The v polynomial actually has degree
      * r-1, which is guaranteed by setting the last r+1 elements of c_i vectors to be identities.
      */
-    ret = g1_ifft(v, u, circulant_domain_size, s);
+    ret = g1_ifft_unscaled(v, u, circulant_domain_size, s);
     if (ret != C_KZG_OK) goto out;
 
     /*

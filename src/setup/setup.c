@@ -79,7 +79,7 @@
  * factor changes, this constant is no longer correct.
  */
 static const fr_t ROOT_OF_UNITY = {
-    0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L
+    {0xa33d279ff0ccffc9L, 0x41fac79f59e91972L, 0x065d227fead1139bL, 0x71db41abda03e055L}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

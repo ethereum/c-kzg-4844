@@ -35,7 +35,7 @@
  *       printf("%#018llxL,\n", a.l[i]);
  */
 static const fr_t RECOVERY_SHIFT_FACTOR = {
-    0x0000000efffffff1L, 0x17e363d300189c0fL, 0xff9c57876f8457b0L, 0x351332208fc5a8c4L
+    {0x0000000efffffff1L, 0x17e363d300189c0fL, 0xff9c57876f8457b0L, 0x351332208fc5a8c4L}
 };
 
 /**
@@ -48,7 +48,7 @@ static const fr_t RECOVERY_SHIFT_FACTOR = {
  *       printf("%#018llxL,\n", a.l[i]);
  */
 static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
-    0xdb6db6dadb6db6dcL, 0xe6b5824adb6cc6daL, 0xf8b356e005810db9L, 0x66d0f1e660ec4796L
+    {0xdb6db6dadb6db6dcL, 0xe6b5824adb6cc6daL, 0xf8b356e005810db9L, 0x66d0f1e660ec4796L}
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,7 +194,7 @@ static void g1_fft_fast(
  *
  * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
- * @remark Use g1_ifft() for inverse transformation.
+ * @remark Use g1_ifft_unscaled() for inverse transformation.
  */
 C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Handle zero length input */
@@ -222,8 +222,9 @@ C_KZG_RET g1_fft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
  * @remark Will do nothing if given a zero length array.
  * @remark The array lengths must be a power of two.
  * @remark Use g1_fft() for forward transformation.
+ * @remark The result is not scaled by 1/n. The caller must account for the missing factor.
  */
-C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
+C_KZG_RET g1_ifft_unscaled(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
     /* Handle zero length input */
     if (n == 0) return C_KZG_OK;
 
@@ -234,13 +235,6 @@ C_KZG_RET g1_ifft(g1_t *out, const g1_t *in, size_t n, const KZGSettings *s) {
 
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
     g1_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
-
-    fr_t inv_n;
-    fr_from_uint64(&inv_n, n);
-    blst_fr_eucl_inverse(&inv_n, &inv_n);
-    for (size_t i = 0; i < n; i++) {
-        g1_mul(&out[i], &out[i], &inv_n);
-    }
 
     return C_KZG_OK;
 }

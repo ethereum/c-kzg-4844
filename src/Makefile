@@ -20,7 +20,7 @@ ifeq ($(PLATFORM),Darwin)
 endif
 
 # The base compiler flags. More can be added on command line.
-CFLAGS += -I. -I../inc -O2 -Werror -Wno-gnu-folding-constant
+CFLAGS += -I. -I../inc -O2
 # Enable a bunch of optional warnings.
 CFLAGS += \
 	-pedantic \
@@ -43,6 +43,7 @@ CFLAGS += \
 	-Winit-self \
 	-Winline \
 	-Winvalid-pch \
+	-Wmissing-braces \
 	-Wmissing-declarations \
 	-Wmissing-field-initializers \
 	-Wmissing-format-attribute \
@@ -75,13 +76,15 @@ CFLAGS += \
 
 # Cross-platform compilation settings.
 ifeq ($(PLATFORM),Windows)
-	CC = gcc
+	CC ?= gcc
 	CFLAGS += -D_CRT_SECURE_NO_WARNINGS
-	CFLAGS += -Wno-missing-braces -Wno-format
+	CFLAGS += -Wno-format
 else
-	CC = clang
+	CC ?= clang
 	CFLAGS += -fPIC
-	CFLAGS += -Wmissing-braces -Wformat=2
+ifeq ($(CC),clang)
+	CFLAGS += -Werror -Wno-gnu-folding-constant -Wformat=2
+endif
 endif
 
 # Settings for blst.
@@ -219,7 +222,10 @@ sanitize_%: blst $(SOURCE_FILES) $(HEADER_FILES)
 	    ./$@; rm $@
 
 .PHONY: sanitize
-ifeq ($(PLATFORM),Darwin)
+ifneq ($(CC),clang)
+sanitize:
+	$(error sanitize requires CC=clang)
+else ifeq ($(PLATFORM),Darwin)
 sanitize: \
 	sanitize_address \
 	sanitize_undefined
