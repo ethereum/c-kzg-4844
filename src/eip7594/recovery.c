@@ -196,7 +196,6 @@ static bool is_in_array(const uint64_t *arr, size_t arr_size, uint64_t value) {
  *
  * @remark `reconstructed_data_out` and `cells` can point to the same memory.
  * @remark The array `cells` must be in the correct order (according to cell_indices).
- * @remark Missing cells in `cells` should be equal to FR_NULL.
  */
 C_KZG_RET recover_cells(
     fr_t *reconstructed_data_out,
@@ -280,17 +279,7 @@ C_KZG_RET recover_cells(
      * P(x) is the polynomial we want to reconstruct (degree FIELD_ELEMENTS_PER_BLOB - 1).
      */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        if (fr_is_null(&cells_brp[i])) {
-            /*
-             * We handle this situation differently because FR_NULL is an invalid value. The right
-             * hand side, vanishing_poly_eval[i], will always be zero when cells_brp[i] is null, so
-             * the multiplication would still be result in zero, but we shouldn't depend on blst
-             * handling invalid values like this.
-             */
-            extended_evaluation_times_zero[i] = FR_ZERO;
-        } else {
-            blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);
-        }
+        blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);
     }
 
     /*

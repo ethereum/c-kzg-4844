@@ -206,9 +206,9 @@ C_KZG_RET recover_cells_and_kzg_proofs(
     ret = new_g1_array(&recovered_proofs_g1, CELLS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    /* Initialize all cells as missing */
+    /* Initialize all cells to zero */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        recovered_cells_fr[i] = FR_NULL;
+        recovered_cells_fr[i] = FR_ZERO;
     }
 
     /* Populate recovered_cells_fr with available cells at the right places */

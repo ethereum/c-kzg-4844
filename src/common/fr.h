@@ -48,11 +48,6 @@ static const fr_t FR_ONE = {
     0x00000001fffffffeL, 0x5884b7fa00034802L, 0x998c4fefecbc4ff5L, 0x1824b159acc5056fL
 };
 
-/** This used to represent a missing element. It's an invalid value. */
-static const fr_t FR_NULL = {
-    0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL, 0xffffffffffffffffL
-};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Public Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,7 +59,6 @@ extern "C" {
 bool fr_equal(const fr_t *a, const fr_t *b);
 bool fr_is_zero(const fr_t *fr);
 bool fr_is_one(const fr_t *fr);
-bool fr_is_null(const fr_t *fr);
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 void fr_from_uint64(fr_t *out, uint64_t n);
