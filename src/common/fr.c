@@ -19,7 +19,6 @@
 
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
-#include <string.h>   /* For memcmp */
 
 /**
  * Test whether two field elements are equal.
@@ -29,11 +28,26 @@
  *
  * @retval  true    The two elements are equal.
  * @retval  false   The two elements are not equal.
- *
- * @remark The field elements are assumed to be in reduced (canonical) form.
  */
 bool fr_equal(const fr_t *a, const fr_t *b) {
-    return memcmp(a, b, sizeof(fr_t)) == 0;
+    uint64_t _a[4], _b[4];
+    blst_uint64_from_fr(_a, a);
+    blst_uint64_from_fr(_b, b);
+    return _a[0] == _b[0] && _a[1] == _b[1] && _a[2] == _b[2] && _a[3] == _b[3];
+}
+
+/**
+ * Test whether the operand is one in the finite field.
+ *
+ * @param[in]   p   The field element to be checked
+ *
+ * @retval  true    The element is one
+ * @retval  false   The element is not one
+ */
+bool fr_is_one(const fr_t *p) {
+    uint64_t a[4];
+    blst_uint64_from_fr(a, p);
+    return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
 
 /**

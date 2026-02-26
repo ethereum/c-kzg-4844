@@ -171,7 +171,7 @@ static void g1_fft_fast(
         g1_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (size_t i = 0; i < half; i++) {
             /* If the scalar is one, we can skip the multiplication */
-            if (fr_equal(&roots[i * roots_stride], &FR_ONE)) {
+            if (fr_is_one(&roots[i * roots_stride])) {
                 y_times_root = out[i + half];
             } else {
                 g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
