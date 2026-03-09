@@ -1,6 +1,13 @@
 use crate::KzgSettings;
-use alloc::{boxed::Box, sync::Arc};
-use once_cell::race::OnceBox;
+use alloc::sync::Arc;
+
+#[cfg(not(feature = "std"))]
+use once_cell::race::OnceBox as OnceLock;
+#[cfg(feature = "std")]
+use std::sync::OnceLock;
+
+#[cfg(feature = "std")]
+use once_cell as _;
 
 /// Default G1 monomial bytes.
 const ETH_G1_MONOMIAL_POINTS: &[u8] = include_bytes!("./g1_monomial_bytes.bin");
@@ -11,11 +18,11 @@ const ETH_G2_MONOMIAL_POINTS: &[u8] = include_bytes!("./g2_monomial_bytes.bin");
 
 macro_rules! create_cache {
     ($name:ident) => {
-        static $name: OnceBox<Arc<KzgSettings>> = OnceBox::new();
+        static $name: OnceLock<Arc<KzgSettings>> = OnceLock::new();
     };
 }
 
-// We use separate OnceBox instances for each precompute value.
+// We use separate OnceLock instances for each precompute value.
 // This avoids the need for any unsafe code or mutexes.
 create_cache!(CACHE_0);
 create_cache!(CACHE_1);
@@ -53,7 +60,7 @@ pub fn ethereum_kzg_settings_arc(precompute: u64) -> Arc<KzgSettings> {
 }
 
 fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
-    let cache_box = match precompute {
+    let cache = match precompute {
         0 => &CACHE_0,
         1 => &CACHE_1,
         2 => &CACHE_2,
@@ -75,7 +82,7 @@ fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
         ),
     };
 
-    cache_box.get_or_init(|| {
+    cache.get_or_init(|| {
         let settings = KzgSettings::load_trusted_setup(
             ETH_G1_MONOMIAL_POINTS,
             ETH_G1_LAGRANGE_POINTS,
@@ -83,7 +90,8 @@ fn ethereum_kzg_settings_inner(precompute: u64) -> &'static Arc<KzgSettings> {
             precompute,
         )
         .expect("failed to load default trusted setup");
-        Box::new(Arc::new(settings))
+        #[allow(clippy::useless_conversion)] // `std`: no-op, `not(std)`: allocates into a `Box`.
+        Arc::new(settings).into()
     })
 }
 
