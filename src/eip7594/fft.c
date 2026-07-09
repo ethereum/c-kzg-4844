@@ -76,9 +76,9 @@ static void fr_fft_fast(
         fr_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
         fr_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
         for (size_t i = 0; i < half; i++) {
-            blst_fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            blst_fr_sub(&out[i + half], &out[i], &y_times_root);
-            blst_fr_add(&out[i], &out[i], &y_times_root);
+            fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            fr_sub(&out[i + half], &out[i], &y_times_root);
+            fr_add(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;
@@ -138,9 +138,9 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
 
     fr_t inv_n;
     fr_from_uint64(&inv_n, n);
-    blst_fr_eucl_inverse(&inv_n, &inv_n);
+    fr_inv(&inv_n, &inv_n);
     for (size_t i = 0; i < n; i++) {
-        blst_fr_mul(&out[i], &out[i], &inv_n);
+        fr_mul(&out[i], &out[i], &inv_n);
     }
     return C_KZG_OK;
 }
@@ -177,7 +177,7 @@ static void g1_fft_fast(
                 g1_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
             }
             g1_sub(&out[i + half], &out[i], &y_times_root);
-            blst_p1_add_or_double(&out[i], &out[i], &y_times_root);
+            g1_add(&out[i], &out[i], &y_times_root);
         }
     } else {
         *out = *in;

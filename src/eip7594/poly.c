@@ -38,8 +38,8 @@
 void shift_poly(fr_t *p, size_t len, const fr_t *shift_factor) {
     fr_t factor_power = FR_ONE;
     for (size_t i = 1; i < len; i++) {
-        blst_fr_mul(&factor_power, &factor_power, shift_factor);
-        blst_fr_mul(&p[i], &p[i], &factor_power);
+        fr_mul(&factor_power, &factor_power, shift_factor);
+        fr_mul(&p[i], &p[i], &factor_power);
     }
 }
 

@@ -53,19 +53,19 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
     }
 
     /* Initialize with -root[0] */
-    blst_fr_cneg(&poly[0], &roots[0], true);
+    fr_neg(&poly[0], &roots[0]);
 
     for (size_t i = 1; i < roots_len; i++) {
-        blst_fr_cneg(&neg_root, &roots[i], true);
+        fr_neg(&neg_root, &roots[i]);
 
         poly[i] = neg_root;
-        blst_fr_add(&poly[i], &poly[i], &poly[i - 1]);
+        fr_add(&poly[i], &poly[i], &poly[i - 1]);
 
         for (size_t j = i - 1; j > 0; j--) {
-            blst_fr_mul(&poly[j], &poly[j], &neg_root);
-            blst_fr_add(&poly[j], &poly[j], &poly[j - 1]);
+            fr_mul(&poly[j], &poly[j], &neg_root);
+            fr_add(&poly[j], &poly[j], &poly[j - 1]);
         }
-        blst_fr_mul(&poly[0], &poly[0], &neg_root);
+        fr_mul(&poly[0], &poly[0], &neg_root);
     }
 
     poly[roots_len] = FR_ONE;
@@ -279,7 +279,7 @@ C_KZG_RET recover_cells(
      * P(x) is the polynomial we want to reconstruct (degree FIELD_ELEMENTS_PER_BLOB - 1).
      */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        blst_fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);
+        fr_mul(&extended_evaluation_times_zero[i], &cells_brp[i], &vanishing_poly_eval[i]);
     }
 
     /*

@@ -36,7 +36,7 @@ void g1_lincomb_naive(g1_t *out, const g1_t *p, const fr_t *coeffs, size_t len) 
     *out = G1_IDENTITY;
     for (size_t i = 0; i < len; i++) {
         g1_mul(&tmp, &p[i], &coeffs[i]);
-        blst_p1_add_or_double(out, out, &tmp);
+        g1_add(out, out, &tmp);
     }
 }
 

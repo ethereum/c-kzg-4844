@@ -43,6 +43,7 @@ static const g1_t G1_IDENTITY = {
 extern "C" {
 #endif
 
+void g1_add(g1_t *out, const g1_t *a, const g1_t *b);
 void g1_sub(g1_t *out, const g1_t *a, const g1_t *b);
 void g1_mul(g1_t *out, const g1_t *a, const fr_t *b);
 void print_g1(const g1_t *g);
