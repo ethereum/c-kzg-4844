@@ -16,6 +16,7 @@
 
 #include "eip7594/eip7594.h"
 #include "common/alloc.h"
+#include "common/ec.h"
 #include "common/fr.h"
 #include "common/lincomb.h"
 #include "common/utils.h"
@@ -518,7 +519,7 @@ static C_KZG_RET compute_weighted_sum_of_commitments(
 
     /* Update commitment weights */
     for (uint64_t i = 0; i < num_cells; i++) {
-        blst_fr_add(
+        fr_add(
             &commitment_weights[commitment_indices[i]],
             &commitment_weights[commitment_indices[i]],
             &r_powers[i]
@@ -672,12 +673,12 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
             if (ret != C_KZG_OK) goto out;
 
             /* Scale the field element by the appropriate power of r */
-            blst_fr_mul(&scaled_fr, &original_fr, &r_powers[cell_index]);
+            fr_mul(&scaled_fr, &original_fr, &r_powers[cell_index]);
 
             /* Figure out the right index for this field element within the extended array */
             size_t array_index = column_index * FIELD_ELEMENTS_PER_CELL + fr_index;
             /* Aggregate the scaled field element into the array */
-            blst_fr_add(
+            fr_add(
                 &aggregated_column_cells[array_index],
                 &aggregated_column_cells[array_index],
                 &scaled_fr
@@ -742,7 +743,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
 
         /* Update the aggregated poly */
         for (size_t k = 0; k < FIELD_ELEMENTS_PER_CELL; k++) {
-            blst_fr_add(
+            fr_add(
                 &aggregated_interpolation_poly[k],
                 &aggregated_interpolation_poly[k],
                 &column_interpolation_poly[k]
@@ -800,7 +801,7 @@ static C_KZG_RET computed_weighted_sum_of_proofs(
         get_coset_shift_pow_for_cell(&h_k_pow, cell_indices[i], s);
 
         /* Scale the power of r by h_k^n */
-        blst_fr_mul(&weighted_powers_of_r[i], &r_powers[i], &h_k_pow);
+        fr_mul(&weighted_powers_of_r[i], &r_powers[i], &h_k_pow);
     }
 
     ret = g1_lincomb_fast(weighted_proof_sum_out, proofs_g1, weighted_powers_of_r, num_cells);
@@ -944,9 +945,8 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Subtract commitment from sum by adding the negated commitment */
-    blst_p1_cneg(&interpolation_poly_commit, true);
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
+    /* Subtract the commitment from the sum */
+    g1_sub(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Compute sum of the proofs scaled by the coset factors
@@ -957,7 +957,7 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     );
     if (ret != C_KZG_OK) goto out;
 
-    blst_p1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
+    g1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Do the final pairing check

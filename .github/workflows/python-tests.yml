@@ -15,10 +15,10 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -51,10 +51,10 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           submodules: recursive
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
           python-version: '3.x'
       - name: Install dependencies
@@ -65,7 +65,7 @@ jobs:
         run: python -m build --sdist
       - name: Set up Visual Studio shell
         if: runner.os == 'Windows'
-        uses: egor-tensin/vs-shell@9a932a62d05192eae18ca370155cf877eecc2202 # v2.1
+        uses: egor-tensin/vs-shell@54e4148eac794e4580591c2e0b7750f14b7891fc # v2.2
       - name: Install via sdist
         working-directory: dist
         run: pip install ckzg-*.tar.gz

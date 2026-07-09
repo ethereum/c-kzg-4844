@@ -58,6 +58,11 @@ extern "C" {
 
 bool fr_equal(const fr_t *a, const fr_t *b);
 bool fr_is_one(const fr_t *p);
+void fr_add(fr_t *out, const fr_t *a, const fr_t *b);
+void fr_sub(fr_t *out, const fr_t *a, const fr_t *b);
+void fr_mul(fr_t *out, const fr_t *a, const fr_t *b);
+void fr_neg(fr_t *out, const fr_t *a);
+void fr_inv(fr_t *out, const fr_t *a);
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 void fr_from_uint64(fr_t *out, uint64_t n);

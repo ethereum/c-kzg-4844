@@ -20,6 +20,17 @@
 #include <stdio.h> /* For printf */
 
 /**
+ * Addition of G1 group elements.
+ *
+ * @param[out]  out The result, `a + b`
+ * @param[in]   a   A G1 group element
+ * @param[in]   b   The G1 group element to be added
+ */
+void g1_add(g1_t *out, const g1_t *a, const g1_t *b) {
+    blst_p1_add_or_double(out, a, b);
+}
+
+/**
  * Subtraction of G1 group elements.
  *
  * @param[out]  out The result, `a - b`
@@ -29,7 +40,7 @@
 void g1_sub(g1_t *out, const g1_t *a, const g1_t *b) {
     g1_t bneg = *b;
     blst_p1_cneg(&bneg, true);
-    blst_p1_add_or_double(out, a, &bneg);
+    g1_add(out, a, &bneg);
 }
 
 /**

@@ -35,7 +35,7 @@ defmodule KZGTest do
   end
 
   test "blob_to_kzg_commitment/2 tests", %{setup: setup} do
-    assert length(@blob_to_kzg_commitment_tests) > 0
+    assert @blob_to_kzg_commitment_tests != []
 
     for file <- @blob_to_kzg_commitment_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -56,7 +56,7 @@ defmodule KZGTest do
   end
 
   test "compute_kzg_proof/3 tests", %{setup: setup} do
-    assert length(@compute_kzg_proof_tests) > 0
+    assert @compute_kzg_proof_tests != []
 
     for file <- @compute_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -83,7 +83,7 @@ defmodule KZGTest do
   end
 
   test "compute_blob_kzg_proof/3 tests", %{setup: setup} do
-    assert length(@compute_blob_kzg_proof_tests) > 0
+    assert @compute_blob_kzg_proof_tests != []
 
     for file <- @compute_blob_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -105,7 +105,7 @@ defmodule KZGTest do
   end
 
   test "verify_kzg_proof/5 tests", %{setup: setup} do
-    assert length(@verify_kzg_proof_tests) > 0
+    assert @verify_kzg_proof_tests != []
 
     for file <- @verify_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -127,7 +127,7 @@ defmodule KZGTest do
   end
 
   test "verify_blob_kzg_proof/4 tests", %{setup: setup} do
-    assert length(@verify_blob_kzg_proof_tests) > 0
+    assert @verify_blob_kzg_proof_tests != []
 
     for file <- @verify_blob_kzg_proof_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -148,7 +148,7 @@ defmodule KZGTest do
   end
 
   test "verify_blob_kzg_proof_batch/4 tests", %{setup: setup} do
-    assert length(@verify_blob_kzg_proof_batch_tests) > 0
+    assert @verify_blob_kzg_proof_batch_tests != []
 
     for file <- @verify_blob_kzg_proof_batch_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -181,7 +181,7 @@ defmodule KZGTest do
   end
 
   test "compute_cells/2 tests", %{setup: setup} do
-    assert length(@compute_cells_tests) > 0
+    assert @compute_cells_tests != []
 
     for file <- @compute_cells_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -202,7 +202,7 @@ defmodule KZGTest do
   end
 
   test "compute_cells_and_kzg_proofs/2 tests", %{setup: setup} do
-    assert length(@compute_cells_and_kzg_proofs_tests) > 0
+    assert @compute_cells_and_kzg_proofs_tests != []
 
     for file <- @compute_cells_and_kzg_proofs_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -234,7 +234,7 @@ defmodule KZGTest do
   end
 
   test "recover_cells_and_kzg_proofs/3 tests", %{setup: setup} do
-    assert length(@recover_cells_and_kzg_proofs_tests) > 0
+    assert @recover_cells_and_kzg_proofs_tests != []
 
     for file <- @recover_cells_and_kzg_proofs_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
@@ -267,7 +267,7 @@ defmodule KZGTest do
   end
 
   test "verify_cell_kzg_proof_batch/5 tests", %{setup: setup} do
-    assert length(@verify_cell_kzg_proof_batch_tests) > 0
+    assert @verify_cell_kzg_proof_batch_tests != []
 
     for file <- @verify_cell_kzg_proof_batch_tests do
       {:ok, test_data} = YamlElixir.read_from_file(file)
