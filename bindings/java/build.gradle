@@ -2,7 +2,7 @@ plugins {
     id "application"
     id "java-test-fixtures"
     id "me.champeau.jmh" version "0.7.3"
-    id "com.diffplug.spotless" version "7.0.2"
+    id "com.diffplug.spotless" version "7.2.1"
 }
 
 repositories {
@@ -15,8 +15,8 @@ java {
 }
 
 dependencies {
-    def junitVersion = "5.12.0"
-    def jacksonVersion = "2.16.1"
+    def junitVersion = "5.14.4"
+    def jacksonVersion = "2.22.1"
 
     testImplementation("org.junit.jupiter:junit-jupiter:${junitVersion}")
     testImplementation("org.junit.jupiter:junit-jupiter-params:${junitVersion}")
