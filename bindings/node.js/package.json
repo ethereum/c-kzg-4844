@@ -9,26 +9,26 @@
   "license": "MIT",
   "dependencies": {
     "bindings": "^1.5.0",
-    "node-addon-api": "^8.5.0"
+    "node-addon-api": "^8.9.0"
   },
   "devDependencies": {
-    "@eslint/compat": "^2.0.2",
-    "@eslint/eslintrc": "^3.3.4",
+    "@eslint/compat": "^2.1.0",
+    "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
     "@types/jest": "^30.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.0.2",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
+    "eslint": "^10.6.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-prettier": "^5.5.6",
     "glob": "^13.0.6",
-    "globals": "^17.3.0",
-    "jest": "^30.2.0",
-    "js-yaml": "^4.1.1",
-    "node-gyp": "^12.2.0",
-    "prettier": "3.8.1",
-    "ts-jest": "^29.4.6",
-    "typescript": "^5.9.3"
+    "globals": "^17.7.0",
+    "jest": "^30.4.2",
+    "js-yaml": "^5.2.1",
+    "node-gyp": "^13.0.1",
+    "prettier": "3.9.5",
+    "ts-jest": "^29.4.11",
+    "typescript": "~6.0.3"
   },
   "repository": {
     "type": "git",

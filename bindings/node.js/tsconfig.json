@@ -16,6 +16,7 @@
     "declaration": true,
     "sourceMap": true,
     "declarationMap": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "types": ["jest", "node"]
   }
 }
