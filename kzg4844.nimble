@@ -36,7 +36,7 @@ requires "nim >= 1.6.0",
 import "bindings/nim/config.nims"
 
 task test, "Run all tests":
-  runAllTest()
+  runTests()
 
 ##################################################
 # Package installation code
