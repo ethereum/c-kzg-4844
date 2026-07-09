@@ -152,7 +152,7 @@ void compute_powers(fr_t *out, const fr_t *x, size_t n) {
     fr_t current_power = FR_ONE;
     for (size_t i = 0; i < n; i++) {
         out[i] = current_power;
-        blst_fr_mul(&current_power, &current_power, x);
+        fr_mul(&current_power, &current_power, x);
     }
 }
 

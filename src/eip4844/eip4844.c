@@ -87,7 +87,7 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
 
     for (i = 0; i < len; i++) {
         out[i] = accumulator;
-        blst_fr_mul(&accumulator, &accumulator, &a[i]);
+        fr_mul(&accumulator, &accumulator, &a[i]);
     }
 
     /* Bail on any zero input */
@@ -95,11 +95,11 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
         return C_KZG_BADARGS;
     }
 
-    blst_fr_eucl_inverse(&accumulator, &accumulator);
+    fr_inv(&accumulator, &accumulator);
 
     for (i = len - 1; i >= 0; i--) {
-        blst_fr_mul(&out[i], &out[i], &accumulator);
-        blst_fr_mul(&accumulator, &accumulator, &a[i]);
+        fr_mul(&out[i], &out[i], &accumulator);
+        fr_mul(&accumulator, &accumulator, &a[i]);
     }
 
     return C_KZG_OK;
@@ -215,7 +215,7 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
             ret = C_KZG_OK;
             goto out;
         }
-        blst_fr_sub(&inverses_in[i], x, &brp_roots_of_unity[i]);
+        fr_sub(&inverses_in[i], x, &brp_roots_of_unity[i]);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -223,15 +223,15 @@ static C_KZG_RET evaluate_polynomial_in_evaluation_form(
 
     *out = FR_ZERO;
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        blst_fr_mul(&tmp, &inverses[i], &brp_roots_of_unity[i]);
-        blst_fr_mul(&tmp, &tmp, &poly[i]);
-        blst_fr_add(out, out, &tmp);
+        fr_mul(&tmp, &inverses[i], &brp_roots_of_unity[i]);
+        fr_mul(&tmp, &tmp, &poly[i]);
+        fr_add(out, out, &tmp);
     }
     fr_from_uint64(&tmp, FIELD_ELEMENTS_PER_BLOB);
     fr_div(out, out, &tmp);
     fr_pow(&tmp, x, FIELD_ELEMENTS_PER_BLOB);
-    blst_fr_sub(&tmp, &tmp, &FR_ONE);
-    blst_fr_mul(out, out, &tmp);
+    fr_sub(&tmp, &tmp, &FR_ONE);
+    fr_mul(out, out, &tmp);
 
 out:
     c_kzg_free(inverses_in);
@@ -446,15 +446,15 @@ static C_KZG_RET compute_kzg_proof_impl(
             continue;
         }
         // (p_i - y) / (ω_i - z)
-        blst_fr_sub(&q_poly[i], &poly[i], y_out);
-        blst_fr_sub(&inverses_in[i], &brp_roots_of_unity[i], z);
+        fr_sub(&q_poly[i], &poly[i], y_out);
+        fr_sub(&inverses_in[i], &brp_roots_of_unity[i], z);
     }
 
     ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
     for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
-        blst_fr_mul(&q_poly[i], &q_poly[i], &inverses[i]);
+        fr_mul(&q_poly[i], &q_poly[i], &inverses[i]);
     }
 
     if (m != 0) { /* ω_{m-1} == z */
@@ -462,8 +462,8 @@ static C_KZG_RET compute_kzg_proof_impl(
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             /* Build denominator: z * (z - ω_i) */
-            blst_fr_sub(&tmp, z, &brp_roots_of_unity[i]);
-            blst_fr_mul(&inverses_in[i], &tmp, z);
+            fr_sub(&tmp, z, &brp_roots_of_unity[i]);
+            fr_mul(&inverses_in[i], &tmp, z);
         }
 
         ret = fr_batch_inv(inverses, inverses_in, FIELD_ELEMENTS_PER_BLOB);
@@ -472,11 +472,11 @@ static C_KZG_RET compute_kzg_proof_impl(
         for (i = 0; i < FIELD_ELEMENTS_PER_BLOB; i++) {
             if (i == m) continue;
             /* Build numerator: ω_i * (p_i - y) */
-            blst_fr_sub(&tmp, &poly[i], y_out);
-            blst_fr_mul(&tmp, &tmp, &brp_roots_of_unity[i]);
+            fr_sub(&tmp, &poly[i], y_out);
+            fr_mul(&tmp, &tmp, &brp_roots_of_unity[i]);
             /* Do the division: (p_i - y) * ω_i / (z * (z - ω_i)) */
-            blst_fr_mul(&tmp, &tmp, &inverses[i]);
-            blst_fr_add(&q_poly[m], &q_poly[m], &tmp);
+            fr_mul(&tmp, &tmp, &inverses[i]);
+            fr_add(&q_poly[m], &q_poly[m], &tmp);
         }
     }
 
@@ -737,7 +737,7 @@ static C_KZG_RET verify_kzg_proof_batch(
         /* Get C_i - [y_i] */
         g1_sub(&C_minus_y[i], &commitments_g1[i], &ys_encrypted);
         /* Get r^i * z_i */
-        blst_fr_mul(&r_times_z[i], &r_powers[i], &zs_fr[i]);
+        fr_mul(&r_times_z[i], &r_powers[i], &zs_fr[i]);
     }
 
     /* Get \sum r^i z_i Proof_i */
@@ -745,7 +745,7 @@ static C_KZG_RET verify_kzg_proof_batch(
     /* Get \sum r^i (C_i - [y_i]) */
     g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
     /* Get C_minus_y_lincomb + proof_z_lincomb */
-    blst_p1_add_or_double(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
+    g1_add(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
     /* Do the pairing check! */
     *ok = pairings_verify(&proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());

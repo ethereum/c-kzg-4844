@@ -51,6 +51,61 @@ bool fr_is_one(const fr_t *p) {
 }
 
 /**
+ * Addition of field elements.
+ *
+ * @param[out]  out The result, `a + b`
+ * @param[in]   a   A field element
+ * @param[in]   b   The field element to be added
+ */
+void fr_add(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr_add(out, a, b);
+}
+
+/**
+ * Subtraction of field elements.
+ *
+ * @param[out]  out The result, `a - b`
+ * @param[in]   a   A field element
+ * @param[in]   b   The field element to be subtracted
+ */
+void fr_sub(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr_sub(out, a, b);
+}
+
+/**
+ * Multiplication of field elements.
+ *
+ * @param[out]  out The result, `a * b`
+ * @param[in]   a   A field element
+ * @param[in]   b   The multiplier
+ */
+void fr_mul(fr_t *out, const fr_t *a, const fr_t *b) {
+    blst_fr_mul(out, a, b);
+}
+
+/**
+ * Negation of a field element.
+ *
+ * @param[out]  out The result, `-a`
+ * @param[in]   a   The field element to be negated
+ */
+void fr_neg(fr_t *out, const fr_t *a) {
+    blst_fr_cneg(out, a, true);
+}
+
+/**
+ * Inversion of a field element.
+ *
+ * @param[out]  out The result, `1 / a`
+ * @param[in]   a   The field element to be inverted
+ *
+ * @remark The behavior for `a == 0` is unspecified.
+ */
+void fr_inv(fr_t *out, const fr_t *a) {
+    blst_fr_eucl_inverse(out, a);
+}
+
+/**
  * Divide a field element by another.
  *
  * @param[out]  out The result, `a / b`
@@ -62,8 +117,8 @@ bool fr_is_one(const fr_t *p) {
  */
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
     fr_t tmp;
-    blst_fr_eucl_inverse(&tmp, b);
-    blst_fr_mul(out, a, &tmp);
+    fr_inv(&tmp, b);
+    fr_mul(out, a, &tmp);
 }
 
 /**
@@ -84,7 +139,7 @@ void fr_pow(fr_t *out, const fr_t *a, uint64_t n) {
 
     while (true) {
         if (n & 1) {
-            blst_fr_mul(out, out, &tmp);
+            fr_mul(out, out, &tmp);
         }
         if ((n >>= 1) == 0) break;
         blst_fr_sqr(&tmp, &tmp);

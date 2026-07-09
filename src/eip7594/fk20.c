@@ -195,7 +195,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
      * needed in the IFFT scaling step.
      */
     fr_from_uint64(&inv_domain_size, circulant_domain_size);
-    blst_fr_eucl_inverse(&inv_domain_size, &inv_domain_size);
+    fr_inv(&inv_domain_size, &inv_domain_size);
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
         /* Select the coefficients c_i of poly that form the i-th circulant matrix */
         circulant_coeffs_stride(circulant_coeffs, poly, i);
@@ -204,7 +204,7 @@ C_KZG_RET compute_fk20_cell_proofs(g1_t *out, const fr_t *poly, const KZGSetting
         if (ret != C_KZG_OK) goto out;
         /* Transpose and prescale by 1/n in one pass */
         for (size_t j = 0; j < circulant_domain_size; j++) {
-            blst_fr_mul(&coeffs[j][i], &circulant_coeffs_fft[j], &inv_domain_size);
+            fr_mul(&coeffs[j][i], &circulant_coeffs_fft[j], &inv_domain_size);
         }
     }
 
