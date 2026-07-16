@@ -246,7 +246,7 @@ analyze: blst $(SOURCE_FILES)
 	@rm -rf analysis-report
 	@for src in $(SOURCE_FILES); do \
 		echo "[+] analyzing $$src..."; \
-		$(CC) --analyze -Xanalyzer -analyzer-output=html -o analysis-report $(CFLAGS) -c $$src; \
+		$(CC) --analyze -Xanalyzer -analyzer-output=html -o analysis-report $(CFLAGS) $$src; \
 		[ -d analysis-report ] && exit 1; true; \
 	done
 
