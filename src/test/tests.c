@@ -1934,6 +1934,44 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
+static void test_compute_cells_and_kzg_proofs__succeeds_with_precompute(void) {
+    C_KZG_RET ret;
+    FILE *fp;
+    KZGSettings s_precompute;
+    Blob blob;
+    Cell cells[CELLS_PER_EXT_BLOB];
+    Cell cells_precompute[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+    KZGProof proofs_precompute[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    /* Load a second trusted setup with precomputation enabled */
+    fp = fopen("trusted_setup.txt", "r");
+    ASSERT_EQUALS(fp == NULL, false);
+    ret = load_trusted_setup_file(&s_precompute, fp, 8);
+    fclose(fp);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Get the cells and proofs with & without precomputation */
+    ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = compute_cells_and_kzg_proofs(cells_precompute, proofs_precompute, &blob, &s_precompute);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Precomputation must not change the result */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        diff = memcmp(&cells[i], &cells_precompute[i], sizeof(Cell));
+        ASSERT_EQUALS(diff, 0);
+        diff = memcmp(&proofs[i], &proofs_precompute[i], sizeof(KZGProof));
+        ASSERT_EQUALS(diff, 0);
+    }
+
+    free_trusted_setup(&s_precompute);
+}
+
 static void test_compute_vanishing_polynomial_from_roots(void) {
     /*
      * Test case: (x - 2)(x - 3)
@@ -2366,6 +2404,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_compute_cells_and_kzg_proofs__succeeds_with_precompute);
     RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
