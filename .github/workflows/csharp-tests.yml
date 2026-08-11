@@ -133,6 +133,7 @@ jobs:
         name: Ckzg.Bindings-${{ inputs.version || env.binding_build_number_based_version }}
         path: bindings/csharp/nupkgs/Ckzg.Bindings.*.nupkg
     - name: NuGet login
+      if: github.ref == 'refs/heads/main'
       uses: nuget/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
       id: login
       with:
