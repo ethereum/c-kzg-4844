@@ -140,5 +140,7 @@ jobs:
         user: ${{ secrets.NUGET_USER }}
     - name: Publish package
       if: github.ref == 'refs/heads/main'
-      run: dotnet nuget push bindings/csharp/nupkgs/*.nupkg \
-        -k "${{ steps.login.outputs.NUGET_API_KEY }}" -s https://www.nuget.org/api/v2/package
+      run: |
+        dotnet nuget push bindings/csharp/nupkgs/*.nupkg \
+          -k "${{ steps.login.outputs.NUGET_API_KEY }}" \
+          -s https://www.nuget.org/api/v2/package
