@@ -1,7 +1,17 @@
+from concurrent.futures import ThreadPoolExecutor
 import glob
-import yaml
+import os
+import sys
+import sysconfig
+from threading import Barrier
 
 import ckzg
+import yaml
+
+
+GIL_ENABLED_AFTER_CKZG_IMPORT = (
+    sys._is_gil_enabled() if sysconfig.get_config_var("Py_GIL_DISABLED") else None
+)
 
 ###############################################################################
 # Constants
@@ -28,6 +38,12 @@ VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../tests/verify_cell_kzg_proof_batch/*/*
 
 def bytes_from_hex(hexstring):
     return bytes.fromhex(hexstring.replace("0x", ""))
+
+
+def blob_to_kzg_commitment_concurrently(args):
+    barrier, blob, ts = args
+    barrier.wait()
+    return ckzg.blob_to_kzg_commitment(blob, ts)
 
 
 ###############################################################################
@@ -253,12 +269,42 @@ def test_verify_cell_kzg_proof_batch(ts):
         assert valid == expected_valid, f"{test_file}\n{valid=}\n{expected_valid=}"
 
 
+def test_free_threaded_module_support():
+    if sysconfig.get_config_var("Py_GIL_DISABLED"):
+        assert not GIL_ENABLED_AFTER_CKZG_IMPORT
+
+
+def test_thread_safety(ts):
+    for test_file in glob.glob(BLOB_TO_KZG_COMMITMENT_TESTS):
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+        if test["output"] is not None:
+            break
+    else:
+        raise AssertionError("no valid blob-to-KZG-commitment test case found")
+
+    blob = bytes_from_hex(test["input"]["blob"])
+    expected_commitment = bytes_from_hex(test["output"])
+    workers = min(32, max(2, (os.cpu_count() or 1) * 2))
+    barrier = Barrier(workers)
+
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        commitments = executor.map(
+            blob_to_kzg_commitment_concurrently,
+            [(barrier, blob, ts)] * workers,
+        )
+
+    assert all(commitment == expected_commitment for commitment in commitments)
+
+
 ###############################################################################
 # Main Logic
 ###############################################################################
 
 if __name__ == "__main__":
     ts = ckzg.load_trusted_setup("../../src/trusted_setup.txt", 0)
+
+    test_free_threaded_module_support()
 
     test_blob_to_kzg_commitment(ts)
     test_compute_kzg_proof(ts)
@@ -271,5 +317,6 @@ if __name__ == "__main__":
     test_compute_cells_and_kzg_proofs(ts)
     test_recover_cells_and_kzg_proofs(ts)
     test_verify_cell_kzg_proof_batch(ts)
+    test_thread_safety(ts)
 
     print("tests passed")
