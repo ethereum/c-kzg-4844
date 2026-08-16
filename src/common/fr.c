@@ -147,8 +147,8 @@ void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
  * @remark This function does NOT support in-place computation.
  * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
  *         the `out` output array has already been mutated.
- * @remark Costs one inversion and three multiplications per element, rather than
- *         one inversion per element.
+ * @remark Costs one inversion in total plus three multiplications per element,
+ *         rather than one inversion per element.
  */
 C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
     assert(len > 0);
