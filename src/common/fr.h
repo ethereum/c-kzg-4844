@@ -16,9 +16,12 @@
 
 #pragma once
 
+#include "common/ret.h"
+
 #include "blst.h"
 
 #include <stdbool.h> /* For bool */
+#include <stddef.h>  /* For size_t */
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Types
@@ -58,12 +61,14 @@ extern "C" {
 
 bool fr_equal(const fr_t *a, const fr_t *b);
 bool fr_is_one(const fr_t *p);
+bool fr_is_zero(const fr_t *p);
 void fr_add(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_sub(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_mul(fr_t *out, const fr_t *a, const fr_t *b);
 void fr_neg(fr_t *out, const fr_t *a);
 void fr_inv(fr_t *out, const fr_t *a);
 void fr_div(fr_t *out, const fr_t *a, const fr_t *b);
+C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len);
 void fr_pow(fr_t *out, const fr_t *a, uint64_t n);
 void fr_from_uint64(fr_t *out, uint64_t n);
 void print_fr(const fr_t *f);
