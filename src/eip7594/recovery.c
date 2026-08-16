@@ -318,12 +318,24 @@ C_KZG_RET recover_cells(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Compute P(x) = (P*Z)(x) / Z(x) in evaluation form over a coset of the FFT domain */
+    /*
+     * Compute P(x) = (P*Z)(x) / Z(x) in evaluation form over a coset of the FFT domain.
+     *
+     * The divisors are inverted as a batch rather than one at a time: Montgomery's trick
+     * costs one inversion plus three multiplications per element, where fr_div costs a
+     * full inversion each. Z has no zeros on the coset -- which is the reason the division
+     * is done there -- so the batch cannot fail, but the return value is still checked.
+     */
+    fr_t *inv_vanishing_poly_over_coset = vanishing_poly_eval; /* Dead from here on; reused */
+    ret = fr_batch_inv(
+        inv_vanishing_poly_over_coset, vanishing_poly_over_coset, FIELD_ELEMENTS_PER_EXT_BLOB
+    );
+    if (ret != C_KZG_OK) goto out;
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        fr_div(
+        fr_mul(
             &extended_evaluations_over_coset[i],
             &extended_evaluations_over_coset[i],
-            &vanishing_poly_over_coset[i]
+            &inv_vanishing_poly_over_coset[i]
         );
     }
 
