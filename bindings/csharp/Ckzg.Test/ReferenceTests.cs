@@ -468,6 +468,31 @@ public class ReferenceTests
 
     #endregion
 
+    #region RecoverCells
+
+    [Test, TestCaseSource(nameof(GetRecoverCellsAndKzgProofsTests))]
+    public void TestRecoverCells(RecoverCellsAndKzgProofsTest test)
+    {
+        byte[] recoveredCells = new byte[CellsPerExtBlob * Ckzg.BytesPerCell];
+        UInt64[] cellIndices = test.Input.CellIndices.ToArray();
+        byte[] cells = GetFlatBytes(test.Input.Cells);
+        int numCells = cells.Length / Ckzg.BytesPerCell;
+
+        try
+        {
+            Ckzg.RecoverCells(recoveredCells, cellIndices, cells, numCells, _ts);
+            Assert.That(test.Output, Is.Not.EqualTo(null));
+            byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
+            Assert.That(recoveredCells, Is.EqualTo(expectedCells));
+        }
+        catch
+        {
+            Assert.That(test.Output, Is.EqualTo(null));
+        }
+    }
+
+    #endregion
+
     #region RecoverCellsAndKzgProofs
 
     public class RecoverCellsAndKzgProofsInput

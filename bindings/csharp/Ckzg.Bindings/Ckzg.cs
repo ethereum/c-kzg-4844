@@ -248,6 +248,36 @@ public static partial class Ckzg
     }
 
     /// <summary>
+    ///     Given some cells for a blob, recover all cells.
+    /// </summary>
+    /// <param name="recoveredCells">Recovered cells as a flattened byte array</param>
+    /// <param name="cellIndices">Cell indices as a flattened UInt64 array</param>
+    /// <param name="cells">Cells as a flattened byte array</param>
+    /// <param name="numCells">The number of cells provided</param>
+    /// <param name="ckzgSetup">Trusted setup settings</param>
+    /// <exception cref="ArgumentException">Thrown when length of an argument is not correct or settings are not correct</exception>
+    /// <exception cref="ApplicationException">Thrown when the library returns unexpected Error code</exception>
+    /// <exception cref="InsufficientMemoryException">Thrown when the library has no enough memory to process</exception>
+    public static unsafe void RecoverCells(Span<byte> recoveredCells,
+            ReadOnlySpan<UInt64> cellIndices, ReadOnlySpan<byte> cells, int numCells, IntPtr ckzgSetup)
+    {
+        ThrowOnUninitializedTrustedSetup(ckzgSetup);
+        ThrowOnInvalidLength(recoveredCells, nameof(recoveredCells), BytesPerCell * CellsPerExtBlob);
+        ThrowOnInvalidLength(cellIndices, nameof(cellIndices), numCells);
+        ThrowOnInvalidLength(cells, nameof(cells), BytesPerCell * numCells);
+
+        fixed (byte* recoveredCellsPtr = recoveredCells, cellsPtr = cells)
+        {
+            fixed(UInt64* cellIndicesPtr = cellIndices)
+            {
+                KzgResult result = RecoverCellsAndKzgProofs(recoveredCellsPtr, null, cellIndicesPtr,
+                    cellsPtr, (UInt64)numCells, ckzgSetup);
+                ThrowOnError(result);
+            }
+        }
+    }
+
+    /// <summary>
     ///     Given some cells for a blob, recover all cells/proofs.
     /// </summary>
     /// <param name="recoveredCells">Recovered cells as a flattened byte array</param>

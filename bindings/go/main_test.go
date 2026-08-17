@@ -601,6 +601,59 @@ func TestVerifyCellKZGProofBatch(t *testing.T) {
 	}
 }
 
+func TestRecoverCells(t *testing.T) {
+	type Test struct {
+		Input struct {
+			CellIndices []uint64 `yaml:"cell_indices"`
+			Cells       []string `yaml:"cells"`
+		}
+		Output *[][]string `yaml:"output"`
+	}
+
+	tests, err := filepath.Glob(recoverCellsAndKZGProofsTests)
+	require.NoError(t, err)
+	require.True(t, len(tests) > 0)
+
+	for _, testPath := range tests {
+		t.Run(testPath, func(t *testing.T) {
+			testFile, err := os.Open(testPath)
+			require.NoError(t, err)
+			test := Test{}
+			err = yaml.NewDecoder(testFile).Decode(&test)
+			require.NoError(t, testFile.Close())
+			require.NoError(t, err)
+
+			cellIndices := test.Input.CellIndices
+
+			var cells []Cell
+			for _, c := range test.Input.Cells {
+				var cell Cell
+				err = cell.UnmarshalText([]byte(c))
+				if err != nil {
+					require.Nil(t, test.Output)
+					return
+				}
+				cells = append(cells, cell)
+			}
+
+			recoveredCells, err := RecoverCells(cellIndices, cells)
+			if err == nil {
+				require.NotNil(t, test.Output)
+				var expectedCells []Cell
+				for _, cellStr := range (*test.Output)[0] {
+					var cell Cell
+					err := cell.UnmarshalText([]byte(cellStr))
+					require.NoError(t, err)
+					expectedCells = append(expectedCells, cell)
+				}
+				require.Equal(t, expectedCells, recoveredCells[:])
+			} else {
+				require.Nil(t, test.Output)
+			}
+		})
+	}
+}
+
 func TestRecoverCellsAndKZGProofs(t *testing.T) {
 	type Test struct {
 		Input struct {

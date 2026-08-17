@@ -447,6 +447,128 @@ out:
   return ret;
 }
 
+static PyObject *recover_cells_wrap(PyObject *self, PyObject *args) {
+  PyObject *input_cell_indices, *input_cells, *s;
+  PyObject *ret = NULL;
+  uint64_t *cell_indices = NULL;
+  Cell *cells = NULL;
+  Cell *recovered_cells = NULL;
+
+  /* Ensure inputs are the right types */
+  if (!PyArg_UnpackTuple(args, "recover_cells", 3, 3, &input_cell_indices,
+                         &input_cells, &s) ||
+      !PyList_Check(input_cell_indices) || !PyList_Check(input_cells) ||
+      !PyCapsule_IsValid(s, "KZGSettings")) {
+    ret = PyErr_Format(PyExc_ValueError, "expected list, list, trusted setup");
+    goto out;
+  }
+
+  /* Ensure cell indices/cells are the same length */
+  Py_ssize_t cell_indices_count = PyList_Size(input_cell_indices);
+  Py_ssize_t cells_count = PyList_Size(input_cells);
+  if (cell_indices_count != cells_count) {
+    ret = PyErr_Format(PyExc_ValueError,
+                       "expected same number of cell_indices and cells");
+    goto out;
+  }
+
+  /* Allocate space for the cell indices */
+  cell_indices = (uint64_t *)calloc(cells_count, sizeof(uint64_t));
+  if (cell_indices == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError,
+                       "Failed to allocate memory for cell indices");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
+    /* Ensure each cell index is an integer */
+    PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
+    if (!PyLong_Check(cell_index)) {
+      ret = PyErr_Format(PyExc_ValueError,
+                         "expected cell index to be an integer");
+      goto out;
+    }
+    /* Convert the cell index to a cell index type (uint64_t) */
+    uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
+    if (PyErr_Occurred()) {
+      ret = PyErr_Format(PyExc_ValueError,
+                         "failed to convert cell index to uint64_t");
+      goto out;
+    }
+    /* The cell index is good, add it to our array */
+    memcpy(&cell_indices[i], &value, sizeof(uint64_t));
+  }
+
+  /* Allocate space for the cells */
+  cells = (Cell *)calloc(cells_count, BYTES_PER_CELL);
+  if (cells == NULL) {
+    ret =
+        PyErr_Format(PyExc_MemoryError, "Failed to allocate memory for cells");
+    goto out;
+  }
+  for (Py_ssize_t i = 0; i < cells_count; i++) {
+    /* Ensure each cell is bytes */
+    PyObject *cell = PyList_GetItem(input_cells, i);
+    if (!PyBytes_Check(cell)) {
+      ret = PyErr_Format(PyExc_ValueError, "expected cell to be bytes");
+      goto out;
+    }
+    /* Ensure each cell is the right size */
+    Py_ssize_t cell_size = PyBytes_Size(cell);
+    if (cell_size != BYTES_PER_CELL) {
+      ret = PyErr_Format(PyExc_ValueError,
+                         "expected cell to be BYTES_PER_CELL bytes");
+      goto out;
+    }
+    /* The cell is good, copy it to our array */
+    memcpy(&cells[i], PyBytes_AsString(cell), BYTES_PER_CELL);
+  }
+
+  /* Allocate space for the recovered cells */
+  recovered_cells = calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
+  if (recovered_cells == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError,
+                       "Failed to allocate memory for recovered cells");
+    goto out;
+  }
+
+  /* Call our C function with our inputs, skipping proof recovery */
+  if (recover_cells_and_kzg_proofs(
+          recovered_cells, NULL, cell_indices, cells, cells_count,
+          PyCapsule_GetPointer(s, "KZGSettings")) != C_KZG_OK) {
+    ret = PyErr_Format(PyExc_RuntimeError, "recover_cells failed");
+    goto out;
+  }
+
+  /* Convert our result to a list of bytes objects */
+  PyObject *recovered_cells_list = PyList_New(CELLS_PER_EXT_BLOB);
+  if (recovered_cells_list == NULL) {
+    ret = PyErr_Format(PyExc_MemoryError,
+                       "Failed to allocate memory for return list of cells");
+    goto out;
+  }
+  for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+    /* Convert cell to a bytes object */
+    PyObject *cell_bytes = PyBytes_FromStringAndSize(
+        (const char *)&recovered_cells[i], BYTES_PER_CELL);
+    if (cell_bytes == NULL) {
+      Py_DECREF(cell_bytes);
+      ret = PyErr_Format(PyExc_MemoryError,
+                         "Failed to allocate memory for cell bytes");
+      goto out;
+    }
+    PyList_SetItem(recovered_cells_list, i, cell_bytes);
+  }
+
+  /* Success! */
+  ret = recovered_cells_list;
+
+out:
+  free(cell_indices);
+  free(cells);
+  free(recovered_cells);
+  return ret;
+}
+
 static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
                                                    PyObject *args) {
   PyObject *input_cell_indices, *input_cells, *s;
@@ -797,6 +919,8 @@ static PyMethodDef ckzgmethods[] = {
      "Compute cells for a blob"},
     {"compute_cells_and_kzg_proofs", compute_cells_and_kzg_proofs_wrap,
      METH_VARARGS, "Compute cells and proofs for a blob"},
+    {"recover_cells", recover_cells_wrap, METH_VARARGS,
+     "Recover missing cells"},
     {"recover_cells_and_kzg_proofs", recover_cells_and_kzg_proofs_wrap,
      METH_VARARGS, "Recover missing cells and proofs"},
     {"verify_cell_kzg_proof_batch", verify_cell_kzg_proof_batch_wrap,
