@@ -58,30 +58,60 @@ static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
 /**
  * Fast Fourier Transform.
  *
- * Recursively divide and conquer.
+ * Iterative decimation-in-time: gather the input in bit-reversed order, then run log2(n) stages
+ * of in-place butterflies over blocks of doubling size. The roots table is in natural order and
+ * spans the full domain, so it already holds every twiddle at every power-of-two stride; each
+ * stage just reads it at a larger step. The first twiddle of every block is w^0 = 1, so that
+ * butterfly is a plain add/sub, saving n - 1 of the (n/2) * log2(n) multiplications.
  *
  * @param[out]  out             The results, length `n`
- * @param[in]   in              The input data, length `n * stride`
- * @param[in]   stride          The input data stride
+ * @param[in]   in              The input data, length `n`
  * @param[in]   roots           Roots of unity, length `n * roots_stride`
  * @param[in]   roots_stride    The stride interval among the roots of unity
  * @param[in]   n               Length of the FFT, must be a power of two
+ *
+ * @remark The input and output arrays must not overlap.
  */
 static void fr_fft_fast(
-    fr_t *out, const fr_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n
+    fr_t *out, const fr_t *in, const fr_t *roots, size_t roots_stride, size_t n
 ) {
-    size_t half = n / 2;
-    if (half > 0) {
-        fr_t y_times_root;
-        fr_fft_fast(out, in, stride * 2, roots, roots_stride * 2, half);
-        fr_fft_fast(out + half, in + stride, stride * 2, roots, roots_stride * 2, half);
-        for (size_t i = 0; i < half; i++) {
-            fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
-            fr_sub(&out[i + half], &out[i], &y_times_root);
-            fr_add(&out[i], &out[i], &y_times_root);
+    if (n < 2) {
+        if (n == 1) *out = *in;
+        return;
+    }
+
+    /*
+     * Copy the input to the output in bit-reversed order. The read index j visits the
+     * bit-reversed values of i: incrementing i by one corresponds to incrementing j as a
+     * log2(n)-bit counter whose carries propagate from the most significant bit downwards,
+     * which costs O(n) in total rather than reversing every index from scratch.
+     */
+    out[0] = in[0];
+    for (size_t i = 1, j = 0; i < n; i++) {
+        size_t bit = n >> 1;
+        for (; j & bit; bit >>= 1) {
+            j ^= bit;
         }
-    } else {
-        *out = *in;
+        j ^= bit;
+        out[i] = in[j];
+    }
+
+    /* One stage per level of the butterfly, for block sizes 2, 4, ..., n */
+    for (size_t m = 2; m <= n; m *= 2) {
+        size_t half = m / 2;
+        size_t twiddle_stride = roots_stride * (n / m);
+        for (size_t k = 0; k < n; k += m) {
+            fr_t y_times_root;
+            /* The j = 0 butterfly has twiddle w^0 = 1, so skip the multiplication */
+            y_times_root = out[k + half];
+            fr_sub(&out[k + half], &out[k], &y_times_root);
+            fr_add(&out[k], &out[k], &y_times_root);
+            for (size_t j = 1; j < half; j++) {
+                fr_mul(&y_times_root, &out[k + j + half], &roots[j * twiddle_stride]);
+                fr_sub(&out[k + j + half], &out[k + j], &y_times_root);
+                fr_add(&out[k + j], &out[k + j], &y_times_root);
+            }
+        }
     }
 }
 
@@ -107,7 +137,7 @@ C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     }
 
     size_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
-    fr_fft_fast(out, in, 1, s->roots_of_unity, roots_stride, n);
+    fr_fft_fast(out, in, s->roots_of_unity, roots_stride, n);
 
     return C_KZG_OK;
 }
@@ -134,7 +164,7 @@ C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s) {
     }
 
     size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
-    fr_fft_fast(out, in, 1, s->reverse_roots_of_unity, stride, n);
+    fr_fft_fast(out, in, s->reverse_roots_of_unity, stride, n);
 
     fr_t inv_n;
     fr_from_uint64(&inv_n, n);
