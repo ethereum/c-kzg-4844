@@ -196,6 +196,25 @@ pub const Settings = struct {
         ));
     }
 
+    pub fn recoverCells(
+        self: *const Settings,
+        recovered_cells: *[CELLS_PER_EXT_BLOB]Cell,
+        cell_indices: []const u64,
+        cells: []const Cell,
+    ) !void {
+        try self.ensureLoaded();
+        if (cell_indices.len != cells.len) return error.LengthMismatch;
+
+        try checkRet(c.recover_cells_and_kzg_proofs(
+            recovered_cells,
+            null,
+            sliceConstPtr(u64, cell_indices),
+            sliceConstPtr(Cell, cells),
+            cell_indices.len,
+            &self.inner,
+        ));
+    }
+
     pub fn recoverCellsAndKzgProofs(
         self: *const Settings,
         recovered_cells: *[CELLS_PER_EXT_BLOB]Cell,

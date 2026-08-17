@@ -479,6 +479,40 @@ impl KZGSettings {
         }
     }
 
+    pub fn recover_cells(
+        &self,
+        cell_indices: &[u64],
+        cells: &[Cell],
+    ) -> Result<Box<CellsPerExtBlob>, Error> {
+        if cell_indices.len() != cells.len() {
+            return Err(Error::MismatchLength(format!(
+                "There are {} cell indices and {} cells",
+                cell_indices.len(),
+                cells.len()
+            )));
+        }
+        let mut recovered_cells: Box<[Cell; CELLS_PER_EXT_BLOB]> =
+            vec![Cell::default(); CELLS_PER_EXT_BLOB]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap();
+        unsafe {
+            let res = recover_cells_and_kzg_proofs(
+                recovered_cells.as_mut_ptr(),
+                ptr::null_mut(),
+                cell_indices.as_ptr(),
+                cells.as_ptr(),
+                cells.len() as u64,
+                self,
+            );
+            if let C_KZG_RET::C_KZG_OK = res {
+                Ok(recovered_cells)
+            } else {
+                Err(Error::CError(res))
+            }
+        }
+    }
+
     pub fn recover_cells_and_kzg_proofs(
         &self,
         cell_indices: &[u64],
@@ -1369,6 +1403,38 @@ mod tests {
                     let proofs_as_bytes: Vec<Bytes48> =
                         proofs.iter().map(|p| p.to_bytes()).collect();
                     assert_eq!(proofs_as_bytes, expected_proofs);
+                }
+                _ => assert!(test.get_output().is_none()),
+            }
+        }
+    }
+
+    #[test]
+    fn test_recover_cells() {
+        let trusted_setup_file = Path::new("src/trusted_setup.txt");
+        assert!(trusted_setup_file.exists());
+        let kzg_settings = KZGSettings::load_trusted_setup_file(trusted_setup_file, 0).unwrap();
+        let test_files: Vec<PathBuf> = glob::glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        assert!(!test_files.is_empty());
+
+        for test_file in test_files.iter() {
+            let yaml_data = fs::read_to_string(test_file).unwrap();
+            let test: recover_cells_and_kzg_proofs::Test =
+                serde_yaml::from_str(&yaml_data).unwrap();
+            let (Ok(cell_indices), Ok(cells)) =
+                (test.input.get_cell_indices(), test.input.get_cells())
+            else {
+                assert!(test.get_output().is_none());
+                continue;
+            };
+
+            match kzg_settings.recover_cells(&cell_indices, &cells) {
+                Ok(recovered_cells) => {
+                    let (expected_cells, _) = test.get_output().unwrap();
+                    assert_eq!(recovered_cells.as_slice(), expected_cells);
                 }
                 _ => assert!(test.get_output().is_none()),
             }

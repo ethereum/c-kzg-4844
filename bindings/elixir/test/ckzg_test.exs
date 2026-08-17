@@ -233,6 +233,31 @@ defmodule KZGTest do
     end
   end
 
+  test "recover_cells/3 tests", %{setup: setup} do
+    assert @recover_cells_and_kzg_proofs_tests != []
+
+    for file <- @recover_cells_and_kzg_proofs_tests do
+      {:ok, test_data} = YamlElixir.read_from_file(file)
+
+      cell_indices = test_data["input"]["cell_indices"]
+      cells = Enum.map(test_data["input"]["cells"], &bytes_from_hex/1)
+
+      case KZG.recover_cells(cell_indices, cells, setup) do
+        {:error, _} ->
+          assert test_data["output"] == nil
+
+        {:ok, recovered_cells} ->
+          expected_cells =
+            test_data["output"]
+            |> List.first()
+            |> Enum.map(&bytes_from_hex/1)
+
+          assert recovered_cells == expected_cells,
+                 "#{file}\nRecovered cells #{inspect(recovered_cells)} do not match expected #{inspect(expected_cells)}"
+      end
+    end
+  end
+
   test "recover_cells_and_kzg_proofs/3 tests", %{setup: setup} do
     assert @recover_cells_and_kzg_proofs_tests != []
 

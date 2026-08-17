@@ -309,6 +309,42 @@ test "compute_cells_and_kzg_proofs" {
     }
 }
 
+test "recover_cells" {
+    var s = try loadSettings();
+    defer s.deinit();
+    var arena = std.heap.ArenaAllocator.init(std.testing.allocator);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const io = std.testing.io;
+
+    const Test = struct {
+        input: struct {
+            cell_indices: []u64,
+            cells: [][]const u8,
+        },
+        output: ?[2][][]const u8, // [recovered_cells[128], recovered_proofs[128]]
+    };
+
+    for (try collectCases(io, alloc, "recover_cells_and_kzg_proofs")) |path| {
+        const text = try std.Io.Dir.cwd().readFileAlloc(io, path, alloc, .unlimited);
+        const tc = (try std.json.parseFromSlice(Test, alloc, text, .{})).value;
+        var recovered_cells: [ckzg.CELLS_PER_EXT_BLOB]ckzg.Cell = undefined;
+        const result: anyerror!void = blk: {
+            const input_cells = try alloc.alloc(ckzg.Cell, tc.input.cells.len);
+            for (tc.input.cells, input_cells) |hex, *c| c.* = hexToStruct(ckzg.Cell, hex) catch |e| break :blk e;
+            break :blk s.recoverCells(&recovered_cells, tc.input.cell_indices, input_cells);
+        };
+        if (tc.output == null) {
+            if (result) |_| return error.TestExpectedError else |_| {}
+        } else {
+            try result;
+            for (tc.output.?[0], 0..) |hex, i| {
+                try std.testing.expectEqualSlices(u8, &(try hexToStruct(ckzg.Cell, hex)).bytes, &recovered_cells[i].bytes);
+            }
+        }
+    }
+}
+
 test "recover_cells_and_kzg_proofs" {
     var s = try loadSettings();
     defer s.deinit();
