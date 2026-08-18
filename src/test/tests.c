@@ -83,6 +83,13 @@ static void get_rand_g2(g2_t *out) {
     blst_hash_to_g2(out, tmp_bytes.bytes, 32, NULL, 0, NULL, 0);
 }
 
+/** Multiply a G2 group element by a field element. */
+static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
+    blst_scalar s;
+    blst_scalar_from_fr(&s, b);
+    blst_p2_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
+}
+
 static void bytes32_from_hex(Bytes32 *out, const char *hex) {
     int matches;
     for (size_t i = 0; i < sizeof(Bytes32); i++) {
@@ -1330,6 +1337,65 @@ static void test_verify_kzg_proof__fails_y_not_field_element(void) {
     ASSERT_EQUALS(ret, C_KZG_BADARGS);
 }
 
+static void test_verify_kzg_proof__fails_tampered_y(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    Bytes32 z, y;
+    KZGCommitment c;
+    Blob blob;
+    bool ok;
+
+    get_rand_field_element(&z);
+    get_rand_blob(&blob);
+
+    /* Get a commitment to that particular blob */
+    ret = blob_to_kzg_commitment(&c, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* Compute the proof and the correct evaluation y */
+    ret = compute_kzg_proof(&proof, &y, &blob, &z, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /*
+     * Flip the lowest bit of the correct evaluation. The result is still canonical (only
+     * y == BLS_MODULUS - 1 could overflow, which a random y is not), so it must be rejected by the
+     * pairing check itself, not the field-element check. All points are finite, so this pins the
+     * pairing check to the exact evaluation relation.
+     */
+    y.bytes[31] ^= 1;
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok, false);
+}
+
+static void test_verify_kzg_proof__fails_infinity_rhs_finite_proof(void) {
+    C_KZG_RET ret;
+    Bytes48 proof;
+    KZGCommitment c;
+    Bytes32 z, y;
+    bool ok;
+
+    /*
+     * With commitment = proof = the G1 generator, y = 0 and z = BLS_MODULUS - 1, the pairing-check
+     * point commitment - [y] + z * proof = G1 + [BLS_MODULUS - 1]G1 is the point at infinity while
+     * the proof is finite. Such a claim is only valid if the proof is infinity too, so this must
+     * be rejected: it exercises the infinity handling of the G1-side pairing input.
+     */
+    bytes48_from_hex(
+        &c,
+        "97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905"
+        "a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb"
+    );
+    proof = c;
+    bytes32_from_hex(&z, "73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000");
+    bytes32_from_hex(&y, "0000000000000000000000000000000000000000000000000000000000000000");
+
+    ret = verify_kzg_proof(&ok, &c, &z, &y, &proof, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok, false);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for compute_blob_kzg_proof
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2343,6 +2409,8 @@ int main(void) {
     RUN(test_verify_kzg_proof__fails_commitment_not_in_g1);
     RUN(test_verify_kzg_proof__fails_z_not_field_element);
     RUN(test_verify_kzg_proof__fails_y_not_field_element);
+    RUN(test_verify_kzg_proof__fails_tampered_y);
+    RUN(test_verify_kzg_proof__fails_infinity_rhs_finite_proof);
     RUN(test_compute_and_verify_blob_kzg_proof__succeeds_round_trip);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_incorrect_proof);
     RUN(test_compute_and_verify_blob_kzg_proof__fails_proof_not_in_g1);
