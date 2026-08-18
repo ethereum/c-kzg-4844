@@ -85,9 +85,9 @@ static void get_rand_g2(g2_t *out) {
 
 /** Multiply a G2 group element by a field element. */
 static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    blst_p2_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
+    blst_scalar scalar;
+    blst_scalar_from_fr(&scalar, b);
+    blst_p2_mult(out, a, scalar.b, BITS_PER_FIELD_ELEMENT);
 }
 
 static void bytes32_from_hex(Bytes32 *out, const char *hex) {
