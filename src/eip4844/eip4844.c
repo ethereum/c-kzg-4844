@@ -105,32 +105,6 @@ static C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, int len) {
     return C_KZG_OK;
 }
 
-/**
- * Multiply a G2 group element by a field element.
- *
- * @param[out]  out The result, `a * b`
- * @param[in]   a   The G2 group element
- * @param[in]   b   The multiplier
- */
-static void g2_mul(g2_t *out, const g2_t *a, const fr_t *b) {
-    blst_scalar s;
-    blst_scalar_from_fr(&s, b);
-    blst_p2_mult(out, a, s.b, BITS_PER_FIELD_ELEMENT);
-}
-
-/**
- * Subtraction of G2 group elements.
- *
- * @param[out]  out The result, `a - b`
- * @param[in]   a   A G2 group element
- * @param[in]   b   The G2 group element to be subtracted
- */
-static void g2_sub(g2_t *out, const g2_t *a, const g2_t *b) {
-    g2_t bneg = *b;
-    blst_p2_cneg(&bneg, true);
-    blst_p2_add_or_double(out, a, &bneg);
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // BLS12-381 Helper Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -348,19 +322,31 @@ static C_KZG_RET verify_kzg_proof_impl(
     const g1_t *proof,
     const KZGSettings *s
 ) {
-    g2_t x_g2, X_minus_z;
-    g1_t y_g1, P_minus_y;
+    g1_t y_g1, P_minus_y, z_proof, rhs_g1;
 
-    /* Calculate: X_minus_z */
-    g2_mul(&x_g2, blst_p2_generator(), z);
-    g2_sub(&X_minus_z, &s->g2_values_monomial[1], &x_g2);
+    /*
+     * Verify: P - y = Q * (X - z)
+     *
+     * The straightforward pairing check e(P - [y], [1]) == e(Q, [X] - [z]) needs a per-call G2
+     * scalar multiplication to compute [z]. Moving z to the G1 side via bilinearity,
+     * e(Q, -[z]) == e(-z * Q, [1]), gives the equivalent check
+     *
+     *   e(P - [y] + z * Q, [1]) == e(Q, [X])
+     *
+     * whose G2 inputs are both constants, replacing the G2 scalar multiplication (and G2
+     * subtraction) with a cheaper G1 one. This is the same form used by verify_kzg_proof_batch().
+     */
 
     /* Calculate: P_minus_y */
     g1_mul(&y_g1, blst_p1_generator(), y);
     g1_sub(&P_minus_y, commitment, &y_g1);
 
-    /* Verify: P - y = Q * (X - z) */
-    *ok = pairings_verify(&P_minus_y, blst_p2_generator(), proof, &X_minus_z);
+    /* Calculate: P_minus_y + z * Q */
+    g1_mul(&z_proof, proof, z);
+    g1_add(&rhs_g1, &P_minus_y, &z_proof);
+
+    /* Verify: e(Q, [X]) == e(P - [y] + z * Q, [1]) */
+    *ok = pairings_verify(proof, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());
 
     return C_KZG_OK;
 }
