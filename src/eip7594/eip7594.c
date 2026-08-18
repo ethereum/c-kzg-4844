@@ -64,7 +64,6 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     C_KZG_RET ret;
     fr_t *poly_monomial = NULL;
     fr_t *poly_lagrange = NULL;
-    fr_t *poly_shifted = NULL;
     fr_t *data_fr = NULL;
     g1_t *proofs_g1 = NULL;
     blst_p1_affine *proofs_affine = NULL;
@@ -112,14 +111,17 @@ C_KZG_RET compute_cells_and_kzg_proofs(
         /* The first half of the data points is the blob's own evaluations */
         memcpy(data_fr, poly_lagrange, FIELD_ELEMENTS_PER_BLOB * sizeof(fr_t));
 
-        /* Scale each coefficient by successive powers of w to shift the evaluation domain */
-        ret = new_fr_array(&poly_shifted, FIELD_ELEMENTS_PER_BLOB);
-        if (ret != C_KZG_OK) goto out;
-        memcpy(poly_shifted, poly_monomial, FIELD_ELEMENTS_PER_BLOB * sizeof(fr_t));
-        shift_poly(poly_shifted, FIELD_ELEMENTS_PER_BLOB, &s->roots_of_unity[1]);
+        /*
+         * Scale each coefficient by successive powers of w to shift the evaluation domain. The
+         * lagrange-form buffer is dead after the copy above, so reuse it as scratch for the
+         * shifted coefficients instead of allocating a new array. Proof generation below only
+         * reads poly_monomial, which stays unmodified.
+         */
+        memcpy(poly_lagrange, poly_monomial, FIELD_ELEMENTS_PER_BLOB * sizeof(fr_t));
+        shift_poly(poly_lagrange, FIELD_ELEMENTS_PER_BLOB, &s->roots_of_unity[1]);
 
         /* Evaluate over the coset with a half-size transformation */
-        ret = fr_fft(&data_fr[FIELD_ELEMENTS_PER_BLOB], poly_shifted, FIELD_ELEMENTS_PER_BLOB, s);
+        ret = fr_fft(&data_fr[FIELD_ELEMENTS_PER_BLOB], poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
         /* Bit-reverse the coset evaluations; the first half is already bit-reversed */
@@ -168,7 +170,6 @@ C_KZG_RET compute_cells_and_kzg_proofs(
 out:
     c_kzg_free(poly_monomial);
     c_kzg_free(poly_lagrange);
-    c_kzg_free(poly_shifted);
     c_kzg_free(data_fr);
     c_kzg_free(proofs_g1);
     c_kzg_free(proofs_affine);
