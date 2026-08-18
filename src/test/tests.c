@@ -1891,6 +1891,110 @@ static void test_shift_factors__succeeds(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Tests for compute_cells_and_kzg_proofs
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Reference implementation of the cell computation, the shape used before the half-FFT
+ * optimization: convert the blob to monomial form, zero-pad to the extended domain, apply a full
+ * size-8192 FFT, and bit-reverse the result.
+ */
+static C_KZG_RET reference_compute_cells(Cell *cells, const Blob *blob) {
+    C_KZG_RET ret;
+    fr_t *poly_monomial = NULL;
+    fr_t *poly_lagrange = NULL;
+    fr_t *data_fr = NULL;
+
+    /* new_fr_array zero-initializes, so the upper half of poly_monomial stays zero */
+    ret = new_fr_array(&poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+    ret = new_fr_array(&data_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert the blob to monomial form */
+    ret = blob_to_polynomial(poly_lagrange, blob);
+    if (ret != C_KZG_OK) goto out;
+    ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, &s);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Evaluate over the extended domain with a full-size FFT */
+    ret = fr_fft(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, &s);
+    if (ret != C_KZG_OK) goto out;
+    ret = bit_reversal_permutation(data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Convert all of the cells to byte-form */
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        for (size_t j = 0; j < FIELD_ELEMENTS_PER_CELL; j++) {
+            size_t index = i * FIELD_ELEMENTS_PER_CELL + j;
+            size_t offset = j * BYTES_PER_FIELD_ELEMENT;
+            bytes_from_bls_field((Bytes32 *)&cells[i].bytes[offset], &data_fr[index]);
+        }
+    }
+
+out:
+    c_kzg_free(poly_monomial);
+    c_kzg_free(poly_lagrange);
+    c_kzg_free(data_fr);
+    return ret;
+}
+
+static void test_compute_cells_and_kzg_proofs__matches_full_fft_reference(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Cell cells[CELLS_PER_EXT_BLOB];
+    Cell expected_cells[CELLS_PER_EXT_BLOB];
+    KZGProof proofs[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    for (size_t trial = 0; trial < 4; trial++) {
+        /* Get a random blob */
+        get_rand_blob(&blob);
+
+        /* Compute the cells via the half-FFT path, with and without proofs */
+        ret = compute_cells_and_kzg_proofs(cells, proofs, &blob, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* Compute the cells via the full-size FFT reference */
+        ret = reference_compute_cells(expected_cells, &blob);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        /* The two paths must produce byte-identical cells */
+        diff = memcmp(cells, expected_cells, sizeof(cells));
+        ASSERT_EQUALS(diff, 0);
+
+        /* The cells-only variant must match too */
+        memset(cells, 0, sizeof(cells));
+        ret = compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        diff = memcmp(cells, expected_cells, sizeof(cells));
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+static void test_compute_cells_and_kzg_proofs__first_half_is_blob(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Cell cells[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    /* Get a random blob */
+    get_rand_blob(&blob);
+
+    /* Compute the cells */
+    ret = compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /* The first half of the extension is the blob itself */
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        diff = memcmp(cells[i].bytes, &blob.bytes[i * BYTES_PER_CELL], BYTES_PER_CELL);
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for recover_cells_and_kzg_proofs
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2365,6 +2469,8 @@ int main(void) {
     RUN(test_deduplicate_commitments__all_duplicates);
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
+    RUN(test_compute_cells_and_kzg_proofs__matches_full_fft_reference);
+    RUN(test_compute_cells_and_kzg_proofs__first_half_is_blob);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
     RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
