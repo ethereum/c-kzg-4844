@@ -64,6 +64,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     C_KZG_RET ret;
     fr_t *poly_monomial = NULL;
     fr_t *poly_lagrange = NULL;
+    fr_t *poly_shifted = NULL;
     fr_t *data_fr = NULL;
     g1_t *proofs_g1 = NULL;
     blst_p1_affine *proofs_affine = NULL;
@@ -74,17 +75,12 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     }
 
     /* Allocate space fr-form arrays */
-    ret = new_fr_array(&poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB);
+    ret = new_fr_array(&poly_monomial, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_EXT_BLOB);
+    ret = new_fr_array(&poly_lagrange, FIELD_ELEMENTS_PER_BLOB);
     if (ret != C_KZG_OK) goto out;
 
-    /*
-     * Convert the blob to a polynomial in lagrange form. Note that only the first 4096 fields of
-     * the polynomial will be set. The upper 4096 fields will remain zero. The extra space is
-     * required because the polynomial will be evaluated to the extended domain (8192 roots of
-     * unity).
-     */
+    /* Convert the blob to a polynomial in lagrange form */
     ret = blob_to_polynomial(poly_lagrange, blob);
     if (ret != C_KZG_OK) goto out;
 
@@ -92,22 +88,44 @@ C_KZG_RET compute_cells_and_kzg_proofs(
     ret = poly_lagrange_to_monomial(poly_monomial, poly_lagrange, FIELD_ELEMENTS_PER_BLOB, s);
     if (ret != C_KZG_OK) goto out;
 
-    /* Ensure that only the first FIELD_ELEMENTS_PER_BLOB elements can be non-zero */
-    for (size_t i = FIELD_ELEMENTS_PER_BLOB; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
-        assert(fr_equal(&poly_monomial[i], &FR_ZERO));
-    }
-
     if (cells != NULL) {
         /* Allocate space for our data points */
         ret = new_fr_array(&data_fr, FIELD_ELEMENTS_PER_EXT_BLOB);
         if (ret != C_KZG_OK) goto out;
 
-        /* Get the data points via forward transformation */
-        ret = fr_fft(data_fr, poly_monomial, FIELD_ELEMENTS_PER_EXT_BLOB, s);
+        /*
+         * Evaluate the polynomial over the extended domain (the 8192nd roots of unity). Doing
+         * this directly would be a size-8192 FFT of the zero-padded polynomial, but the extended
+         * domain is the disjoint union of the blob's own domain (the 4096th roots of unity, i.e.
+         * the even powers of w = roots_of_unity[1]) and its coset (the odd powers of w). In the
+         * bit-reversed ordering used for cells, the evaluations over the even powers form the
+         * first half of the output and those over the odd powers form the second half. So:
+         *
+         *   - The first half is the blob itself: its lagrange form is these very evaluations,
+         *     already in bit-reversed order.
+         *   - The second half is a single size-4096 coset FFT: scale coefficient k by w^k, then
+         *     apply a forward FFT over the blob's domain.
+         *
+         * This produces output that is bit-identical to the full-size FFT.
+         */
+
+        /* The first half of the data points is the blob's own evaluations */
+        memcpy(data_fr, poly_lagrange, FIELD_ELEMENTS_PER_BLOB * sizeof(fr_t));
+
+        /* Scale each coefficient by successive powers of w to shift the evaluation domain */
+        ret = new_fr_array(&poly_shifted, FIELD_ELEMENTS_PER_BLOB);
+        if (ret != C_KZG_OK) goto out;
+        memcpy(poly_shifted, poly_monomial, FIELD_ELEMENTS_PER_BLOB * sizeof(fr_t));
+        shift_poly(poly_shifted, FIELD_ELEMENTS_PER_BLOB, &s->roots_of_unity[1]);
+
+        /* Evaluate over the coset with a half-size transformation */
+        ret = fr_fft(&data_fr[FIELD_ELEMENTS_PER_BLOB], poly_shifted, FIELD_ELEMENTS_PER_BLOB, s);
         if (ret != C_KZG_OK) goto out;
 
-        /* Bit-reverse the data points */
-        ret = bit_reversal_permutation(data_fr, sizeof(fr_t), FIELD_ELEMENTS_PER_EXT_BLOB);
+        /* Bit-reverse the coset evaluations; the first half is already bit-reversed */
+        ret = bit_reversal_permutation(
+            &data_fr[FIELD_ELEMENTS_PER_BLOB], sizeof(fr_t), FIELD_ELEMENTS_PER_BLOB
+        );
         if (ret != C_KZG_OK) goto out;
 
         /* Convert all of the cells to byte-form */
@@ -150,6 +168,7 @@ C_KZG_RET compute_cells_and_kzg_proofs(
 out:
     c_kzg_free(poly_monomial);
     c_kzg_free(poly_lagrange);
+    c_kzg_free(poly_shifted);
     c_kzg_free(data_fr);
     c_kzg_free(proofs_g1);
     c_kzg_free(proofs_affine);
