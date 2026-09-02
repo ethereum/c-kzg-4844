@@ -3,6 +3,22 @@
 #include <Python.h>
 #include <stdbool.h>
 
+static inline PyObject *get_list_item(PyObject *list, Py_ssize_t index) {
+#ifdef Py_GIL_DISABLED
+  return PyList_GetItemRef(list, index);
+#else
+  return PyList_GetItem(list, index);
+#endif
+}
+
+static inline void release_list_item(PyObject *item) {
+#ifdef Py_GIL_DISABLED
+  Py_DECREF(item);
+#else
+  (void)item;
+#endif
+}
+
 static void free_KZGSettings(PyObject *c) {
   KZGSettings *s = PyCapsule_GetPointer(c, "KZGSettings");
   free_trusted_setup(s);
@@ -483,8 +499,13 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
     /* Ensure each cell index is an integer */
-    PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
+    PyObject *cell_index = get_list_item(input_cell_indices, i);
+    if (cell_index == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyLong_Check(cell_index)) {
+      release_list_item(cell_index);
       ret = PyErr_Format(PyExc_ValueError,
                          "expected cell index to be an integer");
       goto out;
@@ -492,12 +513,14 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
     /* Convert the cell index to a cell index type (uint64_t) */
     uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
     if (PyErr_Occurred()) {
+      release_list_item(cell_index);
       ret = PyErr_Format(PyExc_ValueError,
                          "failed to convert cell index to uint64_t");
       goto out;
     }
     /* The cell index is good, add it to our array */
     memcpy(&cell_indices[i], &value, sizeof(uint64_t));
+    release_list_item(cell_index);
   }
 
   /* Allocate space for the cells */
@@ -509,20 +532,27 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < cells_count; i++) {
     /* Ensure each cell is bytes */
-    PyObject *cell = PyList_GetItem(input_cells, i);
+    PyObject *cell = get_list_item(input_cells, i);
+    if (cell == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyBytes_Check(cell)) {
+      release_list_item(cell);
       ret = PyErr_Format(PyExc_ValueError, "expected cell to be bytes");
       goto out;
     }
     /* Ensure each cell is the right size */
     Py_ssize_t cell_size = PyBytes_Size(cell);
     if (cell_size != BYTES_PER_CELL) {
+      release_list_item(cell);
       ret = PyErr_Format(PyExc_ValueError,
                          "expected cell to be BYTES_PER_CELL bytes");
       goto out;
     }
     /* The cell is good, copy it to our array */
     memcpy(&cells[i], PyBytes_AsString(cell), BYTES_PER_CELL);
+    release_list_item(cell);
   }
 
   /* Allocate space for the recovered cells/proofs */
@@ -659,14 +689,20 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < commitments_count; i++) {
     /* Ensure each commitment is bytes */
-    PyObject *commitment = PyList_GetItem(input_commitments, i);
+    PyObject *commitment = get_list_item(input_commitments, i);
+    if (commitment == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyBytes_Check(commitment)) {
+      release_list_item(commitment);
       ret = PyErr_Format(PyExc_ValueError, "expected commitment to be bytes");
       goto out;
     }
     /* Ensure each commitment is the right size */
     Py_ssize_t commitment_size = PyBytes_Size(commitment);
     if (commitment_size != BYTES_PER_COMMITMENT) {
+      release_list_item(commitment);
       ret =
           PyErr_Format(PyExc_ValueError,
                        "expected commitment to be BYTES_PER_COMMITMENT bytes");
@@ -674,6 +710,7 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
     }
     /* The commitment is good, copy it to our array */
     memcpy(&commitments[i], PyBytes_AsString(commitment), BYTES_PER_COMMITMENT);
+    release_list_item(commitment);
   }
 
   /* Allocate space for the column indices */
@@ -685,8 +722,13 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < cell_indices_count; i++) {
     /* Ensure each column index is an integer */
-    PyObject *cell_index = PyList_GetItem(input_cell_indices, i);
+    PyObject *cell_index = get_list_item(input_cell_indices, i);
+    if (cell_index == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyLong_Check(cell_index)) {
+      release_list_item(cell_index);
       ret = PyErr_Format(PyExc_ValueError,
                          "expected column index to be an integer");
       goto out;
@@ -694,12 +736,14 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
     /* Convert the column index to a uint64_t */
     uint64_t value = PyLong_AsUnsignedLongLong(cell_index);
     if (PyErr_Occurred()) {
+      release_list_item(cell_index);
       ret = PyErr_Format(PyExc_ValueError,
                          "failed to convert column index to uint64_t");
       goto out;
     }
     /* The column is good, add it to our array */
     memcpy(&cell_indices[i], &value, sizeof(uint64_t));
+    release_list_item(cell_index);
   }
 
   /* Allocate space for the cells */
@@ -711,20 +755,27 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < cells_count; i++) {
     /* Ensure each cell is bytes */
-    PyObject *cell = PyList_GetItem(input_cells, i);
+    PyObject *cell = get_list_item(input_cells, i);
+    if (cell == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyBytes_Check(cell)) {
+      release_list_item(cell);
       ret = PyErr_Format(PyExc_ValueError, "expected cell to be bytes");
       goto out;
     }
     /* Ensure each cell is the right size */
     Py_ssize_t cell_size = PyBytes_Size(cell);
     if (cell_size != BYTES_PER_CELL) {
+      release_list_item(cell);
       ret = PyErr_Format(PyExc_ValueError,
                          "expected cell to be BYTES_PER_CELL bytes");
       goto out;
     }
     /* The cell is good, copy it to our array */
     memcpy(&cells[i], PyBytes_AsString(cell), BYTES_PER_CELL);
+    release_list_item(cell);
   }
 
   /* Allocate space for the proofs */
@@ -736,20 +787,27 @@ static PyObject *verify_cell_kzg_proof_batch_wrap(PyObject *self,
   }
   for (Py_ssize_t i = 0; i < proofs_count; i++) {
     /* Ensure each proof is bytes */
-    PyObject *proof = PyList_GetItem(input_proofs, i);
+    PyObject *proof = get_list_item(input_proofs, i);
+    if (proof == NULL) {
+      ret = NULL;
+      goto out;
+    }
     if (!PyBytes_Check(proof)) {
+      release_list_item(proof);
       ret = PyErr_Format(PyExc_ValueError, "expected proof to be bytes");
       goto out;
     }
     /* Ensure each proof is the right size */
     Py_ssize_t proof_size = PyBytes_Size(proof);
     if (proof_size != BYTES_PER_PROOF) {
+      release_list_item(proof);
       ret = PyErr_Format(PyExc_ValueError,
                          "expected proof to be BYTES_PER_PROOF bytes");
       goto out;
     }
     /* The proof is good, copy it to our array */
     memcpy(&proofs[i], PyBytes_AsString(proof), BYTES_PER_PROOF);
+    release_list_item(proof);
   }
 
   /* Call our C function with our inputs */
@@ -806,4 +864,14 @@ static PyMethodDef ckzgmethods[] = {
 static struct PyModuleDef ckzg = {PyModuleDef_HEAD_INIT, "ckzg", NULL, -1,
                                   ckzgmethods};
 
-PyMODINIT_FUNC PyInit_ckzg(void) { return PyModule_Create(&ckzg); }
+PyMODINIT_FUNC PyInit_ckzg(void) {
+  PyObject *module = PyModule_Create(&ckzg);
+  if (module == NULL)
+    return NULL;
+
+#ifdef Py_GIL_DISABLED
+  PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
+#endif
+
+  return module;
+}

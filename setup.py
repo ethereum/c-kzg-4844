@@ -5,6 +5,7 @@ from shutil import which
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from subprocess import check_call
+from sysconfig import get_config_var
 
 
 def get_make():
@@ -50,7 +51,11 @@ def main():
                 sources=["bindings/python/ckzg_wrap.c", "src/ckzg.c"],
                 include_dirs=["inc", "src"],
                 library_dirs=["lib"],
-                libraries=["blst"]
+                libraries=["blst"],
+                define_macros=(
+                    [("Py_GIL_DISABLED", "1")]
+                    if get_config_var("Py_GIL_DISABLED") else []
+                ),
             )
         ],
         cmdclass={
