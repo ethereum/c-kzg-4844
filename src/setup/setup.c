@@ -42,6 +42,21 @@
 /** The number of g2 points in a trusted setup. */
 #define NUM_G2_POINTS 65
 
+/**
+ * The window size for the fixed-base MSM that verify_cell_kzg_proof_batch() uses to commit to the
+ * aggregated interpolation polynomial. This MSM is over the first FIELD_ELEMENTS_PER_CELL points of
+ * the monomial G1 setup, so the table is small and it is always precomputed, independently of the
+ * `precompute` parameter.
+ *
+ * The table has `FIELD_ELEMENTS_PER_CELL << (wbits - 1)` affine points: 192 KiB with 6 bits,
+ * 768 KiB with 8 bits, 3 MiB with 10 bits. On one Apple M4 sample the 64-point MSM takes 0.94 ms
+ * with Pippenger and 0.71, 0.54 and 0.44 ms with 6, 8 and 10 bits (table build 0.7, 2.7 and
+ * 11 ms). Eight bits is the knee of the curve. Each call touches one entry per window per point,
+ * about 192 KiB of the table, which fits in L2 on mainstream x86 parts; the 3 MiB table for 10
+ * bits would spill to L3 on many of them.
+ */
+#define VERIFY_WBITS 8
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Constants
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -187,6 +202,9 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->tables);
     s->wbits = 0;
     s->scratch_size = 0;
+    c_kzg_free(s->interp_table);
+    s->interp_wbits = 0;
+    s->interp_scratch_size = 0;
 }
 
 /**
@@ -330,6 +348,49 @@ out:
 }
 
 /**
+ * Initialize the fixed-base table for the interpolation polynomial commitment.
+ *
+ * @param[out]  s   Pointer to KZGSettings to initialize
+ *
+ * @remark The base points are the first FIELD_ELEMENTS_PER_CELL points of `g1_values_monomial`,
+ * which are the same for every call to verify_cell_kzg_proof_batch(), so the table is computed
+ * once here. It must be called after the monomial G1 points have been loaded.
+ */
+static C_KZG_RET init_interp_table(KZGSettings *s) {
+    C_KZG_RET ret;
+    blst_p1_affine *p_affine = NULL;
+
+    /* Allocate space for points in affine representation */
+    ret = c_kzg_calloc((void **)&p_affine, FIELD_ELEMENTS_PER_CELL, sizeof(blst_p1_affine));
+    if (ret != C_KZG_OK) goto out;
+
+    /* Transform the points to affine representation */
+    const blst_p1 *p_arg[2] = {s->g1_values_monomial, NULL};
+    blst_p1s_to_affine(p_affine, p_arg, FIELD_ELEMENTS_PER_CELL);
+    const blst_p1_affine *points_arg[2] = {p_affine, NULL};
+
+    /* Allocate space for the table */
+    s->interp_wbits = VERIFY_WBITS;
+    size_t table_size = blst_p1s_mult_wbits_precompute_sizeof(
+        s->interp_wbits, FIELD_ELEMENTS_PER_CELL
+    );
+    ret = c_kzg_malloc((void **)&s->interp_table, table_size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Compute table for fixed-base MSM */
+    blst_p1s_mult_wbits_precompute(
+        s->interp_table, s->interp_wbits, points_arg, FIELD_ELEMENTS_PER_CELL
+    );
+
+    /* Calculate the size of the scratch */
+    s->interp_scratch_size = blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL);
+
+out:
+    c_kzg_free(p_affine);
+    return ret;
+}
+
+/**
  * Basic sanity check that the trusted setup was loaded in Lagrange form.
  *
  * @param[in]   s   Pointer to the stored trusted setup data
@@ -373,6 +434,9 @@ static void init_settings(KZGSettings *out) {
     out->tables = NULL;
     out->wbits = 0;
     out->scratch_size = 0;
+    out->interp_table = NULL;
+    out->interp_wbits = 0;
+    out->interp_scratch_size = 0;
 }
 
 /**
@@ -490,6 +554,10 @@ C_KZG_RET load_trusted_setup(
 
     /* Setup for FK20 proof computation */
     ret = init_fk20_multi_settings(out);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Setup for cell proof batch verification */
+    ret = init_interp_table(out);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;

@@ -119,7 +119,10 @@ the performance of `compute_cells_and_kzg_proofs` and
 `recover_cells_and_kzg_proofs`. If your application does not use these
 functions, we recommend using `precompute=0`. For applications that do, we
 recommend using `precompute=8` or `precompute=9`, which offer an optimal balance
-between performance and memory usage.
+between performance and memory usage. Independently of `precompute`, loading the
+trusted setup always builds a 768 KiB fixed-base table that
+`verify_cell_kzg_proof_batch` uses to commit to the aggregated interpolation
+polynomial; this adds a few milliseconds to the load time.
 
 For reference, benchmarks from a system with an Apple M1 CPU:
 

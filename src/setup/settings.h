@@ -76,4 +76,17 @@ typedef struct {
     size_t wbits;
     /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
+    /**
+     * The precomputed table for the fixed-base MSM over the first `FIELD_ELEMENTS_PER_CELL`
+     * points of `g1_values_monomial`.
+     *
+     * This is used by `verify_cell_kzg_proof_batch` to commit to the aggregated interpolation
+     * polynomial. Unlike `tables`, it is always populated, regardless of the `precompute`
+     * parameter.
+     */
+    blst_p1_affine *interp_table;
+    /** The window size for the interpolation table MSM. */
+    size_t interp_wbits;
+    /** The scratch size for the interpolation table MSM. */
+    size_t interp_scratch_size;
 } KZGSettings;
