@@ -26,7 +26,6 @@
           ]
         }],
         ["OS=='win'", {
-          "sources": ["deps/blst/build/win64/*-x86_64.asm"],
           "defines": [
             "_CRT_SECURE_NO_WARNINGS",
             "_HAS_EXCEPTIONS=1"
@@ -36,7 +35,14 @@
               "ExceptionHandling": "Sync",
               "AdditionalOptions": ["/std:c++17"]
             }
-          }
+          },
+          "conditions": [
+            ["target_arch=='arm64'", {
+              "sources": ["deps/blst/build/win64/*-armv8.asm"]
+            }, {
+              "sources": ["deps/blst/build/win64/*-x86_64.asm"]
+            }]
+          ]
         }],
         ["OS=='mac'", {
           "xcode_settings": {
