@@ -34,6 +34,7 @@
 
     <ItemGroup>
         <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/win-x64/native/ckzg.dll" Condition="Exists('runtimes/win-x64/native/ckzg.dll')" Pack="true" PackagePath="runtimes/win-x64/native/ckzg.dll" />
+        <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/win-arm64/native/ckzg.dll" Condition="Exists('runtimes/win-arm64/native/ckzg.dll')" Pack="true" PackagePath="runtimes/win-arm64/native/ckzg.dll" />
 
         <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-x64/native/ckzg.so" Condition="Exists('runtimes/linux-x64/native/ckzg.so')" Pack="true" PackagePath="runtimes/linux-x64/native/ckzg.so" />
         <Content CopyToOutputDirectory="PreserveNewest" Include="runtimes/linux-arm64/native/ckzg.so" Condition="Exists('runtimes/linux-arm64/native/ckzg.so')" Pack="true" PackagePath="runtimes/linux-arm64/native/ckzg.so" />
