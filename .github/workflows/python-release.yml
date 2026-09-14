@@ -18,6 +18,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-latest
+          - windows-11-arm
           - macos-latest
 
     steps:
@@ -41,7 +42,9 @@ jobs:
       # Need this to get cl.exe on the path.
       - name: Set up Visual Studio shell
         if: runner.os == 'Windows'
-        uses: egor-tensin/vs-shell@54e4148eac794e4580591c2e0b7750f14b7891fc # v2.2
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: ${{ matrix.os == 'windows-11-arm' && 'arm64' || 'x64' }}
 
       - name: Install cibuildwheel
         run: python -m pip install cibuildwheel
@@ -63,7 +66,8 @@ jobs:
 
           # Building x86 (32-bit) package is difficult.
           # We're missing the 32-bit Python library.
-          CIBW_ARCHS_WINDOWS: AMD64
+          # The arch must match the runner; Windows ARM64 wheels need a native host.
+          CIBW_ARCHS_WINDOWS: ${{ matrix.os == 'windows-11-arm' && 'ARM64' || 'AMD64' }}
           # We need blst.lib (via MSVC) which our Makefile doesn't support.
           CIBW_BEFORE_BUILD_WINDOWS: |
             cd blst && build.bat && cp blst.lib ../lib && cp bindings/*.h ../inc
