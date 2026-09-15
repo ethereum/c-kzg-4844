@@ -5,7 +5,13 @@ ifeq ($(OS),Windows_NT)
 		BLST_BUILDSCRIPT = .\build.bat
 	endif
 	BLST_OBJ = blst.lib
-	LOCATION ?= win-x64
+	# PROCESSOR_ARCHITEW6432 is set when make itself runs emulated on an ARM64 host.
+	HOST_ARCH = $(PROCESSOR_ARCHITEW6432)$(PROCESSOR_ARCHITECTURE)
+	ifneq (,$(findstring ARM64,$(HOST_ARCH)))
+		LOCATION ?= win-arm64
+	else
+		LOCATION ?= win-x64
+	endif
 	CLANG_EXECUTABLE = clang
 	EXTENSION ?= ".dll"
 	CKZG_LIBRARY_PATH = Ckzg.Bindings\runtimes\$(LOCATION)\native\ckzg$(EXTENSION)
