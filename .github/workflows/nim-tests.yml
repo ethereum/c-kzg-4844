@@ -50,7 +50,8 @@ jobs:
       run: |
         nimble install -y stew
         nimble install -y unittest2
-        nimble install -y yaml
+        # yaml-test-suite uses directory symlinks that fail on Windows.
+        nimble install -y yaml --ignoreSubmodules
 
     - name: Test
       run: |
