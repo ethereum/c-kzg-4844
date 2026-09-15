@@ -50,6 +50,7 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
+          - windows-11-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -65,7 +66,9 @@ jobs:
         run: python -m build --sdist
       - name: Set up Visual Studio shell
         if: runner.os == 'Windows'
-        uses: egor-tensin/vs-shell@54e4148eac794e4580591c2e0b7750f14b7891fc # v2.2
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+        with:
+          arch: ${{ matrix.os == 'windows-11-arm' && 'arm64' || 'x64' }}
       - name: Install via sdist
         working-directory: dist
         run: pip install ckzg-*.tar.gz
