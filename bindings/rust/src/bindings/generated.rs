@@ -105,6 +105,12 @@ pub struct KZGSettings {
     wbits: usize,
     #[doc = " The scratch size for the fixed-base MSM."]
     scratch_size: usize,
+    #[doc = " The precomputed table for the fixed-base MSM over the first `FIELD_ELEMENTS_PER_CELL`\n points of `g1_values_monomial`.\n\n This is used by `verify_cell_kzg_proof_batch` to commit to the aggregated interpolation\n polynomial. Unlike `tables`, it is always populated, regardless of the `precompute`\n parameter."]
+    interp_table: *mut blst_p1_affine,
+    #[doc = " The window size for the interpolation table MSM."]
+    interp_wbits: usize,
+    #[doc = " The scratch size for the interpolation table MSM."]
+    interp_scratch_size: usize,
 }
 #[doc = " A single cell for a blob."]
 #[repr(C)]
