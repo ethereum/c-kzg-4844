@@ -234,6 +234,26 @@ defmodule KZG do
   end
 
   @doc """
+  Recovers missing cells given cell indices and available cells.
+
+  ## Parameters
+
+    - `cell_indices` is a list of non-negative integers (cell indices).
+    - `cells` is a list of binary cells.
+    - `settings` is the trusted settings reference.
+
+  ## Returns
+
+    - `{:ok, cells_list}` on success, where `cells_list` is a list of binary cells.
+    - `{:error, reason}` on error.
+  """
+  @spec recover_cells([non_neg_integer()], [binary], settings) ::
+          {:ok, [binary()]} | {:error, atom()}
+  def recover_cells(_cell_indices, _cells, _settings) do
+    :erlang.nif_error(:not_loaded)
+  end
+
+  @doc """
   Recovers missing cells and their proofs given cell indices and available cells.
 
   ## Parameters

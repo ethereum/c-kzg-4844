@@ -29,6 +29,7 @@ const {
   computeCells,
   computeCellsAndKzgProofs,
   verifyCellKzgProofBatch,
+  recoverCells,
   recoverCellsAndKzgProofs,
 } = kzg;
 
@@ -421,6 +422,34 @@ describe("C-KZG", () => {
         expect(proofs.length).toBe(expectedProofs.length);
         for (let i = 0; i < proofs.length; i++) {
           assertBytesEqual(proofs[i], expectedProofs[i]);
+        }
+      });
+    });
+
+    it("reference tests for recoverCells should pass", () => {
+      const tests = globSync(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
+      expect(tests.length).toBeGreaterThan(0);
+
+      tests.forEach((testFile: string) => {
+        const test: RecoverCellsAndKzgProofsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+        let recoveredCells;
+        const cellIndices = test.input.cell_indices;
+        const cells = test.input.cells.map(bytesFromHex);
+
+        try {
+          recoveredCells = recoverCells(cellIndices, cells);
+        } catch {
+          expect(test.output).toBeNull();
+          return;
+        }
+
+        expect(test.output).not.toBeNull();
+        expect(test.output.length).toBe(2);
+        const expectedCells = test.output[0].map(bytesFromHex);
+        expect(recoveredCells.length).toBe(expectedCells.length);
+        for (let i = 0; i < recoveredCells.length; i++) {
+          assertBytesEqual(recoveredCells[i], expectedCells[i]);
         }
       });
     });

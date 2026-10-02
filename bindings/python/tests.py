@@ -207,6 +207,27 @@ def test_compute_cells_and_kzg_proofs(ts):
         assert proofs == expected_proofs, f"{test_file}\n{cells=}\n{expected_proofs=}"
 
 
+def test_recover_cells(ts):
+    test_files = glob.glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
+    assert len(test_files) > 0
+
+    for test_file in test_files:
+        with open(test_file, "r") as f:
+            test = yaml.safe_load(f)
+
+        cell_indices = test["input"]["cell_indices"]
+        cells = list(map(bytes_from_hex, test["input"]["cells"]))
+
+        try:
+            recovered_cells = ckzg.recover_cells(cell_indices, cells, ts)
+        except:
+            assert test["output"] is None
+            continue
+
+        expected_cells = list(map(bytes_from_hex, test["output"][0]))
+        assert recovered_cells == expected_cells, f"{test_file}\n{cells=}\n{expected_cells=}"
+
+
 def test_recover_cells_and_kzg_proofs(ts):
     test_files = glob.glob(RECOVER_CELLS_AND_KZG_PROOFS_TESTS)
     assert len(test_files) > 0
@@ -269,6 +290,7 @@ if __name__ == "__main__":
 
     test_compute_cells(ts)
     test_compute_cells_and_kzg_proofs(ts)
+    test_recover_cells(ts)
     test_recover_cells_and_kzg_proofs(ts)
     test_verify_cell_kzg_proof_batch(ts)
 

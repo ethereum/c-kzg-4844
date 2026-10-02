@@ -568,6 +568,123 @@ out:
     return msg;
 }
 
+static ERL_NIF_TERM recover_cells_nif(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]) {
+    ERL_NIF_TERM *cells_list = NULL;
+    Cell *cells = NULL, *recovered_cells = NULL;
+    uint64_t *cell_indices = NULL;
+    ERL_NIF_TERM msg;
+
+    if (argc != 3) {
+        msg = make_error(env, ckzg_atoms.incorrect_arg_count);
+        goto out;
+    }
+
+    unsigned int cell_indices_len;
+    if (!enif_get_list_length(env, argv[0], &cell_indices_len)) {
+        msg = make_error(env, ckzg_atoms.cell_indices_not_list);
+        goto out;
+    }
+
+    unsigned int cells_len;
+    if (!enif_get_list_length(env, argv[1], &cells_len)) {
+        msg = make_error(env, ckzg_atoms.cells_not_list);
+        goto out;
+    }
+
+    if (cells_len != cell_indices_len) {
+        msg = make_error(env, ckzg_atoms.expected_same_array_size);
+        goto out;
+    }
+
+    KZGSettings *settings;
+    if (!enif_get_resource(env, argv[2], KZGSETTINGS_RES_TYPE, (void **)&settings)) {
+        msg = make_error(env, ckzg_atoms.failed_get_settings_resource);
+        goto out;
+    }
+
+    cell_indices = enif_alloc(cell_indices_len * sizeof(uint64_t));
+    if (cell_indices == NULL) {
+        msg = make_error(env, ckzg_atoms.out_of_memory);
+        goto out;
+    }
+
+    ERL_NIF_TERM head;
+    ERL_NIF_TERM tail = argv[0];
+
+    for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifUInt64 current_u;
+        if (!enif_get_uint64(env, head, &current_u)) {
+            msg = make_error(env, ckzg_atoms.cell_indices_value_not_uint64);
+            goto out;
+        }
+
+        cell_indices[i] = (uint64_t)current_u;
+    }
+
+    cells = enif_alloc(cells_len * BYTES_PER_CELL);
+    if (cells == NULL) {
+        msg = make_error(env, ckzg_atoms.out_of_memory);
+        goto out;
+    }
+
+    tail = argv[1];
+    for (int i = 0; enif_get_list_cell(env, tail, &head, &tail); i++) {
+        ErlNifBinary current_b;
+        if (!enif_inspect_binary(env, head, &current_b)) {
+            msg = make_error(env, ckzg_atoms.cells_value_not_binary);
+            goto out;
+        }
+
+        if (current_b.size != BYTES_PER_CELL) {
+            msg = make_error(env, ckzg_atoms.invalid_cell_length);
+            goto out;
+        }
+
+        memcpy(&cells[i], current_b.data, BYTES_PER_CELL);
+    }
+
+    recovered_cells = enif_alloc(CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+    if (recovered_cells == NULL) {
+        msg = make_error(env, ckzg_atoms.out_of_memory);
+        goto out;
+    }
+
+    C_KZG_RET ret = recover_cells_and_kzg_proofs(
+        recovered_cells, NULL, cell_indices, cells, cells_len, settings
+    );
+    if (ret != C_KZG_OK) {
+        msg = make_kzg_error(env, ret);
+        goto out;
+    }
+
+    cells_list = enif_alloc(sizeof(ERL_NIF_TERM) * CELLS_PER_EXT_BLOB);
+    if (cells_list == NULL) {
+        msg = make_error(env, ckzg_atoms.out_of_memory);
+        goto out;
+    }
+
+    for (int i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        ErlNifBinary cell_bytes;
+        if (!enif_alloc_binary(BYTES_PER_CELL, &cell_bytes)) {
+            msg = make_error(env, ckzg_atoms.out_of_memory);
+            goto out;
+        }
+
+        memcpy(cell_bytes.data, &recovered_cells[i], BYTES_PER_CELL);
+        cells_list[i] = enif_make_binary(env, &cell_bytes);
+    }
+
+    ERL_NIF_TERM cells_term = enif_make_list_from_array(env, cells_list, CELLS_PER_EXT_BLOB);
+    msg = make_success(env, cells_term);
+
+out:
+    enif_free(cell_indices);
+    enif_free(cells);
+    enif_free(recovered_cells);
+    enif_free(cells_list);
+    return msg;
+}
+
 static ERL_NIF_TERM recover_cells_and_kzg_proofs_nif(
     ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[]
 ) {
@@ -880,6 +997,7 @@ static ErlNifFunc nif_funcs[] = {
      2,
      compute_cells_and_kzg_proofs_nif,
      ERL_NIF_DIRTY_JOB_CPU_BOUND},
+    {"recover_cells", 3, recover_cells_nif, ERL_NIF_DIRTY_JOB_CPU_BOUND},
     {"recover_cells_and_kzg_proofs",
      3,
      recover_cells_and_kzg_proofs_nif,

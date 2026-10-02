@@ -586,6 +586,48 @@ Java_ethereum_ckzg4844_CKZG4844JNI_computeCellsAndKzgProofs(JNIEnv *env,
   return result;
 }
 
+JNIEXPORT jbyteArray JNICALL Java_ethereum_ckzg4844_CKZG4844JNI_recoverCells(
+    JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells) {
+  if (settings == NULL) {
+    throw_exception(env, TRUSTED_SETUP_NOT_LOADED);
+    return NULL;
+  }
+
+  size_t count = (size_t)(*env)->GetArrayLength(env, cell_indices);
+  size_t cells_size = (size_t)(*env)->GetArrayLength(env, cells);
+  if (cells_size != count * BYTES_PER_CELL) {
+    throw_invalid_size_exception(env, "Invalid cells size.", cells_size,
+                                 count * BYTES_PER_CELL);
+    return NULL;
+  }
+
+  jbyteArray recovered_cells =
+      (*env)->NewByteArray(env, CELLS_PER_EXT_BLOB * BYTES_PER_CELL);
+  Cell *recovered_cells_native =
+      (Cell *)(*env)->GetByteArrayElements(env, recovered_cells, NULL);
+  uint64_t *cell_indices_native =
+      (uint64_t *)(*env)->GetLongArrayElements(env, cell_indices, NULL);
+  Cell *cells_native = (Cell *)(*env)->GetByteArrayElements(env, cells, NULL);
+
+  C_KZG_RET ret = recover_cells_and_kzg_proofs(recovered_cells_native, NULL,
+                                               cell_indices_native,
+                                               cells_native, count, settings);
+
+  (*env)->ReleaseByteArrayElements(env, recovered_cells,
+                                   (jbyte *)recovered_cells_native, 0);
+  (*env)->ReleaseLongArrayElements(env, cell_indices,
+                                   (jlong *)cell_indices_native, JNI_ABORT);
+  (*env)->ReleaseByteArrayElements(env, cells, (jbyte *)cells_native,
+                                   JNI_ABORT);
+
+  if (ret != C_KZG_OK) {
+    throw_c_kzg_exception(env, ret, "There was an error in recoverCells.");
+    return NULL;
+  }
+
+  return recovered_cells;
+}
+
 JNIEXPORT jobject JNICALL
 Java_ethereum_ckzg4844_CKZG4844JNI_recoverCellsAndKzgProofs(
     JNIEnv *env, jclass thisCls, jlongArray cell_indices, jbyteArray cells) {
