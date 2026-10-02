@@ -1934,6 +1934,66 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
+static void test_recover_cells__succeeds_every_erasure_count(void) {
+    C_KZG_RET ret;
+    Blob blob;
+    Cell cells[CELLS_PER_EXT_BLOB];
+    Cell recovered_cells[CELLS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_EXT_BLOB];
+    Cell partial_cells[CELLS_PER_EXT_BLOB];
+    bool is_missing[CELLS_PER_EXT_BLOB];
+    int diff;
+
+    get_rand_blob(&blob);
+    ret = compute_cells_and_kzg_proofs(cells, NULL, &blob, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    /*
+     * Recovery cost does not depend on how much is missing, so a single erasure count is not
+     * evidence about the others. Sweep all of them, from one missing cell to the maximum, as a
+     * prefix, a suffix and a strided pattern.
+     *
+     * The strided and maximum-erasure cases matter in particular: the vanishing polynomial reaches
+     * its full degree only when exactly CELLS_PER_BLOB cells are missing.
+     */
+    for (size_t k = 1; k <= CELLS_PER_BLOB; k++) {
+        for (int mode = 0; mode < 3; mode++) {
+            for (size_t c = 0; c < CELLS_PER_EXT_BLOB; c++) {
+                is_missing[c] = false;
+            }
+            for (size_t j = 0; j < k; j++) {
+                size_t idx;
+                if (mode == 0) {
+                    idx = j;
+                } else if (mode == 1) {
+                    idx = CELLS_PER_EXT_BLOB - 1 - j;
+                } else {
+                    idx = (j * CELLS_PER_EXT_BLOB) / k;
+                }
+                is_missing[idx] = true;
+            }
+
+            size_t num_have = 0;
+            for (size_t c = 0; c < CELLS_PER_EXT_BLOB; c++) {
+                if (is_missing[c]) continue;
+                cell_indices[num_have] = c;
+                memcpy(&partial_cells[num_have], &cells[c], sizeof(Cell));
+                num_have++;
+            }
+
+            ret = recover_cells_and_kzg_proofs(
+                recovered_cells, NULL, cell_indices, partial_cells, num_have, &s
+            );
+            ASSERT_EQUALS(ret, C_KZG_OK);
+
+            for (size_t c = 0; c < CELLS_PER_EXT_BLOB; c++) {
+                diff = memcmp(&cells[c], &recovered_cells[c], sizeof(Cell));
+                ASSERT_EQUALS(diff, 0);
+            }
+        }
+    }
+}
+
 static void test_compute_vanishing_polynomial_from_roots(void) {
     /*
      * Test case: (x - 2)(x - 3)
@@ -1968,6 +2028,43 @@ static void test_compute_vanishing_polynomial_from_roots(void) {
     ASSERT("coefficient 2 are equal", fr_equal(&poly[2], &expected[2]));
 }
 
+/**
+ * Expands the short vanishing polynomial Zhat into the full-domain Z, by spreading its
+ * coefficients at stride FIELD_ELEMENTS_PER_CELL:
+ *
+ *   Z(x) = Zhat(x^FIELD_ELEMENTS_PER_CELL)
+ *
+ * recover_cells never builds Z in this form -- it works with Zhat and exploits the
+ * periodicity that this identity implies. The expansion lives here so the test below can
+ * check the identity directly, without the library carrying code nothing calls.
+ */
+static C_KZG_RET expand_vanishing_polynomial_for_missing_cells(
+    fr_t *vanishing_poly, const uint64_t *missing_cell_indices, size_t len_missing_cells
+) {
+    C_KZG_RET ret;
+    fr_t *short_vanishing_poly = NULL;
+    size_t short_vanishing_poly_len = 0;
+
+    ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
+    if (ret != C_KZG_OK) goto out;
+
+    ret = short_vanishing_polynomial_for_missing_cells(
+        short_vanishing_poly, &short_vanishing_poly_len, missing_cell_indices, len_missing_cells, &s
+    );
+    if (ret != C_KZG_OK) goto out;
+
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
+        vanishing_poly[i] = FR_ZERO;
+    }
+    for (size_t i = 0; i < short_vanishing_poly_len; i++) {
+        vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
+    }
+
+out:
+    c_kzg_free(short_vanishing_poly);
+    return ret;
+}
+
 static void test_vanishing_polynomial_for_missing_cells(void) {
     C_KZG_RET ret;
 
@@ -1978,8 +2075,8 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
     uint64_t missing_cell_indices[] = {0, 1};
     size_t len_missing_cells = 2;
 
-    ret = vanishing_polynomial_for_missing_cells(
-        vanishing_poly, missing_cell_indices, len_missing_cells, &s
+    ret = expand_vanishing_polynomial_for_missing_cells(
+        vanishing_poly, missing_cell_indices, len_missing_cells
     );
 
     /* Check return status */
@@ -2367,6 +2464,7 @@ int main(void) {
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
     RUN(test_shift_factors__succeeds);
+    RUN(test_recover_cells__succeeds_every_erasure_count);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);

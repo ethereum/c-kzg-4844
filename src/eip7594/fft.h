@@ -29,6 +29,16 @@
 extern "C" {
 #endif
 
+/**
+ * The coset shift factor used by the cell recovery code, and its inverse.
+ *
+ * Exposed so that callers computing on the same coset -- for instance evaluating a factor
+ * of the vanishing polynomial on a smaller subgroup of it -- derive their shift from this
+ * one constant rather than restating it.
+ */
+extern const fr_t RECOVERY_SHIFT_FACTOR;
+extern const fr_t INV_RECOVERY_SHIFT_FACTOR;
+
 C_KZG_RET fr_fft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 C_KZG_RET fr_ifft(fr_t *out, const fr_t *in, size_t n, const KZGSettings *s);
 

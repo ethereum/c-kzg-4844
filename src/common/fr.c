@@ -17,6 +17,7 @@
 #include "common/fr.h"
 #include "common/bytes.h"
 
+#include <assert.h>   /* For assert */
 #include <inttypes.h> /* For uint*_t */
 #include <stdbool.h>  /* For bool */
 
@@ -48,6 +49,20 @@ bool fr_is_one(const fr_t *p) {
     uint64_t a[4];
     blst_uint64_from_fr(a, p);
     return a[0] == 1 && a[1] == 0 && a[2] == 0 && a[3] == 0;
+}
+
+/**
+ * Test whether the operand is zero.
+ *
+ * @param[in]   p   The field element to be checked
+ *
+ * @retval  true    The element is zero.
+ * @retval  false   The element is not zero.
+ */
+bool fr_is_zero(const fr_t *p) {
+    uint64_t a[4];
+    blst_uint64_from_fr(a, p);
+    return a[0] == 0 && a[1] == 0 && a[2] == 0 && a[3] == 0;
 }
 
 /**
@@ -119,6 +134,46 @@ void fr_div(fr_t *out, const fr_t *a, const fr_t *b) {
     fr_t tmp;
     fr_inv(&tmp, b);
     fr_mul(out, a, &tmp);
+}
+
+/**
+ * Montgomery batch inversion in finite field.
+ *
+ * @param[out]  out The inverses of `a`, length `len`
+ * @param[in]   a   A vector of field elements, length `len`
+ * @param[in]   len The number of field elements
+ *
+ * @remark This function only supports len > 0.
+ * @remark This function does NOT support in-place computation.
+ * @remark Return C_KZG_BADARGS if a zero is found in the input. In this case,
+ *         the `out` output array has already been mutated.
+ * @remark Costs one inversion in total plus three multiplications per element,
+ *         rather than one inversion per element.
+ */
+C_KZG_RET fr_batch_inv(fr_t *out, const fr_t *a, size_t len) {
+    assert(len > 0);
+    assert(a != out);
+
+    fr_t accumulator = FR_ONE;
+
+    for (size_t i = 0; i < len; i++) {
+        out[i] = accumulator;
+        fr_mul(&accumulator, &accumulator, &a[i]);
+    }
+
+    /* Bail on any zero input */
+    if (fr_is_zero(&accumulator)) {
+        return C_KZG_BADARGS;
+    }
+
+    fr_inv(&accumulator, &accumulator);
+
+    for (size_t i = len; i > 0; i--) {
+        fr_mul(&out[i - 1], &out[i - 1], &accumulator);
+        fr_mul(&accumulator, &accumulator, &a[i - 1]);
+    }
+
+    return C_KZG_OK;
 }
 
 /**
