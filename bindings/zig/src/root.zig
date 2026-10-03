@@ -1,9 +1,6 @@
 const std = @import("std");
 
-pub const c = @cImport({
-    @cInclude("stdio.h");
-    @cInclude("ckzg.h");
-});
+pub const c = @import("c");
 
 pub const BYTES_PER_COMMITMENT: usize = c.BYTES_PER_COMMITMENT;
 pub const BYTES_PER_PROOF: usize = c.BYTES_PER_PROOF;

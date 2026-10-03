@@ -4,7 +4,7 @@ This directory contains Zig bindings for the C-KZG-4844 library.
 
 ## Prerequisites
 
-Use Zig `0.16.0` or greater.
+Use Zig `0.17.0` or greater.
 
 ## Build
 
