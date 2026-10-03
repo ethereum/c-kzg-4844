@@ -6,11 +6,26 @@ pub fn build(b: *std.Build) void {
 
     const blst = b.dependency("blst", .{});
 
+    const translate_c = b.addTranslateC(.{
+        .root_source_file = b.addWriteFiles().add("c.h",
+            \\#include <stdio.h>
+            \\#include "ckzg.h"
+            \\
+        ),
+        .target = target,
+        .optimize = optimize,
+    });
+    translate_c.addIncludePath(b.path("src"));
+    translate_c.addIncludePath(blst.path("bindings"));
+
     const ckzg_module = b.addModule("ckzg", .{
         .root_source_file = b.path("bindings/zig/src/root.zig"),
         .target = target,
         .optimize = optimize,
         .link_libc = true,
+        .imports = &.{
+            .{ .name = "c", .module = translate_c.createModule() },
+        },
     });
     ckzg_module.addIncludePath(b.path("src"));
 
@@ -55,7 +70,7 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(lib);
 
-    const trusted_setup_mod = buildTrustedSetupModule(b, b.path("src/trusted_setup.txt"));
+    const trusted_setup_mod = buildTrustedSetupModule(b, "src/trusted_setup.txt");
 
     const tests = b.addTest(.{
         .root_module = b.createModule(.{
@@ -75,8 +90,9 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_tests.step);
 }
 
-fn buildTrustedSetupModule(b: *std.Build, txt: std.Build.LazyPath) *std.Build.Module {
-    const path = txt.getPath(b);
+fn buildTrustedSetupModule(b: *std.Build, sub_path: []const u8) *std.Build.Module {
+    b.dependOnFileContents(b.path(sub_path));
+    const path = b.root.joinString(b.allocator, sub_path) catch @panic("OOM");
     const text = std.Io.Dir.cwd().readFileAlloc(b.graph.io, path, b.allocator, .unlimited) catch |e|
         std.debug.panic("cannot read trusted setup '{s}': {s}", .{ path, @errorName(e) });
 
