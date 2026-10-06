@@ -92,10 +92,14 @@ static PyObject *compute_kzg_proof_wrap(PyObject *self, PyObject *args) {
   if (py_y == NULL)
     return PyErr_NoMemory();
   PyObject *py_proof = PyBytes_FromStringAndSize(NULL, BYTES_PER_PROOF);
-  if (py_proof == NULL)
+  if (py_proof == NULL) {
+    Py_DECREF(py_y);
     return PyErr_NoMemory();
+  }
 
   PyObject *out = PyTuple_Pack(2, py_proof, py_y);
+  Py_DECREF(py_proof);
+  Py_DECREF(py_y);
   if (out == NULL)
     return PyErr_NoMemory();
 
@@ -279,6 +283,7 @@ static PyObject *verify_blob_kzg_proof_batch_wrap(PyObject *self,
 static PyObject *compute_cells_wrap(PyObject *self, PyObject *args) {
   PyObject *input_blob, *s;
   PyObject *ret = NULL;
+  PyObject *output_cells = NULL;
   Cell *cells = NULL;
 
   /* Ensure inputs are the right types */
@@ -313,7 +318,7 @@ static PyObject *compute_cells_wrap(PyObject *self, PyObject *args) {
   }
 
   /* Convert our cells result to a list of bytes objects */
-  PyObject *output_cells = PyList_New(CELLS_PER_EXT_BLOB);
+  output_cells = PyList_New(CELLS_PER_EXT_BLOB);
   if (output_cells == NULL) {
     ret = PyErr_Format(PyExc_MemoryError,
                        "Failed to allocate memory for output cells");
@@ -324,7 +329,6 @@ static PyObject *compute_cells_wrap(PyObject *self, PyObject *args) {
     PyObject *cell_bytes =
         PyBytes_FromStringAndSize((const char *)&cells[i], BYTES_PER_CELL);
     if (cell_bytes == NULL) {
-      Py_DECREF(cell_bytes);
       ret = PyErr_Format(PyExc_MemoryError,
                          "Failed to allocate memory for cell bytes");
       goto out;
@@ -337,6 +341,7 @@ static PyObject *compute_cells_wrap(PyObject *self, PyObject *args) {
   ret = output_cells;
 
 out:
+  Py_XDECREF(output_cells);
   free(cells);
   return ret;
 }
@@ -347,6 +352,8 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
   PyObject *ret = NULL;
   Cell *cells = NULL;
   KZGProof *proofs = NULL;
+  PyObject *output_cells = NULL;
+  PyObject *output_proofs = NULL;
 
   /* Ensure inputs are the right types */
   if (!PyArg_UnpackTuple(args, "compute_cells_and_kzg_proofs", 2, 2,
@@ -390,7 +397,7 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
   }
 
   /* Convert our cells result to a list of bytes objects */
-  PyObject *output_cells = PyList_New(CELLS_PER_EXT_BLOB);
+  output_cells = PyList_New(CELLS_PER_EXT_BLOB);
   if (output_cells == NULL) {
     ret = PyErr_Format(PyExc_MemoryError,
                        "Failed to allocate memory for output cells");
@@ -401,7 +408,6 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
     PyObject *cell_bytes =
         PyBytes_FromStringAndSize((const char *)&cells[i], BYTES_PER_CELL);
     if (cell_bytes == NULL) {
-      Py_DECREF(cell_bytes);
       ret = PyErr_Format(PyExc_MemoryError,
                          "Failed to allocate memory for cell bytes");
       goto out;
@@ -411,7 +417,7 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
   }
 
   /* Convert our proofs result to a list of bytes objects */
-  PyObject *output_proofs = PyList_New(CELLS_PER_EXT_BLOB);
+  output_proofs = PyList_New(CELLS_PER_EXT_BLOB);
   if (output_proofs == NULL) {
     ret = PyErr_Format(PyExc_MemoryError,
                        "Failed to allocate memory for output proofs");
@@ -422,7 +428,6 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
     PyObject *proof_bytes =
         PyBytes_FromStringAndSize((const char *)&proofs[i], BYTES_PER_PROOF);
     if (proof_bytes == NULL) {
-      Py_DECREF(proof_bytes);
       ret = PyErr_Format(PyExc_MemoryError,
                          "Failed to allocate memory for proof bytes");
       goto out;
@@ -442,6 +447,8 @@ static PyObject *compute_cells_and_kzg_proofs_wrap(PyObject *self,
   ret = cells_and_proofs;
 
 out:
+  Py_XDECREF(output_cells);
+  Py_XDECREF(output_proofs);
   free(cells);
   free(proofs);
   return ret;
@@ -455,6 +462,8 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
   Cell *cells = NULL;
   Cell *recovered_cells = NULL;
   KZGProof *recovered_proofs = NULL;
+  PyObject *recovered_cells_list = NULL;
+  PyObject *recovered_proofs_list = NULL;
 
   /* Ensure inputs are the right types */
   if (!PyArg_UnpackTuple(args, "recover_cells_and_kzg_proofs", 3, 3,
@@ -549,13 +558,13 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
   }
 
   /* Convert our result to a list of bytes objects */
-  PyObject *recovered_cells_list = PyList_New(CELLS_PER_EXT_BLOB);
+  recovered_cells_list = PyList_New(CELLS_PER_EXT_BLOB);
   if (recovered_cells_list == NULL) {
     ret = PyErr_Format(PyExc_MemoryError,
                        "Failed to allocate memory for return list of cells");
     goto out;
   }
-  PyObject *recovered_proofs_list = PyList_New(CELLS_PER_EXT_BLOB);
+  recovered_proofs_list = PyList_New(CELLS_PER_EXT_BLOB);
   if (recovered_proofs_list == NULL) {
     ret = PyErr_Format(PyExc_MemoryError,
                        "Failed to allocate memory for return list of proofs");
@@ -566,7 +575,6 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
     PyObject *cell_bytes = PyBytes_FromStringAndSize(
         (const char *)&recovered_cells[i], BYTES_PER_CELL);
     if (cell_bytes == NULL) {
-      Py_DECREF(cell_bytes);
       ret = PyErr_Format(PyExc_MemoryError,
                          "Failed to allocate memory for cell bytes");
       goto out;
@@ -577,7 +585,6 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
     PyObject *proof_bytes = PyBytes_FromStringAndSize(
         (const char *)&recovered_proofs[i], BYTES_PER_PROOF);
     if (proof_bytes == NULL) {
-      Py_DECREF(proof_bytes);
       ret = PyErr_Format(PyExc_MemoryError,
                          "Failed to allocate memory for proof bytes");
       goto out;
@@ -599,6 +606,8 @@ static PyObject *recover_cells_and_kzg_proofs_wrap(PyObject *self,
   ret = recovered_cells_and_proofs;
 
 out:
+  Py_XDECREF(recovered_cells_list);
+  Py_XDECREF(recovered_proofs_list);
   free(cell_indices);
   free(cells);
   free(recovered_cells);
