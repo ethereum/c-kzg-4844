@@ -155,4 +155,4 @@ jobs:
       run: |
         dotnet nuget push bindings/csharp/nupkgs/*.nupkg \
           -k "${{ steps.login.outputs.NUGET_API_KEY }}" \
-          -s https://www.nuget.org/api/v2/package
+          -s https://api.nuget.org/v3/index.json
