@@ -54,26 +54,35 @@ func `$`*(x: KZG_RET): string =
 func `==`*(a, b: KZG_RET): bool =
   a.cint == b.cint
 
+{.pragma: kzg_type, header: "ckzg.h", completeStruct.}
+
 type
-  # Stores the setup and parameters needed for performing FFTs.
-  KzgSettings* {.importc: "KZGSettings",
-    header: "ckzg.h", byref.} = object
+  # Stores the setup and parameters needed for computing KZG proofs.
+  # Mirrors KZGSettings in src/setup/settings.h - in particular, its size matches
+  KzgSettings* {.importc: "KZGSettings", kzg_type.} = object
+    roots_of_unity: pointer
+    brp_roots_of_unity: pointer
+    reverse_roots_of_unity: pointer
+    g1_values_monomial: pointer
+    g1_values_lagrange_brp: pointer
+    g2_values_monomial: pointer
+    x_ext_fft_columns: pointer
+    tables: pointer
+    wbits: csize_t
+    scratch_size: csize_t
 
   # A basic blob data.
-  KzgBlob* {.importc: "Blob",
-    header: "ckzg.h", completeStruct.} = object
+  KzgBlob* {.importc: "Blob", kzg_type.} = object
     bytes*: array[BYTES_PER_BLOB, uint8]
 
   # An array of 48 bytes. Represents an untrusted
   # (potentially invalid) commitment/proof.
-  KzgBytes48* {.importc: "Bytes48",
-    header: "ckzg.h", completeStruct.} = object
+  KzgBytes48* {.importc: "Bytes48", kzg_type.} = object
     bytes*: array[48, uint8]
 
   # An array of 32 bytes. Represents an untrusted
   # (potentially invalid) field element.
-  KzgBytes32* {.importc: "Bytes32",
-    header: "ckzg.h", completeStruct.} = object
+  KzgBytes32* {.importc: "Bytes32", kzg_type.} = object
     bytes*: array[32, uint8]
 
   # A trusted (valid) KZG commitment.
@@ -83,11 +92,10 @@ type
   KzgProof* = KzgBytes48
 
   # A single cell for a blob.
-  KzgCell* {.importc: "Cell",
-    header: "ckzg.h", completeStruct.} = object
+  KzgCell* {.importc: "Cell", kzg_type.} = object
     bytes*: array[BYTES_PER_CELL, uint8]
 
-{.pragma: kzg_abi, importc, cdecl, header: "ckzg.h".}
+{.pragma: kzg_abi, importc, cdecl, header: "ckzg.h", noSideEffect.}
 
 proc load_trusted_setup*(res: ptr KzgSettings,
                          g1MonomialBytes: ptr byte,
