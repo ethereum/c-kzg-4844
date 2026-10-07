@@ -34,7 +34,7 @@
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
  */
-static const fr_t RECOVERY_SHIFT_FACTOR = {
+const fr_t RECOVERY_SHIFT_FACTOR = {
     {0x0000000efffffff1L, 0x17e363d300189c0fL, 0xff9c57876f8457b0L, 0x351332208fc5a8c4L}
 };
 
@@ -47,7 +47,7 @@ static const fr_t RECOVERY_SHIFT_FACTOR = {
  *   for (size_t i = 0; i < 4; i++)
  *       printf("%#018llxL,\n", a.l[i]);
  */
-static const fr_t INV_RECOVERY_SHIFT_FACTOR = {
+const fr_t INV_RECOVERY_SHIFT_FACTOR = {
     {0xdb6db6dadb6db6dcL, 0xe6b5824adb6cc6daL, 0xf8b356e005810db9L, 0x66d0f1e660ec4796L}
 };
 
