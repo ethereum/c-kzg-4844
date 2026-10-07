@@ -601,6 +601,53 @@ static void get_coset_shift_pow_for_cell(
 }
 
 /**
+ * Commit to a polynomial in monomial form with exactly FIELD_ELEMENTS_PER_CELL coefficients.
+ *
+ * This is a fixed-base MSM over the first FIELD_ELEMENTS_PER_CELL points of `g1_values_monomial`
+ * using the table that was precomputed when the trusted setup was loaded. The result is equal as a
+ * group element to `g1_lincomb_fast` over the same points; the table only makes it faster.
+ *
+ * @param[out]  commitment_out  Commitment to the polynomial
+ * @param[in]   poly            The polynomial coefficients, length `FIELD_ELEMENTS_PER_CELL`
+ * @param[in]   s               The trusted setup
+ */
+static C_KZG_RET commit_to_interpolation_poly(
+    g1_t *commitment_out, const fr_t *poly, const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    blst_scalar *scalars = NULL;
+    limb_t *scratch = NULL;
+
+    /* Allocations for fixed-base MSM */
+    ret = c_kzg_calloc((void **)&scalars, FIELD_ELEMENTS_PER_CELL, sizeof(blst_scalar));
+    if (ret != C_KZG_OK) goto out;
+    ret = c_kzg_malloc((void **)&scratch, s->interp_scratch_size);
+    if (ret != C_KZG_OK) goto out;
+
+    /* Transform the field elements to 255-bit scalars */
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        blst_scalar_from_fr(&scalars[i], &poly[i]);
+    }
+    const byte *scalars_arg[2] = {(byte *)scalars, NULL};
+
+    /* A fixed-base MSM with precomputation */
+    blst_p1s_mult_wbits(
+        commitment_out,
+        s->interp_table,
+        s->interp_wbits,
+        FIELD_ELEMENTS_PER_CELL,
+        scalars_arg,
+        BITS_PER_FIELD_ELEMENT,
+        scratch
+    );
+
+out:
+    c_kzg_free(scalars);
+    c_kzg_free(scratch);
+    return ret;
+}
+
+/**
  * Aggregate columns, compute the sum of interpolation polynomials, and commit to the result.
  *
  * This function computes `RLI = [sum_k r^k interpolation_poly_k(s)]` from the spec.
@@ -755,12 +802,7 @@ static C_KZG_RET compute_commitment_to_aggregated_interpolation_poly(
     // Commit to the aggregated interpolation polynomial
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ret = g1_lincomb_fast(
-        commitment_out,
-        s->g1_values_monomial,
-        aggregated_interpolation_poly,
-        FIELD_ELEMENTS_PER_CELL
-    );
+    ret = commit_to_interpolation_poly(commitment_out, aggregated_interpolation_poly, s);
     if (ret != C_KZG_OK) goto out;
 
 out:

@@ -2035,6 +2035,144 @@ static void test_vanishing_polynomial_for_missing_cells(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// Tests for commit_to_interpolation_poly
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/*
+ * Check that committing with the precomputed table gives the same point as Pippenger over the
+ * monomial G1 points that the table was built from.
+ */
+static void check_interp_table_matches_pippenger(const fr_t *poly) {
+    C_KZG_RET ret;
+    g1_t out, check;
+
+    ret = g1_lincomb_fast(&check, s.g1_values_monomial, poly, FIELD_ELEMENTS_PER_CELL);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ret = commit_to_interpolation_poly(&out, poly, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    ASSERT("table matches pippenger", blst_p1_is_equal(&out, &check));
+}
+
+static void test_commit_to_interpolation_poly__table_is_initialized(void) {
+    ASSERT("table is allocated", s.interp_table != NULL);
+    ASSERT_EQUALS(s.interp_wbits, VERIFY_WBITS);
+    ASSERT_EQUALS(
+        s.interp_scratch_size, blst_p1s_mult_wbits_scratch_sizeof(FIELD_ELEMENTS_PER_CELL)
+    );
+}
+
+static void test_init_interp_table__entries_are_multiples(void) {
+    size_t nwin = (size_t)1 << (s.interp_wbits - 1);
+
+    /* Row i of the table holds (j + 1) * P_i for j in [0, nwin), where P_i is the i-th point */
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        g1_t acc = s.g1_values_monomial[i];
+        for (size_t j = 0; j < nwin; j++) {
+            blst_p1_affine expected;
+            blst_p1_to_affine(&expected, &acc);
+            ASSERT(
+                "table entry is (j+1)*P_i",
+                blst_p1_affine_is_equal(&expected, &s.interp_table[i * nwin + j])
+            );
+            g1_add(&acc, &acc, &s.g1_values_monomial[i]);
+        }
+    }
+}
+
+static void test_commit_to_interpolation_poly__matches_pippenger_random(void) {
+    fr_t poly[FIELD_ELEMENTS_PER_CELL];
+
+    for (size_t trial = 0; trial < 16; trial++) {
+        for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+            get_rand_fr(&poly[i]);
+        }
+        check_interp_table_matches_pippenger(poly);
+    }
+}
+
+static void test_commit_to_interpolation_poly__all_zero_is_infinity(void) {
+    C_KZG_RET ret;
+    g1_t out;
+    fr_t poly[FIELD_ELEMENTS_PER_CELL];
+
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        poly[i] = FR_ZERO;
+    }
+
+    ret = commit_to_interpolation_poly(&out, poly, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("commitment to the zero poly is infinity", blst_p1_is_inf(&out));
+    check_interp_table_matches_pippenger(poly);
+}
+
+static void test_commit_to_interpolation_poly__single_coefficient(void) {
+    C_KZG_RET ret;
+    g1_t out, check;
+    fr_t poly[FIELD_ELEMENTS_PER_CELL];
+    size_t indices[2] = {0, FIELD_ELEMENTS_PER_CELL - 1};
+
+    for (size_t k = 0; k < 2; k++) {
+        for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+            poly[i] = FR_ZERO;
+        }
+        get_rand_fr(&poly[indices[k]]);
+
+        /* The commitment is a single scalar multiplication */
+        g1_mul(&check, &s.g1_values_monomial[indices[k]], &poly[indices[k]]);
+
+        ret = commit_to_interpolation_poly(&out, poly, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        ASSERT("table matches scalar multiplication", blst_p1_is_equal(&out, &check));
+        check_interp_table_matches_pippenger(poly);
+    }
+}
+
+static void test_commit_to_interpolation_poly__all_ones(void) {
+    C_KZG_RET ret;
+    g1_t out, check;
+    fr_t poly[FIELD_ELEMENTS_PER_CELL];
+
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        poly[i] = FR_ONE;
+    }
+
+    /* The commitment is the sum of the points */
+    check = G1_IDENTITY;
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        g1_add(&check, &check, &s.g1_values_monomial[i]);
+    }
+
+    ret = commit_to_interpolation_poly(&out, poly, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("table matches sum of points", blst_p1_is_equal(&out, &check));
+    check_interp_table_matches_pippenger(poly);
+}
+
+static void test_commit_to_interpolation_poly__all_minus_one(void) {
+    C_KZG_RET ret;
+    g1_t out, check;
+    fr_t poly[FIELD_ELEMENTS_PER_CELL];
+
+    /* The largest field element, r - 1 */
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        fr_neg(&poly[i], &FR_ONE);
+    }
+
+    /* The commitment is the negated sum of the points */
+    check = G1_IDENTITY;
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_CELL; i++) {
+        g1_sub(&check, &check, &s.g1_values_monomial[i]);
+    }
+
+    ret = commit_to_interpolation_poly(&out, poly, &s);
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("table matches negated sum of points", blst_p1_is_equal(&out, &check));
+    check_interp_table_matches_pippenger(poly);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for verify_cell_kzg_proof_batch
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2070,6 +2208,7 @@ static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
         &ok, commitments, cell_indices, cells, proofs, CELLS_PER_EXT_BLOB, &s
     );
     ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT("proofs verify", ok);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2369,6 +2508,13 @@ int main(void) {
     RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
+    RUN(test_commit_to_interpolation_poly__table_is_initialized);
+    RUN(test_init_interp_table__entries_are_multiples);
+    RUN(test_commit_to_interpolation_poly__matches_pippenger_random);
+    RUN(test_commit_to_interpolation_poly__all_zero_is_infinity);
+    RUN(test_commit_to_interpolation_poly__single_coefficient);
+    RUN(test_commit_to_interpolation_poly__all_ones);
+    RUN(test_commit_to_interpolation_poly__all_minus_one);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
 
     /*
