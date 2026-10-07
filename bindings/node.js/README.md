@@ -186,6 +186,23 @@ verifyBlobKzgProofBatch(
 export function computeCellsAndKzgProofs(blob: Blob): [Cell[], KZGProof[]];
 ```
 
+### `recoverCells`
+
+```ts
+/**
+ * Given at least 50% of cells, reconstruct the missing ones.
+ *
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ *
+ * @return {Cell[]} - An array of cells
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells
+ */
+export function recoverCells(cellIndices: number[], cells: Cell[]): Cell[];
+```
+
 ### `recoverCellsAndKzgProofs`
 
 ```ts

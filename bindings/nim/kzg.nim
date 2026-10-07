@@ -277,6 +277,26 @@ proc computeCellsAndKzgProofs*(blob: KzgBlob): Result[KzgCellsAndKzgProofs, stri
     gCtx.settings)
   verify(res, ret)
 
+proc recoverCells*(cellIndices: openArray[uint64],
+                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
+  if not gCtx.initialized:
+    return err(TrustedSetupNotLoadedErr)
+  if cells.len != cellIndices.len:
+    return err($KZG_BADARGS)
+  if cells.len == 0:
+    return err($KZG_BADARGS)
+
+  var ret: KzgCells
+  var recoveredCellsPtr: ptr KzgCell = ret[0].getPtr
+  let res = recover_cells_and_kzg_proofs(
+    recoveredCellsPtr,
+    nil,
+    cellIndices[0].getPtr,
+    cells[0].getPtr,
+    cells.len.uint64,
+    gCtx.settings)
+  verify(res, ret)
+
 proc recoverCellsAndKzgProofs*(cellIndices: openArray[uint64],
                    cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   if not gCtx.initialized:

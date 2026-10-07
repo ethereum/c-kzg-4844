@@ -158,7 +158,12 @@ suite "yaml tests":
     let
       cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = KzgCell.fromHexList(n["input"]["cells"])
+      cellsRes = recoverCells(cellIndices, cells)
       res = recoverCellsAndKzgProofs(cellIndices, cells)
+
+    checkRes(cellsRes):
+      let expectedCells = KzgCell.fromHexList(n["output"][0])
+      check expectedCells == cellsRes.get
 
     checkRes(res):
       let expectedCells = KzgCell.fromHexList(n["output"][0])

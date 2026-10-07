@@ -146,6 +146,18 @@ public class CKZG4844JNITest {
 
   @ParameterizedTest
   @MethodSource("getRecoverCellsAndKzgProofsTests")
+  public void recoverCellsTests(final RecoverCellsAndKzgProofsTest test) {
+    try {
+      final byte[] recoveredCells =
+          CKZG4844JNI.recoverCells(test.getInput().getCellIndices(), test.getInput().getCells());
+      assertArrayEquals(test.getOutput().getCells(), recoveredCells);
+    } catch (CKZGException ex) {
+      assertNull(test.getOutput());
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("getRecoverCellsAndKzgProofsTests")
   public void recoverCellsAndKzgProofsTests(final RecoverCellsAndKzgProofsTest test) {
     try {
       final CellsAndProofs recoveredCellsAndProofs =
@@ -213,6 +225,20 @@ public class CKZG4844JNITest {
     final ProofAndY proofAndY = CKZG4844JNI.computeKzgProof(blob, z_bytes);
     assertEquals(BYTES_PER_PROOF, proofAndY.getProof().length);
     assertEquals(CKZG4844JNI.BYTES_PER_FIELD_ELEMENT, proofAndY.getY().length);
+    CKZG4844JNI.freeTrustedSetup();
+  }
+
+  @Test
+  public void checkRecoverCells() {
+    loadTrustedSetup();
+    final byte[] blob = TestUtils.createRandomBlob();
+    final CellsAndProofs cellsAndProofs = CKZG4844JNI.computeCellsAndKzgProofs(blob);
+    final byte[] cells = cellsAndProofs.getCells();
+    final byte[] partialCells = new byte[BYTES_PER_CELL * CELLS_PER_EXT_BLOB / 2];
+    System.arraycopy(cells, 0, partialCells, 0, partialCells.length);
+    final long[] cellIndices = LongStream.range(0, CELLS_PER_EXT_BLOB / 2).toArray();
+    final byte[] recoveredCells = CKZG4844JNI.recoverCells(cellIndices, partialCells);
+    assertArrayEquals(cells, recoveredCells);
     CKZG4844JNI.freeTrustedSetup();
   }
 

@@ -692,6 +692,119 @@ out:
 }
 
 /**
+ * Given at least 50% of cells, reconstruct the missing cells.
+ *
+ * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
+ * @param[in] {Cell[]}    cells - The cells you have
+ *
+ * @return {Cell[]} - An array of cells
+ *
+ * @throws {Error} - Invalid input, failure to allocate or error recovering
+ * cells
+ */
+Napi::Value RecoverCells(const Napi::CallbackInfo &info) {
+    C_KZG_RET ret;
+    uint64_t *cell_indices = NULL;
+    Cell *cells = NULL;
+    Cell *recovered_cells = NULL;
+    Napi::Array cellArray;
+    uint64_t num_cells;
+
+    Napi::Env env = info.Env();
+    Napi::Value result = env.Null();
+    if (!info[0].IsArray()) {
+        Napi::Error::New(env, "CellIndices must be an array")
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    if (!info[1].IsArray()) {
+        Napi::Error::New(env, "Cells must be an array")
+            .ThrowAsJavaScriptException();
+        return result;
+    }
+    KZGSettings *kzg_settings = get_kzg_settings(env, info);
+    if (kzg_settings == nullptr) {
+        return env.Null();
+    }
+
+    Napi::Array cell_indices_param = info[0].As<Napi::Array>();
+    Napi::Array cells_param = info[1].As<Napi::Array>();
+
+    if (cell_indices_param.Length() != cells_param.Length()) {
+        Napi::Error::New(
+            env, "There must equal lengths of cellIndices and cells"
+        )
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    num_cells = cells_param.Length();
+    cell_indices = (uint64_t *)calloc(num_cells, sizeof(uint64_t));
+    if (cell_indices == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cell_indices")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    cells = (Cell *)calloc(num_cells, BYTES_PER_CELL);
+    if (cells == nullptr) {
+        Napi::Error::New(env, "Error while allocating memory for cells")
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+    recovered_cells = (Cell *)calloc(CELLS_PER_EXT_BLOB, BYTES_PER_CELL);
+    if (recovered_cells == nullptr) {
+        Napi::Error::New(
+            env, "Error while allocating memory for recovered cells"
+        )
+            .ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    for (uint64_t i = 0; i < num_cells; i++) {
+        // add HandleScope here to release reference to temp values
+        // after each iteration since data is being memcpy
+        Napi::HandleScope scope{env};
+
+        cell_indices[i] = get_cell_index(env, cell_indices_param[i]);
+        Cell *cell = get_cell(env, cells_param[i]);
+        if (cell == nullptr) {
+            goto out;
+        }
+        memcpy(&cells[i], cell, BYTES_PER_CELL);
+    }
+
+    ret = recover_cells_and_kzg_proofs(
+        recovered_cells, NULL, cell_indices, cells, num_cells, kzg_settings
+    );
+    if (ret != C_KZG_OK) {
+        std::ostringstream msg;
+        msg << "Error in recoverCells: " << from_c_kzg_ret(ret);
+        Napi::Error::New(env, msg.str()).ThrowAsJavaScriptException();
+        goto out;
+    }
+
+    cellArray = Napi::Array::New(env, CELLS_PER_EXT_BLOB);
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        cellArray.Set(
+            i,
+            Napi::Buffer<uint8_t>::Copy(
+                env,
+                reinterpret_cast<uint8_t *>(&recovered_cells[i]),
+                BYTES_PER_CELL
+            )
+        );
+    }
+
+    result = cellArray;
+
+out:
+    free(cell_indices);
+    free(cells);
+    free(recovered_cells);
+    return result;
+}
+
+/**
  * Given at least 50% of cells, reconstruct the missing cells/proofs.
  *
  * @param[in] {number[]}  cellIndices - The identifiers for the cells you have
@@ -1006,6 +1119,9 @@ Napi::Object Init(Napi::Env env, Napi::Object exports) {
     );
     exports["computeCellsAndKzgProofs"] = Napi::Function::New(
         env, ComputeCellsAndKzgProofs, "computeCellsAndKzgProofs"
+    );
+    exports["recoverCells"] = Napi::Function::New(
+        env, RecoverCells, "recoverCells"
     );
     exports["recoverCellsAndKzgProofs"] = Napi::Function::New(
         env, RecoverCellsAndKzgProofs, "recoverCellsAndKzgProofs"
