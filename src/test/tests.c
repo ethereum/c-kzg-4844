@@ -1685,6 +1685,78 @@ static void test_expand_root_of_unity__fails_wrong_root_of_unity(void) {
 // Tests for reconstruction
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+/**
+ * The recursive divide-and-conquer FFT that fr_fft_fast() replaced, kept as a reference
+ * implementation. Field operations are exact, and the iterative version changes only the
+ * evaluation order and skips multiplications by w^0 = 1, both of which preserve exactness, so its
+ * output must be bit-identical to this one.
+ */
+static void reference_fr_fft_recursive(
+    fr_t *out, const fr_t *in, size_t stride, const fr_t *roots, size_t roots_stride, size_t n
+) {
+    size_t half = n / 2;
+    if (half > 0) {
+        fr_t y_times_root;
+        reference_fr_fft_recursive(out, in, stride * 2, roots, roots_stride * 2, half);
+        reference_fr_fft_recursive(
+            out + half, in + stride, stride * 2, roots, roots_stride * 2, half
+        );
+        for (size_t i = 0; i < half; i++) {
+            fr_mul(&y_times_root, &out[i + half], &roots[i * roots_stride]);
+            fr_sub(&out[i + half], &out[i], &y_times_root);
+            fr_add(&out[i], &out[i], &y_times_root);
+        }
+    } else {
+        *out = *in;
+    }
+}
+
+static void test_fr_fft__matches_recursive_reference(void) {
+    C_KZG_RET ret;
+    /* Static so the four full-size arrays don't overflow the stack frame limit */
+    static fr_t input[FIELD_ELEMENTS_PER_EXT_BLOB];
+    static fr_t expected[FIELD_ELEMENTS_PER_EXT_BLOB];
+    static fr_t actual[FIELD_ELEMENTS_PER_EXT_BLOB];
+    static fr_t roundtrip[FIELD_ELEMENTS_PER_EXT_BLOB];
+    int diff;
+
+    for (size_t n = 1; n <= FIELD_ELEMENTS_PER_EXT_BLOB; n *= 2) {
+        size_t roots_stride = FIELD_ELEMENTS_PER_EXT_BLOB / n;
+
+        for (size_t i = 0; i < n; i++) {
+            get_rand_fr(&input[i]);
+        }
+
+        /* The forward transform must be bit-identical to the recursive reference */
+        reference_fr_fft_recursive(expected, input, 1, s.roots_of_unity, roots_stride, n);
+        ret = fr_fft(actual, input, n, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        diff = memcmp(expected, actual, n * sizeof(fr_t));
+        ASSERT_EQUALS(diff, 0);
+
+        /* The inverse transform must be bit-identical to the reference plus the 1/n scaling */
+        reference_fr_fft_recursive(expected, input, 1, s.reverse_roots_of_unity, roots_stride, n);
+        fr_t inv_n;
+        fr_from_uint64(&inv_n, n);
+        fr_inv(&inv_n, &inv_n);
+        for (size_t i = 0; i < n; i++) {
+            fr_mul(&expected[i], &expected[i], &inv_n);
+        }
+        ret = fr_ifft(actual, input, n, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        diff = memcmp(expected, actual, n * sizeof(fr_t));
+        ASSERT_EQUALS(diff, 0);
+
+        /* The inverse transform must invert the forward transform exactly */
+        ret = fr_fft(actual, input, n, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        ret = fr_ifft(roundtrip, actual, n, &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        diff = memcmp(input, roundtrip, n * sizeof(fr_t));
+        ASSERT_EQUALS(diff, 0);
+    }
+}
+
 static void test_fft(void) {
     // TODO: Breaks with N=4096 or N=128 which are used in the protocol (see
     // issue 444)
@@ -2358,6 +2430,7 @@ int main(void) {
     RUN(test_expand_root_of_unity__succeeds_with_root);
     RUN(test_expand_root_of_unity__fails_not_root_of_unity);
     RUN(test_expand_root_of_unity__fails_wrong_root_of_unity);
+    RUN(test_fr_fft__matches_recursive_reference);
     RUN(test_fft);
     RUN(test_coset_fft);
     RUN(test_deduplicate_commitments__one_duplicate);
