@@ -194,3 +194,50 @@ bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t 
 
     return blst_fp12_is_one(&gt_point);
 }
+
+/**
+ * Verify that the pairings of two pairs of points are equal using precomputed G2 lines.
+ *
+ * Checks that e(a1, a2) == e(b1, b2) given precomputed lines for a2 and b2.
+ *
+ * @param[in]   a1        A G1 group point for the first pairing
+ * @param[in]   a2_lines  Precomputed Miller loop lines for a2
+ * @param[in]   b1        A G1 group point for the second pairing
+ * @param[in]   b2_lines  Precomputed Miller loop lines for b2
+ *
+ * @retval true  The pairings were equal
+ * @retval false The pairings were not equal
+ */
+bool pairings_verify_precomputed(
+    const g1_t *a1,
+    const blst_fp6 a2_lines[68],
+    const g1_t *b1,
+    const blst_fp6 b2_lines[68]
+) {
+    blst_fp12 loop0, loop1, gt_point;
+    blst_p1_affine aa1, bb1;
+
+    g1_t a1neg = *a1;
+    blst_p1_cneg(&a1neg, true);
+
+    blst_p1_to_affine(&aa1, &a1neg);
+    blst_p1_to_affine(&bb1, b1);
+
+    if (blst_p1_affine_is_inf(&aa1)) {
+        loop0 = *blst_fp12_one();
+    } else {
+        blst_miller_loop_lines(&loop0, a2_lines, &aa1);
+    }
+
+    if (blst_p1_affine_is_inf(&bb1)) {
+        loop1 = *blst_fp12_one();
+    } else {
+        blst_miller_loop_lines(&loop1, b2_lines, &bb1);
+    }
+
+    blst_fp12_mul(&gt_point, &loop0, &loop1);
+    blst_final_exp(&gt_point, &gt_point);
+
+    return blst_fp12_is_one(&gt_point);
+}
+

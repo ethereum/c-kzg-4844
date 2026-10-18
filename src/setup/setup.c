@@ -167,6 +167,8 @@ void free_trusted_setup(KZGSettings *s) {
     c_kzg_free(s->g1_values_monomial);
     c_kzg_free(s->g1_values_lagrange_brp);
     c_kzg_free(s->g2_values_monomial);
+    c_kzg_free(s->g2_monomial_1_lines);
+    c_kzg_free(s->g2_generator_lines);
 
     /*
      * If for whatever reason we accidentally call free_trusted_setup() on an uninitialized
@@ -373,6 +375,8 @@ static void init_settings(KZGSettings *out) {
     out->tables = NULL;
     out->wbits = 0;
     out->scratch_size = 0;
+    out->g2_monomial_1_lines = NULL;
+    out->g2_generator_lines = NULL;
 }
 
 /**
@@ -474,6 +478,20 @@ C_KZG_RET load_trusted_setup(
             goto out_error;
         }
         blst_p2_from_affine(&out->g2_values_monomial[i], &g2_affine);
+    }
+
+    /* Precompute Miller loop lines for G2 setup point 1 and G2 generator */
+    ret = c_kzg_malloc((void **)&out->g2_monomial_1_lines, sizeof(blst_fp6) * 68);
+    if (ret != C_KZG_OK) goto out_error;
+    ret = c_kzg_malloc((void **)&out->g2_generator_lines, sizeof(blst_fp6) * 68);
+    if (ret != C_KZG_OK) goto out_error;
+
+    {
+        blst_p2_affine g2_1_affine, g2_gen_affine;
+        blst_p2_to_affine(&g2_1_affine, &out->g2_values_monomial[1]);
+        blst_p2_to_affine(&g2_gen_affine, blst_p2_generator());
+        blst_precompute_lines(out->g2_monomial_1_lines, &g2_1_affine);
+        blst_precompute_lines(out->g2_generator_lines, &g2_gen_affine);
     }
 
     /* Make sure the trusted setup was loaded in Lagrange form */

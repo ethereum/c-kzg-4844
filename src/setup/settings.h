@@ -76,4 +76,8 @@ typedef struct {
     size_t wbits;
     /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
+    /** The precomputed Miller loop lines for G2 setup point 1. */
+    blst_fp6 *g2_monomial_1_lines;
+    /** The precomputed Miller loop lines for G2 generator. */
+    blst_fp6 *g2_generator_lines;
 } KZGSettings;

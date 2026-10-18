@@ -748,7 +748,16 @@ static C_KZG_RET verify_kzg_proof_batch(
     g1_add(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
 
     /* Do the pairing check! */
-    *ok = pairings_verify(&proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());
+    if (s->g2_monomial_1_lines != NULL && s->g2_generator_lines != NULL) {
+        *ok = pairings_verify_precomputed(
+            &proof_lincomb,
+            s->g2_monomial_1_lines,
+            &rhs_g1,
+            s->g2_generator_lines
+        );
+    } else {
+        *ok = pairings_verify(&proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());
+    }
 
 out:
     c_kzg_free(r_powers);

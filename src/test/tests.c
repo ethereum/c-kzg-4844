@@ -404,6 +404,65 @@ static void test_pairings_verify__bad_pairing(void) {
     ASSERT("pairings fail", !pairings_verify(&g1, &s1g2, &sg1, &g2));
 }
 
+static void test_pairings_verify_precomputed__good_pairing(void) {
+    fr_t f;
+    g1_t g1, sg1;
+    g2_t g2, sg2;
+    blst_p2_affine g2_affine, sg2_affine;
+    blst_fp6 g2_lines[68], sg2_lines[68];
+
+    get_rand_fr(&f);
+    get_rand_g1(&g1);
+    get_rand_g2(&g2);
+
+    g1_mul(&sg1, &g1, &f);
+    g2_mul(&sg2, &g2, &f);
+
+    blst_p2_to_affine(&g2_affine, &g2);
+    blst_p2_to_affine(&sg2_affine, &sg2);
+    blst_precompute_lines(g2_lines, &g2_affine);
+    blst_precompute_lines(sg2_lines, &sg2_affine);
+
+    ASSERT("pairings verify precomputed", pairings_verify_precomputed(&g1, sg2_lines, &sg1, g2_lines));
+}
+
+static void test_pairings_verify_precomputed__bad_pairing(void) {
+    fr_t f, splusone;
+    g1_t g1, sg1;
+    g2_t g2, s1g2;
+    blst_p2_affine g2_affine, s1g2_affine;
+    blst_fp6 g2_lines[68], s1g2_lines[68];
+
+    get_rand_fr(&f);
+    blst_fr_add(&splusone, &f, &FR_ONE);
+
+    get_rand_g1(&g1);
+    get_rand_g2(&g2);
+
+    g1_mul(&sg1, &g1, &f);
+    g2_mul(&s1g2, &g2, &splusone);
+
+    blst_p2_to_affine(&g2_affine, &g2);
+    blst_p2_to_affine(&s1g2_affine, &s1g2);
+    blst_precompute_lines(g2_lines, &g2_affine);
+    blst_precompute_lines(s1g2_lines, &s1g2_affine);
+
+    ASSERT("pairings fail precomputed", !pairings_verify_precomputed(&g1, s1g2_lines, &sg1, g2_lines));
+}
+
+static void test_pairings_verify_precomputed__identity_pairing(void) {
+    g1_t id = G1_IDENTITY;
+    g2_t g2;
+    blst_p2_affine g2_affine;
+    blst_fp6 g2_lines[68];
+
+    get_rand_g2(&g2);
+    blst_p2_to_affine(&g2_affine, &g2);
+    blst_precompute_lines(g2_lines, &g2_affine);
+
+    ASSERT("pairings verify precomputed identity", pairings_verify_precomputed(&id, g2_lines, &id, g2_lines));
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Tests for blob_to_kzg_commitment
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2297,6 +2356,9 @@ int main(void) {
     RUN(test_g1_mul__test_different_bit_lengths);
     RUN(test_pairings_verify__good_pairing);
     RUN(test_pairings_verify__bad_pairing);
+    RUN(test_pairings_verify_precomputed__good_pairing);
+    RUN(test_pairings_verify_precomputed__bad_pairing);
+    RUN(test_pairings_verify_precomputed__identity_pairing);
     RUN(test_blob_to_kzg_commitment__succeeds_x_less_than_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_equal_to_modulus);
     RUN(test_blob_to_kzg_commitment__fails_x_greater_than_modulus);
