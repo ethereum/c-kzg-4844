@@ -90,6 +90,41 @@ static C_KZG_RET compute_vanishing_polynomial_from_roots(
  * @remark If no cells are missing, recovery is trivial; we expect the caller to handle this.
  * @remark If all cells are missing, we return C_KZG_BADARGS; the algorithm has an edge case.
  */
+static C_KZG_RET short_vanishing_polynomial_from_missing_cells(
+    fr_t *short_vanishing_poly,
+    const uint64_t *missing_cell_indices,
+    size_t len_missing_cells,
+    const KZGSettings *s
+) {
+    C_KZG_RET ret;
+    fr_t *roots = NULL;
+    size_t short_vanishing_poly_len = 0;
+
+    /* Return early if none or all of the cells are missing */
+    if (len_missing_cells == 0 || len_missing_cells >= CELLS_PER_EXT_BLOB) {
+        return C_KZG_BADARGS;
+    }
+
+    ret = new_fr_array(&roots, len_missing_cells);
+    if (ret != C_KZG_OK) return ret;
+
+    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / CELLS_PER_EXT_BLOB;
+    for (size_t i = 0; i < len_missing_cells; i++) {
+        roots[i] = s->roots_of_unity[missing_cell_indices[i] * stride];
+    }
+
+    for (size_t i = 0; i < CELLS_PER_EXT_BLOB; i++) {
+        short_vanishing_poly[i] = FR_ZERO;
+    }
+
+    ret = compute_vanishing_polynomial_from_roots(
+        short_vanishing_poly, &short_vanishing_poly_len, roots, len_missing_cells
+    );
+
+    c_kzg_free(roots);
+    return ret;
+}
+
 static C_KZG_RET vanishing_polynomial_for_missing_cells(
     fr_t *vanishing_poly,
     const uint64_t *missing_cell_indices,
@@ -97,68 +132,22 @@ static C_KZG_RET vanishing_polynomial_for_missing_cells(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    fr_t *roots = NULL;
-    fr_t *short_vanishing_poly = NULL;
-    size_t short_vanishing_poly_len = 0;
+    fr_t short_vanishing_poly[CELLS_PER_EXT_BLOB];
 
-    /* Return early if none or all of the cells are missing */
-    if (len_missing_cells == 0 || len_missing_cells >= CELLS_PER_EXT_BLOB) {
-        ret = C_KZG_BADARGS;
-        goto out;
-    }
-
-    /* Allocate arrays */
-    ret = new_fr_array(&roots, len_missing_cells);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&short_vanishing_poly, (len_missing_cells + 1));
-    if (ret != C_KZG_OK) goto out;
-
-    /*
-     * For each missing cell index, choose the corresponding root of unity from the subgroup of
-     * size `CELLS_PER_EXT_BLOB`.
-     *
-     * In other words, if the missing index is `i`, then we add \omega^i to the roots array, where
-     * \omega is a primitive `CELLS_PER_EXT_BLOB` root of unity.
-     */
-    size_t stride = FIELD_ELEMENTS_PER_EXT_BLOB / CELLS_PER_EXT_BLOB;
-    for (size_t i = 0; i < len_missing_cells; i++) {
-        roots[i] = s->roots_of_unity[missing_cell_indices[i] * stride];
-    }
-
-    /* Compute the polynomial that evaluates to zero on the roots */
-    ret = compute_vanishing_polynomial_from_roots(
-        short_vanishing_poly, &short_vanishing_poly_len, roots, len_missing_cells
+    ret = short_vanishing_polynomial_from_missing_cells(
+        short_vanishing_poly, missing_cell_indices, len_missing_cells, s
     );
-    if (ret != C_KZG_OK) goto out;
+    if (ret != C_KZG_OK) return ret;
 
-    /* Zero out all the coefficients of the output poly */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
         vanishing_poly[i] = FR_ZERO;
     }
 
-    /*
-     * For each root \omega^i in `short_vanishing_poly`, we compute a polynomial that has roots at
-     *
-     *  H = {
-     *      \omega^i * \gamma^0,
-     *      \omega^i * \gamma^1,
-     *      ...,
-     *      \omega^i * \gamma^{FIELD_ELEMENTS_PER_CELL-1}
-     *  }
-     *
-     * where \gamma is a primitive `FIELD_ELEMENTS_PER_EXT_BLOB`-th root of unity.
-     *
-     * This is done by shifting the degree of all coefficients in `short_vanishing_poly` up by
-     * `FIELD_ELEMENTS_PER_CELL` amount.
-     */
-    for (size_t i = 0; i < short_vanishing_poly_len; i++) {
+    for (size_t i = 0; i <= len_missing_cells; i++) {
         vanishing_poly[i * FIELD_ELEMENTS_PER_CELL] = short_vanishing_poly[i];
     }
 
-out:
-    c_kzg_free(roots);
-    c_kzg_free(short_vanishing_poly);
-    return ret;
+    return C_KZG_OK;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,7 +196,6 @@ C_KZG_RET recover_cells(
     C_KZG_RET ret;
     uint64_t *missing_cell_indices = NULL;
     fr_t *vanishing_poly_eval = NULL;
-    fr_t *vanishing_poly_coeff = NULL;
     fr_t *extended_evaluation_times_zero = NULL;
     fr_t *extended_evaluation_times_zero_coeffs = NULL;
     fr_t *extended_evaluations_over_coset = NULL;
@@ -221,8 +209,6 @@ C_KZG_RET recover_cells(
     );
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&vanishing_poly_eval, FIELD_ELEMENTS_PER_EXT_BLOB);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_fr_array(&vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&extended_evaluation_times_zero, FIELD_ELEMENTS_PER_EXT_BLOB);
     if (ret != C_KZG_OK) goto out;
@@ -260,17 +246,30 @@ C_KZG_RET recover_cells(
     assert(CELLS_PER_EXT_BLOB - len_missing >= CELLS_PER_BLOB);
 
     /*
-     * Compute Z(x) in monomial form.
-     * Z(x) is the polynomial which vanishes on all of the evaluations which are missing.
+     * Compute Z(x) in evaluation form over the roots of unity.
+     *
+     * Z(x) = Z_short(x^FIELD_ELEMENTS_PER_CELL) is a sparse polynomial where non-zero
+     * coefficients appear only at multiples of FIELD_ELEMENTS_PER_CELL (64).
+     * Evaluating Z at the 8192-th roots of unity gamma^k yields:
+     * Z(gamma^k) = Z_short((gamma^k)^64) = Z_short(omega^(k mod 128)),
+     * where omega is a primitive 128-th root of unity.
+     *
+     * Thus, an 8192-point FFT on the sparse polynomial simplifies to a 128-point FFT
+     * on Z_short replicated across all 64 blocks of the 8192-point domain.
      */
-    ret = vanishing_polynomial_for_missing_cells(
-        vanishing_poly_coeff, missing_cell_indices, len_missing, s
+    fr_t short_vanishing_poly[CELLS_PER_EXT_BLOB];
+    ret = short_vanishing_polynomial_from_missing_cells(
+        short_vanishing_poly, missing_cell_indices, len_missing, s
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Convert Z(x) to evaluation form */
-    ret = fr_fft(vanishing_poly_eval, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s);
+    fr_t short_eval[CELLS_PER_EXT_BLOB];
+    ret = fr_fft(short_eval, short_vanishing_poly, CELLS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
+
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i += CELLS_PER_EXT_BLOB) {
+        memcpy(&vanishing_poly_eval[i], short_eval, sizeof(short_eval));
+    }
 
     /*
      * Compute (E*Z)(x) = E(x) * Z(x) in evaluation form over the FFT domain.
@@ -312,11 +311,29 @@ C_KZG_RET recover_cells(
     );
     if (ret != C_KZG_OK) goto out;
 
-    /* Convert Z(x) to evaluation form over a coset of the FFT domain */
-    ret = coset_fft(
-        vanishing_poly_over_coset, vanishing_poly_coeff, FIELD_ELEMENTS_PER_EXT_BLOB, s
-    );
+    /*
+     * Convert Z(x) to evaluation form over a coset of the FFT domain.
+     *
+     * Over the coset h * gamma^k (where h is RECOVERY_SHIFT_FACTOR),
+     * (h * gamma^k)^64 = h^64 * omega^(k mod 128).
+     * Shifting Z_short by h^64 and evaluating via a 128-point FFT gives the coset values,
+     * replicated across all 64 blocks of the 8192-point domain.
+     */
+    fr_t shift_factor_short = RECOVERY_SHIFT_FACTOR;
+    for (size_t i = 0; i < 6; i++) {
+        fr_mul(&shift_factor_short, &shift_factor_short, &shift_factor_short);
+    }
+    fr_t short_shifted[CELLS_PER_EXT_BLOB];
+    memcpy(short_shifted, short_vanishing_poly, sizeof(short_shifted));
+    shift_poly(short_shifted, CELLS_PER_EXT_BLOB, &shift_factor_short);
+
+    fr_t short_coset_eval[CELLS_PER_EXT_BLOB];
+    ret = fr_fft(short_coset_eval, short_shifted, CELLS_PER_EXT_BLOB, s);
     if (ret != C_KZG_OK) goto out;
+
+    for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i += CELLS_PER_EXT_BLOB) {
+        memcpy(&vanishing_poly_over_coset[i], short_coset_eval, sizeof(short_coset_eval));
+    }
 
     /* Compute P(x) = (P*Z)(x) / Z(x) in evaluation form over a coset of the FFT domain */
     for (size_t i = 0; i < FIELD_ELEMENTS_PER_EXT_BLOB; i++) {
@@ -359,7 +376,6 @@ out:
     c_kzg_free(extended_evaluations_over_coset);
     c_kzg_free(vanishing_poly_over_coset);
     c_kzg_free(reconstructed_poly_coeff);
-    c_kzg_free(vanishing_poly_coeff);
     c_kzg_free(cells_brp);
     return ret;
 }
