@@ -76,4 +76,10 @@ typedef struct {
     size_t wbits;
     /** The scratch size for the fixed-base MSM. */
     size_t scratch_size;
+    /**
+     * Precomputed G2 points for PeerDAS EIP-7594 same-column batch verification:
+     * [s^FIELD_ELEMENTS_PER_CELL - h_k^FIELD_ELEMENTS_PER_CELL]_2 in affine form.
+     * The array contains CELLS_PER_EXT_BLOB elements.
+     */
+    blst_p2_affine *g2_s64_minus_h64_columns;
 } KZGSettings;

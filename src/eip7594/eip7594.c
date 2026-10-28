@@ -578,7 +578,7 @@ static void get_inv_coset_shift_for_cell(
  * @param[in]   cell_index          The index of the cell
  * @param[in]   s                   The trusted setup
  */
-static void get_coset_shift_pow_for_cell(
+void get_coset_shift_pow_for_cell(
     fr_t *coset_factor_out, uint64_t cell_index, const KZGSettings *s
 ) {
     /*
@@ -948,22 +948,56 @@ C_KZG_RET verify_cell_kzg_proof_batch(
     /* Subtract the commitment from the sum */
     g1_sub(&final_g1_sum, &final_g1_sum, &interpolation_poly_commit);
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Compute sum of the proofs scaled by the coset factors
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
+     * Check if all cells in the batch share the exact same column index k.
+     * In EIP-7594 PeerDAS, nodes on column subnets verify DataColumnSidecars where every
+     * cell in the verified batch shares the exact same column index k.
+     *
+     * By bilinear pairing distributivity:
+     * e(final_g1_sum + h_k^n * proof_lincomb, [1]_2) == e(proof_lincomb, [s^n]_2)
+     * <=> e(final_g1_sum, [1]_2) == e(proof_lincomb, [s^n - h_k^n]_2)
+     *
+     * When all cells share column k, shifting the coset factor across the pairing into G2
+     * completely eliminates the second Pippenger MSM / G1 scalar multiplication and the
+     * subsequent G1 group addition. The G2 point [s^n - h_k^n]_2 is precomputed in affine
+     * form in KZGSettings, allowing direct pairing evaluation without dynamic G2 conversions.
+     */
+    bool same_column = (s->g2_s64_minus_h64_columns != NULL);
+    if (same_column) {
+        for (size_t i = 1; i < num_cells; i++) {
+            if (cell_indices[i] != cell_indices[0]) {
+                same_column = false;
+                break;
+            }
+        }
+    }
 
-    ret = computed_weighted_sum_of_proofs(
-        &weighted_sum_of_proofs, proofs_g1, r_powers, cell_indices, num_cells, s
-    );
-    if (ret != C_KZG_OK) goto out;
+    if (same_column) {
+        uint64_t col = cell_indices[0];
+        *ok = pairings_verify_affine_g2(
+            &final_g1_sum,
+            blst_p2_affine_generator(),
+            &proof_lincomb,
+            &s->g2_s64_minus_h64_columns[col]
+        );
+    } else {
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Compute sum of the proofs scaled by the coset factors
+        ////////////////////////////////////////////////////////////////////////////////////////////
 
-    g1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
+        ret = computed_weighted_sum_of_proofs(
+            &weighted_sum_of_proofs, proofs_g1, r_powers, cell_indices, num_cells, s
+        );
+        if (ret != C_KZG_OK) goto out;
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-    // Do the final pairing check
-    ////////////////////////////////////////////////////////////////////////////////////////////////
+        g1_add(&final_g1_sum, &final_g1_sum, &weighted_sum_of_proofs);
 
-    *ok = pairings_verify(&final_g1_sum, blst_p2_generator(), &proof_lincomb, &power_of_s);
+        ////////////////////////////////////////////////////////////////////////////////////////////
+        // Do the final pairing check
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        *ok = pairings_verify(&final_g1_sum, blst_p2_generator(), &proof_lincomb, &power_of_s);
+    }
 
 out:
     c_kzg_free(unique_commitments);

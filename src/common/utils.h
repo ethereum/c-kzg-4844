@@ -38,6 +38,12 @@ uint64_t reverse_bits_limited(uint64_t n, uint64_t value);
 C_KZG_RET bit_reversal_permutation(void *values, size_t size, size_t n);
 void compute_powers(fr_t *out, const fr_t *x, size_t n);
 bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2);
+bool pairings_verify_affine_g2(
+    const g1_t *a1,
+    const blst_p2_affine *a2,
+    const g1_t *b1,
+    const blst_p2_affine *b2
+);
 
 #ifdef __cplusplus
 }

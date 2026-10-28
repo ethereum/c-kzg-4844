@@ -56,6 +56,9 @@ C_KZG_RET verify_cell_kzg_proof_batch(
 );
 
 /* Internal function exposed for testing purposes */
+void get_coset_shift_pow_for_cell(
+    fr_t *coset_factor_out, uint64_t cell_index, const KZGSettings *s
+);
 C_KZG_RET compute_verify_cell_kzg_proof_batch_challenge(
     fr_t *challenge_out,
     const Bytes48 *commitments_bytes,

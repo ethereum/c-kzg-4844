@@ -185,6 +185,7 @@ void free_trusted_setup(KZGSettings *s) {
     }
     c_kzg_free(s->x_ext_fft_columns);
     c_kzg_free(s->tables);
+    c_kzg_free(s->g2_s64_minus_h64_columns);
     s->wbits = 0;
     s->scratch_size = 0;
 }
@@ -371,8 +372,47 @@ static void init_settings(KZGSettings *out) {
     out->g2_values_monomial = NULL;
     out->x_ext_fft_columns = NULL;
     out->tables = NULL;
+    out->g2_s64_minus_h64_columns = NULL;
     out->wbits = 0;
     out->scratch_size = 0;
+}
+
+/**
+ * Precompute the G2 affine points [s^FIELD_ELEMENTS_PER_CELL - h_k^FIELD_ELEMENTS_PER_CELL]_2
+ * for each column k in [0, CELLS_PER_EXT_BLOB).
+ *
+ * For each column k, h_k^FIELD_ELEMENTS_PER_CELL is the 128-th root of unity (coset shift power).
+ * Shifting the coset factor across the bilinear pairing into G2 allows same-column batches to
+ * completely eliminate the weighted sum of proofs from G1.
+ *
+ * @param[out] s The KZGSettings to populate
+ * @return C_KZG_OK on success, or memory error
+ */
+static C_KZG_RET precompute_peerdas_g2_column_points(KZGSettings *s) {
+    C_KZG_RET ret;
+    g2_t power_of_s;
+
+    ret = c_kzg_calloc(
+        (void **)&s->g2_s64_minus_h64_columns,
+        CELLS_PER_EXT_BLOB,
+        sizeof(blst_p2_affine)
+    );
+    if (ret != C_KZG_OK) return ret;
+
+    power_of_s = s->g2_values_monomial[FIELD_ELEMENTS_PER_CELL];
+
+    for (uint64_t k = 0; k < CELLS_PER_EXT_BLOB; k++) {
+        fr_t h_k_pow;
+        g2_t h_k_g2;
+        g2_t diff_proj;
+
+        get_coset_shift_pow_for_cell(&h_k_pow, k, s);
+        g2_mul(&h_k_g2, blst_p2_generator(), &h_k_pow);
+        g2_sub(&diff_proj, &power_of_s, &h_k_g2);
+        blst_p2_to_affine(&s->g2_s64_minus_h64_columns[k], &diff_proj);
+    }
+
+    return C_KZG_OK;
 }
 
 /**
@@ -490,6 +530,10 @@ C_KZG_RET load_trusted_setup(
 
     /* Setup for FK20 proof computation */
     ret = init_fk20_multi_settings(out);
+    if (ret != C_KZG_OK) goto out_error;
+
+    /* Precompute PeerDAS G2 column points */
+    ret = precompute_peerdas_g2_column_points(out);
     if (ret != C_KZG_OK) goto out_error;
 
     goto out_success;

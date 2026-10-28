@@ -169,10 +169,29 @@ void compute_powers(fr_t *out, const fr_t *x, size_t n) {
  * @retval true  The pairings were equal
  * @retval false The pairings were not equal
  */
-bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
+/**
+ * Check that:
+ *
+ * e(a1, a2) == e(b1, b2)
+ *
+ * where a2 and b2 are already in affine G2 coordinates.
+ *
+ * @param[in]   a1  A G1 group point for the first pairing
+ * @param[in]   a2  An affine G2 group point for the first pairing
+ * @param[in]   b1  A G1 group point for the second pairing
+ * @param[in]   b2  An affine G2 group point for the second pairing
+ *
+ * @retval true  The pairings were equal
+ * @retval false The pairings were not equal
+ */
+bool pairings_verify_affine_g2(
+    const g1_t *a1,
+    const blst_p2_affine *a2,
+    const g1_t *b1,
+    const blst_p2_affine *b2
+) {
     blst_fp12 loop0, loop1, gt_point;
     blst_p1_affine aa1, bb1;
-    blst_p2_affine aa2, bb2;
 
     /*
      * As an optimisation, we want to invert one of the pairings,
@@ -183,14 +202,21 @@ bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t 
 
     blst_p1_to_affine(&aa1, &a1neg);
     blst_p1_to_affine(&bb1, b1);
-    blst_p2_to_affine(&aa2, a2);
-    blst_p2_to_affine(&bb2, b2);
 
-    blst_miller_loop(&loop0, &aa2, &aa1);
-    blst_miller_loop(&loop1, &bb2, &bb1);
+    blst_miller_loop(&loop0, a2, &aa1);
+    blst_miller_loop(&loop1, b2, &bb1);
 
     blst_fp12_mul(&gt_point, &loop0, &loop1);
     blst_final_exp(&gt_point, &gt_point);
 
     return blst_fp12_is_one(&gt_point);
+}
+
+bool pairings_verify(const g1_t *a1, const g2_t *a2, const g1_t *b1, const g2_t *b2) {
+    blst_p2_affine aa2, bb2;
+
+    blst_p2_to_affine(&aa2, a2);
+    blst_p2_to_affine(&bb2, b2);
+
+    return pairings_verify_affine_g2(a1, &aa2, b1, &bb2);
 }

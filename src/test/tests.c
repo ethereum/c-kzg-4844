@@ -2072,6 +2072,162 @@ static void test_verify_cell_kzg_proof_batch__succeeds_random_blob(void) {
     ASSERT_EQUALS(ret, C_KZG_OK);
 }
 
+static void test_verify_cell_kzg_proof_batch__succeeds_same_column(void) {
+    C_KZG_RET ret;
+    bool ok;
+    const size_t num_blobs = 4;
+    Blob *blobs = NULL;
+    Cell *all_cells = NULL;
+    KZGProof *all_proofs = NULL;
+    KZGCommitment commitments[4];
+    Bytes48 commitments_bytes[4];
+    uint64_t cell_indices[4];
+    Cell cells[4];
+    KZGProof proofs[4];
+    uint64_t chosen_col = 37;
+
+    ret = c_kzg_malloc((void **)&blobs, num_blobs * sizeof(Blob));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_proofs, CELLS_PER_EXT_BLOB * sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t b = 0; b < num_blobs; b++) {
+        get_rand_blob(&blobs[b]);
+        ret = blob_to_kzg_commitment(&commitments[b], &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        memcpy(commitments_bytes[b].bytes, &commitments[b], BYTES_PER_COMMITMENT);
+
+        ret = compute_cells_and_kzg_proofs(all_cells, all_proofs, &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        cells[b] = all_cells[chosen_col];
+        proofs[b] = all_proofs[chosen_col];
+        cell_indices[b] = chosen_col;
+    }
+
+    ret = verify_cell_kzg_proof_batch(
+        &ok, commitments_bytes, cell_indices, cells, proofs, num_blobs, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok, true);
+
+    c_kzg_free(blobs);
+    c_kzg_free(all_cells);
+    c_kzg_free(all_proofs);
+}
+
+static void test_verify_cell_kzg_proof_batch__fails_same_column_invalid_proof(void) {
+    C_KZG_RET ret;
+    bool ok;
+    const size_t num_blobs = 4;
+    Blob *blobs = NULL;
+    Cell *all_cells = NULL;
+    KZGProof *all_proofs = NULL;
+    KZGCommitment commitments[4];
+    Bytes48 commitments_bytes[4];
+    uint64_t cell_indices[4];
+    Cell cells[4];
+    KZGProof proofs[4];
+    uint64_t chosen_col = 19;
+    KZGProof invalid_proof;
+
+    ret = c_kzg_malloc((void **)&blobs, num_blobs * sizeof(Blob));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_proofs, CELLS_PER_EXT_BLOB * sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t b = 0; b < num_blobs; b++) {
+        get_rand_blob(&blobs[b]);
+        ret = blob_to_kzg_commitment(&commitments[b], &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        memcpy(commitments_bytes[b].bytes, &commitments[b], BYTES_PER_COMMITMENT);
+
+        ret = compute_cells_and_kzg_proofs(all_cells, all_proofs, &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        cells[b] = all_cells[chosen_col];
+        proofs[b] = all_proofs[chosen_col];
+        cell_indices[b] = chosen_col;
+
+        if (b == 2) {
+            invalid_proof = all_proofs[(chosen_col + 1) % CELLS_PER_EXT_BLOB];
+        }
+    }
+
+    proofs[2] = invalid_proof;
+
+    ret = verify_cell_kzg_proof_batch(
+        &ok, commitments_bytes, cell_indices, cells, proofs, num_blobs, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok, false);
+
+    c_kzg_free(blobs);
+    c_kzg_free(all_cells);
+    c_kzg_free(all_proofs);
+}
+
+static void test_verify_cell_kzg_proof_batch__same_column_matches_standard_fallback(void) {
+    C_KZG_RET ret;
+    bool ok_fast, ok_std;
+    const size_t num_blobs = 3;
+    Blob *blobs = NULL;
+    Cell *all_cells = NULL;
+    KZGProof *all_proofs = NULL;
+    KZGCommitment commitments[3];
+    Bytes48 commitments_bytes[3];
+    uint64_t cell_indices[3];
+    Cell cells[3];
+    KZGProof proofs[3];
+    uint64_t chosen_col = 55;
+
+    ret = c_kzg_malloc((void **)&blobs, num_blobs * sizeof(Blob));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_cells, CELLS_PER_EXT_BLOB * sizeof(Cell));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ret = c_kzg_malloc((void **)&all_proofs, CELLS_PER_EXT_BLOB * sizeof(KZGProof));
+    ASSERT_EQUALS(ret, C_KZG_OK);
+
+    for (size_t b = 0; b < num_blobs; b++) {
+        get_rand_blob(&blobs[b]);
+        ret = blob_to_kzg_commitment(&commitments[b], &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+        memcpy(commitments_bytes[b].bytes, &commitments[b], BYTES_PER_COMMITMENT);
+
+        ret = compute_cells_and_kzg_proofs(all_cells, all_proofs, &blobs[b], &s);
+        ASSERT_EQUALS(ret, C_KZG_OK);
+
+        cells[b] = all_cells[chosen_col];
+        proofs[b] = all_proofs[chosen_col];
+        cell_indices[b] = chosen_col;
+    }
+
+    /* Fast G2 folded path */
+    ret = verify_cell_kzg_proof_batch(
+        &ok_fast, commitments_bytes, cell_indices, cells, proofs, num_blobs, &s
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok_fast, true);
+
+    /* Standard fallback path (without precomputed G2 points) */
+    KZGSettings s_fallback = s;
+    s_fallback.g2_s64_minus_h64_columns = NULL;
+    ret = verify_cell_kzg_proof_batch(
+        &ok_std, commitments_bytes, cell_indices, cells, proofs, num_blobs, &s_fallback
+    );
+    ASSERT_EQUALS(ret, C_KZG_OK);
+    ASSERT_EQUALS(ok_std, true);
+    ASSERT_EQUALS(ok_fast, ok_std);
+
+    c_kzg_free(blobs);
+    c_kzg_free(all_cells);
+    c_kzg_free(all_proofs);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // Profiling Functions
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2370,6 +2526,9 @@ int main(void) {
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);
     RUN(test_verify_cell_kzg_proof_batch__succeeds_random_blob);
+    RUN(test_verify_cell_kzg_proof_batch__succeeds_same_column);
+    RUN(test_verify_cell_kzg_proof_batch__fails_same_column_invalid_proof);
+    RUN(test_verify_cell_kzg_proof_batch__same_column_matches_standard_fallback);
 
     /*
      * These functions are only executed if we're profiling. To me, it makes sense to put these in
