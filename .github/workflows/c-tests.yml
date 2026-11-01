@@ -66,7 +66,7 @@ jobs:
       # Doesn't work on Windows.
       - name: Install LLVM
         if: matrix.os == 'ubuntu-latest'
-        uses: egor-tensin/setup-clang@23bc15cd4207e45f1566447deb48f4ff3ef932cb # v2.3
+        uses: egor-tensin/setup-clang@61aac60c0e44adeaa8b280f878829b5a32ba3bc5 # v2.3
 
       # Generate the coverage report.
       # Doesn't work on Windows.
@@ -78,7 +78,7 @@ jobs:
       # Didn't generate it for Windows.
       - name: Save coverage report
         if: matrix.os != 'windows-latest'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-${{ matrix.os }}
           path: src/coverage.html
