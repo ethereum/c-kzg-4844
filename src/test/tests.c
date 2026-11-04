@@ -1934,6 +1934,53 @@ static void test_recover_cells_and_kzg_proofs__succeeds_random_blob(void) {
     }
 }
 
+static void test_recover_cells__fails_insufficient_cells(void) {
+    C_KZG_RET ret;
+    fr_t recovered_data[FIELD_ELEMENTS_PER_EXT_BLOB];
+    fr_t cells[FIELD_ELEMENTS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_BLOB - 1];
+
+    for (size_t i = 0; i < CELLS_PER_BLOB - 1; i++) {
+        cell_indices[i] = i;
+    }
+    memset(cells, 0, sizeof(cells));
+
+    ret = recover_cells(recovered_data, cell_indices, CELLS_PER_BLOB - 1, cells, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_recover_cells__fails_duplicate_cell_indices(void) {
+    C_KZG_RET ret;
+    fr_t recovered_data[FIELD_ELEMENTS_PER_EXT_BLOB];
+    fr_t cells[FIELD_ELEMENTS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_BLOB];
+
+    /* 64 cells provided, but all are duplicate index 0 */
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cell_indices[i] = 0;
+    }
+    memset(cells, 0, sizeof(cells));
+
+    ret = recover_cells(recovered_data, cell_indices, CELLS_PER_BLOB, cells, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
+static void test_recover_cells__fails_invalid_cell_index(void) {
+    C_KZG_RET ret;
+    fr_t recovered_data[FIELD_ELEMENTS_PER_EXT_BLOB];
+    fr_t cells[FIELD_ELEMENTS_PER_EXT_BLOB];
+    uint64_t cell_indices[CELLS_PER_BLOB];
+
+    for (size_t i = 0; i < CELLS_PER_BLOB; i++) {
+        cell_indices[i] = i;
+    }
+    cell_indices[0] = CELLS_PER_EXT_BLOB;
+    memset(cells, 0, sizeof(cells));
+
+    ret = recover_cells(recovered_data, cell_indices, CELLS_PER_BLOB, cells, &s);
+    ASSERT_EQUALS(ret, C_KZG_BADARGS);
+}
+
 static void test_compute_vanishing_polynomial_from_roots(void) {
     /*
      * Test case: (x - 2)(x - 3)
@@ -2366,6 +2413,9 @@ int main(void) {
     RUN(test_deduplicate_commitments__no_commitments);
     RUN(test_deduplicate_commitments__one_commitment);
     RUN(test_recover_cells_and_kzg_proofs__succeeds_random_blob);
+    RUN(test_recover_cells__fails_insufficient_cells);
+    RUN(test_recover_cells__fails_duplicate_cell_indices);
+    RUN(test_recover_cells__fails_invalid_cell_index);
     RUN(test_shift_factors__succeeds);
     RUN(test_compute_vanishing_polynomial_from_roots);
     RUN(test_vanishing_polynomial_for_missing_cells);

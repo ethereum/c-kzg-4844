@@ -215,6 +215,19 @@ C_KZG_RET recover_cells(
     fr_t *reconstructed_poly_coeff = NULL;
     fr_t *cells_brp = NULL;
 
+    /* Validate arguments */
+    if (reconstructed_data_out == NULL || cell_indices == NULL || cells == NULL || s == NULL) {
+        return C_KZG_BADARGS;
+    }
+    if (num_cells < CELLS_PER_BLOB || num_cells > CELLS_PER_EXT_BLOB) {
+        return C_KZG_BADARGS;
+    }
+    for (size_t i = 0; i < num_cells; i++) {
+        if (cell_indices[i] >= CELLS_PER_EXT_BLOB) {
+            return C_KZG_BADARGS;
+        }
+    }
+
     /* Allocate space for arrays */
     ret = c_kzg_calloc(
         (void **)&missing_cell_indices, FIELD_ELEMENTS_PER_EXT_BLOB, sizeof(uint64_t)
@@ -254,10 +267,13 @@ C_KZG_RET recover_cells(
     }
 
     /*
-     * Check that we have enough cells to recover.
+     * Check that we have enough distinct cells to recover.
      * Concretely, we need to have at least CELLS_PER_BLOB many cells.
      */
-    assert(CELLS_PER_EXT_BLOB - len_missing >= CELLS_PER_BLOB);
+    if (CELLS_PER_EXT_BLOB - len_missing < CELLS_PER_BLOB) {
+        ret = C_KZG_BADARGS;
+        goto out;
+    }
 
     /*
      * Compute Z(x) in monomial form.
