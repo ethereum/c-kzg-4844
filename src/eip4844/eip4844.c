@@ -704,10 +704,10 @@ static C_KZG_RET verify_kzg_proof_batch(
     const KZGSettings *s
 ) {
     C_KZG_RET ret;
-    g1_t proof_lincomb, proof_z_lincomb, C_minus_y_lincomb, rhs_g1;
+    g1_t proof_lincomb, proof_z_lincomb, C_lincomb, ys_encrypted, rhs_g1;
     fr_t *r_powers = NULL;
-    g1_t *C_minus_y = NULL;
     fr_t *r_times_z = NULL;
+    fr_t y_total = FR_ZERO;
 
     assert(n > 0);
 
@@ -715,8 +715,6 @@ static C_KZG_RET verify_kzg_proof_batch(
 
     /* First let's allocate our arrays */
     ret = new_fr_array(&r_powers, n);
-    if (ret != C_KZG_OK) goto out;
-    ret = new_g1_array(&C_minus_y, n);
     if (ret != C_KZG_OK) goto out;
     ret = new_fr_array(&r_times_z, n);
     if (ret != C_KZG_OK) goto out;
@@ -728,31 +726,36 @@ static C_KZG_RET verify_kzg_proof_batch(
     if (ret != C_KZG_OK) goto out;
 
     /* Compute \sum r^i * Proof_i */
-    g1_lincomb_naive(&proof_lincomb, proofs_g1, r_powers, n);
+    ret = g1_lincomb_fast(&proof_lincomb, proofs_g1, r_powers, n);
+    if (ret != C_KZG_OK) goto out;
 
     for (size_t i = 0; i < n; i++) {
-        g1_t ys_encrypted;
-        /* Get [y_i] */
-        g1_mul(&ys_encrypted, blst_p1_generator(), &ys_fr[i]);
-        /* Get C_i - [y_i] */
-        g1_sub(&C_minus_y[i], &commitments_g1[i], &ys_encrypted);
+        fr_t r_times_y;
         /* Get r^i * z_i */
         fr_mul(&r_times_z[i], &r_powers[i], &zs_fr[i]);
+        /* Accumulate r^i * y_i */
+        fr_mul(&r_times_y, &r_powers[i], &ys_fr[i]);
+        fr_add(&y_total, &y_total, &r_times_y);
     }
 
     /* Get \sum r^i z_i Proof_i */
-    g1_lincomb_naive(&proof_z_lincomb, proofs_g1, r_times_z, n);
-    /* Get \sum r^i (C_i - [y_i]) */
-    g1_lincomb_naive(&C_minus_y_lincomb, C_minus_y, r_powers, n);
-    /* Get C_minus_y_lincomb + proof_z_lincomb */
-    g1_add(&rhs_g1, &C_minus_y_lincomb, &proof_z_lincomb);
+    ret = g1_lincomb_fast(&proof_z_lincomb, proofs_g1, r_times_z, n);
+    if (ret != C_KZG_OK) goto out;
+    /* Get \sum r^i C_i */
+    ret = g1_lincomb_fast(&C_lincomb, commitments_g1, r_powers, n);
+    if (ret != C_KZG_OK) goto out;
+    /* Get [\sum r^i y_i] = (\sum r^i y_i) * G1 */
+    g1_mul(&ys_encrypted, blst_p1_generator(), &y_total);
+
+    /* Get C_lincomb + proof_z_lincomb - ys_encrypted */
+    g1_add(&rhs_g1, &C_lincomb, &proof_z_lincomb);
+    g1_sub(&rhs_g1, &rhs_g1, &ys_encrypted);
 
     /* Do the pairing check! */
     *ok = pairings_verify(&proof_lincomb, &s->g2_values_monomial[1], &rhs_g1, blst_p2_generator());
 
 out:
     c_kzg_free(r_powers);
-    c_kzg_free(C_minus_y);
     c_kzg_free(r_times_z);
     return ret;
 }
