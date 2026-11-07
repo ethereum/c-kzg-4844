@@ -46,7 +46,7 @@ def find_data_yaml_files(root_dir):
     """
     pattern = os.path.join(root_dir, "**", "data.yaml")
     data_yaml_files = glob.glob(pattern, recursive=True)
-    return [f for f in data_yaml_files if "/kzg-mainnet/" in f]
+    return [f for f in data_yaml_files if f"{os.path.sep}kzg-mainnet{os.path.sep}" in f]
 
 
 def sha256_hash_file(file_path):
